@@ -86,6 +86,7 @@ import { versionsApi } from '~/api/versions'
 import { format } from 'date-fns'
 
 const props = defineProps({
+  form: { type: Object, required: true },
   submissionId: {
     type: Number,
     required: true,
@@ -97,7 +98,8 @@ const { openSubscriptionModal } = useAppModals()
 const { data: user } = useAuth().user()
 const isHistoryModalOpen = ref(false)
 const versions = ref([])
-const { invalidateSubmission } = useFormSubmissions()
+const { submissionDetailById, invalidateSubmission } = useFormSubmissions()
+const submissionDetailQuery = submissionDetailById(props.form.id, props.submissionId, { enabled: false })
 
 onMounted(() => {
   if (props.submissionId) {
@@ -124,20 +126,16 @@ const formatDate = (val) => {
 
 const getTags = (version) => {
   const tags = []
-  for (const [key, change] of Object.entries(version?.diff || {})) {
-    const label = humanizeKey(key, change)
-    tags.push({ key, label })
+  for (const [key] of Object.entries(version?.diff?.data || {})) {
+    const label = getFieldName(key)
+    tags.push({ key, label: `${label} changed` })
   }
   return tags
 }
 
-const humanizeKey = (key, change) => {
-  const words = String(key).replace(/[_-]+/g, ' ').trim().toLowerCase()
-  const capitalized = words.charAt(0).toUpperCase() + words.slice(1)
-  if (typeof change?.new === 'boolean' || typeof change?.old === 'boolean') {
-    return `${capitalized} ${change?.new ? 'enabled' : 'disabled'}`
-  }
-  return `${capitalized} changed`
+const getFieldName = (key) => {
+  const allProperties = props.form.properties.concat(props.form.removed_properties)
+  return allProperties.find(property => property.id === key)?.name || key
 }
 
 const onRestore = async (version) => {
@@ -151,6 +149,7 @@ const onRestore = async (version) => {
 
 const restoreVersion = async (version) => {
   await versionsApi.restore(version.id).then((_response) => {
+    submissionDetailQuery.refetch()
     invalidateSubmission(props.submissionId)
     useAlert().success('Submission restored successfully')
     fetchVersions()

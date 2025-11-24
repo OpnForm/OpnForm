@@ -132,6 +132,18 @@ export function useFormSubmissions() {
     }
   }
 
+  const submissionDetailById = (formId, id, options = {}) => {
+    return useQuery({
+      queryKey: ['forms', formId, 'submissions', id],
+      queryFn: () => formsApi.submissions.fetch(formId, id, options),
+      enabled: !!(formId && id),
+      onSuccess: (data) => {
+        queryClient.setQueryData(['forms', formId, 'submissions', id], data)
+      },
+      ...options
+    })
+  }
+
   const submissionDetail = (slug, submissionId, options = {}) => {
     return useQuery({
       queryKey: ['submissions', submissionId],
@@ -233,6 +245,7 @@ export function useFormSubmissions() {
     paginatedSubmissions,
     paginatedList,
     submissionDetail,
+    submissionDetailById,
     updateSubmission,
     deleteSubmission,
     deleteMultiSubmissions,

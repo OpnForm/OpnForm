@@ -163,6 +163,7 @@ Route::group(['middleware' => 'auth.multi'], function () {
 
             Route::prefix('/{form}/submissions')->name('submissions.')->group(function () {
                 Route::get('/', [FormSubmissionController::class, 'submissions'])->name('index');
+                Route::get('/{submission_id}', [FormSubmissionController::class, 'fetch'])->name('fetch');
                 Route::put('/{submission_id}', [FormSubmissionController::class, 'update'])->name('update');
                 Route::post('/export', [FormSubmissionController::class, 'export'])->name('export');
                 Route::get('/export/status/{jobId}', [FormSubmissionController::class, 'exportStatus'])->name('export.status');
