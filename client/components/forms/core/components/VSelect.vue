@@ -534,7 +534,10 @@ export default {
       }
     },
     setupVirtualizer () {
-      if (!this.$refs.scrollRef || !this.filteredOptions || this.filteredOptions.length === 0) {
+      const scrollEl = this.$refs.scrollRef
+      const previousScrollTop = scrollEl ? scrollEl.scrollTop : null
+
+      if (!scrollEl || !this.filteredOptions || this.filteredOptions.length === 0) {
         this.virtualizer = null
         return
       }
@@ -545,12 +548,18 @@ export default {
       }
       
       // Skip virtualization if list fits in visible height
-      const dropdownEl = this.$refs.scrollRef
+      const dropdownEl = scrollEl
       const maxVisibleHeight = dropdownEl && dropdownEl.clientHeight ? dropdownEl.clientHeight : 0
       const estimatedItemSize = this.estimatedItemSizePx
       const estimatedTotal = this.filteredOptions.length * estimatedItemSize
       if (maxVisibleHeight && estimatedTotal <= maxVisibleHeight) {
         this.virtualizer = null
+        // Restore previous scroll position if any DOM changes reset it
+        this.$nextTick(() => {
+          if (this.$refs.scrollRef && previousScrollTop !== null) {
+            this.$refs.scrollRef.scrollTop = previousScrollTop
+          }
+        })
         return
       }
 
@@ -561,6 +570,13 @@ export default {
         overscan: 5,
         // Dynamic measurement so item height adapts to content
         measureElement: (el) => (el ? el.getBoundingClientRect().height : 0)
+      })
+
+      // Restore previous scroll position after virtualizer initializes
+      this.$nextTick(() => {
+        if (this.$refs.scrollRef && previousScrollTop !== null) {
+          this.$refs.scrollRef.scrollTop = previousScrollTop
+        }
       })
     },
     isSelected (value) {
