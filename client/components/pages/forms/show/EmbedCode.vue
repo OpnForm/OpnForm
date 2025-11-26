@@ -26,11 +26,9 @@ export default {
 
   computed: {
     embedCode() {
-      // eslint-disable no-useless-escape
       const isFocused = this.form?.presentation_style === 'focused'
-      return isFocused
-        ? this.iframeCode
-        : `${this.iframeCode}<script type="text/javascript" onload="initEmbed('${this.form.slug}')" src="${appUrl("/widgets/iframe.min.js")}"><\/script>`
+      // eslint-disable no-useless-escape
+      return `${this.iframeCode}<script type="text/javascript" onload="initEmbed('${this.form.slug}', { isFocused: ${isFocused} })" src="${appUrl("/widgets/iframe.min.js")}"><\/script>`
     },
     iframeCode() {
       const share_url = this.extraQueryParam
