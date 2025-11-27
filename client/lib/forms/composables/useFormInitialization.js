@@ -200,7 +200,8 @@ export function useFormInitialization(formConfig, form, pendingSubmission) {
 
   /**
    * Attempts to load form data from an existing submission.
-   * @param {String} submissionId - ID of the submission to load
+   * Supports both UUID (new format) and Hashid (legacy format) identifiers.
+   * @param {String} submissionId - UUID or Hashid of the submission to load
    * @returns {Promise<Boolean>} - Whether loading was successful
    */
   const tryLoadFromSubmissionId = async (submissionId) => {
