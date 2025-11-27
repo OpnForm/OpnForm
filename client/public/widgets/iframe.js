@@ -480,7 +480,7 @@ function initEmbed(formSlug, options = {}) {
     return
   }
 
-  const { isFocused = false } = options || {}
+  const { autoResize = true } = options || {}
 
   window.addEventListener('message', function (event) {
     // Make sure that the event data has the type `form-submitted`
@@ -496,7 +496,7 @@ function initEmbed(formSlug, options = {}) {
     }
   })
 
-  if (isFocused) {
+  if (!autoResize) {
     return
   }
 
