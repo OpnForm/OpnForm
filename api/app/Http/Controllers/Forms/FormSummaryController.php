@@ -59,4 +59,3 @@ class FormSummaryController extends Controller
         return response()->json($values);
     }
 }
-
