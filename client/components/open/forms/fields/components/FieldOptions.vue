@@ -248,6 +248,60 @@
           />
         </template>
       </toggle-switch-input>
+
+      <UPopover
+        v-if="!field.multi_lines"
+        arrow
+        :content="{ side: 'left', align: 'center' }"
+      >
+        <UButton
+          class="mt-4"
+          block
+          color="neutral"
+          variant="outline"
+          :trailing-icon="field.input_mask ? 'i-heroicons-check-circle' : ''"
+          label="Input Mask Pattern"
+        />
+        <template #content>
+          <div class="p-4">
+            <TextInput
+              name="input_mask"
+              :form="field"
+              label="Input Mask Pattern"
+              placeholder="(999) 999-9999"
+              @update:model-value="onInputMaskChange"
+            >
+              <template #help>
+                <InputHelp>
+                  <span>
+                    <b>Format:</b> 9=number, a=letter, *=both. 
+                    <br/>
+                    <b>Examples:</b> (999) 999-9999, 999-99-9999, a*-999
+                    <br/>
+                    <a
+                      href="#"
+                      class="text-blue-500 hover:underline"
+                      @click.prevent="crisp.openHelpdeskArticle('how-to-set-mask-pattern-197qqps')"
+                  >
+                    Learn more?
+                  </a>
+                  </span>
+                </InputHelp>
+              </template>
+            </TextInput>
+            <TextInput
+              v-if="field.input_mask"
+              name="slot_char"
+              :form="field"
+              class="mt-2"
+              label="Slot Character"
+              placeholder="_"
+              :max-char-limit="1"
+              help="The character to use when the input is empty"
+            />
+          </div>
+        </template>
+      </UPopover>
     </div>
 
     <!--   Date Options   -->
@@ -735,7 +789,10 @@ export default {
   },
   setup() {
     const { current: currentWorkspace } = useCurrentWorkspace()
-    return { currentWorkspace }
+    return {
+      currentWorkspace,
+      crisp: useCrisp()
+    }
   },
   data() {
     return {
@@ -1061,6 +1118,24 @@ export default {
       } else {
         this.field.use_focused_toggle = false
         this.field.use_toggle_switch = false
+      }
+    },
+    onInputMaskChange(val) {
+      // Ensure val is a string
+      if (typeof val !== 'string') {
+        return
+      }
+      
+      // Only allow characters: a, 9, *, and common punctuation for input masks
+      const allowedChars = /^[a9*()\-_.,/\s]+$/
+      if (val && !allowedChars.test(val)) {
+        // Remove invalid characters
+        const cleanedValue = val.replace(/[^a9*()\-_.,/\s]/g, '')
+        this.field.input_mask = cleanedValue
+      }
+
+      if (val) {
+        this.field.slot_char = this.field.slot_char ?? '_'
       }
     }
   }
