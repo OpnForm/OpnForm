@@ -13,17 +13,7 @@
       :autocomplete="autocomplete"
       :pattern="pattern"
       :style="inputStyle"
-      :class="[
-        theme.default.input,
-        theme.default.borderRadius,
-        theme.default.spacing.horizontal,
-        theme.default.spacing.vertical,
-        theme.default.fontSize,
-        {
-          '!ring-red-500 !ring-2 !border-transparent': hasError,
-          '!cursor-not-allowed !bg-gray-200 dark:!bg-gray-800': disabled,
-        },
-      ]"
+      :class="ui.input({ class: props.ui?.slots?.input })"
       :name="name"
       :accept="accept"
       :placeholder="effectivePlaceholder"
@@ -31,7 +21,7 @@
       :max="max"
       :maxlength="maxCharLimit"
       @change="onChange"
-      @keydown.enter.prevent="onEnterPress"
+      @keydown.enter="onEnterPress"
       @focus="onFocus"
       @blur="onBlur"
     >
@@ -47,7 +37,7 @@
       v-if="maxCharLimit && showCharLimit"
       #bottom_after_help
     >
-      <small :class="theme.default.help">
+      <small :class="ui.help({ class: props.ui?.slots?.help })">
         {{ charCount }}/{{ maxCharLimit }}
       </small>
     </template>
@@ -63,6 +53,7 @@
 
 <script>
 import {inputProps, useFormInput} from "../useFormInput.js"
+import { textInputTheme } from "~/lib/forms/themes/text-input.theme.js"
 
 export default {
   name: "MaskInput",
@@ -76,7 +67,8 @@ export default {
     max: {type: Number, required: false, default: null},
     autocomplete: {type: [Boolean, String, Object], default: null},
     maxCharLimit: {type: Number, required: false, default: null},
-    pattern: { type: String, default: null },
+    pattern: {type: String, default: null},
+    preventEnter: { type: Boolean, default: true },
     mask: { type: String, default: null },
     slotChar: { type: String, default: '_' }
   },
@@ -88,7 +80,8 @@ export default {
       props,
       context,
       {
-        formPrefixKey: props.nativeType === "file" ? "file-" : null
+        formPrefixKey: props.nativeType === "file" ? "file-" : null,
+        variants: textInputTheme
       },
     )
 
@@ -200,7 +193,10 @@ export default {
     }
 
     const onEnterPress = (event) => {
-      event.preventDefault()
+      if (props.preventEnter) {
+        event.preventDefault()
+      }
+      context.emit('input-filled')
       return false
     }
 
@@ -209,7 +205,8 @@ export default {
         props,
         context,
         {
-          formPrefixKey: props.nativeType === "file" ? "file-" : null
+          formPrefixKey: props.nativeType === "file" ? "file-" : null,
+          variants: textInputTheme
         },
       ),
       onEnterPress,
@@ -219,7 +216,8 @@ export default {
       effectivePlaceholder,
       inputRef,
       isValidMask,
-      displayValue
+      displayValue,
+      props
     }
   },
   computed: {
