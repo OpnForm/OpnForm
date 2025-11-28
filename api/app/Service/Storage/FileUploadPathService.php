@@ -86,7 +86,6 @@ class FileUploadPathService
 
         // Check for path traversal attempts or problematic characters
         if (
-            str_contains($component, '..') ||
             str_contains($component, '/') ||
             str_contains($component, '\\')
         ) {
