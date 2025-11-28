@@ -535,31 +535,31 @@ export default {
     },
     setupVirtualizer () {
       const scrollEl = this.$refs.scrollRef
-      const previousScrollTop = scrollEl ? scrollEl.scrollTop : null
+      const previousScrollTop = scrollEl?.scrollTop ?? null
 
-      if (!scrollEl || !this.filteredOptions || this.filteredOptions.length === 0) {
+      // Restore scroll position after DOM updates (prevents jump on multi-select)
+      const restoreScroll = () => {
+        if (previousScrollTop === null) return
+        this.$nextTick(() => {
+          if (this.$refs.scrollRef) {
+            this.$refs.scrollRef.scrollTop = previousScrollTop
+          }
+        })
+      }
+
+      if (!scrollEl || !this.filteredOptions?.length) {
         this.virtualizer = null
         return
       }
       
       // Clean up existing virtualizer
-      if (this.virtualizer) {
-        this.virtualizer = null
-      }
+      this.virtualizer = null
       
       // Skip virtualization if list fits in visible height
-      const dropdownEl = scrollEl
-      const maxVisibleHeight = dropdownEl && dropdownEl.clientHeight ? dropdownEl.clientHeight : 0
-      const estimatedItemSize = this.estimatedItemSizePx
-      const estimatedTotal = this.filteredOptions.length * estimatedItemSize
+      const maxVisibleHeight = scrollEl.clientHeight || 0
+      const estimatedTotal = this.filteredOptions.length * this.estimatedItemSizePx
       if (maxVisibleHeight && estimatedTotal <= maxVisibleHeight) {
-        this.virtualizer = null
-        // Restore previous scroll position if any DOM changes reset it
-        this.$nextTick(() => {
-          if (this.$refs.scrollRef && previousScrollTop !== null) {
-            this.$refs.scrollRef.scrollTop = previousScrollTop
-          }
-        })
+        restoreScroll()
         return
       }
 
@@ -568,16 +568,10 @@ export default {
         getScrollElement: () => this.$refs.scrollRef,
         estimateSize: () => this.estimatedItemSizePx,
         overscan: 5,
-        // Dynamic measurement so item height adapts to content
-        measureElement: (el) => (el ? el.getBoundingClientRect().height : 0)
+        measureElement: (el) => el?.getBoundingClientRect().height ?? 0
       })
 
-      // Restore previous scroll position after virtualizer initializes
-      this.$nextTick(() => {
-        if (this.$refs.scrollRef && previousScrollTop !== null) {
-          this.$refs.scrollRef.scrollTop = previousScrollTop
-        }
-      })
+      restoreScroll()
     },
     isSelected (value) {
       if (!this.modelValue) return false
