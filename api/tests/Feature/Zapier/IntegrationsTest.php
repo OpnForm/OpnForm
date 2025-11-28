@@ -5,6 +5,7 @@ use App\Models\User;
 use Laravel\Sanctum\Sanctum;
 
 use function Pest\Laravel\assertDatabaseCount;
+use function Pest\Laravel\assertSoftDeleted;
 use function Pest\Laravel\delete;
 use function Pest\Laravel\post;
 use function PHPUnit\Framework\assertEquals;
@@ -44,6 +45,7 @@ test('cannot create an integration without a corresponding ability', function ()
     Sanctum::actingAs($user);
 
     post(route('zapier.webhooks.store'), [
+
         'form_id' => $form->id,
         'hookUrl' => 'https://zapier.com/hook/test'
     ])
@@ -63,6 +65,7 @@ test('cannot create an integration for other users form', function () {
     Sanctum::actingAs($user);
 
     post(route('zapier.webhooks.store'), [
+
         'form_id' => $form->id,
         'hookUrl' => 'https://zapier.com/hook/test'
     ])
@@ -92,13 +95,13 @@ test('delete an integration', function () {
 
     assertDatabaseCount('form_integrations', 1);
 
-    delete(route('zapier.webhooks.destroy', $integration), [
+    delete(route('zapier.webhooks.destroy'), [
         'form_id' => $form->id,
         'hookUrl' => $hookUrl,
     ])
         ->assertOk();
 
-    assertDatabaseCount('form_integrations', 0);
+    assertSoftDeleted('form_integrations', ['id' => $integration->id]);
 });
 
 test('cannot delete an integration with an incorrect hook url', function () {
@@ -120,7 +123,7 @@ test('cannot delete an integration with an incorrect hook url', function () {
             ]
         ]);
 
-    delete(route('zapier.webhooks.destroy', $integration), [
+    delete(route('zapier.webhooks.destroy'), [
         'form_id' => $form->id,
         'hookUrl' => 'https://google.com',
     ])

@@ -12,6 +12,7 @@ class FeatureFlagsController extends Controller
         $featureFlags = Cache::remember('feature_flags', 3600, function () {
             return [
                 'self_hosted' => config('app.self_hosted', true),
+                'setup_required' => config('app.self_hosted', true) && !\App\Models\User::max('id'),
                 'custom_domains' => config('custom-domains.enabled', false),
                 'ai_features' => !empty(config('services.openai.api_key')),
                 'version' => $this->getAppVersion(),
@@ -41,10 +42,27 @@ class FeatureFlagsController extends Controller
                     'google_sheets' => !empty(config('services.google.client_id')) && !empty(config('services.google.client_secret')),
                     'telegram' => !empty(config('services.telegram.bot_token')),
                 ],
+                'custom_code' => [
+                    'enable_self_hosted' => (bool) config('opnform.custom_code.enable_self_hosted', false),
+                ],
+                'oidc' => [
+                    'available' => $this->isOidcAvailable(),
+                    'forced' => config('oidc.force_login', false) && $this->isOidcAvailable(),
+                ],
             ];
         });
 
         return response()->json($featureFlags);
+    }
+
+    /**
+     * Check if OIDC is available (at least one enabled connection exists).
+     */
+    private function isOidcAvailable(): bool
+    {
+        return \App\Enterprise\Oidc\Models\IdentityConnection::enabled()
+            ->where('type', \App\Enterprise\Oidc\Models\IdentityConnection::TYPE_OIDC)
+            ->exists();
     }
 
     /**

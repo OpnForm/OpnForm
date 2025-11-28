@@ -4,11 +4,11 @@ namespace App\Http\Controllers\Forms;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\AnswerFormRequest;
+use App\Models\Forms\Form;
 use App\Http\Resources\FormResource;
 use App\Http\Resources\FormSubmissionResource;
 use App\Jobs\Form\StoreFormSubmissionJob;
-use App\Models\Forms\Form;
-use App\Models\Forms\FormSubmission;
+use App\Service\Forms\Analytics\UserAgentHelper;
 use App\Service\Forms\FormSubmissionProcessor;
 use App\Service\Forms\FormCleaner;
 use App\Service\WorkspaceHelper;
@@ -20,13 +20,12 @@ use Illuminate\Support\Str;
 
 class PublicFormController extends Controller
 {
-    public const FILE_UPLOAD_PATH = 'forms/?/submissions';
-
-    public const TMP_FILE_UPLOAD_PATH = 'tmp/';
-
-    public function show(Request $request, string $slug)
+    public function show(Request $request, Form $form)
     {
-        $form = Form::whereSlug($slug)->whereIn('visibility', ['public', 'closed'])->firstOrFail();
+        // Ensure form is public or closed
+        if (!in_array($form->visibility, ['public', 'closed'])) {
+            abort(404);
+        }
         if ($form->workspace == null) {
             // Workspace deleted
             return $this->error([
@@ -44,19 +43,41 @@ class PublicFormController extends Controller
                 ->getData()
         );
 
-        // Increase form view counter if not login
-        if (!Auth::check()) {
-            $form->views()->create();
-        }
-
         return (new FormResource($form))
             ->setCleanings($formCleaner->getPerformedCleanings());
     }
 
-    public function listUsers(Request $request)
+    public function view(Request $request, Form $form)
+    {
+        // Ensure form is public
+        if ($form->visibility !== 'public') {
+            abort(404);
+        }
+
+        if ($form->workspace == null) {
+            return $this->error([
+                'message' => 'Form not found.',
+            ], 404);
+        }
+
+        if (Auth::check()) {
+            return $this->success([
+                'message' => 'Form viewed by logged in user.',
+            ]);
+        }
+
+        // Increment view count and store metadata for analytics
+        $userAgent = new UserAgentHelper($request);
+        $form->views()->create(['meta' => $userAgent->getMetadata()]);
+
+        return $this->success([
+            'message' => 'Form viewed.',
+        ]);
+    }
+
+    public function listUsers(Request $request, Form $form)
     {
         // Check that form has user field
-        $form = $request->form;
         if (!$form->has_user_field) {
             return [];
         }
@@ -89,16 +110,11 @@ class PublicFormController extends Controller
     /**
      * Handle partial form submissions
      *
-     * @param Request $request
+     * @param array $submissionData
      * @return \Illuminate\Http\JsonResponse
      */
-    private function handlePartialSubmissions(Request $request)
+    private function handlePartialSubmissions(array $submissionData, Form $form)
     {
-        $form = $request->form;
-
-        // Process submission data to extract submission ID
-        $submissionData = $this->processSubmissionIdentifiers($request, $request->all());
-
         // Validate that at least one field has a value
         $hasValue = false;
         foreach ($submissionData as $key => $value) {
@@ -113,38 +129,45 @@ class PublicFormController extends Controller
             ], 422);
         }
 
-        // Explicitly mark this as a partial submission
         $submissionData['is_partial'] = true;
-
-        // Use the same job as regular submissions to ensure consistent processing
         $job = new StoreFormSubmissionJob($form, $submissionData);
         $job->handle();
 
-        // Get the submission ID
-        $submissionId = $job->getSubmissionId();
-
         return $this->success([
             'message' => 'Partial submission saved',
-            'submission_hash' => Hashids::encode($submissionId)
+            'submission_hash' => Hashids::encode($job->getSubmissionId())
         ]);
     }
 
-    public function answer(AnswerFormRequest $request, FormSubmissionProcessor $formSubmissionProcessor)
+    public function answer(AnswerFormRequest $request, Form $form, FormSubmissionProcessor $formSubmissionProcessor)
     {
-        $form = $request->form;
+        // Check if user can answer this form
+        $this->authorize('answer', $form);
+
         $isFirstSubmission = ($form->submissions_count === 0);
 
-        // Handle partial submissions
+        // Check for partial submission flag early (before validation)
         $isPartial = $request->get('is_partial') ?? false;
-        if ($isPartial && $form->enable_partial_submissions && $form->is_pro) {
-            return $this->handlePartialSubmissions($request);
-        }
 
-        // Get validated data (includes all metadata)
-        $submissionData = $request->validated();
+        // Use raw data for partial submissions (don't validate all required fields)
+        // Use validated data for complete submissions
+        $submissionData = ($isPartial && $form->enable_partial_submissions && $form->is_pro)
+            ? $request->all()
+            : $request->validated();
 
         // Process submission hash and ID
         $submissionData = $this->processSubmissionIdentifiers($request, $submissionData);
+
+        // Add IP address for tracking if enabled
+        unset($submissionData['submitter_ip']);
+        if ($form->enable_ip_tracking && $form->is_pro) {
+            $submissionData['submitter_ip'] = $request->ip();
+        }
+
+        // Handle partial submissions
+        if ($isPartial && $form->enable_partial_submissions && $form->is_pro) {
+            return $this->handlePartialSubmissions($submissionData, $form);
+        }
 
         // Create the job with all data (including metadata)
         $job = new StoreFormSubmissionJob($form, $submissionData);
@@ -201,35 +224,33 @@ class PublicFormController extends Controller
         return $submissionData;
     }
 
-    public function fetchSubmission(Request $request, string $slug, string $submissionId)
+    public function fetchSubmission(Request $request, Form $form, string $submission_id)
     {
         // Decode the submission ID using the same approach as in processSubmissionIdentifiers
-        $decodedId = Hashids::decode($submissionId);
+        $decodedId = Hashids::decode($submission_id);
         $submissionId = !empty($decodedId) ? (int)($decodedId[0]) : false;
 
-        $form = Form::whereSlug($slug)->whereVisibility('public')->firstOrFail();
+        // Ensure form is public and allows editable submissions
+        if ($form->visibility !== 'public') {
+            abort(404);
+        }
         if ($form->workspace == null || !$form->editable_submissions || !$submissionId) {
             return $this->error([
                 'message' => 'Not allowed.',
             ]);
         }
 
-        $submission = FormSubmission::find($submissionId);
+        $submission = $form->submissions()->find($submissionId);
         if (!$submission) {
             return $this->error([
                 'message' => 'Submission not found.',
             ]);
         }
 
-        $submission = new FormSubmissionResource($submission);
-        $submission->publiclyAccessed();
+        $submission->setRelation('form', $form);
+        $resource = new FormSubmissionResource($submission);
+        $resource->publiclyAccessed();
 
-        if ($submission->form_id != $form->id) {
-            return $this->error([
-                'message' => 'Not allowed.',
-            ], 403);
-        }
-
-        return $this->success($submission->toArray($request));
+        return $this->success($resource->toArray($request));
     }
 }

@@ -20,11 +20,29 @@ class WorkspaceController extends Controller
     {
         $this->authorize('viewAny', Workspace::class);
 
-        return WorkspaceResource::collection(Auth::user()->workspaces);
+        // Eager load users with pivot roles to prevent N+1 queries in WorkspaceResource
+        // Make this query identical to UserController to avoid duplicate database work
+        $user = Auth::user();
+        if ($user instanceof \App\Models\User) {
+            $user->load([
+                'workspaces' => function ($query) {
+                    $query->withPivot('role')->with([
+                        'users' => function ($subQuery) {
+                            $subQuery->withPivot('role');
+                        }
+                    ]);
+                }
+            ]);
+        }
+
+        $workspaces = $user->workspaces;
+
+        return WorkspaceResource::collection($workspaces);
     }
 
     public function saveCustomDomain(CustomDomainRequest $request)
     {
+        $this->authorize('adminAction', $request->workspace);
         if (!$request->workspace->is_pro) {
             return $this->error([
                 'message' => 'A Pro plan is required to use this feature.',
@@ -39,6 +57,7 @@ class WorkspaceController extends Controller
 
     public function saveEmailSettings(EmailSettingsRequest $request)
     {
+        $this->authorize('adminAction', $request->workspace);
         if (!$request->workspace->is_pro) {
             return $this->error([
                 'message' => 'A Pro plan is required to use this feature.',
@@ -50,9 +69,8 @@ class WorkspaceController extends Controller
         return new WorkspaceResource($request->workspace);
     }
 
-    public function delete($id)
+    public function delete(Workspace $workspace)
     {
-        $workspace = Workspace::findOrFail($id);
         $this->authorize('delete', $workspace);
 
         $id = $workspace->id;
@@ -94,9 +112,8 @@ class WorkspaceController extends Controller
         ]);
     }
 
-    public function update(Request $request, $id)
+    public function update(Request $request, Workspace $workspace)
     {
-        $workspace = Auth::user()->workspaces()->findOrFail($id);
         $this->authorize('update', $workspace);
 
         $this->validate($request, [

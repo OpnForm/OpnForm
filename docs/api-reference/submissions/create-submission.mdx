@@ -1,0 +1,229 @@
+---
+openapi: post /forms/{slug}/answer
+---
+
+# Create Form Submission
+
+Submit a new response to a form using the OpnForm API. This endpoint allows you to programmatically collect form data without requiring user authentication.
+
+<Info>
+    This is a public endpoint designed for form submissions. No API
+    authentication is required.
+</Info>
+
+## Prerequisites
+
+Before submitting to a form, you'll need:
+
+-   A published form with a valid slug or UUID
+-   Knowledge of the form's field IDs (available via the [Get Form](/api-reference/forms/get-form) endpoint)
+-   Form fields configured according to your validation requirements
+
+<Tip>
+    You can find your form's slug in the OpnForm dashboard under form settings,
+    or use the form's UUID which is also displayed in the dashboard.
+</Tip>
+
+## Request
+
+<RequestExample>
+```http
+POST /forms/{slug}/answer HTTP/1.1
+Host: api.opnform.com
+Content-Type: application/json
+
+{
+"completion_time": 10,
+"3700d380-197b-47b9-a008-3acc31bbd506": "Alice",
+"12461db5-0c19-429e-840b-8de1e359c42f": "alice@example.com"
+}
+
+````
+
+</RequestExample>
+
+### Path Parameters
+
+<ParamField path="slug" type="string" required>
+    The form identifier - either a human-readable slug (e.g.,
+    `customer-feedback`) or UUID. You can find this in your OpnForm dashboard
+    under form settings.
+</ParamField>
+
+### Request Body
+
+<ParamField body="[field_id]" type="string|number|boolean|array">
+**Dynamic field data**: Each form field is identified by its unique UUID. The value type depends on the field type:
+- Text fields: `string`
+- Number fields: `number`
+- Checkbox fields: `boolean`
+- Multi-select fields: `array`
+
+**Example**: `"3700d380-197b-47b9-a008-3acc31bbd506": "Alice Johnson"`
+
+</ParamField>
+
+<ParamField body="completion_time" type="number">
+    Time in seconds it took the user to complete the form. Used for analytics
+    and form optimization insights.
+</ParamField>
+
+<ParamField body="is_partial" type="boolean" default="false">
+Submit the form as a partial submission. Only works if the form has "Collect partial submissions" enabled in its settings.
+
+When `true`, the response includes a `submission_hash` that can be used to update the same submission later.
+
+</ParamField>
+
+## Response
+
+<ResponseExample>
+```json Success (200 OK)
+{
+  "type": "success",
+  "message": "Form submission saved.",
+  "submission_id": "sub_1234567890",
+  "is_first_submission": true,
+  "redirect": false,
+  "submission_hash": null
+}
+````
+
+```json Partial Success (200 OK)
+{
+    "type": "success",
+    "message": "Partial form submission saved.",
+    "submission_hash": "hash_abc123def456"
+}
+```
+
+```json Validation Error (422)
+{
+    "message": "The Name field is required.",
+    "errors": {
+        "3700d380-197b-47b9-a008-3acc31bbd506": ["The Name field is required."],
+        "12461db5-0c19-429e-840b-8de1e359c42f": [
+            "The email field must be a valid email address."
+        ]
+    }
+}
+```
+
+```json Form Not Found (404)
+{
+    "message": "Form not found.",
+    "error": "The specified form slug does not exist or is not published."
+}
+```
+
+</ResponseExample>
+
+### Success Response Fields
+
+<ResponseField name="type" type="string">
+    Response type indicator. Always `"success"` for successful submissions.
+</ResponseField>
+
+<ResponseField name="message" type="string">
+    Human-readable success message describing the submission result.
+</ResponseField>
+
+<ResponseField name="submission_id" type="string|null">
+    Unique identifier for the created submission. Returns `null` for partial
+    submissions.
+</ResponseField>
+
+<ResponseField name="is_first_submission" type="boolean">
+    Indicates whether this is the first submission for this form. Useful for
+    triggering welcome flows or first-time user experiences.
+</ResponseField>
+
+<ResponseField name="redirect" type="boolean">
+    Indicates if the form has a custom redirect URL configured. Always `false`
+    for API submissions.
+</ResponseField>
+
+<ResponseField name="submission_hash" type="string|null">
+    Unique hash for partial submissions that can be used to update the
+    submission later. Only present when `is_partial: true`.
+</ResponseField>
+
+## Use Cases
+
+### Basic Form Submission
+
+Submit a complete contact form with validation:
+
+```javascript
+const submitContactForm = async (formData) => {
+    try {
+        const response = await fetch(
+            "https://api.opnform.com/forms/contact-us/answer",
+            {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    "3700d380-197b-47b9-a008-3acc31bbd506": formData.name,
+                    "12461db5-0c19-429e-840b-8de1e359c42f": formData.email,
+                    "a8f5c2d1-9b7e-4c3f-8a1d-2e5f9c4b7a8e": formData.message,
+                    completion_time: formData.timeSpent,
+                }),
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error("Submission failed");
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error("Form submission error:", error);
+        throw error;
+    }
+};
+```
+
+### Partial Submission Workflow
+
+Save progress and complete later:
+
+```javascript
+// Save partial submission
+const saveProgress = async (partialData) => {
+    const response = await fetch(
+        "https://api.opnform.com/forms/survey/answer",
+        {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                ...partialData,
+                is_partial: true,
+            }),
+        }
+    );
+
+    const result = await response.json();
+    // Store submission_hash for later use
+    localStorage.setItem("submission_hash", result.submission_hash);
+    return result;
+};
+
+// Complete the submission later
+const completeSubmission = async (finalData) => {
+    const hash = localStorage.getItem("submission_hash");
+    const response = await fetch(
+        "https://api.opnform.com/forms/survey/answer",
+        {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                ...finalData,
+                submission_hash: hash,
+                is_partial: false,
+            }),
+        }
+    );
+
+    return await response.json();
+};
+```

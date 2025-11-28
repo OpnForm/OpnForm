@@ -23,10 +23,11 @@
       <OptionSelectorInput
           v-model="field.width"
           name="width"
-          class="grow"
+          class="grow mt-4"
           :form="field"
           label="Block Width"
           seamless
+          v-if="!isFocused"
           :options="[
             { name: 'full', label: 'Full' },
             { name: '1/2', label: '1/2' },
@@ -39,10 +40,10 @@
           :columns="6"
         />
         <OptionSelectorInput
-          v-if="['nf-text', 'nf-image'].includes(field.type)"
+          v-if="['nf-text', 'nf-image', 'nf-video'].includes(field.type)"
           v-model="field.align"
           name="align"
-          class="w-2/3"
+          class="mt-4 w-2/3"
           :form="field"
           label="Text Alignment"
           seamless
@@ -55,6 +56,11 @@
           :multiple="false"
           :columns="4"
         />
+    </div>
+
+    <!-- Focused Mode: Media settings (high priority under general) -->
+    <div v-if="isFocused && field.type==='nf-text'" class="mt-2">
+      <BlockMediaOptions :model="field" :form="form" />
     </div>
 
     <div
@@ -102,6 +108,19 @@
         :required="false"
       />
     </div>
+    
+    <div
+      v-else-if="field.type == 'nf-video'"
+      class="border-t mt-4"
+    >
+      <TextInput
+        name="video_block"
+        class="mx-4"
+        :form="field"
+        label="Video URL"
+        help="You can add a video URL here. It will be displayed as a video block."
+      />
+    </div>
 
     <div
       v-else-if="field.type == 'nf-code'"
@@ -117,10 +136,13 @@
       />
     </div>
   </div>
+
+  <!-- (moved above for focused mode) -->
 </template>
 
 <script setup>
 import HiddenRequiredDisabled from './HiddenRequiredDisabled.vue'
+import BlockMediaOptions from '~/components/open/forms/components/media/BlockMediaOptions.vue'
 
 const props = defineProps({
   field: {
@@ -132,6 +154,8 @@ const props = defineProps({
     required: false
   }
 })
+
+const isFocused = computed(() => props.form?.presentation_style === 'focused')
 
 watch(() => props.field?.width, (val) => {
   if (val === undefined || val === null) {

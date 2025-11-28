@@ -74,7 +74,7 @@ const crisp = useCrisp()
 
 const selectedWorkspace = ref(null)
 const props = defineProps({
-  show: { type: Boolean, required: true },
+  show: { type: Boolean, required: true }, 
   form: { type: Object, required: true },
 })
 

@@ -21,12 +21,14 @@
               class="h-4 w-px bg-neutral-900/10"
               aria-hidden="true"
             />
-            <a
-              v-track.welcome_github_click
-              target="_blank"
-              class="flex items-center gap-x-1 hover:no-underline"
-              href="https://github.com/jhumanj/opnform"
+            <TrackClick
+              name="welcome_github_click"
             >
+              <a
+                target="_blank"
+                class="flex items-center gap-x-1 hover:no-underline"
+                href="https://github.com/OpnForm/OpnForm"
+              >
               <span
                 class="absolute inset-0"
                 aria-hidden="true"
@@ -47,7 +49,8 @@
                   d="M8.25 4.5l7.5 7.5-7.5 7.5"
                 />
               </svg>
-            </a>
+              </a>
+            </TrackClick>
           </div>
         </div>
         <div class="max-w-4xl mx-auto text-center">
@@ -254,12 +257,14 @@
               />
             </svg>
           </a>
-          <a
-            v-track.welcome_github_click
-            target="_blank"
-            :href="configLinks.github_url"
-            class="mr-4"
+          <TrackClick
+            name="welcome_github_click"
           >
+            <a
+              target="_blank"
+              :href="configLinks.github_url"
+              class="mr-4"
+            >
             <svg
               class="w-6 h-6 text-white"
               viewBox="0 0 24 24"
@@ -273,7 +278,8 @@
                 fill="currentColor"
               />
             </svg>
-          </a>
+            </a>
+          </TrackClick>
         </div>
 
         <p class="mt-12 text-white text-lg">
@@ -308,21 +314,10 @@ import { useIsAuthenticated } from '~/composables/useAuthFlow'
 
 definePageMeta({
   layout: "default",
+  middleware: ['root-redirect']
 })
 
 const { isAuthenticated: authenticated } = useIsAuthenticated()
-
-useHead({
-  title: 'OpnForm: Open-Source Form Builder',
-  titleTemplate: '%s',
-  meta: [
-    {
-      hid: 'description',
-      name: 'description',
-      content: 'The Open-Source Typeform Alternative',
-    },
-  ],
-})
 
 const config = opnformConfig
 const configLinks = computed(() => config.links)

@@ -22,10 +22,11 @@ it('update profile info', function () {
 it('update password', function () {
     $this->actingAs($user = User::factory()->create())
         ->patchJson('/settings/password', [
-            'password' => 'updated',
-            'password_confirmation' => 'updated',
+            'current_password' => 'Abcd@1234',
+            'password' => 'Abcd@1234_updated',
+            'password_confirmation' => 'Abcd@1234_updated',
         ])
         ->assertSuccessful();
 
-    $this->assertTrue(Hash::check('updated', $user->password));
+    $this->assertTrue(Hash::check('Abcd@1234_updated', $user->password));
 });

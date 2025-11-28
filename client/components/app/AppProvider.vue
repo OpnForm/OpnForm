@@ -1,5 +1,5 @@
 <template>
-  <UApp :toaster="toasterConfig">
+  <UApp :toaster="toasterConfig" :tooltip="tooltipConfig">
     <slot />
   </UApp>
 </template>
@@ -51,6 +51,10 @@ const toasterConfig = computed(() => {
     },
   }
 })
+
+const tooltipConfig = {
+  delayDuration: 100
+}
 
 // Lifecycle
 onMounted(() => {

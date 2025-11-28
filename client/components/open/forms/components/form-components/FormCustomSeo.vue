@@ -23,47 +23,48 @@
       />
       </div>
 
-      <SelectInput
-        v-if="useFeatureFlag('custom_domains')"
-        v-model="form.custom_domain"
-        :clearable="true"
-        :disabled="customDomainOptions.length <= 0"
-        :options="customDomainOptions"
-        name="type"
-        class="mt-4 max-w-xs"
-        label="Form Domain"
-        placeholder="yourdomain.com"
-      />
       <template v-if="form.seo_meta">
-        <text-input
-          v-model="form.seo_meta.page_title"
-          name="page_title"
-          class="mt-4 max-w-xs"
-          label="Page Title"
-          help="Max 60 characters recommended"
-        />
-        <text-area-input
-          v-model="form.seo_meta.page_description"
-          name="page_description"
-          class="mt-4 max-w-xs"
-          label="Page Description"
-          help="Between 150 and 160 characters"
-        />
-        <div class="flex gap-4">
-          <image-input
-            v-model="form.seo_meta.page_thumbnail"
-            name="page_thumbnail"
-            class="flex-grow"
-            label="Thumbnail Image"
-            help="og:image - 1200px X 630px"
-          />
-          <image-input
-            v-model="form.seo_meta.page_favicon"
-            name="page_favicon"
-            class="flex-grow"
-            label="Favicon Image"
-            help="Public form page favicon"
-          />
+        <div class="flex flex-col lg:flex-row gap-8 mt-4 lg:items-start">
+          <!-- Left Column - Form Inputs -->
+          <div class="flex-1 space-y-4 max-w-xs">
+            <SelectInput
+              v-if="useFeatureFlag('custom_domains')"
+              v-model="form.custom_domain"
+              :clearable="true"
+              :disabled="customDomainOptions.length <= 0"
+              :options="customDomainOptions"
+              name="type"
+              label="Form Domain"
+              placeholder="yourdomain.com"
+            />
+            <text-input
+              v-model="form.seo_meta.page_title"
+              name="page_title"
+              label="Page Title"
+              help="Max 60 characters recommended"
+            />
+            <text-area-input
+              v-model="form.seo_meta.page_description"
+              name="page_description"
+              label="Page Description"
+              help="Between 150 and 160 characters"
+            />
+            <image-input
+              v-model="form.seo_meta.page_thumbnail"
+              name="page_thumbnail"
+              label="Thumbnail Image"
+              help="og:image - 1200px X 630px"
+            />
+            <image-input
+              v-model="form.seo_meta.page_favicon"
+              name="page_favicon"
+              label="Favicon Image"
+              help="Public form page favicon"
+            />
+          </div>
+          
+          <!-- Right Column - Preview (After fields on mobile) -->
+          <SeoPreview :form="form" />
         </div>
       </template>
 
@@ -103,6 +104,7 @@
 <script setup>
 const crisp = useCrisp()
 import ProTag from "~/components/app/ProTag.vue"
+import SeoPreview from "~/components/open/forms/components/SeoPreview.vue"
 
 const workingFormStore = useWorkingFormStore()
 const { content: form } = storeToRefs(workingFormStore)
@@ -110,8 +112,8 @@ const { content: form } = storeToRefs(workingFormStore)
 const { current: workspace } = useCurrentWorkspace()
 
 const customDomainOptions = computed(() => {
-  return workspace.value.custom_domains
-    ? workspace.value.custom_domains.map((domain) => {
+  return workspace?.value?.custom_domains
+    ? workspace?.value?.custom_domains.map((domain) => {
         return {
           name: domain,
           value: domain,
@@ -122,12 +124,15 @@ const customDomainOptions = computed(() => {
 
 onMounted(() => {
   if (!form.value.seo_meta || Array.isArray(form.value.seo_meta))
-    form.value.seo_meta = {};
+    form.value.seo_meta = {}
 
-  ['page_title', 'page_description', 'page_thumbnail', 'page_favicon'].forEach((keyname) => {
-    if (form.value.seo_meta[keyname] === undefined)
-      form.value.seo_meta[keyname] = null
-  })
+  form.value.seo_meta = {
+    ...form.value.seo_meta,
+    page_title: form.value.seo_meta.page_title === undefined ? null : form.value.seo_meta.page_title,
+    page_description: form.value.seo_meta.page_description === undefined ? null : form.value.seo_meta.page_description,
+    page_thumbnail: form.value.seo_meta.page_thumbnail === undefined ? null : form.value.seo_meta.page_thumbnail,
+    page_favicon: form.value.seo_meta.page_favicon === undefined ? null : form.value.seo_meta.page_favicon,
+  }
 
   if (form.value.custom_domain && workspace.value?.custom_domains && !workspace.value.custom_domains.find((item) => { return item === form.value.custom_domain })) {
     form.value.custom_domain = null

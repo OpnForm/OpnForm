@@ -65,7 +65,19 @@ class UserInvite extends Model
 
     public function markAsAccepted()
     {
-        $this->update(['status' => self::ACCEPTED_STATUS]);
+        // Use conditional atomic update as secondary guard against race conditions
+        $updated = $this->where('id', $this->id)
+            ->where('status', self::PENDING_STATUS)
+            ->update(['status' => self::ACCEPTED_STATUS]);
+
+        if ($updated === 0) {
+            // Invite was already accepted or doesn't exist
+            throw new \RuntimeException('Invite could not be marked as accepted - may already be processed.');
+        }
+
+        // Refresh the model to reflect the updated status
+        $this->refresh();
+
         WorkspaceUsersUpdated::dispatch($this->workspace);
         return $this;
     }

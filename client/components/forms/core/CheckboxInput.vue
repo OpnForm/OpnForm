@@ -12,7 +12,6 @@
         :disabled="disabled ? true : null"
         :name="name"
         :color="color"
-        :theme="theme"
       />
       <div>
         <slot
@@ -21,7 +20,7 @@
         >
           <InputHelp
             :help="help"
-            :help-classes="theme.default.help"
+            :help-classes="ui.help({ class: props.ui?.slots?.help })"
           >
             <template #after-help>
               <slot name="bottom_after_help" />
@@ -29,17 +28,11 @@
           </InputHelp>
         </slot>
         <slot name="label">
-          <label
-            :aria-label="id ? id : name"
-            :for="id ? id : name"
-            :class="theme.default.fontSize"
-          >
-            {{ label }}
-            <span
-              v-if="required"
-              class="text-red-500 required-dot"
-            >*</span>
-          </label>
+          <InputLabel
+            :label="label"
+            :required="required"
+            :theme="theme"
+          />
         </slot>
         <slot
           v-if="helpPosition === 'below_input'"
@@ -47,7 +40,7 @@
         >
           <InputHelp
             :help="help"
-            :help-classes="theme.default.help"
+            :help-classes="ui.help({ class: props.ui?.slots?.help })"
           >
             <template #after-help>
               <slot name="bottom_after_help" />
@@ -70,6 +63,7 @@
 <script>
 import { inputProps, useFormInput } from '../useFormInput.js'
 import VCheckbox from './components/VCheckbox.vue'
+import { checkboxInputTheme } from "~/lib/forms/themes/checkbox-input.theme.js"
 
 export default {
   name: 'CheckboxInput',
@@ -81,8 +75,12 @@ export default {
   },
 
   setup(props, context) {
+    const formInput = useFormInput(props, context, {
+      variants: checkboxInputTheme
+    })
     return {
-      ...useFormInput(props, context),
+      ...formInput,
+      props
     }
   },
 

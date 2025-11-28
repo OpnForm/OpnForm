@@ -19,6 +19,11 @@
       />
     </div>
 
+    <!-- Focused Mode: Media settings (high priority under general) -->
+    <div v-if="isFocused" class="mt-2">
+      <BlockMediaOptions :model="field" :form="form" />
+    </div>
+
     <!-- Checkbox -->
     <div
       v-if="field.type === 'checkbox'"
@@ -29,11 +34,24 @@
         title="Checkbox"
       />
       <toggle-switch-input
+        v-if="!isFocused"
         :form="field"
         name="use_toggle_switch"
         label="Use toggle switch"
         help="If enabled, checkbox will be replaced with a toggle switch"
       />
+      <template v-else>
+        <flat-select-input
+          v-model="field.focused_checkbox_style"
+          name="focused_checkbox_style"
+          class="mt-3"
+          :form="field"
+          :options="focusedCheckboxStyleOptions"
+          label="Checkbox style"
+          help="Choose how the checkbox appears in focused mode"
+          @update:model-value="onFieldFocusedCheckboxStyleChange"
+        />
+      </template>
     </div>
 
     <!-- File Uploads -->
@@ -370,18 +388,61 @@
         @update:model-value="onFieldOptionsChange"
       />
       <toggle-switch-input
+        v-if="isFocused"
+        :model-value="field.use_focused_selector === false"
+        label="Use dropdown instead"
+        help="Use classic dropdown instead of focused selector with keyboard shortcuts"
+        @update:model-value="onFieldUseDropdownInFocusedChange"
+      />
+      <toggle-switch-input
+        v-if="!isFocusedSelectorActive"
         :form="field"
         name="allow_creation"
         label="Allow respondent to create new options"
         @update:model-value="onFieldAllowCreationChange"
       />
       <toggle-switch-input
+        v-if="!isFocusedSelectorActive"
         :form="field"
         name="without_dropdown"
-        label="Always show all select options"
-        help="Options won't be in a dropdown anymore, but will all be visible"
+        label="Use radio buttons"
         @update:model-value="onFieldWithoutDropdownChange"
       />
+      
+      <!-- Min/Max Selection Constraints for multi_select only -->
+      <template v-if="field.type === 'multi_select'">
+        <div class="flex gap-1">
+        <text-input
+          name="min_selection"
+          native-type="number"
+          :min="0"
+          class="flex-1"
+          :form="field"
+          label="Min. required"
+          placeholder="1"
+          @update:model-value="onFieldMinSelectionChange"
+        />
+        <text-input
+          name="max_selection"
+          native-type="number"
+          :min="1"
+          class="flex-1"
+          :form="field"
+          label="Max. allowed"
+          placeholder="2"
+          @update:model-value="onFieldMaxSelectionChange"
+        />
+        <UButton
+          icon="i-heroicons-backspace"
+          color="neutral"
+          variant="outline"
+          class="self-end mb-1"
+          title="Clear both values"
+          @click="clearMinMaxSelection"
+        />
+      </div>
+      <InputHelp help="Set min/max options allowed, or leave empty for unlimited. Save form to test changes." />
+      </template>
     </div>
 
     <!-- Customization - Placeholder, Prefill, Relabel, Field Help    -->
@@ -406,11 +467,13 @@
         name="use_simple_text_input"
         label="Use simple text input"
       />
+
       <template v-if="field.type === 'phone_number' && !field.use_simple_text_input">
         <select-input
+          class="mt-3"
           v-model="field.unavailable_countries"
-          class="mt-4"
-          wrapper-class="relative"
+          popover-width="full"
+          input-class="ltr-only:rounded-r-none rtl:rounded-l-none!"
           :options="allCountries"
           :multiple="true"
           :searchable="true"
@@ -427,14 +490,14 @@
             </div>
           </template>
           <template #option="{ option, selected }">
-            <div class="flex items-center space-x-2 hover:text-white">
+            <div class="flex items-center gap-2 max-w-full">
               <country-flag
                 size="normal"
-                class="!-mt-[9px]"
+                class="-mt-[9px]! rounded"
                 :country="option.code"
               />
-              <span class="grow">{{ option.name }}</span>
-              <span>{{ option.dial_code }}</span>
+              <span class="truncate">{{ option.name }}</span>
+              <span class="text-gray-500">{{ option.dial_code }}</span>
             </div>
             <span
               v-if="selected"
@@ -482,6 +545,7 @@
         :form="field"
         :options="prefillSelectsOptions"
         label="Pre-filled value"
+        :searchable="shouldEnableSelectSearch"
         :multiple="field.type === 'multi_select'"
       />
       <template v-else-if="field.type === 'matrix'">
@@ -564,9 +628,9 @@
         </small>
       </div>
 
-      <!--    Placeholder    -->
+      <!-- Placeholder -->
       <text-area-input
-        v-if="hasPlaceholder && field.type === 'text' && field.multi_lines"
+        v-if="hasPlaceholder && ((field.type === 'text' && field.multi_lines) || field.type === 'rich_text')"
         name="placeholder"
         class="mt-3"
         :form="field"
@@ -587,6 +651,7 @@
         :form="field"
         label="Block Width"
         seamless
+        v-if="!isFocused"
         :options="[
           { name: 'full', label: 'Full' },
           { name: '1/2', label: '1/2' },
@@ -614,8 +679,16 @@
             'italic',
             'link',
             'underline',
-            'list'
-          ]
+            'list',
+            'strike'
+          ],
+          modules: {
+            toolbar: [
+              ['bold', 'italic', 'underline', 'strike'],
+              ['link'],
+              [{ list: 'ordered' }, { list: 'bullet' }]
+            ]
+          }
         }"
         help="Displayed below/above the field, like this text"
         :help-position="field.help_position"
@@ -682,6 +755,8 @@
         @update:model-value="onFieldGenAutoIdChange"
       />
     </div>
+
+  <!--  (moved above for focused mode)  -->
   </div>
 </template>
 
@@ -697,10 +772,11 @@ import ProTag from '~/components/app/ProTag.vue'
 import { format } from 'date-fns'
 import { default as _has } from 'lodash/has'
 import blocksTypes from '~/data/blocks_types.json'
+import BlockMediaOptions from '~/components/open/forms/components/media/BlockMediaOptions.vue'
 
 export default {
   name: 'FieldOptions',
-  components: { CountryFlag, MatrixFieldOptions, HiddenRequiredDisabled, EditorSectionHeader, PaymentFieldOptions, ProTag },
+  components: { CountryFlag, MatrixFieldOptions, HiddenRequiredDisabled, EditorSectionHeader, PaymentFieldOptions, ProTag, BlockMediaOptions },
   props: {
     field: {
       type: Object,
@@ -735,8 +811,22 @@ export default {
   },
 
   computed: {
+    isFocused() {
+      return this.form?.presentation_style === 'focused'
+    },
+    isFocusedSelectorActive() {
+      // Focused selector is active when in focused mode AND not explicitly disabled
+      return this.isFocused && this.field.use_focused_selector !== false
+    },
     hasPlaceholder() {
       return !this.typesWithoutPlaceholder.includes(this.field.type)
+    },
+    focusedCheckboxStyleOptions() {
+      return [
+        { name: 'Yes/No selector (Y/N shortcuts)', value: 'focused_toggle' },
+        { name: 'Toggle switch', value: 'toggle_switch' },
+        { name: 'Classic checkbox', value: 'checkbox' }
+      ]
     },
     mbLimit() {
       return  (this.form?.workspace && this.form?.workspace.max_file_size) ? this.form?.workspace?.max_file_size : 10
@@ -753,6 +843,13 @@ export default {
           value: option.id
         }
       })
+    },
+    selectionOptionsCount() {
+      if (!['select', 'multi_select'].includes(this.field.type)) return 0
+      return Array.isArray(this.field[this.field.type]?.options) ? this.field[this.field.type].options.length : 0
+    },
+    shouldEnableSelectSearch() {
+      return ['select', 'multi_select'].includes(this.field.type) && this.selectionOptionsCount > 5
     },
     timezonesOptions() {
       if (this.field.type !== 'date') return []
@@ -807,6 +904,26 @@ export default {
       },
       immediate: true
     },
+    isFocused: {
+      handler(val) {
+        // When switching to focused mode for checkbox, set default style if not set
+        if (val && this.field.type === 'checkbox' && !this.field.focused_checkbox_style) {
+          this.field.focused_checkbox_style = 'focused_toggle'
+          this.field.use_focused_toggle = true
+        }
+      },
+      immediate: true
+    },
+    isFocusedSelectorActive: {
+      handler(val) {
+        // When focused selector becomes active, ensure conflicting options are disabled
+        if (val && ['select', 'multi_select'].includes(this.field.type)) {
+          this.field.without_dropdown = false
+          this.field.allow_creation = false
+        }
+      },
+      immediate: true
+    }
   },
 
   created() {
@@ -870,6 +987,19 @@ export default {
     onFieldWithoutDropdownChange(val) {
       this.field.without_dropdown = val
       if (this.field.without_dropdown) {
+        this.field.allow_creation = false
+        this.field.use_focused_selector = false
+      }
+    },
+    onFieldUseDropdownInFocusedChange(val) {
+      // Inverted logic: when "use dropdown instead" is ON, disable focused selector
+      this.field.use_focused_selector = !val
+      if (!this.field.use_focused_selector) {
+        // When disabling focused selector (using dropdown instead), no need to disable other options
+        // User can choose dropdown with creation or without_dropdown
+      } else {
+        // When enabling focused selector, force disable conflicting options
+        this.field.without_dropdown = false
         this.field.allow_creation = false
       }
     },
@@ -951,6 +1081,10 @@ export default {
         this.field.slider_step_value = 1
       } else if (["select", "multi_select"].includes(this.field.type) && !this.field[this.field.type]?.options) {
         this.field[this.field.type] = { options: [] }
+      } else if (this.field.type === "checkbox" && this.isFocused && !this.field.focused_checkbox_style) {
+        // Default to focused toggle in focused mode
+        this.field.focused_checkbox_style = 'focused_toggle'
+        this.field.use_focused_toggle = true
       }
     },
     updateMatrixField(newField) {
@@ -960,6 +1094,30 @@ export default {
       this.field.max_char_limit = val
       if(!this.field.max_char_limit) {
         this.field.show_char_limit = false
+      }
+    },
+    onFieldMinSelectionChange(val) {
+      this.field.min_selection = val ? parseInt(val) : null
+    },
+    onFieldMaxSelectionChange(val) {
+      this.field.max_selection = val ? parseInt(val) : null
+    },
+    clearMinMaxSelection() {
+      this.field.min_selection = null
+      this.field.max_selection = null
+    },
+    onFieldFocusedCheckboxStyleChange(val) {
+      this.field.focused_checkbox_style = val
+      // Update field flags based on selection
+      if (val === 'focused_toggle') {
+        this.field.use_focused_toggle = true
+        this.field.use_toggle_switch = false
+      } else if (val === 'toggle_switch') {
+        this.field.use_focused_toggle = false
+        this.field.use_toggle_switch = true
+      } else {
+        this.field.use_focused_toggle = false
+        this.field.use_toggle_switch = false
       }
     },
     onInputMaskChange(val) {

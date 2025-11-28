@@ -37,7 +37,8 @@
               "configuration/aws-s3",
               "configuration/email-setup",
               "configuration/custom-domain",
-              "configuration/subdomain-redirect"
+              "configuration/subdomain-redirect",
+              "configuration/oidc-sso"
             ]
           }
         ]
@@ -63,21 +64,9 @@
             ]
           },
           {
-            "group": "Workspace Users",
-            "pages": [
-              "api-reference/workspace-users/list-workspace-users",
-              "api-reference/workspace-users/list-workspace-invites",
-              "api-reference/workspace-users/add-workspace-user",
-              "api-reference/workspace-users/remove-workspace-user",
-              "api-reference/workspace-users/update-workspace-user-role",
-              "api-reference/workspace-users/leave-workspace",
-              "api-reference/workspace-users/resend-workspace-invite",
-              "api-reference/workspace-users/cancel-workspace-invite"
-            ]
-          },
-          {
             "group": "Forms",
             "pages": [
+              "api-reference/forms/list-workspace-forms",
               "api-reference/forms/list-forms",
               "api-reference/forms/create-form",
               "api-reference/forms/get-form",
@@ -89,9 +78,35 @@
             "group": "Submissions",
             "pages": [
               "api-reference/submissions/list-submissions",
+              "api-reference/submissions/create-submission",
               "api-reference/submissions/export-submissions-csv",
+              "api-reference/submissions/export-status",
               "api-reference/submissions/update-submission",
               "api-reference/submissions/delete-submission"
+            ]
+          },
+          {
+            "group": "Integrations",
+            "pages": [
+              "api-reference/integrations/list-form-integrations",
+              "api-reference/integrations/create-webhook-integration",
+              "api-reference/integrations/update-webhook-integration",
+              "api-reference/integrations/delete-webhook-integration",
+              "api-reference/integrations/list-webhook-events",
+              "api-reference/integrations/webhook-security"
+            ]
+          },
+          {
+            "group": "Workspace Users",
+            "pages": [
+              "api-reference/workspace-users/list-workspace-users",
+              "api-reference/workspace-users/list-workspace-invites",
+              "api-reference/workspace-users/add-workspace-user",
+              "api-reference/workspace-users/remove-workspace-user",
+              "api-reference/workspace-users/update-workspace-user-role",
+              "api-reference/workspace-users/leave-workspace",
+              "api-reference/workspace-users/resend-workspace-invite",
+              "api-reference/workspace-users/cancel-workspace-invite"
             ]
           },
           {
@@ -164,7 +179,7 @@
       },
       {
         "label": "GitHub",
-        "href": "https://github.com/JhumanJ/OpnForm"
+        "href": "https://github.com/OpnForm/OpnForm"
       }
     ],
     "primary": {
@@ -176,7 +191,7 @@
   "footer": {
     "socials": {
       "twitter": "https://twitter.com/opnform",
-      "github": "https://github.com/JhumanJ/OpnForm"
+      "github": "https://github.com/OpnForm/OpnForm"
     }
   }
 }

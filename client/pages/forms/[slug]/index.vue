@@ -1,39 +1,9 @@
 <template>
   <div
     id="public-form"
-    class="flex flex-col"
+    class="flex flex-col min-h-screen"
   >
-    <div v-if="form && !isIframe && (form.logo_picture || form.cover_picture)">
-      <div v-if="form.cover_picture">
-        <div
-          id="cover-picture"
-          class="max-h-56 w-full overflow-hidden flex items-center justify-center"
-        >
-          <img
-            alt="Form Cover Picture"
-            :src="form.cover_picture"
-            class="w-full"
-          >
-        </div>
-      </div>
-      <div
-        v-if="form.logo_picture"
-        class="w-full p-5 relative mx-auto"
-        :class="{'pt-20':!form.cover_picture, 'md:w-3/5 lg:w-1/2 md:max-w-2xl': form.width === 'centered', 'max-w-7xl': (form.width === 'full' && !isIframe) }"
-        :style="{ 'direction': form?.layout_rtl ? 'rtl' : 'ltr' }"
-      >
-        <img
-          alt="Logo Picture"
-          :src="form.logo_picture"
-          :class="{'top-5':!form.cover_picture, '-top-10':form.cover_picture}"
-          class="w-20 h-20 object-contain absolute transition-all"
-        >
-      </div>
-    </div>
-    <div
-      class="w-full mx-auto px-4"
-      :class="{'mt-6':!isIframe, 'md:w-3/5 lg:w-1/2 md:max-w-2xl': form && (form.width === 'centered'), 'max-w-7xl': (form && form.width === 'full' && !isIframe)}"
-    >
+    <div class="w-full mx-auto flex flex-col grow h-full">
       <div v-if="!formLoading && !form">
         <NotFoundForm />
       </div>
@@ -44,9 +14,9 @@
       </div>
       <template v-else>
         <OpenCompleteForm
-          ref="openCompleteForm"
+          ref="openCompleteFormRef"
           :form="form"
-          class="mb-10"
+          class="w-full grow min-h-0"
           :dark-mode="darkMode"
           :mode="FormMode.LIVE"
           @password-entered="passwordEntered"
@@ -68,8 +38,11 @@ import {
   useDarkMode
 } from '~/lib/forms/public-page'
 import { FormMode } from "~/lib/forms/FormModeStrategy.js"
+import { formsApi } from '~/api'
+import { customDomainUsed } from '~/lib/utils.js'
 
 const crisp = useCrisp()
+const appStore = useAppStore()
 const darkMode = useDarkMode()
 const isIframe = useIsIframe()
 const slug = useRoute().params.slug
@@ -86,7 +59,7 @@ if (import.meta.server) {
   await suspense()
 }
 
-const openCompleteForm = ref(null)
+const openCompleteFormRef = ref(null)
 
 const passwordEntered = function (password) {
   const cookie = useCookie('password-' + slug, {
@@ -98,7 +71,16 @@ const passwordEntered = function (password) {
   nextTick(() => {
     refetchForm().then(() => {
       if (form.value?.is_password_protected) {
-        openCompleteForm.value.addPasswordError(t('forms.invalid_password'))
+        // Add another nextTick to ensure the component is fully rendered after refetch
+        nextTick(() => {
+          if (openCompleteFormRef.value && typeof openCompleteFormRef.value.addPasswordError === 'function') {
+            openCompleteFormRef.value.addPasswordError(t('forms.invalid_password'))
+          } else {
+            console.warn('openCompleteFormRef ref not available or addPasswordError method not found')
+          }
+        })
+      } else {
+        trackFormView()
       }
     })
   })
@@ -138,6 +120,7 @@ watch([formLoading, formError], async ([loading, error]) => {
 
 onMounted(() => {
   crisp.hideChat()
+  appStore.hideFeatureBaseButton()
   document.body.classList.add('public-page')
   if (form.value) {
     handleDarkMode(form.value?.dark_mode)
@@ -151,7 +134,13 @@ onMounted(() => {
     })
 
     if (import.meta.client) {
-      if (form.value.custom_code) {
+      const allowSelfHosted = !!useFeatureFlag('custom_code.enable_self_hosted', false)
+      const isSelfHosted = !!useFeatureFlag('self_hosted', false)
+      const isCustomDomain = customDomainUsed()
+
+      const canExecuteCustomCode = isCustomDomain || (isSelfHosted && allowSelfHosted)
+
+      if (form.value.custom_code && canExecuteCustomCode) {
         const scriptEl = document.createRange().createContextualFragment(form.value.custom_code)
         try {
           document.head.append(scriptEl)
@@ -161,10 +150,24 @@ onMounted(() => {
       }
       if (!isIframe && form.value?.auto_focus) focusOnFirstFormElement()
     }
+
+    trackFormView()
   }
 })
 
+  // Track form view
+let hasViewedForm = false
+const trackFormView = () => {
+  if (import.meta.client && !form.value?.is_password_protected && !hasViewedForm) {
+    hasViewedForm = true
+    nextTick(() => {
+      formsApi.view(form.value.slug)
+    })
+  }
+}
+
 onBeforeRouteLeave(() => {
+  appStore.showFeatureBaseButton()
   document.body.classList.remove('public-page')
   crisp.showChat()
   disableDarkMode()
@@ -231,7 +234,7 @@ useOpnSeoMeta({
   robots: () => {
     return (form.value && form.value?.can_be_indexed) ? null : 'noindex, nofollow'
   }
-})
+}, true)
 
 const getHtmlClass = computed(() => {
   return {
@@ -256,7 +259,7 @@ useHead({
   link: headLinks.value,
   meta: pageMeta.value.page_favicon ? [
     {
-      name: 'apple-mobile-web-app-capable',
+      name: 'mobile-web-app-capable',
       content: 'yes'
     },
     {
@@ -264,7 +267,10 @@ useHead({
       content: 'black-translucent'
     },
   ] : {},
-  script: [{ src: '/widgets/iframeResizer.contentWindow.min.js' }]
+  script: [{ src: '/widgets/iframeResizer.contentWindow.min.js' }],
+  style: computed(() => form.value?.custom_css ? [
+    { key: 'custom-css', textContent: form.value.custom_css }
+  ] : [])
 })
 
 definePageMeta({

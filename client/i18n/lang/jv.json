@@ -3,6 +3,12 @@
         "name": "OpnForm"
     },
     "forms": {
+        "buttons": {
+            "submit": "Kirim",
+            "next": "Sabanjure",
+            "previous": "Sadurunge",
+            "re_fill": "Kirim jawaban liyane"
+        },
         "powered_by": "Dipungkasi dening",
         "password_protected": "Formulir iki dilindhungi tembung sandi.",
         "invalid_password": "Tembung sandi ora bener.",
@@ -47,19 +53,25 @@
             "billing_email": "Alamat email tagihan",
             "payment_disclaimer": "Kertu kredit sampeyan bakal dikenani biaya nalika ngeklik tombol iki. Pembayaran diproses kanthi aman liwat Stripe.",
             "errors": {
-                "missingFormOrProvider": "Missing form slug or provider ID.",
-                "failedAccountDetails": "Failed to get Stripe account details.",
-                "setupError": "An error occurred during Stripe setup.",
-                "systemNotReady": "Payment system not ready. Please wait a moment and try again.",
-                "misconfigured": "Payment system misconfigured. Please refresh and try again.",
-                "notFullyReady": "Payment system not fully ready. Please refresh and try again.",
-                "paymentRequired": "Complete the payment before you can proceed.",
-                "nameRequired": "Card holder name is required.",
-                "emailRequired": "Billing email address is required.",
-                "invalidEmail": "Invalid billing email address.",
-                "failedIntent": "Failed to create payment intent.",
-                "processingFailed": "Payment processing failed."
+                "missingFormOrProvider": "Slug formulir utawa ID panyedhiya ilang.",
+                "failedAccountDetails": "Gagal njupuk rincian akun Stripe.",
+                "setupError": "Ana kesalahan nalika persiyapan Stripe.",
+                "systemNotReady": "Sistem pembayaran durung siyap. Enteni sawetara wektu banjur coba maneh.",
+                "misconfigured": "Sistem pembayaran salah dikonfigurasi. Mangga refresh banjur coba maneh.",
+                "notFullyReady": "Sistem pembayaran durung siyap kanthi lengkap. Mangga refresh banjur coba maneh.",
+                "paymentRequired": "Rampungake pembayaran sadurunge bisa nerusake.",
+                "nameRequired": "Jeneng sing duwe kertu dibutuhake.",
+                "emailRequired": "Alamat email tagihan dibutuhake.",
+                "invalidEmail": "Alamat email tagihan ora bener.",
+                "failedIntent": "Gagal nggawe niat pembayaran.",
+                "processingFailed": "Proses pembayaran gagal."
             }
+        },
+        "validation_error": "Kesalahan validasi",
+        "validation_error_with_count": "Kesalahan validasi ({count} kolom)",
+        "toggle": {
+            "yes": "Ya",
+            "no": "Ora"
         }
     }
 } 

@@ -176,132 +176,112 @@
   </div>
 </template>
 
-<script>
-import { computed } from "vue"
-import Fuse from "fuse.js"
+<script setup>
+import { useFuse } from '@vueuse/integrations/useFuse'
 import SingleTemplate from "./SingleTemplate.vue"
 import { refDebounced } from "@vueuse/core"
 import { useTemplateMeta } from "~/composables/data/useTemplateMeta"
 
-export default {
-  name: "TemplatesList",
-  components: { SingleTemplate },
-  props: {
-    templates: {
-      type: Array,
-      required: true,
-    },
-    loading: {
-      type: Boolean,
-      default: false,
-    },
-    showTypes: {
-      type: Boolean,
-      default: true,
-    },
-    filterTypes: {
-      type: Boolean,
-      default: true,
-    },
-    showIndustries: {
-      type: Boolean,
-      default: true,
-    },
-    filterIndustries: {
-      type: Boolean,
-      default: true,
-    },
-    gridClasses: {
-      type: String,
-      default: "grid-cols-1 mt-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4",
-    },
+const props = defineProps({
+  templates: {
+    type: Array,
+    default: () => [],
+    required: true,
   },
-
-  setup() {
-    const { industries, types } = useTemplateMeta()
-    const search = ref("")
-    const debouncedSearch = refDebounced(search, 500)
-    return {
-      search,
-      debouncedSearch,
-      user: computed(() => useAuth().user().data.value),
-      industries: computed(() => [...industries.values()]),
-      types: computed(() => [...types.values()]),
-    }
+  loading: {
+    type: Boolean,
+    default: false,
   },
-
-  data: () => ({
-    selectedType: "all",
-    selectedIndustry: "all",
-  }),
-
-  computed: {
-    industriesOptions() {
-      return [{ name: "All Industries", value: "all" }].concat(
-        Object.values(this.industries).map((industry) => {
-          return {
-            name: industry.name,
-            value: industry.slug,
-          }
-        }),
-      )
-    },
-    typesOptions() {
-      return [{ name: "All Types", value: "all" }].concat(
-        Object.values(this.types).map((type) => {
-          return {
-            name: type.name,
-            value: type.slug,
-          }
-        }),
-      )
-    },
-    enrichedTemplates() {
-      let enrichedTemplates = this.templates
-
-      // Filter by Selected Type
-      if (
-        this.filterTypes &&
-        this.selectedType &&
-        this.selectedType !== "all"
-      ) {
-        enrichedTemplates = enrichedTemplates.filter((item) => {
-          return item.types && item.types.length > 0
-            ? item.types.includes(this.selectedType)
-            : false
-        })
-      }
-
-      // Filter by Selected Industry
-      if (
-        this.filterIndustries &&
-        this.selectedIndustry &&
-        this.selectedIndustry !== "all"
-      ) {
-        enrichedTemplates = enrichedTemplates.filter((item) => {
-          return item.industries && item.industries.length > 0
-            ? item.industries.includes(this.selectedIndustry)
-            : false
-        })
-      }
-
-      if (
-        !this.debouncedSearch ||
-        this.debouncedSearch === "" ||
-        this.debouncedSearch === null
-      ) {
-        return enrichedTemplates
-      }
-
-      // Fuze search
-      const fuzeOptions = {
-        keys: ["name", "slug", "description", "short_description"],
-      }
-      const fuse = new Fuse(enrichedTemplates, fuzeOptions)
-      return fuse.search(this.debouncedSearch).map((res) => {
-        return res.item
-      })
-    },
+  showTypes: {
+    type: Boolean,
+    default: true,
   },
-}
+  filterTypes: {
+    type: Boolean,
+    default: true,
+  },
+  showIndustries: {
+    type: Boolean,
+    default: true,
+  },
+  filterIndustries: {
+    type: Boolean,
+    default: true,
+  },
+  gridClasses: {
+    type: String,
+    default: "grid-cols-1 mt-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4",
+  },
+})
+
+const { industries: industriesMap, types: typesMap } = useTemplateMeta()
+
+const industries = computed(() => [...industriesMap.values()])
+const types = computed(() => [...typesMap.values()])
+
+const search = ref("")
+const debouncedSearch = refDebounced(search, 500)
+
+const selectedType = ref("all")
+const selectedIndustry = ref("all")
+
+const industriesOptions = computed(() => {
+  return [{ name: "All Industries", value: "all" }].concat(
+    industries.value.map((industry) => ({
+      name: industry.name,
+      value: industry.slug,
+    })),
+  )
+})
+
+const typesOptions = computed(() => {
+  return [{ name: "All Types", value: "all" }].concat(
+    types.value.map((type) => ({
+      name: type.name,
+      value: type.slug,
+    })),
+  )
+})
+
+const filteredBase = computed(() => {
+  let list = props.templates
+
+  if (props.filterTypes && selectedType.value && selectedType.value !== "all") {
+    list = list.filter((item) => {
+      return item.types && item.types.length > 0
+        ? item.types.includes(selectedType.value)
+        : false
+    })
+  }
+
+  if (props.filterIndustries && selectedIndustry.value && selectedIndustry.value !== "all") {
+    list = list.filter((item) => {
+      return item.industries && item.industries.length > 0
+        ? item.industries.includes(selectedIndustry.value)
+        : false
+    })
+  }
+
+  return list
+})
+
+const { results: fuseResults } = useFuse(
+  debouncedSearch,
+  filteredBase,
+  {
+    fuseOptions: {
+      keys: ["name", "slug", "description", "short_description"],
+      threshold: 0.3,
+      ignoreLocation: true,
+      includeScore: false,
+    },
+    matchAllWhenSearchEmpty: true,
+  }
+)
+
+const enrichedTemplates = computed(() => {
+  const base = filteredBase.value
+  const results = fuseResults.value
+  return results && results.length > 0 ? results.map(r => r.item) : base
+})
 </script>

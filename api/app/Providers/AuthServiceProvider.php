@@ -3,11 +3,13 @@
 namespace App\Providers;
 
 use App\Models\Forms\Form;
+use App\Models\Forms\FormSubmission;
 use App\Models\Integration\FormZapierWebhook;
 use App\Models\OAuthProvider;
 use App\Models\Template;
 use App\Models\Workspace;
 use App\Policies\FormPolicy;
+use App\Policies\FormSubmissionPolicy;
 use App\Policies\Integration\FormZapierWebhookPolicy;
 use App\Policies\OAuthProviderPolicy;
 use App\Policies\PersonalAccessTokenPolicy;
@@ -25,11 +27,13 @@ class AuthServiceProvider extends ServiceProvider
      */
     protected $policies = [
         Form::class => FormPolicy::class,
+        FormSubmission::class => FormSubmissionPolicy::class,
         Workspace::class => WorkspacePolicy::class,
         FormZapierWebhook::class => FormZapierWebhookPolicy::class,
         Template::class => TemplatePolicy::class,
         OAuthProvider::class => OAuthProviderPolicy::class,
         PersonalAccessToken::class => PersonalAccessTokenPolicy::class,
+        \App\Enterprise\Oidc\Models\IdentityConnection::class => \App\Enterprise\Oidc\Policies\IdentityConnectionPolicy::class,
     ];
 
     /**

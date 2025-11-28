@@ -99,7 +99,12 @@ class FormSubmissionDataFactory
         }
 
         $option = $this->faker->randomElement($property['options']);
-        return $option['id'];
+        // Support both [{id: ...}] and ["id1", "id2"] option formats
+        if (is_array($option) && array_key_exists('id', $option)) {
+            return $option['id'];
+        }
+
+        return $option;
     }
 
     private function generateMultiSelectValues($property)
@@ -108,14 +113,24 @@ class FormSubmissionDataFactory
             return [];
         }
 
-        $numOptions = count($property['options']);
+        // Normalize options to a flat list of IDs/values
+        $normalizedValues = array_values(array_filter(array_map(function ($option) {
+            if (is_array($option) && array_key_exists('id', $option)) {
+                return $option['id'];
+            }
+            return is_scalar($option) ? $option : null;
+        }, $property['options']), function ($value) {
+            return $value !== null && $value !== '';
+        }));
+
+        if (count($normalizedValues) === 0) {
+            // Nothing valid to choose from
+            return [];
+        }
+
+        $numOptions = count($normalizedValues);
         $numToSelect = $this->faker->numberBetween(1, min(3, $numOptions));
 
-        $selectedOptions = $this->faker->randomElements(
-            array_column($property['options'], 'id'),
-            $numToSelect
-        );
-
-        return $selectedOptions;
+        return $this->faker->randomElements($normalizedValues, $numToSelect);
     }
 }

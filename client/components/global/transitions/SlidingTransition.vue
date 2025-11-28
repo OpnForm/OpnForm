@@ -1,13 +1,9 @@
 <template>
-  <transition
-    :name="transitionName"
-    @enter="enter"
-    @leave="leave"
-    @after-enter="resetStyles"
-    @after-leave="resetStyles"
-  >
-    <slot />
-  </transition>
+  <div class="sliding-wrapper" :style="{ '--transition-speed': transitionSpeed }">
+    <transition :name="transitionName">
+      <slot />
+    </transition>
+  </div>
 </template>
 
 <script setup>
@@ -22,6 +18,10 @@ const props = defineProps({
   step: {
     type: Number,
     default: 1
+  },
+  speed: {
+    type: [Number, String],
+    default: 800
   }
 })
 
@@ -31,65 +31,111 @@ const transitionName = computed(() => {
   return `${baseTransition}-${props.step > previousStep.value ? 'forward' : 'backward'}`
 })
 
+const transitionSpeed = computed(() => {
+  return typeof props.speed === 'number' ? `${props.speed}ms` : props.speed
+})
+
 watch(() => props.step, (newStep, oldStep) => {
   previousStep.value = oldStep
 })
 
-const enter = (el, done) => {
-  const { height } = el.getBoundingClientRect()
-  el.style.height = '0'
-  el.offsetHeight // force reflow
-  el.style.height = `${height}px`
-  el.addEventListener('transitionend', done, { once: true })
-}
-
-const leave = (el, done) => {
-  const { height } = el.getBoundingClientRect()
-  el.style.height = `${height}px`
-  el.offsetHeight // force reflow
-  el.style.height = '0'
-  el.addEventListener('transitionend', done, { once: true })
-}
-
-const resetStyles = (el) => {
-  el.style.height = ''
-}
+// No JS animation hooks; CSS handles both enter/leave transforms in sync
 </script>
 
 <style scoped>
-.slide-horizontal-forward-enter-active,
-.slide-horizontal-forward-leave-active,
-.slide-horizontal-backward-enter-active,
-.slide-horizontal-backward-leave-active,
-.slide-vertical-forward-enter-active,
-.slide-vertical-forward-leave-active,
-.slide-vertical-backward-enter-active,
-.slide-vertical-backward-leave-active {
-  transition: all 0.3s ease-out;
+.sliding-wrapper {
+  position: relative;
   overflow: hidden;
 }
 
-.slide-horizontal-forward-enter-from,
-.slide-horizontal-backward-leave-to {
-  opacity: 0;
-  transform: translateX(30px);
+/* Active: absolutely stack and animate transform + opacity */
+:deep(.slide-horizontal-forward-enter-active),
+:deep(.slide-horizontal-forward-leave-active),
+:deep(.slide-horizontal-backward-enter-active),
+:deep(.slide-horizontal-backward-leave-active),
+:deep(.slide-vertical-forward-enter-active),
+:deep(.slide-vertical-forward-leave-active),
+:deep(.slide-vertical-backward-enter-active),
+:deep(.slide-vertical-backward-leave-active) {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  transition: transform var(--transition-speed, 800ms) ease-in-out, opacity var(--transition-speed, 800ms) ease-in-out;
+  will-change: transform, opacity;
 }
 
-.slide-horizontal-forward-leave-to,
-.slide-horizontal-backward-enter-from {
-  opacity: 0;
-  transform: translateX(-30px);
+/* Enter on top */
+:deep(.slide-horizontal-forward-enter-active),
+:deep(.slide-horizontal-backward-enter-active),
+:deep(.slide-vertical-forward-enter-active),
+:deep(.slide-vertical-backward-enter-active) {
+  z-index: 2;
+}
+:deep(.slide-horizontal-forward-leave-active),
+:deep(.slide-horizontal-backward-leave-active),
+:deep(.slide-vertical-forward-leave-active),
+:deep(.slide-vertical-backward-leave-active) {
+  z-index: 1;
 }
 
-.slide-vertical-forward-enter-from,
-.slide-vertical-backward-leave-to {
-  opacity: 0;
-  transform: translateY(30px);
+/* Horizontal */
+:deep(.slide-horizontal-forward-enter-from),
+:deep(.slide-horizontal-backward-leave-to) {
+  transform: translateX(100%);
+  opacity: 0.5;
+}
+:deep(.slide-horizontal-forward-enter-to),
+:deep(.slide-horizontal-backward-leave-from) {
+  transform: translateX(0%);
+  opacity: 1;
+}
+:deep(.slide-horizontal-forward-leave-to),
+:deep(.slide-horizontal-backward-enter-from) {
+  transform: translateX(-100%);
+  opacity: 0.5;
+}
+:deep(.slide-horizontal-forward-leave-from),
+:deep(.slide-horizontal-backward-enter-to) {
+  transform: translateX(0%);
+  opacity: 1;
 }
 
-.slide-vertical-forward-leave-to,
-.slide-vertical-backward-enter-from {
-  opacity: 0;
-  transform: translateY(-30px);
+/* Vertical */
+/* Forward: old goes up, new comes from bottom */
+:deep(.slide-vertical-forward-enter-from) {
+  transform: translateY(100%);
+  opacity: 0.5;
+}
+:deep(.slide-vertical-forward-enter-to) {
+  transform: translateY(0%);
+  opacity: 1;
+}
+:deep(.slide-vertical-forward-leave-to) {
+  transform: translateY(-100%);
+  opacity: 0.5;
+}
+:deep(.slide-vertical-forward-leave-from) {
+  transform: translateY(0%);
+  opacity: 1;
+}
+
+/* Backward: old goes down, new comes from top */
+:deep(.slide-vertical-backward-enter-from) {
+  transform: translateY(-100%);
+  opacity: 0.5;
+}
+:deep(.slide-vertical-backward-enter-to) {
+  transform: translateY(0%);
+  opacity: 1;
+}
+:deep(.slide-vertical-backward-leave-to) {
+  transform: translateY(100%);
+  opacity: 0.5;
+}
+:deep(.slide-vertical-backward-leave-from) {
+  transform: translateY(0%);
+  opacity: 1;
 }
 </style>

@@ -17,6 +17,7 @@ class AiFormController extends Controller
             'message' => 'We\'re working on your form, please wait ~1 min.',
             'ai_form_completion_id' => AiFormCompletion::create([
                 'form_prompt' => $request->input('form_prompt'),
+                'generation_params' => $request->input('generation_params', []),
                 'ip' => $request->ip(),
             ])->id,
         ]);
@@ -44,6 +45,7 @@ class AiFormController extends Controller
                 'type' => AiFormCompletion::TYPE_FIELDS,
                 'form_prompt' => $request->input('fields_prompt'),
                 'context' => $request->input('current_form_structure'),
+                'generation_params' => $request->input('generation_params', []),
                 'ip' => $request->ip(),
             ])->id,
         ]);

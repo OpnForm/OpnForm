@@ -41,23 +41,13 @@
     <div
       v-else
       :style="inputStyle"
-      class="flex flex-col w-full items-center justify-center transition-colors duration-40"
-      :class="[
-        {'!cursor-not-allowed':disabled, 'cursor-pointer':!disabled},
-        theme.fileInput.input,
-        theme.fileInput.borderRadius,
-        theme.fileInput.spacing.horizontal,
-        theme.fileInput.spacing.vertical,
-        theme.fileInput.fontSize,
-        theme.fileInput.minHeight,
-        {'border-red-500 border-2':hasError},
-        'focus:outline-hidden focus:ring-2'
-      ]"
+      class="cursor-pointer"
+      :class="ui.container({ class: props.ui?.slots?.container })"
       tabindex="0"
       role="button"
       aria-label="Click to open a camera"
       @click="startScanning"
-      @keydown.enter.prevent="startScanning"
+      @keydown.enter="handleEnterPress"
     >
       <div class="flex w-full items-center justify-center">
         <div class="text-center">
@@ -86,6 +76,7 @@
 <script>
 import { inputProps, useFormInput } from '../useFormInput.js'
 import CameraUpload from './components/CameraUpload.vue'
+import { fileInputTheme } from '~/lib/forms/themes/file-input.theme.js'
 
 export default {
   name: 'BarcodeInput',
@@ -96,12 +87,17 @@ export default {
     decoders: {
       type: Array,
       default: () => []
-    }
+    },
+    preventEnter: {type: Boolean, default: true},
   },
 
   setup(props, context) {
+    const formInput = useFormInput(props, context, {
+      variants: fileInputTheme
+    })
     return {
-      ...useFormInput(props, context),
+      ...formInput,
+      props
     }
   },
 
@@ -124,6 +120,12 @@ export default {
   },
 
   methods: {
+    handleEnterPress(event) {
+      if (this.preventEnter) {
+        event.preventDefault()
+        this.startScanning()
+      }
+    },
     startScanning() {
       if (this.disabled) return
       this.isScanning = true

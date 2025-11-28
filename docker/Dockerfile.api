@@ -78,7 +78,7 @@ RUN mkdir -p storage/framework/sessions \
 # Copy the entire application from the builder stage
 COPY --from=builder /app/ ./
 
-# Set version as environment variable (more reliable than file approach)
+# Set version as environment variable
 ENV APP_VERSION_DOCKER=$APP_VERSION
 
 # Setup entrypoint

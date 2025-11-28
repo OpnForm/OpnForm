@@ -73,10 +73,10 @@
         <UBadge
           color="neutral"
           variant="subtle"
-          icon="i-heroicons-chart-bar"
+          icon="i-heroicons-lock-closed"
           :size="size"
         >
-          Submissions full
+          Limit reached
         </UBadge>
       </UTooltip>
     </template>

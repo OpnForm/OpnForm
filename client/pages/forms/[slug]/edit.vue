@@ -44,8 +44,9 @@ const { detail: formDetail } = useForms()
 
 const slug = route.params.slug
 
-// Get form by slug using TanStack Query
-const { data: form, isLoading: formsLoading, error } = formDetail(slug,{
+// Get form by slug using TanStack Query with private authenticated endpoint
+const { data: form, isLoading: formsLoading, error } = formDetail(slug, {
+  usePrivate: true,
   enabled: import.meta.client,
 })
 
@@ -128,7 +129,7 @@ useOpnSeoMeta({
   title: "Edit " + (form.value ? form.value.title : "Your Form"),
 })
 definePageMeta({
-  middleware: "auth",
+  middleware: ["auth", "readonly-block"],
   layout: 'empty'
 })
 </script>

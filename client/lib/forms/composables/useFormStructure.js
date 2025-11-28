@@ -1,24 +1,18 @@
 import { computed, toValue } from 'vue'
-import FormLogicPropertyResolver from '~/lib/forms/FormLogicPropertyResolver.js'
 
 /**
  * @fileoverview Composable responsible for analyzing and managing the structural aspects of a form,
  * including page breaks, field grouping, page boundaries, and determining field locations.
  */
-export function useFormStructure(formConfig, managerState, formData) {
+export function useFormStructure(formConfig, managerState, formData, fieldState) {
   const form = computed(() => toValue(formConfig) || { properties: [] })
 
   /**
-   * Checks if a field is hidden based on form logic.
-   * Uses FormLogicPropertyResolver.
-   * @param {Object} field - The field configuration object.
-   * @returns {Boolean} True if the field is hidden, false otherwise.
+   * Checks if a field is hidden based on centralized field state service.
    */
   const isFieldHidden = (field) => {
     try {
-      // Use the formData ref passed into the composable
-      const currentFormData = toValue(formData) || {}
-      return new FormLogicPropertyResolver(field, currentFormData).isHidden()
+      return !!fieldState.getState(field).hidden
     } catch (e) {
       console.error("Error checking if field is hidden:", field?.id, e)
       return field?.hidden || false // Fallback
@@ -27,6 +21,7 @@ export function useFormStructure(formConfig, managerState, formData) {
 
   /**
    * Calculates the groups of fields based on non-hidden page breaks.
+   * Classic mode: split on visible page breaks and ignore empty pages (groups containing only page-breaks).
    * @returns {Array<Array<Object>>} Nested array where each inner array represents a page.
    */
   const calculateFieldGroups = () => {
@@ -35,24 +30,29 @@ export function useFormStructure(formConfig, managerState, formData) {
 
     const groups = []
     let currentGroup = []
+    let hasRenderable = false // any non-page-break field in this group
+
+    const pushGroupIfRenderable = () => {
+      if (currentGroup.length === 0) return
+      if (hasRenderable) groups.push([...currentGroup])
+      currentGroup = []
+      hasRenderable = false
+    }
 
     properties.forEach((field, index) => {
       currentGroup.push(field)
+      if (field.type !== 'nf-page-break') hasRenderable = true
 
-      // Check if the field is a page break AND it's not hidden
+      // Split only on non-hidden page breaks
       if (field.type === 'nf-page-break' && !isFieldHidden(field)) {
-        groups.push([...currentGroup])
-        if (index < properties.length - 1) {
-          currentGroup = []
-        }
+        pushGroupIfRenderable()
+      }
+
+      // Last item safety
+      if (index === properties.length - 1) {
+        pushGroupIfRenderable()
       }
     })
-
-    // Add the last group if it's not empty AND the last field wasn't a non-hidden page break
-    const lastProperty = properties[properties.length - 1]
-    if (currentGroup.length > 0 && (!lastProperty || lastProperty.type !== 'nf-page-break' || isFieldHidden(lastProperty))) {
-      groups.push(currentGroup)
-    }
 
     // Ensure at least one group exists
     if (groups.length === 0) {
@@ -368,7 +368,7 @@ export function useFormStructure(formConfig, managerState, formData) {
     getPageForField,  // Find which page a field index belongs to
     hasPaymentBlock,  // Check if a page has a payment block
     getPaymentBlock,  // Get the payment block from a page
-    isFieldHidden,    // Check if a specific field is hidden by logic
+    isFieldHidden,    // Check if a specific field is hidden by state
     getTargetDropIndex, // Calculate absolute index for drag/drop
     determineInsertIndex, // Calculate where to insert a new field
     setPageForField // Set the current page to the page containing the specified field

@@ -20,15 +20,18 @@ Authorization: Bearer <token>
 
 ### Path Parameters
 
-| Parameter | Type   | Description                 |
-|-----------|--------|-----------------------------|
-| id        | number | Numeric ID of the form.     |
+| Parameter | Type   | Description             |
+| --------- | ------ | ----------------------- |
+| id        | number | Numeric ID of the form. |
 
 ### Query Parameters
 
-| Parameter | Type   | Required | Description                                        |
-|-----------|--------|----------|----------------------------------------------------|
-| page      | number | No       | Pagination page number (default `1`). 100 results per page. |
+| Parameter | Type   | Required | Description                                                              |
+| --------- | ------ | -------- | ------------------------------------------------------------------------ |
+| page      | number | No       | Pagination page number (default `1`).                                    |
+| per_page  | number | No       | Number of results per page (default `100`, max `100`).                   |
+| search    | string | No       | Search term to filter submissions by field values.                       |
+| status    | string | No       | Filter by submission status: `completed`, `partial`, or `all` (default). |
 
 ## Response
 
@@ -36,33 +39,114 @@ Authorization: Bearer <token>
 
 ```json
 {
-  "data": [
-    {
-      "submission_id": 1,
-      "form_id": 123,
-      "submitted_at": "2024-06-12T09:15:23Z",
-      "data": {
-        "First name": "Alice",
-        "Email": "alice@example.com"
-      }
+    "data": [
+        {
+            "data": {
+                "field-id-1": "Sample text response",
+                "field-id-2": ["Option 1", "Option 2"],
+                "field-id-3": [
+                    {
+                        "file_url": "https://api.opnform.com/open/forms/123/submissions/file/document.pdf?expires=1756808073&signature=abc123...",
+                        "file_name": "document.pdf"
+                    }
+                ],
+                "status": "completed",
+                "created_at": "2024-06-12 09:15:23",
+                "id": 615432
+            },
+            "completion_time": 45,
+            "form_id": 123,
+            "id": 615432
+        }
+    ],
+    "links": {
+        "first": "https://api.opnform.com/open/forms/123/submissions?page=1",
+        "last": "https://api.opnform.com/open/forms/123/submissions?page=3",
+        "prev": null,
+        "next": "https://api.opnform.com/open/forms/123/submissions?page=2"
+    },
+    "meta": {
+        "current_page": 1,
+        "from": 1,
+        "last_page": 3,
+        "links": [
+            {
+                "url": null,
+                "label": "&laquo; Previous",
+                "active": false
+            },
+            {
+                "url": "https://api.opnform.com/open/forms/123/submissions?page=1",
+                "label": "1",
+                "active": true
+            },
+            {
+                "url": "https://api.opnform.com/open/forms/123/submissions?page=2",
+                "label": "Next &raquo;",
+                "active": false
+            }
+        ],
+        "path": "https://api.opnform.com/open/forms/123/submissions",
+        "per_page": 100,
+        "to": 12,
+        "total": 12
     }
-  ],
-  "links": {
-    "first": "https://api.opnform.com/open/forms/123/submissions?page=1",
-    "last": "https://api.opnform.com/open/forms/123/submissions?page=3",
-    "prev": null,
-    "next": "https://api.opnform.com/open/forms/123/submissions?page=2"
-  },
-  "meta": {
-    "current_page": 1,
-    "from": 1,
-    "last_page": 3,
-    "path": "https://api.opnform.com/open/forms/123/submissions",
-    "per_page": 100,
-    "to": 100,
-    "total": 250
-  }
 }
 ```
+
+### Response Fields
+
+Each submission object contains:
+
+| Field             | Type        | Description                                 |
+| ----------------- | ----------- | ------------------------------------------- |
+| `data`            | object      | Contains form field responses plus metadata |
+| `completion_time` | number/null | Time taken to complete the form in seconds  |
+| `form_id`         | number      | ID of the parent form                       |
+| `id`              | number      | Unique submission ID                        |
+
+#### Data Object Structure
+
+The `data` object contains:
+
+-   **Form field responses**: Keyed by field UUID, values vary by field type
+-   **Metadata fields**:
+    -   `status`: Submission status (`completed` or `partial`)
+    -   `created_at`: Submission creation timestamp
+    -   `id`: Submission ID (duplicate for convenience)
+
+#### File Field Handling
+
+File and signature fields are automatically processed to include download URLs:
+
+```json
+"field-uuid": [
+  {
+    "file_url": "https://api.opnform.com/open/forms/123/submissions/file/filename.pdf?expires=1756808073&signature=abc123...",
+    "file_name": "filename.pdf"
+  }
+]
+```
+
+<Note>File URLs are signed and expire after 10 minutes for security.</Note>
+
+### Query Parameter Details
+
+#### Search Functionality
+
+-   Searches within submission field **values only** (not field names/keys)
+-   Uses case-insensitive matching
+-   Supports partial text matching
+
+#### Status Filtering
+
+-   `completed`: Returns only fully completed submissions
+-   `partial`: Returns only partially completed submissions (Pro feature)
+-   `all` or omitted: Returns all submissions regardless of status
+
+#### Pagination
+
+-   Default `per_page` is 100, maximum is 100
+-   Results are ordered by `created_at` in descending order (newest first)
 
 `403 Forbidden` – The token lacks `forms-read`.

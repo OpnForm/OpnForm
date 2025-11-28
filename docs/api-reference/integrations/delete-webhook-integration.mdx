@@ -1,0 +1,50 @@
+---
+openapi: delete /open/forms/{form}/integrations/{integrationid}
+---
+
+# Delete Webhook Integration
+
+Remove a webhook integration from a form.
+
+## Authentication & Scope
+
+This endpoint requires a **Personal Access Token** with the `manage-integrations` ability.
+
+## Request
+
+<ParamField path="form" type="number" required>
+The ID of the form containing the webhook.
+</ParamField>
+
+<ParamField path="integrationid" type="number" required>
+The ID of the webhook integration to delete.
+</ParamField>
+
+```http
+DELETE /open/forms/{form}/integrations/{integrationid} HTTP/1.1
+Host: api.opnform.com
+Authorization: Bearer <token>
+```
+
+<RequestExample>
+```bash cURL
+curl -X DELETE 'https://api.opnform.com/open/forms/123/integrations/42' \
+  -H 'Authorization: Bearer YOUR_PAT'
+```
+</RequestExample>
+
+## Response
+
+`200 OK` – Webhook deleted successfully.
+
+<ResponseExample>
+```json Success
+{
+  "message": "Form Integration was deleted."
+}
+```
+</ResponseExample>
+
+`403 Forbidden` – The token does not have `manage-integrations` ability or insufficient form permissions.
+
+`404 Not Found` – Form or integration not found.

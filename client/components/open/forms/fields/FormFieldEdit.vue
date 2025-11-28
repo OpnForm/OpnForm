@@ -1,6 +1,9 @@
 <template>
-  <div>
-    <div class="p-2 border-b sticky top-0 z-10 bg-white">
+  <div 
+    :class="{ 'sidebar-bounce': sidebarBounce }"
+    class="sidebar-container"
+  >
+    <div class="p-2 border-b sticky top-0 z-20 bg-white">
       <UButton
         v-if="!field"
         size="sm"
@@ -33,7 +36,8 @@
             
             <UDropdownMenu
               :items="dropdownItems"
-              :popper="{ placement: 'bottom-start' }"
+              :content="{ side: 'bottom', align: 'start' }"
+              arrow
             >
               <UButton
                 color="neutral"
@@ -95,17 +99,15 @@
 
 <script setup>
 import { storeToRefs } from 'pinia'
-import clonedeep from 'clone-deep'
 import FieldOptions from './components/FieldOptions.vue'
 import BlockOptions from './components/BlockOptions.vue'
 import BlockTypeIcon from '../components/BlockTypeIcon.vue'
 import blocksTypes from '~/data/blocks_types.json'
 import FormBlockLogicEditor from '../components/form-logic-components/FormBlockLogicEditor.vue'
 import CustomFieldValidation from '../components/CustomFieldValidation.vue'
-import { generateUUID } from '~/lib/utils'
 
 const workingFormStore = useWorkingFormStore()
-const { content: form } = storeToRefs(workingFormStore)
+const { content: form, sidebarBounce } = storeToRefs(workingFormStore)
 
 const selectedFieldIndex = computed(() => workingFormStore.selectedFieldIndex)
 
@@ -126,20 +128,19 @@ onMounted(() => {
 })
 
 const isBlockField = computed(() => {
-  return field.value && field.value.type.startsWith('nf')
+  return field.value && field.value.type && typeof field.value.type === 'string' && field.value.type.startsWith('nf')
 })
 
 const typeCanBeChanged = computed(() => {
+  const textualTypes = ["text", "rich_text", "url", "email", "phone_number", "number"]
+  const selectionTypes = ["select", "multi_select"]
+  const scaleTypes = ["rating", "scale", "slider"]
+  const booleanTypes = ["checkbox"]
   return [
-    "text",
-    "email",
-    "phone_number",
-    "number",
-    "select",
-    "multi_select",
-    "rating",
-    "scale",
-    "slider",
+    ...textualTypes,
+    ...selectionTypes,
+    ...scaleTypes,
+    ...booleanTypes,
   ].includes(field.value.type)
 })
 
@@ -151,47 +152,44 @@ const useFieldTypeChange = () => {
       field.value[newType] = field.value[field.value.type] // Set new options with new type
       delete field.value[field.value.type] // remove old type options
     }
+
+    // Preserve/downgrade content when converting between text and rich_text
+    if ((field.value.type === 'text' && newType === 'rich_text') || (field.value.type === 'rich_text' && newType === 'text')) {
+      // keep existing value in place; renderer handles component mapping
+    }
+
     field.value.type = newType
   }
 
   const getChangeTypeOptions = (currentType) => {
-    let newTypes = []
-    
-    if ([
-      "text",
-      "email", 
-      "phone_number",
-      "number",
-      "slider",
-      "rating",
-      "scale",
-    ].includes(currentType)) {
-      newTypes = [
-        { name: "Text Input", value: "text", icon: "i-heroicons-pencil-20-solid" },
-        { name: "Email Input", value: "email", icon: "i-heroicons-at-symbol-20-solid" },
-        { name: "Phone Input", value: "phone_number", icon: "i-heroicons-phone-20-solid" },
-        { name: "Number Input", value: "number", icon: "i-heroicons-hashtag-20-solid" },
-        { name: "Slider Input", value: "slider", icon: "i-heroicons-adjustments-horizontal-20-solid" },
-        { name: "Rating Input", value: "rating", icon: "i-heroicons-star-20-solid" },
-        { name: "Scale Input", value: "scale", icon: "i-heroicons-chart-bar-20-solid" },
-      ]
+    const textualTypes = ["text", "rich_text", "url", "email", "phone_number", "number"]
+    const selectionTypes = ["select", "multi_select"]
+    const scaleTypes = ["rating", "scale", "slider"]
+    const booleanTypes = ["checkbox"]
+
+    let candidateTypes = []
+
+    if (textualTypes.includes(currentType)) {
+      candidateTypes = [...textualTypes, ...booleanTypes]
+    } else if (selectionTypes.includes(currentType)) {
+      candidateTypes = [...selectionTypes]
+    } else if (scaleTypes.includes(currentType)) {
+      candidateTypes = [...scaleTypes]
+    } else if (booleanTypes.includes(currentType)) {
+      candidateTypes = [...textualTypes, ...booleanTypes]
     }
-    
-    if (["select", "multi_select"].includes(currentType)) {
-      newTypes = [
-        { name: "Select Input", value: "select", icon: "i-heroicons-chevron-down-20-solid" },
-        { name: "Multi-Select Input", value: "multi_select", icon: "i-heroicons-check-20-solid" },
-      ]
-    }
-    
-    return newTypes
-      .filter((item) => item.value !== currentType)
-      .map((item) => ({
-        label: item.name,
-        value: item.value,
-        icon: item.icon,
-        onClick: () => onChangeType(item.value)
-      }))
+
+    return candidateTypes
+      .filter((type) => type !== currentType)
+      .map((type) => {
+        const meta = blocksTypes[type] || {}
+        return {
+          label: meta.title || type,
+          value: type,
+          icon: meta.icon || undefined,
+          onClick: () => onChangeType(type)
+        }
+      })
   }
 
   return {
@@ -224,14 +222,8 @@ const dropdownItems = computed(() => {
     [{
       label: 'Duplicate',
       icon: 'i-heroicons-document-duplicate-20-solid',
-      onClick: () => {
-        const newField = clonedeep(field.value)
-        newField.id = generateUUID()
-        newField.name = 'Copy of ' + newField.name
-        const newFields = [...form.value.properties]
-        newFields.splice(selectedFieldIndex.value + 1, 0, newField)
-        form.value.properties = newFields
-      }
+      kbds: ['meta', 'd'],
+      onClick: () => workingFormStore.duplicateField(field.value)
     }]
   ]
 
@@ -252,11 +244,13 @@ const dropdownItems = computed(() => {
     label: 'Remove',
     icon: 'i-heroicons-trash-20-solid',
     color: 'error',
+    kbds: ['meta', 'backspace'],
     onClick: removeBlock
   }])
 
   return baseItems
 })
+defineShortcuts(extractShortcuts(dropdownItems.value))
 
 const activeTab = ref('options')
 
@@ -277,3 +271,37 @@ const tabItems = computed(() => {
 })
 
 </script>
+
+<style scoped>
+.sidebar-container {
+  transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.sidebar-bounce {
+  animation: bounce-left 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+@keyframes bounce-left {
+  0% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-6px);
+  }
+  40% {
+    transform: translateX(0);
+  }
+  60% {
+    transform: translateX(-3px);
+  }
+  80% {
+    transform: translateX(0);
+  }
+  90% {
+    transform: translateX(-1px);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+</style>

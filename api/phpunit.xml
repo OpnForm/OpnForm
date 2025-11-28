@@ -21,6 +21,7 @@
     <env name="MAIL_FROM_ADDRESS" value="notifications@notionforms.io"/>
     <env name="MAIL_FROM_NAME" value="NotionForms"/>
     <env name="QUEUE_CONNECTION" value="sync"/>
+    <env name="FILESYSTEM_DISK" value="local"/>
     <env name="SESSION_DRIVER" value="array"/>
     <env name="SELF_HOSTED" value="false"/>
     <env name="TEMPLATE_EDITOR_EMAILS" value="admin@opnform.com"/>

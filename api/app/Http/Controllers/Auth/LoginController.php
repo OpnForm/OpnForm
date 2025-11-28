@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Exceptions\VerifyEmailException;
+use App\Http\Controllers\Auth\Traits\ManagesJWT;
 use App\Http\Controllers\Controller;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
@@ -12,6 +13,9 @@ use Illuminate\Validation\ValidationException;
 class LoginController extends Controller
 {
     use AuthenticatesUsers;
+    use ManagesJWT {
+        ManagesJWT::sendLoginResponse as traitSendLoginResponse;
+    }
 
     /**
      * Create a new controller instance.
@@ -30,6 +34,19 @@ class LoginController extends Controller
      */
     protected function attemptLogin(Request $request)
     {
+        // Block password-based login if OIDC force_login is enabled
+        if (config('oidc.force_login', false)) {
+            $hasOidcConnection = \App\Enterprise\Oidc\Models\IdentityConnection::enabled()
+                ->where('type', \App\Enterprise\Oidc\Models\IdentityConnection::TYPE_OIDC)
+                ->exists();
+
+            if ($hasOidcConnection) {
+                throw ValidationException::withMessages([
+                    $this->username() => ['Password-based login is disabled. Please use OIDC authentication.'],
+                ]);
+            }
+        }
+
         // Only set custom TTL if remember me is checked
         $guard = $this->guard();
 
@@ -49,11 +66,7 @@ class LoginController extends Controller
             return false;
         }
 
-        if ($user->is_blocked) {
-            $this->guard()->logout();
-            return false;
-        }
-
+        // Blocked check is now handled in sendLoginResponseWithTwoFactorCheck
         $guard->setToken($token);
 
         return true;
@@ -74,6 +87,7 @@ class LoginController extends Controller
 
     /**
      * Send the response after the user was authenticated.
+     * Override to use centralized logic that handles 2FA and blocked user checks.
      *
      * @return \Illuminate\Http\JsonResponse
      */
@@ -81,13 +95,12 @@ class LoginController extends Controller
     {
         $this->clearLoginAttempts($request);
 
-        $token = (string) $this->guard()->getToken();
-        $expiration = $this->guard()->getPayload()->get('exp');
+        $user = $this->guard()->user();
 
-        return response()->json([
-            'token' => $token,
-            'token_type' => 'bearer',
-            'expires_in' => $expiration - time(),
+        // traitSendLoginResponse() automatically handles 2FA check and blocked user check
+        return $this->traitSendLoginResponse($user, [
+            'method' => 'password',
+            'remember' => $request->remember ?? false,
         ]);
     }
 
@@ -116,6 +129,15 @@ class LoginController extends Controller
         throw ValidationException::withMessages([
             $this->username() => [trans('auth.failed')],
         ]);
+    }
+
+    /**
+     * Customize throttling to be per-credential (email) instead of IP-based, to avoid X-Forwarded-For spoofing bypasses.
+     */
+    protected function throttleKey(Request $request)
+    {
+        $email = strtolower((string) $request->input($this->username()));
+        return 'login:' . sha1($email !== '' ? $email : 'unknown');
     }
 
     /**

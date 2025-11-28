@@ -2,7 +2,7 @@
   <transition name="fade">
     <div
       v-if="errorMessage"
-      class="has-error text-xs text-red-500 mt-1 break-words whitespace-break-spaces"
+      :class="errorClasses"
       v-html="errorMessage"
     />
   </transition>
@@ -14,7 +14,8 @@ export default {
   props: {
     form: {
       type: Object,
-      required: true,
+      required: false,
+      default: null,
     },
     fieldId: {
       type: String,
@@ -24,10 +25,14 @@ export default {
       type: String,
       required: false,
     },
+    errorClasses: {
+      type: String,
+      default: 'has-error text-xs text-red-500 break-words whitespace-break-spaces',
+    },
   },
   computed: {
     errorMessage() {
-      if (!this.form.errors || !this.form.errors.any())
+      if (!this.form || !this.form.errors || !this.form.errors.any())
         return null
       const subErrorsKeys = Object.keys(this.form.errors.all()).filter(
         (key) => {

@@ -3,7 +3,7 @@ import templateTypes from './data/forms/templates/types.json'
 import opnformConfig from './opnform.config.js'
 
 export default {
-  exclude: ['/subscriptions/**', '/templates/my-templates'],
+  exclude: ['/subscriptions/**', '/templates/my-templates', '/setup'],
   sources: [`${process.env.NUXT_PUBLIC_API_BASE}sitemap-urls`],
   cacheMaxAgeSeconds: 60 * 60 * 2, // 2 hours
   xslColumns: [

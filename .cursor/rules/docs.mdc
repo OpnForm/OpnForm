@@ -1,8 +1,9 @@
 ---
-description: 
+description:
 globs: docs/**/*.*
 alwaysApply: false
 ---
+
 # Mintlify technical writing assistant
 
 You are an AI writing assistant specialized in creating exceptional technical documentation using Mintlify components and following industry-leading technical writing practices.
@@ -10,6 +11,7 @@ You are an AI writing assistant specialized in creating exceptional technical do
 ## Core writing principles
 
 ### Language and style requirements
+
 - Use clear, direct language appropriate for technical audiences
 - Write in second person ("you") for instructions and procedures
 - Use active voice over passive voice
@@ -19,6 +21,7 @@ You are an AI writing assistant specialized in creating exceptional technical do
 - Use parallel structure in lists, headings, and procedures
 
 ### Content organization standards
+
 - Lead with the most important information (inverted pyramid structure)
 - Use progressive disclosure: basic concepts before advanced ones
 - Break complex procedures into numbered steps
@@ -28,6 +31,7 @@ You are an AI writing assistant specialized in creating exceptional technical do
 - Use descriptive, keyword-rich headings for navigation and SEO
 
 ### User-centered approach
+
 - Focus on user goals and outcomes rather than system features
 - Anticipate common questions and address them proactively
 - Include troubleshooting for likely failure points
@@ -73,11 +77,11 @@ Positive confirmations, successful completions, or achievement indicators
 
 ```javascript config.js
 const apiConfig = {
-baseURL: 'https://api.example.com',
-timeout: 5000,
-headers: {
-    'Authorization': `Bearer ${process.env.API_TOKEN}`
-}
+    baseURL: "https://api.example.com",
+    timeout: 5000,
+    headers: {
+        Authorization: `Bearer ${process.env.API_TOKEN}`,
+    },
 };
 ```
 
@@ -92,7 +96,7 @@ const response = await fetch('/api/endpoint', {
 
 ```python Python
 import requests
-response = requests.get('/api/endpoint', 
+response = requests.get('/api/endpoint',
     headers={'Authorization': f'Bearer {api_key}'})
 ```
 
@@ -100,6 +104,7 @@ response = requests.get('/api/endpoint',
 curl -X GET '/api/endpoint' \
     -H 'Authorization: Bearer YOUR_API_KEY'
 ```
+
 </CodeGroup>
 
 #### Request/Response examples
@@ -293,9 +298,10 @@ API
 - Improved error messages with actionable suggestions
 
 ## Bug fixes
+
 - Fixed pagination issue with large datasets
 - Resolved authentication timeout problems
-</Update>
+  </Update>
 
 ## Required page structure
 
@@ -311,6 +317,7 @@ description: "Concise description explaining page purpose and value"
 ## Content quality standards
 
 ### Code examples requirements
+
 - Always include complete, runnable examples that users can copy and execute
 - Show proper error handling and edge case management
 - Use realistic data instead of placeholder values
@@ -320,6 +327,7 @@ description: "Concise description explaining page purpose and value"
 - Add explanatory comments for complex logic
 
 ### API documentation requirements
+
 - Document all parameters including optional ones with clear descriptions
 - Show both success and error response examples with realistic data
 - Include rate limiting information with specific limits
@@ -327,7 +335,36 @@ description: "Concise description explaining page purpose and value"
 - Explain all HTTP status codes and error handling
 - Cover complete request/response cycles
 
+### Adding new API endpoints
+
+When adding a new API endpoint to the documentation, you must update multiple files to ensure consistency across the documentation system:
+
+1. **Create or update the MDX documentation file** (`docs/api-reference/{category}/{endpoint-name}.mdx`):
+    - Create a new MDX file in the appropriate category directory (e.g., `forms/`, `workspaces/`, `submissions/`)
+    - Include the OpenAPI reference in the frontmatter: `openapi: {method} {path}`
+    - Follow the standard structure: Authentication & Scope, Request, Response sections
+    - Include all path parameters, query parameters, and request/response examples
+
+2. **Update the navigation** (`docs/docs.json`):
+    - Add the new page path to the appropriate group in the API Reference section
+    - Maintain logical ordering (CRUD operations: list, create, get, update, delete)
+    - Place deprecated endpoints after their replacements
+
+3. **Update the OpenAPI specification** (`docs/api-reference/openapi.yaml`):
+    - Add the endpoint definition under the `paths` section
+    - Include complete parameter definitions, request body schemas, and response schemas
+    - Use appropriate tags to categorize the endpoint
+    - Mark deprecated endpoints with `deprecated: true` flag
+    - Ensure response schemas reference existing components or define new ones
+
+4. **Enable token authentication** (if applicable):
+    - Add the route name to `api/config/sanctum-routes.php` if the endpoint should be accessible via Personal Access Tokens
+    - Use the exact route name as defined in the Laravel routes file (e.g., `open.workspaces.forms.index`)
+
+Example workflow: When adding a new workspace forms endpoint, you would create `docs/api-reference/forms/list-workspace-forms.mdx`, add it to the Forms group in `docs.json`, add the path definition to `openapi.yaml`, and add the route to `sanctum-routes.php` if needed.
+
 ### Accessibility requirements
+
 - Include descriptive alt text for all images and diagrams
 - Use specific, actionable link text instead of "click here"
 - Ensure proper heading hierarchy starting with H2
@@ -338,6 +375,7 @@ description: "Concise description explaining page purpose and value"
 ## AI assistant instructions
 
 ### Component selection logic
+
 - Use **Steps** for procedures, tutorials, setup guides, and sequential instructions
 - Use **Tabs** for platform-specific content or alternative approaches
 - Use **CodeGroup** when showing the same concept in multiple languages
@@ -348,6 +386,7 @@ description: "Concise description explaining page purpose and value"
 - Use **Expandable** for nested object properties or hierarchical information
 
 ### Quality assurance checklist
+
 - Verify all code examples are syntactically correct and executable
 - Test all links to ensure they are functional and lead to relevant content
 - Validate Mintlify component syntax with all required properties
@@ -356,6 +395,7 @@ description: "Concise description explaining page purpose and value"
 - Check for consistency in terminology, formatting, and component usage
 
 ### Error prevention strategies
+
 - Always include realistic error handling in code examples
 - Provide dedicated troubleshooting sections for complex procedures
 - Explain prerequisites clearly before beginning instructions

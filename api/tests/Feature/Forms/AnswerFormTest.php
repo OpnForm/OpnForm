@@ -386,3 +386,194 @@ it('can update form submission if database fields update is set', function () {
     $this->assertEquals('test@test.com', $submission->data[$emailField['id']]);
     $this->assertEquals('Test 1', $submission->data[$nameField['id']]);
 });
+
+it('can submit form with valid multi select min/max constraints', function () {
+    $user = $this->actingAsUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace);
+
+    // Add multi_select field with constraints
+    $multiSelectField = [
+        'id' => 'test_multi_select',
+        'name' => 'Test Multi Select',
+        'type' => 'multi_select',
+        'required' => true,
+        'min_selection' => 2,
+        'max_selection' => 3,
+        'multi_select' => [
+            'options' => [
+                ['id' => 'option1', 'name' => 'Option 1'],
+                ['id' => 'option2', 'name' => 'Option 2'],
+                ['id' => 'option3', 'name' => 'Option 3'],
+                ['id' => 'option4', 'name' => 'Option 4'],
+            ]
+        ]
+    ];
+
+    $form->properties = array_merge($form->properties, [$multiSelectField]);
+    $form->save();
+
+    // Submit valid data (2 selections, within min=2, max=3)
+    $formData = $this->generateFormSubmissionData($form, [
+        'test_multi_select' => ['Option 1', 'Option 2']
+    ]);
+
+    $this->postJson(route('forms.answer', $form->slug), $formData)
+        ->assertSuccessful()
+        ->assertJson([
+            'type' => 'success',
+            'message' => 'Form submission saved.',
+        ]);
+});
+
+it('rejects multi select submission below minimum selection', function () {
+    $user = $this->actingAsUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace);
+
+    // Add multi_select field with min constraint
+    $multiSelectField = [
+        'id' => 'test_multi_select_min',
+        'name' => 'Test Multi Select Min',
+        'type' => 'multi_select',
+        'required' => true,
+        'min_selection' => 3,
+        'multi_select' => [
+            'options' => [
+                ['id' => 'option1', 'name' => 'Option A'],
+                ['id' => 'option2', 'name' => 'Option B'],
+                ['id' => 'option3', 'name' => 'Option C'],
+                ['id' => 'option4', 'name' => 'Option D'],
+            ]
+        ]
+    ];
+
+    $form->properties = array_merge($form->properties, [$multiSelectField]);
+    $form->save();
+
+    // Submit invalid data (only 2 selections, but min=3)
+    $formData = $this->generateFormSubmissionData($form, [
+        'test_multi_select_min' => ['Option A', 'Option B']
+    ]);
+
+    $this->postJson(route('forms.answer', $form->slug), $formData)
+        ->assertStatus(422)
+        ->assertJson([
+            'message' => 'Please select at least 3 options',
+        ]);
+});
+
+it('rejects multi select submission above maximum selection', function () {
+    $user = $this->actingAsUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace);
+
+    // Add multi_select field with max constraint
+    $multiSelectField = [
+        'id' => 'test_multi_select_max',
+        'name' => 'Test Multi Select Max',
+        'type' => 'multi_select',
+        'required' => true,
+        'max_selection' => 2,
+        'multi_select' => [
+            'options' => [
+                ['id' => 'option1', 'name' => 'Choice 1'],
+                ['id' => 'option2', 'name' => 'Choice 2'],
+                ['id' => 'option3', 'name' => 'Choice 3'],
+                ['id' => 'option4', 'name' => 'Choice 4'],
+            ]
+        ]
+    ];
+
+    $form->properties = array_merge($form->properties, [$multiSelectField]);
+    $form->save();
+
+    // Submit invalid data (3 selections, but max=2)
+    $formData = $this->generateFormSubmissionData($form, [
+        'test_multi_select_max' => ['Choice 1', 'Choice 2', 'Choice 3']
+    ]);
+
+    $this->postJson(route('forms.answer', $form->slug), $formData)
+        ->assertStatus(422)
+        ->assertJson([
+            'message' => 'Please select no more than 2 options',
+        ]);
+});
+
+it('accepts multi select submission at exact min/max boundaries', function () {
+    $user = $this->actingAsUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace);
+
+    // Add multi_select field with both constraints (exact boundary)
+    $multiSelectField = [
+        'id' => 'test_multi_select_boundary',
+        'name' => 'Test Multi Select Boundary',
+        'type' => 'multi_select',
+        'required' => true,
+        'min_selection' => 2,
+        'max_selection' => 2,  // Exact constraint - must select exactly 2
+        'multi_select' => [
+            'options' => [
+                ['id' => 'option1', 'name' => 'First'],
+                ['id' => 'option2', 'name' => 'Second'],
+                ['id' => 'option3', 'name' => 'Third'],
+            ]
+        ]
+    ];
+
+    $form->properties = array_merge($form->properties, [$multiSelectField]);
+    $form->save();
+
+    // Submit valid data (exactly 2 selections)
+    $formData = $this->generateFormSubmissionData($form, [
+        'test_multi_select_boundary' => ['First', 'Second']
+    ]);
+
+    $this->postJson(route('forms.answer', $form->slug), $formData)
+        ->assertSuccessful()
+        ->assertJson([
+            'type' => 'success',
+            'message' => 'Form submission saved.',
+        ]);
+});
+
+it('accepts multi select with only min constraint', function () {
+    $user = $this->actingAsUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace);
+
+    // Add multi_select field with only min constraint (no max limit)
+    $multiSelectField = [
+        'id' => 'test_multi_select_min_only',
+        'name' => 'Test Multi Select Min Only',
+        'type' => 'multi_select',
+        'required' => true,
+        'min_selection' => 2,
+        // No max_selection - unlimited selections allowed
+        'multi_select' => [
+            'options' => [
+                ['id' => 'option1', 'name' => 'One'],
+                ['id' => 'option2', 'name' => 'Two'],
+                ['id' => 'option3', 'name' => 'Three'],
+                ['id' => 'option4', 'name' => 'Four'],
+                ['id' => 'option5', 'name' => 'Five'],
+            ]
+        ]
+    ];
+
+    $form->properties = array_merge($form->properties, [$multiSelectField]);
+    $form->save();
+
+    // Submit valid data (5 selections, min=2, no max limit)
+    $formData = $this->generateFormSubmissionData($form, [
+        'test_multi_select_min_only' => ['One', 'Two', 'Three', 'Four', 'Five']
+    ]);
+
+    $this->postJson(route('forms.answer', $form->slug), $formData)
+        ->assertSuccessful()
+        ->assertJson([
+            'type' => 'success',
+            'message' => 'Form submission saved.',
+        ]);
+});

@@ -2,6 +2,7 @@
 
 namespace App\Models\Forms;
 
+use App\Events\Models\FormSubmissionDeleting;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -15,7 +16,8 @@ class FormSubmission extends Model
     protected $fillable = [
         'data',
         'completion_time',
-        'status'
+        'status',
+        'meta'
     ];
 
     protected function casts(): array
@@ -23,8 +25,18 @@ class FormSubmission extends Model
         return [
             'data' => 'array',
             'completion_time' => 'integer',
+            'meta' => 'array',
         ];
     }
+
+    /**
+     * The event map for the model.
+     *
+     * @var array
+     */
+    protected $dispatchesEvents = [
+        'deleting' => FormSubmissionDeleting::class,
+    ];
 
     /**
      * RelationShips

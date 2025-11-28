@@ -2,53 +2,83 @@
 description: Laravel Back-end
 globs: api/**/*.php
 ---
+
 You are an expert in Laravel, PHP, and related web development technologies.
 
 Key Principles
-- Write concise, technical responses with accurate PHP examples.
-- Adhere to Laravel 11+ best practices and conventions.
-- Use object-oriented programming with a focus on SOLID principles.
-- Prefer iteration and modularization over duplication.
-- Use descriptive variable and method names.
-- Use lowercase with dashes for directories (e.g., app/Http/Controllers).
-- Favor dependency injection and service containers.
+
+-   Write concise, technical responses with accurate PHP examples.
+-   Adhere to Laravel 11+ best practices and conventions.
+-   Use object-oriented programming with a focus on SOLID principles.
+-   Prefer iteration and modularization over duplication.
+-   Use descriptive variable and method names.
+-   Use lowercase with dashes for directories (e.g., app/Http/Controllers).
+-   Favor dependency injection and service containers.
 
 PHP/Laravel
-- Use PHP 8.2+ features when appropriate (e.g., typed properties, match expressions).
-- Follow PSR-12 coding standards.
-- Utilize Laravel's built-in features and helpers when possible.
-- File structure: Follow Laravel's directory structure and naming conventions.
-- Implement proper error handling and logging:
-- Use Laravel's exception handling and logging features.
-- Create custom exceptions when necessary.
-- Use try-catch blocks for expected exceptions.
-- Use Laravel's validation features for form and request validation.
-- Implement middleware for request filtering and modification.
-- Utilize Laravel's Eloquent ORM for database interactions.
-- Use Laravel's query builder for complex database queries.
-- Implement proper database migrations and seeders.
+
+-   Use PHP 8.2+ features when appropriate (e.g., typed properties, match expressions).
+-   Follow PSR-12 coding standards.
+-   Utilize Laravel's built-in features and helpers when possible.
+-   File structure: Follow Laravel's directory structure and naming conventions.
+-   Implement proper error handling and logging:
+-   Use Laravel's exception handling and logging features.
+-   Create custom exceptions when necessary.
+-   Use try-catch blocks for expected exceptions.
+-   Use Laravel's validation features for form and request validation.
+-   Implement middleware for request filtering and modification.
+-   Utilize Laravel's Eloquent ORM for database interactions.
+-   Use Laravel's query builder for complex database queries.
+-   Implement proper database migrations and seeders.
 
 Dependencies
-- Laravel (latest stable version)
-- Composer for dependency management
+
+-   Laravel (latest stable version)
+-   Composer for dependency management
 
 Laravel Best Practices
-- Use Eloquent ORM instead of raw SQL queries when possible.
-- Use Laravel's built-in authentication and authorization features.
-- Utilize Laravel's caching mechanisms for improved performance.
-- Implement job queues for long-running tasks.
-- Use Pest for unit and feature tests.
-- Use Laravel's localization features for multi-language support.
-- Implement proper database indexing for improved query performance.
-- Use Laravel's built-in pagination features.
-- Implement proper error logging and monitoring.
+
+-   Use Eloquent ORM instead of raw SQL queries when possible.
+-   Use Laravel's built-in authentication and authorization features.
+-   Utilize Laravel's caching mechanisms for improved performance.
+-   Implement job queues for long-running tasks.
+-   Use Pest for unit and feature tests.
+-   Use Laravel's localization features for multi-language support.
+-   Implement proper database indexing for improved query performance.
+-   Use Laravel's built-in pagination features.
+-   Implement proper error logging and monitoring.
 
 Debugging
-- Always use ray() for debugging
-- Never add any import for ray like use Illuminate\Support\Facades\Ray, just use ray() function direcly
-- Use ray methods to add more context and improve display when needed @https://myray.app/docs/php/vanilla-php/reference
+
+-   Always use ray() for debugging
+-   Never add any import for ray like use Illuminate\Support\Facades\Ray, just use ray() function direcly
+-   Use ray methods to add more context and improve display when needed @https://myray.app/docs/php/vanilla-php/reference
+
+Route Model Binding
+
+-   Configure route model bindings in AppServiceProvider's boot() method for performance optimization.
+-   Preload relationships in route bindings to avoid N+1 queries:
+    ```php
+    Route::bind('workspace', function ($value) {
+        return \App\Models\Workspace::with([
+            'users' => fn ($q) => $q->withPivot('role')
+        ])->findOrFail((int) $value);
+    });
+    ```
+-   Support multiple resolution strategies (ID vs slug) when needed:
+    ```php
+    Route::bind('form', function ($value) {
+        $query = \App\Models\Forms\Form::with(['workspace.users' => fn ($q) => $q->withPivot('role')]);
+        return is_numeric($value)
+            ? $query->findOrFail((int) $value)
+            : $query->where('slug', $value)->firstOrFail();
+    });
+    ```
+-   Always use `findOrFail()` or `firstOrFail()` in route bindings for proper 404 error handling.
+-   Cast numeric values to integers when appropriate for type safety.
 
 Key Conventions
+
 1. Follow Laravel's MVC architecture.
 2. Use Laravel's routing system for defining application endpoints.
 3. Implement proper request validation using Form Requests.
@@ -56,3 +86,4 @@ Key Conventions
 5. Use Laravel's event and listener system for decoupled code.
 6. Implement proper database transactions for data integrity.
 7. Use Laravel's built-in scheduling features for recurring tasks.
+8. Use route model binding for automatic model resolution and relationship preloading.

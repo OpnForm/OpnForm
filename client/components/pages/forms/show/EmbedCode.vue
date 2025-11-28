@@ -27,14 +27,21 @@ export default {
   computed: {
     embedCode() {
       // eslint-disable no-useless-escape
-      return `${this.iframeCode}<script type="text/javascript" onload="initEmbed('${this.form.slug}')" src="${appUrl("/widgets/iframe.min.js")}"><\/script>`
+      const isFocused = this.form?.presentation_style === 'focused'
+      return isFocused
+        ? this.iframeCode
+        : `${this.iframeCode}<script type="text/javascript" onload="initEmbed('${this.form.slug}')" src="${appUrl("/widgets/iframe.min.js")}"><\/script>`
     },
     iframeCode() {
       const share_url = this.extraQueryParam
         ? this.form.share_url + "?" + this.extraQueryParam
         : this.form.share_url + this.extraQueryParam
+      const isFocused = this.form?.presentation_style === 'focused'
+      const style = isFocused
+        ? 'border:none;width:100%;height:700px;max-height:90vh;'
+        : 'border:none;width:100%;'
       return (
-        '<iframe style="border:none;width:100%;" id="' + this.form.slug + '" src="' + share_url + '"></iframe>'
+        '<iframe style="' + style + '" id="' + this.form.slug + '" src="' + share_url + '"></iframe>'
       )
     }
   },

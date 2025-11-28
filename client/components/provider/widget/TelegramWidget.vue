@@ -24,8 +24,6 @@
 </template>
 
 <script setup>
-import { useFeatureFlagsStore } from '~/stores/featureFlags'
-
 defineProps({
   service: {
     type: Object,
@@ -35,8 +33,7 @@ defineProps({
 
 const emit = defineEmits(['auth-data'])
 
-const featureFlagsStore = useFeatureFlagsStore()
-const botId = computed(() => featureFlagsStore.getFlag('services.telegram.bot_id'))
+const botId = computed(() => useFeatureFlag('services.telegram.bot_id'))
 
 const loadTelegramWidget = () => {
   if (!botId.value) return
@@ -52,7 +49,8 @@ const handleAuth = () => {
     window.Telegram.Login.auth(
       { bot_id: botId.value, request_access: 'write' },
       (data) => {
-        emit('auth-data', data)
+        // Include intent for integration flow
+        emit('auth-data', { ...data, intent: 'integration' })
       }
     )
   } else {

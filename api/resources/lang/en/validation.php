@@ -154,4 +154,11 @@ return [
     'complete_captcha' => 'Please complete the captcha.',
     'yes' => 'Yes',
     'no' => 'No',
+
+    'from_date_required' => 'From date is required',
+    'to_date_required' => 'To date is required',
+    'from_date_before_or_equal' => 'From date must be before or equal to To date',
+    'rating_min' => 'A rating must be selected',
+    'select_min' => 'Please select at least :min options',
+    'select_max' => 'Please select no more than :max options',
 ];

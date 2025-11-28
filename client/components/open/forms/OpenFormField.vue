@@ -5,11 +5,10 @@
     ref="form-block"
     class="px-2"
     :class="[
-      getFieldWidthClasses(field),
       {
-        'group/nffield hover:bg-neutral-100/50 relative hover:z-10 transition-colors hover:border-neutral-200 dark:hover:!bg-neutral-900 border-dashed border border-transparent box-border dark:hover:border-blue-900 rounded-md': isAdminPreview,
+        'group/nffield hover:bg-neutral-100/50 relative hover:z-10 transition-colors hover:border-neutral-200 border-dashed border border-transparent box-border dark:hover:border-blue-900 dark:hover:bg-blue-950 rounded-md': isAdminPreview,
         'cursor-pointer':workingFormStore.showEditFieldSidebar && isAdminPreview,
-        'bg-blue-50 hover:!bg-blue-50 dark:bg-neutral-800 rounded-md': beingEdited,
+        'bg-blue-50 hover:!bg-blue-50 dark:bg-neutral-700! dark:hover:bg-neutral-700! rounded-md': beingEdited,
       }]"
     @click="setFieldAsSelected"
     @dblclick="fieldDoubleClick"
@@ -23,7 +22,7 @@
         class="absolute translate-y-full lg:translate-y-0 -bottom-1 left-1/2 -translate-x-1/2 lg:-translate-x-full lg:-left-1 lg:top-1 lg:bottom-0 hidden group-hover/nffield:block z-10"
       >
         <div
-          class="flex lg:flex-col bg-white !bg-white dark:!bg-white border rounded-sm shadow-xs z-50 p-[1px] relative"
+          class="flex lg:flex-col bg-white dark:!bg-white border rounded-sm shadow-xs z-50 p-[1px] relative"
         >
           <div
             class="p-1 hover:!text-blue-500 dark:hover:!text-blue-500 hover:bg-blue-50 cursor-pointer !text-neutral-500 dark:!text-neutral-500 flex items-center justify-center rounded-md"
@@ -31,8 +30,9 @@
             @click.stop.prevent="openAddFieldSidebar"
           >
             <UTooltip
+              arrow
               text="Add new field"
-              :popper="{ placement: 'right' }"
+              :content="{ side: 'left' }"
               :ui="{ container: 'z-50' }"
             >
               <Icon
@@ -47,8 +47,9 @@
             @click.stop.prevent="editFieldOptions"
           >
             <UTooltip
+              arrow
               text="Edit field settings"
-              :popper="{ placement: 'right' }"
+              :content="{ side: 'left' }"
               :ui="{ container: 'z-50' }"
             >
               <Icon
@@ -63,8 +64,9 @@
             @click.stop.prevent="removeField"
           >
             <UTooltip
+              arrow
               text="Delete field"
-              :popper="{ placement: 'right' }"
+              :content="{ side: 'left' }"
               :ui="{ container: 'z-50' }"
             >
               <Icon
@@ -75,75 +77,10 @@
           </div>
         </div>
       </div>
-      <div v-if="fieldComponentInfo && fieldComponentInfo.component">
-        <ClientOnlyWrapper :client-only="fieldComponentInfo.clientOnly">
-          <Suspense>
-            <component
-              :is="fieldComponentInfo.component"
-              v-bind="inputProperties(field)"
-              :required="isFieldRequired"
-              :disabled="isFieldDisabled"
-              :is-admin-preview="isAdminPreview"
-            />
-            <template #fallback>
-              <USkeleton class="w-full h-16 my-1.5" />
-            </template>
-          </Suspense>
-          <template #fallback>
-            <USkeleton class="w-full h-16 my-1.5" />
-          </template>
-        </ClientOnlyWrapper>
+      <div v-if="field">
+        <BlockRenderer :block="field" :form-manager="formManager" />
       </div>
-      <template v-else>
-        <div
-          v-if="field.type === 'nf-text' && field.content"
-          :id="field.id"
-          :key="field.id"
-          class="nf-text w-full my-1.5 break-words whitespace-break-spaces"
-          :class="[getFieldAlignClasses(field)]"
-          v-html="field.content"
-          @dblclick="editFieldOptions"
-        />
-        <div
-          v-if="field.type === 'nf-code' && field.content"
-          :id="field.id"
-          :key="field.id"
-          class="nf-code w-full px-2 my-1.5"
-          v-html="field.content"
-        />
-        <div
-          v-if="field.type === 'nf-divider'"
-          :id="field.id"
-          :key="field.id"
-          class="border-b my-4 w-full mx-2"
-        />
-        <div
-          v-if="field.type === 'nf-image' && (field.image_block || !isPublicFormPage)"
-          :id="field.id"
-          :key="field.id"
-          class="my-4 w-full px-2"
-          :class="[getFieldAlignClasses(field)]"
-          @dblclick="editFieldOptions"
-        >
-          <div
-            v-if="!field.image_block"
-            class="p-4 border border-dashed text-center"
-          >
-            <a
-              href="#"
-              class="text-blue-800 dark:text-blue-200"
-              @click.prevent="editFieldOptions"
-            >Open block settings to upload image.</a>
-          </div>
-          <img
-            v-else
-            :alt="field.name"
-            :src="field.image_block"
-            class="max-w-full inline-block"
-            :class="theme.default.borderRadius"
-          >
-        </div>
-      </template>
+      
       <div
         class="hidden group-hover/nffield:flex translate-x-full absolute right-0 top-0 h-full w-5 flex-col justify-center pl-1 pt-3"
       >
@@ -162,11 +99,9 @@
 
 <script setup>
 import FormLogicPropertyResolver from "~/lib/forms/FormLogicPropertyResolver.js"
-import CachedDefaultTheme from "~/lib/forms/themes/CachedDefaultTheme.js"
-import { default as _has } from 'lodash/has'
 import { FormMode, createFormModeStrategy } from "~/lib/forms/FormModeStrategy.js"
 import { useWorkingFormStore } from '~/stores/working_form'
-import { useComponentRegistry } from '~/composables/components/useComponentRegistry'
+import BlockRenderer from './BlockRenderer.vue'
 
 // Define props
 const props = defineProps({
@@ -177,75 +112,23 @@ const props = defineProps({
   formManager: {
     type: Object,
     required: true
-  },
-  theme: {
-    type: Object,
-    required: true
   }
 })
 
 // Derive everything from formManager
 const form = computed(() => props.formManager?.config?.value || {})
 const dataForm = computed(() => props.formManager?.form || {})
-const darkMode = computed(() => props.formManager?.darkMode?.value || false)
 const showHidden = computed(() => props.formManager?.strategy?.value?.display?.showHiddenFields || false)
-const enableDisabledFields = computed(() => props.formManager?.strategy?.value?.display?.enableDisabledFields || false)
 
 // Setup stores and reactive state
 const workingFormStore = useWorkingFormStore()
-const { getFormComponent } = useComponentRegistry()
 const selectedFieldIndex = computed(() => workingFormStore.selectedFieldIndex)
 const showEditFieldSidebar = computed(() => workingFormStore.showEditFieldSidebar)
 const strategy = computed(() => props.formManager?.strategy?.value || createFormModeStrategy(FormMode.LIVE))
 const isAdminPreview = computed(() => strategy.value?.admin?.showAdminControls || false)
 
 // Computed properties
-const fieldComponentInfo = computed(() => {
-  const field = props.field
-  let componentName
-
-  if (field.type === 'text' && field.multi_lines) {
-    componentName = 'TextAreaInput'
-  } else if (field.type === 'text' && field.input_mask) {
-    componentName = 'MaskInput'
-  } else if (field.type === 'url' && field.file_upload) {
-    componentName = 'FileInput'
-  } else if (['select', 'multi_select'].includes(field.type) && field.without_dropdown) {
-    componentName = 'FlatSelectInput'
-  } else if (field.type === 'checkbox' && field.use_toggle_switch) {
-    componentName = 'ToggleSwitchInput'
-  } else if (field.type === 'signature') {
-    componentName = 'SignatureInput'
-  } else if (field.type === 'phone_number' && !field.use_simple_text_input) {
-    componentName = 'PhoneInput'
-  } else {
-    componentName = {
-      text: 'TextInput',
-      rich_text: 'RichTextAreaInput',
-      number: 'TextInput',
-      rating: 'RatingInput',
-      scale: 'ScaleInput',
-      slider: 'SliderInput',
-      select: 'SelectInput',
-      multi_select: 'SelectInput',
-      date: 'DateInput',
-      files: 'FileInput',
-      checkbox: 'CheckboxInput',
-      url: 'TextInput',
-      email: 'TextInput',
-      phone_number: 'TextInput',
-      matrix: 'MatrixInput',
-      barcode: 'BarcodeInput',
-      payment: 'PaymentInput',
-      code: 'CodeInput'
-    }[field.type]
-  }
-
-  // Let the component registry handle whether to return a string or an async component
-  return getFormComponent(componentName)
-})
-
-const isPublicFormPage = computed(() => useRoute().name === 'forms-slug')
+// Field rendering is delegated to BlockRenderer
 
 const isFieldHidden = computed(() => !showHidden.value && shouldBeHidden.value)
 
@@ -253,14 +136,8 @@ const shouldBeHidden = computed(() =>
   (new FormLogicPropertyResolver(props.field, dataForm.value)).isHidden()
 )
 
-const isFieldRequired = computed(() => 
-  (new FormLogicPropertyResolver(props.field, dataForm.value)).isRequired()
-)
-
-const isFieldDisabled = computed(() => {
-  if (enableDisabledFields.value) return false
-  return (new FormLogicPropertyResolver(props.field, dataForm.value)).isDisabled()
-})
+// Required/props now handled inside BlockRenderer
+/* noop */
 
 const beingEdited = computed(() => 
   isAdminPreview.value && 
@@ -271,7 +148,7 @@ const beingEdited = computed(() =>
 // Methods
 function editFieldOptions() {
   if (!isAdminPreview.value) return
-  workingFormStore.openSettingsForField(props.field)
+  workingFormStore.openSettingsForField(props.field, true)
 }
 
 function setFieldAsSelected() {
@@ -294,150 +171,10 @@ function removeField() {
   workingFormStore.removeField(props.field)
 }
 
-function getFieldWidthClasses(field) {
-  if (!field.width || field.width === 'full') return 'col-span-full'
-  else if (field.width === '1/2') {
-    return 'sm:col-span-6 col-span-full'
-  } else if (field.width === '1/3') {
-    return 'sm:col-span-4 col-span-full'
-  } else if (field.width === '2/3') {
-    return 'sm:col-span-8 col-span-full'
-  } else if (field.width === '1/4') {
-    return 'sm:col-span-3 col-span-full'
-  } else if (field.width === '3/4') {
-    return 'sm:col-span-9 col-span-full'
-  }
-}
-
-function getFieldAlignClasses(field) {
-  if (!field.align || field.align === 'left') return 'text-left'
-  else if (field.align === 'right') {
-    return 'text-right'
-  } else if (field.align === 'center') {
-    return 'text-center'
-  } else if (field.align === 'justify') {
-    return 'text-justify'
-  }
-}
-
 /**
  * Get the right input component options for the field/options
  */
-function inputProperties(field) {
-  const inputProperties = {
-    key: field.id,
-    name: field.id,
-    form: dataForm.value,
-    label: (field.hide_field_name) ? null : field.name + ((shouldBeHidden.value) ? ' (Hidden Field)' : ''),
-    color: form.value.color,
-    placeholder: field.placeholder,
-    help: field.help,
-    helpPosition: (field.help_position) ? field.help_position : 'below_input',
-    uppercaseLabels: form.value.uppercase_labels == 1 || form.value.uppercase_labels == true,
-    theme: props.theme || CachedDefaultTheme.getInstance(),
-    maxCharLimit: (field.max_char_limit) ? parseInt(field.max_char_limit) : null,
-    showCharLimit: field.show_char_limit || false,
-    isDark: darkMode.value,
-    locale: (form.value?.language) ? form.value.language : 'en'
-  }
 
-  if(field.type === 'text' && field.input_mask) {
-    inputProperties.mask = field.input_mask
-    inputProperties.slotChar = field.slot_char
-  }
-
-  if (field.type === 'matrix') {
-    inputProperties.rows = field.rows
-    inputProperties.columns = field.columns
-  }
-
-  if (field.type === 'barcode') {
-    inputProperties.decoders = field.decoders
-  }
-
-  if (['select','multi_select'].includes(field.type) && !isFieldRequired.value) {
-    inputProperties.clearable = true
-  }
-
-  if (['select', 'multi_select'].includes(field.type)) {
-    inputProperties.options = (_has(field, field.type))
-      ? field[field.type].options.map(option => {
-        return {
-          name: option.name,
-          value: option.name
-        }
-      })
-      : []
-    inputProperties.multiple = (field.type === 'multi_select')
-    inputProperties.allowCreation = (field.allow_creation === true)
-    inputProperties.searchable = (inputProperties.options.length > 4)
-  } else if (field.type === 'date') {
-    inputProperties.dateFormat = field.date_format
-    inputProperties.timeFormat = field.time_format
-    if (field.with_time) {
-      inputProperties.withTime = true
-    }
-    if (field.date_range) {
-      inputProperties.dateRange = true
-    }
-    if (field.disable_past_dates) {
-      inputProperties.disablePastDates = true
-    } else if (field.disable_future_dates) {
-      inputProperties.disableFutureDates = true
-    }
-  } else if (field.type === 'files' || (field.type === 'url' && field.file_upload)) {
-    inputProperties.multiple = (field.multiple !== undefined && field.multiple)
-    inputProperties.cameraUpload = (field.camera_upload !== undefined && field.camera_upload)
-    let maxFileSize = (form.value?.workspace && form.value?.workspace.max_file_size) ? form.value?.workspace?.max_file_size : 10
-    if (field?.max_file_size > 0) {
-      maxFileSize = Math.min(field.max_file_size, maxFileSize)
-    }
-    inputProperties.mbLimit = maxFileSize
-    inputProperties.accept = (form.value.is_pro && field.allowed_file_types) ? field.allowed_file_types : ''
-  } else if (field.type === 'rating') {
-    inputProperties.numberOfStars = parseInt(field.rating_max_value) ?? 5
-  } else if (field.type === 'scale') {
-    inputProperties.minScale = parseFloat(field.scale_min_value) ?? 1
-    inputProperties.maxScale = parseFloat(field.scale_max_value) ?? 5
-    inputProperties.stepScale = parseFloat(field.scale_step_value) ?? 1
-  } else if (field.type === 'slider') {
-    inputProperties.minSlider = parseInt(field.slider_min_value) ?? 0
-    inputProperties.maxSlider = parseInt(field.slider_max_value) ?? 50
-    inputProperties.stepSlider = parseInt(field.slider_step_value) ?? 5
-  } else if (field.type === 'number' || (field.type === 'phone_number' && field.use_simple_text_input)) {
-    inputProperties.pattern = '/d*'
-  } else if (field.type === 'phone_number' && !field.use_simple_text_input) {
-    inputProperties.unavailableCountries = field.unavailable_countries ?? []
-  } else if (field.type === 'text' && field.secret_input) {
-    inputProperties.nativeType = 'password'
-  } else if (field.type === 'payment') {
-    inputProperties.direction = form.value.layout_rtl ? 'rtl' : 'ltr'
-    inputProperties.currency = field.currency
-    inputProperties.amount = field.amount
-    inputProperties.oauthProviderId = field.stripe_account_id
-    
-    // Get paymentData from formManager if available
-    if (props.formManager?.payment) {
-      try {
-        inputProperties.paymentData = props.formManager.payment.getPaymentData(field)
-      } catch (error) {
-        console.error("Error getting payment data:", error)
-      }
-    }
-  }
-
-  return inputProperties
-}
 </script>
 
-<style lang='scss' scoped>
-.nf-text {
-  ol {
-    @apply list-decimal list-inside;
-  }
 
-  ul {
-    @apply list-disc list-inside;
-  }
-}
-</style>

@@ -29,29 +29,11 @@ class GenerateFormFieldsPrompt extends Prompt
         
         Return an array of field objects that fit the context and complement the existing form structure. Consider the form's purpose and existing fields when generating new fields.
 
-        Available field types:
-        - text: Text input (use multi_lines: true for multi-line text)
-        - rich_text: Rich text input
-        - date: Date picker (use with_time: true to include time selection)
-        - url: URL input with validation
-        - phone_number: Phone number input
-        - email: Email input with validation
-        - checkbox: Single checkbox for yes/no (use use_toggle_switch: true for toggle switch)
-        - select: Dropdown selection (use without_dropdown: true for radio buttons, recommended for <5 options)
-        - multi_select: Multiple selection (use without_dropdown: true for checkboxes, recommended for <5 options)
-        - matrix: Matrix input with rows and columns
-        - number: Numeric input
-        - rating: Star rating 
-        - scale: Numeric scale 
-        - slider: Slider selection
-        - files: File upload
-        - signature: Signature pad
-        - barcode: Barcode scanner
-        - nf-text: Rich text content (not an input field)
-        - nf-page-break: Page break for multi-page forms
-        - nf-divider: Visual divider (not an input field)
-        - nf-image: Image element
-        - nf-code: Code block
+        Presentation mode and constraints:
+        {modeConstraints}
+
+        Available field types (mode-aware):
+        {allowedFieldTypesList}
         
         HTML formatting for nf-text:
         - Headers: <h1>, <h2> for section titles and subtitles
@@ -62,18 +44,7 @@ class GenerateFormFieldsPrompt extends Prompt
         - Paragraphs: <p>paragraph text</p> for text blocks with spacing
         Use these HTML tags to create well-structured and visually appealing form content.
         
-        Field width options:
-        - width: "full" (default, takes entire width)
-        - width: "1/2" (takes half width)
-        - width: "1/3" (takes a third of the width)
-        - width: "2/3" (takes two thirds of the width)
-        - width: "1/4" (takes a quarter of the width)
-        - width: "3/4" (takes three quarters of the width)
-        Fields with width less than "full" will be placed on the same line if there's enough room. For example:
-        - Two 1/2 width fields will be placed side by side
-        - Three 1/3 width fields will be placed on the same line
-        - etc.
-        No need for lines width to be complete. Don't abuse putting multiple fields on the same line if it doesn't make sense. For First name and Last name, it works well for instance.
+        {widthGuidance}
         
         Field generation guidelines:
         - Choose the most appropriate field type based on the data being collected
@@ -122,6 +93,7 @@ class GenerateFormFieldsPrompt extends Prompt
                         ['$ref' => '#/definitions/nfPageBreakProperty'],
                         ['$ref' => '#/definitions/nfDividerProperty'],
                         ['$ref' => '#/definitions/nfImageProperty'],
+                        ['$ref' => '#/definitions/nfVideoProperty'],
                         ['$ref' => '#/definitions/nfCodeProperty']
                     ]
                 ]
@@ -133,7 +105,8 @@ class GenerateFormFieldsPrompt extends Prompt
     public function __construct(
         public string $formPrompt,
         public string $formTitle = '',
-        public array $existingFields = []
+        public array $existingFields = [],
+        public array $params = []
     ) {
         parent::__construct();
     }
@@ -167,7 +140,49 @@ class GenerateFormFieldsPrompt extends Prompt
         // Add the formatted existing fields
         $variables['{existingFields}'] = $this->formatExistingFields();
 
+        $rules = PresentationRules::buildContext($this->params);
+        $variables['{modeConstraints}'] = $rules['constraintsText'];
+        $variables['{widthGuidance}'] = $rules['mode'] === PresentationRules::MODE_FOCUSED
+            ? 'In focused mode, do not use width options. Each step contains a single full-width question.'
+            : 'Field width options:\n- width: "full" (default)\n- width: "1/2"\n- width: "1/3"\n- width: "2/3"\n- width: "1/4"\n- width: "3/4"\nFields can share rows when room allows.';
+        $variables['{allowedFieldTypesList}'] = $this->formatAllowedTypes($rules['allowedFieldTypes']);
+
         return $variables;
+    }
+
+    private function formatAllowedTypes(array $types): string
+    {
+        $map = [
+            'text' => 'text: Text input (use multi_lines: true for multi-line text)',
+            'rich_text' => 'rich_text: Rich text input',
+            'date' => 'date: Date picker (use with_time: true to include time selection)',
+            'url' => 'url: URL input with validation',
+            'phone_number' => 'phone_number: Phone number input',
+            'email' => 'email: Email input with validation',
+            'checkbox' => 'checkbox: Single checkbox for yes/no (use use_toggle_switch: true for toggle switch)',
+            'select' => 'select: Dropdown selection (use without_dropdown: true for radio buttons, recommended for <5 options)',
+            'multi_select' => 'multi_select: Multiple selection (use without_dropdown: true for checkboxes, recommended for <5 options)',
+            'matrix' => 'matrix: Matrix input with rows and columns',
+            'number' => 'number: Numeric input',
+            'rating' => 'rating: Star rating',
+            'scale' => 'scale: Numeric scale',
+            'slider' => 'slider: Slider selection',
+            'files' => 'files: File upload',
+            'signature' => 'signature: Signature pad',
+            'barcode' => 'barcode: Barcode scanner',
+            'nf-text' => 'nf-text: Rich text content (not an input field)',
+            'nf-page-break' => 'nf-page-break: Page break for multi-page forms',
+            'nf-divider' => 'nf-divider: Visual divider (not an input field)',
+            'nf-image' => 'nf-image: Image element',
+            'nf-video' => 'nf-video: Video element',
+            'nf-code' => 'nf-code: Code block',
+        ];
+
+        $lines = array_map(function ($t) use ($map) {
+            return '- ' . ($map[$t] ?? $t);
+        }, $types);
+
+        return implode("\n", $lines);
     }
 
     /**
@@ -195,7 +210,15 @@ class GenerateFormFieldsPrompt extends Prompt
     public function processOutput(array $formFields): array
     {
         $properties = $formFields['properties'] ?? [];
+        $processedFields = FormFieldSchemas::processFields($properties);
 
-        return FormFieldSchemas::processFields($properties);
+        // Optimize fields for focused mode
+        $mode = $this->params['presentation_style'] ?? PresentationRules::MODE_CLASSIC;
+        $optimizedFormData = FocusedFormOptimizer::optimizeFormProperties(
+            ['properties' => $processedFields],
+            $mode
+        );
+
+        return $optimizedFormData['properties'];
     }
 }

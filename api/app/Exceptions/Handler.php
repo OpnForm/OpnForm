@@ -50,7 +50,7 @@ class Handler extends ExceptionHandler
         if ($this->shouldReport($exception)) {
             if (app()->bound('sentry') && $this->sentryShouldReport($exception)) {
                 app('sentry')->captureException($exception);
-                Log::debug('Un-handled Exception: '.$exception->getMessage(), [
+                Log::debug('Un-handled Exception: ' . $exception->getMessage(), [
                     'exception' => $exception,
                     'file' => $exception->getFile(),
                     'line' => $exception->getLine(),
@@ -64,8 +64,13 @@ class Handler extends ExceptionHandler
 
     public function render($request, Throwable $e)
     {
-        if ($this->shouldReport($e) && ! in_array(\App::environment(), ['testing']) && config('logging.channels.slack.enabled')) {
-            Log::channel('slack')->error($e);
+        if ($this->shouldReport($e) && ! in_array(\App::environment(), ['testing'])) {
+            Log::channel('slack_errors')->error('Exception', [
+                'exception' => $e,
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTrace()
+            ]);
         }
 
         return parent::render($request, $e);

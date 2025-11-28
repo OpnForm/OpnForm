@@ -6,14 +6,11 @@
     <div
       v-if="cameraUpload && isInWebcam"
       class="hidden sm:block w-full"
-      :class="[
-        theme.fileInput.minHeight
-      ]"
+      :class="ui.container({ class: props.ui?.slots?.container })"
     >
       <ClientOnly>
       <CameraUpload
         v-if="cameraUpload"
-        :theme="theme"
         @upload-image="cameraFileUpload"
         @stop-webcam="isInWebcam=false"
       />
@@ -22,21 +19,8 @@
     <div
       v-else
       :style="inputStyle"
-      class="flex flex-col w-full items-center justify-center transition-colors duration-40"
-      :class="[
-        {'!cursor-not-allowed':disabled, 'cursor-pointer':!disabled,
-         '!bg-neutral-200 dark:!bg-neutral-800': disabled,
-         [theme.fileInput.inputHover.light + ' dark:'+theme.fileInput.inputHover.dark]: uploadDragoverEvent,
-         ['hover:'+theme.fileInput.inputHover.light +' dark:hover:'+theme.fileInput.inputHover.dark]: !loading},
-        theme.fileInput.input,
-        theme.fileInput.borderRadius,
-        theme.fileInput.spacing.horizontal,
-        theme.fileInput.spacing.vertical,
-        theme.fileInput.fontSize,
-        theme.fileInput.minHeight,
-        {'border-red-500 border-2':hasError},
-        'focus:outline-hidden focus:ring-2'
-      ]"
+      class="cursor-pointer"
+      :class="ui.container({ class: props.ui?.slots?.container })"
       tabindex="0"
       role="button"
       :aria-label="multiple ? 'Choose files or drag here' : 'Choose a file or drag here'"
@@ -44,7 +28,7 @@
       @dragleave.prevent="uploadDragoverEvent=false"
       @drop.prevent="onUploadDropEvent"
       @click="openFileUpload"
-      @keydown.enter.prevent="openFileUpload"
+      @keydown.enter="handleEnterPress"
     >
       <div class="flex w-full items-center justify-center">
         <div
@@ -72,11 +56,11 @@
               class="flex flex-wrap items-center justify-center gap-4"
             >
               <uploaded-file
-                v-for="file in files"
+                v-for="(file, index) in files"
                 :key="file.url"
                 :file="file"
-                :theme="theme"
-                @remove="clearFile(file)"
+                :disabled="disabled"
+                @remove="clearFile(index)"
               />
             </div>
             <template v-else>
@@ -135,6 +119,7 @@ import UploadedFile from './components/UploadedFile.vue'
 import CameraUpload from './components/CameraUpload.vue'
 import {storeFile} from "~/lib/file-uploads.js"
 import { formsApi } from '~/api'
+import { fileInputTheme } from '~/lib/forms/themes/file-input.theme.js'
 
 export default {
   name: 'FileInput',
@@ -146,12 +131,17 @@ export default {
     cameraUpload: {type: Boolean, default: false},
     mbLimit: {type: Number, default: 5},
     accept: {type: String, default: ''},
-    moveToFormAssets: {type: Boolean, default: false}
+    moveToFormAssets: {type: Boolean, default: false},
+    preventEnter: {type: Boolean, default: true},
   },
 
   setup(props, context) {
+    const formInput = useFormInput(props, context, {
+      variants: fileInputTheme
+    })
     return {
-      ...useFormInput(props, context)
+      ...formInput,
+      props
     }
   },
 
@@ -228,9 +218,19 @@ export default {
       this.loading = false
     },
     clearAll() {
+      // Revoke object URLs to prevent memory leaks
+      this.files.forEach(f => {
+        if (f && f.src) {
+          URL.revokeObjectURL(f.src)
+        }
+      })
       this.files = []
     },
     clearFile(index) {
+      const f = this.files[index]
+      if (f && f.src) {
+        URL.revokeObjectURL(f.src)
+      }
       this.files.splice(index, 1)
     },
     onUploadDropEvent(e) {
@@ -242,6 +242,12 @@ export default {
 
       for (let i = 0; i < droppedFiles.length; i++) {
         this.uploadFileToServer(droppedFiles.item(i))
+      }
+    },
+    handleEnterPress(event) {
+      if (this.preventEnter) {
+        event.preventDefault()
+        this.openFileUpload()
       }
     },
     openFileUpload() {

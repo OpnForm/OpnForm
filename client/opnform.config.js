@@ -6,8 +6,8 @@ export default {
   notion: { worker: "https://notion-forms-worker.notionforms.workers.dev/v1" },
   links: {
     help_url: "https://help.opnform.com",
-    github_url: "https://github.com/JhumanJ/OpnForm",
-    github_forum_url: "https://github.com/JhumanJ/OpnForm/discussions",
+    github_url: "https://github.com/OpnForm/OpnForm",
+    github_forum_url: "https://github.com/OpnForm/OpnForm/discussions",
     discord: "https://discord.gg/YTSjU2a9TS",
     twitter: "https://twitter.com/OpnForm",
     zapier_integration:

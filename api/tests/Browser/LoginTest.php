@@ -13,7 +13,7 @@ it('can login onboarded users', function () {
 
     $this->browse(function ($browser) use ($user) {
         $browser->visit(new Login())
-            ->submit($user->email, 'password')
+            ->submit($user->email, 'Abcd@1234')
             ->assertPageIs(Home::class);
     });
 });
@@ -32,7 +32,7 @@ it('can log out the user', function () {
 
     $this->browse(function ($browser) use ($user) {
         $browser->visit(new Login())
-            ->submit($user->email, 'password')
+            ->submit($user->email, 'Abcd@1234')
             ->on(new Home())
             ->clickLogout()
             ->assertPageIs(Login::class);

@@ -134,9 +134,9 @@
               </div>
               
               <!-- Status Badges and Form Cleanings -->
-              <div class="flex flex-wrap gap-2">
-                <FormStatusBadges class="mt-2" size="sm" :form="form" />
-                <FormCleanings class="mt-2" :form="form" />
+              <div class="flex flex-wrap gap-2 flex-col mt-2">
+                <FormStatusBadges size="sm" :form="form" />
+                <FormCleanings :form="form" />
               </div>
             </div>
           </div>
@@ -175,7 +175,6 @@
 </template>
 
 <script setup>
-import { computed } from "vue"
 import { formatNumber, formatNumberWithCommas } from "~/lib/utils.js"
 import FormSidebar from "../../../components/layouts/FormSidebar.vue"
 import ExtraMenu from "../../../components/pages/forms/show/ExtraMenu.vue"
@@ -202,8 +201,8 @@ const slug = route.params.slug
 const { current: workspaceRef } = useCurrentWorkspace()
 const workspace = workspaceRef.value
 
-// Get form by slug
-const { data: form, isLoading: isFormLoading, isFetched: isFormFinished } = formDetail(slug)
+// Get form by slug using private authenticated endpoint
+const { data: form, isLoading: isFormLoading, isFetched: isFormFinished } = formDetail(slug, { usePrivate: true })
 
 // Combined loading state
 const isLoading = computed(() => isFormLoading.value)

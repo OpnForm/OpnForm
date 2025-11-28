@@ -1,7 +1,7 @@
 <template>
   <div>
     <UPopover v-model:open="isPopoverOpen" arrow :content="popoverContent">
-      <UTooltip text="Add question with AI">
+      <UTooltip text="Add question with AI" arrow>
         <UButton
           size="sm"
           color="neutral"
@@ -90,7 +90,11 @@ const handleGenerate = () => {
     
   loading.value = true
   aiRequestId.value = null
-  formsApi.ai.generateFields(aiFields).then(data => {
+  const presentationStyle = form.value?.presentation_style || 'classic'
+  formsApi.ai.generateFields({
+    ...aiFields.data(),
+    generation_params: { presentation_style: presentationStyle }
+  }).then(data => {
     aiRequestId.value = data.ai_form_completion_id
     fetchGeneratedForm(data.ai_form_completion_id)
   }).catch(error => {

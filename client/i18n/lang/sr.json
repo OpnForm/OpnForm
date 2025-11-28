@@ -1,0 +1,78 @@
+{
+    "app": {
+        "name": "OpnForm"
+    },
+    "forms": {
+        "buttons": {
+            "submit": "Pošalji",
+            "next": "Dalje",
+            "previous": "Nazad",
+            "re_fill": "Pošalji još jedan odgovor"
+        },
+        "powered_by": "Pokreće",
+        "password_protected": "Ovaj formular je zaštićen lozinkom.",
+        "invalid_password": "Neispravna lozinka.",
+        "password_required": "Lozinka je obavezna.",
+        "create_form_free": "Kreiraj svoj formular besplatno uz OpnForm",
+        "submit": "Pošalji",
+        "wrong_form_structure": "Nešto nije u redu sa strukturom ovog formulara. Ako ste vlasnik formulara, kontaktirajte nas.",
+        "cannot_access_here": "Ovom sadržaju nije moguće pristupiti ovde. Kliknite na link ispod za pristup.",
+        "open_form": "Otvori formular",
+        "restricted_to_workspace": "Ograničeno na članove Notion Workspace-a. Prijavite se za pristup ovom sadržaju.",
+        "select": {
+            "search": "Pretraga",
+            "searchOrTypeToCreateNew": "Pretraži ili ukucaj da kreiraš novo",
+            "typeSomethingToAddAnOption": "Ukucaj nešto da dodaš opciju",
+            "noOptionAvailable": "Nema dostupnih opcija",
+            "create": "Kreiraj"
+        },
+        "fileInput": {
+            "chooseFiles": "Kliknite da izaberete fajl(ove) ili prevucite ovde | Kliknite da izaberete fajl ili prevucite ovde",
+            "sizeLimit": "Ograničenje veličine: {count}MB po fajlu",
+            "uploadingFile": "Otpremanje vašeg fajla..."
+        },
+        "cameraUpload": {
+            "allowCameraPermission": "Dozvoli pristup kameri",
+            "allowCameraPermissionDescription": "Morate dozvoliti pristup kameri pre snimanja. Idite u podešavanja pregledača da omogućite pristup kameri na ovoj stranici.",
+            "gotIt": "U redu!",
+            "cameraDeviceError": "Greška uređaja kamere",
+            "cameraDeviceErrorDescription": "Došlo je do nepoznate greške prilikom pokretanja uređaja za kameru.",
+            "goBack": "Nazad"
+        },
+        "signatureInput": {
+            "uploadFileInstead": "Otpremi fajl umesto toga",
+            "clear": "Obriši"
+        },
+        "barcodeInput": {
+            "clickToOpenCamera": "Kliknite da otvorite kameru"
+        },
+        "payment": {
+            "amount_to_pay": "Iznos za plaćanje",
+            "success": "Plaćanje uspešno",
+            "name_on_card": "Ime na kartici",
+            "billing_email": "Email adresa za naplatu",
+            "payment_disclaimer": "Vaša kartica će biti naplaćena klikom na ovo dugme. Plaćanja se bezbedno obrađuju preko Stripe-a.",
+            "errors": {
+                "missingFormOrProvider": "Nedostaje slug formulara ili ID provajdera.",
+                "failedAccountDetails": "Neuspešno preuzimanje Stripe podataka o nalogu.",
+                "setupError": "Došlo je do greške tokom podešavanja Stripe-a.",
+                "systemNotReady": "Sistem plaćanja nije spreman. Sačekajte i pokušajte ponovo.",
+                "misconfigured": "Sistem plaćanja je pogrešno podešen. Osvežite i pokušajte ponovo.",
+                "notFullyReady": "Sistem plaćanja nije u potpunosti spreman. Osvežite i pokušajte ponovo.",
+                "paymentRequired": "Dovršite plaćanje pre nego što nastavite.",
+                "nameRequired": "Ime vlasnika kartice je obavezno.",
+                "emailRequired": "Email adresa za naplatu je obavezna.",
+                "invalidEmail": "Nevažeća email adresa za naplatu.",
+                "failedIntent": "Neuspešno kreiranje namere plaćanja.",
+                "processingFailed": "Obrada plaćanja nije uspela."
+            }
+        },
+        "validation_error": "Greška pri validaciji",
+        "validation_error_with_count": "Greška pri validaciji ({count} polja)",
+        "toggle": {
+            "yes": "Da",
+            "no": "Ne"
+        }
+    }
+}
+

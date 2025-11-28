@@ -1,12 +1,37 @@
 import { h } from 'vue'
 
-export function useAlert () {
+export function useAlert() {
 
   function success (message, autoClose = 10000, options = {}) {
     if (typeof message === 'object' && message !== null) {
       options = { ...message, ...options }
       message = options.description || options.message || ''
     }
+    // Compose actions, optionally appending an "Open form" action when a form is provided
+    const composedActions = Array.isArray(options.actions) ? [...options.actions] : []
+    const form = options.form || options.openForm
+    const shareUrl = form?.share_url || options.shareUrl
+    if (form && shareUrl) {
+      composedActions.push({
+        label: options.openFormLabel ?? 'Open form',
+        icon: 'i-heroicons-arrow-top-right-on-square',
+        onClick: () => {
+          if (form.visibility === 'draft') {
+            useAlert().warning(
+              'This form is currently in Draft mode and is not publicly accessible, You can change the form status on the edit form page.'
+            )
+          } else if (import.meta.client) {
+            window.open(shareUrl, '_blank')
+          }
+        }
+      })
+    }
+
+    const extraOptions = { ...options }
+    if (composedActions.length > 0) {
+      extraOptions.actions = composedActions
+    }
+
     return useToast().add({
       icon: 'i-heroicons-check-circle',
       title: options.title ?? 'Success',
@@ -14,7 +39,7 @@ export function useAlert () {
       color: 'success',
       closeIcon: 'i-heroicons-x-mark-20-solid',
       duration: autoClose,
-      ...options
+      ...extraOptions
     })
   }
 
@@ -68,7 +93,8 @@ export function useAlert () {
   }
 
   function validationError(error, autoClose = 10000, options = {}) {
-    const message = error.message || 'Validation Error'
+    const t = useNuxtApp().$i18n.t
+    const message = error.message || t('forms.validation_error')
     let description = message
 
     if (error.errors) {
@@ -83,7 +109,7 @@ export function useAlert () {
 
     return useToast().add({
       icon: 'i-heroicons-x-circle',
-      title: options.title ?? 'Validation Error',
+      title: options.title ?? t('forms.validation_error'),
       description,
       color: 'error',
       duration: autoClose,
@@ -96,6 +122,8 @@ export function useAlert () {
       return error(error.message || 'An unknown validation error occurred', autoClose, options)
     }
 
+    const t = useNuxtApp().$i18n.t
+    
     // Count total errors
     const errorCount = Object.keys(error.errors).length
 
@@ -114,8 +142,8 @@ export function useAlert () {
 
     // Add count of errors to the title
     const title = options.title || (errorCount > 1 
-      ? `Validation Error (${errorCount} fields)` 
-      : 'Validation Error')
+      ? t('forms.validation_error_with_count', { count: errorCount })
+      : t('forms.validation_error'))
 
     return useToast().add({
       icon: 'i-heroicons-x-circle',

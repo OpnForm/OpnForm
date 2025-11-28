@@ -2,6 +2,7 @@
 
 namespace App\Integrations\OAuth\Drivers;
 
+use App\Exceptions\OAuth\InvalidWidgetDataException;
 use App\Integrations\OAuth\Drivers\Contracts\WidgetOAuthDriver;
 use Laravel\Socialite\Contracts\User;
 
@@ -27,6 +28,12 @@ class OAuthTelegramDriver implements WidgetOAuthDriver
         return $this;
     }
 
+    public function setState(string $state): self
+    {
+        // Widget-based auth doesn't use state, but interface requires it
+        return $this;
+    }
+
     public function getUser(): User
     {
         throw new \Exception('Use getUserFromWidgetData for Widget based authentication');
@@ -49,20 +56,49 @@ class OAuthTelegramDriver implements WidgetOAuthDriver
 
     public function verifyWidgetData(array $data): bool
     {
-        $checkHash = $data['hash'];
-        unset($data['hash']);
+        // As per Telegram docs, the hash must be computed from exactly the fields provided by Telegram.
+        // Ignore any extra fields we might add client-side (e.g. intent, utm, invite_token, etc.).
+        $checkHash = $data['hash'] ?? null;
+        if (!$checkHash) {
+            throw new InvalidWidgetDataException('Missing Telegram hash');
+        }
+
+        // Whitelist allowed keys from Telegram Login Widget
+        $allowedKeys = [
+            'id',
+            'first_name',
+            'last_name',
+            'username',
+            'photo_url',
+            'auth_date',
+        ];
+
+        // Build data-check-string from allowed fields only
+        $filtered = [];
+        foreach ($allowedKeys as $key) {
+            if (array_key_exists($key, $data)) {
+                $filtered[$key] = $data[$key];
+            }
+        }
 
         $dataCheckArr = [];
-        foreach ($data as $key => $value) {
+        foreach ($filtered as $key => $value) {
             $dataCheckArr[] = $key . '=' . $value;
         }
 
         sort($dataCheckArr);
         $dataCheckString = implode("\n", $dataCheckArr);
-        $secretKey = hash('sha256', config('services.telegram.bot_token'), true);
+        $botToken = config('services.telegram.bot_token');
+        if (!$botToken) {
+            throw new InvalidWidgetDataException('Telegram bot token not configured');
+        }
+        $secretKey = hash('sha256', $botToken, true);
         $hash = hash_hmac('sha256', $dataCheckString, $secretKey);
+        if (!hash_equals($hash, $checkHash)) {
+            throw new InvalidWidgetDataException('Invalid Telegram signature');
+        }
 
-        return hash_equals($hash, $checkHash);
+        return true;
     }
 
     public function getUserFromWidgetData(array $data): array

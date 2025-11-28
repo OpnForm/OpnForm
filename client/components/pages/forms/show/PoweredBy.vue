@@ -4,8 +4,9 @@
     color="form"
     :label="props.label"
     trailing-icon="i-heroicons-arrow-up-right-20-solid"
-    class="fixed bottom-4 right-4 hover:no-underline powered-by-button"
+    class="hover:no-underline hover:shadow-lg hover:scale-105 transition-all powered-by-button"
     :class="textColorClass"
+    size="sm"
     target="_blank"
   /> 
 </template>
@@ -59,3 +60,9 @@ const textColorClass = computed(() => {
   return 'text-white hover:text-white'
 })
 </script>
+
+<style>
+.powered-by-button, .powered-by-button span {
+  font-family: Inter, sans-serif !important;
+}
+</style>

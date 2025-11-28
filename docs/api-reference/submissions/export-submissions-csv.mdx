@@ -4,7 +4,7 @@ openapi: post /open/forms/{id}/submissions/export
 
 # Export Submissions (CSV)
 
-Download a CSV file containing submissions for the specified form.
+Export submissions for a form as a CSV file. Large exports are processed asynchronously in the background, while smaller exports are processed immediately.
 
 ## Authentication & Scope
 
@@ -21,30 +21,53 @@ Authorization: Bearer <token>
 
 ### Path Parameters
 
-| Parameter | Type   | Description                 |
-|-----------|--------|-----------------------------|
-| id        | number | Numeric ID of the form.     |
+| Parameter | Type   | Description             |
+| --------- | ------ | ----------------------- |
+| id        | number | Numeric ID of the form. |
 
 ### Body Parameters
 
-| Field   | Type  | Required | Description                                                                                                   |
-|---------|-------|----------|-----------------------------------------------------------------------------------------------------------------|
+| Field   | Type   | Required | Description                                                                                                       |
+| ------- | ------ | -------- | ----------------------------------------------------------------------------------------------------------------- |
 | columns | object | Yes      | Keys are field IDs (or `created_at`); values are booleans indicating whether to include the column in the export. |
 
 Example payload exporting two fields and the created_at timestamp:
 
 ```json
 {
-  "columns": {
-    "field_name": true,
-    "field_email": true,
-    "created_at": true
-  }
+    "columns": {
+        "field_name": true,
+        "field_email": true,
+        "created_at": true
+    }
 }
 ```
 
 ## Response
 
-`200 OK` – Returns a CSV file download. The response's `Content-Type` will be `text/csv` and include the `Content-Disposition` header.
+The API automatically determines whether to process the export synchronously or asynchronously based on the form size.
+
+### Synchronous Export (Small Forms)
+
+`200 OK` – Returns a CSV file download immediately. The response's `Content-Type` will be `text/csv` and include the `Content-Disposition` header.
+
+### Asynchronous Export (Large Forms)
+
+`200 OK` – Returns a job status object for background processing:
+
+```json
+{
+    "message": "Export started. Large export will be processed in the background.",
+    "job_id": "export_abc123def456",
+    "is_async": true
+}
+```
+
+<Note>
+    Use the `job_id` to check export progress using the [Export Status
+    endpoint](/api-reference/submissions/export-status).
+</Note>
+
+### Error Responses
 
 `403 Forbidden` – The token lacks `forms-read` or you don't have access.

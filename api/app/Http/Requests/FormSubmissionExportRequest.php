@@ -12,7 +12,7 @@ class FormSubmissionExportRequest extends FormRequest
 
     public function __construct(Request $request)
     {
-        $this->form = Form::findOrFail($request->route('id'));
+        $this->form = $request->route('form');
     }
 
     public function rules()

@@ -6,10 +6,10 @@ it('can fetch form integration events', function () {
     $form = $this->createForm($user, $workspace);
 
     $data = [
-        'status' => true,
+        'status' => 'active',
         'integration_id' => 'email',
         'logic' => null,
-        'settings' => [
+        'data' => [
             'send_to' => 'test@test.com',
             'sender_name' => 'OpnForm',
             'subject' => 'New form submission',
@@ -20,14 +20,14 @@ it('can fetch form integration events', function () {
         ]
     ];
 
-    $response = $this->postJson(route('open.forms.integration.create', $form->id), $data)
+    $response = $this->postJson(route('open.forms.integrations.create', $form), $data)
         ->assertSuccessful()
         ->assertJson([
             'type' => 'success',
             'message' => 'Form Integration was created.'
         ]);
 
-    $this->getJson(route('open.forms.integrations.events', [$form->id, $response->json('form_integration.id')]))
+    $this->getJson(route('open.forms.integrations.events', [$form, $response->json('form_integration.id')]))
         ->assertSuccessful()
         ->assertJsonCount(0);
 });

@@ -22,32 +22,81 @@ Authorization: Bearer <token>
 ### Path Parameters
 
 | Parameter | Type   | Description                    |
-|-----------|--------|--------------------------------|
+| --------- | ------ | ------------------------------ |
 | id        | number | Numeric ID of the form to edit |
 
-### Body Parameters (partial)
+### Body Parameters
 
-All fields from the [Create Form](./create-form) endpoint may be supplied. Only the fields you include will be updated; omitting a field leaves its current value unchanged.
+All fields from the [Create Form](./create-form) endpoint may be supplied. However, **the API validation requires you to include specific fields** in every update request, even if you only want to change one optional field.
 
-Important:
+#### Required Fields in Updates
 
-* Passing a new `slug` will regenerate the form URL (self-hosted only).
-* The `workspace_id` can **not** be changed via this endpoint—use `/open/forms/{id}/workspace/{workspace_id}` instead.
+These fields must always be included:
 
-Example:
+| Field                  | Type    | Description                                                          |
+| ---------------------- | ------- | -------------------------------------------------------------------- |
+| title                  | string  | Form title (max 60 characters)                                       |
+| visibility             | string  | Form visibility state (`"public"`, `"closed"`, `"draft"`)            |
+| language               | string  | Two-letter ISO language code (e.g. `en`)                             |
+| theme                  | string  | Form theme                                                           |
+| presentation_style     | string  | How the form is presented                                            |
+| width                  | string  | Form container width                                                 |
+| size                   | string  | Form text size                                                       |
+| border_radius          | string  | Form border radius                                                   |
+| dark_mode              | string  | Dark mode setting                                                    |
+| color                  | string  | Primary color (hex format)                                           |
+| uppercase_labels       | boolean | Whether labels should be uppercase                                   |
+| no_branding            | boolean | Hide OpenForm branding                                               |
+| transparent_background | boolean | Use transparent background                                           |
+| properties             | array   | Array of form fields/blocks — **must never be empty**, or existing properties will be lost |
+| …other fields          | mixed   | All other fields from Create Form (description, logo_picture, etc.)  |
+
+<Warning>
+**Important:** Omitting any of the required fields will result in a validation error. You must include all these fields in your update request, even if you're only changing one optional field. Additionally, the `properties` array cannot be empty — always send your complete form fields.
+</Warning>
+
+### Recommended Update Pattern
+
+To safely update a form without accidentally losing properties:
+
+1. **Fetch** the current form state using the [Get Form](./get-form) endpoint
+2. **Modify** only the fields you want to change in the fetched response
+3. **Send** the complete updated form (including all required fields and properties) back to this endpoint
+
+This ensures you retain all existing form fields and don't accidentally overwrite them with empty arrays.
+
+<Tip>
+**Best Practice Example:** If you only want to change form visibility, fetch the form first, update only the `visibility` field locally, then send the complete form back with all its properties intact.
+</Tip>
+
+### Body Example
+
+Example request updating title and visibility (note: all required fields must be included):
 
 ```json
 {
-  "title": "Customer Feedback (v2)",
-  "visibility": "draft",
-  "properties": [
-    {
-      "id": "field-1",
-      "type": "short_text",
-      "name": "First name",
-      "required": true
-    }
-  ]
+    "title": "Customer Feedback (v2)",
+    "visibility": "closed",
+    "language": "en",
+    "theme": "light",
+    "presentation_style": "default",
+    "width": "normal",
+    "size": "medium",
+    "border_radius": "medium",
+    "dark_mode": "off",
+    "color": "#3b82f6",
+    "uppercase_labels": false,
+    "no_branding": false,
+    "transparent_background": false,
+    "properties": [
+        {
+            "id": "field-1",
+            "type": "short_text",
+            "name": "First name",
+            "required": true
+        }
+    ],
+    "closed_text": "Form is currently closed"
 }
 ```
 

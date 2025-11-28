@@ -5,57 +5,55 @@ description: "Deploy OpnForm using Docker"
 
 import CloudVersion from "/snippets/cloud-version.mdx";
 
-<CloudVersion/>
+<CloudVersion />
 
 <Tip>
-Looking to develop OpnForm locally? Check out our [Docker Development Setup](/deployment/docker-development) guide which provides hot-reload and other development features.
+    Looking to develop OpnForm locally? Check out our [Docker Development
+    Setup](/deployment/docker-development) guide which provides hot-reload and
+    other development features.
 </Tip>
 
 ## Quick Start
 
 1. Clone the repository:
-   ```bash
-   git clone https://github.com/JhumanJ/OpnForm.git
-   cd OpnForm
-   ```
+    ```bash
+    git clone https://github.com/OpnForm/OpnForm.git
+    cd OpnForm
+    ```
 
 <Warning>
-**Important for Windows Users**: Ensure script files maintain LF (Unix-style) line endings. If you're using Windows, configure Git to preserve line endings:
-```bash
-git config core.autocrlf false
-```
-And check/fix the artisan script before running setup:
-```bash
-# Using Git Bash or WSL
-dos2unix api/artisan
-```
-Otherwise, Docker containers may hang at "Waiting for DB to be ready" during startup.
+    **Important for Windows Users**: Ensure script files maintain LF
+    (Unix-style) line endings. If you're using Windows, configure Git to
+    preserve line endings: ```bash git config core.autocrlf false ``` And
+    check/fix the artisan script before running setup: ```bash # Using Git Bash
+    or WSL dos2unix api/artisan ``` Otherwise, Docker containers may hang at
+    "Waiting for DB to be ready" during startup.
 </Warning>
 
 2. Run the setup script:
-   ```bash
-   chmod +x scripts/docker-setup.sh
-   ./scripts/docker-setup.sh
-   ```
 
-   The script will:
-   - Create necessary environment files
-   - Pull required Docker images
-   - Start all containers in production mode
-   - Display access information
+    ```bash
+    chmod +x scripts/docker-setup.sh
+    ./scripts/docker-setup.sh
+    ```
+
+    The script will:
+
+    - Create necessary environment files
+    - Pull required Docker images
+    - Start all containers in production mode
+    - Display access information
 
 3. Access your OpnForm instance at `http://localhost`
 
-### Initial Login
+### Initial Setup
 
-After deployment, use these credentials to access the app:
+After deployment, OpnForm will automatically redirect you to a setup page where you can create your admin account. Simply visit `http://localhost` and you'll be guided through the setup process.
 
--   Email: `admin@opnform.com`
--   Password: `password`
-
-You will be prompted to change your email and password after your first login.
-
-<Note>Public registration is disabled in the self-hosted version. Use the admin account to invite additional users.</Note>
+<Note>
+    Public registration is disabled in the self-hosted version after setup is
+    complete. Use the admin account to invite additional users.
+</Note>
 
 ## Architecture
 
@@ -72,52 +70,40 @@ graph TD
 ### Components
 
 <Tabs>
-  <Tab title="Frontend">
-    The Nuxt frontend service:
-    - Server-Side Rendered application
-    - Built with Vue 3 and Tailwind CSS
-    - Handles dynamic rendering and client-side interactivity
-    - Optimized for production performance
-  </Tab>
-  <Tab title="Backend">
-    The Laravel API service:
-    - Handles business logic and data persistence
-    - Provides REST API endpoints
-    - Manages file uploads and processing
-    - Includes required PHP extensions (pgsql, redis, etc.)
-    - Configured for PostgreSQL and Redis connections
-  </Tab>
-  <Tab title="Workers">
-    Background processing services:
-    - **API Worker**: Processes queued jobs (emails, exports, etc.)
-    - **API Scheduler**: Handles scheduled tasks and periodic cleanups
-    - Both share the same codebase as the main API
-  </Tab>
-  <Tab title="Databases">
-    Data storage services:
-    - **PostgreSQL**: Primary database for all application data
-    - **Redis**: Used for:
-      - Session storage
-      - Cache
-      - Queue management
-      - Real-time features
-  </Tab>
-  <Tab title="Proxy">
-    The Nginx proxy service:
-    - Routes requests between frontend and backend
-    - Handles SSL termination
-    - Manages file upload limits
-    - Serves static assets
-    - Configured for optimal performance
-  </Tab>
+    <Tab title="Frontend">
+        The Nuxt frontend service: - Server-Side Rendered application - Built
+        with Vue 3 and Tailwind CSS - Handles dynamic rendering and client-side
+        interactivity - Optimized for production performance
+    </Tab>
+    <Tab title="Backend">
+        The Laravel API service: - Handles business logic and data persistence -
+        Provides REST API endpoints - Manages file uploads and processing -
+        Includes required PHP extensions (pgsql, redis, etc.) - Configured for
+        PostgreSQL and Redis connections
+    </Tab>
+    <Tab title="Workers">
+        Background processing services: - **API Worker**: Processes queued jobs
+        (emails, exports, etc.) - **API Scheduler**: Handles scheduled tasks and
+        periodic cleanups - Both share the same codebase as the main API
+    </Tab>
+    <Tab title="Databases">
+        Data storage services: - **PostgreSQL**: Primary database for all
+        application data - **Redis**: Used for: - Session storage - Cache -
+        Queue management - Real-time features
+    </Tab>
+    <Tab title="Proxy">
+        The Nginx proxy service: - Routes requests between frontend and backend
+        - Handles SSL termination - Manages file upload limits - Serves static
+        assets - Configured for optimal performance
+    </Tab>
 </Tabs>
 
 ## Docker Images
 
 OpnForm provides pre-built Docker images for easy deployment:
 
-- [OpnForm API Image](https://hub.docker.com/r/jhumanj/opnform-api)
-- [OpnForm Client Image](https://hub.docker.com/r/jhumanj/opnform-client)
+-   [OpnForm API Image](https://hub.docker.com/r/jhumanj/opnform-api)
+-   [OpnForm Client Image](https://hub.docker.com/r/jhumanj/opnform-client)
 
 ### Building Custom Images
 
@@ -133,19 +119,20 @@ docker build -t opnform-ui:local -f docker/Dockerfile.client .
 ```
 
 ### Custom Configuration
+
 Create a `docker-compose.override.yml` to customize your deployment:
 
 ```yaml
 services:
-  api:
-    image: opnform-api:local
-    environment:
-      PHP_MEMORY_LIMIT: 1G
-  ui:
-    image: opnform-ui:local
-  ingress:
-    volumes:
-      - ./custom-nginx.conf:/etc/nginx/conf.d/default.conf
+    api:
+        image: opnform-api:local
+        environment:
+            PHP_MEMORY_LIMIT: 1G
+    ui:
+        image: opnform-ui:local
+    ingress:
+        volumes:
+            - ./custom-nginx.conf:/etc/nginx/conf.d/default.conf
 ```
 
 ## Environment Variables
@@ -157,19 +144,21 @@ For detailed information about environment variables and how to update them in D
 ### Updates
 
 1. Pull latest changes:
-   ```bash
-   git pull origin main
-   ```
+
+    ```bash
+    git pull origin main
+    ```
 
 2. Update containers:
-   ```bash
-   docker compose pull
-   docker compose up -d
-   ```
+    ```bash
+    docker compose pull
+    docker compose up -d
+    ```
 
 ### Monitoring
 
 View container logs:
+
 ```bash
 # All containers
 docker compose logs -f
@@ -179,6 +168,7 @@ docker compose logs -f api
 ```
 
 Monitor container health:
+
 ```bash
 docker compose ps
 ```
@@ -188,6 +178,7 @@ docker compose ps
 ### Container Issues
 
 If containers aren't starting:
+
 ```bash
 # View detailed logs
 docker compose logs -f
@@ -200,6 +191,7 @@ docker compose up -d
 ### Database Issues
 
 If database connections fail:
+
 ```bash
 # Check database status
 docker compose exec db pg_isready
@@ -209,6 +201,7 @@ docker compose logs db
 ```
 
 If the API container is stuck on "Waiting for DB to be ready":
+
 ```bash
 # Check for line ending issues in the artisan script
 # The file should use LF (Unix) line endings, not CRLF (Windows)
@@ -221,12 +214,17 @@ dos2unix api/artisan
 ```
 
 <Note>
-**Line Ending Issue**: When using Git or code editors on Windows, line endings in the `artisan` script may be converted from LF (Unix-style) to CRLF (Windows-style). This prevents the Docker container from properly executing the script, causing it to hang at "Waiting for DB to be ready". Always ensure script files maintain LF line endings.
+    **Line Ending Issue**: When using Git or code editors on Windows, line
+    endings in the `artisan` script may be converted from LF (Unix-style) to
+    CRLF (Windows-style). This prevents the Docker container from properly
+    executing the script, causing it to hang at "Waiting for DB to be ready".
+    Always ensure script files maintain LF line endings.
 </Note>
 
 ### Cache Issues
 
 Clear various caches:
+
 ```bash
 # Clear application cache
 docker compose exec api php artisan cache:clear
@@ -241,6 +239,7 @@ docker compose exec api php artisan route:clear
 ### Permission Issues
 
 Fix storage permissions:
+
 ```bash
 docker compose exec api chown -R www-data:www-data storage
 docker compose exec api chmod -R 775 storage

@@ -14,16 +14,31 @@
           @submit.prevent="updatePassword"
         >
           <div class="max-w-sm">
-            <text-input
+            <TextInput
+              :form="passwordForm"
+              name="current_password"
+              label="Current Password"
+              native-type="password"
+              placeholder="Enter current password"
+              :required="true"
+            />
+
+            <TextInput
               :form="passwordForm"
               name="password"
               label="New Password"
               native-type="password"
               placeholder="Enter new password"
               :required="true"
+              @focus="isPasswordFocused = true"
+              @blur="isPasswordFocused = false"
+            />
+            <PasswordStrengthIndicator 
+              v-show="isPasswordFocused" 
+              :password="passwordForm.password" 
             />
             
-            <text-input
+            <TextInput
               :form="passwordForm"
               name="password_confirmation"
               label="Confirm Password"
@@ -46,24 +61,8 @@
       </VForm>
     </div>
 
-    <!-- Two-Factor Authentication (Future Enhancement) -->
     <div class="pt-8 border-t border-neutral-200">
-      <div class="flex flex-col gap-2 items-start">
-        <div>
-          <h3 class="text-lg font-medium text-neutral-900">Two-Factor Authentication</h3>
-          <p class="text-sm text-neutral-500 mt-1">
-            Add an extra layer of security to your account.
-          </p>
-        </div>
-        
-        <UButton
-          color="primary"
-          disabled
-        >
-          Coming Soon
-        </UButton>
-        
-      </div>
+      <UsersSettingsTwoFactorAuth />
     </div>
   </div>
 </template>
@@ -73,9 +72,13 @@ const alert = useAlert()
 
 // Password form
 const passwordForm = useForm({
+  current_password: '',
   password: '',
   password_confirmation: ''
 })
+
+// Password field focus state
+const isPasswordFocused = ref(false)
 
 // Update password
 const updatePassword = () => {

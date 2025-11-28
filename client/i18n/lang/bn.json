@@ -3,6 +3,12 @@
         "name": "OpnForm"
     },
     "forms": {
+        "buttons": {
+            "submit": "জমা দিন",
+            "next": "পরবর্তী",
+            "previous": "পূর্ববর্তী",
+            "re_fill": "আরেকটি প্রতিক্রিয়া জমা দিন"
+        },
         "powered_by": "দ্বারা চালিত",
         "password_protected": "এই ফর্মটি পাসওয়ার্ড দ্বারা সুরক্ষিত।",
         "invalid_password": "অবৈধ পাসওয়ার্ড।",
@@ -47,19 +53,25 @@
             "billing_email": "বিলিং ইমেইল ঠিকানা",
             "payment_disclaimer": "এই বোতামে ক্লিক করলে আপনার ক্রেডিট কার্ড থেকে চার্জ করা হবে। পেমেন্টগুলি নিরাপদে স্ট্রাইপের মাধ্যমে প্রসেস করা হয়।",
             "errors": {
-                "missingFormOrProvider": "Missing form slug or provider ID.",
-                "failedAccountDetails": "Failed to get Stripe account details.",
-                "setupError": "An error occurred during Stripe setup.",
-                "systemNotReady": "Payment system not ready. Please wait a moment and try again.",
-                "misconfigured": "Payment system misconfigured. Please refresh and try again.",
-                "notFullyReady": "Payment system not fully ready. Please refresh and try again.",
-                "paymentRequired": "Complete the payment before you can proceed.",
-                "nameRequired": "Card holder name is required.",
-                "emailRequired": "Billing email address is required.",
-                "invalidEmail": "Invalid billing email address.",
-                "failedIntent": "Failed to create payment intent.",
-                "processingFailed": "Payment processing failed."
+                "missingFormOrProvider": "ফর্ম স্লাগ বা প্রদানকারী আইডি অনুপস্থিত।",
+                "failedAccountDetails": "স্ট্রাইপ অ্যাকাউন্টের বিবরণ পেতে ব্যর্থ হয়েছে।",
+                "setupError": "স্ট্রাইপ সেটআপের সময় একটি ত্রুটি ঘটেছে।",
+                "systemNotReady": "পেমেন্ট সিস্টেম প্রস্তুত নয়। অনুগ্রহ করে কিছুক্ষণ অপেক্ষা করে আবার চেষ্টা করুন।",
+                "misconfigured": "পেমেন্ট সিস্টেম ভুলভাবে কনফিগার করা হয়েছে। অনুগ্রহ করে রিফ্রেশ করে আবার চেষ্টা করুন।",
+                "notFullyReady": "পেমেন্ট সিস্টেম পুরোপুরি প্রস্তুত নয়। অনুগ্রহ করে রিফ্রেশ করে আবার চেষ্টা করুন।",
+                "paymentRequired": "এগিয়ে যাওয়ার আগে পেমেন্ট সম্পন্ন করুন।",
+                "nameRequired": "কার্ডধারীর নাম প্রয়োজন।",
+                "emailRequired": "বিলিং ইমেল ঠিকানা প্রয়োজন।",
+                "invalidEmail": "অবৈধ বিলিং ইমেল ঠিকানা।",
+                "failedIntent": "পেমেন্ট ইনটেন্ট তৈরি করতে ব্যর্থ হয়েছে।",
+                "processingFailed": "পেমেন্ট প্রক্রিয়াকরণ ব্যর্থ হয়েছে।"
             }
+        },
+        "validation_error": "যাচাইকরণ ত্রুটি",
+        "validation_error_with_count": "যাচাইকরণ ত্রুটি ({count}টি ক্ষেত্র)",
+        "toggle": {
+            "yes": "হ্যাঁ",
+            "no": "না"
         }
     }
 } 

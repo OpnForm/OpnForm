@@ -90,11 +90,11 @@ const loading = ref(false)
 const showWidgetModal = ref(false)
 const selectedService = ref(null)
 const alert = useAlert()
+const windowMessage = useWindowMessage(WindowMessageTypes.OAUTH_PROVIDER_CONNECTED)
+
 
 // Listen for OAuth completion to close modal and refresh
-onMounted(() => {
-  const windowMessage = useWindowMessage(WindowMessageTypes.OAUTH_PROVIDER_CONNECTED)
-  
+onMounted(() => {  
   windowMessage.listen((_event) => {
     // OAuth connection completed, close modal and refresh
     loading.value = false

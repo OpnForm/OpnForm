@@ -24,7 +24,7 @@
           placeholder="7"
         />
         <UButton
-          :loading="loading"
+          :loading="form.busy"
           type="submit"
           block
           label="Apply Extend Trial"
@@ -39,7 +39,6 @@ const props = defineProps({
   user: { type: Object, required: true }
 })
 
-let loading = ref(false)
 const form = useForm({
   user_id: props.user.id,
   number_of_day: ''
@@ -47,16 +46,13 @@ const form = useForm({
 
 const extendTrial = () => {
   if (!props.user.stripe_id) return
-  loading = true
   form
     .patch('/moderator/extend-trial')
     .then(async (data) => {
-      loading = false
       useAlert().success(data.message)
     })
     .catch((error) => {
       useAlert().error(error.data.message)
-      loading = false
     })
 }
 

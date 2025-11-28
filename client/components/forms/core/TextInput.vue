@@ -12,17 +12,7 @@
       :autocomplete="autocomplete"
       :pattern="pattern"
       :style="inputStyle"
-      :class="[
-        theme.default.input,
-        theme.default.borderRadius,
-        theme.default.spacing.horizontal,
-        theme.default.spacing.vertical,
-        theme.default.fontSize,
-        {
-          '!ring-red-500 !ring-2 !border-transparent': hasError,
-          '!cursor-not-allowed !bg-neutral-200 dark:!bg-neutral-800': disabled,
-        },
-      ]"
+      :class="ui.input({ class: props.ui?.slots?.input })"
       :name="name"
       :accept="accept"
       :placeholder="placeholder"
@@ -30,7 +20,7 @@
       :max="max"
       :maxlength="maxCharLimit"
       @change="onChange"
-      @keydown.enter.prevent="onEnterPress"
+      @keydown.enter="onEnterPress"
       @focus="onFocus"
       @blur="onBlur"
     >
@@ -46,7 +36,7 @@
       v-if="maxCharLimit && showCharLimit"
       #bottom_after_help
     >
-      <small :class="theme.default.help">
+      <small :class="ui.help({ class: props.ui?.slots?.help })">
         {{ charCount }}/{{ maxCharLimit }}
       </small>
     </template>
@@ -62,6 +52,7 @@
 
 <script>
 import {inputProps, useFormInput} from "../useFormInput.js"
+import { textInputTheme } from "~/lib/forms/themes/text-input.theme.js"
 
 export default {
   name: "TextInput",
@@ -76,9 +67,19 @@ export default {
     autocomplete: {type: [Boolean, String, Object], default: null},
     maxCharLimit: {type: Number, required: false, default: null},
     pattern: {type: String, default: null},
+    preventEnter: {type: Boolean, default: true},
   },
 
   setup(props, context) {
+    const formInput = useFormInput(
+      props,
+      context,
+      {
+        formPrefixKey: props.nativeType === "file" ? "file-" : null,
+        variants: textInputTheme
+      },
+    )
+
     const onChange = (event) => {
       if (props.nativeType !== "file") return
 
@@ -88,20 +89,18 @@ export default {
     }
 
     const onEnterPress = (event) => {
-      event.preventDefault()
+      if (props.preventEnter) {
+        event.preventDefault()
+      }
+      context.emit('input-filled')
       return false
     }
 
     return {
-      ...useFormInput(
-        props,
-        context,
-        {
-          formPrefixKey: props.nativeType === "file" ? "file-" : null
-        },
-      ),
+      ...formInput,
       onEnterPress,
-      onChange
+      onChange,
+      props
     }
   },
   computed: {

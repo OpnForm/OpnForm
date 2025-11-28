@@ -8,19 +8,9 @@
       <slot name="help" />
     </template>
 
-    <div
-      :class="[
-        'h-40 max-h-96 overflow-y-auto relative',
-        theme.CodeInput.input,
-        theme.CodeInput.borderRadius,
-        {
-          '!ring-red-500 !ring-2 !border-transparent': hasError,
-          '!cursor-not-allowed !bg-neutral-200 dark:!bg-neutral-800': disabled,
-        },
-      ]"
-    >
+    <div :class="ui.container({ class: props.ui?.slots?.container })">
       <!-- Fullscreen button -->
-      <UTooltip text="Open in fullscreen" :popper="{ placement: 'left' }">
+      <UTooltip text="Open in fullscreen" :content="{ side: 'left' }" arrow>
         <UButton
           v-if="allowFullscreen"
           @click="openFullscreen"
@@ -101,10 +91,16 @@
 <script setup>
 import { Codemirror } from "vue-codemirror"
 import { html } from "@codemirror/lang-html"
+import { css as cssLang } from "@codemirror/lang-css"
 import { inputProps, useFormInput } from "../useFormInput.js"
+import { codeInputTheme } from '~/lib/forms/themes/code-input.theme.js'
 
 const props = defineProps({
   ...inputProps,
+  languageMode: {
+    type: String,
+    default: 'html', // 'html' | 'css'
+  },
   allowFullscreen: {
     type: Boolean,
     default: false,
@@ -113,17 +109,17 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue', 'focus', 'blur'])
 
-const extensions = [html()]
+const extensions = computed(() => {
+  return props.languageMode === 'css' ? [cssLang()] : [html()]
+})
 const isFullscreen = ref(false)
 
 const openFullscreen = () => {
   isFullscreen.value = true
-  console.log('openFullscreen')
 }
 
 const closeFullscreen = () => {
   isFullscreen.value = false
-  console.log('closeFullscreen')
 }
 
 // Handle keyboard shortcuts
@@ -138,8 +134,13 @@ defineShortcuts({
   }
 })
 
-// Get form input composable
-const { compVal, inputWrapperProps, hasError, disabled, inputStyle, id, name } = useFormInput(props, { emit })
+// Get form input composable  
+const { compVal, inputWrapperProps, inputStyle, id, name, ui } = useFormInput(props, { emit }, {
+  variants: codeInputTheme,
+  additionalVariants: {
+    fullscreen: false  // Could be extended for fullscreen mode
+  }
+})
 </script>
 
 <style>

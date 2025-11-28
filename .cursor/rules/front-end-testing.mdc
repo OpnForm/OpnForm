@@ -1,0 +1,280 @@
+---
+description: Front-end Testing Nuxt app with Vitest and Vue Test Utils
+globs: client/test/**/*.{spec,test}.ts
+---
+
+You are an expert in front-end testing, particularly with Vitest and Vue Test Utils for the Nuxt 3 front-end.
+
+Key Principles
+
+-   Write concise, isolated tests that verify specific functionality.
+-   Follow the Arrange-Act-Assert pattern for test structure.
+-   Use descriptive test names that explain what is being tested.
+-   Use Vitest's expressive syntax with describe() and it() blocks.
+-   Mock and stub external dependencies appropriately to isolate components.
+-   Test behavior and user interactions, not implementation details.
+-   Keep tests fast and focused on one responsibility per test.
+
+Test Structure
+
+-   `test/unit/`: Contains unit tests for composables, utilities, and pure functions in isolation.
+-   `test/nuxt/`: Contains component tests and integration tests using Nuxt Test Utils environment.
+-   `test/utils/`: Contains helper utilities and test fixtures used across tests.
+
+Test Configuration
+
+-   Use `vitest.config.ts` for Vitest configuration (already configured with 'unit' and 'nuxt' projects).
+-   Unit tests run in `node` environment.
+-   Nuxt tests run in `nuxt` environment (provides access to auto-imported utilities).
+-   Run tests with: `npm run test`
+-   Run tests with UI dashboard: `npm run test:ui`
+
+Unit Testing Best Practices
+
+1. **Test in Isolation**: Mock dependencies and external modules to ensure true unit testing.
+2. **Single Responsibility**: Each test should verify one specific behavior.
+3. **Descriptive Names**: Use descriptive test names that clearly state what is being tested.
+4. **Arrange-Act-Assert**: Structure tests with clear arrangement (setup), action (execute), and assertion (verify) phases.
+5. **Test Edge Cases**: Include tests for edge cases, error conditions, and boundary values.
+6. **Use describe()**: Group related tests using describe() blocks to organize test suites.
+7. **Use beforeEach()**: Set up common test state using beforeEach() hooks to reduce duplication.
+8. **Avoid Test Dependencies**: Tests should not depend on the state or output from other tests.
+9. **Test Public API**: Focus on testing the public API and observable behavior, not private implementation.
+10. **Consistent Patterns**: Follow consistent patterns for similar types of tests.
+
+Writing Unit Tests
+
+-   Use Vitest's expressive syntax:
+
+    ```javascript
+    import { describe, it, expect } from "vitest";
+    import { computeValue } from "~/lib/utils";
+
+    describe("computeValue", () => {
+        it("should compute the correct value for valid input", () => {
+            const result = computeValue(5, 10);
+            expect(result).toBe(15);
+        });
+
+        it("should return zero for negative inputs", () => {
+            const result = computeValue(-5, -10);
+            expect(result).toBe(0);
+        });
+    });
+    ```
+
+-   Group related tests with describe():
+
+    ```javascript
+    describe("Field visibility logic", () => {
+        it("shows field when visibility flag is true", () => {
+            const field = { hidden: false };
+            expect(isFieldVisible(field)).toBe(true);
+        });
+
+        it("hides field when visibility flag is false", () => {
+            const field = { hidden: true };
+            expect(isFieldVisible(field)).toBe(false);
+        });
+    });
+    ```
+
+-   Use beforeEach() for common setup:
+
+    ```javascript
+    describe("Form state", () => {
+        let formData;
+
+        beforeEach(() => {
+            formData = {
+                name: "",
+                email: "",
+                message: "",
+            };
+        });
+
+        it("initializes with empty values", () => {
+            expect(formData.name).toBe("");
+        });
+    });
+    ```
+
+-   Mock dependencies:
+
+    ```javascript
+    import { vi, it, expect } from 'vitest'
+    import { fetchUserData } from '~/api/users'
+
+    vi.mock('~/api/users')
+
+    it('handles user fetch correctly', () => {
+      fetchUserData.mockResolvedValue({ id: 1, name: 'John' })
+      const result = await getUser(1)
+      expect(result.name).toBe('John')
+    })
+    ```
+
+-   Test edge cases:
+
+    ```javascript
+    it("handles empty string input gracefully", () => {
+        const result = formatFieldName("");
+        expect(result).toBe(null);
+    });
+
+    it("handles very long strings without breaking", () => {
+        const longString = "a".repeat(1000);
+        expect(() => formatFieldName(longString)).not.toThrow();
+    });
+    ```
+
+Testing Composables
+
+-   Test composables by calling them in isolation:
+
+    ```javascript
+    import { useFieldState } from "~/lib/forms/composables/useFieldState";
+    import { ref } from "vue";
+
+    describe("useFieldState", () => {
+        it("returns correct field state", () => {
+            const mockData = ref({ field1: "value" });
+            const mockConfig = ref({ properties: [] });
+            const mockStrategy = ref({});
+
+            const fieldState = useFieldState(
+                mockData,
+                mockConfig,
+                mockStrategy
+            );
+            expect(fieldState).toBeDefined();
+        });
+    });
+    ```
+
+-   Use beforeEach() to set up mocks:
+    ```javascript
+    beforeEach(() => {
+        mockFormData.value = {
+            name: "Test",
+            hidden: false,
+        };
+    });
+    ```
+
+Testing Vue Components
+
+-   Use Nuxt Test Utils for component tests:
+
+    ```javascript
+    import { describe, it, expect } from "vitest";
+    import { mount } from "@vue/test-utils";
+    import MyComponent from "~/components/MyComponent.vue";
+
+    describe("MyComponent", () => {
+        it("renders correctly", () => {
+            const wrapper = mount(MyComponent, {
+                props: { title: "Test" },
+            });
+            expect(wrapper.find("h1").text()).toBe("Test");
+        });
+
+        it("emits event on button click", async () => {
+            const wrapper = mount(MyComponent);
+            await wrapper.find("button").trigger("click");
+            expect(wrapper.emitted()).toHaveProperty("click");
+        });
+    });
+    ```
+
+-   Test user interactions:
+
+    ```javascript
+    it("updates input value on user typing", async () => {
+        const wrapper = mount(TextInput);
+        const input = wrapper.find("input");
+        await input.setValue("hello");
+        expect(wrapper.vm.modelValue).toBe("hello");
+    });
+    ```
+
+-   Test conditional rendering:
+    ```javascript
+    it("shows error message when validation fails", async () => {
+        const wrapper = mount(FormField, {
+            props: { error: "Required field" },
+        });
+        expect(wrapper.find(".error").text()).toContain("Required field");
+    });
+    ```
+
+Testing Strategy Patterns
+
+-   Test strategy pattern implementations (like FormModeStrategy):
+
+    ```javascript
+    describe("FormModeStrategy", () => {
+        it("LIVE mode should not show hidden fields", () => {
+            const strategy = createFormModeStrategy(FormMode.LIVE);
+            expect(strategy.display.showHiddenFields).toBe(false);
+        });
+
+        it("EDIT mode should show hidden fields", () => {
+            const strategy = createFormModeStrategy(FormMode.EDIT);
+            expect(strategy.display.showHiddenFields).toBe(true);
+        });
+    });
+    ```
+
+Running Tests
+
+-   Run all tests: `npm run test`
+-   Run tests with UI dashboard: `npm run test:ui`
+-   Run tests in watch mode: `npm run test -- --watch`
+-   Run a specific test file: `npm run test -- hidden-field-indicator.spec.ts`
+-   Run tests matching a pattern: `npm run test -- --grep "hidden field"`
+-   Run only unit tests: `npm run test test/unit`
+-   Run only Nuxt tests: `npm run test test/nuxt`
+-   Run with coverage: `npm run test -- --coverage`
+
+Test Debugging
+
+-   Use console.log() or similar for debugging (output visible in test results).
+-   Use Vitest UI (`npm run test:ui`) for interactive debugging.
+-   Mark tests with `.only` to focus on specific tests during debugging: `it.only('test name', () => {})`
+-   Skip tests temporarily with `.skip`: `it.skip('test name', () => {})`
+-   Check test output for detailed error messages and stack traces.
+-   Use `--inspect-brk` flag for Node debugger: `npm run test -- --inspect-brk`
+
+Common Testing Patterns
+
+-   Testing computed/reactive properties:
+
+    ```javascript
+    it("recomputes when dependency changes", () => {
+        const inputValue = ref("initial");
+        const computed = computed(() => inputValue.value.toUpperCase());
+        expect(computed.value).toBe("INITIAL");
+        inputValue.value = "changed";
+        expect(computed.value).toBe("CHANGED");
+    });
+    ```
+
+-   Testing error handling:
+
+    ```javascript
+    it("handles errors gracefully", async () => {
+        const error = new Error("Network failed");
+        expect(() => {
+            processData(null);
+        }).toThrow();
+    });
+    ```
+
+-   Testing async operations:
+    ```javascript
+    it("resolves async operation correctly", async () => {
+        const result = await fetchData();
+        expect(result).toBeDefined();
+    });
+    ```

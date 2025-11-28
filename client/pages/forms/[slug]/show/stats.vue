@@ -36,12 +36,23 @@
       </div>
     </div>
 
-    <FormStats class="w-full max-w-4xl mx-auto" :form="form" />
+    <FormStats 
+      class="w-full max-w-4xl mx-auto" 
+      :form="form" 
+    />
+    
+    <FormTrafficBreakdown
+      class="w-full max-w-4xl mx-auto mt-8" 
+      :form="form" 
+      :meta-data="statsData?.meta_stats ?? {}" 
+      :is-loading="isLoading"
+    />
   </div>
 </template>
 
 <script setup>
 import FormStats from "~/components/open/forms/components/FormStats.vue"
+import FormTrafficBreakdown from "~/components/open/forms/components/FormTrafficBreakdown.vue"
 
 const props = defineProps({
   form: { type: Object, required: true },

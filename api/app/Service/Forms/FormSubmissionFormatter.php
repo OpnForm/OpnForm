@@ -4,6 +4,8 @@ namespace App\Service\Forms;
 
 use App\Models\Forms\Form;
 use Carbon\Carbon;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\URL;
 
 class FormSubmissionFormatter
 {
@@ -112,22 +114,18 @@ class FormSubmissionFormatter
             $fields = $fields->merge($removeFields);
         }
         $fields = $fields->filter(function ($field) {
-            return !in_array($field['type'], ['nf-text', 'nf-code', 'nf-page-break', 'nf-divider', 'nf-image']);
+            return !Str::of($field['type'])->startsWith('nf-');
         })->values();
 
         $returnArray = [];
         foreach ($fields as $field) {
-
-            if (in_array($field['id'], ['nf-text', 'nf-code', 'nf-page-break', 'nf-divider', 'nf-image'])) {
-                continue;
-            }
 
             if ($field['removed'] ?? false) {
                 $field['name'] = $field['name'] . ' (deleted)';
             }
 
             // Add ID to avoid name clashes
-            $field['name'] = $field['name'] . ' (' . \Str::of($field['id']) . ')';
+            $field['name'] = $field['name'] . ' (' . Str::of($field['id']) . ')';
 
             // If not present skip
             if (!isset($data[$field['id']])) {
@@ -152,7 +150,7 @@ class FormSubmissionFormatter
             } elseif ($field['type'] == 'multi_select') {
                 $val = $data[$field['id']];
                 if ($this->outputStringsOnly && is_array($val)) {
-                    $returnArray[$field['name']] = implode(', ', $val);
+                    $returnArray[$field['name']] = $this->implodeCsvSafe($val);
                 } else {
                     $returnArray[$field['name']] = $val;
                 }
@@ -180,7 +178,7 @@ class FormSubmissionFormatter
                 }
             } else {
                 if (is_array($data[$field['id']]) && $this->outputStringsOnly) {
-                    $data[$field['id']] = implode(', ', $data[$field['id']]);
+                    $data[$field['id']] = $this->implodeCsvSafe($data[$field['id']]);
                 }
                 $returnArray[$field['name']] = $data[$field['id']];
             }
@@ -230,7 +228,7 @@ class FormSubmissionFormatter
             } elseif ($field['type'] == 'multi_select') {
                 $val = $data[$field['id']];
                 if ($this->outputStringsOnly) {
-                    $field['value'] = implode(', ', $val);
+                    $field['value'] = $this->implodeCsvSafe($val);
                 } else {
                     $field['value'] = $val;
                 }
@@ -255,7 +253,7 @@ class FormSubmissionFormatter
                         return [
                             'unsigned_url' => route('open.forms.submissions.file', [$formId, $file]),
                             'signed_url' => $this->getFileUrl($formId, $file),
-                            'label' => \Str::limit($file, 20, '[...].' . end($splitText)),
+                            'label' => Str::limit($file, 20, '[...].' . end($splitText)),
                         ];
                     })->toArray();
                 } else {
@@ -269,7 +267,7 @@ class FormSubmissionFormatter
                 }
             } else {
                 if (is_array($data[$field['id']]) && $this->outputStringsOnly) {
-                    $field['value'] = implode(', ', $data[$field['id']]);
+                    $field['value'] = $this->implodeCsvSafe($data[$field['id']]);
                 } else {
                     $field['value'] = $data[$field['id']];
                 }
@@ -296,7 +294,7 @@ class FormSubmissionFormatter
     private function getFileUrl($formId, $file)
     {
         try {
-            return $this->useSignedUrlForFiles ? \URL::signedRoute(
+            return $this->useSignedUrlForFiles ? URL::signedRoute(
                 'open.forms.submissions.file',
                 [$formId, $file]
             ) : route('open.forms.submissions.file', [$formId, $file]);
@@ -304,5 +302,34 @@ class FormSubmissionFormatter
             throw $e;
             return null;
         }
+    }
+
+    /**
+     * Escape a field value for CSV format
+     * Wraps fields containing commas or quotes in double quotes
+     * Escapes internal quotes by doubling them
+     */
+    private function escapeCsvField($field)
+    {
+        // Convert to string if not already
+        $field = (string) $field;
+
+        // If field contains comma, double quote, or newline, wrap in quotes
+        if (strpos($field, ',') !== false || strpos($field, '"') !== false || strpos($field, "\n") !== false || strpos($field, "\r") !== false) {
+            // Escape any existing double quotes by doubling them
+            $field = str_replace('"', '""', $field);
+            // Wrap the entire field in double quotes
+            $field = '"' . $field . '"';
+        }
+
+        return $field;
+    }
+
+    /**
+     * Join array values with commas, properly escaping CSV fields
+     */
+    private function implodeCsvSafe(array $values): string
+    {
+        return implode(',', array_map([$this, 'escapeCsvField'], $values));
     }
 }

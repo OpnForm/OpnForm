@@ -15,17 +15,15 @@ class UserInviteController extends Controller
         $this->middleware('auth');
     }
 
-    public function listInvites(Request $request, $workspaceId)
+    public function listInvites(Request $request, Workspace $workspace)
     {
-        $workspace = Workspace::findOrFail($workspaceId);
         $this->authorize('view', $workspace);
 
         return (new WorkspaceHelper($workspace))->getAllInvites();
     }
 
-    public function resendInvite($workspaceId, $inviteId)
+    public function resendInvite(Workspace $workspace, $inviteId)
     {
-        $workspace = Workspace::findOrFail($workspaceId);
         $this->authorize('adminAction', $workspace);
         $userInvite = $workspace->invites()->find($inviteId);
         if (!$userInvite) {
@@ -41,9 +39,8 @@ class UserInviteController extends Controller
         return $this->success(['message' => 'Invite email resent successfully.']);
     }
 
-    public function cancelInvite($workspaceId, $inviteId)
+    public function cancelInvite(Workspace $workspace, $inviteId)
     {
-        $workspace = Workspace::findOrFail($workspaceId);
         $this->authorize('adminAction', $workspace);
         $userInvite = $workspace->invites()->find($inviteId);
         if (!$userInvite) {

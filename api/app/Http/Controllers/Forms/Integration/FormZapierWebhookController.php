@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Forms\Integration;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Integration\StoreFormZapierWebhookRequest;
+use App\Http\Requests\Integration\Zapier\StoreFormZapierWebhookRequest;
 use App\Models\Integration\FormZapierWebhook;
 
 class FormZapierWebhookController extends Controller

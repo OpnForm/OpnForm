@@ -3,6 +3,12 @@
         "name": "OpnForm"
     },
     "forms": {
+        "buttons": {
+            "submit": "சமர்ப்பிக்கவும்",
+            "next": "அடுத்தது",
+            "previous": "முந்தையது",
+            "re_fill": "மற்றொரு பதிலைச் சமர்ப்பிக்கவும்"
+        },
         "powered_by": "மூலம் இயக்கப்படுகிறது",
         "password_protected": "இந்தப் படிவம் கடவுச்சொல்லால் பாதுகாக்கப்பட்டுள்ளது.",
         "invalid_password": "தவறான கடவுச்சொல்.",
@@ -47,19 +53,25 @@
             "billing_email": "பில்லிங் மின்னஞ்சல் முகவரி",
             "payment_disclaimer": "இந்த பொத்தானைக் கிளிக் செய்யும் போது உங்கள் கிரெடிட் கார்டில் கட்டணம் வசூலிக்கப்படும். பணம் செலுத்துதல்கள் பாதுகாப்பாக Stripe மூலம் செயலாக்கப்படுகின்றன.",
             "errors": {
-                "missingFormOrProvider": "Missing form slug or provider ID.",
-                "failedAccountDetails": "Failed to get Stripe account details.",
-                "setupError": "An error occurred during Stripe setup.",
-                "systemNotReady": "Payment system not ready. Please wait a moment and try again.",
-                "misconfigured": "Payment system misconfigured. Please refresh and try again.",
-                "notFullyReady": "Payment system not fully ready. Please refresh and try again.",
-                "paymentRequired": "Complete the payment before you can proceed.",
-                "nameRequired": "Card holder name is required.",
-                "emailRequired": "Billing email address is required.",
-                "invalidEmail": "Invalid billing email address.",
-                "failedIntent": "Failed to create payment intent.",
-                "processingFailed": "Payment processing failed."
+                "missingFormOrProvider": "படிவம் ஸ்லக் அல்லது வழங்குநர் ஐடி இல்லை.",
+                "failedAccountDetails": "Stripe கணக்கு விவரங்களைப் பெற முடியவில்லை.",
+                "setupError": "Stripe அமைப்பின் போது ஒரு பிழை ஏற்பட்டது.",
+                "systemNotReady": "பணம் செலுத்தும் முறை தயாராக இல்லை. ஒரு கணம் காத்திருந்து மீண்டும் முயற்சிக்கவும்.",
+                "misconfigured": "பணம் செலுத்தும் முறை தவறாக உள்ளமைக்கப்பட்டுள்ளது. புதுப்பித்து மீண்டும் முயற்சிக்கவும்.",
+                "notFullyReady": "பணம் செலுத்தும் முறை முழுமையாக தயாராக இல்லை. புதுப்பித்து மீண்டும் முயற்சிக்கவும்.",
+                "paymentRequired": "தொடர்வதற்கு முன் பணம் செலுத்துவதை முடிக்கவும்.",
+                "nameRequired": "அட்டைதாரர் பெயர் தேவை.",
+                "emailRequired": "பில்லிங் மின்னஞ்சல் முகவரி தேவை.",
+                "invalidEmail": "தவறான பில்லிங் மின்னஞ்சல் முகவரி.",
+                "failedIntent": "பணம் செலுத்தும் நோக்கத்தை உருவாக்க முடியவில்லை.",
+                "processingFailed": "பணம் செலுத்துதல் செயலாக்கம் தோல்வியடைந்தது."
             }
+        },
+        "validation_error": "சரிபார்ப்பு பிழை",
+        "validation_error_with_count": "சரிபார்ப்பு பிழை ({count} புலங்கள்)",
+        "toggle": {
+            "yes": "ஆம்",
+            "no": "இல்லை"
         }
     }
 } 

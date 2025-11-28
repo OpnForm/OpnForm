@@ -39,7 +39,7 @@ class ImpersonationMiddleware
         'open.forms.submissions',
         'open.forms.submissions.file',
         'open.providers',
-        'open.forms.integrations',
+        'open.forms.integrations.index',
         'open.forms.integrations.events',
 
         // Workspaces

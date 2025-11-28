@@ -45,6 +45,7 @@
       help="Form views and submissions count"
     />
     <toggle-switch-input
+      v-if="form.editable_submissions"
       v-model="compVal.link_edit_submission"
       name="link_edit_submission"
       class="mt-4"

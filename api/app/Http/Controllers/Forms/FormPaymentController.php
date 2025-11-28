@@ -3,11 +3,10 @@
 namespace App\Http\Controllers\Forms;
 
 use App\Http\Controllers\Controller;
+use App\Models\Forms\Form;
 use App\Models\OAuthProvider;
 use App\Http\Requests\Forms\GetStripeAccountRequest;
-use App\Http\Requests\Forms\CreatePaymentIntentRequest;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Stripe\Stripe;
 use Stripe\PaymentIntent;
@@ -24,14 +23,12 @@ class FormPaymentController extends Controller
      * @param GetStripeAccountRequest $request
      * @return \Illuminate\Http\JsonResponse
      */
-    public function getAccount(GetStripeAccountRequest $request)
+    public function getAccount(GetStripeAccountRequest $request, Form $form)
     {
         // Disable payment features on self-hosted instances
         if (config('app.self_hosted')) {
             return $this->error(['message' => 'Payment features are not available in the self-hosted version.'], 403);
         }
-
-        $form = $request->form;
         $provider = null;
 
         // Case 1: Editor Preview (Validated by GetStripeAccountRequest)
@@ -78,14 +75,12 @@ class FormPaymentController extends Controller
         return $this->success(['stripeAccount' => $provider->provider_user_id]);
     }
 
-    public function createIntent(CreatePaymentIntentRequest $request)
+    public function createIntent(Form $form)
     {
         // Disable payment features on self-hosted instances
         if (config('app.self_hosted')) {
             return $this->error(['message' => 'Payment features are not available in the self-hosted version.'], 403);
         }
-
-        $form = $request->form;
 
         // Verify form exists and is accessible
         if ($form->workspace === null || $form->visibility !== 'public') {

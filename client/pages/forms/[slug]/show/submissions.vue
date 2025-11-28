@@ -18,7 +18,5 @@ useOpnSeoMeta({
     : "Form Submissions",
 })
 
-onBeforeRouteLeave(() => {
-  useRecordsStore().resetState()
-})
+
 </script>

@@ -19,7 +19,7 @@ beforeEach(function () {
 it('can register with invite token', function () {
     $email = 'invitee@gmail.com';
     $inviteData = ['email' => $email, 'role' => 'user'];
-    $this->postJson(route('open.workspaces.users.add', $this->workspace->id), $inviteData)
+    $this->postJson(route('open.workspaces.users.add', ['workspace' => $this->workspace]), $inviteData)
         ->assertSuccessful();
 
     expect($this->workspace->invites()->count())->toBe(1);
@@ -34,8 +34,8 @@ it('can register with invite token', function () {
         'name' => 'Invitee',
         'email' => $email,
         'hear_about_us' => 'google',
-        'password' => 'secret',
-        'password_confirmation' => 'secret',
+        'password' => 'Abcd@1234',
+        'password_confirmation' => 'Abcd@1234',
         'agree_terms' => true,
         'invite_token' => $token,
         'h-captcha-response' => 'test-token',
@@ -48,7 +48,7 @@ it('can register with invite token', function () {
 it('cannot register with expired invite token', function () {
     $email = 'invitee@gmail.com';
     $inviteData = ['email' => $email, 'role' => 'user'];
-    $this->postJson(route('open.workspaces.users.add', $this->workspace->id), $inviteData)
+    $this->postJson(route('open.workspaces.users.add', ['workspace' => $this->workspace]), $inviteData)
         ->assertSuccessful();
 
     expect($this->workspace->invites()->count())->toBe(1);
@@ -64,8 +64,8 @@ it('cannot register with expired invite token', function () {
         'name' => 'Invitee',
         'email' => $email,
         'hear_about_us' => 'google',
-        'password' => 'secret',
-        'password_confirmation' => 'secret',
+        'password' => 'Abcd@1234',
+        'password_confirmation' => 'Abcd@1234',
         'agree_terms' => true,
         'invite_token' => $token,
         'h-captcha-response' => 'test-token',
@@ -80,7 +80,7 @@ it('cannot register with expired invite token', function () {
 it('cannot re-register with accepted invite token', function () {
     $email = 'invitee@gmail.com';
     $inviteData = ['email' => $email, 'role' => 'user'];
-    $this->postJson(route('open.workspaces.users.add', $this->workspace->id), $inviteData)
+    $this->postJson(route('open.workspaces.users.add', ['workspace' => $this->workspace]), $inviteData)
         ->assertSuccessful();
 
     expect($this->workspace->invites()->count())->toBe(1);
@@ -95,8 +95,8 @@ it('cannot re-register with accepted invite token', function () {
         'name' => 'Invitee',
         'email' => $email,
         'hear_about_us' => 'google',
-        'password' => 'secret',
-        'password_confirmation' => 'secret',
+        'password' => 'Abcd@1234',
+        'password_confirmation' => 'Abcd@1234',
         'agree_terms' => true,
         'invite_token' => $token,
         'h-captcha-response' => 'test-token',
@@ -113,8 +113,8 @@ it('cannot re-register with accepted invite token', function () {
         'name' => 'Invitee',
         'email' => $email,
         'hear_about_us' => 'google',
-        'password' => 'secret',
-        'password_confirmation' => 'secret',
+        'password' => 'Abcd@1234',
+        'password_confirmation' => 'Abcd@1234',
         'agree_terms' => true,
         'invite_token' => $token,
         'h-captcha-response' => 'test-token',
@@ -130,7 +130,7 @@ it('cannot re-register with accepted invite token', function () {
 it('can cancel user invite', function () {
     $email = 'invitee@gmail.com';
     $inviteData = ['email' => $email, 'role' => 'user'];
-    $response = $this->postJson(route('open.workspaces.users.add', $this->workspace->id), $inviteData)
+    $response = $this->postJson(route('open.workspaces.users.add', ['workspace' => $this->workspace]), $inviteData)
         ->assertSuccessful();
 
     expect($this->workspace->invites()->count())->toBe(1);
@@ -138,7 +138,7 @@ it('can cancel user invite', function () {
     $token = $userInvite->token;
 
     // Cancel the invite
-    $this->deleteJson(route('open.workspaces.invites.cancel', ['workspaceId' => $this->workspace->id, 'inviteId' => $userInvite->id]))
+    $this->deleteJson(route('open.workspaces.invites.cancel', ['workspace' => $this->workspace, 'inviteId' => $userInvite->id]))
         ->assertSuccessful();
 
     $this->postJson('/logout')
@@ -149,8 +149,8 @@ it('can cancel user invite', function () {
         'name' => 'Invitee',
         'email' => $email,
         'hear_about_us' => 'google',
-        'password' => 'secret',
-        'password_confirmation' => 'secret',
+        'password' => 'Abcd@1234',
+        'password_confirmation' => 'Abcd@1234',
         'agree_terms' => true,
         'invite_token' => $token,
         'h-captcha-response' => 'test-token',

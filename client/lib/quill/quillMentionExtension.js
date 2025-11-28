@@ -22,14 +22,19 @@ export default function registerMentionExtension(QuillInstance) {
     class MentionBlot extends ParchmentEmbed {
       static blotName = 'mention'
       static tagName = 'SPAN'
+      static className = 'mention'
       static scope = Parchment.Scope.INLINE
       
-      // Match any span with a 'mention' attribute
+      constructor(scroll, domNode) {
+        super(scroll, domNode)
+      }
+      
+      // Match any span with a 'mention' attribute (regardless of value)
       static matches(domNode) {
         return (
           domNode instanceof HTMLElement && 
           domNode.tagName === this.tagName && 
-          domNode.getAttribute('mention') === 'true'
+          domNode.hasAttribute('mention')
         )
       }
 
@@ -100,12 +105,26 @@ export default function registerMentionExtension(QuillInstance) {
       
       addClipboardMatcher() {
         if (this.quill.clipboard && typeof this.quill.clipboard.addMatcher === 'function') {
+          // First matcher: Convert mention spans to embed operations
+          this.quill.clipboard.addMatcher('span[mention]', (node) => {
+            const blotData = {
+              field: {
+                id: node.getAttribute('mention-field-id') || '',
+                name: cleanString(node.getAttribute('mention-field-name') || '')
+              },
+              fallback: cleanString(node.getAttribute('mention-fallback') || '')
+            }
+            // Return an embed operation for the mention
+            return new Delta().insert({ mention: blotData })
+          })
+          
+          // Second matcher: Handle other spans and prevent false mentions
           this.quill.clipboard.addMatcher('span', (node, delta) => {
-            const isRealMention = node.getAttribute('mention') === 'true'
+            const isRealMention = node.hasAttribute('mention')
             const isInterpretedAsMention = delta.ops.some(op => op.insert && typeof op.insert.mention === 'object')
 
             if (isRealMention) {
-              // This is a real mention. Quill's conversion is correct.
+              // Already handled by 'span[mention]' matcher above
               return delta
             }
 

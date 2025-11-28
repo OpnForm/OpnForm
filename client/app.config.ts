@@ -1,4 +1,7 @@
 export default defineAppConfig({
+    icon: {
+        cssLayer: 'base',
+    },
     ui: {
         colors: {
             primary: 'blue',

@@ -10,9 +10,9 @@ class EmailSettingsRequest extends FormRequest
 {
     public Workspace $workspace;
 
-    public function __construct(Request $request, Workspace $workspace)
+    public function __construct(Request $request)
     {
-        $this->workspace = Workspace::findOrFail($request->workspaceId);
+        $this->workspace = $request->route('workspace');
     }
 
     /**

@@ -105,6 +105,29 @@ class FormPolicy
     }
 
     /**
+     * Determine whether the user can manage integrations on the model.
+     * For Sanctum tokens, requires the manage-integrations ability.
+     * For other auth methods, allows if user has write permission.
+     *
+     * @return mixed
+     */
+    public function manageIntegrations(User $user, Form $form)
+    {
+        // First check if user has write permission
+        if (!$this->canPerformWriteOperation($user, $form)) {
+            return false;
+        }
+
+        // If using Sanctum token, ensure it has manage-integrations ability
+        if ($token = $user->currentAccessToken()) {
+            return $token->can('manage-integrations');
+        }
+
+        // For non-Sanctum auth (JWT/session), allow if they can write
+        return true;
+    }
+
+    /**
      * Determine whether the user can permanently delete the model.
      *
      * @return mixed
@@ -112,5 +135,20 @@ class FormPolicy
     public function forceDelete(User $user, Form $form)
     {
         return $this->canPerformWriteOperation($user, $form);
+    }
+
+    /**
+     * Determine whether a user can answer/submit to the form.
+     * This method checks if the form is open for public submissions.
+     *
+     * @param  \App\Models\User|null  $user
+     * @param  \App\Models\Forms\Form  $form
+     * @return bool
+     */
+    public function answer(?User $user, Form $form)
+    {
+        return !$form->is_closed
+            && !$form->max_number_of_submissions_reached
+            && $form->visibility === 'public';
     }
 }

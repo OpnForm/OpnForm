@@ -1,6 +1,9 @@
 import { apiService } from './base'
 
 export const formsApi = {
+  // Form views
+  view: (slug, options) => apiService.get(`/forms/${slug}/view`, options),
+
   // Form operations
   list: (workspaceId, options) => apiService.get(`/open/workspaces/${workspaceId}/forms`, options),
   get: (slug, options) => apiService.get(`/open/forms/${slug}`, options),
@@ -24,7 +27,9 @@ export const formsApi = {
     get: (slug, submissionId, options) => apiService.get(`/forms/${slug}/submissions/${submissionId}`, options),
     update: (formId, submissionId, data) => apiService.put(`/open/forms/${formId}/submissions/${submissionId}`, data),
     delete: (formId, submissionId) => apiService.delete(`/open/forms/${formId}/submissions/${submissionId}`),
+    deleteMulti: (formId, submissionIds) => apiService.post(`/open/forms/${formId}/submissions/multi`, { submissionIds }),
     export: (formId, data) => apiService.post(`/open/forms/${formId}/submissions/export`, data),
+    exportStatus: (formId, jobId) => apiService.get(`/open/forms/${formId}/submissions/export/status/${jobId}`),
     answer: (slug, data, options) => apiService.post(`/forms/${slug}/answer`, data, options)
   },
 
@@ -54,10 +59,10 @@ export const formsApi = {
   // Integrations
   integrations: {
     list: (formId, options) => apiService.get(`/open/forms/${formId}/integrations`, options),
-    create: (formId, data) => apiService.post(`/open/forms/${formId}/integration`, data),
-    update: (formId, integrationId, data) => apiService.put(`/open/forms/${formId}/integration/${integrationId}`, data),
-    delete: (formId, integrationId) => apiService.delete(`/open/forms/${formId}/integration/${integrationId}`),
-    events: (formId, integrationId, options) => apiService.get(`/open/forms/${formId}/integration/${integrationId}/events`, options)
+    create: (formId, data) => apiService.post(`/open/forms/${formId}/integrations`, data),
+    update: (formId, integrationId, data) => apiService.put(`/open/forms/${formId}/integrations/${integrationId}`, data),
+    delete: (formId, integrationId) => apiService.delete(`/open/forms/${formId}/integrations/${integrationId}`),
+    events: (formId, integrationId, options) => apiService.get(`/open/forms/${formId}/integrations/${integrationId}/events`, options)
   },
 
   // Zapier webhooks

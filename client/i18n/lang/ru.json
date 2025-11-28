@@ -3,6 +3,12 @@
         "name": "OpnForm"
     },
     "forms": {
+        "buttons": {
+            "submit": "Отправить",
+            "next": "Следующий",
+            "previous": "Предыдущий",
+            "re_fill": "Отправить еще один ответ"
+        },
         "powered_by": "Работает на",
         "password_protected": "Эта форма защищена паролем.",
         "invalid_password": "Неверный пароль.",
@@ -47,19 +53,25 @@
             "billing_email": "Адрес электронной почты для выставления счетов",
             "payment_disclaimer": "С вашей кредитной карты будет снята сумма при нажатии на эту кнопку. Платежи безопасно обрабатываются через Stripe.",
             "errors": {
-                "missingFormOrProvider": "Missing form slug or provider ID.",
-                "failedAccountDetails": "Failed to get Stripe account details.",
-                "setupError": "An error occurred during Stripe setup.",
-                "systemNotReady": "Payment system not ready. Please wait a moment and try again.",
-                "misconfigured": "Payment system misconfigured. Please refresh and try again.",
-                "notFullyReady": "Payment system not fully ready. Please refresh and try again.",
-                "paymentRequired": "Complete the payment before you can proceed.",
-                "nameRequired": "Card holder name is required.",
-                "emailRequired": "Billing email address is required.",
-                "invalidEmail": "Invalid billing email address.",
-                "failedIntent": "Failed to create payment intent.",
-                "processingFailed": "Payment processing failed."
+                "missingFormOrProvider": "Отсутствует слаг формы или идентификатор провайдера.",
+                "failedAccountDetails": "Не удалось получить данные учетной записи Stripe.",
+                "setupError": "Произошла ошибка при настройке Stripe.",
+                "systemNotReady": "Платежная система не готова. Пожалуйста, подождите и попробуйте еще раз.",
+                "misconfigured": "Платежная система неправильно настроена. Пожалуйста, обновите страницу и попробуйте еще раз.",
+                "notFullyReady": "Платежная система не полностью готова. Пожалуйста, обновите страницу и попробуйте еще раз.",
+                "paymentRequired": "Завершите платеж, прежде чем продолжить.",
+                "nameRequired": "Требуется имя владельца карты.",
+                "emailRequired": "Требуется адрес электронной почты для выставления счетов.",
+                "invalidEmail": "Неверный адрес электронной почты для выставления счетов.",
+                "failedIntent": "Не удалось создать намерение платежа.",
+                "processingFailed": "Ошибка обработки платежа."
             }
+        },
+        "validation_error": "Ошибка валидации",
+        "validation_error_with_count": "Ошибка валидации ({count} поля)",
+        "toggle": {
+            "yes": "Да",
+            "no": "Нет"
         }
     }
 } 

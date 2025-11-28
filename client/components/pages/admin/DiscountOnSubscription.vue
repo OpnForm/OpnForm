@@ -15,7 +15,7 @@
         subscriptions before you can apply the 40% discount.
       </p>
       <UButton
-        :loading="loading"
+        :loading="form.busy"
         type="submit"
         block
         label="Apply Discount"
@@ -29,23 +29,19 @@ const props = defineProps({
   user: { type: Object, required: true }
 })
 
-let loading = ref(false)
 const form = useForm({
   user_id: props.user.id
 })
 
 const applyDiscount = () => {
   if (!props.user.stripe_id) return
-  loading = true
   form
     .patch('/moderator/apply-discount')
     .then(async (data) => {
-      loading = false
       useAlert().success(data.message)
     })
     .catch((error) => {
       useAlert().error(error.data.message)
-      loading = false
     })
 }
 

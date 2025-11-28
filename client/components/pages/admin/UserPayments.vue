@@ -37,17 +37,62 @@
           {{ row.original.status }}
         </span>
       </template>
+      <template #actions-cell="{ row, index }">
+        <UButton
+          v-if="row.original.status == 'paid' && isLastPayment(row.original)"
+          color="error"
+          variant="outline"
+          size="sm"
+          icon="heroicons:arrow-uturn-left-16-solid"
+          label="Refund"
+          @click="openRefundModal(row.original)"
+        />
+      </template>
     </UTable>
     <div
       v-if="payments?.length > pageCount"
       class="flex justify-end px-3 py-3.5 border-t border-neutral-200 dark:border-neutral-700"
     >
       <UPagination
-        v-model="page"
-        :page-count="pageCount"
+        v-model:page="page"
+        :items-per-page="pageCount"
         :total="payments?.length"
       />
     </div>
+
+    <UModal
+      v-model:open="showRefundModal"
+      :ui="{ content: 'sm:max-w-lg' }"
+      title="Refund payment"
+    >
+      <template #body>
+        <form @submit.prevent="askRefund">
+            <p class="text-xs text-neutral-500">
+              We will not update to user. Please inform them manually. <br/>
+              After refund it will take some time to update this page.
+            </p>
+            <div class="mt-4">
+              <TextInput
+                name="refund_reason"
+                :form="form"
+                label="Refund reason"
+                native-type="reason"
+                :required="true"
+                help="Please provide a clear reason for refunding this payment. This will be logged for future reference."
+              />
+
+              <UButton
+                class="mt-4"
+                :loading="form.busy"
+                type="submit"
+                block
+                icon="heroicons:arrow-uturn-left-16-solid"
+                label="Refund payment now"
+              />
+            </div>
+          </form>
+        </template>
+    </UModal>
   </AdminCard>
 </template>
 
@@ -58,6 +103,7 @@ const props = defineProps({
   user: {type: Object, required: true}
 })
 
+const alert = useAlert()
 const loading = ref(true)
 const payments = ref([])
 const page = ref(1)
@@ -82,6 +128,17 @@ const getPayments = () => {
   })
 }
 
+const isLastPayment = (payment) => {
+  if (!payments.value || payments.value.length === 0) return false
+  
+  // Find the most recent payment by creation date
+  const sortedPayments = [...payments.value].sort((a, b) => {
+    return new Date(b.creation_date) - new Date(a.creation_date)
+  })
+  
+  return sortedPayments[0].id === payment.id
+}
+
 
 const columns = [{
   accessorKey: 'id',
@@ -102,6 +159,45 @@ const columns = [{
   accessorKey: 'creation_date',
   header: 'Creation date',
   sortable: true
+}, {
+  accessorKey: 'actions',
+  header: '',
 }]
 
+const showRefundModal = ref(false)
+const form = useForm({
+  user_id: props.user.id,
+  invoice_id: null,
+  refund_reason: null
+})
+
+watch(showRefundModal, (value) => {
+  if (!value) {
+    form.invoice_id = null
+    form.refund_reason = null
+  }
+})
+
+const openRefundModal = (payment) => {
+  form.invoice_id = payment.id
+  showRefundModal.value = true
+}
+
+const askRefund = () => {
+  alert.confirm('Are you sure? This will refund the payment for this user.', refundPayment)
+}
+
+const refundPayment = () => {
+  if (!props.user.stripe_id) return
+  form
+    .patch('/moderator/refund-payment')
+    .then(async (data) => {
+      alert.success(data.message)
+      showRefundModal.value = false
+      getPayments()
+    })
+    .catch((error) => {
+      alert.error(error.data.message)
+    })
+}
 </script>

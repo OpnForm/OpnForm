@@ -3,6 +3,12 @@
         "name": "OpnForm"
     },
     "forms": {
+        "buttons": {
+            "submit": "Enviar",
+            "next": "Seguinte",
+            "previous": "Anterior",
+            "re_fill": "Enviar outra resposta"
+        },
         "powered_by": "Desenvolvido por",
         "password_protected": "Este formulario está protexido por contrasinal.",
         "invalid_password": "Contrasinal non válido.",
@@ -47,19 +53,25 @@
             "billing_email": "Enderezo de correo electrónico de facturación",
             "payment_disclaimer": "Cobrarase na túa tarxeta de crédito ao premer neste botón. Os pagos procésanse de forma segura a través de Stripe.",
             "errors": {
-                "missingFormOrProvider": "Missing form slug or provider ID.",
-                "failedAccountDetails": "Failed to get Stripe account details.",
-                "setupError": "An error occurred during Stripe setup.",
-                "systemNotReady": "Payment system not ready. Please wait a moment and try again.",
-                "misconfigured": "Payment system misconfigured. Please refresh and try again.",
-                "notFullyReady": "Payment system not fully ready. Please refresh and try again.",
-                "paymentRequired": "Complete the payment before you can proceed.",
-                "nameRequired": "Card holder name is required.",
-                "emailRequired": "Billing email address is required.",
-                "invalidEmail": "Invalid billing email address.",
-                "failedIntent": "Failed to create payment intent.",
-                "processingFailed": "Payment processing failed."
+                "missingFormOrProvider": "Falta o slug do formulario ou o ID do provedor.",
+                "failedAccountDetails": "Non se puideron obter os detalles da conta de Stripe.",
+                "setupError": "Produciuse un erro durante a configuración de Stripe.",
+                "systemNotReady": "O sistema de pago non está listo. Agarda un momento e téntao de novo.",
+                "misconfigured": "O sistema de pago está mal configurado. Actualiza e téntao de novo.",
+                "notFullyReady": "O sistema de pago non está completamente listo. Actualiza e téntao de novo.",
+                "paymentRequired": "Completa o pago antes de poder continuar.",
+                "nameRequired": "O nome do titular da tarxeta é obrigatorio.",
+                "emailRequired": "O enderezo de correo electrónico de facturación é obrigatorio.",
+                "invalidEmail": "Enderezo de correo electrónico de facturación non válido.",
+                "failedIntent": "Non se puido crear a intención de pago.",
+                "processingFailed": "O procesamento do pago fallou."
             }
+        },
+        "validation_error": "Erro de validación",
+        "validation_error_with_count": "Erro de validación ({count} campos)",
+        "toggle": {
+            "yes": "Si",
+            "no": "Non"
         }
     }
 } 

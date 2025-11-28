@@ -19,25 +19,26 @@
       :color="color"
       :placeholder="placeholder"
       :uppercase-labels="uppercaseLabels"
-      :theme="theme"
       :has-error="hasError"
       :allow-creation="allowCreation"
       :disabled="disabled"
-      :help="help"
-      :help-position="helpPosition"
       :remote="remote"
       :dropdown-class="dropdownClass"
+      :min-selection="minSelection"
+      :max-selection="maxSelection"
+      :theme="resolvedTheme"
+      :size="resolvedSize"
+      :border-radius="resolvedBorderRadius"
+      :ui="ui"
       @update-options="updateOptions"
       @update:model-value="updateModelValue"
     >
       <template #selected="{ option }">
         <template v-if="multiple">
-          <div class="flex items-center truncate mr-6">
+          <div class="flex items-center truncate ltr-only:mr-6 rtl-only:ml-6">
             <span
               class="truncate"
-              :class="[
-                theme.SelectInput.fontSize,
-              ]"
+              :class="ui.selected({ class: props.ui?.slots?.selected })"
             >
               {{ getOptionNames(selectedValues).join(', ') }}
             </span>
@@ -49,12 +50,8 @@
             :option="option"
             :option-name="getOptionName(option)"
           >
-            <div class="flex items-center truncate mr-6">
-              <div
-                :class="[
-                  theme.SelectInput.fontSize,
-                ]"
-              >
+            <div class="flex items-center truncate ltr-only:mr-6 rtl-only:ml-6">
+              <div :class="ui.selected({ class: props.ui?.slots?.selected })">
                 {{ getOptionName(option) }}
               </div>
             </div>
@@ -70,9 +67,7 @@
           <span class="flex">
             <p
               class="flex-grow"
-              :class="[
-                theme.SelectInput.fontSize,
-              ]"
+              :class="ui.option({ class: props.ui?.slots?.option })"
             >
               {{ getOptionName(option) }}
             </p>
@@ -94,6 +89,23 @@
       <slot name="help" />
     </template>
 
+    <template
+      v-if="multiple && (minSelection || maxSelection) && selectedCount > 0"
+      #bottom_after_help
+    >
+      <small :class="ui.help({ class: props.ui?.slots?.help })">
+        <span v-if="minSelection && maxSelection">
+          {{ selectedCount }} of {{ minSelection }}-{{ maxSelection }}
+        </span>
+        <span v-else-if="minSelection">
+          {{ selectedCount }} selected (min {{ minSelection }})
+        </span>
+        <span v-else-if="maxSelection">
+          {{ selectedCount }}/{{ maxSelection }} selected
+        </span>
+      </small>
+    </template>
+
     <template #error>
       <slot name="error" />
     </template>
@@ -101,7 +113,9 @@
 </template>
 
 <script>
+import { computed } from 'vue'
 import { inputProps, useFormInput } from '../useFormInput.js'
+import { selectInputTheme } from '~/lib/forms/themes/select-input.theme.js'
 
 /**
  * Options: {name,value} objects
@@ -122,11 +136,26 @@ export default {
     clearable: { type: Boolean, default: false },
     allowCreation: { type: Boolean, default: false },
     dropdownClass: { type: String, default: 'w-full' },
-    remote: { type: Function, default: null }
+    remote: { type: Function, default: null },
+    minSelection: { type: Number, default: null },
+    maxSelection: { type: Number, default: null }
   },
   setup(props, context) {
+    const additionalVariants = computed(() => ({
+      loading: props.loading,
+      multiple: props.multiple,
+      searchable: props.searchable,
+      clearable: props.clearable
+    }))
+
+    const formInput = useFormInput(props, context, {
+      variants: selectInputTheme,
+      additionalVariants
+    })
+
     return {
-      ...useFormInput(props, context)
+      ...formInput,
+      props
     }
   },
   data() {
@@ -138,7 +167,11 @@ export default {
   computed: {
     finalOptions() {
       return this.options.concat(this.additionalOptions)
-    }
+    },
+    selectedCount() {
+      if (!this.multiple || !Array.isArray(this.selectedValues)) return 0
+      return this.selectedValues.length
+    },
   },
   watch: {
     compVal: {
@@ -172,6 +205,10 @@ export default {
     updateModelValue(newValues) {
       if (newValues === null) newValues = []
       this.selectedValues = newValues
+      if (!this.multiple) {
+        const hasValue = newValues !== null && newValues !== undefined && newValues !== ''
+        if (hasValue) this.$emit('input-filled')
+      }
     },
     updateOptions(newItem) {
       if (newItem) {

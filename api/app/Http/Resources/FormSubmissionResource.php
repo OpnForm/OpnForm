@@ -3,7 +3,13 @@
 namespace App\Http\Resources;
 
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\URL;
+use Vinkla\Hashids\Facades\Hashids;
+use Stevebauman\Purify\Facades\Purify;
 
+/**
+ * @property array $data
+ */
 class FormSubmissionResource extends JsonResource
 {
     public bool $publiclyAccessed = false;
@@ -16,7 +22,8 @@ class FormSubmissionResource extends JsonResource
      */
     public function toArray($request)
     {
-        $this->generateFileLinks();
+        // Single-pass transform: files/signatures → signed URLs, rich_text → purified HTML
+        $this->transformDataByFieldTypes();
 
         if (!$this->publiclyAccessed) {
             $this->addExtraData();
@@ -27,7 +34,8 @@ class FormSubmissionResource extends JsonResource
             'completion_time' => $this->completion_time,
         ], ($this->publiclyAccessed) ? [] : [
             'form_id' => $this->form_id,
-            'id' => $this->id
+            'id' => $this->id,
+            'submission_id' => Hashids::encode($this->id),
         ]);
     }
 
@@ -39,41 +47,61 @@ class FormSubmissionResource extends JsonResource
 
     private function addExtraData()
     {
-        $this->data = array_merge($this->data, [
+        $extraData = [
             'status' => $this->status,
             'created_at' => $this->created_at->toDateTimeString(),
             'id' => $this->id,
-        ]);
+            'submission_id' => Hashids::encode($this->id)
+        ];
+        if ($this->form->enable_ip_tracking && $this->form->is_pro && !empty($this->meta)) {
+            $extraData['ip_address'] = $this->meta['ip_address'] ?? null;
+        }
+
+        $this->data = array_merge($this->data, $extraData);
     }
 
     /**
-     * Link to the file (generating signed s3 URL)
-     *
-     * @return void
+     * Transform data based on field types in a single pass.
      */
-    private function generateFileLinks()
+    private function transformDataByFieldTypes(): void
     {
         $data = $this->data;
         $formFields = collect($this->form->properties)->concat(collect($this->form->removed_properties));
-        $fileFields = $formFields->filter(function ($field) {
-            return in_array($field['type'], ['files', 'signature']);
-        });
-        foreach ($fileFields as $field) {
-            if (isset($data[$field['id']]) && !empty($data[$field['id']])) {
-                $data[$field['id']] = collect($data[$field['id']])->filter(function ($file) {
-                    return !is_null($file) && !empty($file);
-                })->map(function ($file) {
-                    return [
-                        'file_url' => \URL::signedRoute(
-                            'open.forms.submissions.file',
-                            [$this->form_id, $file],
-                            now()->addMinutes(10)
-                        ),
-                        'file_name' => $file,
-                    ];
-                });
+
+        foreach ($formFields as $field) {
+            $fieldId = $field['id'] ?? null;
+            $type = $field['type'] ?? null;
+            if (!$fieldId || !array_key_exists($fieldId, $data)) {
+                continue;
+            }
+
+            $value = $data[$fieldId];
+
+            // Files and signatures → signed URLs array
+            if (in_array($type, ['files', 'signature'], true) && !empty($value)) {
+                $fileItems = is_array($value) ? $value : [$value];
+                $mapped = collect($fileItems)
+                    ->filter(fn ($file) => !is_null($file) && $file !== '')
+                    ->map(function ($file) {
+                        return [
+                            'file_url' => URL::signedRoute(
+                                'open.forms.submissions.file',
+                                [$this->form_id, $file],
+                                now()->addMinutes(10)
+                            ),
+                            'file_name' => $file,
+                        ];
+                    });
+                $data[$fieldId] = $mapped;
+                continue;
+            }
+
+            // Rich text → purified
+            if ($type === 'rich_text' && is_string($value) && $value !== '') {
+                $data[$fieldId] = Purify::clean($value);
             }
         }
+
         $this->data = $data;
     }
 }

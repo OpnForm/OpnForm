@@ -56,7 +56,7 @@ class AuthenticateJWT
 
                 return response()->json([
                     'message' => $error,
-                ], 403);
+                ], 401);
             }
         }
 

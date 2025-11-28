@@ -3,6 +3,12 @@
         "name": "OpnForm"
     },
     "forms": {
+        "buttons": {
+            "submit": "提交",
+            "next": "下一个",
+            "previous": "上一个",
+            "re_fill": "提交另一个回复"
+        },
         "powered_by": "开发者",
         "password_protected": "此表单受密码保护。",
         "invalid_password": "无效密码。",
@@ -47,19 +53,25 @@
             "billing_email": "账单邮箱地址",
             "payment_disclaimer": "点击此按钮后，将从您的信用卡中扣款。付款通过 Stripe 安全处理。",
             "errors": {
-                "missingFormOrProvider": "Missing form slug or provider ID.",
-                "failedAccountDetails": "Failed to get Stripe account details.",
-                "setupError": "An error occurred during Stripe setup.",
-                "systemNotReady": "Payment system not ready. Please wait a moment and try again.",
-                "misconfigured": "Payment system misconfigured. Please refresh and try again.",
-                "notFullyReady": "Payment system not fully ready. Please refresh and try again.",
-                "paymentRequired": "Complete the payment before you can proceed.",
-                "nameRequired": "Card holder name is required.",
-                "emailRequired": "Billing email address is required.",
-                "invalidEmail": "Invalid billing email address.",
-                "failedIntent": "Failed to create payment intent.",
-                "processingFailed": "Payment processing failed."
+                "missingFormOrProvider": "缺少表单 slug 或提供商 ID。",
+                "failedAccountDetails": "无法获取 Stripe 帐户详细信息。",
+                "setupError": "Stripe 设置期间发生错误。",
+                "systemNotReady": "支付系统尚未准备好。请稍候再试。",
+                "misconfigured": "支付系统配置错误。请刷新后重试。",
+                "notFullyReady": "支付系统尚未完全准备好。请刷新后重试。",
+                "paymentRequired": "请先完成付款，然后再继续。",
+                "nameRequired": "持卡人姓名是必需的。",
+                "emailRequired": "账单邮箱地址是必需的。",
+                "invalidEmail": "无效的账单邮箱地址。",
+                "failedIntent": "创建支付意图失败。",
+                "processingFailed": "支付处理失败。"
             }
+        },
+        "validation_error": "验证错误",
+        "validation_error_with_count": "验证错误 ({count} 个字段)",
+        "toggle": {
+            "yes": "是",
+            "no": "否"
         }
     }
 } 

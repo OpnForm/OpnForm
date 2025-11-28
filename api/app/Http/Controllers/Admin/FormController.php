@@ -8,9 +8,8 @@ use App\Models\User;
 
 class FormController extends Controller
 {
-    public function getDeletedForms($userId)
+    public function getDeletedForms(User $user)
     {
-        $user  = User::find($userId);
         $deletedForms = $user->forms()->with('creator')->onlyTrashed()->get()->map(function ($form) {
             return  [
                 "id" => $form->id,
@@ -30,7 +29,6 @@ class FormController extends Controller
 
         AdminController::log('Restore deleted form', [
             'form_id' => $form->id,
-            'moderator_id' => auth()->id()
         ]);
 
         return  $this->success(['message' => 'Form restored successfully']);

@@ -2,13 +2,13 @@
 
 namespace App\Integrations\OAuth\Drivers;
 
-use App\Integrations\OAuth\Drivers\Contracts\OAuthDriver;
+use App\Exceptions\OAuth\InvalidWidgetDataException;
 use App\Integrations\OAuth\Drivers\Contracts\WidgetOAuthDriver;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Laravel\Socialite\Contracts\User;
 
-class OAuthGoogleOneTapDriver implements OAuthDriver, WidgetOAuthDriver
+class OAuthGoogleOneTapDriver implements WidgetOAuthDriver
 {
     public function getRedirectUrl(): string
     {
@@ -22,6 +22,12 @@ class OAuthGoogleOneTapDriver implements OAuthDriver, WidgetOAuthDriver
 
     public function setScopes(array $scopes): self
     {
+        return $this;
+    }
+
+    public function setState(string $state): self
+    {
+        // Widget-based auth doesn't use state, but interface requires it
         return $this;
     }
 
@@ -48,14 +54,16 @@ class OAuthGoogleOneTapDriver implements OAuthDriver, WidgetOAuthDriver
     public function verifyWidgetData(array $data): bool
     {
         if (!isset($data['credential'])) {
-            return false;
+            throw new InvalidWidgetDataException('Missing Google One Tap credential');
         }
 
         try {
             $this->verifyAndDecodeJWT($data['credential']);
             return true;
-        } catch (\Exception $e) {
-            return false;
+        } catch (InvalidWidgetDataException $e) {
+            throw $e;
+        } catch (\Throwable $e) {
+            throw new InvalidWidgetDataException('Invalid Google One Tap credential: ' . $e->getMessage());
         }
     }
 
@@ -80,7 +88,7 @@ class OAuthGoogleOneTapDriver implements OAuthDriver, WidgetOAuthDriver
         // Split JWT into parts
         $parts = explode('.', $jwt);
         if (count($parts) !== 3) {
-            throw new \Exception('Invalid JWT format');
+            throw new InvalidWidgetDataException('Invalid JWT format');
         }
 
         [$headerB64, $payloadB64, $signatureB64] = $parts;
@@ -93,7 +101,7 @@ class OAuthGoogleOneTapDriver implements OAuthDriver, WidgetOAuthDriver
         $payloadData = json_decode($payload, true);
 
         if (!$headerData || !$payloadData) {
-            throw new \Exception('Invalid JWT data');
+            throw new InvalidWidgetDataException('Invalid JWT data');
         }
 
         // Basic payload validation
@@ -123,39 +131,39 @@ class OAuthGoogleOneTapDriver implements OAuthDriver, WidgetOAuthDriver
     {
         // Check expiration
         if (!isset($payload['exp']) || $payload['exp'] < time()) {
-            throw new \Exception('JWT has expired');
+            throw new InvalidWidgetDataException('JWT has expired');
         }
 
         // Check issued at (not too far in future)
         if (!isset($payload['iat']) || $payload['iat'] > time() + 300) {
-            throw new \Exception('JWT issued in future');
+            throw new InvalidWidgetDataException('JWT issued in future');
         }
 
         // Verify audience (your Google Client ID)
         $expectedClientId = config('services.google.client_id');
         if (!isset($payload['aud']) || $payload['aud'] !== $expectedClientId) {
-            throw new \Exception('Invalid audience');
+            throw new InvalidWidgetDataException('Invalid audience');
         }
 
         // Verify issuer
         if (!isset($payload['iss']) || !in_array($payload['iss'], ['https://accounts.google.com', 'accounts.google.com'])) {
-            throw new \Exception('Invalid issuer');
+            throw new InvalidWidgetDataException('Invalid issuer');
         }
 
         // Check required fields
         if (!isset($payload['sub']) || !isset($payload['email'])) {
-            throw new \Exception('Missing required fields');
+            throw new InvalidWidgetDataException('Missing required fields');
         }
     }
 
     private function verifySignature(string $data, string $signature, array $header): void
     {
         if (!isset($header['kid']) || !isset($header['alg'])) {
-            throw new \Exception('Missing header information');
+            throw new InvalidWidgetDataException('Missing header information');
         }
 
         if ($header['alg'] !== 'RS256') {
-            throw new \Exception('Unsupported algorithm');
+            throw new InvalidWidgetDataException('Unsupported algorithm');
         }
 
         // Get Google's public keys
@@ -166,7 +174,7 @@ class OAuthGoogleOneTapDriver implements OAuthDriver, WidgetOAuthDriver
         $verified = openssl_verify($data, $signatureRaw, $publicKey, OPENSSL_ALGO_SHA256);
 
         if ($verified !== 1) {
-            throw new \Exception('Invalid signature');
+            throw new InvalidWidgetDataException('Invalid signature');
         }
     }
 
@@ -177,13 +185,13 @@ class OAuthGoogleOneTapDriver implements OAuthDriver, WidgetOAuthDriver
             $response = Http::get('https://www.googleapis.com/oauth2/v3/certs');
 
             if (!$response->successful()) {
-                throw new \Exception('Failed to fetch Google public keys');
+                throw new InvalidWidgetDataException('Failed to fetch Google public keys');
             }
 
             $keys = $response->json();
 
             if (!isset($keys['keys'])) {
-                throw new \Exception('Invalid keys response');
+                throw new InvalidWidgetDataException('Invalid keys response');
             }
 
             foreach ($keys['keys'] as $key) {
@@ -193,14 +201,14 @@ class OAuthGoogleOneTapDriver implements OAuthDriver, WidgetOAuthDriver
                 }
             }
 
-            throw new \Exception('Key not found');
+            throw new InvalidWidgetDataException('Key not found');
         });
     }
 
     private function jwkToPem(array $jwk): string
     {
         if (!isset($jwk['n']) || !isset($jwk['e'])) {
-            throw new \Exception('Invalid JWK format');
+            throw new InvalidWidgetDataException('Invalid JWK format');
         }
 
         // Decode base64url modulus and exponent

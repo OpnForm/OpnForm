@@ -214,7 +214,7 @@ trait TestHelpers
 
         $this->postJson('/login', [
             'email' => $user->email,
-            'password' => 'password',
+            'password' => 'Abcd@1234',
         ])->assertSuccessful();
 
         return $user;
@@ -251,16 +251,28 @@ trait TestHelpers
         $this->assertGuest();
     }
 
+    public function actingAsAdmin(?User $user = null)
+    {
+        if ($user == null) {
+            // Create admin user by setting email in admin config
+            $adminEmail = 'admin@test.com';
+            config(['opnform.admin_emails' => [$adminEmail]]);
+            $user = $this->createUser(['email' => $adminEmail]);
+        }
+
+        return $this->actingAsUser($user);
+    }
+
     public function createFormIntegration($integrationId, $formId, $settings = [])
     {
         $data = [
-            'status' => true,
+            'status' => 'active',
             'integration_id' => $integrationId,
             'logic' => null,
-            'settings' => $settings
+            'data' => $settings
         ];
 
-        $response = $this->postJson(route('open.forms.integration.create', $formId), $data)
+        $response = $this->postJson(route('open.forms.integrations.create', $formId), $data)
             ->assertSuccessful()
             ->assertJson([
                 'type' => 'success',

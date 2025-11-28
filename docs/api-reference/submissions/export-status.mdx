@@ -1,0 +1,136 @@
+---
+openapi: get /open/forms/{id}/submissions/export/{job_id}/status
+---
+
+# Check Export Status
+
+Check the status and progress of an asynchronous CSV export job.
+
+## Authentication & Scope
+
+Requires `forms-read` ability.
+
+## Request
+
+```http
+GET /open/forms/{id}/submissions/export/{job_id}/status HTTP/1.1
+Host: api.opnform.com
+Authorization: Bearer <token>
+```
+
+### Path Parameters
+
+| Parameter | Type   | Description             |
+| --------- | ------ | ----------------------- |
+| id        | number | Numeric ID of the form. |
+| job_id    | string | Export job identifier.  |
+
+## Response
+
+### Processing Status
+
+```json
+{
+    "status": "processing",
+    "progress": 65,
+    "form_id": 123,
+    "user_id": 456,
+    "processed_submissions": 650,
+    "total_submissions": 1000,
+    "created_at": "2024-06-12T09:15:23.000Z",
+    "updated_at": "2024-06-12T09:16:10.000Z",
+    "job_id": "export_abc123def456"
+}
+```
+
+### Completed Status
+
+```json
+{
+    "status": "completed",
+    "progress": 100,
+    "form_id": 123,
+    "user_id": 456,
+    "processed_submissions": 1000,
+    "total_submissions": 1000,
+    "file_url": "https://storage.example.com/exports/form-123-submissions-2024-06-12-09-15-23.csv",
+    "expires_at": "2024-06-13T09:15:23.000Z",
+    "created_at": "2024-06-12T09:15:23.000Z",
+    "updated_at": "2024-06-12T09:16:30.000Z",
+    "job_id": "export_abc123def456"
+}
+```
+
+### Failed Status
+
+```json
+{
+    "status": "failed",
+    "progress": 0,
+    "form_id": 123,
+    "user_id": 456,
+    "error_message": "Database connection timeout",
+    "created_at": "2024-06-12T09:15:23.000Z",
+    "updated_at": "2024-06-12T09:15:45.000Z",
+    "job_id": "export_abc123def456"
+}
+```
+
+## Response Fields
+
+| Field                   | Type   | Description                                          |
+| ----------------------- | ------ | ---------------------------------------------------- |
+| `status`                | string | Job status: `processing`, `completed`, or `failed`   |
+| `progress`              | number | Completion percentage (0-100)                        |
+| `form_id`               | number | ID of the form being exported                        |
+| `user_id`               | number | ID of the user who initiated the export              |
+| `job_id`                | string | Export job identifier                                |
+| `processed_submissions` | number | Number of submissions processed so far               |
+| `total_submissions`     | number | Total number of submissions to process               |
+| `file_url`              | string | Download URL for completed exports                   |
+| `expires_at`            | string | File expiration timestamp (24 hours from completion) |
+| `error_message`         | string | Error description for failed exports                 |
+| `created_at`            | string | Job creation timestamp                               |
+| `updated_at`            | string | Last update timestamp                                |
+
+<Note>
+    Only `status`, `progress`, `form_id`, `user_id`, `job_id`, `created_at`, and
+    `updated_at` are always present. Other fields appear based on the job state.
+</Note>
+
+<Warning>
+    Export files are automatically deleted after 24 hours for security and
+    storage management.
+</Warning>
+
+## Error Responses
+
+`404 Not Found` – Export job not found or has expired.
+
+`403 Forbidden` – The token lacks `forms-read` or you don't have access.
+
+## Usage Example
+
+After initiating an export that returns `is_async: true`, poll this endpoint to track progress:
+
+<Steps>
+<Step title="Start export">
+    Call the export endpoint and receive a `job_id`.
+</Step>
+
+<Step title="Poll status">
+    Use the `job_id` to check export progress every few seconds.
+    <Tip>
+        Avoid polling too frequently. Check every 2-5 seconds for optimal
+        performance.
+    </Tip>
+</Step>
+
+<Step title="Download file">
+    When status is `completed`, use the `file_url` to download your CSV file.
+    
+    <Warning>
+    Download the file promptly as it expires in 24 hours.
+    </Warning>
+</Step>
+</Steps>

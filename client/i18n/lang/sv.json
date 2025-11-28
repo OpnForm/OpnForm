@@ -3,6 +3,12 @@
         "name": "OpnForm"
     },
     "forms": {
+        "buttons": {
+            "submit": "Skicka",
+            "next": "Nästa",
+            "previous": "Föregående",
+            "re_fill": "Skicka ett annat svar"
+        },
         "powered_by": "Drivs av",
         "password_protected": "Detta formulär är lösenordsskyddat.",
         "invalid_password": "Ogiltigt lösenord.",
@@ -47,19 +53,25 @@
             "billing_email": "Fakturerings-e-postadress",
             "payment_disclaimer": "Ditt kreditkort kommer att debiteras när du klickar på den här knappen. Betalningar behandlas säkert via Stripe.",
             "errors": {
-                "missingFormOrProvider": "Missing form slug or provider ID.",
-                "failedAccountDetails": "Failed to get Stripe account details.",
-                "setupError": "An error occurred during Stripe setup.",
-                "systemNotReady": "Payment system not ready. Please wait a moment and try again.",
-                "misconfigured": "Payment system misconfigured. Please refresh and try again.",
-                "notFullyReady": "Payment system not fully ready. Please refresh and try again.",
-                "paymentRequired": "Complete the payment before you can proceed.",
-                "nameRequired": "Card holder name is required.",
-                "emailRequired": "Billing email address is required.",
-                "invalidEmail": "Invalid billing email address.",
-                "failedIntent": "Failed to create payment intent.",
-                "processingFailed": "Payment processing failed."
+                "missingFormOrProvider": "Formulärslug eller leverantörs-ID saknas.",
+                "failedAccountDetails": "Det gick inte att hämta Stripe-kontouppgifter.",
+                "setupError": "Ett fel uppstod under Stripe-installationen.",
+                "systemNotReady": "Betalningssystemet är inte redo. Vänta ett ögonblick och försök igen.",
+                "misconfigured": "Betalningssystemet är felkonfigurerat. Uppdatera och försök igen.",
+                "notFullyReady": "Betalningssystemet är inte helt redo. Uppdatera och försök igen.",
+                "paymentRequired": "Slutför betalningen innan du kan fortsätta.",
+                "nameRequired": "Kortinnehavarens namn krävs.",
+                "emailRequired": "Fakturerings-e-postadress krävs.",
+                "invalidEmail": "Ogiltig fakturerings-e-postadress.",
+                "failedIntent": "Det gick inte att skapa betalningsavsikt.",
+                "processingFailed": "Betalningsbehandlingen misslyckades."
             }
+        },
+        "validation_error": "Valideringsfel",
+        "validation_error_with_count": "Valideringsfel ({count} fält)",
+        "toggle": {
+            "yes": "Ja",
+            "no": "Nej"
         }
     }
 } 

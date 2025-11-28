@@ -1,0 +1,62 @@
+---
+openapi: get /open/workspaces/{workspaceId}/forms
+---
+
+Retrieve all forms within a specific workspace.
+
+## Authentication & Scope
+
+This request must be authenticated using a **Personal Access Token** that includes the `forms-read` ability.
+
+```http
+Authorization: Bearer <token>
+```
+
+## Request
+
+```http
+GET /open/workspaces/{workspaceId}/forms HTTP/1.1
+Host: api.opnform.com
+Authorization: Bearer <token>
+```
+
+### Path Parameters
+
+| Parameter   | Type   | Description                      |
+|-------------|--------|----------------------------------|
+| workspaceId | number | ID of the workspace to retrieve forms from. |
+
+### Query Parameters
+
+| Parameter | Type   | Description                                    | Default |
+|-----------|--------|------------------------------------------------|---------|
+| page      | number | Page number for pagination.                    | 1       |
+
+## Response
+
+`200 OK` – Returns a paginated JSON response containing Form objects.
+
+```json
+{
+  "data": [
+    {
+      "id": 42,
+      "slug": "customer-feedback",
+      "title": "Customer Feedback",
+      "visibility": "public",
+      "submissions_count": 15,
+      "properties": [
+        /* form fields & layout blocks */
+      ]
+    }
+  ],
+  "current_page": 1,
+  "per_page": 10,
+  "total": 1
+}
+```
+
+`403 Forbidden` – The token does not include the required `forms-read` ability, or you do not have access to the workspace.
+
+`404 Not Found` – The workspace does not exist.
+

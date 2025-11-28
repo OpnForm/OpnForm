@@ -3,6 +3,12 @@
         "name": "OpnForm"
     },
     "forms": {
+        "buttons": {
+            "submit": "సమర్పించండి",
+            "next": "తదుపరి",
+            "previous": "మునుపటి",
+            "re_fill": "మరొక ప్రతిస్పందనను సమర్పించండి"
+        },
         "powered_by": "ద్వారా ఆధారితం",
         "password_protected": "ఈ ఫారమ్ పాస్‌వర్డ్‌తో రక్షించబడింది.",
         "invalid_password": "చెల్లని పాస్‌వర్డ్.",
@@ -47,19 +53,25 @@
             "billing_email": "బిల్లింగ్ ఇమెయిల్ చిరునామా",
             "payment_disclaimer": "ఈ బటన్‌ను క్లిక్ చేసినప్పుడు మీ క్రెడిట్ కార్డ్‌కు ఛార్జీ విధించబడుతుంది. చెల్లింపులు Stripe ద్వారా సురక్షితంగా ప్రాసెస్ చేయబడతాయి.",
             "errors": {
-                "missingFormOrProvider": "Missing form slug or provider ID.",
-                "failedAccountDetails": "Failed to get Stripe account details.",
-                "setupError": "An error occurred during Stripe setup.",
-                "systemNotReady": "Payment system not ready. Please wait a moment and try again.",
-                "misconfigured": "Payment system misconfigured. Please refresh and try again.",
-                "notFullyReady": "Payment system not fully ready. Please refresh and try again.",
-                "paymentRequired": "Complete the payment before you can proceed.",
-                "nameRequired": "Card holder name is required.",
-                "emailRequired": "Billing email address is required.",
-                "invalidEmail": "Invalid billing email address.",
-                "failedIntent": "Failed to create payment intent.",
-                "processingFailed": "Payment processing failed."
+                "missingFormOrProvider": "ఫారమ్ స్లగ్ లేదా ప్రొవైడర్ ID లేదు.",
+                "failedAccountDetails": "Stripe ఖాతా వివరాలను పొందడంలో విఫలమైంది.",
+                "setupError": "Stripe సెటప్ సమయంలో ఒక లోపం సంభవించింది.",
+                "systemNotReady": "చెల్లింపు వ్యవస్థ సిద్ధంగా లేదు. దయచేసి ఒక క్షణం వేచి ఉండి మళ్లీ ప్రయత్నించండి.",
+                "misconfigured": "చెల్లింపు వ్యవస్థ తప్పుగా కాన్ఫిగర్ చేయబడింది. దయచేసి రిఫ్రెష్ చేసి మళ్లీ ప్రయత్నించండి.",
+                "notFullyReady": "చెల్లింపు వ్యవస్థ పూర్తిగా సిద్ధంగా లేదు. దయచేసి రిఫ్రెష్ చేసి మళ్లీ ప్రయత్నించండి.",
+                "paymentRequired": "మీరు కొనసాగడానికి ముందు చెల్లింపును పూర్తి చేయండి.",
+                "nameRequired": "కార్డు హోల్డర్ పేరు అవసరం.",
+                "emailRequired": "బిల్లింగ్ ఇమెయిల్ చిరునామా అవసరం.",
+                "invalidEmail": "చెల్లని బిల్లింగ్ ఇమెయిల్ చిరునామా.",
+                "failedIntent": "చెల్లింపు ఉద్దేశాన్ని సృష్టించడంలో విఫలమైంది.",
+                "processingFailed": "చెల్లింపు ప్రాసెసింగ్ విఫలమైంది."
             }
+        },
+        "validation_error": "ధ్రువీకరణ లోపం",
+        "validation_error_with_count": "ధ్రువీకరణ లోపం ({count} ఫీల్డ్‌లు)",
+        "toggle": {
+            "yes": "అవును",
+            "no": "కాదు"
         }
     }
 } 

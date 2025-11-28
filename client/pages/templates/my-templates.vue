@@ -1,10 +1,9 @@
 <template>
   <div class="flex flex-col h-full bg-white">
-    <!-- Top Bar -->
-    <div class="sticky top-0 z-50 bg-white h-[49px] border-b border-neutral-200 p-2 sm:px-4">
-      <div class="max-w-4xl mx-auto flex items-center justify-between flex-shrink-0 gap-2 px-2 sm:px-0">
+    <div class="sticky top-0 z-50 bg-white border-b border-neutral-200 p-2 sm:px-4">
+      <div class="max-w-4xl mx-auto flex items-center justify-between flex-wrap flex-shrink-0 gap-2 px-2 sm:px-0">
           <h1 class="text-lg font-semibold text-neutral-900">My Form Templates</h1>
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-2 w-full justify-end sm:w-auto">
             <UButton
               to="/templates"
               variant="outline"
@@ -22,11 +21,9 @@
       </div>
     </div>
 
-    <!-- Main Content -->
     <div class="flex-1 overflow-y-auto p-4">
       <div class="max-w-4xl mx-auto">
         <VTransition name="fade">
-          <!-- Templates List -->
           
             <templates-list
               v-if="loading || templates?.length > 0"
@@ -62,7 +59,6 @@
 
 <script setup>
 import { useCrisp } from '~/composables/useCrisp'
-import { computed } from 'vue'
 
 definePageMeta({
   middleware: "auth",
@@ -79,8 +75,7 @@ const { list } = useTemplates()
 const { openHelpdeskArticle } = useCrisp()
 
 const { data: templates, isLoading: loading } = list({
-  params: { onlymy: true },
-  enabled: computed(() => import.meta.client)
+  params: { onlymy: true }
 })
 
 const openTemplateGuide = () => {

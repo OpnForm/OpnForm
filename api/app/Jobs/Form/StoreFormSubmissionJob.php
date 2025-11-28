@@ -4,8 +4,8 @@ namespace App\Jobs\Form;
 
 use App\Events\Forms\FormSubmitted;
 use App\Http\Controllers\Forms\FormController;
-use App\Http\Controllers\Forms\PublicFormController;
 use App\Http\Requests\AnswerFormRequest;
+use App\Service\Storage\FileUploadPathService;
 use App\Models\Forms\Form;
 use App\Models\Forms\FormSubmission;
 use App\Service\Forms\FormLogicPropertyResolver;
@@ -17,6 +17,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Stevebauman\Purify\Facades\Purify;
 
 /**
  * Job to store form submissions
@@ -28,6 +29,7 @@ use Illuminate\Support\Str;
  * - submission_id: ID of an existing submission to update (must be an integer)
  * - completion_time: Time in seconds it took to complete the form
  * - is_partial: Whether this is a partial submission (will be stored with STATUS_PARTIAL)
+ * - submitter_ip: IP address of the submitter (will be stored in meta if form has IP tracking enabled)
  *   If not specified, submissions are treated as complete by default.
  *
  * These metadata fields will be automatically extracted and removed from the stored form data.
@@ -48,6 +50,8 @@ class StoreFormSubmissionJob implements ShouldQueue
     private ?array $formData = null;
     private ?int $completionTime = null;
     private bool $isPartial = false;
+    private bool $isClientProvidedSubmissionId = false;
+    private ?string $submitterIp = null;
 
     /**
      * Create a new job instance.
@@ -84,6 +88,7 @@ class StoreFormSubmissionJob implements ShouldQueue
      * - submission_id
      * - completion_time
      * - is_partial
+     * - submitter_ip
      */
     private function extractMetadata(): void
     {
@@ -94,12 +99,17 @@ class StoreFormSubmissionJob implements ShouldQueue
         if (isset($this->submissionData['submission_id']) && $this->submissionData['submission_id']) {
             if (is_numeric($this->submissionData['submission_id'])) {
                 $this->submissionId = (int)$this->submissionData['submission_id'];
+                $this->isClientProvidedSubmissionId = true;
             }
             unset($this->submissionData['submission_id']);
         }
         if (isset($this->submissionData['is_partial'])) {
             $this->isPartial = (bool)$this->submissionData['is_partial'];
             unset($this->submissionData['is_partial']);
+        }
+        if (isset($this->submissionData['submitter_ip'])) {
+            $this->submitterIp = $this->submissionData['submitter_ip'];
+            unset($this->submissionData['submitter_ip']);
         }
     }
 
@@ -147,7 +157,11 @@ class StoreFormSubmissionJob implements ShouldQueue
         }
         $record = $query->first();
 
-        return $record ? $record->id : null;
+        if ($record) {
+            $this->isClientProvidedSubmissionId = true;
+            return $record->id;
+        }
+        return null;
     }
 
     /**
@@ -173,6 +187,14 @@ class StoreFormSubmissionJob implements ShouldQueue
         $submission->status = $this->isPartial
             ? FormSubmission::STATUS_PARTIAL
             : FormSubmission::STATUS_COMPLETED;
+
+        // Store IP address in meta if IP tracking is enabled
+        if ($this->form->enable_ip_tracking && $this->form->is_pro && $this->submitterIp) {
+            $existingMeta = $submission->meta ?? [];
+            $existingMeta['ip_address'] = $this->submitterIp;
+            $submission->meta = $existingMeta;
+        }
+
         $submission->save();
         $this->submissionId = $submission->id;
     }
@@ -194,6 +216,22 @@ class StoreFormSubmissionJob implements ShouldQueue
             $field = $properties->where('id', $answerKey)->first();
             if (!$field) {
                 continue;
+            }
+
+            // For editable submissions, always include empty values to clear fields
+            // For field-matching updates, respect the form's clear_empty_fields_on_update setting
+            $shouldSkipEmpty = !$this->isClientProvidedSubmissionId && !($this->form->clear_empty_fields_on_update ?? false);
+            if ($shouldSkipEmpty && (empty($answerValue) || is_null($answerValue)) && $answerValue !== 0 && $answerValue !== '0' && $answerValue !== false) {
+                continue;
+            }
+
+
+            // Sanitize only rich text; plain text fields are stored as-is and rendered safely in UI
+            if ($field['type'] === 'rich_text') {
+                if (is_string($answerValue)) {
+                    // Ensure rich text is cleaned with strict allowlist (defense-in-depth)
+                    $answerValue = Purify::clean($answerValue);
+                }
             }
 
             if (
@@ -258,8 +296,7 @@ class StoreFormSubmissionJob implements ShouldQueue
             return false; // Input $value couldn't be resolved to a canonical stored name format
         }
 
-        $destinationPath = Str::of(PublicFormController::FILE_UPLOAD_PATH)->replace('?', $this->form->id);
-        $fullPathToCheck = $destinationPath . '/' . $canonicalStoredName;
+        $fullPathToCheck = FileUploadPathService::getFileUploadPath($this->form->id, $canonicalStoredName);
         return Storage::exists($fullPathToCheck);
     }
 
@@ -280,8 +317,8 @@ class StoreFormSubmissionJob implements ShouldQueue
         if (filter_var($value, FILTER_VALIDATE_URL) !== false && str_contains($value, parse_url(config('app.url'))['host'])) {
             $fileName = explode('?', basename($value))[0];
             $path = FormController::ASSETS_UPLOAD_PATH . '/' . $fileName; // Assuming assets are in a defined path
-            $newPath = Str::of(PublicFormController::FILE_UPLOAD_PATH)->replace('?', $this->form->id);
-            Storage::move($path, $newPath . '/' . $fileName);
+            $newPath = FileUploadPathService::getFileUploadPath($this->form->id, $fileName);
+            Storage::move($path, $newPath);
             return $fileName;
         }
 
@@ -300,7 +337,7 @@ class StoreFormSubmissionJob implements ShouldQueue
         if (!$fileNameParser || !$fileNameParser->uuid) {
             return null; // Cannot derive UUID from the reference
         }
-        $fileNameInTmp = PublicFormController::TMP_FILE_UPLOAD_PATH . $fileNameParser->uuid;
+        $fileNameInTmp = FileUploadPathService::getTmpFileUploadPath($fileNameParser->uuid);
         if (!Storage::exists($fileNameInTmp)) {
             return null; // Temporary file not found
         }
@@ -308,8 +345,7 @@ class StoreFormSubmissionJob implements ShouldQueue
         if (empty($movedFileName)) {
             return null; // Canonical name generation failed
         }
-        $newPath = Str::of(PublicFormController::FILE_UPLOAD_PATH)->replace('?', $this->form->id);
-        $completeNewFilename = $newPath . '/' . $movedFileName;
+        $completeNewFilename = FileUploadPathService::getFileUploadPath($this->form->id, $movedFileName);
         Storage::move($fileNameInTmp, $completeNewFilename);
         return $movedFileName;
     }
@@ -325,8 +361,7 @@ class StoreFormSubmissionJob implements ShouldQueue
             return null;
         }
         $fileName = 'sign_' . (string) Str::uuid() . '.png';
-        $newPath = Str::of(PublicFormController::FILE_UPLOAD_PATH)->replace('?', $this->form->id);
-        $completeNewFilename = $newPath . '/' . $fileName;
+        $completeNewFilename = FileUploadPathService::getFileUploadPath($this->form->id, $fileName);
         Storage::put($completeNewFilename, base64_decode(explode(',', $value)[1]));
         return $fileName;
     }

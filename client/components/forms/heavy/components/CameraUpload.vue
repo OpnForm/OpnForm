@@ -1,7 +1,7 @@
 <template>
   <div
     class="relative overflow-hidden"
-    :class="[theme.fileInput.borderRadius]"
+    :class="variantSlots.container()"
   >
     <video
       ref="webcamRef"
@@ -10,8 +10,6 @@
       muted
       :class="[
         { hidden: !isCapturing }, 
-        theme.fileInput.minHeight, 
-        theme.fileInput.borderRadius,
         'w-full h-full object-cover bg-neutral-500'
       ]"
       webkit-playsinline
@@ -20,8 +18,6 @@
       ref="canvasRef"
       :class="[
         { hidden: !capturedImage },
-        theme.fileInput.borderRadius,
-        theme.fileInput.minHeight,
         'w-full h-full object-cover'
       ]"
     />
@@ -86,7 +82,7 @@
     <div
       v-else-if="cameraPermissionStatus === 'blocked'"
       class="absolute p-5 top-0 inset-x-0 flex flex-col items-center justify-center space-y-4 text-center border border-neutral-400/30 h-full"
-      :class="[theme.fileInput.borderRadius]"
+      :class="variantSlots.container()"
       @click="openCameraUpload"
     >
       <Icon
@@ -111,7 +107,7 @@
     <div
       v-else-if="cameraPermissionStatus === 'loading'"
       class="absolute p-5 top-0 inset-x-0 flex flex-col items-center justify-center space-y-4 text-center border border-neutral-400/30 h-full"
-      :class="[theme.fileInput.borderRadius]"
+      :class="variantSlots.container()"
     >
       <div class="w-6 h-6">
         <Loader />
@@ -120,7 +116,7 @@
     <div
       v-else
       class="absolute p-5 top-0 inset-x-0 flex flex-col items-center justify-center space-y-4 text-center border border-neutral-400/30 h-full"
-      :class="[theme.fileInput.borderRadius]"
+      :class="variantSlots.container()"
       @click="openCameraUpload"
     >
       <Icon
@@ -146,21 +142,13 @@
 
 <script>
 import Webcam from "webcam-easy"
-import CachedDefaultTheme from "~/lib/forms/themes/CachedDefaultTheme.js"
 import { BrowserMultiFormatReader, DecodeHintType, BarcodeFormat } from '@zxing/library'
+import { tv } from 'tailwind-variants'
+import { fileInputTheme } from '~/lib/forms/themes/file-input.theme.js'
 
 export default {
   name: "CameraUpload",
   props: {
-    theme: {
-      type: Object, default: () => {
-        const theme = inject("theme", null)
-        if (theme) {
-          return theme.value
-        }
-        return CachedDefaultTheme.getInstance()
-      }
-    },
     isBarcodeMode: {
       type: Boolean,
       default: false
@@ -180,6 +168,21 @@ export default {
     currentFacingMode: 'user',
     mediaStream: null
   }),
+  setup() {
+    const themeName = inject('formTheme', null)
+    const size = inject('formSize', null)
+    const borderRadius = inject('formBorderRadius', null)
+    const resolvedTheme = computed(() => themeName?.value || 'default')
+    const resolvedSize = computed(() => size?.value || 'md')
+    const resolvedBorderRadius = computed(() => borderRadius?.value || 'small')
+    const variants = computed(() => tv(fileInputTheme, {}))
+    const variantSlots = computed(() => variants.value({
+      theme: resolvedTheme.value,
+      size: resolvedSize.value,
+      borderRadius: resolvedBorderRadius.value
+    }))
+    return { variantSlots }
+  },
   computed: {
     videoDisplay() {
       return this.isCapturing ? "" : "hidden"
@@ -436,4 +439,3 @@ export default {
   },
 }
 </script>
-

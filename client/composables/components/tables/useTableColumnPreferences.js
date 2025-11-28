@@ -71,23 +71,6 @@ export function useTableColumnPreferences(formId) {
     }
   }
 
-  const setColumnsOrder = (newOrder) => {
-    if (import.meta.server) return
-    
-    const newColumns = { ...preferences.value.columns }
-    newOrder.forEach((columnId, index) => {
-      newColumns[columnId] = {
-        ...getColumnPreference(columnId),
-        order: index
-      }
-    })
-    
-    preferences.value = {
-      ...preferences.value,
-      columns: newColumns
-    }
-  }
-
   const setColumnSizing = (newSizing) => {
     if (import.meta.server) return
     preferences.value = {
@@ -115,7 +98,6 @@ export function useTableColumnPreferences(formId) {
     preferences: computed(() => preferences.value),
     getColumnPreference,
     setColumnPreference,
-    setColumnsOrder,
     setColumnSizing,
     resetPreferences,
     resetColumn,

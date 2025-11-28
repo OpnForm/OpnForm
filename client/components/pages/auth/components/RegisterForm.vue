@@ -1,36 +1,33 @@
 <template>
-  <VForm size="sm"
+  <VForm size="md"
     method="POST"
+    :form="form"
     @submit.prevent="register"
-    class="flex flex-col gap-1"
   >
     <!-- Name -->
     <text-input
       name="name"
-      :form="form"
       label="Name"
       placeholder="Your name"
-      :required="true"
+      required
     />
 
     <!-- Email -->
     <text-input
       name="email"
-      :form="form"
       label="Email"
-      :required="true"
+      required
       :disabled="disableEmail"
       placeholder="Your email address"
     />
 
     <select-input
-      v-if="!disableEmail"
+      v-if="!disableEmail && !isSetup"
       name="hear_about_us"
       :options="hearAboutUsOptions"
-      :form="form"
       placeholder="Select option"
       label="How did you hear about us?"
-      :required="true"
+      required
     />
 
     <!-- Password -->
@@ -38,16 +35,20 @@
       native-type="password"
       placeholder="Enter password"
       name="password"
-      :form="form"
       label="Password"
-      :required="true"
+      required
+      @focus="isPasswordFocused = true"
+      @blur="isPasswordFocused = false"
+    />
+    <PasswordStrengthIndicator 
+      v-show="isPasswordFocused" 
+      :password="form.password" 
     />
 
     <!-- Password Confirmation-->
     <text-input
       native-type="password"
-      :form="form"
-      :required="true"
+      required
       placeholder="Enter confirm password"
       name="password_confirmation"
       label="Confirm Password"
@@ -56,7 +57,7 @@
     <!-- Captcha -->
     <div
       v-if="reCaptchaSiteKey"
-      class="my-4 px-2 mx-auto w-max"
+      class="my-2 px-2 mx-auto w-max"
     >
       <CaptchaInput
         ref="captcha"
@@ -67,10 +68,10 @@
     </div>
 
     <checkbox-input
-      :form="form"
       name="agree_terms"
-      class="my-3"
-      :required="true"
+      class="my-2"
+      required
+      v-if="!useFeatureFlag('self_hosted')"
     >
       <template #label>
         <label for="agree_terms">
@@ -97,7 +98,7 @@
 
     <!-- Submit Button -->
     <UButton
-      class="mt-4"
+      class="mt-2"
       block
       size="lg"
       :loading="form.busy"
@@ -105,8 +106,8 @@
       label="Create account"
     />
 
-    <template v-if="useFeatureFlag('services.google.auth') && !useFeatureFlag('self_hosted')">
-      <p class="text-neutral-500 text-sm text-center my-4">
+    <template v-if="useFeatureFlag('services.google.auth') && !useFeatureFlag('self_hosted') && !isSetup">
+      <p class="text-neutral-500 text-sm text-center my-2">
         OR
       </p>
       <UButton
@@ -122,7 +123,7 @@
       />
     </template>
 
-    <p class="text-neutral-500 mt-4 text-sm text-center">
+    <p v-if="!isSetup" class="text-neutral-500 mt-2 text-sm text-center">
       Already have an account?
       <a
         v-if="isQuick"
@@ -142,7 +143,7 @@
 
   <!-- Google One Tap -->
   <ClientOnly>
-    <GoogleOneTap context="signup" />
+    <GoogleOneTap v-if="!isSetup" context="signup" />
   </ClientOnly>
 </template>
 
@@ -157,10 +158,15 @@ const props = defineProps({
     required: false,
     default: false,
   },
+  isSetup: {
+    type: Boolean,
+    required: false,
+    default: false,
+  },
 })
 
 // Emits
-defineEmits(['openLogin'])
+const emit = defineEmits(['openLogin', 'registered'])
 
 // Composables
 const { $utm } = useNuxtApp()
@@ -187,6 +193,9 @@ const form = useForm({
 
 const disableEmail = ref(false)
 const captcha = ref(null)
+
+// Password field focus state
+const isPasswordFocused = ref(false)
 
 // Computed
 const reCaptchaSiteKey = computed(() => {
@@ -239,6 +248,11 @@ onMounted(() => {
     }
     form.invite_token = route.query?.invite_token
   }
+
+  // Set default hear_about_us for setup mode
+  if (props.isSetup) {
+    form.hear_about_us = 'setup'
+  }
 })
 
 // Methods
@@ -252,13 +266,19 @@ const register = () => {
       source: form.hear_about_us
     }
   }).then(() => {
+    if (props.isSetup) {
+      // In setup mode, emit registered event instead of showing alert/redirecting
+      emit('registered')
+    } else {
     useAlert().success({
       title: "Welcome to OpnForm 👋",
       ...!props.isQuick ? {description: "Time to create your first form!"} : {}
     })
     redirect()
+    }
   }).catch((err) => {
-    useAlert().error(err.response?._data?.message)
+    console.error(err)
+    useAlert().error(err.response?._data?.message ?? "Something went wrong. Please try again.")
   }).finally(() => {
     // Reset captcha after submission
     if (import.meta.client && reCaptchaSiteKey.value) {
@@ -293,7 +313,11 @@ const showOAuthError = (error) => {
 
 const signInwithGoogle = () => {
   try {
-    oAuth.guestConnect('google', true)
+    // guestConnect now always captures and sends utm_data
+    const additionalData = {
+      ...(form.invite_token ? { invite_token: form.invite_token } : {})
+    }
+    oAuth.guestConnect('google', true, additionalData)
   } catch (error) {
     showOAuthError(error)
   }

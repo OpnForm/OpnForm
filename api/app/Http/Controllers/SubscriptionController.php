@@ -40,9 +40,10 @@ class SubscriptionController extends Controller
             ->newSubscription($pricing, BillingHelper::getPricing($pricing)[$plan])
             ->allowPromotionCodes();
 
-        if ($trial != null) {
-            $checkoutBuilder->trialUntil(now()->addDays(3)->addHour());
-        }
+        // Disable trial for now
+        // if ($trial != null) {
+        //     $checkoutBuilder->trialUntil(now()->addDays(3)->addHour());
+        // }
 
         $checkout = $checkoutBuilder
             ->collectTaxIds()

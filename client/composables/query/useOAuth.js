@@ -7,14 +7,8 @@ export function useOAuth() {
   const alert = useAlert()
 
   // Constants
-  const googleDrivePermission = {
-    scope: 'https://www.googleapis.com/auth/drive.file',
-    access_type: 'offline',
-    prompt: 'consent',
-    response_type: 'code',
-    approval_prompt: 'force'
-  }
-
+  const googleDrivePermissionFileScope = 'https://www.googleapis.com/auth/drive.file'
+  
   // Service definitions
   const services = computed(() => {
     return [
@@ -54,6 +48,39 @@ export function useOAuth() {
     alert.error(message ?? "An error occurred while connecting an account")
   }
 
+  // Popup utilities
+  const popupFeatures = 'width=600,height=700,left=100,top=100,resizable=yes,scrollbars=yes'
+
+  const preOpenPopupIfNeeded = (shouldOpenInNewTab, service) => {
+    if (!shouldOpenInNewTab) return null
+    const popupWindow = window.open('', 'oauth_popup_' + service, popupFeatures)
+    if (!popupWindow) {
+      alert.error('Popup was blocked. Please allow popups and try again.')
+      return null
+    }
+    try { popupWindow.document.title = 'Connecting…' } catch { /* ignore */ }
+    return popupWindow
+  }
+
+  const navigatePopupOrFallback = (popupWindow, targetUrl, service) => {
+    if (popupWindow && !popupWindow.closed) {
+      try { popupWindow.location.replace(targetUrl) } catch { popupWindow.location.href = targetUrl }
+      return true
+    }
+    const fallbackPopup = window.open(targetUrl, 'oauth_popup_' + service, popupFeatures)
+    if (!fallbackPopup) {
+      alert.error('Popup was blocked. Please allow popups and try again.')
+      return false
+    }
+    return true
+  }
+
+  const safelyClosePopup = (popupWindow) => {
+    if (popupWindow && !popupWindow.closed) {
+      try { popupWindow.close() } catch { /* ignore */ }
+    }
+  }
+
   // Queries
   const providers = (options = {}) => {
     return useQuery({
@@ -84,11 +111,14 @@ export function useOAuth() {
   // Enhanced connect method with redirect/newtab/autoClose support
   const connect = (service, redirect = false, newtab = false, autoClose = false) => {
     const serviceConfig = getService(service)
+    
     if (serviceConfig && serviceConfig.auth_type && serviceConfig.auth_type !== 'redirect') {
       return Promise.resolve()
     }
 
     const intention = redirect ? new URL(window.location.href).pathname : undefined
+    // If opening in new tab, open synchronously to avoid popup blockers
+    const popupWindow = preOpenPopupIfNeeded(newtab, service)
     
     return oauthApi.connect(service, {
       ...(intention && { intention }),
@@ -96,27 +126,40 @@ export function useOAuth() {
     })
       .then((data) => {
         if (newtab) {
-          window.open(data.url, '_blank')
+          navigatePopupOrFallback(popupWindow, data.url, service)
         } else {
           window.location.href = data.url
         }
       })
       .catch((error) => {
+        // If we opened a window but failed to get URL, close the placeholder to avoid dangling blank window
+        safelyClosePopup(popupWindow)
         handleOAuthError(error)
       })
   }
 
   // Guest connect method
-  const guestConnect = (service, redirect = false) => {
+  const guestConnect = (service, redirect = false, additionalData = {}) => {
     const intention = new URL(window.location.href).pathname
+    const { $utm } = useNuxtApp()
+
+    // Open synchronously to avoid popup blockers
+    const popupWindow = preOpenPopupIfNeeded(true, service)
 
     return oauthApi.redirect(service, {
       ...redirect ? { intention } : {},
+      ...additionalData,
+      utm_data: $utm.value
     })
       .then((data) => {
-        window.open(data.url, '_blank')
+        // If we have invite_token in additionalData store it in localStorage
+        if (additionalData.invite_token) {
+          localStorage.setItem('oauth_invite_token', additionalData.invite_token)
+        }
+        navigatePopupOrFallback(popupWindow, data.url, service)
       })
       .catch((error) => {
+        safelyClosePopup(popupWindow)
         handleOAuthError(error)
       })
   }
@@ -235,19 +278,12 @@ export function useOAuth() {
   })
 
   // Utility functions
-  const prefetchProviders = () => {
-    return queryClient.prefetchQuery({
-      queryKey: ['oauth', 'providers'],
-      queryFn: () => oauthApi.list()
-    })
-  }
-
   const invalidateProviders = () => {
-    queryClient.invalidateQueries(['oauth', 'providers'])
+    queryClient.invalidateQueries({ queryKey: ['oauth', 'providers'] })
   }
 
   const invalidateProvider = (providerId) => {
-    queryClient.invalidateQueries(['oauth', 'providers', providerId])
+    queryClient.invalidateQueries({ queryKey: ['oauth', 'providers', providerId] })
   }
 
   const getProviderByService = (service) => {
@@ -265,7 +301,7 @@ export function useOAuth() {
 
   return {
     // Constants
-    googleDrivePermission,
+    googleDrivePermissionFileScope,
     
     // Service definitions
     services,
@@ -288,7 +324,6 @@ export function useOAuth() {
     redirect,
     
     // Utilities
-    prefetchProviders,
     invalidateProviders,
     invalidateProvider,
     getProviderByService

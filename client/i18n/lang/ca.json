@@ -3,6 +3,12 @@
         "name": "OpnForm"
     },
     "forms": {
+        "buttons": {
+            "submit": "Enviar",
+            "next": "Següent",
+            "previous": "Anterior",
+            "re_fill": "Enviar una altra resposta"
+        },
         "powered_by": "Desenvolupat per",
         "password_protected": "Aquest formulari està protegit amb contrasenya.",
         "invalid_password": "Contrasenya no vàlida.",
@@ -47,19 +53,25 @@
             "billing_email": "Adreça de correu electrònic de facturació",
             "payment_disclaimer": "Se us cobrarà a la targeta de crèdit en fer clic en aquest botó. Els pagaments es processen de forma segura a través de Stripe.",
             "errors": {
-                "missingFormOrProvider": "Missing form slug or provider ID.",
-                "failedAccountDetails": "Failed to get Stripe account details.",
-                "setupError": "An error occurred during Stripe setup.",
-                "systemNotReady": "Payment system not ready. Please wait a moment and try again.",
-                "misconfigured": "Payment system misconfigured. Please refresh and try again.",
-                "notFullyReady": "Payment system not fully ready. Please refresh and try again.",
-                "paymentRequired": "Complete the payment before you can proceed.",
-                "nameRequired": "Card holder name is required.",
-                "emailRequired": "Billing email address is required.",
-                "invalidEmail": "Invalid billing email address.",
-                "failedIntent": "Failed to create payment intent.",
-                "processingFailed": "Payment processing failed."
+                "missingFormOrProvider": "Falta l'slug del formulari o l'ID del proveïdor.",
+                "failedAccountDetails": "No s'han pogut obtenir els detalls del compte de Stripe.",
+                "setupError": "S'ha produït un error durant la configuració de Stripe.",
+                "systemNotReady": "El sistema de pagament no està llest. Espereu un moment i torneu-ho a provar.",
+                "misconfigured": "El sistema de pagament està mal configurat. Actualitzeu i torneu-ho a provar.",
+                "notFullyReady": "El sistema de pagament no està completament llest. Actualitzeu i torneu-ho a provar.",
+                "paymentRequired": "Completeu el pagament abans de poder continuar.",
+                "nameRequired": "El nom del titular de la targeta és obligatori.",
+                "emailRequired": "L'adreça de correu electrònic de facturació és obligatòria.",
+                "invalidEmail": "Adreça de correu electrònic de facturació no vàlida.",
+                "failedIntent": "No s'ha pogut crear la intenció de pagament.",
+                "processingFailed": "El processament del pagament ha fallat."
             }
+        },
+        "validation_error": "Error de validació",
+        "validation_error_with_count": "Error de validació ({count} camps)",
+        "toggle": {
+            "yes": "Sí",
+            "no": "No"
         }
     }
 } 

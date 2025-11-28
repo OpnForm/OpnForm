@@ -10,18 +10,7 @@
         :contenteditable="!disabled"
         class="mention-input"
         :style="inputStyle"
-        :class="[
-          theme.default.input,
-          theme.default.borderRadius,
-          theme.default.spacing.horizontal,
-          theme.default.spacing.vertical,
-          theme.default.fontSize,
-          {
-            '!ring-red-500 !ring-2 !border-transparent': hasError,
-            '!cursor-not-allowed !bg-neutral-200 dark:!bg-neutral-800': disabled,
-          },
-          'pr-12'
-        ]"
+        :class="ui.input({ class: props.ui?.slots?.input })"
         :placeholder="placeholder"
         @input="onInput"
       />
@@ -72,6 +61,7 @@
 import { ref, onMounted, watch, reactive } from 'vue'
 import { inputProps, useFormInput } from '../useFormInput.js'
 import MentionDropdown from './components/MentionDropdown.vue'
+import { mentionInputTheme } from '~/lib/forms/themes/mention-input.theme.js'
 
 const props = defineProps({
   ...inputProps,
@@ -81,7 +71,9 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue'])
 
-const { compVal, inputStyle, hasError, inputWrapperProps } = useFormInput(props, { emit })
+const { compVal, inputStyle, inputWrapperProps, ui } = useFormInput(props, { emit }, {
+  variants: mentionInputTheme
+})
 const editableDiv = ref(null)
 const savedRange = ref(null)
 const { openSubscriptionModal } = useAppModals()
@@ -172,8 +164,21 @@ const restoreSelection = () => {
   }
 }
 
+const getPlainText = (html) => {
+  if (!html) return ''
+  // Create a temporary div to parse HTML
+  const temp = document.createElement('div')
+  temp.innerHTML = html
+  // Get text content and trim
+  return temp.textContent.trim()
+}
+
 const updateCompVal = () => {
-  compVal.value = editableDiv.value.innerHTML
+  const html = editableDiv.value.innerHTML
+  const plainText = getPlainText(html)
+  
+  // If plain text is empty, store empty string; otherwise store HTML
+  compVal.value = plainText ? html : ''
 }
 
 const onInput = () => {

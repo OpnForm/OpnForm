@@ -1,0 +1,365 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+    tags:
+      - "v*"
+    paths:
+      - "api/**"
+      - "client/**"
+      - "docker/**"
+      - "docker-compose*.yml"
+      - ".github/workflows/ci-cd.yml"
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  code_lint:
+    runs-on: ubuntu-latest
+    name: Run code linters
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get Composer cache directory
+        id: composer-cache
+        run: |
+          echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.2
+          extensions: dom, curl, mbstring, pdo, sqlite, pdo_sqlite
+          tools: composer:v2
+          coverage: none
+
+      - name: Prepare the environment
+        working-directory: ./api
+        run: cp .env.example .env
+
+      - name: Install composer dependencies
+        working-directory: ./api
+        run: composer install --prefer-dist --no-interaction --no-progress --ignore-platform-reqs --optimize-autoloader
+
+      - name: Directory permissions
+        working-directory: ./api
+        run: chmod -R 777 storage bootstrap/cache
+
+      - name: Run PHP lint check
+        working-directory: ./api
+        run: ./vendor/bin/pint --test
+
+  client_lint:
+    runs-on: ubuntu-latest
+    name: Run client linters + tests
+    defaults:
+      run:
+        working-directory: ./client
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.17.0"
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: Install npm dependencies
+        run: npm ci --no-audit --no-progress --silent
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Run front-end tests
+        run: npm run test -- --run
+
+  tests:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        # Docker Hub image
+        image: postgres:14
+        # Provide the password for postgres
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_DB: postgres
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          # Maps tcp port 5432 on service container to the host
+          - 5432:5432
+      mysql:
+        # Docker Hub image
+        image: mysql:8
+        # Provide the password for mysql
+        env:
+          MYSQL_ROOT_PASSWORD: test
+          MYSQL_DATABASE: test
+          MYSQL_USER: test
+          MYSQL_PASSWORD: test
+        # Set health checks to wait until mysql has started
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+        ports:
+          # Maps tcp port 3306 on service container to the host
+          - 3306:3306
+
+    strategy:
+      fail-fast: true
+      matrix:
+        php: [8.2]
+        connection: [pgsql, mysql]
+        include:
+          - connection: pgsql
+            host: localhost
+            port: 5432
+            user: postgres
+            password: postgres
+            database: postgres
+          - connection: mysql
+            host: "127.0.0.1"
+            port: 3306
+            user: root
+            password: test
+            database: test
+
+    name: Run Feature & Unit tests (PHP ${{ matrix.php }} - ${{ matrix.connection }})
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get Composer cache directory
+        id: composer-cache
+        run: |
+          echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: dom, curl, mbstring, pdo, sqlite, pdo_sqlite
+          tools: composer:v2
+          coverage: none
+
+      - name: Prepare the environment
+        run: cp api/.env.example api/.env
+
+      - name: Install composer dependencies
+        working-directory: ./api
+        run: composer install --prefer-dist --no-interaction --no-progress --ignore-platform-reqs --optimize-autoloader
+
+      - name: Directory permissions
+        working-directory: ./api
+        run: chmod -R 777 storage bootstrap/cache
+
+      - name: Run tests (Unit and Feature)
+        working-directory: ./api
+        run: ./vendor/bin/pest -p
+        env:
+          DB_CONNECTION: ${{ matrix.connection }}
+          DB_HOST: ${{ matrix.host }}
+          DB_PORT: ${{ matrix.port }}
+          DB_DATABASE: ${{ matrix.database }}
+          DB_USERNAME: ${{ matrix.user }}
+          DB_PASSWORD: ${{ matrix.password }}
+
+      - name: "Archive log results"
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: log-results-${{ matrix.connection }}
+          path: api/storage/logs/laravel.log
+          retention-days: 3
+
+  build-nuxt-app:
+    runs-on: ubuntu-latest
+    name: Build the Nuxt app
+    defaults:
+      run:
+        working-directory: ./client
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.17.0"
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: Prepare the environment
+        run: cp .env.example .env
+
+      - name: Install npm dependencies
+        run: npm ci --no-audit --no-progress --silent
+
+      - name: Build client
+        run: npm run build
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+
+  production-deploy:
+    needs: [code_lint, client_lint, tests, build-nuxt-app]
+    if: success() && github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    name: Triggers Deployment (Vapor & Amplify)
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get Composer cache directory
+        id: composer-cache
+        run: |
+          echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.2
+          extensions: dom, curl, mbstring, pdo, sqlite, pdo_sqlite
+          tools: composer:v2
+          coverage: none
+
+      - name: Prepare the environment
+        working-directory: ./api
+        run: cp .env.example .env
+
+      - name: Install composer dependencies
+        working-directory: ./api
+        run: composer install --prefer-dist --no-interaction --no-progress --ignore-platform-reqs --optimize-autoloader
+
+      - name: Directory permissions
+        working-directory: ./api
+        run: chmod -R 777 storage bootstrap/cache
+
+      - name: Trigger front-end deployment
+        run: |
+          URL="${{ secrets.AMPLIFY_DEPLOY_URL }}"
+          curl -X POST -d {} "$URL" -H "Content-Type: application/json"
+
+      - name: Created encrypted .env file before deployment
+        working-directory: ./api
+        run: |
+          echo "${{ secrets.ENCRYPTED_ENV_FILE }}" >> .env.production.encrypted
+
+      - name: Deploy back-end to production
+        working-directory: ./api
+        run: php vendor/bin/vapor deploy api-production --commit="${GITHUB_SHA}" --message="${GITHUB_REF}"
+        env:
+          VAPOR_API_TOKEN: ${{ secrets.VAPOR_API_TOKEN }}
+
+  publish-docker-images:
+    name: Push Docker images to Docker Hub
+    needs: [code_lint, client_lint, tests, build-nuxt-app]
+    if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Get version info
+        run: |
+          if [[ $GITHUB_REF == refs/tags/* ]]; then
+            echo "VERSION=${GITHUB_REF#refs/*/v}" >> $GITHUB_ENV
+            echo "API_TAGS=${{secrets.DOCKER_API_REPO}}:latest,${{secrets.DOCKER_API_REPO}}:${GITHUB_REF#refs/*/v}" >> $GITHUB_ENV
+            echo "UI_TAGS=${{secrets.DOCKER_UI_REPO}}:latest,${{secrets.DOCKER_UI_REPO}}:${GITHUB_REF#refs/*/v}" >> $GITHUB_ENV
+          fi
+
+      - name: Check out the repo
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_ACCESS_TOKEN }}
+
+      - name: Build and push API image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/Dockerfile.api
+          platforms: linux/amd64,linux/arm64
+          push: true
+          build-args: |
+            APP_ENV=${{ env.VERSION == 'dev' && 'local' || 'production' }}
+            COMPOSER_FLAGS=${{ env.VERSION == 'dev' && '--optimize-autoloader --no-interaction' || '--no-dev --optimize-autoloader --no-interaction' }}
+            APP_VERSION=${{ env.VERSION }}
+          tags: ${{ env.API_TAGS }}
+          cache-from: type=registry,ref=${{secrets.DOCKER_API_REPO}}:dev
+          cache-to: type=inline
+
+      - name: Build and push Client image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/Dockerfile.client
+          platforms: linux/amd64,linux/arm64
+          push: true
+          build-args: |
+            APP_VERSION=${{ env.VERSION }}
+          tags: ${{ env.UI_TAGS }}
+          cache-from: type=registry,ref=${{secrets.DOCKER_UI_REPO}}:dev
+          cache-to: type=inline

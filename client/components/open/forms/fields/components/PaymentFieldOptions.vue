@@ -77,7 +77,7 @@ const props = defineProps({
 
 const crisp = useCrisp()
 const oAuth = useOAuth()
-const { data: providersData, refetch } = oAuth.providers()
+const { data: providersData, refetch} = oAuth.providers()
 const stripeLoading = ref(false)
 
 // Setup window message listener for Stripe connection
@@ -109,7 +109,7 @@ onMounted(async () => {
   }, { 
     useMessageChannel: false, 
     acknowledge: false 
-  }, `${WindowMessageTypes.OAUTH_PROVIDER_CONNECTED}:stripe`)
+  }, WindowMessageTypes.OAUTH_PROVIDER_CONNECTED)
 })
 
 onUnmounted(() => {

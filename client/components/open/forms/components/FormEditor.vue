@@ -50,7 +50,19 @@
 
       <FormEditorErrorHandler>
         <div class="w-full flex grow overflow-y-scroll relative bg-white">
-          <div class="relative w-full shrink-0 overflow-y-scroll border-r md:w-1/2 md:max-w-xs lg:w-2/5">
+          <div 
+            ref="elementRef"
+            class="relative shrink-0 overflow-y-scroll border-r"
+            :class="isResizable ? '' : 'w-full md:w-1/2 md:max-w-xs lg:w-2/5'"
+            :style="isResizable ? dynamicStyles : {}"
+          >
+            <ResizeHandle
+              :show="isResizable"
+              direction="left"
+              @start-resize="startResize"
+              class="z-20"
+            />
+            
             <VForm
               size="sm"
               @submit.prevent=""
@@ -113,6 +125,8 @@ import { setFormDefaults } from '~/composables/forms/initForm.js'
 import { breakpointsTailwind, useBreakpoints } from '@vueuse/core'
 import LogicConfirmationModal from '~/components/forms/heavy/LogicConfirmationModal.vue'
 import { formsApi } from "~/api"
+import { useResizable } from '~/composables/components/useResizable'
+import ResizeHandle from '~/components/global/ResizeHandle.vue'
 
 // Define props
 const props = defineProps({
@@ -153,6 +167,19 @@ const validationErrorResponse = ref(null)
 const createdFormSlug = ref(null)
 const logicErrors = ref([])
 
+// Sidebar resizing using composable
+const { 
+  elementRef, 
+  isResizable, 
+  dynamicStyles, 
+  startResize
+} = useResizable({
+  storageKey: 'formEditorSidebarWidth',
+  defaultWidth: 315,
+  direction: 'left',
+  maxWidth: () => Math.min(600, window.innerWidth * 0.6)
+})
+
 // Check if the editor is visible on smaller screens then send an email
 const breakpoints = useBreakpoints(breakpointsTailwind)
 const isVisible = ref(breakpoints.smaller("md"))
@@ -178,6 +205,20 @@ const workingFormStore = useWorkingFormStore()
 const crisp = useCrisp()
 const amplitude = useAmplitude()
 
+// Keyboard shortcut to open add field sidebar
+defineShortcuts({
+  meta_b: {
+    handler: () => {
+      workingFormStore.openAddFieldSidebar()
+    }
+  },
+  ctrl_b: {
+    handler: () => {
+      workingFormStore.openAddFieldSidebar()
+    }
+  }
+})
+
 // Computed properties
 const activeTab = computed(() => workingFormStore.activeTab)
 
@@ -197,9 +238,9 @@ const displayFormModificationAlert = (responseData) => {
     responseData.form.cleanings &&
     Object.keys(responseData.form.cleanings).length > 0
   ) {
-    alert.warning(responseData.message)
+    alert.warning(responseData.message, 10000, { form: responseData.form })
   } else if (responseData.message) {
-    alert.success(responseData.message)
+    alert.success(responseData.message, 10000, { form: responseData.form })
   }
 }
 
@@ -270,10 +311,7 @@ const saveFormEdit = () => {
       form_id: updatedForm.id,
       form_slug: updatedForm.slug,
     })
-    displayFormModificationAlert({
-      form: updatedForm,
-      message: "Form successfully saved.",
-    })
+    displayFormModificationAlert(response)
     } catch (error) {
       console.error("Analytics error", error)
     }
@@ -325,10 +363,7 @@ const saveFormCreate = () => {
     } catch (error) {
       console.error("Analytics error", error)
     }
-    displayFormModificationAlert({
-      form: newForm,
-      message: "Form successfully created.",
-    })
+    displayFormModificationAlert(response)
 
     useRouter().push({
       name: "forms-slug-show-share",
@@ -365,7 +400,8 @@ const saveFormGuest = () => {
 }
 
 defineExpose({
-  saveFormCreate
+  saveFormCreate,
+  showValidationErrors
 })
 
 // Lifecycle hooks
@@ -373,6 +409,7 @@ onMounted(() => {
   emit("mounted")
   workingFormStore.activeTab = 'build'
   amplitude.logEvent('form_editor_viewed')
+  
   if (!props.isEdit) {
     nextTick(() => {
       workingFormStore.openAddFieldSidebar()

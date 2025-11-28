@@ -1,0 +1,202 @@
+---
+description: Overview of the opnform project and its structure - use when a user request is too broad as a pointer
+alwaysApply: false
+---
+
+# OpnForm overview: product, features, and code map
+
+## What OpnForm is
+
+OpnForm is a flexible, privacy‑respecting form builder with logic, embeds, analytics, and integrations (Zapier, webhooks, etc.). It’s built with a Nuxt client (Vue 3) and a Laravel API.
+
+## High‑level architecture
+
+-   Client (Nuxt) — `client/`
+    -   UI, editor, preview, public rendering, embeds, analytics UI
+    -   API clients — `client/api/*.js`
+    -   Form editor — `client/components/open/forms/components/FormEditor.vue`
+    -   Public renderers — `client/components/open/forms/OpenForm.vue` (Classic), `client/components/open/forms/OpenFormFocused.vue` (Focused)
+    -   Block/field metadata — `client/data/blocks_types.json`
+    -   Form initialization/composables — `client/lib/forms/composables/*`, `client/composables/forms/initForm.js`
+    -   Styling — `client/css/*`, icons — `client/public/icons/*`
+-   API (Laravel) — `api/`
+    -   Models/resources/requests — `api/app/Models/**`, `api/app/Http/Resources/**`, `api/app/Http/Requests/**`
+    -   Routes — `api/routes/*.php`
+    -   Migrations — `api/database/migrations/*`
+    -   Business services & jobs — `api/app/Service/**`, `api/app/Jobs/**`
+
+## Core features (product)
+
+-   Form builder with blocks/fields, conditional logic, validations, and themes
+-   Two presentation styles (Classic, Focused)
+-   Sharing & embeds (inline, popup)
+-   Notifications, integrations (Zapier, webhooks), exports
+-   Analytics and submission browsing
+
+## Presentation styles
+
+OpnForm supports two `presentation_style` values on forms: `classic` and `focused`.
+
+-   Classic
+
+    -   Multi‑input pages; supports pages and layout/media blocks.
+    -   Rendered by `client/components/open/forms/OpenForm.vue` and `OpenFormField.vue`.
+    -   Default input size is medium (`md`).
+
+-   Focused (Typeform‑style)
+    -   One question per step; large input size (`lg`).
+    -   Rendered by `client/components/open/forms/OpenFormFocused.vue`.
+    -   Per‑question media and layout options are available when an image is added:
+        -   Layouts: `between`, `left-small`, `right-small`, `left-split`, `right-split`, `background`.
+        -   Defaults and settings are managed in `client/components/open/forms/components/media/BlockMediaOptions.vue`.
+        -   Controls include focal point, brightness, and alt; default layout is `between`.
+    -   Colors & background: one theme color, plus optional background image with adjustable opacity (configured alongside per‑question media settings).
+
+### Switching styles (editor behavior)
+
+-   UI control: `client/components/open/forms/components/form-components/PresentationStyleSwitch.vue`.
+-   When switching, unsupported blocks for the target mode are detected using `available_in` from `client/data/blocks_types.json`.
+-   If there are unsupported blocks, the editor shows a confirmation modal that lists affected blocks; confirming removes them.
+-   Input size auto‑adjusts: `lg` in Focused, `md` in Classic.
+-   Questions, responses, logic, integrations, and sharing continue to work after switching.
+
+## Editor & preview
+
+-   Main editor: `client/components/open/forms/components/FormEditor.vue`
+-   Live preview: `client/components/open/forms/components/form-components/FormEditorPreview.vue`
+-   Customization panel (theme, size, etc.): `client/components/open/forms/components/form-components/FormCustomization.vue`
+-   Per‑step media/layout for Focused: `client/components/open/forms/components/media/BlockMediaOptions.vue`
+
+## Logic, blocks, fields
+
+-   Block/field registry & availability: `client/data/blocks_types.json` (includes `available_in` for Classic/Focused)
+-   Logic editors: `client/components/open/forms/components/form-logic-components/*`
+-   Field option editors: `client/components/open/forms/fields/components/*`
+
+## API data flow (simplified)
+
+-   Form loading/initialization: `client/lib/forms/composables/useFormInitialization.js`, `client/lib/forms/composables/useFormManager.js`, `client/composables/forms/initForm.js`
+-   API endpoints used by client: `client/api/forms.js` and related modules
+-   Server model/resource layer: `api/app/Models/Forms/Form.php`, `api/app/Http/Resources/FormResource.php`
+-   `presentation_style` storage: migration adds column — `api/database/migrations/*add_presentation_style_to_forms_table.php`
+
+## Embeds & sharing
+
+-   Embed helpers and UI: `client/components/pages/forms/show/EmbedCode.vue`, `client/components/pages/forms/show/EmbedFormAsPopupModal.vue`
+-   Public form routes/pages: `client/pages/forms/[slug]/**`
+
+## Notifications & integrations
+
+-   Integrations: Zapier app in `integrations/zapier/`
+-   Webhooks and notifications: implemented on the API side under `api/app/Http/**`, `api/app/Service/**`, and related events/listeners
+-   Client‑side settings UIs are in the form editor components under `client/components/open/forms/components/**`
+
+## Analytics & submissions
+
+-   Submission viewing and stats: `client/components/open/forms/components/FormSubmissions.vue`, `client/components/open/forms/components/FormStats.vue`, `FormTrafficBreakdown.vue`
+-   Exports: `client/components/open/forms/components/FormExportModal.vue`
+
+## Testing
+
+We currently only test the back-end laravel app.
+
+-   Laravel tests: `api/tests/**` (Feature, Unit, Browser/Dusk)
+
+# OpnForm overview: product, features, and code map
+
+## What OpnForm is
+
+OpnForm is a flexible, privacy‑respecting form builder with logic, embeds, analytics, and integrations (Zapier, webhooks, etc.). It’s built with a Nuxt client (Vue 3) and a Laravel API.
+
+## High‑level architecture
+
+-   Client (Nuxt) — `client/`
+    -   UI, editor, preview, public rendering, embeds, analytics UI
+    -   API clients — `client/api/*.js`
+    -   Form editor — `client/components/open/forms/components/FormEditor.vue`
+    -   Public renderers — `client/components/open/forms/OpenForm.vue` (Classic), `client/components/open/forms/OpenFormFocused.vue` (Focused)
+    -   Block/field metadata — `client/data/blocks_types.json`
+    -   Form initialization/composables — `client/lib/forms/composables/*`, `client/composables/forms/initForm.js`
+    -   Styling — `client/css/*`, icons — `client/public/icons/*`
+-   API (Laravel) — `api/`
+    -   Models/resources/requests — `api/app/Models/**`, `api/app/Http/Resources/**`, `api/app/Http/Requests/**`
+    -   Routes — `api/routes/*.php`
+    -   Migrations — `api/database/migrations/*`
+    -   Business services & jobs — `api/app/Service/**`, `api/app/Jobs/**`
+
+## Core features (product)
+
+-   Form builder with blocks/fields, conditional logic, validations, and themes
+-   Two presentation styles (Classic, Focused)
+-   Sharing & embeds (inline, popup)
+-   Notifications, integrations (Zapier, webhooks), exports
+-   Analytics and submission browsing
+
+## Presentation styles
+
+OpnForm supports two `presentation_style` values on forms: `classic` and `focused`.
+
+-   Classic
+
+    -   Multi‑input pages; supports pages and layout/media blocks.
+    -   Rendered by `client/components/open/forms/OpenForm.vue` and `OpenFormField.vue`.
+    -   Default input size is medium (`md`).
+
+-   Focused (Typeform‑style)
+    -   One question per step; large input size (`lg`).
+    -   Rendered by `client/components/open/forms/OpenFormFocused.vue`.
+    -   Per‑question media and layout options are available when an image is added:
+        -   Layouts: `between`, `left-small`, `right-small`, `left-split`, `right-split`, `background`.
+        -   Defaults and settings are managed in `client/components/open/forms/components/media/BlockMediaOptions.vue`.
+        -   Controls include focal point, brightness, and alt; default layout is `between`.
+    -   Colors & background: one theme color, plus optional background image with adjustable opacity (configured alongside per‑question media settings).
+
+### Switching styles (editor behavior)
+
+-   UI control: `client/components/open/forms/components/form-components/PresentationStyleSwitch.vue`.
+-   When switching, unsupported blocks for the target mode are detected using `available_in` from `client/data/blocks_types.json`.
+-   If there are unsupported blocks, the editor shows a confirmation modal that lists affected blocks; confirming removes them.
+-   Input size auto‑adjusts: `lg` in Focused, `md` in Classic.
+-   Questions, responses, logic, integrations, and sharing continue to work after switching.
+
+## Editor & preview
+
+-   Main editor: `client/components/open/forms/components/FormEditor.vue`
+-   Live preview: `client/components/open/forms/components/form-components/FormEditorPreview.vue`
+-   Customization panel (theme, size, etc.): `client/components/open/forms/components/form-components/FormCustomization.vue`
+-   Per‑step media/layout for Focused: `client/components/open/forms/components/media/BlockMediaOptions.vue`
+
+## Logic, blocks, fields
+
+-   Block/field registry & availability: `client/data/blocks_types.json` (includes `available_in` for Classic/Focused)
+-   Logic editors: `client/components/open/forms/components/form-logic-components/*`
+-   Field option editors: `client/components/open/forms/fields/components/*`
+
+## API data flow (simplified)
+
+-   Form loading/initialization: `client/lib/forms/composables/useFormInitialization.js`, `client/lib/forms/composables/useFormManager.js`, `client/composables/forms/initForm.js`
+-   API endpoints used by client: `client/api/forms.js` and related modules
+-   Server model/resource layer: `api/app/Models/Forms/Form.php`, `api/app/Http/Resources/FormResource.php`
+-   `presentation_style` storage: migration adds column — `api/database/migrations/*add_presentation_style_to_forms_table.php`
+
+## Embeds & sharing
+
+-   Embed helpers and UI: `client/components/pages/forms/show/EmbedCode.vue`, `client/components/pages/forms/show/EmbedFormAsPopupModal.vue`
+-   Public form routes/pages: `client/pages/forms/[slug]/**`
+
+## Notifications & integrations
+
+-   Integrations: Zapier app in `integrations/zapier/`
+-   Webhooks and notifications: implemented on the API side under `api/app/Http/**`, `api/app/Service/**`, and related events/listeners
+-   Client‑side settings UIs are in the form editor components under `client/components/open/forms/components/**`
+
+## Analytics & submissions
+
+-   Submission viewing and stats: `client/components/open/forms/components/FormSubmissions.vue`, `client/components/open/forms/components/FormStats.vue`, `FormTrafficBreakdown.vue`
+-   Exports: `client/components/open/forms/components/FormExportModal.vue`
+
+## Testing
+
+We currently only test the back-end laravel app.
+
+-   Laravel tests: `api/tests/**` (Feature, Unit, Browser/Dusk)

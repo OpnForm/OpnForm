@@ -41,7 +41,7 @@
                 Upgrade plan - Unlock all features
               </template>
               <template v-else>
-                Start free trial - Unlock all features
+                Unlock all features
               </template>
             </UButton>
           </TrackClick>

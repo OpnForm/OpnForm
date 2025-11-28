@@ -3,6 +3,12 @@
         "name": "OpnForm"
     },
     "forms": {
+        "buttons": {
+            "submit": "Odeslat",
+            "next": "Další",
+            "previous": "Předchozí",
+            "re_fill": "Odeslat další odpověď"
+        },
         "powered_by": "Vytvořeno pomocí",
         "password_protected": "Tento formulář je chráněn heslem.",
         "invalid_password": "Neplatné heslo.",
@@ -47,19 +53,25 @@
             "billing_email": "Fakturační e-mailová adresa",
             "payment_disclaimer": "Vaše kreditní karta bude zatížena kliknutím na toto tlačítko. Platby jsou bezpečně zpracovány prostřednictvím Stripe.",
             "errors": {
-                "missingFormOrProvider": "Missing form slug or provider ID.",
-                "failedAccountDetails": "Failed to get Stripe account details.",
-                "setupError": "An error occurred during Stripe setup.",
-                "systemNotReady": "Payment system not ready. Please wait a moment and try again.",
-                "misconfigured": "Payment system misconfigured. Please refresh and try again.",
-                "notFullyReady": "Payment system not fully ready. Please refresh and try again.",
-                "paymentRequired": "Complete the payment before you can proceed.",
-                "nameRequired": "Card holder name is required.",
-                "emailRequired": "Billing email address is required.",
-                "invalidEmail": "Invalid billing email address.",
-                "failedIntent": "Failed to create payment intent.",
-                "processingFailed": "Payment processing failed."
+                "missingFormOrProvider": "Chybějící slug formuláře nebo ID poskytovatele.",
+                "failedAccountDetails": "Nepodařilo se získat podrobnosti o účtu Stripe.",
+                "setupError": "Během nastavování Stripe došlo k chybě.",
+                "systemNotReady": "Platební systém není připraven. Počkejte chvíli a zkuste to znovu.",
+                "misconfigured": "Platební systém je nesprávně nakonfigurován. Obnovte a zkuste to znovu.",
+                "notFullyReady": "Platební systém není plně připraven. Obnovte a zkuste to znovu.",
+                "paymentRequired": "Před pokračováním dokončete platbu.",
+                "nameRequired": "Jméno držitele karty je povinné.",
+                "emailRequired": "Fakturační e-mailová adresa je povinná.",
+                "invalidEmail": "Neplatná fakturační e-mailová adresa.",
+                "failedIntent": "Nepodařilo se vytvořit záměr platby.",
+                "processingFailed": "Zpracování platby se nezdařilo."
             }
+        },
+        "validation_error": "Chyba ověření",
+        "validation_error_with_count": "Chyba ověření ({count} polí)",
+        "toggle": {
+            "yes": "Ano",
+            "no": "Ne"
         }
     }
 } 

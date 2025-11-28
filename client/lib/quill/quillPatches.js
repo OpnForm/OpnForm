@@ -45,6 +45,18 @@ import Quill from 'quill'
 
     Clipboard.DEFAULTS.matchers.push([Node.TEXT_NODE, matcher])
   }
+
+  // ---------------------------------------------------------------------------
+  // Tab key accessibility fix: allow Tab to navigate out of editor
+  // ---------------------------------------------------------------------------
+  
+  const Keyboard = Quill.import('modules/keyboard')
+  
+  // Override Tab key behavior to allow navigation instead of inserting tabs
+  Keyboard.DEFAULTS.bindings.tab = {
+    key: 'Tab',
+    handler: () => true // Return true to let browser handle Tab navigation
+  }
 })()
 
 export default {} 

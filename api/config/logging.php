@@ -28,11 +28,24 @@ return [
     | the box, Laravel uses the Monolog PHP logging library. This gives
     | you a variety of powerful log handlers / formatters to utilize.
     |
-    | Available Drivers: "single", "daily", "slack", "syslog",
+    | Available Drivers: "single", "daily", "syslog",
     |                    "errorlog", "monolog",
     |                    "custom", "stack"
     |
     */
+
+    /*
+    |--------------------------------------------------------------------------
+    | Slack Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Configuration for Slack logging integration.
+    |
+    */
+
+    'slack' => [
+        'token' => env('SLACK_BOT_TOKEN'),
+    ],
 
     'channels' => [
         'stack' => [
@@ -43,7 +56,7 @@ return [
 
         'combined' => [
             'driver' => 'stack',
-            'channels' => [env('LOG_CHANNEL') === 'combined' ? 'stack' : env('LOG_CHANNEL', 'stack'), 'slack'],
+            'channels' => [env('LOG_CHANNEL') === 'combined' ? 'stack' : env('LOG_CHANNEL', 'stack'), 'slack_errors'],
             'ignore_exceptions' => false,
         ],
 
@@ -60,13 +73,22 @@ return [
             'days' => 14,
         ],
 
-        'slack' => [
-            'enabled' => env('LOG_SLACK_WEBHOOK_URL') ? true : false,
-            'driver' => 'slack',
-            'url' => env('LOG_SLACK_WEBHOOK_URL'),
-            'username' => 'OpenForm Log',
-            'emoji' => ':boom:',
-            'level' => env('LOG_LEVEL', 'debug'),
+        'slack_errors' => [
+            'driver' => 'custom',
+            'via' => \App\Logging\SlackLoggerFactory::class,
+            'channel' => env('SLACK_ERRORS_CHANNEL', '#errors-opnform'),
+        ],
+
+        'slack_alerts' => [
+            'driver' => 'custom',
+            'via' => \App\Logging\SlackLoggerFactory::class,
+            'channel' => env('SLACK_ALERTS_CHANNEL', '#alerts-opnform'),
+        ],
+
+        'slack_admin' => [
+            'driver' => 'custom',
+            'via' => \App\Logging\SlackLoggerFactory::class,
+            'channel' => env('SLACK_ADMIN_CHANNEL', '#admin-opnform'),
         ],
 
         'papertrail' => [

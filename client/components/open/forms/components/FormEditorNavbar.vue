@@ -36,6 +36,11 @@
       hydrate-on-interaction
     />
 
+    <GitHubStar
+      v-if="isSelfHosted"
+      class="mt-2 ml-2"
+    />
+
     <div class="flex-grow flex justify-center gap-2">
       <EditableTag
         id="form-editor-title"
@@ -68,7 +73,8 @@
         <UTooltip
           text="Help"
           class="items-center relative"
-          :popper="{ placement: 'left' }"
+          :content="{ side: 'bottom' }"
+          arrow
         >
           <UButton
             color="ghost"
@@ -79,7 +85,7 @@
         </UTooltip>
       </TrackClick>
       <slot name="before-save" />
-      <UTooltip :popper="{ placement: 'left' }">
+      <UTooltip arrow :content="{side: 'bottom'}">
         <template #content>
           <UKbd
             value="meta"
@@ -114,6 +120,7 @@ import UndoRedo from '~/components/open/editors/UndoRedo.vue'
 import FormSettingsModal from '~/components/open/forms/components/form-components/FormSettingsModal.vue'
 import EditableTag from '~/components/app/EditableTag.vue'
 import TrackClick from '~/components/global/TrackClick.vue'
+import { useFeatureFlag } from '~/composables/useFeatureFlag'
 
 defineProps({
   backButton: {
@@ -145,4 +152,6 @@ const form = computed(() => workingFormStore.content)
 const { activeTab } = storeToRefs(workingFormStore)
 
 const settingsModal = ref(false)
+
+const isSelfHosted = computed(() => useFeatureFlag('self_hosted'))
 </script>

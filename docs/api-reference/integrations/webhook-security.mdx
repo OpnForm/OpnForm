@@ -1,0 +1,233 @@
+---
+title: "Validating Webhook Signatures"
+description: "Learn how to validate webhook signatures from OpnForm to ensure authenticity and integrity"
+---
+
+# Validating Webhook Signatures
+
+When you configure a webhook with a signing secret, OpnForm signs each webhook request with an HMAC-SHA256 signature. This allows you to verify that:
+
+1. The webhook came from OpnForm (authenticity)
+2. The payload hasn't been modified in transit (integrity)
+
+## Understanding the Signature
+
+Each webhook request includes an `X-Webhook-Signature` header with the format:
+
+```
+X-Webhook-Signature: sha256=HEXADECIMAL_VALUE
+```
+
+The signature is calculated as:
+
+```
+signature = HMAC-SHA256(webhook_secret, request_body)
+```
+
+Where:
+- `webhook_secret` is the secret you provided when creating the webhook
+- `request_body` is the raw JSON payload
+
+## Validation Steps
+
+1. Extract the signature from the `X-Webhook-Signature` header
+2. Remove the `sha256=` prefix
+3. Calculate the expected signature using your webhook secret and the raw request body
+4. Compare the received signature with the calculated signature
+5. Reject the webhook if signatures don't match
+
+<Warning>
+Always use the **raw request body** (as bytes/string before parsing) when calculating the signature. Parsing JSON and re-serializing can produce different output and cause signature mismatches.
+</Warning>
+
+## Implementation Examples
+
+<CodeGroup>
+```javascript Node.js / Express
+const express = require('express');
+const crypto = require('crypto');
+
+const app = express();
+
+// Important: Use raw body middleware to access raw request data
+app.use(express.raw({ type: 'application/json' }));
+
+app.post('/webhook', (req, res) => {
+  const signature = req.headers['x-webhook-signature'];
+  const secret = process.env.OPNFORM_WEBHOOK_SECRET;
+
+  if (!signature || !secret) {
+    return res.status(401).send('Unauthorized: Missing signature or secret');
+  }
+
+  // Calculate expected signature using raw body
+  const expectedSignature = 'sha256=' + crypto
+    .createHmac('sha256', secret)
+    .update(req.body)
+    .digest('hex');
+
+  // Constant-time comparison to prevent timing attacks
+  if (!crypto.timingSafeEqual(signature, expectedSignature)) {
+    return res.status(401).send('Unauthorized: Invalid signature');
+  }
+
+  // Signature is valid, parse and process the webhook
+  const data = JSON.parse(req.body);
+  console.log('Webhook received:', data);
+
+  res.status(200).send('Webhook received');
+});
+
+app.listen(3000, () => console.log('Webhook server running on port 3000'));
+```
+
+```python Python / Flask
+from flask import Flask, request
+import hmac
+import hashlib
+import json
+import os
+
+app = Flask(__name__)
+
+@app.route('/webhook', methods=['POST'])
+def webhook():
+    signature = request.headers.get('X-Webhook-Signature')
+    secret = os.environ.get('OPNFORM_WEBHOOK_SECRET')
+
+    if not signature or not secret:
+        return 'Unauthorized: Missing signature or secret', 401
+
+    # Get raw request body
+    raw_body = request.get_data()
+
+    # Calculate expected signature
+    expected_signature = 'sha256=' + hmac.new(
+        secret.encode(),
+        raw_body,
+        hashlib.sha256
+    ).hexdigest()
+
+    # Constant-time comparison
+    if not hmac.compare_digest(signature, expected_signature):
+        return 'Unauthorized: Invalid signature', 401
+
+    # Signature is valid, parse and process the webhook
+    data = request.get_json()
+    print('Webhook received:', data)
+
+    return 'Webhook received', 200
+
+if __name__ == '__main__':
+    app.run(port=3000, debug=True)
+```
+
+```php PHP / Laravel
+<?php
+
+use Illuminate\Http\Request;
+
+Route::post('/webhook', function (Request $request) {
+    $signature = $request->header('X-Webhook-Signature');
+    $secret = env('OPNFORM_WEBHOOK_SECRET');
+
+    if (!$signature || !$secret) {
+        return response('Unauthorized: Missing signature or secret', 401);
+    }
+
+    // Get raw request body
+    $rawBody = $request->getContent();
+
+    // Calculate expected signature
+    $expectedSignature = 'sha256=' . hash_hmac(
+        'sha256',
+        $rawBody,
+        $secret
+    );
+
+    // Constant-time comparison
+    if (!hash_equals($signature, $expectedSignature)) {
+        return response('Unauthorized: Invalid signature', 401);
+    }
+
+    // Signature is valid, parse and process the webhook
+    $data = $request->json()->all();
+    \Log::info('Webhook received:', $data);
+
+    return response('Webhook received', 200);
+});
+```
+
+```bash cURL Testing
+# Generate a webhook secret for testing
+SECRET="whsec_1234567890abcdefghijklmnopqr"
+BODY='{"form_title":"My Form","submission":{"email":"test@example.com"}}'
+
+# Calculate signature
+SIGNATURE="sha256=$(echo -n "$BODY" | openssl dgst -sha256 -hmac "$SECRET" -hex | cut -d' ' -f2)"
+
+# Send webhook request
+curl -X POST http://localhost:3000/webhook \
+  -H "Content-Type: application/json" \
+  -H "X-Webhook-Signature: $SIGNATURE" \
+  -d "$BODY"
+```
+</CodeGroup>
+
+## Custom Headers
+
+In addition to the signature header, OpnForm will send any custom headers you configured when creating the webhook. These can include authentication tokens, API keys, or other identifiers.
+
+Example webhook request with custom headers:
+
+```bash
+POST /webhook HTTP/1.1
+Host: example.com
+Content-Type: application/json
+X-Webhook-Signature: sha256=abc123def456...
+Authorization: Bearer my-api-token
+X-Custom-Header: custom-value
+
+{
+  "form_title": "Contact Form",
+  "submission": { ... }
+}
+```
+
+## Security Best Practices
+
+<Tip>
+1. **Use HTTPS only**: Always use HTTPS endpoints for webhooks to prevent man-in-the-middle attacks
+2. **Strong secrets**: Use cryptographically random secrets at least 12 characters long
+3. **Constant-time comparison**: Use timing-safe comparison functions to prevent timing attacks
+4. **Validate signatures first**: Verify the signature before parsing or processing the webhook data
+5. **Store secrets securely**: Never commit secrets to version control; use environment variables or secret managers
+6. **Rotate regularly**: Consider rotating your webhook secret periodically
+7. **Log verification failures**: Track failed signature validations to detect potential attacks
+</Tip>
+
+## Troubleshooting
+
+### Signature Mismatch
+
+If you're consistently getting signature mismatches:
+
+1. **Verify the raw body**: Ensure you're using the raw request body (before JSON parsing) to calculate the signature
+2. **Check the secret**: Confirm you're using the exact secret from the webhook configuration
+3. **Character encoding**: Ensure both the secret and body are handled with correct UTF-8 encoding
+4. **Middleware order**: If using middleware, ensure raw body capture happens before JSON parsing
+5. **Test with cURL**: Use the cURL example above to manually test signature generation
+
+### Missing Signature Header
+
+If the `X-Webhook-Signature` header is missing:
+
+1. Verify you provided a `webhook_secret` when creating the webhook
+2. Check your webhook status is `active`
+3. Review the integration event logs for any errors during webhook delivery
+
+## Testing Your Webhook
+
+Use a webhook testing service like [webhook.site](https://webhook.site) or [RequestBin](https://requestbin.com) to inspect webhook requests during development. These services display headers, body, and other request details.
+
+You can also implement local webhook testing by running a simple server on your machine and using a tool like [ngrok](https://ngrok.com) to expose it to the internet.

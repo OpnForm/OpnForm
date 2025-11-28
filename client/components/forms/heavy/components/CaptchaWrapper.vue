@@ -32,8 +32,8 @@ const runtimeConfig = useRuntimeConfig().public
 // Get form and config from the formManager
 const form = computed(() => props.formManager.form)
 const config = computed(() => props.formManager.config.value)
-const structure = computed(() => props.formManager.structure)
-const isLastPage = computed(() => structure.value?.isLastPage.value ?? true)
+const structure = props.formManager.structure
+const isLastPage = computed(() => structure.value?.isLastPage?.value ?? true)
 const language = computed(() => config.value?.language || 'en')
 const provider = computed(() => config.value?.captcha_provider || 'recaptcha')
 const darkMode = computed(() => props.formManager.darkMode.value)

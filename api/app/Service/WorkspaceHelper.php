@@ -8,7 +8,6 @@ class WorkspaceHelper
 {
     public function __construct(public Workspace $workspace)
     {
-
     }
 
     public function getAllUsers()

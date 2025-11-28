@@ -37,21 +37,7 @@ export function useAuth() {
   }
 
   // Mutations
-  const updateCredentials = (options = {}) => {
-    return useMutation({
-      mutationFn: (data) => authApi.user.updateCredentials(data),
-      onSuccess: (updatedUser) => {
-        // Update user cache with optimistic updates
-        queryClient.setQueryData(['user'], (old) => {
-          const newData = old ? { ...old, ...updatedUser } : updatedUser
-          // Re-initialize service clients with updated data
-          initServiceClients(newData)
-          return newData
-        })
-      },
-      ...options
-    })
-  }
+
 
   const deleteAccount = (options = {}) => {
     return useMutation({
@@ -164,7 +150,6 @@ export function useAuth() {
     login,
     register,
     updateProfile,
-    updateCredentials,
     deleteAccount,
     logout,
     oauthCallback,

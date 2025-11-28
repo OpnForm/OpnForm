@@ -1,0 +1,13 @@
+<svg width="70" height="50" viewBox="0 0 70 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect width="70" height="50" fill="white"/>
+<rect width="35" height="50" fill="var(--icon-fg, currentColor)"/>
+<mask id="mask0_3912_138" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="35" height="50">
+<rect width="35" height="50" fill="#737373"/>
+</mask>
+<g mask="url(#mask0_3912_138)">
+<path d="M12 25.5C9.49999 25.5 2.99999 33.5 -1.43051e-05 37C-0.833348 37.6667 -2.60001 39.2 -3.00001 40C-3.40001 40.8 -2.16668 48.3333 -1.50001 52H36.5L36 36.5C31.6694 32.7521 29.5 29.5 28 29.5C26.5 29.5 22 33.5 22 33.5C15 26 14.2555 25.5 12 25.5Z" fill="var(--icon-muted, currentColor)"/>
+</g>
+<rect x="41" y="20" width="23" height="3" rx="1.5" fill="var(--icon-fg, currentColor)"/>
+<rect x="41" y="26" width="12" height="3" rx="1.5" fill="var(--icon-fg, currentColor)"/>
+<circle cx="26" cy="19" r="4" fill="var(--icon-soft, var(--icon-muted, currentColor))"/>
+</svg>

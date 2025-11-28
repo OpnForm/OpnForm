@@ -3,28 +3,21 @@
     <template #label>
       <slot name="label" />
     </template>
-    <div
-      class="border overflow-x-auto"
-      :class="[
-        theme.default.borderRadius,
-        theme.MatrixInput.cell,
-        theme.MatrixInput.table,
-        {
-          '!ring-red-500 !ring-2 !border-transparent': hasError,
-        },
-      ]"
-    >
+    <div :class="ui.container({ class: props.ui?.slots?.container })">
       <table class="w-full table-auto">
         <thead class="">
           <tr>
-            <th class="ltr:text-left rtl:text-right p-2 w-auto max-w-xs" />
+            <th class="ltr:text-left rtl:text-right w-auto max-w-xs" :class="ui.headerCell({ class: props.ui?.slots?.headerCell })" />
             <td
               v-for="column in columns"
               :key="column"
-              class="ltr:border-l rtl:border-r rtl:!border-l-0 max-w-24 overflow-hidden"
-              :class="theme.MatrixInput.cell"
+              :class="[
+                resolvedTheme === 'minimal' ? '' : 'ltr:border-l rtl:border-r rtl:!border-l-0',
+                'max-w-24 overflow-hidden',
+                ui.cell({ class: props.ui?.slots?.cell })
+              ]"
             >
-              <div class="p-2 w-full flex items-center justify-center text-sm">
+              <div :class="ui.headerCell({ class: props.ui?.slots?.headerCell })">
                 {{ column }}
               </div>
             </td>
@@ -32,47 +25,39 @@
         </thead>
         <tbody>
           <tr
-            v-for="row, rowIndex in rows"
+            v-for="(row, rowIndex) in rows"
             :key="rowIndex"
-            class="border-t border-neutral-300"
+            class="border-t border-neutral-300 dark:border-neutral-600"
+            role="radiogroup"
+            :aria-label="`${row} options`"
           >
             <td class="ltr:text-left rtl:text-right w-auto max-w-24 overflow-hidden">
-              <div class="w-full p-2 text-sm">
+              <div :class="ui.rowCell({ class: props.ui?.slots?.rowCell })">
                 {{ row }}
               </div>
             </td>
             <td
               v-for="column in columns"
               :key="row + column"
-              class="ltr:border-l rtl:border-r rtl:!border-l-0"
+              role="radio"
+              :tabindex="props.disabled ? -1 : 0"
+              :aria-checked="compVal && compVal[row] === column"
               :class="[
-                theme.MatrixInput.cell,
-                theme.MatrixInput.cellHover,
-                {
-                  '!cursor-not-allowed !bg-neutral-200 dark:!bg-neutral-800 hover:!bg-neutral-200 dark:hover:!bg-neutral-800': disabled,
-                },
+                resolvedTheme === 'minimal' ? '' : 'ltr:border-l rtl:border-r rtl:!border-l-0',
+                ui.cell({ class: props.ui?.slots?.cell }),
+                ui.cellHover({ class: props.ui?.slots?.cellHover }),
+                ui.option({ class: props.ui?.slots?.option })
               ]"
+              @click="onSelect(row, column)"
+              @keydown="onKeyDown($event, row, column)"
             >
-              <div
-                v-if="compVal"
-                class="w-full flex items-center justify-center relative"
-                role="radio"
-                :aria-checked="compVal[row] === column"
-                :class="[
-                  theme.FlatSelectInput.spacing.vertical,
-                  theme.FlatSelectInput.fontSize,
-                  theme.FlatSelectInput.option,
-                  {
-                    '!cursor-not-allowed !bg-transparent hover:!bg-transparent dark:hover:!bg-transparent': disabled,
-                  }
-                ]"
-                @click="onSelect(row, column)"
-              >
+              <div :class="ui.iconWrapper({ class: props.ui?.slots?.iconWrapper })">
                 <RadioButtonIcon
+                  v-if="compVal"
                   :key="row+column"
                   :is-checked="compVal[row] === column"
                   :color="color"
-                  :theme="theme"
+                  :theme="resolvedTheme"
                 />
               </div>
             </td>
@@ -92,6 +77,7 @@
 import { watch } from "vue"
 import { inputProps, useFormInput } from "../useFormInput.js"
 import RadioButtonIcon from "../core/components/RadioButtonIcon.vue"
+import { matrixInputTheme } from '~/lib/forms/themes/matrix-input.theme.js'
 
 const props = defineProps({
   ...inputProps,
@@ -101,7 +87,9 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue', 'focus', 'blur'])
 
-const { compVal, inputWrapperProps, hasError } = useFormInput(props, { emit })
+const { compVal, inputWrapperProps, ui, resolvedTheme } = useFormInput(props, { emit }, {
+  variants: matrixInputTheme
+})
 
 const onSelect = (row, column) => {
   if (props.disabled) {
@@ -120,6 +108,13 @@ const onSelect = (row, column) => {
   
   // Assigning a new object to compVal.value will trigger the setter in useFormInput
   compVal.value = newValue
+}
+
+const onKeyDown = (event, row, column) => {
+  if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault()
+    onSelect(row, column)
+  }
 }
 
 watch(compVal, (val) => {

@@ -14,7 +14,17 @@ class UserController extends Controller
      */
     public function current(Request $request)
     {
-        return new UserResource($request->user());
+        // Eager load active licenses and workspaces to prevent N+1 queries in UserResource
+        $user = $request->user()->load([
+            'licenses' => function ($query) {
+                $query->active();
+            },
+            'workspaces' => function ($query) {
+                $query->withPivot('role');
+            }
+        ]);
+
+        return new UserResource($user);
     }
 
     public function deleteAccount()

@@ -8,7 +8,7 @@
       You can update the billing email of the subscriber.
     </p>
     <div
-      v-if="loading"
+      v-if="loadingBillingEmail"
       class="text-neutral-600 dark:text-neutral-400"
     >
       <Loader class="h-6 w-6 mx-auto m-10" />
@@ -30,7 +30,7 @@
           :disabled="!userCreated"
         />
         <UButton
-          :loading="loading"
+          :loading="form.busy"
           type="submit"
           block
           :disabled="!userCreated"
@@ -49,7 +49,6 @@ const props = defineProps({
 })
 
 const loadingBillingEmail = ref(false)
-const loading = ref(false)
 const userCreated = ref(false)
 const form = useForm({
     billing_email: '',
@@ -70,18 +69,12 @@ onMounted(() => {
 })
 
 const updateUserBillingEmail = () => {
-    loading.value = true
-    adminApi.billing.updateEmail({
-        billing_email: form.billing_email,
-        user_id: form.user_id
-    })
+    form.patch('/moderator/billing/email')
         .then(async (data) => {
-            loading.value = false
             useAlert().success(data.message)
         })
         .catch((error) => {
             useAlert().error(error.data.message)
-            loading.value = false
         })
 }
 </script>

@@ -40,8 +40,9 @@ class GenerateAiForm implements ShouldQueue
         ]);
 
         try {
-            // Use the static run method to execute the prompt
-            $formData = GenerateFormPrompt::run($this->completion->form_prompt);
+            // Use the static run method to execute the prompt with params
+            $params = $this->completion->generation_params ?? [];
+            $formData = GenerateFormPrompt::run($this->completion->form_prompt, $params);
 
             $this->completion->update([
                 'status' => AiFormCompletion::STATUS_COMPLETED,

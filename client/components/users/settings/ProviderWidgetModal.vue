@@ -87,7 +87,10 @@ const handleAuthData = (data) => {
     return
   }
 
-  widgetCallbackMutation.mutateAsync({ service: props.service.name, data }).then((response) => {
+  // Ensure intent is provided for widget callbacks
+  const payload = { ...data, intent: data?.intent || 'integration' }
+
+  widgetCallbackMutation.mutateAsync({ service: props.service.name, data: payload }).then((response) => {
     if (response.intention) {
       router.push(response.intention)
     } else {

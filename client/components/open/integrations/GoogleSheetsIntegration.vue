@@ -61,7 +61,7 @@ const props = defineProps({
 const oAuth = useOAuth()
 const { data: providersData, isLoading } = oAuth.providers()
 const providers = computed(() => (providersData.value || []).filter(provider => provider.provider == 'google'))
-const disableProviders = computed(() => (providersData.value || []).filter(provider => !provider.scopes.includes(oAuth.googleDrivePermission)).map((provider) => provider.id))
+const disableProviders = computed(() => (providersData.value || []).filter(provider => !provider.scopes.includes(oAuth.googleDrivePermissionFileScope)).map((provider) => provider.id))
 const { openUserSettings } = useAppModals()
 
 function connect () {

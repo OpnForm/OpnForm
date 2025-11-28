@@ -7,7 +7,8 @@
     <UTooltip
       text="Undo"
       :kbds="['meta','Z']"
-      :popper="{ placement: 'left' }"
+      :content="{ side: 'left' }"
+      arrow
     >
       <UButton
         :disabled="!canUndo"
@@ -21,7 +22,8 @@
     <UTooltip
       text="Redo"
       :kbds="['meta','Shift','Z']"
-      :popper="{ placement: 'right' }"
+      :content="{ side: 'right' }"
+      arrow
     >
       <UButton
         :disabled="!canRedo"

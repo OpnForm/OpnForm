@@ -84,11 +84,12 @@ function areValidNumbers(condition, fieldValue) {
 }
 
 function checkEquals(condition, fieldValue) {
+  const conditionValue = condition.value
   // For numeric values, convert to numbers before comparison
-  if (areValidNumbers(condition, fieldValue)) {
-    return parseFloat(condition.value) === parseFloat(fieldValue)
+  if (areValidNumbers(condition, fieldValue) && typeof conditionValue === 'number' && typeof fieldValue === 'number') {
+    return parseFloat(conditionValue) === parseFloat(fieldValue)
   }
-  return condition.value === fieldValue
+  return conditionValue === fieldValue
 }
 
 function checkObjectEquals(condition, fieldValue) {
@@ -237,6 +238,60 @@ function checkNextYear(condition, fieldValue) {
   )
 }
 
+function checkAtLeastXDaysAgo(condition, fieldValue) {
+  if (!fieldValue || !condition.value) return false
+  const fieldDate = new Date(fieldValue)
+  if (Number.isNaN(fieldDate.getTime())) return false
+  const today = new Date()
+  const daysBefore = parseInt(condition.value, 10)
+  if (isNaN(daysBefore) || daysBefore < 0) return false
+  // Create target date by setting the date properly to avoid timezone issues
+  const targetDate = new Date(today.getFullYear(), today.getMonth(), today.getDate() - daysBefore)
+  // Return true if fieldDate is on or before the target date (X days before today)
+  return fieldDate <= targetDate
+}
+
+function checkAtLeastXDaysFromNow(condition, fieldValue) {
+  if (!fieldValue || !condition.value) return false
+  const fieldDate = new Date(fieldValue)
+  if (Number.isNaN(fieldDate.getTime())) return false
+  const today = new Date()
+  const daysAfter = parseInt(condition.value, 10)
+  if (isNaN(daysAfter) || daysAfter < 0) return false
+  // Create target date by setting the date properly to avoid timezone issues
+  const targetDate = new Date(today.getFullYear(), today.getMonth(), today.getDate() + daysAfter)
+  // Return true if fieldDate is on or after the target date (X days after today)
+  return fieldDate >= targetDate
+}
+
+function checkWithinPastXDays(condition, fieldValue) {
+  if (!fieldValue || !condition.value) return false
+  const fieldDate = new Date(fieldValue)
+  if (Number.isNaN(fieldDate.getTime())) return false
+  const today = new Date()
+  const daysBefore = parseInt(condition.value, 10)
+  if (isNaN(daysBefore) || daysBefore < 0) return false
+  // Create target date by setting the date properly to avoid timezone issues
+  const targetDate = new Date(today.getFullYear(), today.getMonth(), today.getDate() - daysBefore)
+  const todayDate = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+  // Return true if fieldDate is between target date (X days ago) and today (inclusive)
+  return fieldDate >= targetDate && fieldDate <= todayDate
+}
+
+function checkWithinNextXDays(condition, fieldValue) {
+  if (!fieldValue || !condition.value) return false
+  const fieldDate = new Date(fieldValue)
+  if (Number.isNaN(fieldDate.getTime())) return false
+  const today = new Date()
+  const daysAfter = parseInt(condition.value, 10)
+  if (isNaN(daysAfter) || daysAfter < 0) return false
+  // Create target date by setting the date properly to avoid timezone issues
+  const targetDate = new Date(today.getFullYear(), today.getMonth(), today.getDate() + daysAfter)
+  const todayDate = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+  // Return true if fieldDate is between today and target date (X days from now) (inclusive)
+  return fieldDate >= todayDate && fieldDate <= targetDate
+}
+
 function checkLength(condition, fieldValue, operator = "===") {
   if (!fieldValue || fieldValue.length === 0) return false
   switch (operator) {
@@ -379,6 +434,14 @@ function dateConditionMet(propertyCondition, value) {
       return checkOnOrBefore(propertyCondition, value)
     case "on_or_after":
       return checkOnOrAfter(propertyCondition, value)
+    case 'at_least_x_days_ago':
+      return checkAtLeastXDaysAgo(propertyCondition, value)
+    case 'at_least_x_days_from_now':
+      return checkAtLeastXDaysFromNow(propertyCondition, value)
+    case 'within_past_x_days':
+      return checkWithinPastXDays(propertyCondition, value)
+    case 'within_next_x_days':
+      return checkWithinNextXDays(propertyCondition, value)
     case "is_empty":
       return checkIsEmpty(propertyCondition, value)
     case "past_week":

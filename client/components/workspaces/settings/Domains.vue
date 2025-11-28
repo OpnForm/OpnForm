@@ -28,12 +28,12 @@
       title="Pro plan required"
       description="Please upgrade your account to setup a custom domain."
       :actions="[{
-        label: 'Try Pro plan',
+        label: 'Upgrade to Pro',
         color: 'warning',
         variant: 'solid',
         onClick: () => openSubscriptionModal({
           modal_title: 'Upgrade to use your own domain',
-          modal_description: 'Try our Pro plan for free today, and unlock custom domains and other features such as advanced customization, forms analytics, integrations, and more!'
+          modal_description: 'Upgrade to our Pro plan to unlock custom domains and other premium features such as advanced customization, forms analytics, integrations, and more!'
         })
       }]"
     />
@@ -126,10 +126,11 @@ const addDomain = () => {
       .replace(/^https?:\/\//i, '')
       .split('/')[0]
 
-    // Basic domain validation
-    const domainRegex = /^((?!-))(xn--)?[a-z0-9][a-z0-9-_]{0,61}[a-z0-9]{0,1}\.(xn--)?([a-z0-9-]{1,61}|[a-z0-9-]{1,30}\.[a-z]{2,})$/i
+    // Domain validation - matches backend regex: /^[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,20}$/
+    // Supports: example.com, test.co.uk, subdomain.example.co.uk, etc.
+    const domainRegex = /^[a-z0-9]+([-.][a-z0-9]+)*\.[a-z]{2,20}$/i
     if (!domainRegex.test(cleanedDomain)) {
-      return alert.error('Invalid domain format. Please use a format like "domain.com".')
+      return alert.error('Invalid domain format. Please use a format like "domain.com" or "subdomain.example.co.uk".')
     }
 
     if (domains.value.includes(cleanedDomain)) {

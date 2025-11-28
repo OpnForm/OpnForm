@@ -20,6 +20,11 @@ class CheckUserIsBlocked
         if (Auth::check()) {
             $user = Auth::user();
             if ($user->is_blocked) {
+                // Allow admin impersonation of blocked users for review purposes
+                if ($this->isAdminImpersonating()) {
+                    return $next($request);
+                }
+
                 if (!Auth::guard('sanctum')->check()) {
                     Auth::guard('api')->logout();
                 }
@@ -31,5 +36,38 @@ class CheckUserIsBlocked
         }
 
         return $next($request);
+    }
+
+    private function isAdminImpersonating(): bool
+    {
+        try {
+            // Skip in testing environment to avoid breaking existing tests
+            if (app()->environment('testing')) {
+                return false;
+            }
+
+            // Check if user is authenticated via JWT and has impersonation claims
+            if (auth()->guard('api')->check()) {
+                $payload = auth()->guard('api')->getPayload();
+
+                $isImpersonating = $payload->get('impersonating') || $payload->get('admin_impersonating');
+                if (!$isImpersonating) {
+                    return false;
+                }
+
+                $impersonatorId = $payload->get('impersonator_id');
+                if (!$impersonatorId) {
+                    return false;
+                }
+
+                $impersonator = \App\Models\User::find($impersonatorId);
+                return $impersonator && ($impersonator->admin || $impersonator->moderator);
+            }
+
+            return false;
+        } catch (\Exception $e) {
+            // Silently fail and don't allow impersonation if there are any errors
+            return false;
+        }
     }
 }

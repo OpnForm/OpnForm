@@ -106,26 +106,26 @@ const formNavigationItems = computed(() => [
     createNavItem({
       label: 'Submissions',
       icon: 'i-heroicons-document-text',
-      to: { name: 'forms-slug-show-submissions', params: { slug: props.form.slug } },
+      to: { name: 'forms-slug-show-submissions', params: { slug: props.form?.slug } },
       active: isActiveRoute('forms-slug-show-submissions')
     }),
     // Hide integrations for read-only workspaces
     ...(workspace.value?.is_readonly ? [] : [createNavItem({
       label: 'Integrations',
       icon: 'i-heroicons-puzzle-piece',
-      to: { name: 'forms-slug-show-integrations', params: { slug: props.form.slug } },
+      to: { name: 'forms-slug-show-integrations', params: { slug: props.form?.slug } },
       active: isActiveRoute('forms-slug-show-integrations')
     })]),
     createNavItem({
       label: 'Analytics',
       icon: 'i-heroicons-chart-bar',
-      to: { name: 'forms-slug-show-stats', params: { slug: props.form.slug } },
+      to: { name: 'forms-slug-show-stats', params: { slug: props.form?.slug } },
       active: isActiveRoute('forms-slug-show-stats')
     }),
     createNavItem({
       label: 'Share',
       icon: 'i-heroicons-share',
-      to: { name: 'forms-slug-show-share', params: { slug: props.form.slug } },
+      to: { name: 'forms-slug-show-share', params: { slug: props.form?.slug } },
       active: isActiveRoute('forms-slug-show-share')
     })
   ])

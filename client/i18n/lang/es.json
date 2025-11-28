@@ -3,6 +3,12 @@
         "name": "OpnForm"
     },
     "forms": {
+        "buttons": {
+            "submit": "Enviar",
+            "next": "Siguiente",
+            "previous": "Anterior",
+            "re_fill": "Enviar otra respuesta"
+        },
         "powered_by": "Desarrollado por",
         "password_protected": "Este formulario está protegido por contraseña.",
         "invalid_password": "Contraseña inválida.",
@@ -47,19 +53,25 @@
             "billing_email": "Correo electrónico de facturación",
             "payment_disclaimer": "Se cargará a su tarjeta de crédito al hacer clic en este botón. Los pagos se procesan de forma segura a través de Stripe.",
             "errors": {
-                "missingFormOrProvider": "Missing form slug or provider ID.",
-                "failedAccountDetails": "Failed to get Stripe account details.",
-                "setupError": "An error occurred during Stripe setup.",
-                "systemNotReady": "Payment system not ready. Please wait a moment and try again.",
-                "misconfigured": "Payment system misconfigured. Please refresh and try again.",
-                "notFullyReady": "Payment system not fully ready. Please refresh and try again.",
-                "paymentRequired": "Complete the payment before you can proceed.",
-                "nameRequired": "Card holder name is required.",
-                "emailRequired": "Billing email address is required.",
-                "invalidEmail": "Invalid billing email address.",
-                "failedIntent": "Failed to create payment intent.",
-                "processingFailed": "Payment processing failed."
+                "missingFormOrProvider": "Falta el slug del formulario o el ID del proveedor.",
+                "failedAccountDetails": "No se pudieron obtener los detalles de la cuenta de Stripe.",
+                "setupError": "Ocurrió un error durante la configuración de Stripe.",
+                "systemNotReady": "El sistema de pago no está listo. Por favor, espere un momento y vuelva a intentarlo.",
+                "misconfigured": "Sistema de pago mal configurado. Por favor, actualice y vuelva a intentarlo.",
+                "notFullyReady": "El sistema de pago no está completamente listo. Por favor, actualice y vuelva a intentarlo.",
+                "paymentRequired": "Complete el pago antes de poder continuar.",
+                "nameRequired": "El nombre del titular de la tarjeta es obligatorio.",
+                "emailRequired": "La dirección de correo electrónico de facturación es obligatoria.",
+                "invalidEmail": "La dirección de correo electrónico de facturación no es válida.",
+                "failedIntent": "Error al crear la intención de pago.",
+                "processingFailed": "El procesamiento del pago ha fallado."
             }
+        },
+        "validation_error": "Error de validación",
+        "validation_error_with_count": "Error de validación ({count} campos)",
+        "toggle": {
+            "yes": "Sí",
+            "no": "No"
         }
     }
 } 

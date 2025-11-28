@@ -1,20 +1,19 @@
 <template>
-  <div class="flex items-center">
+  <div :class="ui.container({ class: props.ui?.slots?.container })">
     <input
       :id="id || name"
       v-model="internalValue"
       :value="value"
       :name="name"
       type="checkbox"
-      class="rounded border-neutral-500 size-6 checkbox"
-      :class="[theme.CheckboxInput.size,{'cursor-pointer': !disabled}]"
-      :style="{ '--accent-color': color }"
+      :class="ui.input({ class: props.ui?.slots?.input })"
+      :style="colorStyle"
       :disabled="disabled ? true : null"
+      @keydown="handleKeydown"
     >
     <label
       :for="id || name"
-      class="text-neutral-700 dark:text-neutral-300 ml-2"
-      :class="{ '!cursor-not-allowed': disabled }"
+      :class="ui.label({ class: props.ui?.slots?.label })"
     >
       <slot />
     </label>
@@ -22,15 +21,8 @@
 </template>
 
 <script setup>
-import {
-  defineEmits,
-  defineOptions,
-  defineProps,
-  onMounted,
-  ref,
-  watch,
-} from 'vue'
-import CachedDefaultTheme from '~/lib/forms/themes/CachedDefaultTheme.js'
+import { tv } from "tailwind-variants"
+import { vCheckboxTheme } from "~/lib/forms/themes/v-checkbox.theme.js"
 
 defineOptions({
   name: 'VCheckbox',
@@ -42,31 +34,40 @@ const props = defineProps({
   modelValue: { type: [Boolean, String], default: false },
   value: { type: [Boolean, String, Number, Object], required: false },
   disabled: { type: Boolean, default: false },
-  theme: {
-      type: Object, default: () => {
-        const theme = inject('theme', null)
-        if (theme) {
-          return theme.value
-        }
-        return CachedDefaultTheme.getInstance()
-      }
-    },
   color: { type: String, default: null },
+  // Theme configuration as strings for tailwind-variants
+  size: {type: String, default: null}, 
+  ui: {type: Object, default: () => ({})}
 })
 
 const emit = defineEmits(['update:modelValue', 'click'])
 
 const internalValue = ref(props.modelValue)
 
-watch(
-  () => props.modelValue,
-  (val) => {
-    internalValue.value = val
-  },
-)
+// Inject theme values for centralized resolution
+const injectedSize = inject('formSize', null)
+
+// Resolve size with proper reactivity
+const resolvedSize = computed(() => {
+  return props.size || injectedSize?.value || 'md'
+})
+
+// Color style for CSS custom property
+const colorStyle = computed(() => ({
+  '--accent-color': props.color,
+  '--form-color': props.color
+}))
+
+// OPTIMIZED: Single computed following Nuxt UI pattern
+const ui = computed(() => {
+  return tv(vCheckboxTheme, props.ui)({
+    size: resolvedSize.value,
+    disabled: props.disabled
+  })
+})
 
 watch(
-  () => props.checked,
+  () => props.modelValue,
   (val) => {
     internalValue.value = val
   },
@@ -84,6 +85,15 @@ watch(
       emit('update:modelValue', val)
   },
 )
+
+const handleKeydown = (event) => {
+  if (props.disabled) return
+
+  if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault()
+    internalValue.value = !internalValue.value
+  }
+}
 
 onMounted(() => {
   if (internalValue.value === null)

@@ -17,7 +17,7 @@ class WorkspaceFactory extends Factory
     public function definition()
     {
         return [
-            'name' => $this->faker->company,
+            'name' => 'Test Workspace ' . $this->faker->randomNumber(4),
             'icon' => '🧪',
         ];
     }

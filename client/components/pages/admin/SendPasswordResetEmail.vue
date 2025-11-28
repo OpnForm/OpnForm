@@ -2,7 +2,7 @@
   <UButton
     variant="outline"
     icon="i-heroicons-key-16-solid"
-    :loading="loading"
+    :loading="form.busy"
     @click="resetPassword"
     label="Reset Password"
   />
@@ -13,25 +13,21 @@ const props = defineProps({
     user: { type: Object, required: true }
 })
 
-const loading = ref(false)
 const form = useForm({
   user_id: props.user.id
 })
 
-const resetPassword = ()=>{
+const resetPassword = () => {
     return useAlert().confirm(
         "Are you sure you want to send a password reset email?",
         () => {
-            loading.value = true
             form
                 .patch('/moderator/send-password-reset-email')
                 .then(async (data) => {
-                    loading.value = false
                     useAlert().success(data.message)
                 })
                 .catch((error) => {
-                    useAlert().error(error.data.message)
-                    loading.value = false
+                    useAlert().error(error.data?.message || 'Failed to send password reset email')
                 })
         })
 }

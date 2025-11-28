@@ -24,7 +24,7 @@ export function useTableState(form, withActions = false) {
 
       const baseColumns = form.value.properties
         .filter((field) => {
-          return !['nf-text', 'nf-code', 'nf-page-break', 'nf-divider', 'nf-image'].includes(field.type)
+          return field.type && typeof field.type === 'string' && !field.type.startsWith('nf-')
         })
         .map(col => {
           const { columns: matrixColumns, ...rest } = col
@@ -114,7 +114,7 @@ export function useTableState(form, withActions = false) {
   const columnPinning = computed({
     get() {
       const prefs = columnPreferences.preferences.value
-      const pinning = { left: [], right: ['actions'] }
+      const pinning = { left: ['select'], right: ['actions'] }
       const configCols = columnConfigurations.value || []
       configCols.forEach(col => {
         const pref = prefs.columns[col.id] || {}
@@ -125,17 +125,19 @@ export function useTableState(form, withActions = false) {
       return pinning
     },
     set(newPinning) {
-      const { left = [] } = newPinning || {}
+      const { left = ['select'] } = newPinning || {}
       const configCols = columnConfigurations.value || []
 
       // First, clear pinning for all applicable columns (except actions)
       configCols.forEach(col => {
-        if (col.id !== 'actions') setColumnPreference(col.id, { pinned: false })
+        if (['actions', 'select'].includes(col.id)) return
+        setColumnPreference(col.id, { pinned: false })
       })
 
       // Apply new left pinning only
       left.forEach(id => {
-        if (id !== 'actions') setColumnPreference(id, { pinned: 'left' })
+        if (['actions','select'].includes(id)) return
+        setColumnPreference(id, { pinned: 'left' })
       })
       // Note: actions column pinning is handled automatically in the getter
     }
@@ -209,85 +211,92 @@ export function useTableState(form, withActions = false) {
   /*                              Column ordering                               */
   /* -------------------------------------------------------------------------- */
 
-  // Helper function to set a specific column to a specific index
+  // Column order for TanStack Table (array of column IDs)
+  const columnOrder = computed({
+    get() {
+      try {
+        // Return all column IDs in the correct order
+        const cols = tableColumns.value || []
+        return cols.map(col => col.id)
+      } catch (error) {
+        console.error('Error in columnOrder computed:', error)
+        return []
+      }
+    },
+    set(newOrder) {
+      try {
+        // newOrder is an array of column IDs
+        // Filter out 'select' and 'actions' columns as they're managed separately
+        const dataColumnIds = newOrder.filter(id => !['select', 'actions'].includes(id))
+        
+        // Update preferences for each column based on the new order
+        dataColumnIds.forEach((id, index) => {
+          columnPreferences.setColumnPreference(id, { order: index })
+        })
+        
+        // Give high order numbers to columns not in the new order
+        const allColumnIds = columnConfigurations.value.map(c => c.id)
+        allColumnIds.forEach(id => {
+          if (!dataColumnIds.includes(id)) {
+            columnPreferences.setColumnPreference(id, { order: 9999 })
+          }
+        })
+      } catch (error) {
+        console.error('Error in columnOrder setter:', error)
+      }
+    }
+  })
+
+  // Helper function to set a specific column to a specific index (used by drag-and-drop)
   const setColumnOrder = (columnId, newIndex) => {
     try {
-      // Get the current list of VISIBLE column IDs, already in the correct order
-      let visibleColumnIds = orderedColumns.value
-        .filter(c => columnVisibility.value[c.id] !== false)
-        .map(c => c.id)
-
-      // Perform the move on this array
-      const currentIndex = visibleColumnIds.indexOf(columnId)
-      if (currentIndex > -1) {
-        visibleColumnIds.splice(currentIndex, 1)
-      }
-      visibleColumnIds.splice(newIndex, 0, columnId)
-
-      // Update the preferences based on the new order
-      const allColumnIds = columnConfigurations.value.map(c => c.id)
-      allColumnIds.forEach(id => {
-        const visibleIndex = visibleColumnIds.indexOf(id)
-        if (visibleIndex !== -1) {
-          // It's visible, set its order
-          columnPreferences.setColumnPreference(id, { order: visibleIndex })
-        } else {
-          // It's hidden, give it a high order number
-          columnPreferences.setColumnPreference(id, { order: 9999 })
-        }
-      })
+      // Get current column order
+      const currentOrder = columnOrder.value
+      
+      // Find the column in the current order
+      const currentIndex = currentOrder.indexOf(columnId)
+      if (currentIndex === -1) return
+      
+      // Create new order by moving the column
+      const newOrder = [...currentOrder]
+      newOrder.splice(currentIndex, 1)
+      newOrder.splice(newIndex, 0, columnId)
+      
+      // Update via columnOrder setter (triggers TanStack Table update)
+      columnOrder.value = newOrder
     } catch (error) {
       console.error('Error in setColumnOrder:', error)
     }
   }
 
-  // Ordered columns for display
-  const orderedColumns = computed({
-    get() {
-      try {
-        const prefs = columnPreferences.preferences.value
-        const configCols = columnConfigurations.value || []
-        const columns = Array.isArray(configCols) ? [...configCols] : []
+  // Ordered columns for display (read-only getter)
+  const orderedColumns = computed(() => {
+    try {
+      const prefs = columnPreferences.preferences.value
+      const configCols = columnConfigurations.value || []
+      const columns = Array.isArray(configCols) ? [...configCols] : []
 
-        // Sort by order preference, then by original position
-        columns.sort((a, b) => {
-          const prefA = prefs.columns[a.id] || {}
-          const prefB = prefs.columns[b.id] || {}
+      // Sort by order preference, then by original position
+      columns.sort((a, b) => {
+        const prefA = prefs.columns[a.id] || {}
+        const prefB = prefs.columns[b.id] || {}
 
-          const orderA = prefA.order ?? 9999
-          const orderB = prefB.order ?? 9999
+        const orderA = prefA.order ?? 9999
+        const orderB = prefB.order ?? 9999
 
-          if (orderA !== orderB) {
-            return orderA - orderB
-          }
-
-          // Fallback to original order
-          return configCols.indexOf(a) - configCols.indexOf(b)
-        })
-
-        return columns
-      } catch (error) {
-        console.error('Error in orderedColumns computed:', error)
-        return []
-      }
-    },
-    set(newOrderColumns) {
-      // Logic to update column order preferences
-      const allColumnIds = (columnConfigurations.value || []).map(c => c.id)
-      const newOrderIds = newOrderColumns.map(c => c.id)
-
-      allColumnIds.forEach(id => {
-        const order = newOrderIds.indexOf(id)
-        if (order !== -1) {
-          // If the column is in the new order, set its order
-          columnPreferences.setColumnPreference(id, { order })
-        } else {
-          // If it's not (e.g., it's a hidden column not in the ordered list),
-          // assign a high order number to keep it at the end if it becomes visible
-          columnPreferences.setColumnPreference(id, { order: 9999 })
+        if (orderA !== orderB) {
+          return orderA - orderB
         }
+
+        // Fallback to original order
+        return configCols.indexOf(a) - configCols.indexOf(b)
       })
-    },
+
+      return columns
+    } catch (error) {
+      console.error('Error in orderedColumns computed:', error)
+      return []
+    }
   })
 
   // Final array of columns to be passed to the table component
@@ -311,8 +320,35 @@ export function useTableState(form, withActions = false) {
         })
       }
 
-      // Add actions column if workspace is not readonly
+      // Add IP address column if needed
+      if (form.value?.is_pro && (form.value.enable_ip_tracking ?? false)) {
+        cols.push({
+          id: 'ip_address',
+          accessorKey: 'ip_address',
+          header: 'IP Address',
+          type: 'ip_address',
+          enableResizing: true,
+          minSize: 100,
+          maxSize: 500,
+        })
+      }
+
+      // Add actions columns
       if (import.meta.client && withActions) {
+        cols.unshift({
+          id: 'select',
+          accessorKey: 'select',
+          header: '',
+          enableResizing: false,
+          size: 40,
+          meta: {
+            class: {
+              th: 'bg-transparent',
+              td: 'backdrop-blur-xs bg-white/70'
+            }
+          }
+        })
+
         cols.push({
           id: 'actions',
           accessorKey: 'actions',
@@ -323,7 +359,7 @@ export function useTableState(form, withActions = false) {
             class: {
               th: 'bg-transparent',
               td: 'backdrop-blur-xs bg-white/70'
-      }
+            }
           }
         })
       }
@@ -366,7 +402,7 @@ export function useTableState(form, withActions = false) {
       
       // Clear all existing pins
       configCols.forEach(col => {
-        if (col.id !== 'actions' && col.id !== columnId) {
+        if (['actions', 'select'].includes(col.id) && col.id !== columnId) {
           setColumnPreference(col.id, { pinned: false })
         }
       })
@@ -391,6 +427,7 @@ export function useTableState(form, withActions = false) {
     columnPinning,
     columnWrapping,
     columnSizing,
+    columnOrder, // TanStack Table column order state
     
     // Preference helpers (for components)
     getColumnPreference,
@@ -400,8 +437,6 @@ export function useTableState(form, withActions = false) {
     toggleColumnVisibility: toggleColumnVisibility,
     toggleColumnWrapping,
     toggleColumnPin: toggleColumnPin,
-    toggleColumnWrap: columnPreferences.toggleColumnWrap,
-    setColumnsOrder: columnPreferences.setColumnsOrder,
     handleColumnResize,
   }
 } 

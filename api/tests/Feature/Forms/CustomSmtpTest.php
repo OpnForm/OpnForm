@@ -8,7 +8,7 @@ it('can not save custom SMTP settings if not pro user', function () {
     $user = $this->actingAsUser();
     $workspace = $this->createUserWorkspace($user);
 
-    $this->putJson(route('open.workspaces.save-email-settings', [$workspace->id]), [
+    $this->putJson(route('open.workspaces.save-email-settings', $workspace), [
         'host' => 'custom.smtp.host',
         'port' => '587',
         'username' => 'custom_username',
@@ -22,7 +22,7 @@ it('send email with custom SMTP settings', function () {
     $form = $this->createForm($user, $workspace);
 
     // Set custom SMTP settings
-    $this->putJson(route('open.workspaces.save-email-settings', [$workspace->id]), [
+    $this->putJson(route('open.workspaces.save-email-settings', $workspace), [
         'host' => 'custom.smtp.host',
         'port' => '587',
         'username' => 'custom_username',

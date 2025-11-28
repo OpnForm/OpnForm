@@ -29,6 +29,7 @@ class AiFormCompletion extends Model
         'error',
         'type',
         'context',
+        'generation_params',
     ];
 
     protected $attributes = [
@@ -40,6 +41,7 @@ class AiFormCompletion extends Model
     {
         return [
             'context' => 'array',
+            'generation_params' => 'array',
         ];
     }
 

@@ -18,7 +18,7 @@ class FormCleaner
     /**
      * All the performed cleanings
      *
-     * @var bool
+     * @var array
      */
     private array $cleanings = [];
 
@@ -32,9 +32,11 @@ class FormCleaner
         'database_fields_update' => null,
         'editable_submissions' => false,
         'custom_code' => null,
+        'custom_css' => null,
         'seo_meta' => [],
         'redirect_url' => null,
         'enable_partial_submissions' => false,
+        'enable_ip_tracking' => false,
     ];
 
     private array $formNonTrialingDefaults = [
@@ -48,15 +50,20 @@ class FormCleaner
         'secret_input' => false,
     ];
 
+    // Policy toggles for current cleaning run
+    private bool $allowCustomCode = true;
+
     private array $cleaningMessages = [
         // For form
         'no_branding' => 'OpenForm branding is not hidden.',
         'database_fields_update' => 'Form submission will only create new records (no updates).',
         'editable_submissions' => 'Users will not be able to edit their submissions.',
         'custom_code' => 'Custom code was disabled',
+        'custom_css' => 'Custom CSS was disabled',
         'seo_meta' => 'Custom SEO was disabled',
         'redirect_url' => 'Redirect Url was disabled',
         'enable_partial_submissions' => 'Partial submissions were disabled',
+        'enable_ip_tracking' => 'IP tracking was disabled',
 
         // For fields
         'file_upload' => 'Link field is not a file upload.',
@@ -112,6 +119,18 @@ class FormCleaner
     public function processForm(Request $request, Form $form): FormCleaner
     {
         $data = (new FormResource($form))->toArray($request);
+
+        // Determine if custom code is allowed in this response context
+        $allowOnSelfHosted = config('app.self_hosted', true) && (bool) config('opnform.custom_code.enable_self_hosted', false);
+        $hasCustomDomain = !empty($data['custom_domain'] ?? null);
+        $this->allowCustomCode = $hasCustomDomain || $allowOnSelfHosted;
+
+        // Suppress top-level custom_code if not allowed (silent, not recorded as cleaning)
+        if (!$this->allowCustomCode) {
+            $data['custom_code'] = null;
+        }
+
+        // Single pass over properties: sanitize text blocks and optionally remove nf-code blocks
         $this->data = $this->commonCleaning($data);
 
         return $this;
@@ -169,10 +188,20 @@ class FormCleaner
      */
     private function commonCleaning(array $data)
     {
-        foreach ($data['properties'] as &$property) {
-            if ($property['type'] == 'nf-text' && isset($property['content'])) {
-                $property['content'] = Purify::clean($property['content']);
+        if (!empty($data['properties']) && is_array($data['properties'])) {
+            foreach ($data['properties'] as $index => &$property) {
+                if (($property['type'] ?? null) === 'nf-text' && isset($property['content'])) {
+                    $property['content'] = Purify::clean($property['content']);
+                }
+
+                if (!$this->allowCustomCode && ($property['type'] ?? null) === 'nf-code') {
+                    // Remove the block entirely (silent, not recorded as cleaning)
+                    unset($data['properties'][$index]);
+                }
             }
+            unset($property);
+            // Reindex properties array if any removals occurred
+            $data['properties'] = array_values($data['properties']);
         }
 
         return $data;
@@ -199,6 +228,11 @@ class FormCleaner
 
     private function cleanProperties(array &$data, $simulation = false): void
     {
+        // Safely skip if properties are not present
+        if (!isset($data['properties']) || !is_array($data['properties'])) {
+            return;
+        }
+
         foreach ($data['properties'] as $key => &$property) {
             /*
             // Remove pro custom blocks
@@ -222,6 +256,7 @@ class FormCleaner
             // Clean pro field options
             $this->cleanField($property, $this->fieldDefaults, $simulation);
         }
+        unset($property);
     }
 
     private function clean(array &$data, array $defaults, $simulation = false): void

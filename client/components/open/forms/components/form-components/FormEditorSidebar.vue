@@ -2,6 +2,7 @@
   <editor-right-sidebar
     :width-class="showAddFieldSidebar ? 'md:max-w-[15rem]' : 'md:max-w-[20rem]'"
     :show="isOpen"
+    :resizable="true"
   >
     <VForm
       size="sm"

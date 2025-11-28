@@ -4,18 +4,15 @@
     :icon="isBlocked ? 'heroicons:lock-open-20-solid' : 'heroicons:no-symbol-20-solid'"
   >
     <div class="space-y-6 flex flex-col justify-between">
-      <p class="text-xs text-neutral-500">
-        <template v-if="isBlocked">
-          This will unblock the user and allow them to log in again. Their forms will remain in draft status.
-          <br>
-          <b>Blocked on:</b> {{ new Date(user.blocked_at).toLocaleString() }}
-          <br>
-          <b>Reason:</b> {{ lastBlock?.reason }}
+      <UAlert
+        :icon="alertContent.icon"
+        :color="alertContent.color"
+        :variant="alertContent.variant"
+      >
+        <template #description>
+          <div v-html="alertContent.content" />
         </template>
-        <template v-else>
-          This will block the user from accessing their account and set all their forms to draft.
-        </template>
-      </p>
+      </UAlert>
 
       <VForm @submit.prevent="submit">
         <TextAreaInput
@@ -28,7 +25,7 @@
         <div class="flex space-x-2 mt-4">
           <UButton
             block
-            :loading="loading"
+            :loading="form.busy"
             type="submit"
             class="grow"
             :label="isBlocked ? 'Unblock User' : 'Block User'"
@@ -59,7 +56,7 @@
 </template>
 
 <script setup>
-import { adminApi } from '~/api'
+
 
 const props = defineProps({
   user: { type: Object, required: true }
@@ -67,7 +64,6 @@ const props = defineProps({
 const emit = defineEmits(['user-updated'])
 
 const alert = useAlert()
-const loading = ref(false)
 const isModalOpen = ref(false)
 
 const form = useForm({
@@ -85,7 +81,10 @@ const historyColumns = [
   },
   {
     accessorKey: 'blocked_by',
-    header: 'Blocked By'
+    header: 'Blocked By',
+    cell: ({ row }) => {
+      return row.original.blocked_by ? row.original.blocked_by : 'AI'
+    }
   },
   {
     accessorKey: 'reason',
@@ -117,23 +116,48 @@ const lastBlock = computed(() => {
   return blockingHistory.value[blockingHistory.value.length - 1]
 })
 
+const alertContent = computed(() => {
+  if (isBlocked.value) {
+    const blockedBy = lastBlock.value?.blocked_by || 'Automatically blocked by our AI'
+    return {
+      icon: 'i-heroicons-exclamation-triangle',
+      color: 'error',
+      variant: 'subtle',
+      content: `
+        This will unblock the user and allow them to log in again. Their forms will remain in draft status.
+        <div class="mt-2">
+          <b>Blocked on:</b> ${new Date(props.user.blocked_at).toLocaleString()}
+          <br>
+          <b>Blocked by:</b> ${blockedBy}
+          <br>
+          <b>Reason:</b> ${lastBlock.value?.reason || ''}
+        </div>
+      `
+    }
+  } else {
+    return {
+      icon: 'i-heroicons-exclamation-triangle',
+      color: 'warning',
+      variant: 'subtle',
+      content: 'This will block the user from accessing their account and set all their forms to draft.'
+    }
+  }
+})
+
 
 async function submit() {
-  loading.value = true
   try {
     let response
     if (isBlocked.value) {
-      response = await adminApi.unblockUser(form.data())
+      response = await form.post('/moderator/unblock-user')
     } else {
-      response = await adminApi.blockUser(form.data())
+      response = await form.post('/moderator/block-user')
     }
     alert.success(response.message)
     emit('user-updated', response.user)
     form.reset()
   } catch (error) {
     alert.error(error.data?.message || 'An error occurred.')
-  } finally {
-    loading.value = false
   }
 }
 </script> 

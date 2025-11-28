@@ -3,6 +3,12 @@
         "name": "OpnForm"
     },
     "forms": {
+        "buttons": {
+            "submit": "सबमिट करा",
+            "next": "पुढील",
+            "previous": "मागील",
+            "re_fill": "दुसरा प्रतिसाद सबमिट करा"
+        },
         "powered_by": "द्वारे संचालित",
         "password_protected": "हा फॉर्म पासवर्डने संरक्षित आहे.",
         "invalid_password": "अवैध पासवर्ड.",
@@ -47,19 +53,25 @@
             "billing_email": "बिलिंग ईमेल पत्ता",
             "payment_disclaimer": "या बटणावर क्लिक केल्यावर तुमच्या क्रेडिट कार्डमधून शुल्क आकारले जाईल. पेमेंट्स स्ट्राइपद्वारे सुरक्षितपणे प्रक्रिया केली जातात.",
             "errors": {
-                "missingFormOrProvider": "Missing form slug or provider ID.",
-                "failedAccountDetails": "Failed to get Stripe account details.",
-                "setupError": "An error occurred during Stripe setup.",
-                "systemNotReady": "Payment system not ready. Please wait a moment and try again.",
-                "misconfigured": "Payment system misconfigured. Please refresh and try again.",
-                "notFullyReady": "Payment system not fully ready. Please refresh and try again.",
-                "paymentRequired": "Complete the payment before you can proceed.",
-                "nameRequired": "Card holder name is required.",
-                "emailRequired": "Billing email address is required.",
-                "invalidEmail": "Invalid billing email address.",
-                "failedIntent": "Failed to create payment intent.",
-                "processingFailed": "Payment processing failed."
+                "missingFormOrProvider": "फॉर्म स्लग किंवा प्रदाता आयडी गहाळ आहे.",
+                "failedAccountDetails": "स्ट्राइप खाते तपशील मिळवण्यात अयशस्वी.",
+                "setupError": "स्ट्राइप सेटअप दरम्यान एक त्रुटी आली.",
+                "systemNotReady": "पेमेंट सिस्टम तयार नाही. कृपया थोडा वेळ थांबा आणि पुन्हा प्रयत्न करा.",
+                "misconfigured": "पेमेंट सिस्टम चुकीच्या पद्धतीने कॉन्फिगर केली आहे. कृपया रिफ्रेश करा आणि पुन्हा प्रयत्न करा.",
+                "notFullyReady": "पेमेंट सिस्टम पूर्णपणे तयार नाही. कृपया रिफ्रेश करा आणि पुन्हा प्रयत्न करा.",
+                "paymentRequired": "पुढे जाण्यापूर्वी पेमेंट पूर्ण करा.",
+                "nameRequired": "कार्ड धारकाचे नाव आवश्यक आहे.",
+                "emailRequired": "बिलिंग ईमेल पत्ता आवश्यक आहे.",
+                "invalidEmail": "अवैध बिलिंग ईमेल पत्ता.",
+                "failedIntent": "पेमेंट उद्देश तयार करण्यात अयशस्वी.",
+                "processingFailed": "पेमेंट प्रक्रिया अयशस्वी झाली."
             }
+        },
+        "validation_error": "प्रमाणीकरण त्रुटी",
+        "validation_error_with_count": "प्रमाणीकरण त्रुटी ({count} फील्ड)",
+        "toggle": {
+            "yes": "होय",
+            "no": "नाही"
         }
     }
 } 

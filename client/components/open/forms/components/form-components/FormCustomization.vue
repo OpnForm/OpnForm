@@ -6,6 +6,8 @@
       :show-line="false"
     />
 
+    <PresentationStyleSwitch />
+
     <select-input
       name="theme"
       class="mt-4"
@@ -13,6 +15,7 @@
         { name: 'Default', value: 'default' },
         { name: 'Notion', value: 'notion' },
         { name: 'Simple (no shadows)', value: 'simple' },
+        { name: 'Minimal', value: 'minimal' },
       ]"
       :form="form"
       label="Form Theme"
@@ -25,7 +28,7 @@
       class="my-4"
     >
       <template #label>
-        <InputLabel>Accent Color - <a
+        <InputLabel label="">Accent Color - <a
           href="#" class="text-blue-500"
           @click.prevent="form.color = DEFAULT_COLOR"
         >Reset</a></InputLabel>
@@ -53,7 +56,7 @@
     />
     <div class="grid grid-cols-2 gap-4">
       <div class="flex-grow my-1" v-if="useFeatureFlag('services.google.fonts')">
-        <label class="text-neutral-700 font-semibold text-sm mb-1 block">Font Family</label>
+        <label class="text-neutral-700 font-semibold text-xs mb-0.5 block">Font Family</label>
         <UButton
           color="neutral"
           variant="outline"
@@ -86,14 +89,12 @@
     <ToggleSwitchInput
       name="layout_rtl"
       :form="form"
-      class="mt-4"
       label="Right-to-Left Layout"
     />
     
     <toggle-switch-input
       name="uppercase_labels"
       :form="form"
-      class="mt-4"
       label="Uppercase Input Labels"
     />
 
@@ -140,6 +141,7 @@
       :form="form"
       name="width"
       seamless
+      v-if="!isFocused"
       :options="[
         { name: 'centered', label: 'Centered' },
         { name: 'full', label: 'Full Width' },
@@ -151,7 +153,7 @@
 
     <EditorSectionHeader
       icon="heroicons:tag-16-solid"
-      title="Branding & Media"
+      title="Branding"
     />
     <div class="grid grid-cols-2 gap-4">
       <image-input
@@ -161,12 +163,7 @@
         :required="false"
       />
 
-      <image-input
-        name="cover_picture"
-        :form="form"
-        label="Cover (~1500px)"
-        :required="false"
-      />
+      <ImageWithSettings :form="form" name="cover_picture" :label="isFocused ? 'Background' : 'Cover (~1500px)'" kind="cover" />
     </div>
 
     <toggle-switch-input
@@ -176,9 +173,11 @@
       @update:model-value="onChangeNoBranding"
     >
       <template #label>
-        <span class="text-sm">
-          Hide OpnForm Branding
-        </span>
+        <InputLabel
+          :label="'Hide OpnForm Branding'"
+          :native-for="'no_branding'"
+          class="text-sm font-medium!"
+        />
         <pro-tag
           upgrade-modal-title="Upgrade today to remove OpnForm branding"
           class="-mt-1"
@@ -189,6 +188,14 @@
     <EditorSectionHeader
       icon="heroicons:cog-6-tooth-16-solid"
       title="Advanced Options"
+    />
+
+    <toggle-switch-input
+      v-if="isFocused"
+      name="settings.navigation_arrows"
+      :form="form"
+      class="mt-2"
+      label="Show navigation arrows"
     />
     <toggle-switch-input
       name="show_progress_bar"
@@ -225,7 +232,9 @@ import EditorSectionHeader from "./EditorSectionHeader.vue"
 import { useWorkingFormStore } from "../../../../../stores/working_form"
 import GoogleFontPicker from "../../../editors/GoogleFontPicker.vue"
 import ProTag from "~/components/app/ProTag.vue"
-import { DEFAULT_COLOR } from "@/composables/forms/initForm"
+import { DEFAULT_COLOR, ensureSettingsObject } from "@/composables/forms/initForm"
+import PresentationStyleSwitch from "./PresentationStyleSwitch.vue"
+import ImageWithSettings from "../media/ImageWithSettings.vue"
 
 
 const workingFormStore = useWorkingFormStore()
@@ -245,12 +254,22 @@ const isPro = computed(() => {
   return workspace.value.is_pro
 })
 
+const isFocused = computed(() => form.value?.presentation_style === 'focused')
+
 const availableLocales = computed(() => {
   return $i18n.locales?.value.map(locale => ({ name: locale.name, value: locale.code })) ?? []
 })
 
 onMounted(() => {
   isMounted.value = true
+  
+  // Ensure settings is a plain, writable object (avoid writing into readonly proxies)
+  ensureSettingsObject(form.value)
+  
+  // Set default value for navigation_arrows in focused mode if not defined
+  if (isFocused.value && form.value.settings.navigation_arrows === undefined) {
+    form.value.settings.navigation_arrows = true
+  }
 })
 
 const onChangeConfettiOnSubmission = (val) => {

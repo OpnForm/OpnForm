@@ -3,36 +3,13 @@
     ref="error_boundary"
     @on-error="handleError"
   >
-    <query-builder
+    <QueryBuilder
       v-model="query"
-      :rules="rules"
       :config="config"
+      where-text="When"
       v-bind="$attrs"
       @update:model-value="onChange"
     >
-      <template #groupOperator="props">
-        <div
-          class="query-builder-group-slot__group-selection flex items-center px-5 border-b py-1"
-        >
-          <p class="mr-2 mt-1 font-semibold">
-            Operator
-          </p>
-          <select-input
-            wrapper-class="relative mb-0" 
-            :model-value="props.currentOperator"
-            :options="props.operators"
-            emit-key="identifier"
-            option-key="identifier"
-            name="operator-input"
-            :help="null"
-            margin-bottom=""
-            @update:model-value="props.updateCurrentOperator($event)"
-          />
-        </div>
-      </template>
-      <template #groupControl="props">
-        <group-control-slot :group-ctrl="props" />
-      </template>
       <template #rule="ruleCtrl">
         <component
           :is="ruleCtrl.ruleComponent"
@@ -40,20 +17,18 @@
           @update:model-value="ruleCtrl.updateRuleData"
         />
       </template>
-    </query-builder>
+    </QueryBuilder>
   </ErrorBoundary> 
 </template>
 
 <script>
 import ErrorBoundary from '~/components/app/ErrorBoundary.vue'
 import { defineComponent } from "vue"
-import QueryBuilder from "query-builder-vue-3"
+import QueryBuilder from "~/components/tools/query-builder/QueryBuilder.vue"
 import ColumnCondition from "./ColumnCondition.vue"
-import GroupControlSlot from "./GroupControlSlot.vue"
 
 export default {
   components: {
-    GroupControlSlot,
     QueryBuilder,
     ColumnCondition,
     ErrorBoundary,
@@ -76,7 +51,7 @@ export default {
     rules() {
       return this.form.properties
         .filter((property) => {
-          return !property.type.startsWith("nf-")
+          return property.type && typeof property.type === 'string' && !property.type.startsWith("nf-")
         })
         .map((property) => {
           const workspaceId = this.form.workspace_id
@@ -158,4 +133,4 @@ export default {
   }
 }
 </script>
-<style src="query-builder-vue-3/dist/style.css" />
+

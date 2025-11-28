@@ -5,6 +5,7 @@
       v-model:open="isLoginModalOpen"
       title="Login to OpnForm"
       :dismissible="!appStore.isUnauthorizedError"
+      @pointer-down-outside="handlePointerDownOutside"
     >
       <template #body>
         <template v-if="appStore.isUnauthorizedError">
@@ -51,6 +52,7 @@
       :ui="{ content: 'sm:max-w-lg' }"
       title="Create an account"
       :dismissible="!appStore.isUnauthorizedError"
+      @pointer-down-outside="handlePointerDownOutside"
     >
       <template #body>
         <RegisterForm
@@ -102,16 +104,11 @@ onMounted(() => {
     // Handle social login completion
     handleSocialLogin()
   })
-  
-  // Set up after-login listener for component communication
-  afterLoginMessage.listen(() => {
-    afterQuickLogin()
-  })
-  
-  // Reset the unauthorized error flag when component is unmounted
-  onUnmounted(() => {
-    appStore.isUnauthorizedError = false
-  })
+})
+
+// Reset the unauthorized error flag when component is unmounted
+onUnmounted(() => {
+  appStore.isUnauthorizedError = false
 })
 
 // Handle social login completion
@@ -157,5 +154,16 @@ const logout = () => {
   appStore.quickLoginModal = false
   appStore.quickRegisterModal = false
   useRouter().push('/login')
+}
+
+// Handle pointer down outside modal to allow Google One Tap interaction
+const handlePointerDownOutside = (event) => {
+  const target = event.target
+  // Allow interaction with Google One Tap picker
+  if (target?.closest('#credential_picker_container') || 
+      target?.closest('iframe[src*="accounts.google.com"]') ||
+      target?.id === 'credential_picker_iframe') {
+    event.preventDefault()
+  }
 }
 </script>

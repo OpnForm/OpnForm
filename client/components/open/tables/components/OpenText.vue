@@ -1,7 +1,8 @@
 <template>
   <div 
     class="text-sm text-neutral-900" 
-    v-html="value" 
+    :title="String(value ?? '')"
+    v-text="value"
   />
 </template>
 

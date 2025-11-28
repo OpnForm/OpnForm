@@ -7,6 +7,12 @@ export function useFormValidation(formConfig, form, managerState) {
 
   const formRef = computed(() => toValue(form)) // Ensure reactivity with the form instance
   const configRef = computed(() => toValue(formConfig)) // Ensure reactivity with config
+  // Treat Notion-style layout/display blocks (nf-*) as non-validated elements
+  const isLayoutBlock = (field) => {
+    const t = field?.type
+    return typeof t === 'string' && t.startsWith('nf-')
+  }
+
 
   /**
    * Validates specific fields using the vForm instance's validate method.
@@ -23,7 +29,13 @@ export function useFormValidation(formConfig, form, managerState) {
     const validationUrl = `/forms/${config.slug}/answer` // Use reactive config
 
     // Use the reactive formRef
-    await formRef.value.validate(httpMethod, validationUrl, {}, fieldIds)
+    try {
+      await formRef.value.validate(httpMethod, validationUrl, {}, fieldIds)
+    } catch (error) {
+      console.error('[useFormValidation] validateFields: Validation error (precognition)', error)
+      useAlert().formValidationError(error.data)
+      throw error
+    }
     return true // Validation passed
   }
 
@@ -34,14 +46,17 @@ export function useFormValidation(formConfig, form, managerState) {
    * @param {Object} formModeStrategy - The strategy object for the current mode.
    * @returns {Promise<boolean>} Resolves true if validation passes or isn't required, rejects otherwise.
    */
+  // Shared filter to remove layout/payment blocks from validation
+  const filterValidatableFields = (fields) => {
+    return (fields || []).filter(field => field && field.id && field.type !== 'payment' && !isLayoutBlock(field))
+  }
+
   const validateCurrentPage = async (currentPageFields, formModeStrategy) => {
     if (!formModeStrategy?.validation?.validateOnNextPage) {
       return true
     }
 
-    const fieldIdsToValidate = currentPageFields
-      .filter(field => field && field.id && field.type !== 'payment')
-      .map(field => field.id)
+    const fieldIdsToValidate = filterValidatableFields(currentPageFields).map(field => field.id)
 
     if (fieldIdsToValidate.length === 0) {
       return true
@@ -69,9 +84,7 @@ export function useFormValidation(formConfig, form, managerState) {
       return true
     }
 
-    const fieldIdsToValidate = allFields
-      .filter(field => field && field.id && field.type !== 'payment')
-      .map(field => field.id)
+    const fieldIdsToValidate = filterValidatableFields(allFields).map(field => field.id)
 
     if (fieldIdsToValidate.length === 0) {
       return true
@@ -129,6 +142,7 @@ export function useFormValidation(formConfig, form, managerState) {
     validateFields,
     validateCurrentPage,
     validateSubmissionIfNotLastPage,
+    filterValidatableFields,
     findFirstPageWithError,
     onValidationFailure,
   }

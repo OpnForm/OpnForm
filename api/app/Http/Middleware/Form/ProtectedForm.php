@@ -19,14 +19,11 @@ class ProtectedForm
      */
     public function handle(Request $request, Closure $next)
     {
-        if (! $request->route('slug')) {
+        if (! $request->route('form')) {
             return $next($request);
         }
 
-        $form = Form::where('slug', $request->route('slug'))->firstOrFail();
-        $request->merge([
-            'form' => $form,
-        ]);
+        $form = $request->route('form');
         $userIsFormOwner = Auth::check() && Auth::user()->ownsForm($form);
         if (! $userIsFormOwner && $this->isProtected($request, $form)) {
             return response([

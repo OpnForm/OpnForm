@@ -3,6 +3,12 @@
         "name": "OpnForm"
     },
     "forms": {
+        "buttons": {
+            "submit": "Submit",
+            "next": "Next",
+            "previous": "Previous",
+            "re_fill": "Submit another response"
+        },
         "powered_by": "Powered by",
         "password_protected": "This form is protected by a password.",
         "invalid_password": "Invalid password.",
@@ -60,6 +66,12 @@
                 "failedIntent": "Failed to create payment intent.",
                 "processingFailed": "Payment processing failed."
             }
+        },
+        "validation_error": "Validation Error",
+        "validation_error_with_count": "Validation Error ({count} fields)",
+        "toggle": {
+            "yes": "Yes",
+            "no": "No"
         }
     }
 } 

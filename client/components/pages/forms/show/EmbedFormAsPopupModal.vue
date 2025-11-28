@@ -11,7 +11,7 @@
         variant="outline"
         color="neutral"
         icon="i-heroicons-chat-bubble-bottom-center-text"
-        @click="showEmbedFormAsPopupModal = true"
+        @click="onOpenClick"
       >
         Embed as popup
       </UButton>
@@ -164,6 +164,14 @@ const onClose = () => {
   removePreview()
   crisp.showChat()
   showEmbedFormAsPopupModal.value = false
+}
+const onOpenClick = () => {
+  const style = props.form?.presentation_style || 'classic'
+  if (style === 'focused') {
+    useAlert().warning('Popup mode is not currently supported for forms in Focused mode.')
+    return
+  }
+  showEmbedFormAsPopupModal.value = true
 }
 const copyToClipboard = () => {
   if (import.meta.server) return

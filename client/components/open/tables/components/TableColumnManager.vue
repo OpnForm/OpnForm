@@ -49,18 +49,19 @@
                 />
               </div>
               
-                <draggable
-                  :list="section.columns"
+                <VueDraggable
+                  :model-value="section.columns"
                   item-key="id"
                   :ghost-class="['opacity-50', 'bg-blue-50', 'rounded-md']"
                   :chosen-class="['bg-blue-100', 'rounded-md']"
                   :animation="200"
                   group="columns"
                   :data-section-type="section.type"
-                  @change="handleDragChange"
+                  @add="handleColumnAdd"
+                  @update="handleColumnUpdate"
                 >
-                  <template #item="{ element: column }">
-                    <div class="group">
+                  <template #default>
+                    <div v-for="column in section.columns" :key="column.id" class="group">
                       <div class="flex items-center gap-1 p-2 rounded-md hover:bg-neutral-50 transition-colors">
                         <!-- Drag Handle -->
                         <div class="w-4 h-4 flex items-center justify-center opacity-60 group-hover:opacity-100 transition-opacity">
@@ -128,7 +129,7 @@
                       </div>
                     </div>
                   </template>
-                </draggable>
+                </VueDraggable>
             </div>
           </template>
           </ScrollableContainer>
@@ -140,7 +141,7 @@
 </template>
 
 <script setup>
-import draggable from 'vuedraggable'
+import { VueDraggable } from 'vue-draggable-plus'
 import BlockTypeIcon from '~/components/open/forms/components/BlockTypeIcon.vue'
 import ScrollableContainer from '~/components/dashboard/ScrollableContainer.vue'
 
@@ -232,20 +233,24 @@ const columnSections = computed(() => {
 })
 
 // Handle drag end event
-const handleDragChange = async (event) => {  
-  if (event.added) {
-    const columnId = event.added.element.id
-    props.tableState.toggleColumnVisibility(columnId)
-    await nextTick() // Wait for Vue to process the visibility change
+const handleColumnAdd = async (evt) => {
+  const column = evt.data || evt.clonedData
+  if (!column) return
+  const isVisibleTarget = evt.to?.dataset?.sectionType === 'visible'
+  if (isVisibleTarget) {
+    props.tableState.toggleColumnVisibility(column.id)
+    await nextTick()
+    props.tableState.setColumnOrder(column.id, evt.newIndex)
+  } else {
+    // Moved into hidden
+    props.tableState.toggleColumnVisibility(column.id)
   }
+}
 
-  const isNowVisibleAfterAdd = event.added ? props.tableState.columnVisibility.value[event.added.element.id] : undefined
-
-  if (event.moved || (event.added && isNowVisibleAfterAdd)) {
-    const eventData = event.moved || event.added
-    const { element, newIndex } = eventData
-    props.tableState.setColumnOrder(element.id, newIndex)
-  }
+const handleColumnUpdate = (evt) => {
+  const column = evt.data
+  if (!column) return
+  props.tableState.setColumnOrder(column.id, evt.newIndex)
 }
 
 // Get pin icon - now using computed map
@@ -262,7 +267,7 @@ const getPinTooltip = (columnId) => {
 
 // Toggle all columns visibility - now using computed map
 const toggleAllColumns = (targetVisibility) => {
-  const columns = props.tableState.columnConfigurations.value || []
+  const columns = props.tableState.orderedColumns.value || []
   const visibilityMap = columnVisibilityMap.value
   
   columns

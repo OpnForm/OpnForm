@@ -1,0 +1,141 @@
+---
+openapi: put /open/forms/{form}/integrations/{integrationid}
+---
+
+# Update Webhook Integration
+
+Modify an existing webhook integration's URL, secret, headers, or status.
+
+## Authentication & Scope
+
+This endpoint requires a **Personal Access Token** with the `manage-integrations` ability.
+
+## Request
+
+<ParamField path="form" type="number" required>
+    The ID of the form containing the webhook.
+</ParamField>
+
+<ParamField path="integrationid" type="number" required>
+    The ID of the webhook integration to update.
+</ParamField>
+
+<ParamField body="integration_id" type="string" required>
+    Must be set to `"webhook"`.
+</ParamField>
+
+<ParamField body="status" type="string">
+    The status of the webhook. Allowed values: `"active"`, `"inactive"`.
+</ParamField>
+
+<ParamField body="data" type="object" required>
+Configuration object containing webhook details. All fields are optional.
+
+<Expandable title="data properties">
+<ParamField body="webhook_url" type="string">
+The updated URL where form submissions will be sent. Must be a valid HTTP/HTTPS URL.
+</ParamField>
+
+<ParamField body="webhook_secret" type="string">
+    Update the signing secret for HMAC-SHA256 validation. Must be at least 12
+    characters. Provide a new value to rotate the secret.
+</ParamField>
+
+<ParamField body="webhook_headers" type="object">
+Update custom HTTP headers. Replaces all existing headers with the provided ones. Maximum 10 headers allowed. See blocked headers list below for restricted header names.
+</ParamField>
+</Expandable>
+</ParamField>
+
+<ParamField body="logic" type="object">
+    Update the conditional logic for webhook triggering.
+</ParamField>
+
+<RequestExample>
+```bash cURL
+curl -X PUT 'https://api.opnform.com/open/forms/123/integrations/42' \
+  -H 'Authorization: Bearer YOUR_PAT' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "integration_id": "webhook",
+    "status": "active",
+    "data": {
+      "webhook_url": "https://new-endpoint.com/opnform-hook",
+      "webhook_secret": "whsec_newsecret123456789abcdef",
+      "webhook_headers": {
+        "X-API-Key": "new-api-key",
+        "X-Custom-ID": "updated-value"
+      }
+    }
+  }'
+```
+</RequestExample>
+
+## Response
+
+`200 OK` – Webhook updated successfully.
+
+<ResponseExample>
+```json Success
+{
+  "message": "Form Integration was updated.",
+  "form_integration": {
+    "id": 42,
+    "form_id": 123,
+    "integration_id": "webhook",
+    "status": "active",
+    "data": {
+      "webhook_url": "https://new-endpoint.com/opnform-hook",
+      "webhook_secret": "whsec_newsecret123456789abcdef",
+      "webhook_headers": {
+        "X-API-Key": "new-api-key",
+        "X-Custom-ID": "updated-value"
+      }
+    }
+  }
+}
+```
+</ResponseExample>
+
+`403 Forbidden` – The token does not have `manage-integrations` ability or insufficient form permissions.
+
+`404 Not Found` – Form or integration not found.
+
+`422 Unprocessable Entity` – Validation error.
+
+<ResponseExample>
+```json Error
+{
+  "message": "The given data was invalid.",
+  "errors": {
+    "data.webhook_secret": ["The webhook secret must be at least 12 characters."],
+    "data.webhook_headers": ["The 'Authorization' header cannot be customized for security reasons."]
+  }
+}
+```
+</ResponseExample>
+
+## Security
+
+### Secret Rotation
+
+When updating the `webhook_secret`, the new secret will be used for all future webhook requests. Existing webhook attempts with the old secret will fail validation on the receiver's end.
+
+If you need to rotate your secret, consider implementing a grace period on your receiving endpoint to accept both old and new secrets during the transition.
+
+### Blocked Headers
+
+For security reasons, the following headers cannot be customized in `webhook_headers`:
+
+-   `Authorization`
+-   `X-Webhook-Signature`
+-   `Content-Type`
+-   `Content-Length`
+-   `Host`
+-   `Cookie`
+-   `X-CSRF-Token`
+-   `X-Forwarded-For`
+-   `X-Forwarded-Proto`
+-   `X-Real-IP`
+
+For signature validation implementation examples, see [Validating Webhook Signatures](/api-reference/integrations/webhook-security).

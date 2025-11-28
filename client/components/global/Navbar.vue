@@ -40,6 +40,14 @@
           class="hidden md:flex gap-x-2 ml-auto"
         >
           <NuxtLink
+            v-if="user"
+            :to="{ name: 'home' }"
+            :class="navLinkClasses"
+            class="hidden lg:block"
+          >
+            My Forms
+          </NuxtLink>  
+          <NuxtLink
             v-if="$route.name !== 'templates'"
             :to="{ name: 'templates' }"
             :class="navLinkClasses"
@@ -121,7 +129,7 @@
                         :src="user.photo_url"
                         class="rounded-full w-6 h-6"
                       >
-                      <p class="ml-2 hidden sm:inline">
+                      <p class="ml-2 hidden sm:inline max-w-20 truncate">
                         {{ user.name }}
                       </p>
                     </button>
@@ -189,6 +197,7 @@ const route = useRoute()
 const isFormSlugRoute = computed(() => route.name && route.name.startsWith('forms-slug'))
 const formSlug = computed(() => isFormSlugRoute.value ? route.params.slug : null)
 const { data: form } = useForms().detail(formSlug.value, {
+  usePrivate: true,
   enabled: computed(() => !!formSlug.value)
 })
 

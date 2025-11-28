@@ -27,7 +27,7 @@ main() {
     if [ "$ROLE" = "api" ]; then
         echo "Running setup for API role..."
         apply_db_migrations
-        run_init_project
+        initialize_instance
         optimize_application
         echo "Starting server for API role with command: $@"
         exec "$@"
@@ -125,9 +125,9 @@ apply_db_migrations() {
     php ./artisan migrate --force
 }
 
-run_init_project() {
-    echo "Running app:init-project command"
-    php ./artisan app:init-project
+initialize_instance() {
+    echo "Initializing instance for telemetry"
+    php ./artisan telemetry:initialize-instance
 }
 
 optimize_application() {

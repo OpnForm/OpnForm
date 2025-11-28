@@ -85,7 +85,7 @@ const props = defineProps({
 })
 
 definePageMeta({
-  middleware: "auth",
+  middleware: ["auth", "readonly-block"],
 })
 
 useOpnSeoMeta({

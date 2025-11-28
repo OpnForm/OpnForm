@@ -1,0 +1,23 @@
+<svg width="70" height="50" viewBox="0 0 70 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g clip-path="url(#clip0_3912_149)">
+<rect width="70" height="50" fill="white"/>
+<rect width="70" height="15" fill="var(--icon-fg, currentColor)"/>
+<mask id="mask0_3912_149" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="70" height="15">
+<rect width="70" height="15" fill="#737373"/>
+</mask>
+<g mask="url(#mask0_3912_149)">
+<path d="M18.5 5.5C13.5 5.5 5.99997 10.0499 -2.86102e-05 11.0999C-1.6667 11.2999 -5.20003 11.7599 -6.00003 11.9999C-6.80003 12.2399 -4.33336 14.4999 -3.00003 15.5999H73L72 10.9499C63.3387 9.82554 62.8267 8.00018 58.5 8C54.1733 7.99982 49 13.5 42 13C28 10.75 23.0111 5.5 18.5 5.5Z" fill="var(--icon-muted, currentColor)"/>
+</g>
+<rect x="19" y="20" width="32" height="3" rx="1.5" fill="var(--icon-fg, currentColor)"/>
+<rect x="19" y="32" width="32" height="3" rx="1.5" fill="var(--icon-fg, currentColor)"/>
+<rect x="19" y="26" width="15" height="3" rx="1.5" fill="var(--icon-fg, currentColor)"/>
+<rect x="28" y="38" width="14" height="3" rx="1.5" fill="var(--icon-fg, currentColor)"/>
+<rect x="36" y="26" width="15" height="3" rx="1.5" fill="var(--icon-fg, currentColor)"/>
+<path d="M54 2C54 4.20914 52.2091 6 50 6C47.7909 6 46 4.20914 46 2C46 -0.209139 47.7909 -2 50 -2C52.2091 -2 54 -0.209139 54 2Z" fill="var(--icon-soft, var(--icon-muted, currentColor))"/>
+</g>
+<defs>
+<clipPath id="clip0_3912_149">
+<rect width="70" height="50" fill="white"/>
+</clipPath>
+</defs>
+</svg>

@@ -7,6 +7,8 @@ import { computed, watch } from 'vue'
  */
 export function useCurrentWorkspace() {
   const appStore = useAppStore()
+  const route = useRoute()
+  const router = useRouter()
   const { list } = useWorkspaces()
   const { isAuthenticated } = useIsAuthenticated()
   
@@ -14,7 +16,7 @@ export function useCurrentWorkspace() {
     enabled: () => isAuthenticated.value
   })
   
-  // Watch for workspaces data and auto-select first workspace if none is current
+  // Watch for workspaces data and apply priority: query param > cookie > first workspace
   watch(
     () => workspacesQuery.data.value,
     (workspaces) => {
@@ -22,15 +24,44 @@ export function useCurrentWorkspace() {
         return
       }
 
+      // Priority 1: workspace_id query param
+      const requestedId = route.query.workspace_id
+      if (requestedId) {
+        const match = workspaces.find(ws => String(ws.id) === String(requestedId))
+        if (match) {
+          appStore.setCurrentId(match.id)
+          // Clear workspace_id query param after switching to avoid blocking future switches
+          const newQuery = { ...route.query }
+          delete newQuery.workspace_id
+          router.replace({ query: newQuery })
+          return
+        }
+      }
+
+      // Priority 2: existing cookie value (currentId)
       const currentWorkspaceExists = appStore.currentId && workspaces.some(ws => ws.id === appStore.currentId)
 
       if (workspaces.length === 0) {
         appStore.setCurrentId(null)
       } else if (!currentWorkspaceExists) {
+        // Priority 3: first available workspace
         appStore.setCurrentId(workspaces[0].id)
       }
     },
     { immediate: true }
+  )
+
+  // Watch for query param changes after initial load
+  watch(
+    () => route.query.workspace_id,
+    (requestedId) => {
+      const workspaces = workspacesQuery.data.value
+      if (!requestedId || !workspaces) return
+      const match = workspaces.find(ws => String(ws.id) === String(requestedId))
+      if (match && appStore.currentId !== match.id) {
+        appStore.setCurrentId(match.id)
+      }
+    }
   )
   
   // Reactive current workspace - combines store state with query data

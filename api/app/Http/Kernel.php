@@ -13,7 +13,6 @@ use App\Http\Middleware\IsModerator;
 use App\Http\Middleware\IsNotSubscribed;
 use App\Http\Middleware\IsSubscribed;
 use App\Http\Middleware\RequireProPlan;
-use App\Http\Middleware\SelfHostedCredentialsMiddleware;
 use Illuminate\Foundation\Http\Kernel as HttpKernel;
 use App\Http\Middleware\CheckUserIsBlocked;
 
@@ -90,7 +89,7 @@ class Kernel extends HttpKernel
             \App\Http\Middleware\EncryptCookies::class,
             \Illuminate\Session\Middleware\StartSession::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
-            SelfHostedCredentialsMiddleware::class,
+
             ImpersonationMiddleware::class,
             CheckUserIsBlocked::class,
         ],

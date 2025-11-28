@@ -1,0 +1,54 @@
+---
+openapi: get /open/forms/{form}/integrations
+---
+
+# List Form Integrations
+
+Retrieve all integrations configured for a specific form.
+
+## Authentication & Scope
+
+This endpoint requires a **Personal Access Token** with the `manage-integrations` ability.
+
+## Request
+
+<ParamField path="form" type="number" required>
+    The ID of the form for which to list integrations.
+</ParamField>
+
+```http
+GET /open/forms/{form}/integrations HTTP/1.1
+Host: api.opnform.com
+Authorization: Bearer <token>
+```
+
+## Response
+
+`200 OK` – Returns an array of integration objects.
+
+<ResponseExample>
+```json Success
+[
+  {
+    "id": 42,
+    "form_id": 123,
+    "integration_id": "webhook",
+    "status": "active",
+    "data": {
+      "webhook_url": "https://example.com/opnform-hook"
+    }
+  },
+  {
+    "id": 43,
+    "form_id": 123,
+    "integration_id": "webhook",
+    "status": "inactive",
+    "data": {
+      "webhook_url": "https://old-endpoint.com/hook"
+    }
+  }
+]
+```
+</ResponseExample>
+
+`403 Forbidden` – The token does not include the `manage-integrations` ability, or you don't have permission to update this form.

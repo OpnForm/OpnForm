@@ -28,6 +28,10 @@ class Workspace extends Model implements CachableAttributes
         'settings'
     ];
 
+    protected $dispatchesEvents = [
+        'created' => \App\Events\Models\WorkspaceCreated::class,
+    ];
+
     protected $appends = [
         'is_pro',
         'is_trialing',
@@ -45,6 +49,7 @@ class Workspace extends Model implements CachableAttributes
 
     protected $cachableAttributes = [
         'is_pro',
+        'is_trialing',
         'is_enterprise',
         'is_risky',
         'submissions_count',
@@ -106,7 +111,11 @@ class Workspace extends Model implements CachableAttributes
 
         return $this->remember('is_pro', 15 * 60, function (): bool {
             // Make sure at least one owner is pro
-            foreach ($this->owners as $owner) {
+            $owners = $this->relationLoaded('users')
+                ? $this->users->where('pivot.role', 'admin')
+                : $this->owners()->get();
+
+            foreach ($owners as $owner) {
                 if ($owner->is_subscribed) {
                     return true;
                 }
@@ -123,8 +132,12 @@ class Workspace extends Model implements CachableAttributes
         }
 
         return $this->remember('is_trialing', 15 * 60, function (): bool {
-            // Make sure at least one owner is pro
-            foreach ($this->owners as $owner) {
+            // Make sure at least one owner is trialing
+            $owners = $this->relationLoaded('users')
+                ? $this->users->where('pivot.role', 'admin')
+                : $this->owners()->get();
+
+            foreach ($owners as $owner) {
                 if ($owner->onTrial()) {
                     return true;
                 }
@@ -141,8 +154,12 @@ class Workspace extends Model implements CachableAttributes
         }
 
         return $this->remember('is_enterprise', 15 * 60, function (): bool {
-            // Make sure at least one owner is pro
-            foreach ($this->owners as $owner) {
+            // Make sure at least one owner has enterprise subscription
+            $owners = $this->relationLoaded('users')
+                ? $this->users->where('pivot.role', 'admin')
+                : $this->owners()->get();
+
+            foreach ($owners as $owner) {
                 if ($owner->has_enterprise_subscription) {
                     return true;
                 }
@@ -155,7 +172,6 @@ class Workspace extends Model implements CachableAttributes
     public function getIsRiskyAttribute()
     {
         return $this->remember('is_risky', 15 * 60, function (): bool {
-            // A workspace is risky if all of his users are risky
             foreach ($this->owners as $owner) {
                 if (!$owner->is_risky) {
                     return false;
@@ -170,7 +186,12 @@ class Workspace extends Model implements CachableAttributes
     {
         return $this->remember('submissions_count', 15 * 60, function (): int {
             $total = 0;
-            foreach ($this->forms as $form) {
+            // Use loaded relationship if available to avoid queries
+            $forms = $this->relationLoaded('forms')
+                ? $this->forms
+                : $this->forms()->get();
+
+            foreach ($forms as $form) {
                 $total += $form->submissions_count;
             }
 
@@ -181,6 +202,10 @@ class Workspace extends Model implements CachableAttributes
     public function getUsersCountAttribute()
     {
         return $this->remember('users_count', 15 * 60, function (): int {
+            // Use loaded relationship if available to avoid queries
+            if ($this->relationLoaded('users')) {
+                return $this->users->count();
+            }
             return $this->users()->count();
         });
     }
@@ -214,6 +239,16 @@ class Workspace extends Model implements CachableAttributes
     }
 
     /**
+     * Get the OIDC identity connections for this workspace.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function identityConnections()
+    {
+        return $this->hasMany(\App\Enterprise\Oidc\Models\IdentityConnection::class);
+    }
+
+    /**
      * Check if the given OAuthProvider ID belongs to any user in this workspace.
      *
      * @param int $providerId
@@ -229,16 +264,41 @@ class Workspace extends Model implements CachableAttributes
 
     public function isAdminUser(?User $user)
     {
-        return $user ? $this->users()
+        if (!$user) {
+            return false;
+        }
+
+        // Use loaded relationship if available to avoid queries
+        if ($this->relationLoaded('users')) {
+            $pivot = $this->users->where('id', $user->id)->first()?->pivot;
+            if ($pivot && isset($pivot->role)) {
+                return $pivot->role === User::ROLE_ADMIN;
+            }
+        }
+
+        return $this->users()
             ->wherePivot('user_id', $user->id)
             ->wherePivot('role', User::ROLE_ADMIN)
-            ->exists() : false;
+            ->exists();
     }
+
     public function isReadonlyUser(?User $user)
     {
-        return $user ? $this->users()
+        if (!$user) {
+            return false;
+        }
+
+        // Use loaded relationship if available to avoid queries
+        if ($this->relationLoaded('users')) {
+            $pivot = $this->users->where('id', $user->id)->first()?->pivot;
+            if ($pivot && isset($pivot->role)) {
+                return $pivot->role === User::ROLE_READONLY;
+            }
+        }
+
+        return $this->users()
             ->wherePivot('user_id', $user->id)
             ->wherePivot('role', User::ROLE_READONLY)
-            ->exists() : false;
+            ->exists();
     }
 }

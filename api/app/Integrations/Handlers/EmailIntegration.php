@@ -27,6 +27,7 @@ class EmailIntegration extends AbstractIntegrationHandler
             'include_submission_data' => 'boolean',
             'include_hidden_fields_submission_data' => ['nullable', 'boolean'],
             'reply_to' => 'nullable',
+            'link_edit_submission' => ['nullable', 'boolean']
         ];
 
         if ($form->is_pro || config('app.self_hosted')) {
@@ -58,7 +59,7 @@ class EmailIntegration extends AbstractIntegrationHandler
                 ->count();
             if ($existingEmailIntegrations > 0) {
                 throw ValidationException::withMessages([
-                    'settings.send_to' => ['Free users are limited to 1 email integration per form.']
+                    'data.send_to' => ['Free users are limited to 1 email integration per form.']
                 ]);
             }
         }
@@ -68,7 +69,17 @@ class EmailIntegration extends AbstractIntegrationHandler
 
     protected function shouldRun(): bool
     {
-        return $this->integrationData?->send_to && parent::shouldRun() && !$this->riskLimitReached();
+        // Check basic conditions first
+        if (!$this->integrationData?->send_to || !parent::shouldRun()) {
+            return false;
+        }
+
+        // Only check risk limit if integration would otherwise run
+        if ($this->riskLimitReached()) {
+            throw new \Exception('Email integration temporarily blocked due to account restrictions. Please contact support to unblock your account or upgrade to a Pro plan to continue sending emails.');
+        }
+
+        return true;
     }
 
     // To avoid phishing abuse we limit this feature for risky users
@@ -77,7 +88,7 @@ class EmailIntegration extends AbstractIntegrationHandler
         // This is a per-workspace limit for risky workspaces
         if ($this->form->workspace->is_risky) {
             if ($this->form->workspace->submissions_count >= self::RISKY_USERS_LIMIT) {
-                Log::error('!!!DANGER!!! Dangerous user detected! Attempting many email sending.', [
+                Log::channel('slack_alerts')->error('🚨 Dangerous new user detected! Attempting many email sending.', [
                     'form_id' => $this->form->id,
                     'workspace_id' => $this->form->workspace->id,
                 ]);
@@ -96,7 +107,7 @@ class EmailIntegration extends AbstractIntegrationHandler
         }
 
         if ($this->form->is_pro) {  // For Send to field Mentions are Pro feature
-            $formatter = (new FormSubmissionFormatter($this->form, $this->submissionData))->outputStringsOnly();
+            $formatter = (new FormSubmissionFormatter($this->form, $this->submissionData))->outputStringsOnly()->showHiddenFields();
             $parser = new MentionParser($this->integrationData?->send_to, $formatter->getFieldsWithValue());
             $sendTo = $parser->parseAsText();
         } else {

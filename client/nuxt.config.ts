@@ -7,7 +7,8 @@ export default defineNuxtConfig({
   devtools: {enabled: true},
   css: ['~/css/app.css'],
 
-  modules: [
+  // Disable certain plugins during testing
+  modules: process.env.VITEST ? [] : [
       '@pinia/nuxt', 
       '@vueuse/nuxt', 
       '@vueuse/motion/nuxt', 
@@ -20,8 +21,15 @@ export default defineNuxtConfig({
       '@zadigetvoltaire/nuxt-gtm',
   ],
 
+  // Skip plugin initialization during tests
+  plugins: process.env.VITEST ? [
+      // Only include plugins safe for testing
+  ] : [
+      // Full plugin list for production/dev
+  ],
+
   build: {
-      transpile: ["vue-notion", "query-builder-vue-3", "vue-signature-pad", "@zxing/library"],
+      transpile: ["vue-notion", "vue-signature-pad", "@zxing/library"],
   },
 
   i18n: {
@@ -53,6 +61,9 @@ export default defineNuxtConfig({
         { code: 'ca', name: 'Valencian/Catalan', iso: 'ca-ES', file: 'ca.json' },
         { code: 'sv', name: 'Swedish', iso: 'sv-SE', file: 'sv.json' },
         { code: 'pl', name: 'Polish', iso: 'pl-PL', file: 'pl.json' },
+        { code: 'nl', name: 'Dutch', iso: 'nl-NL', file: 'nl.json' },
+        { code: 'sr', name: 'Serbian', iso: 'sr-RS', file: 'sr.json' },
+        { code: 'uk', name: 'Ukrainian', iso: 'uk-UA', file: 'uk.json' },
       ],
       defaultLocale: 'en',
       lazy: true,
@@ -125,7 +136,14 @@ export default defineNuxtConfig({
   },
 
   icon: {
+      customCollections: [
+          {
+              prefix: 'opnform',
+              dir: './public/icons'
+          },
+      ],
       clientBundle: {
+          includeCustomCollections: true,
           scan: {
               globInclude: ['**/*.vue', '**/*.json'],
           },

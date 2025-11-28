@@ -3,7 +3,8 @@
 @import "./fonts.css";
 
 @custom-variant dark (&:where(.dark, .dark *));
-@custom-variant ltr-only (&:where(:not([dir="rtl"] *)));
+@custom-variant ltr-only (&:where(:dir(ltr)));
+@custom-variant rtl-only (&:where(:dir(rtl)));
 
 /* Explicitly scan form-themes.js file */
 @source "./lib/forms/themes/form-themes.js";
@@ -37,7 +38,7 @@
 
     /* Custom animations */
     --animate-bounce-slow: bounce-slow 3s ease-in-out infinite;
-    --animate-infinite-scroll: infinite-scroll 80s linear infinite;
+    --animate-infinite-scroll: infinite-scroll 550s linear infinite;
     --animate-text: text 5s ease infinite;
 
     /* Custom keyframes */
@@ -182,8 +183,12 @@
     }
 
     p,
-    div {
-        text-align: inherit;
+    div,
+    span,
+    ol,
+    ul,
+    li {
+        @apply text-inherit;
     }
 
     h1,
@@ -192,37 +197,129 @@
     h4,
     h5,
     h6 {
-        color: var(--color-neutral-900);
-        text-align: inherit;
-    }
-
-    :where(.dark) h1,
-    :where(.dark) h2,
-    :where(.dark) h3,
-    :where(.dark) h4,
-    :where(.dark) h5,
-    :where(.dark) h6 {
-        color: white;
+        @apply text-neutral-900 dark:text-white text-inherit;
     }
 
     h1 {
-        font-size: var(--text-2xl);
-        font-weight: 800;
-    }
-
-    @media (min-width: 640px) {
-        h1 {
-            font-size: var(--text-3xl);
-        }
+        @apply text-2xl sm:text-3xl font-semibold;
     }
 
     h2 {
-        font-size: var(--text-2xl);
-        font-weight: 800;
+        @apply text-2xl font-semibold;
     }
 
     a {
-        color: var(--color-blue-500);
+        @apply text-blue-500;
+    }
+
+    /* Field help styles */
+    .field-help p,
+    .field-help ol,
+    .field-help ul,
+    .field-help li {
+        color: var(--color-neutral-500);
+    }
+
+    :where(.dark) .field-help p,
+    :where(.dark) .field-help ol,
+    :where(.dark) .field-help ul,
+    :where(.dark) .field-help li {
+        color: var(--color-neutral-400);
+    }
+
+    .field-help ol {
+        list-style-type: decimal;
+        list-style-position: inside;
+    }
+
+    .field-help ul {
+        list-style-type: disc;
+        list-style-position: inside;
+    }
+
+    /* Logic query builder */
+    .query-builder-rule {
+        background-color: var(--color-neutral-100);
+        max-width: 100%;
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+        padding-top: 0.5rem;
+        padding-bottom: 0.5rem;
+    }
+
+    .query-builder-group__group-children {
+        margin-left: 0;
+    }
+
+    .query-builder-child__delete-child {
+        right: 0.75rem;
+    }
+
+    /* Gradient text utility */
+    .gradient-text {
+        background: linear-gradient(90deg, #3b82f6 0.24%, #60a5fa 100.24%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        text-fill-color: transparent;
+    }
+
+    /* Text content styling for forms */
+    .nf-text,
+    .form-description {
+        p,
+        div,
+        span,
+        ol,
+        ul,
+        li {
+            @apply text-inherit;
+        }
+
+        :where(.dark) & {
+            p,
+            div,
+            span,
+            ol,
+            ul,
+            li {
+                color: white;
+            }
+        }
+
+        ol {
+            @apply list-decimal list-inside;
+            margin-left: 10px;
+        }
+
+        ul {
+            @apply list-disc list-inside;
+            margin-left: 10px;
+        }
+    }
+
+    /* Form input labels - checkbox, toggle switch, etc. */
+    .form-input-wrapper,
+    .input-wrapper,
+    [data-wrapper="input"] {
+        label {
+            @apply text-inherit;
+        }
+
+        :where(.dark) & label {
+            color: white;
+        }
+    }
+
+    /* Additional fallback for form labels */
+    form label,
+    .form-group label {
+        @apply text-inherit;
+    }
+
+    :where(.dark) form label,
+    :where(.dark) .form-group label {
+        color: white;
     }
 }
 
@@ -263,95 +360,6 @@
 /* Actual CSS */
 body.dark * {
     @apply border-neutral-600;
-}
-
-#app {
-    font-family: Inter, sans-serif !important;
-    @apply min-h-screen;
-}
-
-@layer base {
-    p,
-    div,
-    span,
-    ol,
-    ul,
-    li {
-        @apply text-inherit;
-    }
-
-    h1,
-    h2,
-    h3,
-    h4,
-    h5,
-    h6 {
-        @apply text-neutral-900 dark:text-white text-inherit;
-    }
-
-    h1 {
-        @apply text-2xl sm:text-3xl font-extrabold;
-    }
-
-    h2 {
-        @apply text-2xl font-extrabold;
-    }
-
-    a {
-        @apply text-blue-500;
-    }
-
-    /* Field help styles */
-    .field-help p,
-    .field-help ol,
-    .field-help ul,
-    .field-help li {
-        color: var(--color-neutral-400);
-    }
-
-    :where(.dark) .field-help p,
-    :where(.dark) .field-help ol,
-    :where(.dark) .field-help ul,
-    :where(.dark) .field-help li {
-        color: var(--color-neutral-500);
-    }
-
-    .field-help ol {
-        list-style-type: decimal;
-        list-style-position: inside;
-    }
-
-    .field-help ul {
-        list-style-type: disc;
-        list-style-position: inside;
-    }
-
-    /* Logic query builder */
-    .query-builder-rule {
-        background-color: var(--color-neutral-100);
-        max-width: 100%;
-        padding-left: 0.75rem;
-        padding-right: 0.75rem;
-        padding-top: 0.5rem;
-        padding-bottom: 0.5rem;
-    }
-
-    .query-builder-group__group-children {
-        margin-left: 0;
-    }
-
-    .query-builder-child__delete-child {
-        right: 0.75rem;
-    }
-
-    /* Gradient text utility */
-    .gradient-text {
-        background: linear-gradient(90deg, #3b82f6 0.24%, #60a5fa 100.24%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        text-fill-color: transparent;
-    }
 }
 
 :root {

@@ -20,6 +20,7 @@ use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 use Stevebauman\Purify\Facades\Purify;
 use Carbon\Carbon;
+use App\Events\Forms\FormSaved;
 
 class Form extends Model implements CachableAttributes
 {
@@ -35,13 +36,15 @@ class Form extends Model implements CachableAttributes
 
     public const BORDER_RADIUS = ['none', 'small', 'full'];
 
-    public const THEMES = ['default', 'simple', 'notion'];
+    public const THEMES = ['default', 'simple', 'notion', 'minimal'];
+
+    public const PRESENTATION_STYLES = ['classic', 'focused'];
 
     public const WIDTHS = ['centered', 'full'];
 
     public const VISIBILITY = ['public', 'draft', 'closed'];
 
-    public const LANGUAGES = ['en', 'fr', 'hi', 'es', 'ar', 'zh', 'ja', 'bn', 'pt', 'ru', 'ur', 'pa', 'de', 'jv', 'ko', 'vi', 'te', 'mr', 'ta', 'tr', 'sk', 'cs', 'eu', 'gl', 'ca', 'sv', 'pl'];
+    public const LANGUAGES = ['en', 'fr', 'hi', 'es', 'ar', 'zh', 'ja', 'bn', 'pt', 'ru', 'ur', 'pa', 'de', 'jv', 'ko', 'vi', 'te', 'mr', 'ta', 'tr', 'sk', 'cs', 'eu', 'gl', 'ca', 'sv', 'pl', 'nl', 'sr', 'uk'];
 
     protected $fillable = [
         'workspace_id',
@@ -60,22 +63,30 @@ class Form extends Model implements CachableAttributes
         'size',
         'border_radius',
         'theme',
+        'presentation_style',
         'width',
         'layout_rtl',
         'cover_picture',
+        'cover_settings',
         'logo_picture',
         'dark_mode',
         'color',
         'uppercase_labels',
         'no_branding',
         'transparent_background',
+        'translations',
+
+        // Settings
+        'settings',
 
         // Custom Code
         'custom_code',
+        'custom_css',
 
         // Submission
         'submit_button_text',
         'database_fields_update',
+        'clear_empty_fields_on_update',
         're_fillable',
         're_fill_button_text',
         'submitted_text',
@@ -93,6 +104,7 @@ class Form extends Model implements CachableAttributes
         'auto_save',
         'auto_focus',
         'enable_partial_submissions',
+        'enable_ip_tracking',
 
         // Security & Privacy
         'can_be_indexed',
@@ -111,8 +123,14 @@ class Form extends Model implements CachableAttributes
             'tags' => 'array',
             'removed_properties' => 'array',
             'seo_meta' => 'object',
+            'cover_settings' => 'array',
+            'translations' => 'array',
             'enable_partial_submissions' => 'boolean',
+            'enable_ip_tracking' => 'boolean',
             'auto_save' => 'boolean',
+            'clear_empty_fields_on_update' => 'boolean',
+            'presentation_style' => 'string',
+            'settings' => 'array',
         ];
     }
 
@@ -133,6 +151,7 @@ class Form extends Model implements CachableAttributes
         'is_pro',
         'views_count',
         'max_file_size',
+        'submissions_count',
     ];
 
     /**
@@ -142,6 +161,7 @@ class Form extends Model implements CachableAttributes
      */
     protected $dispatchesEvents = [
         'created' => FormCreated::class,
+        'saved' => FormSaved::class,
     ];
 
     public function getIsProAttribute()
@@ -176,21 +196,68 @@ class Form extends Model implements CachableAttributes
 
     public function getSubmissionsCountAttribute()
     {
-        return $this->submissions()->where('status', FormSubmission::STATUS_COMPLETED)->count();
+        // If hydrated from withCount, use it directly (no cache needed)
+        if (isset($this->attributes['submissions_count'])) {
+            return $this->attributes['submissions_count'];
+        }
+
+        // Fallback to cached query for individual form access
+        return $this->remember('submissions_count', 15 * 60, function (): int {
+            return $this->submissions()->where('status', FormSubmission::STATUS_COMPLETED)->count();
+        });
     }
 
     public function getViewsCountAttribute()
     {
-        return $this->remember('views_count', 15 * 60, function (): int {
-            if (config('database.default') === 'mysql') {
-                return (int) ($this->views()->count() +
-                    $this->statistics()->sum(DB::raw("json_extract(data, '$.views')")));
-            }
+        // If preloaded via scope, use the combined count
+        if (isset($this->attributes['total_views_count'])) {
+            return (int) $this->attributes['total_views_count'];
+        }
 
-            return $this->views()->count() +
-                $this->statistics()->sum(DB::raw("cast(data->>'views' as integer)"));
-        });
+        // Fallback to cached calculation for individual access
+        return $this->remember('views_count', 15 * 60, fn () => $this->calculateTotalViews());
     }
+
+    /**
+     * Calculate total views from both views table and statistics table
+     */
+    private function calculateTotalViews(): int
+    {
+        $directViews = $this->views()->count();
+        $statisticsViews = $this->getStatisticsViewsSum();
+        return $directViews + $statisticsViews;
+    }
+
+    /**
+     * Get views sum from statistics table (database agnostic)
+     */
+    private function getStatisticsViewsSum(): int
+    {
+        return (int) $this->statistics()->sum(
+            config('database.default') === 'mysql'
+                ? DB::raw("CAST(JSON_EXTRACT(data, '$.views') AS SIGNED)")
+                : DB::raw("CAST(data->>'views' AS INTEGER)")
+        );
+    }
+
+    /**
+     * Scope to efficiently load total views count
+     */
+    public function scopeWithTotalViews($query)
+    {
+        $statisticsExpression = config('database.default') === 'mysql'
+            ? 'SUM(CAST(JSON_EXTRACT(data, "$.views") AS SIGNED))'
+            : 'SUM(CAST(data->>\'views\' AS INTEGER))';
+
+        return $query->addSelect([
+            'total_views_count' => DB::raw(
+                'COALESCE((SELECT COUNT(*) FROM form_views WHERE form_views.form_id = forms.id), 0) + ' .
+                    'COALESCE((SELECT ' . $statisticsExpression . ' FROM form_statistics WHERE form_statistics.form_id = forms.id), 0)'
+            )
+        ]);
+    }
+
+
 
     public function setSubmittedTextAttribute($value)
     {
@@ -325,5 +392,16 @@ class Form extends Model implements CachableAttributes
     public static function newFactory()
     {
         return FormFactory::new();
+    }
+
+    public static function booted(): void
+    {
+        static::deleting(function (Form $form) {
+            $form->integrations()
+                ->lazyById()
+                ->each(function (FormIntegration $integration): void {
+                    $integration->delete();
+                });
+        });
     }
 }

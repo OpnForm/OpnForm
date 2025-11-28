@@ -26,9 +26,11 @@
         <span class="font-semibold">{{ form.title }}</span>.
       </p>
 
-      <form
+      <v-form
         v-if="templateForm"
+        :form="templateForm"
         @submit.prevent="onSubmit"
+        @keydown="templateForm.onKeydown($event)"
       >
         <div class="space-y-4">
           <toggle-switch-input
@@ -98,7 +100,7 @@
             label="Frequently asked questions"
           />
         </div>
-      </form>
+      </v-form>
     </template>
 
     <template #footer>

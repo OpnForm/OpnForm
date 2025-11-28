@@ -5,7 +5,6 @@ info:
     version: 1.0.0
 servers:
     - url: https://api.opnform.com
-    - url: https://opnform.test
 security:
     - bearerAuth: []
 tags:
@@ -17,6 +16,8 @@ tags:
       description: Manage and retrieve forms.
     - name: Submissions
       description: Access and manage form submissions.
+    - name: Integrations
+      description: Manage form integrations (webhooks) via API.
     - name: Zapier
       description: Legacy endpoints for the Zapier integration.
 paths:
@@ -361,12 +362,80 @@ paths:
                                         example: Invite deleted successfully.
                 "403":
                     description: Forbidden
+    "/open/workspaces/{workspaceId}/forms":
+        get:
+            tags:
+                - Forms
+            summary: List Workspace Forms
+            description: "Retrieve all forms within a specific workspace. Requires `forms-read` ability."
+            security:
+                - bearerAuth: []
+            parameters:
+                - name: workspaceId
+                  in: path
+                  required: true
+                  schema:
+                      type: number
+                      description: ID of the workspace to retrieve forms from.
+                - name: page
+                  in: query
+                  required: false
+                  schema:
+                      type: number
+                      minimum: 1
+                      default: 1
+                  description: "Pagination page number"
+            responses:
+                "200":
+                    description: Successful
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    data:
+                                        type: array
+                                        items:
+                                            $ref: "#/components/schemas/Form"
+                                    links:
+                                        type: object
+                                        properties:
+                                            first:
+                                                type: string
+                                            last:
+                                                type: string
+                                            prev:
+                                                type: string
+                                                nullable: true
+                                            next:
+                                                type: string
+                                                nullable: true
+                                    meta:
+                                        type: object
+                                        properties:
+                                            current_page:
+                                                type: number
+                                            from:
+                                                type: number
+                                            last_page:
+                                                type: number
+                                            per_page:
+                                                type: number
+                                            to:
+                                                type: number
+                                            total:
+                                                type: number
+                "403":
+                    description: "Forbidden – token lacks forms-read ability or you do not have access to the workspace"
+                "404":
+                    description: "Workspace not found"
     "/open/forms":
         get:
             tags:
                 - Forms
             summary: List Forms
-            description: Retrieve all forms accessible to the token holder.
+            description: "Retrieve all forms accessible to the token holder across all workspaces. **Deprecated**: Use `/open/workspaces/{workspaceId}/forms` instead."
+            deprecated: true
             security:
                 - bearerAuth: []
             responses:
@@ -474,12 +543,78 @@ paths:
                     description: Deleted
                 "403":
                     description: Forbidden
+    "/forms/{slug}/answer":
+        post:
+            tags:
+                - Submissions
+            summary: Create Submission
+            description: "Create a new submission for a form. Public endpoint - no authentication required."
+            security: []
+            parameters:
+                - name: slug
+                  in: path
+                  required: true
+                  schema:
+                      type: string
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            additionalProperties: true
+                            properties:
+                                completion_time:
+                                    type: number
+                                    description: "Time in seconds it took to complete the form"
+                                is_partial:
+                                    type: boolean
+                                    description: "If you want to submit your form as partial"
+            responses:
+                "200":
+                    description: "Form submission saved successfully"
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    type:
+                                        type: string
+                                        example: "success"
+                                    message:
+                                        type: string
+                                        example: "Form submission saved."
+                                    submission_id:
+                                        type: string
+                                        nullable: true
+                                    is_first_submission:
+                                        type: boolean
+                                    redirect:
+                                        type: boolean
+                "422":
+                    description: "Validation error"
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    message:
+                                        type: string
+                                        example: "The Name field is required."
+                                    errors:
+                                        type: object
+                                        additionalProperties:
+                                            type: array
+                                            items:
+                                                type: string
+                "404":
+                    description: "Form not found"
     "/open/forms/{id}/submissions":
         get:
             tags:
                 - Submissions
             summary: List Submissions
-            description: "Requires `forms-read`. Supports pagination via the `page` query parameter."
+            description: "Requires `forms-read`. Supports pagination, search, and status filtering."
             security:
                 - bearerAuth: []
             parameters:
@@ -494,53 +629,80 @@ paths:
                   schema:
                       type: number
                       minimum: 1
+                      default: 1
+                  description: "Pagination page number"
+                - name: per_page
+                  in: query
+                  required: false
+                  schema:
+                      type: number
+                      minimum: 1
+                      maximum: 100
+                      default: 100
+                  description: "Number of results per page"
+                - name: search
+                  in: query
+                  required: false
+                  schema:
+                      type: string
+                  description: "Search term to filter submissions by field values"
+                - name: status
+                  in: query
+                  required: false
+                  schema:
+                      type: string
+                      enum: [completed, partial, all]
+                      default: all
+                  description: "Filter by submission status"
             responses:
                 "200":
                     description: Successful
                     content:
                         application/json:
                             schema:
-                                type: array
-                                items:
-                                    $ref: "#/components/schemas/Submission"
+                                type: object
+                                properties:
+                                    data:
+                                        type: array
+                                        items:
+                                            $ref: "#/components/schemas/Submission"
+                                    links:
+                                        type: object
+                                        properties:
+                                            first:
+                                                type: string
+                                            last:
+                                                type: string
+                                            prev:
+                                                type: string
+                                                nullable: true
+                                            next:
+                                                type: string
+                                                nullable: true
+                                    meta:
+                                        type: object
+                                        properties:
+                                            current_page:
+                                                type: number
+                                            from:
+                                                type: number
+                                            last_page:
+                                                type: number
+                                            per_page:
+                                                type: number
+                                            to:
+                                                type: number
+                                            total:
+                                                type: number
                 "403":
                     description: "Forbidden – token lacks forms-read ability"
-        post:
-            tags:
-                - Submissions
-            summary: Export Submissions (CSV)
-            description: "Export submissions as CSV. Requires `forms-read`."
-            security:
-                - bearerAuth: []
-            parameters:
-                - name: id
-                  in: path
-                  required: true
-                  schema:
-                      type: number
-            requestBody:
-                required: true
-                content:
-                    application/json:
-                        schema:
-                            type: object
-                            properties:
-                                columns:
-                                    type: object
-                                    additionalProperties:
-                                        type: boolean
-                                    description: "Object mapping field IDs to booleans to include columns in CSV."
-            responses:
-                "200":
-                    description: CSV File
-                "403":
-                    description: Forbidden
+
     "/open/forms/{id}/submissions/export":
         post:
             tags:
                 - Submissions
             summary: Export Submissions (CSV)
-            description: "Export submissions as CSV. Requires `forms-read`."
+            description: "Export submissions as CSV. Large exports are processed asynchronously. Requires `forms-read`."
             security:
                 - bearerAuth: []
             parameters:
@@ -555,6 +717,8 @@ paths:
                     application/json:
                         schema:
                             type: object
+                            required:
+                                - columns
                             properties:
                                 columns:
                                     type: object
@@ -563,7 +727,57 @@ paths:
                                     description: "Object mapping field IDs to booleans to include columns in CSV."
             responses:
                 "200":
-                    description: CSV File
+                    description: "Synchronous export (CSV file) or asynchronous export (job status)"
+                    content:
+                        application/json:
+                            schema:
+                                oneOf:
+                                    - type: string
+                                      format: binary
+                                      description: "CSV file download for small forms"
+                                    - type: object
+                                      description: "Job status for large forms"
+                                      properties:
+                                          message:
+                                              type: string
+                                              example: "Export started. Large export will be processed in the background."
+                                          job_id:
+                                              type: string
+                                              example: "export_abc123def456"
+                                          is_async:
+                                              type: boolean
+                                              example: true
+                "403":
+                    description: Forbidden
+    "/open/forms/{id}/submissions/export/{job_id}/status":
+        get:
+            tags:
+                - Submissions
+            summary: Check Export Status
+            description: "Check the status of an asynchronous export job. Requires `forms-read`."
+            security:
+                - bearerAuth: []
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                      type: number
+                - name: job_id
+                  in: path
+                  required: true
+                  schema:
+                      type: string
+                  description: "Export job identifier"
+            responses:
+                "200":
+                    description: Export job status
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ExportJobStatus"
+                "404":
+                    description: "Export job not found or has expired"
                 "403":
                     description: Forbidden
     "/open/forms/{id}/submissions/{submission_id}":
@@ -633,6 +847,231 @@ paths:
                                         example: Record successfully removed.
                 "403":
                     description: "Forbidden – token lacks forms-write ability"
+    "/open/forms/{form}/integrations":
+        get:
+            tags:
+                - Integrations
+            summary: List Form Integrations
+            description: "List all integrations configured for a form. Requires `manage-integrations` ability."
+            security:
+                - bearerAuth: []
+            parameters:
+                - name: form
+                  in: path
+                  required: true
+                  schema:
+                      type: number
+                      description: The ID of the form.
+            responses:
+                "200":
+                    description: Successful
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    $ref: "#/components/schemas/FormIntegration"
+                "403":
+                    description: Forbidden – token lacks manage-integrations ability
+                "404":
+                    description: Form not found
+        post:
+            tags:
+                - Integrations
+            summary: Create Webhook Integration
+            description: "Create a new webhook integration for a form. Requires `manage-integrations` ability."
+            security:
+                - bearerAuth: []
+            parameters:
+                - name: form
+                  in: path
+                  required: true
+                  schema:
+                      type: number
+                      description: The ID of the form.
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            required:
+                                - integration_id
+                                - data
+                            properties:
+                                integration_id:
+                                    type: string
+                                    enum: [webhook]
+                                    description: Must be "webhook"
+                                status:
+                                    type: string
+                                    enum: [active, inactive]
+                                    default: active
+                                    description: The initial status of the webhook
+                                data:
+                                    type: object
+                                    required:
+                                        - webhook_url
+                                    properties:
+                                        webhook_url:
+                                            type: string
+                                            format: uri
+                                            description: The URL where submissions will be sent
+            responses:
+                "200":
+                    description: Webhook created successfully
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    message:
+                                        type: string
+                                        example: "Form Integration was created."
+                                    form_integration:
+                                        $ref: "#/components/schemas/FormIntegration"
+                "403":
+                    description: Forbidden – insufficient permissions
+                "404":
+                    description: Form not found
+                "422":
+                    description: Validation error
+    "/open/forms/{form}/integrations/{integrationid}":
+        put:
+            tags:
+                - Integrations
+            summary: Update Webhook Integration
+            description: "Update an existing webhook integration. Requires `manage-integrations` ability."
+            security:
+                - bearerAuth: []
+            parameters:
+                - name: form
+                  in: path
+                  required: true
+                  schema:
+                      type: number
+                      description: The ID of the form.
+                - name: integrationid
+                  in: path
+                  required: true
+                  schema:
+                      type: number
+                      description: The ID of the integration.
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            required:
+                                - integration_id
+                                - data
+                            properties:
+                                integration_id:
+                                    type: string
+                                    enum: [webhook]
+                                    description: Must be "webhook"
+                                status:
+                                    type: string
+                                    enum: [active, inactive]
+                                    description: The status of the webhook
+                                data:
+                                    type: object
+                                    required:
+                                        - webhook_url
+                                    properties:
+                                        webhook_url:
+                                            type: string
+                                            format: uri
+                                            description: The URL where submissions will be sent
+            responses:
+                "200":
+                    description: Webhook updated successfully
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    message:
+                                        type: string
+                                        example: "Form Integration was updated."
+                                    form_integration:
+                                        $ref: "#/components/schemas/FormIntegration"
+                "403":
+                    description: Forbidden – insufficient permissions
+                "404":
+                    description: Form or integration not found
+                "422":
+                    description: Validation error
+        delete:
+            tags:
+                - Integrations
+            summary: Delete Webhook Integration
+            description: "Delete a webhook integration. Requires `manage-integrations` ability."
+            security:
+                - bearerAuth: []
+            parameters:
+                - name: form
+                  in: path
+                  required: true
+                  schema:
+                      type: number
+                      description: The ID of the form.
+                - name: integrationid
+                  in: path
+                  required: true
+                  schema:
+                      type: number
+                      description: The ID of the integration.
+            responses:
+                "200":
+                    description: Webhook deleted successfully
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    message:
+                                        type: string
+                                        example: "Form Integration was deleted."
+                "403":
+                    description: Forbidden – insufficient permissions
+                "404":
+                    description: Form or integration not found
+    "/open/forms/{form}/integrations/{integrationid}/events":
+        get:
+            tags:
+                - Integrations
+            summary: List Webhook Events
+            description: "List past webhook dispatch events for an integration. Requires `manage-integrations` ability."
+            security:
+                - bearerAuth: []
+            parameters:
+                - name: form
+                  in: path
+                  required: true
+                  schema:
+                      type: number
+                      description: The ID of the form.
+                - name: integrationid
+                  in: path
+                  required: true
+                  schema:
+                      type: number
+                      description: The ID of the integration.
+            responses:
+                "200":
+                    description: Successful
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    $ref: "#/components/schemas/IntegrationEvent"
+                "403":
+                    description: Forbidden – insufficient permissions
+                "404":
+                    description: Form or integration not found
     "/external/zapier/validate":
         get:
             tags:
@@ -957,19 +1396,24 @@ components:
         Submission:
             type: object
             properties:
-                submission_id:
+                id:
                     type: number
+                    description: "Unique submission ID"
                     readOnly: true
                 form_id:
                     type: number
+                    description: "ID of the parent form"
                     readOnly: true
-                submitted_at:
-                    type: string
-                    format: date-time
+                completion_time:
+                    type: number
+                    nullable: true
+                    description: "Time taken to complete the form in seconds"
                     readOnly: true
                 data:
                     type: object
+                    description: "Contains form field responses plus metadata (status, created_at, id)"
                     additionalProperties: true
+                    readOnly: true
         UserWorkspaceMember:
             type: object
             properties:
@@ -1001,6 +1445,113 @@ components:
                     type: string
                     format: date-time
                     description: Expiration timestamp for the invite
+        ExportJobStatus:
+            type: object
+            properties:
+                status:
+                    type: string
+                    enum: [processing, completed, failed]
+                    description: "Current status of the export job"
+                progress:
+                    type: number
+                    minimum: 0
+                    maximum: 100
+                    description: "Completion percentage (0-100)"
+                form_id:
+                    type: number
+                    description: "ID of the form being exported"
+                user_id:
+                    type: number
+                    description: "ID of the user who initiated the export"
+                job_id:
+                    type: string
+                    description: "Export job identifier"
+                processed_submissions:
+                    type: number
+                    description: "Number of submissions processed so far"
+                    nullable: true
+                total_submissions:
+                    type: number
+                    description: "Total number of submissions to process"
+                    nullable: true
+                file_url:
+                    type: string
+                    format: uri
+                    description: "Download URL for completed exports"
+                    nullable: true
+                expires_at:
+                    type: string
+                    format: date-time
+                    description: "File expiration timestamp (24 hours from completion)"
+                    nullable: true
+                error_message:
+                    type: string
+                    description: "Error description for failed exports"
+                    nullable: true
+                created_at:
+                    type: string
+                    format: date-time
+                    description: "Job creation timestamp"
+                updated_at:
+                    type: string
+                    format: date-time
+                    description: "Last update timestamp"
+        FormIntegration:
+            type: object
+            properties:
+                id:
+                    type: number
+                    description: Unique identifier for the integration.
+                    readOnly: true
+                form_id:
+                    type: number
+                    description: The ID of the associated form.
+                    readOnly: true
+                integration_id:
+                    type: string
+                    description: Type of integration (currently only "webhook" is exposed via API).
+                    example: "webhook"
+                status:
+                    type: string
+                    enum: [active, inactive]
+                    description: Whether the integration is active.
+                data:
+                    type: object
+                    description: Integration-specific configuration. For webhooks, contains webhook_url.
+                    example:
+                        webhook_url: "https://example.com/opnform-hook"
+        IntegrationEvent:
+            type: object
+            properties:
+                id:
+                    type: number
+                    description: Unique identifier for the event record.
+                    readOnly: true
+                integration_id:
+                    type: number
+                    description: The ID of the webhook integration that generated this event.
+                    readOnly: true
+                event:
+                    type: string
+                    description: The type of event.
+                    example: "submission.created"
+                status:
+                    type: string
+                    enum: [success, failed, timeout]
+                    description: Result of the webhook dispatch.
+                response_code:
+                    type: number
+                    nullable: true
+                    description: HTTP status code returned by the webhook endpoint.
+                error_message:
+                    type: string
+                    nullable: true
+                    description: Error details if the webhook dispatch failed.
+                created_at:
+                    type: string
+                    format: date-time
+                    description: ISO 8601 timestamp of when the webhook was dispatched.
+                    readOnly: true
     securitySchemes:
         bearerAuth:
             type: http
@@ -1014,3 +1565,4 @@ components:
                 "workspace-users-write": "Write access to workspace users"
                 "forms-read": "Read access to forms"
                 "forms-write": "Write access to forms"
+                "manage-integrations": "Manage form integrations (webhooks)"

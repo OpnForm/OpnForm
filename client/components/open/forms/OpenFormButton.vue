@@ -6,6 +6,7 @@
     :loading="loading"
     :class="['btn', buttonClass]"
     :size="buttonSize"
+    :icon="icon"
   >
     <slot />
   </UButton>
@@ -24,6 +25,10 @@ const props = defineProps({
   loading: {
     type: Boolean,
     default: false,
+  },
+  icon: {
+    type: String,
+    default: null,
   },
 })
 

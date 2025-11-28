@@ -2,6 +2,7 @@
 
 namespace App\Rules;
 
+use App\Models\Forms\Form;
 use App\Service\Forms\FormLogicConditionChecker;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
@@ -15,12 +16,14 @@ class CustomFieldValidationRule implements ValidationRule
      */
     public $implicit = true;
 
+    private bool $errorOccurred = false;
+
     /**
      * Create a new rule instance.
      *
      * @return void
      */
-    public function __construct(public array $validation, public array $formData)
+    public function __construct(public array $validation, public array $formData, public ?Form $form = null)
     {
     }
 
@@ -38,10 +41,26 @@ class CustomFieldValidationRule implements ValidationRule
             return true;
         }
 
-        return FormLogicConditionChecker::conditionsMet(
-            $logicConditions,
-            $this->formData
-        );
+        try {
+            // Prepare form data with form context if form is provided
+            $formDataWithContext = $this->formData;
+            if ($this->form) {
+                $formDataWithContext = array_merge($this->formData, [
+                    'form' => [
+                        'id' => $this->form->id,
+                        'slug' => $this->form->slug,
+                    ]
+                ]);
+            }
+
+            return FormLogicConditionChecker::conditionsMet(
+                $logicConditions,
+                $formDataWithContext
+            );
+        } catch (\Exception $e) {
+            $this->errorOccurred = true;
+            return false;
+        }
     }
 
     public function validate(string $attribute, mixed $value, Closure $fail): void
@@ -58,6 +77,9 @@ class CustomFieldValidationRule implements ValidationRule
      */
     public function message()
     {
+        if ($this->errorOccurred) {
+            return 'An validation logic error occurred';
+        }
         return isset($this->validation['error_message']) ? $this->validation['error_message'] : 'Invalid input';
     }
 }

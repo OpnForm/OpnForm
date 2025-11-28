@@ -47,6 +47,25 @@ it('can fetch a form', function () {
         ]);
 });
 
+it('does not leak workspace details on public form fetch', function () {
+    $user = \App\Models\User::factory()->create();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace);
+
+    $response = $this->getJson(route('forms.show', $form->slug))
+        ->assertSuccessful()
+        ->assertJsonPath('id', $form->id)
+        ->assertJsonPath('workspace_id', $workspace->id)
+        ->assertJsonPath('workspace.id', $workspace->id)
+        ->assertJsonPath('workspace.max_file_size', $workspace->max_file_size / 1000000);
+
+    $response->assertJsonMissingPath('workspace.users');
+    $response->assertJsonMissingPath('workspace.settings');
+    $response->assertJsonMissingPath('workspace.is_admin');
+    $response->assertJsonMissingPath('workspace.is_readonly');
+    $response->assertJsonMissingPath('workspace.users_count');
+});
+
 it('can update a form', function () {
     $user = $this->actingAsUser();
     $workspace = $this->createUserWorkspace($user);
@@ -297,4 +316,122 @@ it('can update form with custom slug when self hosted', function () {
         'id' => $form->id,
         'slug' => 'updated-custom-slug'
     ]);
+});
+
+it('can create form with multi select min/max selection constraints', function () {
+    $user = $this->actingAsUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->makeForm($user, $workspace);
+
+    // Add multi_select field with min/max constraints
+    $form->properties = array_merge($form->properties, [
+        [
+            'id' => 'multi_select_field',
+            'name' => 'Multi Select Field',
+            'type' => 'multi_select',
+            'required' => true,
+            'min_selection' => 2,
+            'max_selection' => 4,
+            'multi_select' => [
+                'options' => [
+                    ['id' => 'option1', 'name' => 'Option 1'],
+                    ['id' => 'option2', 'name' => 'Option 2'],
+                    ['id' => 'option3', 'name' => 'Option 3'],
+                    ['id' => 'option4', 'name' => 'Option 4'],
+                    ['id' => 'option5', 'name' => 'Option 5'],
+                ]
+            ]
+        ]
+    ]);
+
+    $formData = (new \App\Http\Resources\FormResource($form))->toArray(request());
+
+    $response = $this->postJson(route('open.forms.store', $formData))
+        ->assertSuccessful()
+        ->assertJson([
+            'type' => 'success',
+            'message' => 'Form created.',
+        ]);
+
+    // Verify the constraints are saved
+    $createdForm = \App\Models\Forms\Form::find($response->json('form.id'));
+    $multiSelectField = collect($createdForm->properties)->firstWhere('id', 'multi_select_field');
+
+    expect($multiSelectField)->not->toBeNull('Multi select field should exist');
+    expect($multiSelectField)->toHaveKey('min_selection');
+    expect($multiSelectField)->toHaveKey('max_selection');
+    expect($multiSelectField['min_selection'])->toBe('2');
+    expect($multiSelectField['max_selection'])->toBe('4');
+});
+
+it('can update form with multi select min/max selection constraints', function () {
+    $user = $this->actingAsUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace);
+
+    // Update form to add multi_select field with constraints
+    $form->properties = array_merge($form->properties, [
+        [
+            'id' => 'updated_multi_select',
+            'name' => 'Updated Multi Select',
+            'type' => 'multi_select',
+            'required' => false,
+            'min_selection' => 1,
+            'max_selection' => 3,
+            'multi_select' => [
+                'options' => [
+                    ['id' => 'opt1', 'name' => 'Choice 1'],
+                    ['id' => 'opt2', 'name' => 'Choice 2'],
+                    ['id' => 'opt3', 'name' => 'Choice 3'],
+                ]
+            ]
+        ]
+    ]);
+
+    $formData = (new \App\Http\Resources\FormResource($form))->toArray(request());
+
+    $this->putJson(route('open.forms.update', $form->id), $formData)
+        ->assertSuccessful()
+        ->assertJson([
+            'type' => 'success',
+            'message' => 'Form updated.',
+        ]);
+
+    // Verify the constraints are updated correctly
+    $form->refresh();
+    $multiSelectField = collect($form->properties)->firstWhere('id', 'updated_multi_select');
+
+    expect($multiSelectField['min_selection'])->toBe(1);
+    expect($multiSelectField['max_selection'])->toBe(3);
+});
+
+it('validates min/max selection constraints format in form creation', function () {
+    $user = $this->actingAsUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->makeForm($user, $workspace);
+
+    // Add invalid constraints (negative min, zero max)
+    $form->properties = array_merge($form->properties, [
+        [
+            'id' => 'invalid_field',
+            'name' => 'Invalid Field',
+            'type' => 'multi_select',
+            'min_selection' => -1,  // Invalid: negative
+            'max_selection' => 0,   // Invalid: zero
+            'multi_select' => [
+                'options' => [
+                    ['id' => 'option1', 'name' => 'Option 1'],
+                ]
+            ]
+        ]
+    ]);
+
+    $formData = (new \App\Http\Resources\FormResource($form))->toArray(request());
+
+    $this->postJson(route('open.forms.store', $formData))
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors([
+            'properties.14.min_selection',
+            'properties.14.max_selection'
+        ]);
 });

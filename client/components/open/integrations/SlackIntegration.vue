@@ -6,7 +6,7 @@
   >
     <text-input
       :form="integrationData"
-      name="settings.slack_webhook_url"
+      name="data.slack_webhook_url"
       label="Slack webhook url"
       help="help"
       required
@@ -30,7 +30,7 @@
       Slack message actions
     </h4>
     <notifications-message-actions
-      v-model="integrationData.settings"
+      v-model="integrationData.data"
       :form="form"
     />
   </IntegrationWrapper>

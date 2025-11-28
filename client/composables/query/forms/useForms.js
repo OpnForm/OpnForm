@@ -10,10 +10,12 @@ export function useForms() {
   const formsListCache = useFormsListCache()
 
   const detail = (slug, options = {}) => {
+    const { usePrivate = false, ...queryOptions } = options
+    
     return useQuery({
       queryKey: ['forms', 'slug', slug],
       queryFn: () => {
-        if (isAuthenticated.value) {
+        if (usePrivate && isAuthenticated.value) {
           return formsApi.get(slug, options)
         }
         return formsApi.publicGet(slug, options)
@@ -24,15 +26,17 @@ export function useForms() {
           queryClient.setQueryData(['forms', form.id], form)
         }
       },
-      ...options,
+      ...queryOptions,
     })
   }
 
   const detailById = (id, options = {}) => {
+    const { usePrivate = false, ...queryOptions } = options
+    
     return useQuery({
       queryKey: ['forms', id],
       queryFn: () => {
-        if (isAuthenticated.value) {
+        if (usePrivate && isAuthenticated.value) {
           return formsApi.getById(id, options)
         }
         return formsApi.publicGetById(id, options)
@@ -43,7 +47,7 @@ export function useForms() {
           queryClient.setQueryData(['forms', 'slug', form.slug], form)
         }
       },
-      ...options,
+      ...queryOptions,
     })
   }
 
@@ -68,7 +72,6 @@ export function useForms() {
       onSuccess: (updatedForm) => {
       const form = updatedForm.form
       const currentFormId = toValue(formId)
-      console.log(updatedForm)
 
       // Update individual form cache
       queryClient.setQueryData(['forms', currentFormId], form)
@@ -179,21 +182,6 @@ export function useForms() {
     })
   }
 
-  // Utility functions
-  const prefetchDetail = (slug) => {
-    return queryClient.prefetchQuery({
-      queryKey: ['forms', 'slug', slug],
-      queryFn: () => formsApi.get(slug)
-    })
-  }
-
-  const prefetchDetailById = (id) => {
-    return queryClient.prefetchQuery({
-      queryKey: ['forms', id],
-      queryFn: () => formsApi.getById(id)
-    })
-  }
-
   const invalidateAll = () => {
     queryClient.removeQueries({ queryKey: ['forms', 'list'], exact: false })
   }
@@ -226,8 +214,6 @@ export function useForms() {
     deleteZapierWebhook,
     
     // Utilities
-    prefetchDetail,
-    prefetchDetailById,
     invalidateAll,
     invalidateDetail
   }

@@ -14,8 +14,8 @@ it('can register', function () {
         'name' => 'Test User',
         'email' => 'test@test.app',
         'hear_about_us' => 'google',
-        'password' => 'secret',
-        'password_confirmation' => 'secret',
+        'password' => 'Abcd@1234',
+        'password_confirmation' => 'Abcd@1234',
         'agree_terms' => true,
         'g-recaptcha-response' => 'test-token', // Mock token for testing
     ])
@@ -44,8 +44,8 @@ it('cannot register with existing email', function () {
     $this->postJson('/register', [
         'name' => 'Test User',
         'email' => 'test@test.app',
-        'password' => 'secret',
-        'password_confirmation' => 'secret',
+        'password' => 'Abcd@1234',
+        'password_confirmation' => 'Abcd@1234',
         'g-recaptcha-response' => 'test-token',
     ])
         ->assertStatus(422)
@@ -69,8 +69,8 @@ it('cannot register with disposable email', function () {
         'name' => 'Test disposable',
         'email' => $email,
         'hear_about_us' => 'google',
-        'password' => 'secret',
-        'password_confirmation' => 'secret',
+        'password' => 'Abcd@1234',
+        'password_confirmation' => 'Abcd@1234',
         'agree_terms' => true,
         'g-recaptcha-response' => 'test-token',
     ])
@@ -97,8 +97,8 @@ it('requires hcaptcha token in production', function () {
         'name' => 'Test User',
         'email' => 'test@test.app',
         'hear_about_us' => 'google',
-        'password' => 'secret',
-        'password_confirmation' => 'secret',
+        'password' => 'Abcd@1234',
+        'password_confirmation' => 'Abcd@1234',
         'agree_terms' => true,
     ])
         ->assertStatus(422)

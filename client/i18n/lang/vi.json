@@ -3,6 +3,12 @@
         "name": "OpnForm"
     },
     "forms": {
+        "buttons": {
+            "submit": "Gửi",
+            "next": "Tiếp theo",
+            "previous": "Trước",
+            "re_fill": "Gửi một câu trả lời khác"
+        },
         "powered_by": "Được cung cấp bởi",
         "password_protected": "Biểu mẫu này được bảo vệ bằng mật khẩu.",
         "invalid_password": "Mật khẩu không hợp lệ.",
@@ -45,7 +51,27 @@
             "success": "Thanh toán thành công",
             "name_on_card": "Tên trên thẻ",
             "billing_email": "Email thanh toán",
-            "payment_disclaimer": "Thẻ tín dụng của bạn sẽ bị tính phí khi nhấp vào nút này. Các khoản thanh toán được xử lý an toàn qua Stripe."
+            "payment_disclaimer": "Thẻ tín dụng của bạn sẽ bị tính phí khi nhấp vào nút này. Các khoản thanh toán được xử lý an toàn qua Stripe.",
+            "errors": {
+                "missingFormOrProvider": "Thiếu slug biểu mẫu hoặc ID nhà cung cấp.",
+                "failedAccountDetails": "Không thể lấy chi tiết tài khoản Stripe.",
+                "setupError": "Đã xảy ra lỗi trong quá trình thiết lập Stripe.",
+                "systemNotReady": "Hệ thống thanh toán chưa sẵn sàng. Vui lòng đợi một lát và thử lại.",
+                "misconfigured": "Hệ thống thanh toán bị định cấu hình sai. Vui lòng làm mới và thử lại.",
+                "notFullyReady": "Hệ thống thanh toán chưa sẵn sàng hoàn toàn. Vui lòng làm mới và thử lại.",
+                "paymentRequired": "Hoàn tất thanh toán trước khi bạn có thể tiếp tục.",
+                "nameRequired": "Yêu cầu tên chủ thẻ.",
+                "emailRequired": "Yêu cầu địa chỉ email thanh toán.",
+                "invalidEmail": "Địa chỉ email thanh toán không hợp lệ.",
+                "failedIntent": "Không thể tạo ý định thanh toán.",
+                "processingFailed": "Xử lý thanh toán không thành công."
+            }
+        },
+        "validation_error": "Lỗi xác thực",
+        "validation_error_with_count": "Lỗi xác thực ({count} trường)",
+        "toggle": {
+            "yes": "Có",
+            "no": "Không"
         }
     }
 } 

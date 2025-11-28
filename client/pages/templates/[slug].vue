@@ -91,19 +91,36 @@
         </div>
       </section>
 
-      <section class="w-full max-w-4xl relative px-4 mx-auto sm:px-6 lg:px-8 -mt-[210px]">
+      <section class="w-full max-w-5xl relative px-4 mx-auto sm:px-6 lg:px-8 -mt-[210px]">
         <div
           class="p-4 mx-auto bg-white shadow-lg sm:p-6 lg:p-8 rounded-xl ring ring-inset ring-neutral-200 isolate"
         >
           <p class="text-sm font-medium text-center text-neutral-500 -mt-2 mb-2">
             Template Preview
           </p>
-          <OpenCompleteForm
-            ref="open-complete-form"
-            :form="form"
-            :mode="FormMode.TEST"
-            class="mb-4 p-4 bg-neutral-50 border border-neutral-200 border-dashed rounded-lg"
-          />
+          <div class="mb-4">
+            <div
+              ref="templatePreviewParent"
+              class="border rounded-lg bg-white dark:bg-notion-dark w-full shadow-xs transition-all overflow-y-auto flex flex-col"
+            >
+              <div
+                :class="[
+                  'flex flex-col',
+                  form?.presentation_style === 'focused'
+                    ? 'h-[650px] sm:h-[830px]'
+                    : 'min-h-[520px]'
+                ]"
+              >
+                <OpenCompleteForm
+                  ref="open-complete-form"
+                  :form="form"
+                  :mode="FormMode.TEMPLATE"
+                  :dark-mode="darkMode"
+                  class="w-full grow min-h-0"
+                />
+              </div>
+            </div>
+          </div>
         </div>
 
         <div class="absolute bottom-0 translate-y-full inset-x-0">
@@ -141,7 +158,7 @@
               v-html="template.description"
             />
 
-            <template v-if="template.questions.length > 0">
+            <template v-if="template.questions?.length > 0">
               <hr class="mt-12 border-neutral-200">
               <div>
                 <div class="text-center">
@@ -271,7 +288,7 @@
 </template>
 
 <script setup>
-import { computed, ref } from "vue"
+import { computed, ref, onMounted } from "vue"
 import { useRoute } from "vue-router"
 import FormTemplateModal from "~/components/open/forms/components/templates/FormTemplateModal.vue"
 import TemplateTags from "~/components/pages/templates/TemplateTags.vue"
@@ -281,18 +298,33 @@ import { cleanQuotes } from "~/lib/utils"
 import OpenCompleteForm from "~/components/open/forms/OpenCompleteForm.vue"
 import Breadcrumb from "~/components/app/Breadcrumb.vue"
 import TrackClick from "~/components/global/TrackClick.vue"
+import { handleDarkMode, useDarkMode } from "~/lib/forms/public-page.js"
 
 const route = useRoute()
 const { detail, list } = useTemplates()
 
-const { data: template } = detail(route.params.slug)
+const { data: template, suspense: templateSuspense } = detail(route.params.slug)
 const { data: allTemplates } = list()
+
+// Handle SSR suspense to prevent flash of error message
+if (import.meta.server) {
+  await templateSuspense()
+}
 
 const form = computed(() => {
   if (!template.value) {
     return null
   }
   return template.value.structure
+})
+
+// Dark mode handling like editor preview
+const templatePreviewParent = ref(null)
+const darkMode = useDarkMode(templatePreviewParent)
+onMounted(() => {
+  if (template.value?.structure?.dark_mode) {
+    handleDarkMode(template.value.structure.dark_mode, templatePreviewParent.value)
+  }
 })
 
 const relatedTemplates = computed(() => {
@@ -308,7 +340,7 @@ const relatedTemplates = computed(() => {
 const showFormTemplateModal = ref(false)
 const { data: user } = useAuth().user()
 const canEditTemplate = computed(
-  () => user.value && (user.value.admin || user.value.template_editor),
+  () => user.value && (user.value.admin || user.value.template_editor || template.value?.creator_id === user.value.id),
 )
 
 const createFormWithTemplateUrl = computed(() => {

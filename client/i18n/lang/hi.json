@@ -3,6 +3,12 @@
         "name": "OpnForm"
     },
     "forms": {
+        "buttons": {
+            "submit": "जमा करें",
+            "next": "अगला",
+            "previous": "पिछला",
+            "re_fill": "एक और प्रतिक्रिया जमा करें"
+        },
         "powered_by": "विकसित करने वाला",
         "password_protected": "यह फॉर्म एक पासवर्ड से सुरक्षित है।",
         "invalid_password": "अमान्य पासवर्ड।",
@@ -47,19 +53,25 @@
             "billing_email": "बिलिंग ईमेल पता",
             "payment_disclaimer": "इस बटन पर क्लिक करने पर आपके क्रेडिट कार्ड से शुल्क लिया जाएगा। भुगतान स्ट्राइप के माध्यम से सुरक्षित रूप से संसाधित किए जाते हैं।",
             "errors": {
-                "missingFormOrProvider": "Missing form slug or provider ID.",
-                "failedAccountDetails": "Failed to get Stripe account details.",
-                "setupError": "An error occurred during Stripe setup.",
-                "systemNotReady": "Payment system not ready. Please wait a moment and try again.",
-                "misconfigured": "Payment system misconfigured. Please refresh and try again.",
-                "notFullyReady": "Payment system not fully ready. Please refresh and try again.",
-                "paymentRequired": "Complete the payment before you can proceed.",
-                "nameRequired": "Card holder name is required.",
-                "emailRequired": "Billing email address is required.",
-                "invalidEmail": "Invalid billing email address.",
-                "failedIntent": "Failed to create payment intent.",
-                "processingFailed": "Payment processing failed."
+                "missingFormOrProvider": "फॉर्म स्लग या प्रदाता आईडी गायब है।",
+                "failedAccountDetails": "स्ट्राइप खाता विवरण प्राप्त करने में विफल।",
+                "setupError": "स्ट्राइप सेटअप के दौरान एक त्रुटि हुई।",
+                "systemNotReady": "भुगतान प्रणाली तैयार नहीं है। कृपया एक क्षण प्रतीक्षा करें और पुनः प्रयास करें।",
+                "misconfigured": "भुगतान प्रणाली गलत तरीके से कॉन्फ़िगर की गई है। कृपया रीफ्रेश करें और पुनः प्रयास करें।",
+                "notFullyReady": "भुगतान प्रणाली पूरी तरह से तैयार नहीं है। कृपया रीफ्रेश करें और पुनः प्रयास करें।",
+                "paymentRequired": "आगे बढ़ने से पहले भुगतान पूरा करें।",
+                "nameRequired": "कार्ड धारक का नाम आवश्यक है।",
+                "emailRequired": "बिलिंग ईमेल पता आवश्यक है।",
+                "invalidEmail": "अमान्य बिलिंग ईमेल पता।",
+                "failedIntent": "भुगतान इरादा बनाने में विफल।",
+                "processingFailed": "भुगतान प्रसंस्करण विफल रहा।"
             }
+        },
+        "validation_error": "सत्यापन त्रुटि",
+        "validation_error_with_count": "सत्यापन त्रुटि ({count} फ़ील्ड)",
+        "toggle": {
+            "yes": "हाँ",
+            "no": "नहीं"
         }
     }
 } 

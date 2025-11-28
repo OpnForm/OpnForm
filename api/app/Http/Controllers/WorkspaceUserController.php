@@ -19,17 +19,15 @@ class WorkspaceUserController extends Controller
         $this->middleware('auth');
     }
 
-    public function listUsers(Request $request, $workspaceId)
+    public function listUsers(Request $request, Workspace $workspace)
     {
-        $workspace = Workspace::findOrFail($workspaceId);
         $this->authorize('view', $workspace);
 
         return (new WorkspaceHelper($workspace))->getAllUsers();
     }
 
-    public function addUser(Request $request, $workspaceId)
+    public function addUser(Request $request, Workspace $workspace)
     {
-        $workspace = Workspace::findOrFail($workspaceId);
         $this->authorize('inviteUser', $workspace);
 
         $this->validate($request, [
@@ -90,10 +88,8 @@ class WorkspaceUserController extends Controller
         ]);
     }
 
-    public function updateUserRole(Request $request, $workspaceId, $userId)
+    public function updateUserRole(Request $request, Workspace $workspace, User $user)
     {
-        $workspace = Workspace::findOrFail($workspaceId);
-        $user = User::findOrFail($userId);
         $this->authorize('adminAction', $workspace);
 
         $this->validate($request, [
@@ -111,13 +107,11 @@ class WorkspaceUserController extends Controller
         ]);
     }
 
-    public function removeUser(Request $request, $workspaceId, $userId)
+    public function removeUser(Request $request, Workspace $workspace, User $user)
     {
-        $workspace = Workspace::findOrFail($workspaceId);
         $this->authorize('adminAction', $workspace);
 
-        $user = User::findOrFail($userId);
-        $workspace->users()->detach($userId);
+        $workspace->users()->detach($user->id);
         $this->ensureUserHasWorkspace($user);
         WorkspaceUsersUpdated::dispatch($workspace);
 
@@ -126,9 +120,8 @@ class WorkspaceUserController extends Controller
         ]);
     }
 
-    public function leaveWorkspace(Request $request, $workspaceId)
+    public function leaveWorkspace(Request $request, Workspace $workspace)
     {
-        $workspace = Workspace::findOrFail($workspaceId);
         $this->authorize('view', $workspace);
 
         $user = $request->user();

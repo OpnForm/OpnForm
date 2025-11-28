@@ -4,18 +4,23 @@
     :text="upgradeModalTitle??'You need a Pro plan to use this feature'"
     class="inline normal-case"
   >
-    <div
-      v-track.pro_tag_click="{title:upgradeModalTitle}"
-      class="bg-blue-500 text-white px-2 text-xs uppercase inline rounded-full font-semibold cursor-pointer"
-      @click.stop="onClick"
+    <TrackClick
+      name="pro_tag_click"
+      :properties="{ title: upgradeModalTitle }"
     >
-      PRO
-    </div>
+      <div
+        class="bg-blue-500 text-white px-2 text-xs uppercase inline rounded-full font-semibold cursor-pointer"
+        @click.stop="onClick"
+      >
+        PRO
+      </div>
+    </TrackClick>
   </UTooltip>
 </template>
 
 <script setup>
 import { computed } from "vue"
+import TrackClick from "~/components/global/TrackClick.vue"
 
 const props = defineProps({
   upgradeModalTitle: {

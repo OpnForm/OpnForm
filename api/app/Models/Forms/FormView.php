@@ -9,6 +9,15 @@ class FormView extends Model
 {
     use HasFactory;
 
+    protected $fillable = ['meta'];
+
+    protected function casts(): array
+    {
+        return [
+            'meta' => 'array',
+        ];
+    }
+
     /**
      * RelationShips
      */

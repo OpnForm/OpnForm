@@ -1,34 +1,32 @@
 <template>
-  <div class="flex flex-1 items-center">
+  <div class="flex flex-1 items-center gap-2">
     <div
       v-if="integration.provider"
-      class="hidden md:block space-y-1"
+      class="hidden md:flex items-center"
     >
       <UBadge
         :label="mentionAsText(integration.provider.email)"
         color="neutral"
         variant="subtle"
-        size="xs"
+        size="sm"
         class="max-w-[300px] truncate"
       />
     </div>
 
     <div
       v-if="integration.data"
-      class="ml-auto"
+      class="ml-auto flex items-center"
     >
       <UButton
         :to="integration.data.url"
         target="_blank"
-        color="white"
+        color="neutral"
         size="sm"
         variant="outline"
-        class="block"
         icon="mdi:google-spreadsheet"
         trailing-icon="heroicons:arrow-top-right-on-square-20-solid"
-      >
-        Open
-      </UButton>
+        label="Open"
+      />
     </div>
   </div>
 </template>

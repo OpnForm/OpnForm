@@ -3,6 +3,12 @@
         "name": "OpnForm"
     },
     "forms": {
+        "buttons": {
+            "submit": "제출",
+            "next": "다음",
+            "previous": "이전",
+            "re_fill": "다른 답변 제출"
+        },
         "powered_by": "제공",
         "password_protected": "이 양식은 비밀번호로 보호되어 있습니다.",
         "invalid_password": "잘못된 비밀번호입니다.",
@@ -47,19 +53,25 @@
             "billing_email": "청구 이메일 주소",
             "payment_disclaimer": "이 버튼을 클릭하면 신용카드로 청구됩니다. 결제는 Stripe를 통해 안전하게 처리됩니다.",
             "errors": {
-                "missingFormOrProvider": "Missing form slug or provider ID.",
-                "failedAccountDetails": "Failed to get Stripe account details.",
-                "setupError": "An error occurred during Stripe setup.",
-                "systemNotReady": "Payment system not ready. Please wait a moment and try again.",
-                "misconfigured": "Payment system misconfigured. Please refresh and try again.",
-                "notFullyReady": "Payment system not fully ready. Please refresh and try again.",
-                "paymentRequired": "Complete the payment before you can proceed.",
-                "nameRequired": "Card holder name is required.",
-                "emailRequired": "Billing email address is required.",
-                "invalidEmail": "Invalid billing email address.",
-                "failedIntent": "Failed to create payment intent.",
-                "processingFailed": "Payment processing failed."
+                "missingFormOrProvider": "양식 슬러그 또는 공급자 ID가 없습니다.",
+                "failedAccountDetails": "Stripe 계정 정보를 가져오지 못했습니다.",
+                "setupError": "Stripe 설정 중 오류가 발생했습니다.",
+                "systemNotReady": "결제 시스템이 준비되지 않았습니다. 잠시 후 다시 시도해 주세요.",
+                "misconfigured": "결제 시스템이 잘못 구성되었습니다. 새로고침 후 다시 시도해 주세요.",
+                "notFullyReady": "결제 시스템이 완전히 준비되지 않았습니다. 새로고침 후 다시 시도해 주세요.",
+                "paymentRequired": "계속하려면 결제를 완료하세요.",
+                "nameRequired": "카드 소유자 이름이 필요합니다.",
+                "emailRequired": "청구 이메일 주소가 필요합니다.",
+                "invalidEmail": "잘못된 청구 이메일 주소입니다.",
+                "failedIntent": "결제 의도를 생성하지 못했습니다.",
+                "processingFailed": "결제 처리에 실패했습니다."
             }
+        },
+        "validation_error": "유효성 검사 오류",
+        "validation_error_with_count": "유효성 검사 오류 ({count}개 필드)",
+        "toggle": {
+            "yes": "예",
+            "no": "아니오"
         }
     }
 } 

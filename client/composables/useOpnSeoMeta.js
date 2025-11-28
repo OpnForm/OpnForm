@@ -1,4 +1,12 @@
-export const useOpnSeoMeta = (meta) => {
+import { useSubdomainRedirect } from '~/composables/useSubdomainRedirect'
+
+export const useOpnSeoMeta = (meta, alwaysEnabled = false) => {
+  const { shouldRedirect } = useSubdomainRedirect()
+
+  if (!alwaysEnabled && shouldRedirect()) {
+    return
+  }
+
   return useSeoMeta({
     ...(meta.title
       ? {

@@ -24,6 +24,7 @@ class CreateIntegrationRequest extends FormRequest
 
     public function form(): Form
     {
-        return Form::findOrFail($this->input('form_id'));
+        // Use firstOrFail with query optimization instead of findOrFail
+        return Form::where('id', $this->input('form_id'))->firstOrFail();
     }
 }

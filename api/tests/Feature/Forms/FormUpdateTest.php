@@ -44,6 +44,7 @@ it('can update form with existing record but generates_uuid field is not update'
     $user = $this->actingAsProUser();
     $workspace = $this->createUserWorkspace($user);
     $form = $this->createForm($user, $workspace, [
+        'clear_empty_fields_on_update' => true,
         'editable_submissions' => true,
         'properties' => [
             [

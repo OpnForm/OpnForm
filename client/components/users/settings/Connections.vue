@@ -8,17 +8,28 @@
           Manage your external connections and integrations.
         </p>
       </div>
-      <UButton
-        label="Connect Account"
-        icon="i-heroicons-plus"
-        :loading="isLoading"
-        @click="providerModal = true"
-      />
+      <div class="flex items-center gap-2">
+        <UButton
+          icon="i-heroicons-arrow-path"
+          color="neutral"
+          variant="soft"
+          square
+          size="md"
+          :loading="isFetching"
+          @click="refreshProviders"
+        />
+        <UButton
+          label="Connect Account"
+          icon="i-heroicons-plus"
+          :loading="isFetching"
+          @click="providerModal = true"
+        />
+      </div>
     </div>
 
     <!-- Providers List -->
     <div class="space-y-4">
-      <div v-if="providers.length === 0 && !isLoading" class="text-center py-12">
+      <div v-if="providers.length === 0 && !isFetching" class="text-center py-12">
         <UIcon 
           name="i-heroicons-link" 
           class="w-12 h-12 text-neutral-400 mx-auto mb-4" 
@@ -41,7 +52,7 @@
         v-model:column-pinning="columnPinning"
         :data="providers" 
         :columns="tableColumns"
-        :loading="isLoading"
+        :loading="isFetching"
         class="w-full"
       >
         <template #provider-cell="{ row: { original: item } }">
@@ -93,7 +104,7 @@ const providerModal = ref(false)
 const oAuth = useOAuth()
 const alert = useAlert()
 
-const { data: providersData, isLoading: isLoading, refetch } = oAuth.providers()
+const { data: providersData, refetch, isFetching } = oAuth.providers()
 const providers = computed(() => providersData.value || [])
 
 // Column pinning state
@@ -146,6 +157,11 @@ const disconnectProvider = (provider) => {
       }
     })
   })
+}
+
+// Refresh providers
+const refreshProviders = async () => {
+  await refetch()
 }
 
 // Fetch providers on mount

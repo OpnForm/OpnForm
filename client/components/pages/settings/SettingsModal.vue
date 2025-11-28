@@ -4,6 +4,7 @@
     :ui="{
       content: 'max-w-5xl h-[80vh] overflow-hidden',
     }"
+    title=""
     :content="{
       onPointerDownOutside: (event) => { if (event.target?.closest('.crisp-client')) {return event.preventDefault()}}
     }"

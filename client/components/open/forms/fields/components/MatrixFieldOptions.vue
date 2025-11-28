@@ -31,6 +31,7 @@
         <UButton
           size="xs"
           color="neutral"
+          variant="soft"
           icon="i-heroicons-plus"
           @click="addMatrixRow"
         >
@@ -58,6 +59,7 @@
         <UButton
           size="xs"
           color="neutral"
+          variant="soft"
           icon="i-heroicons-plus"
           @click="addMatrixColumn"
         >

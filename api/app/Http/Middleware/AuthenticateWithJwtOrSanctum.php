@@ -25,11 +25,6 @@ class AuthenticateWithJwtOrSanctum
         if (Auth::guard('sanctum')->check()) {
             $user = Auth::guard('sanctum')->user();
 
-            // Check if user is pro before allowing Sanctum authentication
-            if (!$user->is_pro) {
-                throw new AuthenticationException('Pro subscription required for API access.');
-            }
-
             Auth::setUser($user);
 
             // Validate route against whitelist

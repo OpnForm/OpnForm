@@ -8,7 +8,7 @@
 </template>
 
 <script setup>
-import { adminApi } from '~/api'
+
 import { useQueryClient } from '@tanstack/vue-query'
 
 const props = defineProps({
@@ -17,7 +17,6 @@ const props = defineProps({
 
 const authStore = useAuthStore()
 const queryClient = useQueryClient()
-
 const loading = ref(false)
 
 const { user } = useAuth()
@@ -26,7 +25,7 @@ const { data: userData } = user()
 const impersonate = () => {
   loading.value = true
   authStore.startImpersonating()
-  adminApi.impersonate(props.user.id).then(async (data) => {
+  opnFetch(`/moderator/impersonate/${props.user.id}`).then(async (data) => {
     loading.value = false
 
     // Save the token with its expiration time.
@@ -37,7 +36,7 @@ const impersonate = () => {
     useRouter().push({ name: 'home' })
   })
     .catch((error) => {
-      useAlert().error(error.data.message)
+      useAlert().error(error.data?.message || 'Failed to impersonate user')
       loading.value = false
     })
 }

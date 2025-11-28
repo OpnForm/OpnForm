@@ -1,0 +1,6 @@
+<svg width="70" height="50" viewBox="0 0 70 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect width="70" height="50" fill="white"/>
+<rect width="35" height="50" transform="matrix(-1 0 0 1 70 0)" fill="var(--icon-fg, currentColor)"/>
+<rect width="22" height="3" rx="1.5" transform="matrix(-1 0 0 1 28 20)" fill="var(--icon-fg, currentColor)"/>
+<rect width="11" height="3" rx="1.5" transform="matrix(-1 0 0 1 17 26)" fill="var(--icon-fg, currentColor)"/>
+</svg>

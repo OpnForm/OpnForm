@@ -12,7 +12,7 @@
     >
       <Icon
         :name="icon"
-        class="w-4 h-4 text-neutral-400"
+        :class="['w-4 h-4 text-neutral-400', iconClass]"
       />
       <h3 class="text-sm font-semibold text-neutral-500">
         {{ title }}
@@ -34,6 +34,10 @@ title: {
 showLine: {
     type: Boolean,
     default: true
+},
+iconClass: {
+    type: String,
+    default: ''
 }
 })
 </script>

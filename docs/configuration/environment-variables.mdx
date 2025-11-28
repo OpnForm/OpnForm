@@ -14,6 +14,7 @@ The following environment variables are used to [configure the Laravel](https://
 There are dedicated configuration pages available for more detailed setup instructions on specific topics:
 
 -   [OAuth Integration Setup](../configuration/oauth-setup)
+-   [OIDC SSO Configuration](../configuration/oidc-sso)
 -   [File Storage (S3)](../configuration/aws-s3)
 -   [Email Configuration (SMTP)](../configuration/email-setup)
 -   [Custom Domain](../configuration/custom-domain)
@@ -21,37 +22,40 @@ There are dedicated configuration pages available for more detailed setup instru
 
 ### Configuration Environment Variables
 
-| Variable Name               | Description                                                                                              |
-| --------------------------- | -------------------------------------------------------------------------------------------------------- |
-| `H_CAPTCHA_SITE_KEY`        | Site key for hCaptcha integration.                                                                       |
-| `H_CAPTCHA_SECRET_KEY`      | Secret key for hCaptcha integration.                                                                     |
-| `RE_CAPTCHA_SITE_KEY`       | Site key for reCAPTCHA integration.                                                                      |
-| `RE_CAPTCHA_SECRET_KEY`     | Secret key for reCAPTCHA integration.                                                                    |
-| `OPEN_AI_API_KEY`           | API key for accessing OpenAI services.                                                                   |
-| `UNSPLASH_ACCESS_KEY`       | Access key for Unsplash API.                                                                             |
-| `UNSPLASH_SECRET_KEY`       | Secret key for Unsplash API.                                                                             |
-| `FRONT_URL`                 | Public facing URL of the front-end.                                                                      |
-| `FRONT_API_SECRET`          | Shared secret with the front-end.                                                                        |
-| `JWT_TTL`                   | Time to live for JSON Web Tokens (JWT).                                                                  |
-| `JWT_SECRET`                | Secret key used to sign JWTs.                                                                            |
-| `JWT_SKIP_IP_UA_VALIDATION` | Set to `true` to disable JWT IP and User Agent validation (defaults to `false`). Useful for dynamic IPs. |
+| Variable Name                    | Description                                                                                                                                                                               |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `H_CAPTCHA_SITE_KEY`             | Site key for hCaptcha integration.                                                                                                                                                        |
+| `H_CAPTCHA_SECRET_KEY`           | Secret key for hCaptcha integration.                                                                                                                                                      |
+| `RE_CAPTCHA_SITE_KEY`            | Site key for reCAPTCHA integration.                                                                                                                                                       |
+| `RE_CAPTCHA_SECRET_KEY`          | Secret key for reCAPTCHA integration.                                                                                                                                                     |
+| `OPEN_AI_API_KEY`                | API key for accessing OpenAI services.                                                                                                                                                    |
+| `UNSPLASH_ACCESS_KEY`            | Access key for Unsplash API.                                                                                                                                                              |
+| `UNSPLASH_SECRET_KEY`            | Secret key for Unsplash API.                                                                                                                                                              |
+| `FRONT_URL`                      | Public facing URL of the front-end.                                                                                                                                                       |
+| `FRONT_API_SECRET`               | Shared secret with the front-end.                                                                                                                                                         |
+| `JWT_TTL`                        | Time to live for JSON Web Tokens (JWT).                                                                                                                                                   |
+| `JWT_SECRET`                     | Secret key used to sign JWTs.                                                                                                                                                             |
+| `JWT_SKIP_IP_UA_VALIDATION`      | Set to `true` to disable JWT IP and User Agent validation (defaults to `false`). Useful for dynamic IPs.                                                                                  |
+| `OIDC_FORCE_LOGIN`               | When set to `true`, password-based authentication is disabled and users must authenticate via OIDC SSO. See [Force Login Mode](../configuration/oidc-sso#7-force-login-mode) for details. |
+| `CUSTOM_CODE_ENABLE_SELF_HOSTED` | Enables execution of user-provided custom code on self-hosted deployments. Defaults to `false` for safety reasons (XSS etc.).                                                             |
 
 ### OAuth Integration Environment Variables
 
 OAuth integrations enable user authentication and third-party service connections. OpnForm automatically handles OAuth redirect URLs - you don't need to manually configure redirect URIs in your OAuth applications.
 
 <Info>
-For detailed setup instructions for each OAuth provider, see the [OAuth Integration Setup](../configuration/oauth-setup) guide.
+    For detailed setup instructions for each OAuth provider, see the [OAuth
+    Integration Setup](../configuration/oauth-setup) guide.
 </Info>
 
-| Variable Name           | Description                                                                                               |
-| ----------------------- | --------------------------------------------------------------------------------------------------------- |
-| `GOOGLE_CLIENT_ID`      | Client ID for Google OAuth authentication and Google Sheets integration.                                 |
-| `GOOGLE_CLIENT_SECRET`  | Client secret for Google OAuth authentication and Google Sheets integration.                             |
-| `GOOGLE_FONTS_API_KEY`  | API key for accessing Google Fonts (optional).                                                           |
-| `STRIPE_CLIENT_ID`      | Client ID for Stripe Connect OAuth integration for payment processing.                                   |
-| `STRIPE_CLIENT_SECRET`  | Client secret for Stripe Connect OAuth integration.                                                      |
-| `TELEGRAM_BOT_TOKEN`    | Authentication token for your Telegram bot notifications (bot ID is extracted automatically).           |
+| Variable Name          | Description                                                                                   |
+| ---------------------- | --------------------------------------------------------------------------------------------- |
+| `GOOGLE_CLIENT_ID`     | Client ID for Google OAuth authentication and Google Sheets integration.                      |
+| `GOOGLE_CLIENT_SECRET` | Client secret for Google OAuth authentication and Google Sheets integration.                  |
+| `GOOGLE_FONTS_API_KEY` | API key for accessing Google Fonts (optional).                                                |
+| `STRIPE_CLIENT_ID`     | Client ID for Stripe Connect OAuth integration for payment processing.                        |
+| `STRIPE_CLIENT_SECRET` | Client secret for Stripe Connect OAuth integration.                                           |
+| `TELEGRAM_BOT_TOKEN`   | Authentication token for your Telegram bot notifications (bot ID is extracted automatically). |
 
 ### User Options Environment Variables
 
@@ -86,6 +90,38 @@ These variables are essential for connecting the Laravel backend to your databas
 | `DB_DATABASE`   | The name of the database.                     |
 | `DB_USERNAME`   | The username for connecting to the database.  |
 | `DB_PASSWORD`   | The password for the database user.           |
+
+### Anonymous Telemetry
+
+OpnForm tracks usage of its products which helps the team to improve and deliver better software. You can opt-out of this telemetry at any time.
+
+**What data is collected?**
+
+None of your customer data is ever transmitted by OpnForm installation. The telemetry data collected are purely usage statistics of various software features:
+
+- Basic usage metrics (form creation, submissions, workspace creation, user additions)
+- Anonymous instance identifier (UUID)
+- Distribution of forms by type
+- No personally identifiable information (PII)
+- No form content, submission data, or user emails
+
+**How is the data used?**
+
+This data will only be used by OpnForm team for:
+
+- Directly improving the product and identifying the parts of product which are popular
+- Identifying areas with limited usage or where our users get stuck
+- Prioritizing the next set of features to be developed
+
+**When is telemetry active?**
+
+- Production environments (`APP_ENV=production`)
+- Self-hosted deployments (`SELF_HOSTED=true`)
+- Disabled in local/development environments
+
+**How to opt-out:**
+
+Set `OPNFORM_ANONYMOUS_TELEMETRY_DISABLED=true` in your environment variables to disable data collection.
 
 ## Front-end Environment Variables
 

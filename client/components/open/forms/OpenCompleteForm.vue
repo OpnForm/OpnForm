@@ -1,205 +1,134 @@
 <template>
   <div
     v-if="form"
-    class="open-complete-form"
+    class="open-complete-form flex flex-col min-h-full"
     :dir="form?.layout_rtl ? 'rtl' : 'ltr'"
     :style="formStyle"
   >
-    <ClientOnly>
-      <Teleport to="head">
-        <link
-          v-if="showFontLink && form.font_family"
-          :key="form.font_family"
-          :href="getFontUrl"
-          rel="stylesheet"
-          crossorigin="anonymous"
-          referrerpolicy="no-referrer"
-        >
-      </Teleport>
-    </ClientOnly>
-
     <v-transition name="fade" mode="out-in">
       <div v-if="isAutoSubmit" key="auto-submit" class="text-center p-6">
         <Loader class="h-6 w-6 text-blue-500 mx-auto" />
       </div>
 
-      <div v-else key="form-content">
-        <div v-if="isPublicFormPage && form.is_password_protected">
-          <p class="form-description text-neutral-700 dark:text-neutral-300 px-2">
-            {{ t('forms.password_protected') }}
-          </p>
-          <div class="form-group flex flex-wrap w-full">
-            <div class="relative w-full px-2">
-              <text-input
-                :theme="theme"
-                :form="passwordForm"
-                name="password"
-                native-type="password"
-                label="Password"
-              />
+      <component
+        v-else-if="form && formManager && form"
+        :key="'form'+form.presentation_style"
+        :is="FormComponent"
+        :form-manager="formManager"
+        @submit="triggerSubmit"
+        class="flex flex-col grow"
+      >
+        <template #password v-if="isPublicFormPage && form.is_password_protected" >
+          <div class="w-full">
+            <div class="form-group flex flex-wrap w-full max-w-sm mx-auto">
+              <div class="relative w-full px-2">
+                <text-input :form="passwordForm" name="password" native-type="password" label="Password" :help="t('forms.password_protected')" @keydown.enter.prevent="passwordEntered" />
+              </div>
+            </div>
+            <div class="flex flex-wrap justify-center w-full text-center">
+              <open-form-button :form="form" class="my-4 px-8" @click="passwordEntered">
+                {{ t('forms.submit') }}
+              </open-form-button>
             </div>
           </div>
-          <div class="flex flex-wrap justify-center w-full text-center">
-            <open-form-button
-              :form="form"
-              class="my-4"
-              @click="passwordEntered"
-            >
-              {{ t('forms.submit') }}
-            </open-form-button>
-          </div>
-        </div>
-
-        <div v-if="!form.is_password_protected && form.password && !hidePasswordDisabledMsg" 
-          class="m-2 my-4">
+        </template>
+        
+        <template
+          #alerts
+          v-if="isPublicFormPage && (form.is_closed || form.visibility=='closed' || form.max_number_of_submissions_reached)"
+        >
           <UAlert
-            :close-button="{ icon: 'i-heroicons-x-mark-20-solid', color: 'neutral', variant: 'link', padded: false }"
+            v-if="form.is_closed || form.visibility=='closed'"
+            icon="i-heroicons-lock-closed-20-solid"
             color="warning"
             variant="subtle"
-            icon="i-material-symbols-info-outline"
-            @close="hidePasswordDisabledMsg = true"
-            title="Password protection has been disabled since you are the owner of this form."
-          />
-        </div>
-
-
-        <UAlert
-          v-if="isPublicFormPage && (form.is_closed || form.visibility=='closed')"
-          icon="i-heroicons-lock-closed-20-solid"
-          color="warning"
-          variant="subtle"
-          class="m-2 my-4"
-        >
-          <template #description>
-            <div
-              class="break-words whitespace-break-spaces"
-              v-html="form.closed_text"
-            />
-          </template>
-        </UAlert>
-
-        <UAlert
-          v-else-if="isPublicFormPage && form.max_number_of_submissions_reached"
-          icon="i-heroicons-lock-closed-20-solid"
-          color="warning"
-          variant="subtle"
-          class="m-2 my-4"
-        >
-          <template #description>
-            <div
-              class="break-words whitespace-break-spaces"
-              v-html="form.max_submissions_reached_text"
-            />
-          </template>
-        </UAlert>
-
-        <form-cleanings
-          v-if="showFormCleanings"
-          :hideable="true"
-          class="mb-4 mx-2"
-          :form="form"
-          :specify-form-owner="true"
-          :use-cookie-dismissal="true"
-        />
-
-        <v-transition name="fade" v-if="form && !form.is_password_protected">
-          <div
-            v-if="!isFormSubmitted"
-            key="form"
+            class="m-2 my-4"
           >
-            <open-form
-              v-if="formManager && form && shouldDisplayForm"
-              :form-manager="formManager"
-              :theme="theme"
-              @submit="triggerSubmit"
-            >
-              <template #submit-btn="{loading}">
-                <open-form-button
-                  :loading="loading || isProcessing"
-                  :form="form"
-                  class="mt-2 px-8 mx-1"
-                  :class="submitButtonClass"
-                  @click.prevent="triggerSubmit"
-                >
-                  {{ form.submit_button_text }}
-                </open-form-button>
-              </template>
-            </open-form>
-            <PoweredBy v-if="!form.no_branding && formModeStrategy.display.showBranding" :color="form.color" />
-          </div>
-          <div
+            <template #description>
+              <div class="break-words whitespace-break-spaces" v-html="form.closed_text" />
+            </template>
+          </UAlert>
+          <UAlert
             v-else
-            key="submitted"
-            class="px-2"
+            icon="i-heroicons-lock-closed-20-solid"
+            color="warning"
+            variant="subtle"
+            class="m-2 my-4"
           >
-            <TextBlock
-              v-if="form.submitted_text"
-              class="form-description text-neutral-700 dark:text-neutral-300 whitespace-pre-wrap"
-              :content="form.submitted_text"
-              :mentions-allowed="true"
-              :form="form"
-              :form-data="submittedData"
-            />
+            <template #description>
+              <div class="break-words whitespace-break-spaces" v-html="form.max_submissions_reached_text" />
+            </template>
+          </UAlert>
+        </template>
+
+        <template #cleanings>
+          <form-cleanings
+            v-if="showFormCleanings"
+            :hideable="true"
+            class="mb-4 mx-2"
+            :form="form"
+            :specify-form-owner="true"
+            :use-cookie-dismissal="true"
+          />
+        </template>
+
+        <!-- Submitted view provided to renderer -->
+        <template #after-submit>
+          <TextBlock
+            v-if="form.submitted_text"
+            class="form-description text-neutral-700 dark:text-neutral-300 whitespace-pre-wrap"
+            :content="form.submitted_text"
+            :mentions-allowed="true"
+            :form="form"
+            :form-data="submittedData"
+          />
+          <div class="flex w-full gap-2 items-center mt-4">
             <open-form-button
               v-if="form.re_fillable"
               :form="form"
-              class="my-4"
+              icon="i-lucide-rotate-ccw"
               @click="restart"
             >
-              {{ form.re_fill_button_text }}
+              {{ form.re_fill_button_text || t('forms.buttons.re_fill') }}
             </open-form-button>
-            <p
+            <open-form-button
               v-if="form.editable_submissions && submissionId"
-              class="mt-5"
+              :form="form"
+              @click="editSubmission"
             >
-              <a
-                target="_parent"
-                :href="form.share_url+'?submission_id='+submissionId"
-                class="text-blue-500 hover:underline"
-              >
-                {{ form.editable_submissions_button_text }}
-              </a>
-            </p>
-            <p
-              v-if="!form.no_branding && formModeStrategy.display.showBranding"
-              class="mt-5"
-            >
-              <a
-                target="_parent"
-                href="https://opnform.com/?utm_source=form&utm_content=create_form_free"
-                class="text-blue-500 hover:underline"
-              >
-                {{ t('forms.create_form_free') }}
-              </a>
-            </p>
+              {{ form.editable_submissions_button_text }}
+            </open-form-button>
           </div>
-        </v-transition>
-        <FirstSubmissionModal
-          :show="showFirstSubmissionModal"
-          :form="form"
-          @close="showFirstSubmissionModal=false"
-        />
-      </div>
+        </template>
+      </component>
     </v-transition>
+
+    <template v-if="!isAutoSubmit">
+      <FirstSubmissionModal
+        :show="showFirstSubmissionModal"
+        :form="form"
+        @close="showFirstSubmissionModal=false"
+      />
+    </template>
   </div>
 </template>
 
 <script setup>
 import { useFormManager } from '~/lib/forms/composables/useFormManager'
-import { FormMode, createFormModeStrategy } from "~/lib/forms/FormModeStrategy.js"
-import ThemeBuilder from "~/lib/forms/themes/ThemeBuilder.js"
+import { FormMode } from "~/lib/forms/FormModeStrategy.js"
 import OpenForm from './OpenForm.vue'
+import OpenFormFocused from './OpenFormFocused.vue'
 import OpenFormButton from './OpenFormButton.vue'
 import FormCleanings from '../../pages/forms/show/FormCleanings.vue'
 import VTransition from '~/components/global/transitions/VTransition.vue'
 import FirstSubmissionModal from '~/components/open/forms/components/FirstSubmissionModal.vue'
-import PoweredBy from '../../pages/forms/show/PoweredBy.vue'
 import { useForm } from '~/composables/useForm'
 import { useAlert } from '~/composables/useAlert'
 import { useI18n } from 'vue-i18n'
 import { useIsIframe } from '~/composables/useIsIframe'
 import Loader from '~/components/global/Loader.vue'
 import { tailwindcssPaletteGenerator } from '~/lib/colors.js'
+import { useRouter } from 'vue-router'
 
 const props = defineProps({
   form: { type: Object, required: true },
@@ -208,7 +137,6 @@ const props = defineProps({
     default: FormMode.LIVE,
     validator: (value) => Object.values(FormMode).includes(value)
   },
-  submitButtonClass: { type: String, default: '' },
   darkMode: {
     type: Boolean,
     default: false
@@ -219,11 +147,12 @@ const emit = defineEmits(['submitted', 'password-entered', 'restarted'])
 
 const { t, setLocale } = useI18n()
 const route = useRoute()
+const router = useRouter()
 const alert = useAlert()
 const workingFormStore = useWorkingFormStore()
 const { data: user } = useAuth().user()
 const passwordForm = useForm({ password: null })
-const hidePasswordDisabledMsg = ref(false)
+// Removed unused hidePasswordDisabledMsg (was always false and unused)
 const submissionId = ref(route.query.submission_id || null)
 const submittedData = ref(null)
 const showFirstSubmissionModal = ref(false)
@@ -233,21 +162,17 @@ const queryString = route.fullPath.split('?')[1] || ''
 // Check for auto_submit parameter during setup
 const isAutoSubmit = ref(import.meta.client && window.location.href.includes('auto_submit=true'))
 
-const formModeStrategy = computed(() => createFormModeStrategy(props.mode))
 
 // Create a reactive reference directly from the prop
 const darkModeRef = toRef(props, 'darkMode')
 // Create a reactive reference for the mode prop
 const modeRef = toRef(props, 'mode')
 
-// Add back the local theme computation
-const theme = computed(() => {
-  return new ThemeBuilder(props.form.theme, {
-    size: props.form.size,
-    borderRadius: props.form.border_radius
-  }).getAllComponents()
-})
-provide('theme', theme)
+// Provide theme context for components outside OpenForm (password input, TextBlock)
+provide('formTheme', computed(() => props.form.theme || 'default'))
+provide('formSize', computed(() => props.form.size || 'md'))  
+provide('formBorderRadius', computed(() => props.form.border_radius || 'small'))
+provide('formPresentationStyle', computed(() => props.form.presentation_style || 'classic'))
 
 let formManager = null
 if (props.form) {
@@ -256,8 +181,8 @@ if (props.form) {
     mode: modeRef
   })
 
-  // Await the initialization for SSR
-  formManager.initialize({
+  // Await initialization so SSR includes form structure and fields
+  await formManager.initialize({
     submissionId: submissionId.value,
     urlParams: new URLSearchParams(queryString),
   })
@@ -275,12 +200,15 @@ watch(() => props.form, (newForm) => {
   }
 })
 
-// Share the structure service with the working form store only when in admin edit context
-watch(() => formManager?.strategy?.value?.admin?.showAdminControls, (showAdminControls) => {
-  if (workingFormStore && formManager?.structure && showAdminControls) {
-    workingFormStore.setStructureService(formManager.structure)
+// Keep the builder's structureService in sync whenever admin preview is on and the adapter changes
+watch([
+  () => formManager?.strategy?.value?.admin?.showAdminControls,
+  () => formManager?.structure?.value
+], ([showAdminControls, struct]) => {
+  if (workingFormStore && showAdminControls && struct) {
+    workingFormStore.setStructureService(struct)
   }
-}, { immediate: true }) 
+}, { immediate: true })
 
 // Add a watcher to update formManager's darkMode whenever darkModeRef changes
 watch(darkModeRef, (newDarkMode) => {
@@ -314,13 +242,9 @@ const isFormOwner = computed(() => {
   return isAuthenticated.value && props.form && props.form.creator_id === user.value.id
 })
 
-const isFormSubmitted = computed(() => formManager?.state.isSubmitted ?? false)
 const isProcessing = computed(() => formManager?.state.isProcessing ?? false)
 const showFormCleanings = computed(() => formManager?.strategy.value.display.showFormCleanings ?? false)
 const showFontLink = computed(() => formManager?.strategy.value.display.showFontLink ?? false)
-const shouldDisplayForm = computed(() => {
-  return (!props.form.is_closed && !props.form.max_number_of_submissions_reached) || formManager?.strategy?.value.admin?.showAdminControls
-})
 
 const formStyle = computed(() => {
   const baseStyle = {
@@ -339,6 +263,25 @@ const formStyle = computed(() => {
   }
 
   return baseStyle
+})
+
+const FormComponent = computed(() => {
+  return props.form?.presentation_style === 'focused' ? OpenFormFocused : OpenForm
+})
+
+// Conditionally add font link to the page head (SSR-friendly)
+useHead({
+  link: computed(() =>
+    (showFontLink.value && props.form?.font_family && getFontUrl.value) ? [
+      {
+        key: `form-font-${props.form.font_family}`,
+        rel: 'stylesheet',
+        href: getFontUrl.value,
+        crossorigin: 'anonymous',
+        referrerpolicy: 'no-referrer'
+      }
+    ] : []
+  )
 })
 
 watch(() => props.form.language, (newLanguage) => {
@@ -389,6 +332,11 @@ const triggerSubmit = () => {
         }
         
         emit('submitted', true)
+
+        // Ensure the submitted view starts at the top (parity with page change scroll)
+        if (import.meta.client) {
+          window.scrollTo({ top: 0, behavior: 'smooth' })
+        }
       } else {
         console.warn('Form submission failed via composable, but no error thrown?')
         alert.error(t('forms.submission_error'))
@@ -397,9 +345,9 @@ const triggerSubmit = () => {
     .catch(error => {
       console.error(error)
       if (error.response && error.response.status === 422 && error.data) {
-        useAlert().formValidationError(error.data)
+        alert.formValidationError(error.data)
       } else if (error.message) {
-        useAlert().error(error.message)
+        alert.error(error.message)
       }
       handleScrollToError()
     }).finally(() => {
@@ -407,16 +355,41 @@ const triggerSubmit = () => {
     })
 }
 
-const restart = () => {
+const restart = async () => {
   if (!formManager) return
-  formManager.restart().then(() => {
-    submittedData.value = null
-    submissionId.value = null
-    emit('restarted', true)
+  submittedData.value = null
+  submissionId.value = null
+  const queryString = route.fullPath.split('?')[1] || ''
+  const urlParams = new URLSearchParams(queryString)
+  
+  // Determine if we should clear the form completely for a fresh start
+  const shouldClearUrl = props.form.editable_submissions
+  
+  if (shouldClearUrl) {
+    // Remove submission_id parameter and navigate to clean URL
+    urlParams.delete('submission_id')
+    const newQueryString = urlParams.toString()
+    const newPath = newQueryString ? `${route.path}?${newQueryString}` : route.path
+    await router.replace(newPath)
+  }
+  
+  // Single restart call with conditional options
+  await formManager.restart({
+    urlParams: shouldClearUrl ? new URLSearchParams() : urlParams,
+    submissionId: null,
+    skipUrlParams: shouldClearUrl
   })
+  
+  emit('restarted', true)
+}
+
+const editSubmission = () => {
+  const editUrl = props.form.share_url + '?submission_id=' + submissionId.value
+  window.parent.location.href = editUrl
 }
 
 const passwordEntered = () => {
+  console.log('passwordEntered', passwordForm.password)
   if (passwordForm.password) {
     emit('password-entered', passwordForm.password)
   } else {
@@ -441,16 +414,6 @@ defineExpose({
   * {
     font-family: var(--font-family) !important;
   }
-  .form-description, .nf-text {
-    ol {
-      @apply list-decimal list-inside;
-      margin-left: 10px;
-    }
 
-    ul {
-      @apply list-disc list-inside;
-      margin-left: 10px;
-    }
-  }
 }
 </style>

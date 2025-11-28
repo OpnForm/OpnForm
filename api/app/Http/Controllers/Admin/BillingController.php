@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Laravel\Cashier\Cashier;
 
 class BillingController extends Controller
 {
@@ -14,9 +15,8 @@ class BillingController extends Controller
         $this->middleware('moderator');
     }
 
-    public function getEmail($userId)
+    public function getEmail(User $user)
     {
-        $user  = User::find($userId);
 
         if (!$user->hasStripeId()) {
             return $this->error([
@@ -48,16 +48,14 @@ class BillingController extends Controller
         AdminController::log('Update billing email', [
             'user_id' => $user->id,
             'stripe_id' => $user->stripe_id,
-            'moderator_id' => auth()->id()
         ]);
         $user->updateStripeCustomer(['email' => $request->billing_email]);
 
         return $this->success(['message' => 'Billing email updated successfully']);
     }
 
-    public function getSubscriptions($userId)
+    public function getSubscriptions(User $user)
     {
-        $user  = User::find($userId);
         if (!$user->hasStripeId()) {
             return $this->error([
                 "message" => "Stripe user not created",
@@ -70,7 +68,8 @@ class BillingController extends Controller
                 "name" => ucfirst($user->name),
                 "plan" => $subscription->type,
                 "status" => $subscription->stripe_status,
-                "creation_date" => $subscription->created_at->format('Y-m-d')
+                "creation_date" => $subscription->created_at->format('Y-m-d'),
+                "canceled_at" => $subscription->ends_at ? $subscription->ends_at->format('Y-m-d') : null,
             ];
         });
         return $this->success([
@@ -78,9 +77,8 @@ class BillingController extends Controller
         ]);
     }
 
-    public function getPayments($userId)
+    public function getPayments(User $user)
     {
-        $user  = User::find($userId);
         if (!$user->hasStripeId()) {
             return $this->error([
                 "message" => "Stripe user not created",
@@ -88,12 +86,24 @@ class BillingController extends Controller
         }
         $payments = $user->invoices();
         $payments = $payments->map(function ($payment) use ($user) {
+            $status = $payment->status;
+
+            // If the underlying Stripe charge was refunded, reflect that in the status
+            try {
+                $stripeInvoice = Cashier::stripe()->invoices->retrieve($payment->id, ['expand' => ['charge']]);
+                if (isset($stripeInvoice->charge) && ($stripeInvoice->charge->refunded ?? false)) {
+                    $status = 'refunded';
+                }
+            } catch (\Exception $e) {
+                // Ignore errors while deriving refund status; fall back to invoice status
+            }
+
             return  [
                 "id" => $payment->id,
                 "amount_paid" => ($payment->amount_paid),
                 "name" => ucfirst($payment->account_name),
                 "creation_date" => Carbon::parse($payment->created)->format("Y-m-d H:i:s"),
-                "status" => $payment->status,
+                "status" => $status,
             ];
         });
         return $this->success([

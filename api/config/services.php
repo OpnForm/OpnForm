@@ -89,5 +89,11 @@ return [
         'client_id' => env('STRIPE_CLIENT_ID'),
         'client_secret' => env('STRIPE_CLIENT_SECRET', env('STRIPE_SECRET')),
         'redirect' => env('STRIPE_REDIRECT_URL', front_url('/oauth/stripe/callback')),
-    ]
+    ],
+
+    'ipinfo' => [
+        'token' => env('IPINFO_TOKEN'),
+        'cache_ttl_hours' => env('IPINFO_CACHE_TTL_HOURS', 24),
+        'request_timeout' => env('IPINFO_REQUEST_TIMEOUT', 5),
+    ],
 ];

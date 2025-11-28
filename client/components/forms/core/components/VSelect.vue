@@ -1,229 +1,274 @@
 <template>
   <div
     ref="select"
-    class="v-select relative"
-    :class="[{ 'w-0': multiple, 'min-w-full': multiple }]"
+    :class="variantSlots.container({ class: ui?.slots?.container })"
   >
-    <div
-      class="w-full flex overflow-hidden"
-      :style="inputStyle"
-      :class="[
-        theme.SelectInput.input,
-        theme.SelectInput.borderRadius,
-        { 
-          'ring-red-500! ring-2! border-transparent!': hasError, 
-          '!cursor-not-allowed bg-neutral-200! dark:bg-neutral-800!': disabled,
-          'focus-within:ring-2 focus-within:ring-form/100 focus-within:border-transparent': !hasError && !disabled
-        },
-        inputClass
-      ]"
+    <UPopover
+      v-model:open="isOpen"
+      :content="{
+        align: 'start',
+        side: 'bottom',
+        sideOffset: 4
+      }"
+      :ui="{
+        content: 'bg-white dark:!bg-notion-dark-light shadow-xl z-30 overflow-auto ' + borderRadiusClass
+      }"
     >
-      <button
-        type="button"
-        aria-haspopup="listbox"
-        aria-expanded="true"
-        aria-labelledby="listbox-label"
-        class="cursor-pointer w-full grow relative focus:outline-hidden min-w-0 truncate"
-        :class="[
-          theme.SelectInput.spacing.horizontal,
-          theme.SelectInput.spacing.vertical
-        ]"
-        @click="toggleDropdown"
-        @focus="onFocus"
-        @blur="onBlur"
-      >
+      <template #anchor>
         <div
-          class="flex items-center"
-          :class="[
-            theme.SelectInput.minHeight,
-            'ltr:pr-8 rtl:pl-8'
-          ]"
+          :style="inputStyle"
+          :class="[variantSlots.anchor({ class: ui?.slots?.anchor }), inputClass]"
         >
-          <transition
-            name="fade"
-            mode="out-in"
+        <button
+          type="button"
+          aria-haspopup="listbox"
+          :aria-expanded="isOpen"
+          aria-labelledby="listbox-label"
+          :class="variantSlots.button({ class: ui?.slots?.button })"
+          @click.stop="toggleDropdown"
+          @focus="onFocus"
+          @blur="onBlur"
+          @keydown="handleButtonKeydown"
+        >
+          <div
+            :class="variantSlots.buttonInner({ class: ui?.slots?.buttonInner })"
           >
-            <Loader
-              v-if="loading"
-              key="loader"
-              class="h-6 w-6 text-form mx-auto"
-            />
-            <div
-              v-else-if="modelValue"
-              key="value"
-              class="flex"
+            <transition
+              name="fade"
+              mode="out-in"
             >
-              <slot
-                name="selected"
-                :option="modelValue"
-                :toggle="select"
+              <Loader
+                v-if="loading"
+                key="loader"
+                class="h-6 w-6 text-form mx-auto"
+              />
+              <div
+                v-else-if="modelValue"
+                key="value"
+                class="flex"
+              >
+                <slot
+                  name="selected"
+                  :option="modelValue"
+                  :toggle="select"
+                />
+              </div>
+              <div
+                v-else
+                key="placeholder"
+              >
+                <slot name="placeholder">
+                  <div
+                    :class="[
+                      variantSlots.placeholder({ class: ui?.slots?.placeholder }),
+                      { 'py-1': multiple && !loading }
+                    ]"
+                  >
+                    {{ placeholder }}
+                  </div>
+                </slot>
+              </div>
+            </transition>
+          </div>
+          <div
+            :class="variantSlots.chevronGradient({ class: ui?.slots?.chevronGradient })"
+          />
+          <span
+            :class="variantSlots.chevronContainer({ class: ui?.slots?.chevronContainer })"
+          >
+            <Icon
+              name="heroicons:chevron-up-down-16-solid" 
+              :class="variantSlots.chevronIcon({ class: ui?.slots?.chevronIcon })"
+            />
+          </span>
+        </button>
+        <button
+          v-if="clearable && showClearButton && !disabled && !isEmpty"
+          :class="variantSlots.clearButton({ class: ui?.slots?.clearButton })"
+          @click.stop.prevent="clear()"
+        >
+          <Icon
+            name="heroicons:x-mark-20-solid"
+            :class="variantSlots.clearIcon({ class: ui?.slots?.clearIcon })"
+            width="2em"
+            dynamic
+          />
+        </button>
+        </div>
+      </template>
+
+      <template #content>
+        <div
+          tabindex="-1"
+          role="listbox"
+          ref="scrollRef"
+          :class="variantSlots.dropdown({ class: ui?.slots?.dropdown })"
+          class="w-(--reka-popper-anchor-width)"
+          :style="popoverContentStyle"
+          :aria-activedescendant="highlightedIndex >= 0 ? `option-${highlightedIndex}` : undefined"
+          @keydown="handleDropdownKeydown"
+        >
+          <div
+            v-if="isSearchable"
+            :class="variantSlots.searchContainer({ class: ui?.slots?.searchContainer })"
+          >
+            <input
+              ref="searchInput"
+              v-model="searchTerm"
+              type="text"
+              :class="variantSlots.searchInput({ class: ui?.slots?.searchInput })"
+              :placeholder="allowCreation ? $t('forms.select.searchOrTypeToCreateNew') : $t('forms.select.search')"
+              @keydown="handleSearchKeydown"
+            >
+            <div
+              v-if="!searchTerm"
+              :class="variantSlots.searchIconContainer({ class: ui?.slots?.searchIconContainer })"
+            >
+              <Icon
+                name="heroicons:magnifying-glass-solid"
+                :class="variantSlots.searchIcon({ class: ui?.slots?.searchIcon })"
               />
             </div>
             <div
               v-else
-              key="placeholder"
+              role="button"
+              :class="variantSlots.searchClearContainer({ class: ui?.slots?.searchClearContainer })"
+              @click.stop="searchTerm = ''"
             >
-              <slot name="placeholder">
-                <div
-                  class="text-neutral-400 dark:text-neutral-500 w-full ltr:text-left rtl:text-right! truncate ltr:pr-3 rtl:pl-3 rtl:pr-0!"
-                  :class="[
-                    { 'py-1': multiple && !loading },
-                    theme.SelectInput.fontSize
-                  ]"
-                >
-                  {{ placeholder }}
-                </div>
-              </slot>
+              <Icon
+                name="heroicons:backspace"
+                :class="variantSlots.searchClearIcon({ class: ui?.slots?.searchClearIcon })"
+              />
             </div>
-          </transition>
-        </div>
-        <div
-          class="absolute inset-y-0 ltr:right-6 rtl:left-6 w-10 pointer-events-none -z-1"
-          :class="[disabled ? 'bg-linear-to-r from-transparent to-neutral-200 dark:to-neutral-800' : theme.SelectInput.chevronGradient]"
-        />
-        <span
-          class="absolute inset-y-0 ltr:right-0 rtl:left-0 rtl:right-auto! flex items-center ltr:pr-2 rtl:pl-2 rtl:pr-0! pointer-events-none"
-          :class="[disabled ? 'bg-neutral-200 dark:bg-neutral-800' : theme.SelectInput.background]"
-        >
-          <Icon
-            name="heroicons:chevron-up-down-16-solid" 
-            class="h-5 w-5 text-neutral-500"
-          />
-        </span>
-      </button>
-      <button
-        v-if="clearable && showClearButton && !disabled && !isEmpty"
-        class="hover:bg-neutral-50 dark:hover:bg-neutral-900 ltr:border-l rtl:border-l-0! rtl:border-r px-2 flex items-center shrink-0"
-        :class="[theme.SelectInput.spacing.vertical]"
-        @click.prevent="clear()"
-      >
-        <Icon
-          name="heroicons:x-mark-20-solid"
-          class="w-5 h-5 text-neutral-500"
-          width="2em"
-          dynamic
-        />
-      </button>
-    </div>
-    <collapsible
-      v-model="isOpen"
-      class="absolute mt-1 bg-white overflow-auto dark:bg-notion-dark-light shadow-xl z-30"
-      :class="[dropdownClass,theme.SelectInput.dropdown, theme.SelectInput.borderRadius]"
-      @click-away="onClickAway"
-    >
-      <ul
-        tabindex="-1"
-        role="listbox"
-        class="leading-6 shadow-xs overflow-auto focus:outline-hidden sm:text-sm sm:leading-5 relative"
-        :class="[
-          { 'max-h-42': !isSearchable, 'max-h-48': isSearchable },
-          theme.SelectInput.fontSize
-        ]"
-      >
-        <div
-          v-if="isSearchable"
-          class="sticky top-0 z-10 flex border-b bg-white dark:bg-notion-dark-light"
-        >
-          <input
-            v-model="searchTerm"
-            type="text"
-            class="grow ltr:pl-3 ltr:pr-7 rtl:pr-3! rtl:pl-7 py-2 w-full focus:outline-hidden dark:text-white"
-            :placeholder="allowCreation ? $t('forms.select.searchOrTypeToCreateNew') : $t('forms.select.search')"
-          >
-          <div
-            v-if="!searchTerm"
-            class="flex absolute ltr:right-0 rtl:left-0 rtl:right-auto! inset-y-0 items-center px-2 justify-center pointer-events-none"
-          >
-            <Icon
-              name="heroicons:magnifying-glass-solid"
-              class="h-5 w-5 text-neutral-500 dark:text-neutral-400"
-            />
           </div>
           <div
-            v-else
-            role="button"
-            class="flex absolute ltr:right-0 rtl:right-auto! rtl:left-0 inset-y-0 items-center px-2 justify-center"
-            @click="searchTerm = ''"
+            v-if="loading"
+            class="w-full py-2 flex justify-center"
           >
-            <Icon
-              name="heroicons:backspace"
-              class="h-5 w-5 rtl:rotate-180 text-neutral-500 dark:text-neutral-400"
-            />
+            <Loader class="h-6 w-6 text-blue-500 mx-auto" />
           </div>
-        </div>
-        <div
-          v-if="loading"
-          class="w-full py-2 flex justify-center"
-        >
-          <Loader class="h-6 w-6 text-blue-500 mx-auto" />
-        </div>
-        <div
-          v-if="filteredOptions.length > 0"
-          class="p-1"
-        >
-          <li
-            v-for="item in filteredOptions"
-            :key="item[optionKey]"
-            role="option"
-            :style="optionStyle"
-            :class="[
-              dropdownClass,
-              theme.SelectInput.option,
-              theme.SelectInput.spacing.horizontal,
-              theme.SelectInput.spacing.vertical,
-              { 'pr-9': multiple},
-            ]"
-            class="text-neutral-900 select-none relative cursor-pointer group hover:bg-neutral-100 dark:hover:bg-neutral-900 rounded-sm focus:outline-hidden"
-            @click="select(item)"
+          <div
+            v-if="filteredOptions.length > 0"
+            :class="variantSlots.optionsContainer({ class: ui?.slots?.optionsContainer })"
           >
-            <slot
-              name="option"
-              :option="item"
-              :selected="isSelected(item)"
-            />
-          </li>
-        </div>
-        <slot
-          v-else-if="!loading && !(allowCreation && searchTerm)"
-          name="empty-placeholder"
-        >
-          <p
-            class="w-full text-neutral-500 text-center py-2"
+            <div
+              v-if="virtualizer"
+              role="presentation"
+              :style="{ height: virtualizer.getTotalSize() + 'px', width: '100%', position: 'relative' }"
+            >
+              <div
+                v-for="virtualItem in virtualizer.getVirtualItems()"
+                :key="filteredOptions[virtualItem.index] ? filteredOptions[virtualItem.index][optionKey] : virtualItem.index"
+                :id="`option-${virtualItem.index}`"
+                role="option"
+                :aria-selected="filteredOptions[virtualItem.index] ? isSelected(filteredOptions[virtualItem.index]) : false"
+                :data-index="virtualItem.index"
+                :ref="virtualizer ? virtualizer.measureElement : null"
+                :style="[
+                  optionStyle,
+                  {
+                    position: 'absolute',
+                    top: virtualItem.start + 'px',
+                    left: '0px',
+                    width: '100%'
+                  }
+                ]"
+                :class="[
+                  variantSlots.option({ class: ui?.slots?.option }),
+                  dropdownClass,
+                  { 'pr-9': multiple},
+                  { 
+                    'opacity-50 cursor-not-allowed': filteredOptions[virtualItem.index] && disabledOptionsMap[filteredOptions[virtualItem.index][optionKey]],
+                    'cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900': filteredOptions[virtualItem.index] && !disabledOptionsMap[filteredOptions[virtualItem.index][optionKey]],
+                    'bg-gray-100 dark:bg-gray-900': highlightedIndex === virtualItem.index
+                  }
+                ]"
+                @click.stop="filteredOptions[virtualItem.index] && select(filteredOptions[virtualItem.index])"
+                @mouseenter="highlightedIndex = virtualItem.index"
+              >
+                <slot
+                  v-if="filteredOptions[virtualItem.index]"
+                  name="option"
+                  :option="filteredOptions[virtualItem.index]"
+                  :selected="isSelected(filteredOptions[virtualItem.index])"
+                />
+              </div>
+            </div>
+            <div v-else>
+              <div
+                v-for="(option, index) in filteredOptions"
+                :key="option[optionKey]"
+                :id="`option-${index}`"
+                role="option"
+                :aria-selected="isSelected(option)"
+                :style="optionStyle"
+                :class="[
+                  variantSlots.option({ class: ui?.slots?.option }),
+                  dropdownClass,
+                  { 'pr-9': multiple},
+                  { 
+                    'opacity-50 cursor-not-allowed': disabledOptionsMap[option[optionKey]],
+                    'cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900': !disabledOptionsMap[option[optionKey]],
+                    'bg-gray-100 dark:bg-gray-900': highlightedIndex === index
+                  }
+                ]"
+                @click.stop="select(option)"
+                @mouseenter="highlightedIndex = index"
+              >
+                <slot
+                  name="option"
+                  :option="option"
+                  :selected="isSelected(option)"
+                />
+              </div>
+            </div>
+          </div>
+          <slot
+            v-else-if="!loading && !(allowCreation && searchTerm)"
+            name="empty-placeholder"
           >
-            {{ (allowCreation ? $t('forms.select.typeSomethingToAddAnOption') : $t('forms.select.noOptionAvailable')) }}.
-          </p>
-        </slot>
-        <div
-          v-if="allowCreation && searchTerm"
-          class="border-t border-neutral-300 p-1"
-        >
-          <li
-            role="option"
-            :style="optionStyle"
-            :class="[{ 'px-3 pr-9': multiple, 'px-3': !multiple },dropdownClass,theme.SelectInput.option]"
-            class="text-neutral-900 select-none relative py-2 cursor-pointer group hover:bg-neutral-100 dark:hover:bg-neutral-900 rounded-sm focus:outline-hidden"
-            @click="createOption(searchTerm)"
+            <p
+              :class="variantSlots.emptyMessage({ class: ui?.slots?.emptyMessage })"
+            >
+              {{ (allowCreation ? $t('forms.select.typeSomethingToAddAnOption') : $t('forms.select.noOptionAvailable')) }}.
+            </p>
+          </slot>
+          <div
+            v-if="allowCreation && searchTerm"
+            class="border-t border-neutral-300 p-1"
           >
-                          {{ $t('forms.select.create') }} <span class="px-2 bg-neutral-100 border border-neutral-300 rounded-sm group-hover-text-black">{{
-              searchTerm
-            }}</span>
-          </li>
+            <div
+              role="option"
+              :style="optionStyle"
+              :class="[
+                variantSlots.createOption({ class: ui?.slots?.createOption }),
+                { 'px-3 pr-9': multiple, 'px-3': !multiple },
+                dropdownClass
+              ]"
+              @click.stop="createOption(searchTerm)"
+            >
+              {{ $t('forms.select.create') }} <span :class="variantSlots.createLabel({ class: ui?.slots?.createLabel })">{{
+                searchTerm
+              }}</span>
+            </div>
+          </div>
+          <slot name="after-options" />
         </div>
-        <slot name="after-options" />
-      </ul>
-    </collapsible>
+      </template>
+    </UPopover>
   </div>
 </template>
 
 <script>
-import Collapsible from '~/components/global/transitions/Collapsible.vue'
 import debounce from 'debounce'
 import Fuse from 'fuse.js'
-import CachedDefaultTheme from '~/lib/forms/themes/CachedDefaultTheme.js'
+import { tv } from "tailwind-variants"
+import { vSelectTheme } from "~/lib/forms/themes/v-select.theme.js"
+import { useVirtualizer } from '@tanstack/vue-virtual'
 
 export default {
   name: 'VSelect',
-  components: { Collapsible },
+  components: {},
   directives: {},
   props: {
     data: Array,
@@ -244,28 +289,71 @@ export default {
     placeholder: { type: String, default: null },
     uppercaseLabels: { type: Boolean, default: true },
     showClearButton: { type: Boolean, default: true },
-    theme: {
-      type: Object, default: () => {
-        const theme = inject('theme', null)
-        if (theme) {
-          return theme.value
-        }
-        return CachedDefaultTheme.getInstance()
-      }
-    },
+    theme: {type: String, default: null},
+    size: {type: String, default: null}, 
+    borderRadius: {type: String, default: null},
+    ui: {type: Object, default: () => ({})},
     allowCreation: { type: Boolean, default: false },
-    disabled: { type: Boolean, default: false }
+    disabled: { type: Boolean, default: false },
+    minSelection: { type: Number, default: null },
+    maxSelection: { type: Number, default: null },
+    fuseOptions: { type: Object, default: () => ({}) },
+    searchDebounceMs: { type: Number, default: 150 },
+    minSearchLength: { type: Number, default: 1 },
+    // Explicit popover width control. Accepts number (px) or CSS length string.
+    popoverWidth: { type: [String, Number], default: null }
   },
   emits: ['update:modelValue', 'update-options', 'focus', 'blur'],
   data () {
     return {
       isOpen: false,
       searchTerm: '',
+        debouncedTerm: '',
       defaultValue: this.modelValue ?? null,
-      isFocused: false
+      isFocused: false,
+        virtualizer: null,
+        fuse: null,
+        fuseIndex: null,
+        updateDebouncedTerm: null,
+        highlightedIndex: -1
     }
   },
   computed: {
+    // Resolve theme values with proper reactivity
+    resolvedTheme() {
+      return this.theme || 'default'
+    },
+    resolvedSize() {
+      return this.size || 'md'
+    },
+    resolvedBorderRadius() {
+      return this.borderRadius || 'small'
+    },
+
+    // Create select variants with UI prop merging
+    vSelectVariants() {
+      return tv(vSelectTheme, this.ui)
+    },
+
+    // Single variant computation
+    variantSlots() {
+      return this.vSelectVariants({
+        theme: this.resolvedTheme,
+        size: this.resolvedSize,
+        borderRadius: this.resolvedBorderRadius,
+        hasError: this.hasError,
+        disabled: this.disabled,
+        focused: this.isFocused,
+        multiple: this.multiple,
+        searchable: this.isSearchable
+      })
+    },
+
+    // Use variantSlots directly in the template for classes
+    borderRadiusClass() {
+      return this.variantSlots.anchor().match(/rounded-\S+/)?.[0] || 'rounded-lg'
+    },
+
     optionStyle () {
       return {
         '--bg-form-color': this.color
@@ -276,6 +364,12 @@ export default {
         '--tw-ring-color': this.color
       }
     },
+    popoverContentStyle () {
+      const widthValue = this.popoverWidth !== null && this.popoverWidth !== undefined
+        ? (typeof this.popoverWidth === 'number' ? `${this.popoverWidth}px` : String(this.popoverWidth))
+        : 'var(--reka-popper-anchor-width)'
+      return { width: widthValue }
+    },
     debouncedRemote () {
       if (this.remote) {
         return debounce(this.remote, 300)
@@ -284,40 +378,190 @@ export default {
     },
     filteredOptions () {
       if (!this.data) return []
-      if (!this.searchable || this.remote || this.searchTerm === '') {
+
+      // If not searchable, remote search is used, or term too short/empty, return raw data
+      if (!this.searchable || this.remote) {
         return this.data
       }
 
-      // Fuse search
-      const fuzeOptions = {
-        keys: this.searchKeys
+      const term = this.debouncedTerm
+      if (!term || term.length < this.minSearchLength) {
+        return this.data
       }
-      const fuse = new Fuse(this.data, fuzeOptions)
-      return fuse.search(this.searchTerm).map((res) => {
-        return res.item
-      })
+
+      // Ensure Fuse is ready
+      if (!this.fuse) {
+        this.buildFuse()
+      }
+      if (!this.fuse) return this.data
+
+      return this.fuse.search(term).map((res) => res.item)
     },
     isSearchable () {
       return this.searchable || this.remote !== null || this.allowCreation
     },
     isEmpty () {
       return this.multiple ? !this.modelValue || this.modelValue.length === 0 : !this.modelValue
+    },
+    selectedCount () {
+      if (!this.multiple || !Array.isArray(this.modelValue)) return 0
+      return this.modelValue.length
+    },
+    maxSelectionReached () {
+      if (!this.multiple || !this.maxSelection) return false
+      return this.selectedCount >= this.maxSelection
+    },
+    disabledOptionsMap () {
+      if (!this.multiple || !this.maxSelection || !this.data) return {}
+      
+      const map = {}
+      for (const item of this.data) {
+        const isSelected = this.isSelected(item)
+        map[item[this.optionKey]] = !isSelected && this.maxSelectionReached
+      }
+      return map
+    },
+    estimatedItemSizePx () {
+      switch (this.resolvedSize) {
+        case 'xs': return 28
+        case 'sm': return 32
+        case 'lg': return 52
+        case 'md':
+        default: return 40
+      }
     }
   },
   watch: {
     searchTerm (val) {
-      if (!this.debouncedRemote) return
-      if ((this.remote && val) || (val === '' && !this.modelValue) || (val === '' && this.isOpen)) {
-        return this.debouncedRemote(val)
+      // Remote search path
+      if (this.debouncedRemote) {
+        if ((this.remote && val) || (val === '' && !this.modelValue) || (val === '' && this.isOpen)) {
+          this.debouncedRemote(val)
+        }
+      } else {
+        // Local search path: debounce updates
+        if (this.updateDebouncedTerm) this.updateDebouncedTerm(val)
+      }
+    },
+    data () {
+      // Only (re)build fuse when using local search
+      if (this.searchable && !this.remote) {
+        this.buildFuse()
+      } else {
+        this.fuse = null
+        this.fuseIndex = null
+      }
+    },
+    isOpen (val) {
+      if (val) {
+        this.$nextTick(() => {
+          this.setupVirtualizer()
+          // Focus the search input or dropdown for keyboard navigation
+          if (this.isSearchable && this.$refs.searchInput) {
+            this.$refs.searchInput.focus()
+          } else if (this.$refs.scrollRef) {
+            this.$refs.scrollRef.focus()
+          }
+        })
+      } else {
+        // Reset highlighted index when closing
+        this.highlightedIndex = -1
+      }
+    },
+    filteredOptions () {
+      // Reset highlighted index when options change
+      this.highlightedIndex = -1
+      if (this.isOpen) {
+        this.$nextTick(() => {
+          this.setupVirtualizer()
+        })
+      }
+    },
+    resolvedSize () {
+      if (this.isOpen) {
+        this.$nextTick(() => {
+          this.setupVirtualizer()
+        })
+      }
+    },
+    popoverWidth () {
+      if (this.isOpen) {
+        this.$nextTick(() => {
+          this.setupVirtualizer()
+        })
       }
     }
   },
+  mounted () {
+    // Initialize fuse for local search and debounce handler
+    this.buildFuse()
+    this.updateDebouncedTerm = debounce((val) => {
+      this.debouncedTerm = val
+    }, this.searchDebounceMs)
+  },
+  beforeUnmount () {
+    // Clean up virtualizer if it exists
+    if (this.virtualizer) {
+      this.virtualizer = null
+    }
+    if (this.updateDebouncedTerm && this.updateDebouncedTerm.clear) {
+      this.updateDebouncedTerm.clear()
+    }
+  },
   methods: {
-    onClickAway (event) {
-      // Check that event target isn't children of dropdown
-      if (this.$refs.select && !this.$refs.select.contains(event.target)) {
-        this.isOpen = false
+    buildFuse () {
+      if (!this.data || !Array.isArray(this.data) || this.data.length === 0) {
+        this.fuse = null
+        this.fuseIndex = null
+        return
       }
+
+      const options = Object.assign({
+        keys: this.searchKeys,
+        threshold: 0.3,
+        ignoreLocation: true,
+        includeScore: false
+      }, this.fuseOptions || {})
+
+      try {
+        const index = Fuse.createIndex(options.keys, this.data)
+        this.fuseIndex = index
+        this.fuse = new Fuse(this.data, options, index)
+      } catch {
+        // Fallback without precomputed index
+        this.fuse = new Fuse(this.data, options)
+        this.fuseIndex = null
+      }
+    },
+    setupVirtualizer () {
+      if (!this.$refs.scrollRef || !this.filteredOptions || this.filteredOptions.length === 0) {
+        this.virtualizer = null
+        return
+      }
+      
+      // Clean up existing virtualizer
+      if (this.virtualizer) {
+        this.virtualizer = null
+      }
+      
+      // Skip virtualization if list fits in visible height
+      const dropdownEl = this.$refs.scrollRef
+      const maxVisibleHeight = dropdownEl && dropdownEl.clientHeight ? dropdownEl.clientHeight : 0
+      const estimatedItemSize = this.estimatedItemSizePx
+      const estimatedTotal = this.filteredOptions.length * estimatedItemSize
+      if (maxVisibleHeight && estimatedTotal <= maxVisibleHeight) {
+        this.virtualizer = null
+        return
+      }
+
+      this.virtualizer = useVirtualizer({
+        count: this.filteredOptions.length,
+        getScrollElement: () => this.$refs.scrollRef,
+        estimateSize: () => this.estimatedItemSizePx,
+        overscan: 5,
+        // Dynamic measurement so item height adapts to content
+        measureElement: (el) => (el ? el.getBoundingClientRect().height : 0)
+      })
     },
     isSelected (value) {
       if (!this.modelValue) return false
@@ -346,19 +590,21 @@ export default {
     toggleDropdown () {
       if (this.disabled) {
         this.isOpen = false
-      } else {
-        this.isOpen = !this.isOpen
-        if (this.isOpen) {
-          this.onFocus()
-        } else {
-          this.onBlur()
-        }
+        return
       }
+      
+      this.isOpen = !this.isOpen
+      
       if (!this.isOpen) {
         this.searchTerm = ''
       }
     },
     select (value) {
+      // Check if option is disabled (similar to how we check for input disabled)
+      if (this.disabledOptionsMap[value[this.optionKey]]) {
+        return
+      }
+
       if (!this.multiple) {
         // Close after select
         this.toggleDropdown()
@@ -407,8 +653,223 @@ export default {
         this.select(newItem)
         this.searchTerm = ''
       }
+    },
+    handleButtonKeydown (event) {
+      if (this.disabled) return
+
+      // ArrowDown or ArrowUp: Open dropdown and highlight first/last option
+      if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+        event.preventDefault()
+        if (!this.isOpen) {
+          this.isOpen = true
+          this.$nextTick(() => {
+            if (event.key === 'ArrowDown') {
+              this.highlightedIndex = 0
+            } else {
+              this.highlightedIndex = this.filteredOptions.length - 1
+            }
+            this.scrollToHighlighted()
+          })
+        }
+      }
+      
+      // Space or Enter: Toggle dropdown
+      if (event.key === ' ' || event.key === 'Enter') {
+        event.preventDefault()
+        this.toggleDropdown()
+      }
+      
+      // Escape: Close dropdown
+      if (event.key === 'Escape' && this.isOpen) {
+        event.preventDefault()
+        this.isOpen = false
+      }
+    },
+    handleSearchKeydown (event) {
+      // Handle arrow keys in search input for option navigation
+      if (event.key === 'ArrowDown') {
+        event.preventDefault()
+        if (this.highlightedIndex < 0) {
+          this.highlightedIndex = 0
+        } else {
+          this.highlightNext()
+        }
+      } else if (event.key === 'ArrowUp') {
+        event.preventDefault()
+        if (this.highlightedIndex < 0) {
+          this.highlightedIndex = this.filteredOptions.length - 1
+        } else {
+          this.highlightPrevious()
+        }
+      } else if (event.key === 'Enter') {
+        event.preventDefault()
+        if (this.highlightedIndex >= 0 && this.filteredOptions[this.highlightedIndex]) {
+          const option = this.filteredOptions[this.highlightedIndex]
+          if (!this.disabledOptionsMap[option[this.optionKey]]) {
+            this.select(option)
+          }
+        } else if (this.allowCreation && this.searchTerm) {
+          // Create new option if allowCreation is enabled
+          this.createOption(this.searchTerm)
+        }
+      } else if (event.key === 'Escape') {
+        event.preventDefault()
+        if (this.searchTerm) {
+          this.searchTerm = ''
+        } else {
+          this.isOpen = false
+        }
+      } else if (event.key === 'Home') {
+        // Don't prevent default for Home/End in text input (cursor movement)
+        // But highlight first option
+        if (event.ctrlKey || event.metaKey) {
+          event.preventDefault()
+          this.highlightedIndex = 0
+          this.scrollToHighlighted()
+        }
+      } else if (event.key === 'End') {
+        if (event.ctrlKey || event.metaKey) {
+          event.preventDefault()
+          this.highlightedIndex = this.filteredOptions.length - 1
+          this.scrollToHighlighted()
+        }
+      }
+    },
+    handleDropdownKeydown (event) {
+      if (!this.isOpen || this.filteredOptions.length === 0) return
+
+      // If search input is focused, don't handle arrow keys (let user type)
+      if (this.isSearchable && document.activeElement?.tagName === 'INPUT') {
+        // Only handle Escape and Enter when search is focused
+        if (event.key === 'Escape') {
+          event.preventDefault()
+          this.isOpen = false
+          return
+        }
+        if (event.key === 'Enter' && this.highlightedIndex >= 0) {
+          event.preventDefault()
+          const option = this.filteredOptions[this.highlightedIndex]
+          if (option && !this.disabledOptionsMap[option[this.optionKey]]) {
+            this.select(option)
+          }
+          return
+        }
+        return
+      }
+
+      switch (event.key) {
+        case 'ArrowDown':
+          event.preventDefault()
+          this.highlightNext()
+          break
+        case 'ArrowUp':
+          event.preventDefault()
+          this.highlightPrevious()
+          break
+        case 'Home':
+          event.preventDefault()
+          this.highlightedIndex = 0
+          this.scrollToHighlighted()
+          break
+        case 'End':
+          event.preventDefault()
+          this.highlightedIndex = this.filteredOptions.length - 1
+          this.scrollToHighlighted()
+          break
+        case 'Enter':
+        case ' ':
+          event.preventDefault()
+          if (this.highlightedIndex >= 0) {
+            const option = this.filteredOptions[this.highlightedIndex]
+            if (option && !this.disabledOptionsMap[option[this.optionKey]]) {
+              this.select(option)
+            }
+          }
+          break
+        case 'Escape':
+          event.preventDefault()
+          this.isOpen = false
+          break
+        case 'Tab':
+          // Allow tab to close dropdown and move focus
+          this.isOpen = false
+          break
+      }
+    },
+    highlightNext () {
+      if (this.filteredOptions.length === 0) return
+      
+      let nextIndex = this.highlightedIndex + 1
+      // Skip disabled options
+      while (nextIndex < this.filteredOptions.length) {
+        const option = this.filteredOptions[nextIndex]
+        if (!this.disabledOptionsMap[option[this.optionKey]]) {
+          this.highlightedIndex = nextIndex
+          this.scrollToHighlighted()
+          return
+        }
+        nextIndex++
+      }
+      // If we've reached the end, wrap to beginning
+      if (this.highlightedIndex >= this.filteredOptions.length - 1) {
+        nextIndex = 0
+        while (nextIndex < this.filteredOptions.length) {
+          const option = this.filteredOptions[nextIndex]
+          if (!this.disabledOptionsMap[option[this.optionKey]]) {
+            this.highlightedIndex = nextIndex
+            this.scrollToHighlighted()
+            return
+          }
+          nextIndex++
+        }
+      }
+    },
+    highlightPrevious () {
+      if (this.filteredOptions.length === 0) return
+      
+      let prevIndex = this.highlightedIndex <= 0 ? this.filteredOptions.length - 1 : this.highlightedIndex - 1
+      // Skip disabled options
+      while (prevIndex >= 0) {
+        const option = this.filteredOptions[prevIndex]
+        if (!this.disabledOptionsMap[option[this.optionKey]]) {
+          this.highlightedIndex = prevIndex
+          this.scrollToHighlighted()
+          return
+        }
+        prevIndex--
+      }
+      // If we've reached the beginning, wrap to end
+      if (prevIndex < 0) {
+        prevIndex = this.filteredOptions.length - 1
+        while (prevIndex >= 0) {
+          const option = this.filteredOptions[prevIndex]
+          if (!this.disabledOptionsMap[option[this.optionKey]]) {
+            this.highlightedIndex = prevIndex
+            this.scrollToHighlighted()
+            return
+          }
+          prevIndex--
+        }
+      }
+    },
+    scrollToHighlighted () {
+      this.$nextTick(() => {
+        const scrollContainer = this.$refs.scrollRef
+        if (!scrollContainer) return
+
+        if (this.virtualizer) {
+          // For virtualized list, use virtualizer's scrollToIndex
+          this.virtualizer.scrollToIndex(this.highlightedIndex, { align: 'center' })
+        } else {
+          // For non-virtualized list, manually scroll the highlighted element into view
+          const options = scrollContainer.querySelectorAll('[role="option"]')
+          const highlightedOption = options[this.highlightedIndex]
+          if (highlightedOption) {
+            highlightedOption.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+          }
+        }
+      })
     }
   }
 }
 </script>
-

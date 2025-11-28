@@ -3,6 +3,12 @@
         "name": "OpnForm"
     },
     "forms": {
+        "buttons": {
+            "submit": "ਜਮ੍ਹਾਂ ਕਰੋ",
+            "next": "ਅਗਲਾ",
+            "previous": "ਪਿਛਲਾ",
+            "re_fill": "ਇੱਕ ਹੋਰ ਜਵਾਬ ਜਮ੍ਹਾਂ ਕਰੋ"
+        },
         "powered_by": "ਦੁਆਰਾ ਸੰਚਾਲਿਤ",
         "password_protected": "ਇਹ ਫਾਰਮ ਪਾਸਵਰਡ ਦੁਆਰਾ ਸੁਰੱਖਿਅਤ ਹੈ।",
         "invalid_password": "ਗਲਤ ਪਾਸਵਰਡ।",
@@ -47,19 +53,25 @@
             "billing_email": "ਬਿਲਿੰਗ ਈਮੇਲ ਪਤਾ",
             "payment_disclaimer": "ਇਸ ਬਟਨ 'ਤੇ ਕਲਿੱਕ ਕਰਨ 'ਤੇ ਤੁਹਾਡੇ ਕ੍ਰੈਡਿਟ ਕਾਰਡ ਤੋਂ ਚਾਰਜ ਲਿਆ ਜਾਵੇਗਾ। ਭੁਗਤਾਨ Stripe ਰਾਹੀਂ ਸੁਰੱਖਿਅਤ ਢੰਗ ਨਾਲ ਪ੍ਰੋਸੈਸ ਕੀਤੇ ਜਾਂਦੇ ਹਨ।",
             "errors": {
-                "missingFormOrProvider": "Missing form slug or provider ID.",
-                "failedAccountDetails": "Failed to get Stripe account details.",
-                "setupError": "An error occurred during Stripe setup.",
-                "systemNotReady": "Payment system not ready. Please wait a moment and try again.",
-                "misconfigured": "Payment system misconfigured. Please refresh and try again.",
-                "notFullyReady": "Payment system not fully ready. Please refresh and try again.",
-                "paymentRequired": "Complete the payment before you can proceed.",
-                "nameRequired": "Card holder name is required.",
-                "emailRequired": "Billing email address is required.",
-                "invalidEmail": "Invalid billing email address.",
-                "failedIntent": "Failed to create payment intent.",
-                "processingFailed": "Payment processing failed."
+                "missingFormOrProvider": "ਫਾਰਮ ਸਲੱਗ ਜਾਂ ਪ੍ਰਦਾਤਾ ਆਈਡੀ ਗੁੰਮ ਹੈ।",
+                "failedAccountDetails": "Stripe ਖਾਤੇ ਦੇ ਵੇਰਵੇ ਪ੍ਰਾਪਤ ਕਰਨ ਵਿੱਚ ਅਸਫਲ।",
+                "setupError": "Stripe ਸੈੱਟਅੱਪ ਦੌਰਾਨ ਇੱਕ ਗਲਤੀ ਹੋਈ।",
+                "systemNotReady": "ਭੁਗਤਾਨ ਸਿਸਟਮ ਤਿਆਰ ਨਹੀਂ ਹੈ। ਕਿਰਪਾ ਕਰਕੇ ਇੱਕ ਪਲ ਉਡੀਕ ਕਰੋ ਅਤੇ ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।",
+                "misconfigured": "ਭੁਗਤਾਨ ਸਿਸਟਮ ਗਲਤ ਸੰਰਚਨਾ ਕੀਤਾ ਗਿਆ ਹੈ। ਕਿਰਪਾ ਕਰਕੇ ਤਾਜ਼ਾ ਕਰੋ ਅਤੇ ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।",
+                "notFullyReady": "ਭੁਗਤਾਨ ਸਿਸਟਮ ਪੂਰੀ ਤਰ੍ਹਾਂ ਤਿਆਰ ਨਹੀਂ ਹੈ। ਕਿਰਪਾ ਕਰਕੇ ਤਾਜ਼ਾ ਕਰੋ ਅਤੇ ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।",
+                "paymentRequired": "ਅੱਗੇ ਵਧਣ ਤੋਂ ਪਹਿਲਾਂ ਭੁਗਤਾਨ ਪੂਰਾ ਕਰੋ।",
+                "nameRequired": "ਕਾਰਡ ਧਾਰਕ ਦਾ ਨਾਮ ਲੋੜੀਂਦਾ ਹੈ।",
+                "emailRequired": "ਬਿਲਿੰਗ ਈਮੇਲ ਪਤਾ ਲੋੜੀਂਦਾ ਹੈ।",
+                "invalidEmail": "ਅਵੈਧ ਬਿਲਿੰਗ ਈਮੇਲ ਪਤਾ।",
+                "failedIntent": "ਭੁਗਤਾਨ ਇਰਾਦਾ ਬਣਾਉਣ ਵਿੱਚ ਅਸਫਲ।",
+                "processingFailed": "ਭੁਗਤਾਨ ਪ੍ਰਕਿਰਿਆ ਅਸਫਲ ਰਹੀ।"
             }
+        },
+        "validation_error": "ਪ੍ਰਮਾਣਿਕਤਾ ਗਲਤੀ",
+        "validation_error_with_count": "ਪ੍ਰਮਾਣਿਕਤਾ ਗਲਤੀ ({count} ਖੇਤਰ)",
+        "toggle": {
+            "yes": "ਹਾਂ",
+            "no": "ਨਹੀਂ"
         }
     }
 } 

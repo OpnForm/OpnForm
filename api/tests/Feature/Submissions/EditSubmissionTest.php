@@ -19,7 +19,7 @@ it('can update form submission', function () {
             'message' => 'Form submission saved.',
         ]);
     $submission = $form->submissions()->first();
-    $updateResponse = $this->putJson(route('open.forms.submissions.update', ['id' => $form->id,  'submission_id' => $submission->id]), $updatedFormData)
+    $updateResponse = $this->putJson(route('open.forms.submissions.update', ['form' => $form, 'submission_id' => $submission->id]), $updatedFormData)
         ->assertSuccessful()
         ->assertJson([
             'type' => 'success',
@@ -52,6 +52,6 @@ it('cannot update form submission as non admin', function () {
         ]);
     $submission = $form->submissions()->first();
     $this->actingAs($secondUser);
-    $updateResponse = $this->putJson(route('open.forms.submissions.update', ['id' => $form->id,  'submission_id' => $submission->id]), $updatedFormData)
+    $updateResponse = $this->putJson(route('open.forms.submissions.update', ['form' => $form, 'submission_id' => $submission->id]), $updatedFormData)
         ->assertStatus(403);
 });

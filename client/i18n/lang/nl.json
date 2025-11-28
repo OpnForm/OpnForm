@@ -1,0 +1,77 @@
+{
+    "app": {
+        "name": "OpnForm"
+    },
+    "forms": {
+        "buttons": {
+            "submit": "Verzenden",
+            "next": "Volgende",
+            "previous": "Vorige",
+            "re_fill": "Nog een antwoord indienen"
+        },
+        "powered_by": "Mogelijk gemaakt door",
+        "password_protected": "Dit formulier is beveiligd met een wachtwoord.",
+        "invalid_password": "Ongeldig wachtwoord.",
+        "password_required": "Wachtwoord is verplicht.",
+        "create_form_free": "Maak gratis je formulier met OpnForm",
+        "submit": "Verzenden",
+        "wrong_form_structure": "Er is iets mis met de structuur van dit formulier. Als je de eigenaar van het formulier bent, neem dan contact met ons op.",
+        "cannot_access_here": "Deze inhoud is hier niet toegankelijk. Klik op de onderstaande link om toegang te krijgen.",
+        "open_form": "Formulier openen",
+        "restricted_to_workspace": "Beperkt tot leden van de Notion Workspace. Log in om toegang te krijgen tot deze inhoud.",
+        "select": {
+            "search": "Zoeken",
+            "searchOrTypeToCreateNew": "Zoek of typ om nieuw aan te maken",
+            "typeSomethingToAddAnOption": "Typ iets om een optie toe te voegen",
+            "noOptionAvailable": "Geen optie beschikbaar",
+            "create": "Aanmaken"
+        },
+        "fileInput": {
+            "chooseFiles": "Klik om bestand(en) te kiezen of sleep hier | Klik om een bestand te kiezen of sleep hier",
+            "sizeLimit": "Groottelimiet: {count}MB per bestand",
+            "uploadingFile": "Je bestand wordt geüpload..."
+        },
+        "cameraUpload": {
+            "allowCameraPermission": "Cameratoegang toestaan",
+            "allowCameraPermissionDescription": "Je moet cameratoegang toestaan voordat je foto's kunt maken. Ga naar de browserinstellingen om cameratoegang op deze pagina in te schakelen.",
+            "gotIt": "Begrepen!",
+            "cameraDeviceError": "Camera apparaatfout",
+            "cameraDeviceErrorDescription": "Er is een onbekende fout opgetreden bij het starten van het webcamapparaat.",
+            "goBack": "Ga terug"
+        },
+        "signatureInput": {
+            "uploadFileInstead": "Upload in plaats daarvan een bestand",
+            "clear": "Wissen"
+        },
+        "barcodeInput": {
+            "clickToOpenCamera": "Klik om een camera te openen"
+        },
+        "payment": {
+            "amount_to_pay": "Te betalen bedrag",
+            "success": "Betaling succesvol",
+            "name_on_card": "Naam op kaart",
+            "billing_email": "E-mailadres voor facturering",
+            "payment_disclaimer": "Je creditcard wordt belast bij het klikken op deze knop. Betalingen worden veilig verwerkt via Stripe.",
+            "errors": {
+                "missingFormOrProvider": "Formulierslug of provider-ID ontbreekt.",
+                "failedAccountDetails": "Kon Stripe-accountgegevens niet ophalen.",
+                "setupError": "Er is een fout opgetreden tijdens de Stripe-installatie.",
+                "systemNotReady": "Betalingssysteem niet gereed. Wacht even en probeer het opnieuw.",
+                "misconfigured": "Betalingssysteem verkeerd geconfigureerd. Vernieuw en probeer het opnieuw.",
+                "notFullyReady": "Betalingssysteem niet volledig gereed. Vernieuw en probeer het opnieuw.",
+                "paymentRequired": "Voltooi de betaling voordat je verder kunt gaan.",
+                "nameRequired": "Naam van kaarthouder is verplicht.",
+                "emailRequired": "E-mailadres voor facturering is verplicht.",
+                "invalidEmail": "Ongeldig e-mailadres voor facturering.",
+                "failedIntent": "Kon betalingsintentie niet aanmaken.",
+                "processingFailed": "Betalingsverwerking is mislukt."
+            }
+        },
+        "validation_error": "Validatiefout",
+        "validation_error_with_count": "Validatiefout ({count} velden)",
+        "toggle": {
+            "yes": "Ja",
+            "no": "Nee"
+        }
+    }
+}

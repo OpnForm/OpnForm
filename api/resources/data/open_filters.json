@@ -719,6 +719,30 @@
           "type": "date"
         }
       },
+      "at_least_x_days_ago": {
+        "expected_type": "string",
+        "format": {
+          "type": "number"
+        }
+      },
+      "at_least_x_days_from_now": {
+        "expected_type": "string",
+        "format": {
+          "type": "number"
+        }
+      },
+      "within_past_x_days": {
+        "expected_type": "string",
+        "format": {
+          "type": "number"
+        }
+      },
+      "within_next_x_days": {
+        "expected_type": "string",
+        "format": {
+          "type": "number"
+        }
+      },
       "is_empty": {
         "expected_type": "boolean",
         "format": {

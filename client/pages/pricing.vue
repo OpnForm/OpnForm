@@ -195,6 +195,28 @@
               xmlns="http://www.w3.org/2000/svg"
             >
               <path
+                d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            <p
+              class="text-base font-semibold sm:text-lg lg:text-xl text-neutral-950"
+            >
+              API Access Tokens
+            </p>
+          </div>
+
+          <div class="flex flex-col items-center gap-3 md:flex-row">
+            <svg
+              aria-hidden="true"
+              class="w-6 h-6 shrink-0 stroke-blue-600"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
                 d="M21 8H3M16 2V5M8 2V5M12 18V12M9 15H15M7.8 22H16.2C17.8802 22 18.7202 22 19.362 21.673C19.9265 21.3854 20.3854 20.9265 20.673 20.362C21 19.7202 21 18.8802 21 17.2V8.8C21 7.11984 21 6.27976 20.673 5.63803C20.3854 5.07354 19.9265 4.6146 19.362 4.32698C18.7202 4 17.8802 4 16.2 4H7.8C6.11984 4 5.27976 4 4.63803 4.32698C4.07354 4.6146 3.6146 5.07354 3.32698 5.63803C3 6.27976 3 7.11984 3 8.8V17.2C3 18.8802 3 19.7202 3.32698 20.362C3.6146 20.9265 4.07354 21.3854 4.63803 21.673C5.27976 22 6.11984 22 7.8 22Z"
                 stroke-width="2"
                 stroke-linecap="round"
@@ -340,17 +362,12 @@
               {
                 question: 'Is there a free version of OpnForm available?',
                 answer:
-                  'Yes, OpnForm offers a free version with access to 99% of features, including unlimited forms, submissions, fields, and more. Our goal is to provide robust functionality for all users without limitations.',
+                  'Yes, OpnForm offers a free version with access to 99% of features, including unlimited forms, submissions, fields, webhooks, API access tokens, and more. Our goal is to provide robust functionality for all users without limitations.',
               },
               {
                 question: 'What does the Pro Plan include?',
                 answer:
                   'The OpnForm Pro Plan is designed to meet the advanced needs of teams and creators. It includes features like form confirmation emails, Slack and Discord notifications, editable submissions, custom domain, custom code integration, larger file uploads, removal of OpnForm branding, priority support, and more.',
-              },
-              {
-                question: 'Can I try the Pro Plan before subscribing?',
-                answer:
-                  'Absolutely! We offer a free 3-day trial of the OpnForm Pro Plan. This allows you to explore all the empowering features and experience the value it brings to your form-building process. The trial is automatically applied.',
               },
               {
                 question: 'Is there a discount for annual plans?',

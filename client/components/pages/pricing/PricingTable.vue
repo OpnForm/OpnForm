@@ -60,7 +60,7 @@
             </h3>
             <p class="mt-2 text-base font-medium leading-7 text-neutral-600">
               OpnForm Pro offers empowering features tailored to the advanced
-              needs of teams and creators. Enjoy our free 3-day trial!
+              needs of teams and creators.
             </p>
 
             <div class="flex items-center mt-6 gap-x-4">
@@ -134,10 +134,10 @@
                     class="mr-1"
                     :to="{ name: 'register' }"
                     trailing-icon="i-heroicons-arrow-right"
-                    label="Start free trial"
+                    label="Get Pro"
                   />
                   <UButton
-                    v-else-if="authenticated && user.is_subscribed"
+                    v-else-if="authenticated && user && user.is_subscribed"
                     class="mr-1"
                     trailing-icon="i-heroicons-arrow-right"
                     :to="{ name: 'redirect-billing-portal' }"
@@ -149,7 +149,7 @@
                     class="mr-1"
                     trailing-icon="i-heroicons-arrow-right"
                     @click.prevent="openSubscriptionModal({ plan: 'default', yearly: isYearly })"
-                    label="Start free trial"
+                    label="Get Pro"
                   />
                 </div>
                 <p
@@ -174,7 +174,6 @@
 </template>
 
 <script>
-import { computed } from "vue"
 import MonthlyYearlySelector from "./MonthlyYearlySelector.vue"
 import CustomPlan from "./CustomPlan.vue"
 import { useIsAuthenticated } from "~/composables/useAuthFlow"
@@ -195,12 +194,12 @@ export default {
   setup() {
     const { openSubscriptionModal } = useAppModals()
     const { isAuthenticated: authenticated } = useIsAuthenticated()
-    const auth = useAuth()
+    const { data: user } = useAuth().user()
     
     return {
       openSubscriptionModal,
       authenticated,
-      user: computed(() => auth.user().data.value),
+      user,
     }
   },
   data: () => ({
@@ -217,8 +216,7 @@ export default {
       "Remove OpnForm branding",
       "Priority support",
       "Form Analytics",
-      "Custom sender email (SMTP)",
-      "API access",
+      "Custom sender email (SMTP)"
     ],
   }),
 

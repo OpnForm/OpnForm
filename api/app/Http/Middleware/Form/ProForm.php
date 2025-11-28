@@ -2,7 +2,6 @@
 
 namespace App\Http\Middleware\Form;
 
-use App\Models\Forms\Form;
 use Closure;
 use Illuminate\Http\Request;
 
@@ -16,7 +15,7 @@ class ProForm
      */
     public function handle(Request $request, Closure $next)
     {
-        if ($request->route('formId') && $form = Form::findOrFail($request->route('formId'))) {
+        if ($request->route('form') && $form = $request->route('form')) {
             if ($form->is_pro) {
                 $request->merge([
                     'form' => $form,

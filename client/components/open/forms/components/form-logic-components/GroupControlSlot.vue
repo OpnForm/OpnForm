@@ -1,17 +1,13 @@
 <template>
   <div class="flex flex-wrap px-4 py-1 -ml-1 -mt-1">
-    <select-input
+    <USelectMenu
       ref="ruleSelect"
       v-model="selectedRule"
       class="flex-grow ml-1 mr-1 mt-1"
-      wrapper-class="relative"
       placeholder="Add condition on input field"
-      :options="groupCtrl.rules"
-      margin-bottom=""
-      :searchable="groupCtrl.rules.length > 5"
-      emit-key="identifier"
-      option-key="identifier"
-      name="group-control-slot-rule"
+      :items="groupCtrl.rules"
+      value-key="identifier"
+      searchable
     />
     <UButton
       class="ml-1 mt-1"

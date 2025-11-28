@@ -177,7 +177,7 @@ class FormPropertyLogicRule implements DataAwareRule, ValidationRule
             foreach ($actions as $val) {
                 if (
                     !in_array($val, static::ACTIONS_VALUES) ||
-                    (in_array($this->field['type'], ['nf-text', 'nf-code', 'nf-page-break', 'nf-divider', 'nf-image']) && !in_array($val, ['hide-block', 'show-block'])) ||
+                    (in_array($this->field['type'], ['nf-text', 'nf-code', 'nf-page-break', 'nf-divider', 'nf-image', 'nf-video']) && !in_array($val, ['hide-block', 'show-block'])) ||
                     (isset($this->field['hidden']) && $this->field['hidden'] && !in_array($val, ['show-block', 'require-answer'])) ||
                     (isset($this->field['required']) && $this->field['required'] && !in_array($val, ['make-it-optional', 'hide-block', 'disable-block'])) ||
                     (isset($this->field['disabled']) && $this->field['disabled'] && !in_array($val, ['enable-block', 'require-answer', 'make-it-optional']))

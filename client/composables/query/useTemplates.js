@@ -156,24 +156,6 @@ export function useTemplates() {
     })
   }
 
-  // Utility functions
-  const prefetchDetail = (slug) => {
-    return queryClient.prefetchQuery({
-      queryKey: ['templates', 'slug', slug],
-      queryFn: () => templatesApi.get(slug)
-    })
-  }
-
-  const prefetchDetailById = (id) => {
-    return queryClient.prefetchQuery({
-      queryKey: ['templates', id],
-      queryFn: () => {
-        const cachedTemplates = queryClient.getQueryData(['templates', 'list'])
-        return cachedTemplates?.find(t => t.id === id) || null
-      }
-    })
-  }
-
   const invalidateAll = () => {
     queryClient.invalidateQueries(['templates'])
   }
@@ -207,8 +189,6 @@ export function useTemplates() {
     remove,
     
     // Utilities
-    prefetchDetail,
-    prefetchDetailById,
     invalidateAll,
     invalidateDetail,
     invalidateList,

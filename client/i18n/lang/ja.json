@@ -3,6 +3,12 @@
         "name": "OpnForm"
     },
     "forms": {
+        "buttons": {
+            "submit": "送信",
+            "next": "次へ",
+            "previous": "前へ",
+            "re_fill": "別の回答を送信"
+        },
         "powered_by": "開発者",
         "password_protected": "このフォームはパスワードで保護されています。",
         "invalid_password": "無効なパスワード。",
@@ -47,19 +53,25 @@
             "billing_email": "請求先メールアドレス",
             "payment_disclaimer": "このボタンをクリックすると、クレジットカードに請求されます。支払いはStripeを通じて安全に処理されます。",
             "errors": {
-                "missingFormOrProvider": "Missing form slug or provider ID.",
-                "failedAccountDetails": "Failed to get Stripe account details.",
-                "setupError": "An error occurred during Stripe setup.",
-                "systemNotReady": "Payment system not ready. Please wait a moment and try again.",
-                "misconfigured": "Payment system misconfigured. Please refresh and try again.",
-                "notFullyReady": "Payment system not fully ready. Please refresh and try again.",
-                "paymentRequired": "Complete the payment before you can proceed.",
-                "nameRequired": "Card holder name is required.",
-                "emailRequired": "Billing email address is required.",
-                "invalidEmail": "Invalid billing email address.",
-                "failedIntent": "Failed to create payment intent.",
-                "processingFailed": "Payment processing failed."
+                "missingFormOrProvider": "フォームのスラッグまたはプロバイダーIDがありません。",
+                "failedAccountDetails": "Stripeアカウントの詳細を取得できませんでした。",
+                "setupError": "Stripeのセットアップ中にエラーが発生しました。",
+                "systemNotReady": "決済システムが準備できていません。しばらく待ってからもう一度お試しください。",
+                "misconfigured": "決済システムが正しく設定されていません。更新してもう一度お試しください。",
+                "notFullyReady": "決済システムが完全に準備できていません。更新してもう一度お試しください。",
+                "paymentRequired": "続行する前に支払いを完了してください。",
+                "nameRequired": "カード名義人が必要です。",
+                "emailRequired": "請求先メールアドレスが必要です。",
+                "invalidEmail": "無効な請求先メールアドレスです。",
+                "failedIntent": "支払いインテントを作成できませんでした。",
+                "processingFailed": "支払処理に失敗しました。"
             }
+        },
+        "validation_error": "検証エラー",
+        "validation_error_with_count": "検証エラー（{count}フィールド）",
+        "toggle": {
+            "yes": "はい",
+            "no": "いいえ"
         }
     }
 } 

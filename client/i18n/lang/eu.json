@@ -3,6 +3,12 @@
         "name": "OpnForm"
     },
     "forms": {
+        "buttons": {
+            "submit": "Bidali",
+            "next": "Hurrengoa",
+            "previous": "Aurrekoa",
+            "re_fill": "Beste erantzun bat bidali"
+        },
         "powered_by": "Honek sortua",
         "password_protected": "Inprimaki hau pasahitz bidez babestuta dago.",
         "invalid_password": "Pasahitz okerra.",
@@ -47,19 +53,25 @@
             "billing_email": "Fakturazio-helbide elektronikoa",
             "payment_disclaimer": "Zure kreditu txartela kargatuko da botoi honetan klik egitean. Ordainketak Stripe bidez prozesatzen dira modu seguruan.",
             "errors": {
-                "missingFormOrProvider": "Missing form slug or provider ID.",
-                "failedAccountDetails": "Failed to get Stripe account details.",
-                "setupError": "An error occurred during Stripe setup.",
-                "systemNotReady": "Payment system not ready. Please wait a moment and try again.",
-                "misconfigured": "Payment system misconfigured. Please refresh and try again.",
-                "notFullyReady": "Payment system not fully ready. Please refresh and try again.",
-                "paymentRequired": "Complete the payment before you can proceed.",
-                "nameRequired": "Card holder name is required.",
-                "emailRequired": "Billing email address is required.",
-                "invalidEmail": "Invalid billing email address.",
-                "failedIntent": "Failed to create payment intent.",
-                "processingFailed": "Payment processing failed."
+                "missingFormOrProvider": "Inprimakiaren sluga edo hornitzailearen IDa falta da.",
+                "failedAccountDetails": "Ezin izan dira Stripe kontuaren xehetasunak eskuratu.",
+                "setupError": "Errore bat gertatu da Stripe konfiguratzean.",
+                "systemNotReady": "Ordainketa sistema ez dago prest. Itxaron une bat eta saiatu berriro.",
+                "misconfigured": "Ordainketa sistema gaizki konfiguratuta dago. Freskatu eta saiatu berriro.",
+                "notFullyReady": "Ordainketa sistema ez dago guztiz prest. Freskatu eta saiatu berriro.",
+                "paymentRequired": "Osatu ordainketa jarraitu aurretik.",
+                "nameRequired": "Txartelaren titularraren izena beharrezkoa da.",
+                "emailRequired": "Fakturazio-helbide elektronikoa beharrezkoa da.",
+                "invalidEmail": "Fakturazio-helbide elektroniko okerra.",
+                "failedIntent": "Ezin izan da ordainketa asmoa sortu.",
+                "processingFailed": "Ordainketaren prozesamenduak huts egin du."
             }
+        },
+        "validation_error": "Balidazio errorea",
+        "validation_error_with_count": "Balidazio errorea ({count} eremu)",
+        "toggle": {
+            "yes": "Bai",
+            "no": "Ez"
         }
     }
 } 

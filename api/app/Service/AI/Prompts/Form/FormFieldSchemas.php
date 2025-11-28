@@ -181,7 +181,7 @@ class FormFieldSchemas
                 'select' => ['$ref' => '#/definitions/selectOptions'],
                 'without_dropdown' => [
                     'type' => 'boolean',
-                    'description' => 'Whether to display select options as radio buttons instead of a dropdown using FlatSelectInput. Recommended for small choices (<5 options) (default: false)',
+                    'description' => 'Whether to display select options as radio buttons instead of a dropdown. Recommended for small choices (<5 options) (default: false)',
                 ]
             ]
         ],
@@ -195,7 +195,7 @@ class FormFieldSchemas
                 'multi_select' => ['$ref' => '#/definitions/selectOptions'],
                 'without_dropdown' => [
                     'type' => 'boolean',
-                    'description' => 'Whether to display multi-select options as checkboxes instead of a dropdown using FlatSelectInput. Recommended for small choices (<5 options) (default: false)',
+                    'description' => 'Whether to display multi-select options as checkboxes instead of a dropdown. Recommended for small choices (<5 options) (default: false)',
                 ]
             ]
         ],
@@ -359,6 +359,15 @@ class FormFieldSchemas
             'additionalProperties' => false,
             'properties' => [
                 'type' => ['type' => 'string', 'enum' => ['nf-image']],
+                'core' => ['$ref' => '#/definitions/baseProperty'],
+            ]
+        ],
+        'nfVideoProperty' => [
+            'type' => 'object',
+            'required' => ['core', 'type'],
+            'additionalProperties' => false,
+            'properties' => [
+                'type' => ['type' => 'string', 'enum' => ['nf-video']],
                 'core' => ['$ref' => '#/definitions/baseProperty'],
             ]
         ],

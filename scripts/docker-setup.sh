@@ -38,9 +38,13 @@ cd "$PROJECT_ROOT"
 
 echo -e "${BLUE}Starting OpnForm Docker setup...${NC}"
 
-# Run the environment setup script with --docker flag
-echo -e "${GREEN}Setting up environment files...${NC}"
-bash "$SCRIPT_DIR/setup-env.sh" --docker
+# Run the environment setup script with --docker flag (only for production)
+if [ "$DEV_MODE" = false ]; then
+    echo -e "${GREEN}Setting up environment files...${NC}"
+    bash "$SCRIPT_DIR/setup-env.sh" --docker
+else
+    echo -e "${GREEN}Development mode - skipping .env generation (using docker-compose environment variables)${NC}"
+fi
 
 # Determine which compose file to use
 if [ "$DEV_MODE" = true ]; then
@@ -51,21 +55,24 @@ else
     COMPOSE_FILE="docker-compose.yml"
 fi
 
+# Check for override file and build compose command
+COMPOSE_CMD="docker compose -f $COMPOSE_FILE"
+if [ -f "docker-compose.override.yml" ]; then
+    echo -e "${BLUE}Found docker-compose.override.yml - including local overrides${NC}"
+    COMPOSE_CMD="$COMPOSE_CMD -f docker-compose.override.yml"
+fi
+
 # Start Docker containers
 echo -e "${GREEN}Starting Docker containers...${NC}"
-docker compose -f $COMPOSE_FILE up -d
+$COMPOSE_CMD up -d
 
 # Display access instructions
 if [ "$DEV_MODE" = true ]; then
     echo -e "${BLUE}Development environment setup complete!${NC}"
     echo -e "${YELLOW}Please wait for the frontend to finish building (this may take a few minutes)${NC}"
-    echo -e "${GREEN}Then visit: http://localhost:3000${NC}"
+    echo -e "${GREEN}Then visit: http://localhost:3000/setup${NC}"
 else
     echo -e "${BLUE}Production environment setup complete!${NC}"
     echo -e "${YELLOW}Please wait a moment for all services to start${NC}"
     echo -e "${GREEN}Then visit: http://localhost${NC}"
 fi
-
-echo -e "${BLUE}Default admin credentials:${NC}"
-echo -e "${GREEN}Email: admin@opnform.com${NC}"
-echo -e "${GREEN}Password: password${NC}" 

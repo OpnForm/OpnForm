@@ -9,10 +9,11 @@
         :id="id ? id : name"
         v-model="compVal"
         :disabled="disabled ? true : null"
+        :style="colorStyle"
         :ui="{
-          active: 'bg-[var(--form-color,#3B82F6)]',
-          ring: 'focus:ring-[var(--form-color,#3B82F6)]/50'
+          base: 'data-[state=checked]:bg-[var(--form-color,#3B82F6)] focus-visible:outline-[var(--form-color,#3B82F6)]'
         }"
+        @keydown="handleKeydown"
       />
   
       <div>
@@ -22,7 +23,7 @@
         >
           <InputHelp
             :help="help"
-            :help-classes="theme.default.help"
+            :help-classes="ui.help({ class: props.ui?.slots?.help })"
           >
             <template #after-help>
               <slot name="bottom_after_help" />
@@ -30,17 +31,12 @@
           </InputHelp>
         </slot>
         <slot name="label">
-          <label
-            :aria-label="id ? id : name"
-            :for="id ? id : name"
-            :class="theme.default.fontSize"
-          >
-            {{ label }}
-            <span
-              v-if="required"
-              class="text-red-500 required-dot"
-            >*</span>
-          </label>
+          <InputLabel
+            :label="label"
+            :required="required"
+            :theme="theme"
+            :native-for="id ? id : name"
+          />
         </slot>
         <slot
           v-if="helpPosition === 'below_input'"
@@ -48,7 +44,7 @@
         >
           <InputHelp
             :help="help"
-            :help-classes="theme.default.help"
+            :help-classes="ui.help({ class: props.ui?.slots?.help })"
           >
             <template #after-help>
               <slot name="bottom_after_help" />
@@ -71,6 +67,7 @@
 <script>
 import {inputProps, useFormInput} from "../useFormInput.js"
 import InputHelp from "~/components/forms/core/components/InputHelp.vue"
+import { toggleSwitchInputTheme } from "~/lib/forms/themes/toggle-switch-input.theme.js"
 
 export default {
   name: "ToggleSwitchInput",
@@ -81,8 +78,28 @@ export default {
   },
 
   setup(props, context) {
+    const formInput = useFormInput(props, context, {
+      variants: toggleSwitchInputTheme
+    })
+
+    const colorStyle = computed(() => ({
+      '--form-color': props.color
+    }))
+
+    const handleKeydown = (event) => {
+      if (props.disabled) return
+
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault()
+        formInput.compVal.value = !formInput.compVal.value
+      }
+    }
+
     return {
-      ...useFormInput(props, context),
+      ...formInput,
+      colorStyle,
+      handleKeydown,
+      props
     }
   },
 

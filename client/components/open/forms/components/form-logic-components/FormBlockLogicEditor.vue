@@ -3,66 +3,121 @@
     v-if="logic"
     :key="resetKey"
   >
-    <p class="text-neutral-400 text-xs mb-3">
-      Select a field, add some conditions, and finally add some actions.
-    </p>
-    <div class="relative flex">
-      <UButtonGroup size="xs">
-        <UButton
-          color="neutral"
-          variant="subtle"
-          icon="i-heroicons-arrow-down-on-square"
-          @click="showCopyFormModal = true"
-        >
-          Copy from
-        </UButton>
-        <UButton
-          color="neutral"
-          variant="subtle"
-          icon="i-heroicons-arrow-up-on-square"
-          @click="showCopyToModal = true"
-        >
-          Copy to
-        </UButton>
-        <UButton
-          color="neutral"
-          variant="subtle"
-          icon="i-mdi-clear-outline"
-          @click="clearAll"
-        >
-          Clear
-        </UButton>
-      </UButtonGroup>
+    <div class="flex gap-1 border-b pb-2">
+      <UButton
+        color="neutral"
+        variant="ghost"
+        size="xs"
+        icon="i-heroicons-arrow-down-on-square"
+        class="text-neutral-500"
+        @click="showCopyFormModal = true"
+      >
+        Copy from
+      </UButton>
+      <UButton
+        color="neutral"
+        variant="ghost"
+        size="xs"
+        icon="i-heroicons-arrow-up-on-square"
+        class="text-neutral-500"
+        @click="showCopyToModal = true"
+      >
+        Copy to
+      </UButton>
+      <UButton
+        color="neutral"
+        variant="ghost"
+        size="xs"
+        icon="i-mdi-clear-outline"
+        class="text-neutral-500"
+        @click="clearAll"
+      >
+        Clear
+      </UButton>
+      <UButton
+        color="neutral"
+        variant="ghost"
+        class="text-neutral-500"
+        size="xs"
+        icon="i-heroicons-question-mark-circle"
+        @click="openHelpArticle"
+      />
     </div>
 
-    <h5 class="font-medium text-neutral-700 mt-3">
-      1. Conditions
-    </h5>
-    <condition-editor
-      ref="filter-editor"
-      v-model="logic.conditions"
-      class="mt-1 border-t border rounded-md"
-      :form="form"
-    />
+    <!-- Conditions Card -->
+    <div class="mt-4">
+      <p class="text-xs font-medium text-gray-600 mb-2">When following condition(s) are true</p>
+      <div class="p-3 border border-gray-200 rounded-lg bg-gray-50/50 hover:bg-gray-50 transition-colors">
+      <UPopover
+        :content="{ 
+          align: 'start', 
+          side: 'left', 
+          sideOffset: 8 
+        }"
+        :ui="{ 
+          content: 'w-[650px] overflow-hidden' 
+        }"
+        arrow
+      >
+        <UButton
+          :color="hasConditions ? 'primary' : 'neutral'"
+          :variant="hasConditions ? 'subtle' : 'outline'"
+          :icon="hasConditions ? 'i-heroicons-cog-8-tooth-16-solid' : 'i-heroicons-plus'"
+          size="sm"
+          class="w-full justify-start font-medium hover:bg-white transition-colors"
+        >
+          {{ hasConditions ? `${conditionsCount} rule${conditionsCount > 1 ? 's' : ''}` : 'Add rule' }}
+        </UButton>
 
-    <h5 class="font-medium text-neutral-700 mt-3">
-      2. Actions
-    </h5>
-    <p class="text-neutral-500 text-xs mb-3">
-      Action(s) triggered when above conditions are true.
-    </p>
-    <flat-select-input
-      :key="resetKey"
-      v-model="logic.actions"
-      name="actions"
-      :multiple="true"
-      class="mt-1"
-      placeholder="Actions..."
-      :options="actionOptions"
-      @update:model-value="onActionInput"
-    />
+        <template #content>
+            <ScrollableContainer
+              ref="scrollableContainer"
+              direction="both"
+              max-width-class="max-w-[650px]"
+              max-height-class="max-h-96"
+              :fade-class="'from-white via-white/80 to-transparent'"
+              left-fade-width="w-4"
+              right-fade-width="w-4"
+              top-fade-height="h-4"
+              bottom-fade-height="h-4"
+              :scroll-tolerance="5"
+            >
+              <condition-editor
+                class="w-full p-4"
+                ref="filter-editor"
+                v-model="logic.conditions"
+                :form="form"
+              />
+            </ScrollableContainer>
+        </template>
+      </UPopover>
+      </div>
+    </div>
 
-    <p class="text-neutral-500 text-xs mb-3">
+    <!-- Divider Line -->
+    <div class="flex items-center my-5">
+      <div class="flex-1 border-b"></div>
+      <span class="px-4 py-1 text-xs font-medium text-gray-600 bg-white border rounded-full">then</span>
+      <div class="flex-1 border-b"></div>
+    </div>
+
+    <div>
+      <p class="text-xs font-medium text-gray-600 mb-2">Apply the following action(s)</p>
+      <div class="p-3 border border-gray-200 rounded-lg bg-gray-50/50 hover:bg-gray-50 transition-colors">
+        <flat-select-input
+          :key="resetKey"
+          v-model="logic.actions"
+          name="actions"
+          :multiple="true"
+          placeholder="Select actions..."
+          :options="actionOptions"
+          @update:model-value="onActionInput"
+          clearable
+        />
+      </div>
+    </div>
+
+    <p class="text-neutral-400 text-xs mt-2">
       Note that hidden fields can never be required.
     </p>
 
@@ -72,14 +127,12 @@
       :description="`Select another field/block to copy its logic and apply it to '${field.name}'.`"
     >
       <template #body>
-        <SelectInput
+        <USelectMenu
           v-model="copyFrom"
-          name="copy_from"
-          emit-key="value"
-          label="Copy logic from"
+          :items="copyFromOptions"
+          value-key="value"
           placeholder="Choose a field/block..."
-          :options="copyFromOptions"
-          :searchable="copyFromOptions && copyFromOptions.options > 5"
+          searchable
         />
       </template>
 
@@ -104,15 +157,13 @@
       :description="`Select other fields to copy the logic from '${field.name}' to.`"
     >
       <template #body>
-        <SelectInput
+        <USelectMenu
           v-model="copyTo"
-          name="copy_to"
-          emit-key="value"
-          label="Copy logic to"
+          :items="copyToOptions"
+          value-key="value"
           placeholder="Choose fields..."
-          :options="copyToOptions"
           :multiple="true"
-          :searchable="copyToOptions && copyToOptions.length > 5"
+          searchable
         />
       </template>
 
@@ -135,12 +186,13 @@
 
 <script>
 import ConditionEditor from "./ConditionEditor.client.vue"
+import ScrollableContainer from "~/components/dashboard/ScrollableContainer.vue"
 import clonedeep from "clone-deep"
 import { default as _has } from "lodash/has"
 
 export default {
   name: "FormBlockLogicEditor",
-  components: { ConditionEditor },
+  components: { ConditionEditor, ScrollableContainer },
   props: {
     field: {
       type: Object,
@@ -150,6 +202,13 @@ export default {
       type: Object,
       required: false,
     },
+  },
+
+  setup() {
+    const crisp = useCrisp()
+    return {
+      crisp
+    }
   },
 
   data() {
@@ -167,6 +226,14 @@ export default {
   },
 
   computed: {
+    conditionsCount() {
+      if (this.logic.conditions === null || this.logic.conditions === undefined) return 0
+      // Count the number of rules/conditions recursively
+      return this.countConditions(this.logic.conditions)
+    },
+    hasConditions() {
+      return this.conditionsCount > 0
+    },
     copyFromOptions() {
       return this.form.properties
         .filter((field) => {
@@ -178,7 +245,7 @@ export default {
           )
         })
         .map((field) => {
-          return { name: field.name, value: field.id }
+          return { label: field.name, value: field.id }
         })
     },
     copyToOptions() {
@@ -187,7 +254,7 @@ export default {
           return field.id !== this.field.id
         })
         .map((field) => {
-          return { name: field.name, value: field.id }
+          return { label: field.name, value: field.id }
         })
     },
     actionOptions() {
@@ -198,6 +265,7 @@ export default {
           "nf-page-break",
           "nf-divider",
           "nf-image",
+          "nf-video",
         ].includes(this.field.type)
       ) {
         if (this.field.hidden) {
@@ -265,6 +333,31 @@ export default {
   },
 
   methods: {
+    countConditions(conditions) {
+      if (!conditions) return 0
+      
+      // If it's a group with children
+      if (conditions.children && Array.isArray(conditions.children)) {
+        return conditions.children.reduce((count, child) => {
+          // If child has an identifier, it's a rule
+          if (child.identifier) {
+            return count + 1
+          }
+          // If child has children, it's a nested group - count recursively
+          if (child.children) {
+            return count + this.countConditions(child)
+          }
+          return count
+        }, 0)
+      }
+      
+      // If it's a single rule with identifier
+      if (conditions.identifier) {
+        return 1
+      }
+      
+      return 0
+    },
     clearAll() {
       this.logic.conditions = null
       this.logic.actions = []
@@ -297,6 +390,9 @@ export default {
     },
     refreshActions() {
       this.resetKey++
+    },
+    openHelpArticle() {
+      this.crisp.openHelpdeskArticle('how-do-i-add-logic-to-my-form-1lmguq5')
     },
     copyLogic() {
       if (this.copyFrom) {

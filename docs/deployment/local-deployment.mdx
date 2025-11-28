@@ -5,7 +5,7 @@ description: "Set up OpnForm locally for development"
 
 import CloudVersion from "/snippets/cloud-version.mdx";
 
-<CloudVersion/>
+<CloudVersion />
 
 ## Docker Development Setup (Recommended)
 
@@ -21,11 +21,11 @@ If you prefer to set up OpnForm manually or can't use Docker, follow the instruc
 
 Before proceeding with the local deployment, ensure you have the following prerequisites installed on your system:
 
-- **PHP**: Version 8.0 or higher
-- **Composer**: The PHP dependency manager
-- **Node.js**: Version 14 or higher
-- **NPM** or **Yarn**: Package managers for Node.js
-- **MySQL**, or **PostgreSQL**: A supported database system
+-   **PHP**: Version 8.0 or higher
+-   **Composer**: The PHP dependency manager
+-   **Node.js**: Version 14 or higher
+-   **NPM** or **Yarn**: Package managers for Node.js
+-   **MySQL**, or **PostgreSQL**: A supported database system
 
 Make sure these components are properly installed and configured on your local machine before proceeding with the deployment steps.
 
@@ -35,40 +35,42 @@ Make sure these components are properly installed and configured on your local m
 
 2. Clone the repository and install dependencies:
 
-   ```bash
-   git clone https://github.com/JhumanJ/opnform && cd OpnForm
-   cd api && composer install
-   cd ../client && npm install
-   ```
+    ```bash
+    git clone https://github.com/OpnForm/OpnForm && cd OpnForm
+    cd api && composer install
+    cd ../client && npm install
+    ```
 
 3. Compile assets and run dev server:
 
-   ```bash
-   cd client && npm run dev # or build
-   ```
+    ```bash
+    cd client && npm run dev # or build
+    ```
 
 4. Set up environment files:
 
-   ```bash
-   ./scripts/setup-env.sh
-   ```
-   This script will create the necessary `.env` files for both the API and client.
+    ```bash
+    ./scripts/setup-env.sh
+    ```
+
+    This script will create the necessary `.env` files for both the API and client.
 
 5. Run the migrations:
 
-   ```bash
-   cd api
-   php artisan migrate
-   ```
+    ```bash
+    cd api
+    php artisan migrate
+    ```
 
 6. Set up Herd:
    For detailed instructions on setting up Herd, refer to the [Herd documentation](https://herd.laravel.com/docs).
-   - Open the Herd application
-   - Add your OpnForm's `api` directory to Herd
-   - Herd will automatically configure a local domain for your project
 
-   This will start the Nuxt.js development server, typically on `http://localhost:3000`.
+    - Open the Herd application
+    - Add your OpnForm's `api` directory to Herd
+    - Herd will automatically configure a local domain for your project
 
-8. Access your local OpnForm installation:
-   - The API will be available at the domain provided by Herd (e.g., `http://opnform.test`)
-   - The frontend will be accessible at `http://localhost:3000`
+    This will start the Nuxt.js development server, typically on `http://localhost:3000`.
+
+7. Access your local OpnForm installation:
+    - The API will be available at the domain provided by Herd (e.g., `http://opnform.test`)
+    - The frontend will be accessible at `http://localhost:3000`

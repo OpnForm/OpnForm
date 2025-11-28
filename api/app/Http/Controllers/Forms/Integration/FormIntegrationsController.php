@@ -15,10 +15,9 @@ class FormIntegrationsController extends Controller
         $this->middleware('auth');
     }
 
-    public function index(string $id)
+    public function index(Form $form)
     {
-        $form = Form::findOrFail((int)$id);
-        $this->authorize('view', $form);
+        $this->authorize('manageIntegrations', $form);
 
         $integrations = FormIntegration::query()
             ->where('form_id', $form->id)
@@ -28,10 +27,9 @@ class FormIntegrationsController extends Controller
         return FormIntegrationResource::collection($integrations);
     }
 
-    public function create(FormIntegrationsRequest $request, string $id)
+    public function create(FormIntegrationsRequest $request, Form $form)
     {
-        $form = Form::findOrFail((int)$id);
-        $this->authorize('update', $form);
+        $this->authorize('manageIntegrations', $form);
 
         /** @var FormIntegration $formIntegration */
         $formIntegration = FormIntegration::create(
@@ -49,10 +47,9 @@ class FormIntegrationsController extends Controller
         ]);
     }
 
-    public function update(FormIntegrationsRequest $request, string $id, string $integrationid)
+    public function update(FormIntegrationsRequest $request, Form $form, string $integrationid)
     {
-        $form = Form::findOrFail((int)$id);
-        $this->authorize('update', $form);
+        $this->authorize('manageIntegrations', $form);
 
         $formIntegration = FormIntegration::findOrFail((int)$integrationid);
         $formIntegration->update($request->toIntegrationData());
@@ -64,10 +61,9 @@ class FormIntegrationsController extends Controller
         ]);
     }
 
-    public function destroy(string $id, string $integrationid)
+    public function destroy(Form $form, string $integrationid)
     {
-        $form = Form::findOrFail((int)$id);
-        $this->authorize('update', $form);
+        $this->authorize('manageIntegrations', $form);
 
         $formIntegration = FormIntegration::findOrFail((int)$integrationid);
         $formIntegration->delete();

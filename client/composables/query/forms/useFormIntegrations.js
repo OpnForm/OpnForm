@@ -2,6 +2,8 @@ import { useQueryClient, useQuery, useMutation } from '@tanstack/vue-query'
 import { formsApi } from '~/api/forms'
 import integrationsList from '~/data/forms/integrations.json'
 import { unref } from 'vue'
+import { useAuth } from '~/composables/query/useAuth.js'
+import { useFeatureFlag } from '~/composables/useFeatureFlag.js'
 
 export function useFormIntegrations() {
   const queryClient = useQueryClient()
@@ -20,12 +22,11 @@ export function useFormIntegrations() {
 
   // Computed property for available integrations based on user subscription and feature flags
   const availableIntegrations = computed(() => {
-    const featureFlagsStore = useFeatureFlagsStore()
     if (!userData.value) return integrations.value
 
     const enrichedIntegrations = new Map()
     for (const [key, integration] of integrations.value.entries()) {
-      if (featureFlagsStore.getFlag(`integrations.${key}`, true)) {
+      if (useFeatureFlag(`integrations.${key}`, true)) {
         enrichedIntegrations.set(key, {
           ...integration,
           id: key,

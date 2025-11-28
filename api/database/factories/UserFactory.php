@@ -27,7 +27,7 @@ class UserFactory extends Factory
             'email' => $this->faker->unique()->safeEmail,
             'hear_about_us' => 'google',
             'email_verified_at' => now(),
-            'password' => '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', // password
+            'password' => '$2y$10$Ey6obpHoTtSrMqGYjXf7Uu21i.pUqNy/rcG6etOAnKxtYCZmMHC1.', // Abcd@1234
             'remember_token' => Str::random(10),
         ];
     }

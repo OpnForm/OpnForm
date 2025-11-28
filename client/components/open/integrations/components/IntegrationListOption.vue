@@ -3,16 +3,19 @@
     :text="tooltipText"
     :disabled="!unavailable || !tooltipText"
   >
-    <div
-      v-track.new_integration_click="{ name: integration.id }"
-      role="button"
-      :class="{
-        'hover:bg-neutral-100 dark:hover:bg-neutral-800 group cursor-pointer': !unavailable,
-        'cursor-not-allowed opacity-50': unavailable,
-      }"
-      class="border rounded-lg p-4 flex flex-col items-center justify-center text-center transition-colors w-full h-full relative"
-      @click="onClick"
+    <TrackClick
+      name="new_integration_click"
+      :properties="{ name: integration.id }"
     >
+      <div
+        role="button"
+        :class="{
+          'hover:bg-neutral-100 dark:hover:bg-neutral-800 group cursor-pointer': !unavailable,
+          'cursor-not-allowed opacity-50': unavailable,
+        }"
+        class="border rounded-lg p-4 flex flex-col items-center justify-center text-center transition-colors w-full h-full relative"
+        @click="onClick"
+      >
       <div class="flex-shrink-0">
         <Icon
           :name="integration.icon"
@@ -37,13 +40,15 @@
         class="absolute bottom-2 right-2 h-4 w-4 text-neutral-400"
         name="heroicons:arrow-top-right-on-square-20-solid"
       />
-    </div>
+      </div>
+    </TrackClick>
   </UTooltip>
 </template>
 
 <script setup>
 import { computed } from 'vue'
 import ProTag from "~/components/app/ProTag.vue"
+import TrackClick from "~/components/global/TrackClick.vue"
 const emit = defineEmits(["select"])
 const { openSubscriptionModal } = useAppModals()
 

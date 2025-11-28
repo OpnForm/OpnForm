@@ -1,33 +1,45 @@
 <template>
-  <div class="relative">
+  <div class="relative h-[calc(100vh-55px)] overflow-y-auto">
     <div class="flex gap-2 sticky top-0 bg-white border-b z-10 p-4">
-      <UButton
-        color="neutral"
-        variant="subtle"
-        icon="i-heroicons-plus"
-        class="flex-grow justify-center"
-        @click.prevent="openAddFieldSidebar"
+      <UTooltip
+        text="Shortcut"
+        :kbds="['meta', 'B']"
+        arrow
       >
-        Add Block
-      </UButton>
+        <UButton
+          color="neutral"
+          variant="subtle"
+          icon="i-heroicons-plus"
+          class="flex-grow justify-center"
+          @click.prevent="openAddFieldSidebar"
+        >
+          Add Block
+        </UButton>
+      </UTooltip>
     </div>
 
     <div class="p-4">
-      <Draggable
-        v-model="form.properties"
+      <VueDraggable
+        :model-value="form.properties"
+        group="form-elements"
         item-key="id"
         class="mx-auto w-full overflow-hidden rounded-md border border-neutral-300 bg-white transition-colors dark:bg-notion-dark-light"
         ghost-class="bg-blue-100"
         :animation="200"
+        @add="handleDragAdd"
+        @update="handleDragUpdate"
       >
-        <template #item="{ element, index }">
+        <template #default>
           <div
+            v-for="(element, index) in form.properties"
+            :key="element.id || index"
             class="mx-auto w-full border-neutral-300 transition-colors cursor-grab"
             :class="{
-              'bg-neutral-100 ': element.hidden,
-              'bg-white ': !element.hidden,
+              'bg-neutral-100 ': element.hidden && !isBeingEdited(index),
+              'bg-white ': !element.hidden && !isBeingEdited(index),
               'border-b': index !== form.properties.length - 1,
               ' !border-blue-400 border-b-2': element.type === 'nf-page-break',
+              'bg-blue-50 dark:bg-neutral-700': isBeingEdited(index),
             }"
           >
             <div
@@ -35,6 +47,7 @@
               class="group flex items-center gap-x-0.5 py-1.5 pr-1"
             >
               <BlockTypeIcon
+                v-if="element.type && typeof element.type === 'string'"
                 :type="element.type"
                 class="ml-2"
               />
@@ -51,7 +64,7 @@
                 </EditableTag>
               </div>
 
-              <UTooltip :text="element.hidden ? 'Show Block' : 'Hide Block'">
+              <UTooltip arrow :text="element.hidden ? 'Show Block' : 'Hide Block'">
                 <button
                   class="hidden !cursor-pointer rounded-sm p-1 transition-colors hover:bg-blue-100 items-center justify-center"
                   :class="{
@@ -75,8 +88,9 @@
                 </button>
               </UTooltip>
               <UTooltip
-                v-if="!element.type.startsWith('nf-')"
+                v-if="element.type && typeof element.type === 'string' && !element.type.startsWith('nf-')"
                 :text="element.required ? 'Make it optional' : 'Make it required'"
+                arrow
               >
                 <button
                   class="hidden cursor-pointer rounded-sm p-0.5 transition-colors hover:bg-blue-100 items-center px-1 justify-center"
@@ -93,32 +107,34 @@
                   </div>
                 </button>
               </UTooltip>
-              <button
-                class="cursor-pointer rounded-sm p-1 transition-colors hover:bg-blue-100 text-neutral-300 hover:text-blue-500 flex items-center justify-center"
-                @click="editOptions(index)"
-              >
-                <Icon
-                  name="heroicons:cog-8-tooth-solid"
-                  class="h-5 w-5"
-                />
-              </button>
+              <UTooltip arrow text="Open settings">
+                <button
+                  class="cursor-pointer rounded-sm p-1 transition-colors hover:bg-blue-100 text-neutral-300 hover:text-blue-500 flex items-center justify-center field-settings-button"
+                  @click="editOptions(index)"
+                >
+                  <Icon
+                    name="heroicons:cog-8-tooth-solid"
+                    class="h-5 w-5"
+                  />
+                </button>
+              </UTooltip>
             </div>
           </div>
         </template>
-      </Draggable>
+      </VueDraggable>
     </div>
   </div>
 </template>
 
 <script>
-import draggable from 'vuedraggable'
+import { VueDraggable } from 'vue-draggable-plus'
 import EditableTag from '~/components/app/EditableTag.vue'
 import BlockTypeIcon from './BlockTypeIcon.vue'
 
 export default {
   name: 'FormFieldsEditor',
   components: {
-    Draggable: draggable,
+    VueDraggable,
     EditableTag,
     BlockTypeIcon
   },
@@ -133,6 +149,17 @@ export default {
   data () {
     return {
 
+    }
+  },
+
+  computed: {
+    // Expose the form structure service created by useFormManager
+    structure () {
+      return this.workingFormStore?.structureService || null
+    },
+    // Numeric current page index derived from the structure service
+    currentPageIndex () {
+      return this.structure?.currentPage?.value ?? 0
     }
   },
 
@@ -177,6 +204,28 @@ export default {
       field.required = !field.required
       if (field.required)
         field.hidden = false
+    },
+    isBeingEdited (index) {
+      if (!this.workingFormStore?.showEditFieldSidebar) return false
+      return index === this.workingFormStore.selectedFieldIndex
+    },
+    getAbsoluteIndex (relativeIndex) {
+      if (!this.structure) return relativeIndex
+      return this.structure.getTargetDropIndex(relativeIndex, this.currentPageIndex)
+    },
+    handleDragAdd (evt) {
+      if (!this.structure) return
+      const targetIndex = this.getAbsoluteIndex(evt.newIndex)
+      const payload = evt?.clonedData
+      this.workingFormStore.addBlock(payload, targetIndex, false)
+    },
+    handleDragUpdate (evt) {
+      if (!this.structure) return
+      const oldTargetIndex = this.getAbsoluteIndex(evt.oldIndex)
+      const newTargetIndex = this.getAbsoluteIndex(evt.newIndex)
+      if (oldTargetIndex !== newTargetIndex) {
+        this.workingFormStore.moveField(oldTargetIndex, newTargetIndex)
+      }
     }
   }
 }

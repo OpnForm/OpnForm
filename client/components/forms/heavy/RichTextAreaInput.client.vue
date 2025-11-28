@@ -9,20 +9,8 @@
 
     <div
       class="rich-editor resize-y notranslate relative"
-      :class="[
-        {
-          'ring-red-500! ring-2! border-transparent!': hasError,
-          '!cursor-not-allowed bg-neutral-200! dark:bg-neutral-800!': disabled,
-          'focus-within:ring-2 focus-within:ring-form/100 focus-within:border-transparent': !hasError && !disabled
-        },
-        theme.RichTextAreaInput.input,
-        theme.RichTextAreaInput.borderRadius,
-        theme.default.fontSize,
-      ]"
-      :style="{
-        '--font-size': theme.default.fontSize,
-        ...inputStyle
-      }"
+      :class="ui.container({ class: props.ui?.slots?.container })"
+      :style="inputStyle"
     >
       <MentionDropdown
         v-if="enableMentions && mentionState"
@@ -111,7 +99,7 @@
       v-if="maxCharLimit && showCharLimit"
       #bottom_after_help
     >
-      <small :class="theme.default.help">
+      <small :class="ui.help({ class: props.ui?.slots?.help })">
         {{ charCount }}/{{ maxCharLimit }}
       </small>
     </template>
@@ -131,6 +119,7 @@ import { inputProps, useFormInput } from '../useFormInput.js'
 import QuillyEditor from './components/QuillyEditor.vue'
 import MentionDropdown from './components/MentionDropdown.vue'
 import registerMentionExtension from '~/lib/quill/quillMentionExtension.js'
+import { richTextAreaInputTheme } from '~/lib/forms/themes/rich-text-area-input.theme.js'
 
 // Global icon registration - only happens once
 if (import.meta.client) {
@@ -164,7 +153,12 @@ const props = defineProps({
 })
 const emit = defineEmits(['update:modelValue'])
 
-const { compVal, inputStyle, hasError, inputWrapperProps } = useFormInput(props, { emit })
+const { compVal, inputStyle, inputWrapperProps, ui } = useFormInput(props, { emit }, {
+  variants: richTextAreaInputTheme,
+  additionalVariants: {
+    focused: true // focus style is handled via focus-within by CSS
+  }
+})
 const editor = ref(null)
 const mentionState = ref(null)
 
@@ -198,12 +192,11 @@ watch(compVal, (val) => {
   }
 }, { immediate: true })
 
-// Initialize mention extension and fullscreen icon
+// Initialize mention extension - always register blot to prevent crashes
 if (import.meta.client) {
-  if (props.enableMentions) {
-    // Register the mention extension with Quill
-    mentionState.value = registerMentionExtension(Quill)
-  }
+  // Always register mention blot globally for backward compatibility
+  // This ensures any content with mentions can be parsed without crashing
+  mentionState.value = registerMentionExtension(Quill)
 }
 
 // Handle editor ready event
@@ -215,12 +208,30 @@ const onEditorReady = (quillInstance) => {
       mentionState.value = mentionModule.state
     }
   }
+
+  // Limit the number of characters
+  if (props.maxCharLimit) {
+    quillInstance.on('text-change', function() {
+      if (quillInstance.getLength() > props.maxCharLimit) {
+        quillInstance.deleteText(props.maxCharLimit, quillInstance.getLength())
+      }
+    })
+  }
 }
 
-const quillOptions = computed(() => {
-  const defaultOptions = {
+const buildQuillOptions = (includeFullscreen = false) => {
+  // Build formats array dynamically based on enabled features
+  const baseFormats = ['bold', 'color', 'italic', 'link', 'strike', 'underline', 'header', 'list']
+  
+  // Add mention format when mentions are enabled
+  if (props.enableMentions) {
+    baseFormats.push('mention')
+  }
+  
+  const baseOptions = {
     placeholder: props.placeholder || '',
     theme: 'snow',
+    formats: baseFormats,
     modules: {
       toolbar: [
         [{ 'header': 1 }, { 'header': 2 }],
@@ -232,20 +243,25 @@ const quillOptions = computed(() => {
       keyboard: {
         bindings: {
           tab: {
-            key: 9,
-            handler (range) {
-              this.quill.insertText(range.index, '    ', 'user')
-            }
+            key: 'Tab',
+            handler: () => true // Allow Tab to navigate out of editor for accessibility
           }
         }
       }
     }
   }
 
-  const mergedOptions = { ...defaultOptions, ...props.editorOptions, modules: { ...defaultOptions.modules, ...props.editorOptions.modules } }
+  const mergedOptions = { 
+    ...baseOptions, 
+    ...props.editorOptions, 
+    modules: { 
+      ...baseOptions.modules, 
+      ...props.editorOptions.modules 
+    } 
+  }
   
-  // Add fullscreen button to toolbar if enabled
-  if (props.allowFullscreen) {
+  // Add fullscreen button to toolbar if enabled and requested
+  if (includeFullscreen && props.allowFullscreen) {
     mergedOptions.modules.toolbar.push(['fullscreen'])
     
     // Set up toolbar with handlers
@@ -259,56 +275,24 @@ const quillOptions = computed(() => {
     }
   }
   
+  // Add mentions module and toolbar button if enabled
   if (props.enableMentions) {
     mergedOptions.modules.mention = true
-    if (!mergedOptions.modules.toolbar.container) {
-      mergedOptions.modules.toolbar.container = mergedOptions.modules.toolbar
+    
+    // Handle toolbar container properly
+    const toolbar = mergedOptions.modules.toolbar
+    if (toolbar.container) {
+      toolbar.container.push(['mention'])
+    } else {
+      mergedOptions.modules.toolbar.push(['mention'])
     }
-    mergedOptions.modules.toolbar.container.push(['mention'])
   }
   
   return mergedOptions
-})
+}
 
-const modalQuillOptions = computed(() => {
-  const defaultOptions = {
-    placeholder: props.placeholder || '',
-    theme: 'snow',
-    modules: {
-      toolbar: [
-        [{ 'header': 1 }, { 'header': 2 }],
-        ['bold', 'italic', 'underline', 'strike'],
-        ['link'],
-        [{ list: 'ordered' }, { list: 'bullet' }],
-        [{ color: [] }],
-      ],
-      keyboard: {
-        bindings: {
-          tab: {
-            key: 9,
-            handler (range) {
-              this.quill.insertText(range.index, '    ', 'user')
-            }
-          }
-        }
-      }
-    }
-  }
-
-  const mergedOptions = { ...defaultOptions, ...props.editorOptions, modules: { ...defaultOptions.modules, ...props.editorOptions.modules } }
-  
-  // NOTE: No fullscreen button for modal editor
-  
-  if (props.enableMentions) {
-    mergedOptions.modules.mention = true
-    if (!mergedOptions.modules.toolbar) {
-      mergedOptions.modules.toolbar = []
-    }
-    mergedOptions.modules.toolbar.push(['mention'])
-  }
-  
-  return mergedOptions
-})
+const quillOptions = computed(() => buildQuillOptions(true))
+const modalQuillOptions = computed(() => buildQuillOptions(false))
 
 const charCount = computed(() => {
   return compVal.value ? compVal.value.replace(/<[^>]*>/g, '').trim().length : 0

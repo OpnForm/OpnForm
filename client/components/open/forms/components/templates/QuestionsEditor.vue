@@ -1,19 +1,10 @@
 <template>
-  <div :class="wrapperClass">
-    <label
-      v-if="label"
-      :for="id ? id : name"
-      :class="[
-        theme.default.label,
-        { 'uppercase text-xs': uppercaseLabels, 'text-sm': !uppercaseLabels },
-      ]"
-    >
-      {{ label }}
-      <span
-        v-if="required"
-        class="text-red-500 required-dot"
-      >*</span>
-    </label>
+  <div :class="inputWrapperProps.wrapperClass">
+    <InputLabel
+      :label="inputWrapperProps.label"
+      :required="inputWrapperProps.required"
+      :theme="inputWrapperProps.theme"
+    />
 
     <Loader
       v-if="loading"
@@ -63,58 +54,54 @@
     </div>
 
     <small
-      v-if="help"
-      :class="theme.SelectInput.help"
+      v-if="inputWrapperProps.help"
+      class="text-neutral-500"
     >
-      <slot name="help">{{ help }}</slot>
+      <slot name="help">{{ inputWrapperProps.help }}</slot>
     </small>
     <has-error
       v-if="hasValidation"
-      :form="form"
-      :field-id="name"
+      :form="inputWrapperProps.form"
+      :field-id="inputWrapperProps.name"
     />
   </div>
 </template>
 
-<script>
-import inputMixin from "~/mixins/forms/input.js"
+<script setup>
+import { ref, onMounted } from "vue"
+import { useFormInput, inputProps } from "~/components/forms/useFormInput.js"
+import Loader from "~/components/global/Loader.vue"
 
-export default {
-  name: "QuestionsEditor",
-  mixins: [inputMixin],
+const props = defineProps({
+  ...inputProps,
+  loading: { type: Boolean, default: false },
+  addNew: { type: Boolean, default: true },
+  questions: { type: Array, default: () => [] },
+})
 
-  props: {
-    loading: { type: Boolean, default: false },
-    addNew: { type: Boolean, default: true },
-    questions: { type: Array, default: ()=>[] },
-  },
+const emit = defineEmits(['update:modelValue'])
 
-  data() {
-    return {
-      allQuestions: null,
-      newQuestion: {
-        question: "",
-        answer: "",
-      },
-    }
-  },
+// Use form input composable
+const { hasValidation, inputWrapperProps } = useFormInput(props, { emit })
 
-  computed: {},
+// Component-specific state
+const allQuestions = ref(null)
+const newQuestion = ref({
+  question: "",
+  answer: "",
+})
 
-  watch: {},
-
-  mounted() {
-    this.allQuestions =
-      this.questions.length > 0 ? this.questions : [this.newQuestion]
-  },
-
-  methods: {
-    onAdd() {
-      this.allQuestions.push(this.newQuestion)
-    },
-    onRemove(key) {
-      this.allQuestions.splice(key, 1)
-    },
-  },
+// Methods
+const onAdd = () => {
+  allQuestions.value.push({ ...newQuestion.value })
 }
+
+const onRemove = (key) => {
+  allQuestions.value.splice(key, 1)
+}
+
+// Initialize on mount
+onMounted(() => {
+  allQuestions.value = props.questions.length > 0 ? props.questions : [{ ...newQuestion.value }]
+})
 </script>

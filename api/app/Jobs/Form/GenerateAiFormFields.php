@@ -43,11 +43,13 @@ class GenerateAiFormFields implements ShouldQueue
             $formTitle = $context['title'] ?? '';
             $existingFields = $context['properties'] ?? [];
 
-            // Use the static run method to execute the prompt
+            // Use the static run method to execute the prompt with params
+            $params = $this->completion->generation_params ?? [];
             $fieldsData = GenerateFormFieldsPrompt::run(
                 $this->completion->form_prompt,
                 $formTitle,
-                $existingFields
+                $existingFields,
+                $params
             );
 
             $this->completion->update([

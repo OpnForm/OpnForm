@@ -148,6 +148,7 @@ export function handleTransparentMode (transparentModeEnabled) {
   app.classList.remove('bg-white')
   app.classList.remove('dark:bg-notion-dark')
   app.classList.add('bg-transparent')
+  document.body.classList.add('bg-transparent')
 }
 
 export function focusOnFirstFormElement () {

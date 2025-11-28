@@ -6,17 +6,22 @@ description: "Complete guide to implementing OAuth integrations in OpnForm with 
 This guide covers how to add new OAuth integrations to OpnForm. The system uses a modern, service-oriented architecture with intent-based OAuth flows to handle different authentication scenarios including user authentication, account integrations, and widget-based providers.
 
 <Card title="Configuration Guide" icon="gear" href="/configuration/oauth-setup">
-Before implementing a new integration, you may want to review the OAuth configuration guide to understand how to set up the existing Google, Stripe, and Telegram integrations.
+    Before implementing a new integration, you may want to review the OAuth
+    configuration guide to understand how to set up the existing Google, Stripe,
+    and Telegram integrations.
 </Card>
 
 ## System Architecture Overview
 
 OpnForm's OAuth system is built around several key architectural patterns:
 
-- **Intent-based Flows**: Different OAuth scopes and handling based on auth vs integration intents
-- **Driver Pattern**: Abstracted OAuth provider implementations with support for redirect and widget flows
-- **Service Layer**: Centralized user and provider management through dedicated services
-- **Message-based Communication**: Cross-window communication for OAuth callbacks
+-   **Intent-based Flows**: Different OAuth scopes and handling based on auth vs integration intents
+-   **Orchestrator Pattern**: Central `OAuthFlowOrchestrator` coordinates all OAuth flows
+-   **Service-Oriented Architecture**: Specialized services handle context, user data, invites, and provider management
+-   **State-based Context Management**: Secure state tokens replace session-based context storage
+-   **Driver Pattern**: Abstracted OAuth provider implementations with support for redirect and widget flows
+-   **Email Restrictions**: Capability-based email restrictions for workspace invitations
+-   **Message-based Communication**: Cross-window communication for OAuth callbacks
 
 ```mermaid
 graph TB
@@ -27,78 +32,97 @@ graph TB
         useAuthFlow[useAuthFlow Composable]
         TanStackQuery[TanStack Query Cache]
     end
-    
+
     subgraph "Backend API (Laravel)"
-        OAuthController[OAuthController]
-        OAuthUserService[OAuthUserService]
-        OAuthProviderService[OAuthProviderService]
-        
+        OAuthController[OAuthController<br/>Simplified Controller]
+        OAuthFlowOrchestrator[OAuthFlowOrchestrator<br/>Main Orchestrator]
+
+        subgraph "OAuth Services"
+            OAuthContextService[OAuthContextService<br/>State Management]
+            OAuthUserDataService[OAuthUserDataService<br/>Data Extraction]
+            OAuthInviteService[OAuthInviteService<br/>Invite Validation]
+            OAuthUserService[OAuthUserService<br/>User Management]
+            OAuthProviderService[OAuthProviderService<br/>Provider Management]
+        end
+
+        subgraph "Supporting Services"
+            WorkspaceInviteService[WorkspaceInviteService<br/>Workspace Creation]
+        end
+
         subgraph "OAuth Drivers"
-            GoogleDriver[OAuthGoogleDriver]
+            GoogleDriver[OAuthGoogleDriver<br/>+ Email Restrictions]
             GoogleOneTapDriver[OAuthGoogleOneTapDriver]
             StripeDriver[OAuthStripeDriver]
             TelegramDriver[OAuthTelegramDriver]
             NewDriver[OAuthNewProviderDriver]
         end
-        
+
         subgraph "Data Layer"
             UserModel[User Model]
             OAuthProviderModel[OAuthProvider Model]
-            Cache[Laravel Cache]
+            Cache[Laravel Cache<br/>State Storage]
         end
     end
-    
+
     subgraph "External Services"
         GoogleOAuth[Google OAuth]
         StripeOAuth[Stripe Connect]
         TelegramWidget[Telegram Widget]
         NewProviderOAuth[New Provider OAuth]
     end
-    
+
     %% Frontend to Backend API calls
     UI --> useOAuth
     useOAuth --> OAuthController
     useAuthFlow --> OAuthController
-    
-    %% OAuth Controller orchestration
-    OAuthController --> OAuthUserService
-    OAuthController --> OAuthProviderService
-    OAuthController --> Cache
-    
-    %% Service to Drivers
-    OAuthUserService --> GoogleDriver
-    OAuthUserService --> GoogleOneTapDriver
-    OAuthUserService --> StripeDriver
-    OAuthProviderService --> GoogleDriver
-    OAuthProviderService --> GoogleOneTapDriver
-    OAuthProviderService --> StripeDriver
-    OAuthProviderService --> TelegramDriver
-    
+
+    %% Controller to Orchestrator
+    OAuthController --> OAuthFlowOrchestrator
+
+    %% Orchestrator coordination
+    OAuthFlowOrchestrator --> OAuthContextService
+    OAuthFlowOrchestrator --> OAuthUserDataService
+    OAuthFlowOrchestrator --> OAuthInviteService
+    OAuthFlowOrchestrator --> OAuthUserService
+    OAuthFlowOrchestrator --> OAuthProviderService
+
+    %% Service dependencies
+    OAuthUserService --> WorkspaceInviteService
+    OAuthInviteService --> GoogleDriver
+    OAuthUserDataService --> GoogleDriver
+    OAuthUserDataService --> GoogleOneTapDriver
+    OAuthUserDataService --> StripeDriver
+    OAuthUserDataService --> TelegramDriver
+
     %% Drivers to External Services
     GoogleDriver --> GoogleOAuth
     GoogleOneTapDriver --> GoogleOAuth
     StripeDriver --> StripeOAuth
     TelegramDriver --> TelegramWidget
     NewDriver --> NewProviderOAuth
-    
+
     %% Data persistence
     OAuthUserService --> UserModel
     OAuthProviderService --> OAuthProviderModel
-    
+    OAuthContextService --> Cache
+    WorkspaceInviteService --> UserModel
+
     %% Cross-window communication
     useWindowMessage -.->|"OAuth Callbacks"| useOAuth
     useWindowMessage -.->|"Cache Invalidation"| TanStackQuery
-    
+
     %% Cache invalidation
     TanStackQuery -.->|"Refetch on Changes"| useOAuth
-    
+
     classDef frontend fill:#e1f5fe
     classDef backend fill:#f3e5f5
     classDef external fill:#fff3e0
     classDef data fill:#e8f5e8
-    
+    classDef orchestrator fill:#e8f4f8
+
     class UI,useOAuth,useWindowMessage,useAuthFlow,TanStackQuery frontend
-    class OAuthController,OAuthUserService,OAuthProviderService,GoogleDriver,GoogleOneTapDriver,StripeDriver,TelegramDriver,NewDriver backend
+    class OAuthController,OAuthContextService,OAuthUserDataService,OAuthInviteService,OAuthUserService,OAuthProviderService,WorkspaceInviteService,GoogleDriver,GoogleOneTapDriver,StripeDriver,TelegramDriver,NewDriver backend
+    class OAuthFlowOrchestrator orchestrator
     class GoogleOAuth,StripeOAuth,TelegramWidget,NewProviderOAuth external
     class UserModel,OAuthProviderModel,Cache data
 ```
@@ -107,108 +131,227 @@ graph TB
 
 ### 1. OAuthController (`api/app/Http/Controllers/Auth/OAuthController.php`)
 
-The main controller that orchestrates OAuth flows:
+The simplified controller that delegates all OAuth logic to the orchestrator:
 
 ```php
 class OAuthController extends Controller
 {
     public function __construct(
-        private OAuthUserService $oauthUserService,
-        private OAuthProviderService $oauthProviderService
+        private OAuthFlowOrchestrator $flowOrchestrator
     ) {}
 
-    // Initiates OAuth flow with intent-based scoping
-    public function redirect(Request $request, string $provider)
-    
+    // Initiates OAuth flow using validated request
+    public function redirect(OAuthRedirectRequest $request, string $provider)
+    {
+        return response()->json(
+            $this->flowOrchestrator->processRedirect(
+                $provider,
+                $request->validated()
+            )
+        );
+    }
+
     // Handles standard OAuth callbacks
-    public function callback(string $provider)
-    
-    // Handles widget-based OAuth (e.g., Telegram, Google One Tap)
-    public function handleWidgetCallback(string $service, Request $request)
+    public function callback(Request $request, string $provider)
+    {
+        $params = $request->all();
+        $result = $this->flowOrchestrator->processCallback($provider, $params);
+        return response()->json($result);
+    }
+
+    // Handles widget-based OAuth
+    public function handleWidgetCallback(Request $request, string $service)
+    {
+        $result = $this->flowOrchestrator->processWidgetCallback($service, $request);
+        return response()->json($result);
+    }
 }
 ```
 
 **Key Features:**
-- **Intent-based scoping**: Different OAuth scopes for `auth` vs `integration` flows
-- **Context caching**: Stores integration context for callback handling
-- **Flow determination**: Automatically chooses authentication vs integration flow based on user state
 
-### 2. OAuthUserService (`api/app/Service/OAuth/OAuthUserService.php`)
+-   **Simplified Architecture**: All logic delegated to `OAuthFlowOrchestrator`
+-   **Request Validation**: Uses `OAuthRedirectRequest` for structured validation
+-   **Consistent Responses**: Standardized JSON response format
+
+### 2. OAuthFlowOrchestrator (`api/app/Service/OAuth/OAuthFlowOrchestrator.php`)
+
+The main orchestrator service that coordinates all OAuth flows:
+
+```php
+class OAuthFlowOrchestrator
+{
+    public const INTENT_AUTH = 'auth';
+    public const INTENT_INTEGRATION = 'integration';
+
+    public function __construct(
+        private OAuthContextService $contextService,
+        private OAuthInviteService $inviteService,
+        private OAuthUserDataService $userDataService,
+        private OAuthUserService $oauthUserService,
+        private OAuthProviderService $oauthProviderService
+    ) {}
+
+    // Process OAuth redirect with state management
+    public function processRedirect(string $provider, array $params): array
+
+    // Process OAuth callback with context restoration
+    public function processCallback(string $provider, array $params): array
+
+    // Process widget-based OAuth
+    public function processWidgetCallback(string $service, Request $request): array
+}
+```
+
+**Key Features:**
+
+-   **Centralized Coordination**: Single entry point for all OAuth flows
+-   **State Management**: Handles OAuth state tokens for security
+-   **Invite Integration**: Supports workspace invitations with email restrictions
+-   **Intent-based Routing**: Routes to appropriate flow based on auth vs integration intent
+
+### 3. OAuthContextService (`api/app/Service/OAuth/OAuthContextService.php`)
+
+Service that manages OAuth context using secure state tokens:
+
+```php
+class OAuthContextService
+{
+    // Store context with unique state token
+    public function storeContext(array $context): string
+
+    // Retrieve context using state token
+    public function getContext(?string $stateToken = null): ?array
+
+    // Clear context after use
+    public function clearContext(?string $stateToken = null): void
+
+    // Get specific context values
+    public function getIntent(): string
+    public function getInvitedEmail(): ?string
+    public function getInviteToken(): ?string
+}
+```
+
+**Key Features:**
+
+-   **State Token Security**: Uses cryptographically secure state tokens instead of session storage
+-   **Context Isolation**: Each OAuth flow has isolated context
+-   **Automatic Cleanup**: Context automatically expires and clears after use
+
+### 4. OAuthUserDataService (`api/app/Service/OAuth/OAuthUserDataService.php`)
+
+Service that extracts and normalizes user data from OAuth providers:
+
+```php
+class OAuthUserDataService
+{
+    // Extract user data from standard OAuth redirect
+    public function extractFromRedirect(OAuthProviderService $providerService): array
+
+    // Extract user data from widget-based authentication
+    public function extractFromWidget(OAuthProviderService $providerService, Request $request): array
+}
+```
+
+**Key Features:**
+
+-   **Data Normalization**: Standardizes user data across different OAuth providers
+-   **Widget Support**: Handles both redirect and widget-based authentication flows
+-   **Error Handling**: Validates and verifies OAuth provider responses
+
+### 5. OAuthInviteService (`api/app/Service/OAuth/OAuthInviteService.php`)
+
+Service that handles workspace invitations and email restrictions:
+
+```php
+class OAuthInviteService
+{
+    // Validate invite token
+    public function validateInviteToken(string $inviteToken): UserInvite
+
+    // Get invited email from token
+    public function getInvitedEmail(string $inviteToken): string
+
+    // Configure driver with email restrictions
+    public function configureDriverEmailRestrictions(OAuthDriver $driver, ?string $invitedEmail = null): void
+
+    // Validate email matches invitation
+    public function validateEmailRestrictions(string $email, ?string $invitedEmail = null): void
+}
+```
+
+**Key Features:**
+
+-   **Invite Validation**: Validates workspace invitation tokens
+-   **Email Restrictions**: Enforces email restrictions for OAuth providers that support it
+-   **Capability-based**: Uses interfaces to determine if driver supports email restrictions
+
+### 6. OAuthUserService (`api/app/Service/OAuth/OAuthUserService.php`)
 
 Service that handles user-related OAuth operations:
 
 ```php
 class OAuthUserService
 {
-    // Handles user authentication and registration flow
-    public function handleAuthenticationFlow(OAuthProviderService $provider, SocialiteUser $socialiteUser): JsonResponse
-    
-    // Finds or creates user from OAuth provider data
-    public function findOrCreateUser(OAuthProviderService $provider, SocialiteUser $socialiteUser): User
+    // Find or create user from OAuth data
+    public function findOrCreateUser(array $userData, OAuthProviderService $providerService, ?string $inviteToken = null): User
 }
 ```
 
-### 3. OAuthProviderService (`api/app/Service/OAuth/OAuthProviderService.php`)
+**Key Features:**
 
-Service that handles provider-related OAuth operations:
+-   **User Management**: Creates new users or finds existing ones
+-   **Workspace Integration**: Uses `WorkspaceInviteService` for workspace assignment
+-   **UTM Tracking**: Preserves UTM data for analytics
+
+### 7. OAuthProviderService (`api/app/Service/OAuth/OAuthProviderService.php`)
+
+Service that handles OAuth provider record management:
 
 ```php
 class OAuthProviderService
 {
-    // Handles provider connection and integration flow
-    public function handleIntegrationFlow(OAuthProviderService $provider, SocialiteUser $socialiteUser): JsonResponse
-    
-    // Creates or updates OAuth provider records
-    public function createOrUpdateProvider(OAuthProviderService $provider, SocialiteUser $socialiteUser): OAuthProvider
+    // Create or update OAuth provider record
+    public function createOrUpdateProvider(User $user, OAuthProviderService $providerService, array $userData): OAuthProvider
 }
 ```
 
-### 4. Intent-based Flow Handling
+**Key Features:**
 
-The system uses intent-based flow handling instead of strategies:
+-   **Provider Records**: Manages OAuth provider connections in database
+-   **Token Management**: Stores and updates OAuth access/refresh tokens
+-   **Scope Tracking**: Records granted OAuth scopes
 
-#### Authentication Flow
-For user login/registration when user is not authenticated:
+### 8. WorkspaceInviteService (`api/app/Service/WorkspaceInviteService.php`)
+
+Service extracted from `RegisterController` that handles workspace creation and invitation acceptance:
 
 ```php
-// In OAuthController::callback()
-if (!Auth::check()) {
-    // User not authenticated - handle auth flow
-    return $this->oauthUserService->handleAuthenticationFlow($providerService, $socialiteUser);
+class WorkspaceInviteService
+{
+    // Get workspace and role based on invitation
+    public function getWorkspaceAndRole(array $data): array
 }
 ```
 
-#### Integration Flow
-For connecting OAuth accounts when user is already logged in:
+**Key Features:**
 
-```php
-// In OAuthController::callback()
-if (Auth::check()) {
-    // User authenticated - handle integration flow
-    return $this->oauthProviderService->handleIntegrationFlow($providerService, $socialiteUser);
-}
-```
+-   **Workspace Creation**: Creates new workspaces for users without invitations
+-   **Invite Processing**: Handles workspace invitation acceptance with atomic updates
+-   **Role Assignment**: Assigns appropriate roles based on invitation or default admin role
 
-#### Widget Flow
-For widget-based authentication (like Telegram Login Widget, Google One Tap):
+### 9. OAuth Drivers
 
-```php
-// In OAuthController::handleWidgetCallback()
-if ($request->input('intent') === 'auth') {
-    return $this->oauthUserService->handleWidgetAuthFlow($providerService, $request);
-} else {
-    return $this->oauthProviderService->handleWidgetIntegrationFlow($providerService, $request);
-}
-```
-
-### 5. OAuth Drivers
-
-Each provider implements the `OAuthDriver` interface:
+Each provider implements the `OAuthDriver` interface with updated methods:
 
 ```php
 interface OAuthDriver
 {
     public function getRedirectUrl(): string;
+    public function setRedirectUrl(string $url): self;
+    public function setScopes(array $scopes): self;
+    public function setState(string $state): self; // New: Required for state token security
     public function getUser(): User;
     public function canCreateUser(): bool;
     public function getScopesForIntent(string $intent): array;
@@ -226,6 +369,50 @@ interface WidgetOAuthDriver extends OAuthDriver
 }
 ```
 
+### 10. Email Restrictions
+
+For providers that support email restrictions (like Google), implement `SupportsEmailRestrictions`:
+
+```php
+interface SupportsEmailRestrictions
+{
+    /**
+     * Set email restrictions/hints for the OAuth flow
+     */
+    public function setEmailRestrictions(array $emails): self;
+
+    /**
+     * Check if this driver supports email restrictions
+     */
+    public function supportsEmailRestrictions(): bool;
+}
+```
+
+The system includes a trait to simplify implementation:
+
+```php
+use App\Integrations\OAuth\Drivers\Traits\HasEmailRestrictions;
+
+class OAuthGoogleDriver implements OAuthDriver, SupportsEmailRestrictions
+{
+    use HasEmailRestrictions;
+
+    // The trait provides:
+    // - setEmailRestrictions(array $emails): self
+    // - supportsEmailRestrictions(): bool
+    // - getPrimaryEmail(): ?string
+    // - isEmailAllowed(string $email): bool
+    // - getEmailRestrictionParameters(): array
+}
+```
+
+**Email Restrictions Features:**
+
+-   **Invite Integration**: Automatically configures email hints when OAuth is used for workspace invitations
+-   **Login Hints**: Providers like Google receive `login_hint` parameter to pre-fill login form
+-   **Email Validation**: Validates OAuth email matches invited email during authentication
+-   **Capability-based**: Only applied to drivers that implement `SupportsEmailRestrictions`
+
 ## OAuth Flow Types
 
 ### Authentication Flow (User Login/Registration)
@@ -233,45 +420,57 @@ interface WidgetOAuthDriver extends OAuthDriver
 ```mermaid
 flowchart TD
     A["User clicks 'Sign in with Provider'"] --> B["Frontend: useOAuth.guestConnect()"]
-    B --> C["API: POST /oauth/connect/provider?intent=auth"]
-    C --> D{Provider can create users?}
-    D -->|No| E["Return 422 Error"]
-    D -->|Yes| F["Get auth scopes for provider"]
-    F --> G["Generate OAuth redirect URL"]
-    G --> H["Open OAuth provider window"]
-    H --> I["User authorizes at provider"]
-    I --> J["Provider redirects to callback"]
-    J --> K["API: POST /oauth/provider/callback"]
-    K --> L{User authenticated?}
-    L -->|No| M["Use Authentication Flow"]
-    L -->|Yes| N["Use Integration Flow"]
-    M --> O["Find or create user"]
-    O --> P["Create workspace if new user"]
-    P --> Q["Generate JWT token"]
-    Q --> R["Return token response"]
-    R --> S["Frontend: Store token"]
-    S --> T["Send LOGIN_COMPLETE message"]
-    T --> U["Close OAuth window"]
-    U --> V["Redirect to dashboard"]
-    
-    E --> W["Show error message"]
-    
+    B --> C["API: POST /oauth/connect/provider?intent=auth&invite_token=xyz"]
+    C --> D["OAuthFlowOrchestrator.processRedirect()"]
+    D --> E["Validate intent & invite token"]
+    E --> F["Generate secure state token"]
+    F --> G["Store context in cache with state"]
+    G --> H["Configure driver with scopes & email restrictions"]
+    H --> I["Generate OAuth redirect URL with state"]
+    I --> J["Open OAuth provider window"]
+    J --> K["User authorizes at provider"]
+    K --> L["Provider redirects to callback with state"]
+    L --> M["API: GET /oauth/provider/callback?state=xyz&code=abc"]
+    M --> N["OAuthFlowOrchestrator.processCallback()"]
+    N --> O["Retrieve context using state token"]
+    O --> P["Clear context after retrieval"]
+    P --> Q["Extract user data from provider"]
+    Q --> R["Validate email matches invite (if present)"]
+    R --> S["Find or create user"]
+    S --> T["Handle workspace invitation"]
+    T --> U["Create OAuth provider record"]
+    U --> V["Generate JWT token"]
+    V --> W["Return token response"]
+    W --> X["Frontend: Store token"]
+    X --> Y["Send LOGIN_COMPLETE message"]
+    Y --> Z["Close OAuth window"]
+    Z --> AA["Redirect to dashboard"]
+
+    E --> BB{Invalid invite?}
+    BB -->|Yes| CC["Return error"]
+    O --> DD{Context expired?}
+    DD -->|Yes| EE["Return 419 error"]
+    R --> FF{Email mismatch?}
+    FF -->|Yes| GG["Return email error"]
+
     subgraph "Window Communication"
-        X["OAuth Callback Window"] --> Y["useWindowMessage.send()"]
-        Y --> Z["Parent Window Listener"]
-        Z --> AA["Cache invalidation"]
-        AA --> BB["UI updates"]
+        HH["OAuth Callback Window"] --> II["useWindowMessage.send()"]
+        II --> JJ["Parent Window Listener"]
+        JJ --> KK["Cache invalidation"]
+        KK --> LL["UI updates"]
     end
-    
+
     classDef process fill:#e3f2fd
     classDef decision fill:#fff3e0
     classDef error fill:#ffebee
     classDef communication fill:#f3e5f5
-    
-    class A,B,C,F,G,H,I,J,K,O,P,Q,R,S,T,U,V process
-    class D,L decision
-    class E,W error
-    class X,Y,Z,AA,BB communication
+    classDef state fill:#e8f4f8
+
+    class A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z,AA process
+    class BB,DD,FF decision
+    class CC,EE,GG error
+    class HH,II,JJ,KK,LL communication
+    class F,G,O,P state
 ```
 
 ```mermaid
@@ -279,27 +478,46 @@ sequenceDiagram
     participant U as User
     participant F as Frontend
     participant API as OAuthController
+    participant Orch as OAuthFlowOrchestrator
+    participant Ctx as OAuthContextService
     participant P as OAuth Provider
+    participant Inv as OAuthInviteService
     participant US as OAuthUserService
-    
+
     U->>F: Click "Sign in with Provider"
-    F->>API: POST /oauth/connect/{provider}?intent=auth
-    API->>P: Redirect to provider OAuth
+    F->>API: POST /oauth/connect/{provider}?intent=auth&invite_token=xyz
+    API->>Orch: processRedirect(provider, params)
+    Orch->>Inv: validateInviteToken(xyz) & getInvitedEmail()
+    Inv-->>Orch: email@domain.com
+    Orch->>Ctx: storeContext({intent, invite_token, invited_email})
+    Ctx-->>Orch: stateToken: abc123
+    Orch->>Orch: Configure driver with email restrictions
+    Orch-->>API: {url: oauth_url, state: abc123}
+    API->>P: Redirect user to OAuth provider
     P->>U: User authorizes app
-    P->>API: Callback with authorization code
-    API->>US: Execute authentication flow
-    US->>US: Create/find user, generate JWT
-    US->>F: Return JWT token
+    P->>API: Callback with state=abc123&code=def456
+    API->>Orch: processCallback(provider, params)
+    Orch->>Ctx: getContext(abc123)
+    Ctx-->>Orch: {intent: auth, invited_email: email@domain.com}
+    Orch->>Ctx: clearContext(abc123)
+    Orch->>Orch: Extract user data from provider
+    Orch->>Inv: validateEmailRestrictions(user_email, invited_email)
+    Orch->>US: findOrCreateUser(userData, provider, invite_token)
+    US->>US: Create user & handle workspace invitation
+    US-->>Orch: User object with JWT
+    Orch-->>API: {token, user_data}
+    API->>F: Return JWT token
     F->>F: Store token, redirect to dashboard
 ```
 
-**Key Steps:**
-1. Frontend calls `/oauth/connect/{provider}` with `intent=auth`
-2. Controller validates provider can create users
-3. User redirected to OAuth provider with basic scopes
-4. Provider callbacks to `/oauth/{provider}/callback`
-5. `AuthenticationStrategy` handles user creation/login
-6. JWT token returned for client-side authentication
+**Key Features of New Flow:**
+
+1. **State Token Security**: Each OAuth flow gets a unique, cryptographically secure state token
+2. **Context Isolation**: Context is stored with state token, preventing cross-request interference
+3. **Invite Integration**: Workspace invitations are validated and email restrictions applied automatically
+4. **Automatic Cleanup**: Context is cleared after successful use to prevent replay attacks
+5. **Email Validation**: For invites, OAuth email must match the invited email address
+6. **Error Handling**: Comprehensive error handling for expired contexts, invalid invites, email mismatches
 
 ### Integration Flow (Connect Account)
 
@@ -308,27 +526,39 @@ sequenceDiagram
     participant U as Logged User
     participant F as Frontend
     participant API as OAuthController
+    participant Orch as OAuthFlowOrchestrator
+    participant Ctx as OAuthContextService
     participant P as OAuth Provider
     participant PS as OAuthProviderService
-    participant C as Cache
-    
-    U->>F: Click "Connect Account" 
-    F->>API: POST /oauth/connect/{provider}?intent=integration
-    API->>C: Store integration context
+
+    U->>F: Click "Connect Account"
+    F->>API: POST /oauth/connect/{provider}?intent=integration&autoClose=true
+    API->>Orch: processRedirect(provider, params)
+    Orch->>Ctx: storeContext({intent: integration, autoClose: true, intention: 'settings'})
+    Ctx-->>Orch: stateToken: xyz456
+    Orch->>Orch: Configure driver with integration scopes
+    Orch-->>API: {url: oauth_url, state: xyz456}
     API->>P: Redirect with full permission scopes
     P->>U: User authorizes extended permissions
-    P->>API: Callback with authorization code
-    API->>PS: Execute integration flow
-    PS->>PS: Create/update OAuthProvider record
-    PS->>C: Retrieve integration context
-    PS->>F: Return provider details + context
+    P->>API: Callback with state=xyz456&code=def789
+    API->>Orch: processCallback(provider, params)
+    Orch->>Ctx: getContext(xyz456)
+    Ctx-->>Orch: {intent: integration, autoClose: true, intention: 'settings'}
+    Orch->>Ctx: clearContext(xyz456)
+    Orch->>Orch: Extract user data from provider
+    Orch->>PS: createOrUpdateProvider(user, provider, userData)
+    PS-->>Orch: OAuthProvider record
+    Orch-->>API: {provider: resource, autoClose: true, intention: 'settings'}
+    API->>F: Return provider details + context
     F->>F: Update UI, invalidate cache
 ```
 
 **Key Features:**
-- **Enhanced scopes**: Requests full permissions needed for integrations
-- **Context preservation**: Stores `intention` and `autoClose` settings in cache
-- **Provider management**: Creates/updates `OAuthProvider` records
+
+-   **Enhanced scopes**: Automatically requests full permissions needed for integrations based on `getScopesForIntent()`
+-   **Context preservation**: Stores `intention`, `autoClose`, and other settings using secure state tokens
+-   **Provider management**: Creates/updates `OAuthProvider` records with full OAuth data
+-   **State security**: Uses same state token security as authentication flows
 
 ### Widget Flow (e.g., Telegram)
 
@@ -336,25 +566,38 @@ sequenceDiagram
 sequenceDiagram
     participant U as User
     participant W as Widget
-    participant F as Frontend  
+    participant F as Frontend
     participant API as OAuthController
+    participant Orch as OAuthFlowOrchestrator
+    participant Inv as OAuthInviteService
+    participant UD as OAuthUserDataService
     participant US as OAuthUserService
-    
+
     U->>W: Authenticate with provider widget
     W->>F: Widget callback with auth data
-    F->>API: POST /oauth/widget-callback/{provider}
-    API->>US: Execute widget flow
-    US->>US: Verify widget data signature
-    US->>US: Extract user data
-    US->>US: Create user or OAuthProvider record
-    US->>F: Return auth token or provider details
+    F->>API: POST /oauth/widget-callback/{provider}?intent=auth&invite_token=xyz
+    API->>Orch: processWidgetCallback(provider, request)
+    Orch->>Inv: validateInviteToken(xyz) & getInvitedEmail() [if auth intent]
+    Orch->>UD: extractFromWidget(provider, request)
+    UD->>UD: Verify widget data signature
+    UD->>UD: Extract and normalize user data
+    UD-->>Orch: userData
+    Orch->>Inv: validateEmailRestrictions(user_email, invited_email) [if auth intent]
+    Orch->>US: findOrCreateUser(userData, provider, invite_token) [if auth intent]
+    US->>US: Create user & handle workspace invitation
+    US-->>Orch: User object with JWT
+    Orch-->>API: {token, user_data} or {provider, autoClose, intention}
+    API->>F: Return auth token or provider details
     F->>F: Update UI, show success
 ```
 
 **Widget Authentication Features:**
-- **No redirect flow**: Authentication happens in-place via widget
-- **Data verification**: Cryptographic verification of widget data
-- **Direct provider creation**: Immediately creates provider records
+
+-   **No redirect flow**: Authentication happens in-place via widget, no OAuth redirect required
+-   **Data verification**: Cryptographic verification of widget data using provider-specific methods
+-   **Direct provider creation**: Immediately creates provider records without state tokens (no callback URL)
+-   **Invite Integration**: Supports workspace invitations with same email validation as redirect flows
+-   **Orchestrated Processing**: Uses same `OAuthFlowOrchestrator` as redirect flows for consistency
 
 ## Frontend Integration
 
@@ -365,18 +608,18 @@ The frontend uses `useWindowMessage` composable for cross-window communication:
 ```javascript
 // WindowMessageTypes for consistent messaging
 export const WindowMessageTypes = {
-  LOGIN_COMPLETE: 'login-complete',
-  AFTER_LOGIN: 'after-login', 
-  OAUTH_PROVIDER_CONNECTED: 'oauth-provider-connected'
-}
+    LOGIN_COMPLETE: "login-complete",
+    AFTER_LOGIN: "after-login",
+    OAUTH_PROVIDER_CONNECTED: "oauth-provider-connected",
+};
 
 // Usage in OAuth callback
-const { send } = useWindowMessage(WindowMessageTypes.LOGIN_COMPLETE)
+const { send } = useWindowMessage(WindowMessageTypes.LOGIN_COMPLETE);
 send(window.opener, {
-  eventType: WindowMessageTypes.LOGIN_COMPLETE,
-  useMessageChannel: false,
-  waitForAcknowledgment: false
-})
+    eventType: WindowMessageTypes.LOGIN_COMPLETE,
+    useMessageChannel: false,
+    waitForAcknowledgment: false,
+});
 ```
 
 ### OAuth Composable (`useOAuth`)
@@ -384,25 +627,25 @@ send(window.opener, {
 Centralized OAuth operations with TanStack Query integration:
 
 ```javascript
-const { connect, connectMutation, services } = useOAuth()
+const { connect, connectMutation, services } = useOAuth();
 
 // Connect to OAuth provider
-await connect('google', false, true, true) // service, redirect, newtab, autoClose
+await connect("google", false, true, true); // service, redirect, newtab, autoClose
 
 // Service definitions with auth types
 const services = [
-  {
-    name: 'google',
-    title: 'Google', 
-    auth_type: 'redirect' // Standard OAuth redirect flow
-  },
-  {
-    name: 'telegram',
-    title: 'Telegram',
-    auth_type: 'widget', // Widget-based authentication
-    widget_file: 'TelegramWidget'
-  }
-]
+    {
+        name: "google",
+        title: "Google",
+        auth_type: "redirect", // Standard OAuth redirect flow
+    },
+    {
+        name: "telegram",
+        title: "Telegram",
+        auth_type: "widget", // Widget-based authentication
+        widget_file: "TelegramWidget",
+    },
+];
 ```
 
 ### Cache Management
@@ -411,12 +654,15 @@ The system automatically invalidates TanStack Query cache when OAuth connections
 
 ```javascript
 // Listen for OAuth provider connections
-windowMessage.listen((_event) => {
-  invalidateProviders() // Refresh OAuth providers list
-}, {
-  useMessageChannel: false,
-  acknowledge: false
-})
+windowMessage.listen(
+    (_event) => {
+        invalidateProviders(); // Refresh OAuth providers list
+    },
+    {
+        useMessageChannel: false,
+        acknowledge: false,
+    }
+);
 ```
 
 ## Adding a New Integration
@@ -425,7 +671,7 @@ Follow these steps to add a new OAuth provider to OpnForm:
 
 <Steps>
 <Step title="Create OAuth Driver">
-Implement the OAuth driver class:
+Implement the OAuth driver class with the updated interface:
 
 ```php
 // api/app/Integrations/OAuth/Drivers/OAuthNewProviderDriver.php
@@ -433,15 +679,20 @@ Implement the OAuth driver class:
 
 namespace App\Integrations\OAuth\Drivers;
 
-use App\Http\Controllers\Auth\OAuthController;
 use App\Integrations\OAuth\Drivers\Contracts\OAuthDriver;
+use App\Integrations\OAuth\Drivers\Contracts\SupportsEmailRestrictions;
+use App\Integrations\OAuth\Drivers\Traits\HasEmailRestrictions;
+use App\Service\OAuth\OAuthFlowOrchestrator;
 use Laravel\Socialite\Contracts\User;
 use Laravel\Socialite\Facades\Socialite;
 
-class OAuthNewProviderDriver implements OAuthDriver
+class OAuthNewProviderDriver implements OAuthDriver, SupportsEmailRestrictions
 {
+    use HasEmailRestrictions; // Optional: only if provider supports email restrictions
+
     private ?string $redirectUrl = null;
     private ?array $scopes = [];
+    private ?string $state = null;
     protected $provider;
 
     public function __construct()
@@ -451,10 +702,23 @@ class OAuthNewProviderDriver implements OAuthDriver
 
     public function getRedirectUrl(): string
     {
+        $parameters = [];
+
+        // Add state parameter for security
+        if ($this->state) {
+            $parameters['state'] = $this->state;
+        }
+
+        // Add email restriction parameters (if using HasEmailRestrictions trait)
+        if (method_exists($this, 'getEmailRestrictionParameters')) {
+            $parameters = array_merge($parameters, $this->getEmailRestrictionParameters());
+        }
+
         return $this->provider
             ->scopes($this->scopes ?? [])
             ->stateless()
             ->redirectUrl($this->redirectUrl ?? config('services.newprovider.redirect'))
+            ->with($parameters)
             ->redirect()
             ->getTargetUrl();
     }
@@ -472,23 +736,29 @@ class OAuthNewProviderDriver implements OAuthDriver
         return true; // Set false if provider can't be used for user registration
     }
 
-    public function setRedirectUrl(string $url): OAuthDriver
+    public function setRedirectUrl(string $url): self
     {
         $this->redirectUrl = $url;
         return $this;
     }
 
-    public function setScopes(array $scopes): OAuthDriver
+    public function setScopes(array $scopes): self
     {
         $this->scopes = $scopes;
+        return $this;
+    }
+
+    public function setState(string $state): self
+    {
+        $this->state = $state;
         return $this;
     }
 
     public function getScopesForIntent(string $intent): array
     {
         return match ($intent) {
-            OAuthController::INTENT_AUTH => ['user:email', 'read:user'],
-            OAuthController::INTENT_INTEGRATION => ['user:email', 'read:user', 'write:data'],
+            OAuthFlowOrchestrator::INTENT_AUTH => ['user:email', 'read:user'],
+            OAuthFlowOrchestrator::INTENT_INTEGRATION => ['user:email', 'read:user', 'write:data'],
             default => ['user:email', 'read:user'],
         };
     }
@@ -496,8 +766,15 @@ class OAuthNewProviderDriver implements OAuthDriver
 ```
 
 <Tip>
-Configure different scopes for `auth` vs `integration` intents using the `OAuthController::INTENT_AUTH` and `OAuthController::INTENT_INTEGRATION` constants. Auth scopes should be minimal (just enough for user identification), while integration scopes should include all permissions needed for the provider's functionality.
+    **New Required Methods**: All drivers must now implement `setState()` for
+    security. Use `SupportsEmailRestrictions` interface and
+    `HasEmailRestrictions` trait only if your provider supports email
+    hints/restrictions (like Google's `login_hint` parameter).
 </Tip>
+
+<Info>
+The `setState()` method is required for state token security. The orchestrator will automatically call this method with a secure state token before generating the redirect URL.
+</Info>
 </Step>
 
 <Step title="Register in Provider Service">
@@ -518,7 +795,7 @@ enum OAuthProviderService: string
         return match ($this) {
             self::Google => new OAuthGoogleDriver(),
             self::GoogleOneTap => new OAuthGoogleOneTapDriver(),
-            self::Stripe => new OAuthStripeDriver(), 
+            self::Stripe => new OAuthStripeDriver(),
             self::Telegram => new OAuthTelegramDriver(),
             self::NewProvider => new OAuthNewProviderDriver(), // Add mapping
         };
@@ -536,6 +813,7 @@ enum OAuthProviderService: string
     }
 }
 ```
+
 </Step>
 
 <Step title="Configure Services">
@@ -557,6 +835,7 @@ Add environment variables to `.env.example`:
 NEWPROVIDER_CLIENT_ID=
 NEWPROVIDER_CLIENT_SECRET=
 ```
+
 </Step>
 
 <Step title="Install Socialite Provider">
@@ -575,6 +854,7 @@ protected $listen = [
     ],
 ];
 ```
+
 </Step>
 
 <Step title="Add Frontend Service Definition">
@@ -583,18 +863,19 @@ Update the frontend service configuration:
 ```javascript
 // client/composables/query/useOAuth.js
 const services = computed(() => {
-  return [
-    // ... existing services
-    {
-      name: 'newprovider',
-      title: 'New Provider',
-      icon: 'mdi:newprovider', // Use appropriate icon
-      enabled: useFeatureFlag('services.newprovider.client_id', false),
-      auth_type: 'redirect'
-    }
-  ]
-})
+    return [
+        // ... existing services
+        {
+            name: "newprovider",
+            title: "New Provider",
+            icon: "mdi:newprovider", // Use appropriate icon
+            enabled: useFeatureFlag("services.newprovider.client_id", false),
+            auth_type: "redirect",
+        },
+    ];
+});
 ```
+
 </Step>
 
 <Step title="Add Feature Flag">
@@ -615,26 +896,42 @@ public function index(): JsonResponse
     ]);
 }
 ```
+
 </Step>
 
 <Step title="Test the Integration">
-Test both authentication and integration flows:
+Test both authentication and integration flows with the new architecture:
 
 **Authentication Test:**
+
 1. Start fresh (logged out)
 2. Click "Sign in with New Provider"
-3. Complete OAuth flow
-4. Verify user creation and login
+3. Verify state token is included in redirect URL
+4. Complete OAuth flow at provider
+5. Verify callback includes state token
+6. Check user creation and login success
+7. Verify context cleanup (state token should be cleared)
 
 **Integration Test:**
+
 1. Log in with existing account
 2. Go to Settings → Connections
 3. Click "Connect New Provider"
-4. Complete OAuth flow
-5. Verify provider appears in connected accounts
+4. Verify integration scopes are requested (more permissions than auth)
+5. Complete OAuth flow
+6. Verify provider appears in connected accounts
+7. Check that provider record includes full OAuth data
+
+**Workspace Invitation Test (if applicable):**
+
+1. Create a workspace invitation for a specific email
+2. Start OAuth flow with `invite_token` parameter
+3. Verify email restrictions are applied (if provider supports them)
+4. Complete OAuth with invited email address
+5. Verify user is added to correct workspace with proper role
 
 <Check>
-Verify both flows work correctly and check that appropriate scopes are requested for each intent.
+Verify state tokens are generated, used for context storage, and cleaned up after use. Check that email restrictions work correctly for invite flows.
 </Check>
 </Step>
 
@@ -663,20 +960,23 @@ class NewProviderIntegration extends AbstractIntegrationHandler
     {
         // Implement integration logic here
         // e.g., send data to external API, create records, etc.
-        
+
         return true;
     }
 }
 ```
 
 Register the handler and add frontend integration components as needed.
+
 </Step>
 </Steps>
 
 ## Provider Normalization
 
 <Info>
-**Important**: When creating providers that represent the same OAuth service but with different authentication methods (like Google OAuth vs Google One Tap), they should be normalized to the same provider name in the database.
+    **Important**: When creating providers that represent the same OAuth service
+    but with different authentication methods (like Google OAuth vs Google One
+    Tap), they should be normalized to the same provider name in the database.
 </Info>
 
 OpnForm handles provider normalization through the `getDatabaseProvider()` method in the enum:
@@ -694,14 +994,16 @@ public function getDatabaseProvider(): string
 ```
 
 This ensures that:
-- Users can't connect multiple "Google" accounts (regular OAuth + One Tap)
-- Provider scopes and permissions are properly merged
-- The same OAuth provider record is updated regardless of authentication method
-- Integration handlers work consistently with the normalized provider name
+
+-   Users can't connect multiple "Google" accounts (regular OAuth + One Tap)
+-   Provider scopes and permissions are properly merged
+-   The same OAuth provider record is updated regardless of authentication method
+-   Integration handlers work consistently with the normalized provider name
 
 When adding new providers, consider if they should be normalized:
-- **Same OAuth service, different auth methods**: Normalize (like Google/GoogleOneTap)
-- **Different OAuth services**: Don't normalize (like Google/GitHub)
+
+-   **Same OAuth service, different auth methods**: Normalize (like Google/GoogleOneTap)
+-   **Different OAuth services**: Don't normalize (like Google/GitHub)
 
 ## Widget-Based Providers
 
@@ -718,11 +1020,11 @@ use App\Integrations\OAuth\Drivers\Contracts\WidgetOAuthDriver;
 
 class OAuthWidgetProviderDriver implements WidgetOAuthDriver
 {
-    public function verifyWidgetData(array $data): bool
-    {
-        // Implement cryptographic verification of widget data
-        // e.g., HMAC signature verification
-        
+public function verifyWidgetData(array $data): bool
+{
+// Implement cryptographic verification of widget data
+// e.g., HMAC signature verification
+
         $expectedHash = hash_hmac('sha256', $dataString, $secretKey);
         return hash_equals($expectedHash, $data['hash']);
     }
@@ -744,13 +1046,43 @@ class OAuthWidgetProviderDriver implements WidgetOAuthDriver
         return true;
     }
 
-    // Standard OAuthDriver methods...
+    // Standard OAuthDriver methods (required by interface)
     public function getRedirectUrl(): string
     {
         return ''; // Not used for widget auth
     }
+
+    public function setRedirectUrl(string $url): self
+    {
+        // Not used for widget auth, but required by interface
+        return $this;
+    }
+
+    public function setScopes(array $scopes): self
+    {
+        // Not used for widget auth, but required by interface
+        return $this;
+    }
+
+    public function setState(string $state): self
+    {
+        // Widget-based auth doesn't use state tokens
+        return $this;
+    }
+
+    public function canCreateUser(): bool
+    {
+        return true;
+    }
+
+    public function getScopesForIntent(string $intent): array
+    {
+        return []; // Widgets typically don't use OAuth scopes
+    }
+
 }
-```
+
+````
 </Tab>
 
 <Tab title="Frontend Widget Component">
@@ -758,7 +1090,7 @@ class OAuthWidgetProviderDriver implements WidgetOAuthDriver
 <!-- client/components/settings/widgets/WidgetProviderWidget.vue -->
 <template>
   <div class="widget-provider-container">
-    <div 
+    <div
       id="widget-provider-login"
       @click="initializeWidget"
     >
@@ -773,7 +1105,7 @@ const emit = defineEmits(['auth-data'])
 const initializeWidget = () => {
   // Initialize provider widget
   // Handle widget callback and emit auth data
-  
+
   window.WidgetProvider.init({
     onAuth: (authData) => {
       emit('auth-data', authData)
@@ -781,7 +1113,8 @@ const initializeWidget = () => {
   })
 }
 </script>
-```
+````
+
 </Tab>
 
 <Tab title="Frontend Service Config">
@@ -801,22 +1134,62 @@ const initializeWidget = () => {
 
 ## Advanced Configuration
 
+### Request Validation
+
+The system now uses `OAuthRedirectRequest` for structured validation:
+
+```php
+// api/app/Http/Requests/Auth/OAuthRedirectRequest.php
+class OAuthRedirectRequest extends FormRequest
+{
+    public function rules(): array
+    {
+        return [
+            'intent' => 'required|in:auth,integration',
+            'invite_token' => 'sometimes|string',
+            'intention' => 'sometimes|string',
+            'autoClose' => 'sometimes|boolean',
+            'utm_data' => 'sometimes|array',
+        ];
+    }
+}
+```
+
+**Validation Features:**
+
+-   **Intent Validation**: Ensures only valid intents (`auth` or `integration`) are accepted
+-   **Invite Token**: Validates workspace invitation tokens when present
+-   **Context Parameters**: Validates additional context like `intention` and `autoClose`
+-   **UTM Tracking**: Validates UTM data for analytics
+
 ### Custom Scopes and Parameters
 
-OAuth drivers can customize the authorization request:
+OAuth drivers can customize the authorization request with state tokens:
 
 ```php
 public function getRedirectUrl(): string
 {
+    $parameters = [
+        'access_type' => 'offline',
+        'prompt' => 'consent',
+        'custom_param' => 'value'
+    ];
+
+    // Add state parameter for security
+    if ($this->state) {
+        $parameters['state'] = $this->state;
+    }
+
+    // Add email restriction parameters (if supported)
+    if (method_exists($this, 'getEmailRestrictionParameters')) {
+        $parameters = array_merge($parameters, $this->getEmailRestrictionParameters());
+    }
+
     return $this->provider
         ->scopes($this->scopes)
         ->stateless()
         ->redirectUrl($this->redirectUrl)
-        ->with([
-            'access_type' => 'offline',
-            'prompt' => 'consent',
-            'custom_param' => 'value'
-        ])
+        ->with($parameters)
         ->redirect()
         ->getTargetUrl();
 }
@@ -824,42 +1197,43 @@ public function getRedirectUrl(): string
 
 ### Error Handling
 
-The system includes comprehensive error handling:
+The system includes comprehensive error handling in the orchestrator:
 
 ```php
-// In OAuthConnectionService
-public function handleCallback(OAuthProviderService $provider, OAuthCompletionStrategy $strategy): JsonResponse
+// In OAuthFlowOrchestrator
+public function processCallback(string $provider, array $params): array
 {
     try {
-        $driverUser = $provider->getDriver()->getUser();
-        return $strategy->execute($provider, $driverUser);
+        $providerService = OAuthProviderService::from($provider);
+    } catch (\ValueError $e) {
+        abort(400, "Invalid OAuth provider: {$provider}");
+    }
+
+    // Get context using state token
+    $stateToken = $params['state'] ?? null;
+    $context = $this->contextService->getContext($stateToken);
+
+    if (!$context) {
+        abort(419, 'OAuth context expired or invalid state');
+    }
+
+    try {
+        $userData = $this->userDataService->extractFromRedirect($providerService);
+        return $this->handleIntent($context['intent'], $providerService, $userData, ...);
     } catch (\Exception $e) {
         report($e);
-        return response()->json(['message' => 'Failed to authenticate with the provider. Please try again.'], 400);
+        abort(400, 'Failed to authenticate with the provider. Please try again.');
     }
 }
 ```
 
-### Intent-Based Flow Control
+**Error Handling Features:**
 
-The controller automatically selects the appropriate flow based on user authentication state:
-
-```php
-public function callback(string $provider)
-{
-    $providerService = OAuthProviderService::from($provider);
-    $socialiteUser = $providerService->getDriver()->getUser();
-
-    // Flow is determined by the user's authentication state
-    if (Auth::check()) {
-        // User logged in = integration flow
-        return $this->oauthProviderService->handleIntegrationFlow($providerService, $socialiteUser);
-    } else {
-        // User not logged in = authentication flow
-        return $this->oauthUserService->handleAuthenticationFlow($providerService, $socialiteUser);
-    }
-}
-```
+-   **Provider Validation**: Validates OAuth provider exists before processing
+-   **State Token Security**: Returns 419 for expired or invalid state tokens
+-   **Context Cleanup**: Automatically clears context even on errors
+-   **Email Validation**: Returns specific errors for email mismatches in invite flows
+-   **Comprehensive Logging**: All errors are logged for debugging
 
 ## Troubleshooting
 
@@ -872,46 +1246,77 @@ public function callback(string $provider)
 </Accordion>
 
 <Accordion title="OAuth redirect URL mismatch">
-- Verify `redirect` URL in `config/services.php` matches provider configuration
-- Check that `APP_URL` environment variable is correct
-- Ensure provider OAuth app is configured with correct callback URL
+    - Verify `redirect` URL in `config/services.php` matches provider
+    configuration - Check that `APP_URL` environment variable is correct -
+    Ensure provider OAuth app is configured with correct callback URL
+</Accordion>
+
+<Accordion title="State token errors (419 errors)">
+    - Check that the OAuth provider is returning the `state` parameter correctly
+    - Verify that the OAuth flow completes within 5 minutes (context TTL) -
+    Ensure the state token is being passed correctly in `setState()` method -
+    Check cache configuration and ensure Laravel cache is working properly
+</Accordion>
+
+<Accordion title="Email restrictions not working">
+    - Verify driver implements `SupportsEmailRestrictions` interface - Check
+    that `HasEmailRestrictions` trait is being used correctly - Ensure
+    `getEmailRestrictionParameters()` returns correct parameters for your
+    provider - Test with a provider that supports login hints (like Google)
 </Accordion>
 
 <Accordion title="Scopes not working correctly">
-- Check `getScopesForIntent()` method returns correct scopes
-- Verify provider OAuth app has necessary permissions enabled
-- Test with minimal scopes first, then add additional ones
+    - Check `getScopesForIntent()` method returns correct scopes - Verify
+    provider OAuth app has necessary permissions enabled - Test with minimal
+    scopes first, then add additional ones - Ensure intent is being passed
+    correctly (`auth` vs `integration`)
 </Accordion>
 
 <Accordion title="Widget authentication failing">
-- Verify widget data signature verification logic
-- Check that widget script is loaded correctly
-- Ensure widget callback URL is accessible and correct
-- Test widget data extraction and user creation flow
+    - Verify widget data signature verification logic - Check that widget script
+    is loaded correctly - Ensure widget callback URL is accessible and correct -
+    Test widget data extraction and user creation flow - Verify all required
+    `OAuthDriver` interface methods are implemented (including `setState()`)
+</Accordion>
+
+<Accordion title="Workspace invitations not working">
+- Check that `WorkspaceInviteService` is properly handling invitations
+- Verify invite token validation in `OAuthInviteService`
+- Ensure email validation is working correctly for invite flows
+- Check that workspace and role assignment is working properly
 </Accordion>
 </AccordionGroup>
 
 ## Best Practices
 
 <Card title="Security" icon="shield-check">
-- Always verify widget data signatures cryptographically
-- Use minimal scopes for authentication flows
-- Validate all OAuth provider responses
-- Implement proper error handling and logging
+    - **State Token Security**: Always implement `setState()` method properly
+    for CSRF protection - **Context Cleanup**: Trust the orchestrator to handle
+    context cleanup automatically - **Email Validation**: Use
+    `SupportsEmailRestrictions` for workspace invitation flows - **Widget
+    Verification**: Always verify widget data signatures cryptographically -
+    **Minimal Scopes**: Use minimal scopes for authentication, full scopes for
+    integrations - **Error Handling**: Implement comprehensive error handling
+    and logging
 </Card>
 
 <Card title="User Experience" icon="heart">
-- Provide clear loading states during OAuth flows
-- Handle popup blockers gracefully
-- Show appropriate error messages for OAuth failures
-- Auto-close OAuth windows when appropriate
+    - **Loading States**: Provide clear loading states during OAuth flows -
+    **Email Hints**: Use email restrictions to pre-fill login forms for better
+    UX - **Error Messages**: Show specific, actionable error messages for OAuth
+    failures - **Auto-close**: Use `autoClose` parameter appropriately for
+    integration flows - **Popup Handling**: Handle popup blockers gracefully
+    with fallback options
 </Card>
 
 <Card title="Performance" icon="bolt">
-- Cache OAuth provider configurations
-- Use TanStack Query for efficient data fetching
-- Implement proper cleanup for event listeners
-- Minimize API calls during OAuth flows
+    - **State Management**: Trust the orchestrator's efficient state token
+    system - **Context TTL**: Keep OAuth flows under 5 minutes to avoid context
+    expiration - **Cache Integration**: Use TanStack Query for efficient data
+    fetching and cache invalidation - **Service Architecture**: Leverage the
+    service-oriented architecture for better separation of concerns -
+    **Cleanup**: Implement proper cleanup for event listeners and avoid memory
+    leaks
 </Card>
 
 This comprehensive architecture allows OpnForm to support any OAuth provider with a consistent, maintainable codebase that handles all the complexities of modern OAuth flows.
