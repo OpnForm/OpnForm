@@ -30,6 +30,9 @@ export const inputLabelTheme = {
       },
       minimal: {
         label: 'font-medium text-neutral-600 dark:text-neutral-400'
+      },
+      transparent: {
+        label: 'font-semibold'
       }
     },
     size: {

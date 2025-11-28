@@ -12,7 +12,7 @@
               v-for="column in columns"
               :key="column"
               :class="[
-                resolvedTheme === 'minimal' ? '' : 'ltr:border-l rtl:border-r rtl:!border-l-0',
+                ['minimal', 'transparent'].includes(resolvedTheme) ? '' : 'ltr:border-l rtl:border-r rtl:!border-l-0',
                 'max-w-24 overflow-hidden',
                 ui.cell({ class: props.ui?.slots?.cell })
               ]"
@@ -43,7 +43,7 @@
               :tabindex="props.disabled ? -1 : 0"
               :aria-checked="compVal && compVal[row] === column"
               :class="[
-                resolvedTheme === 'minimal' ? '' : 'ltr:border-l rtl:border-r rtl:!border-l-0',
+                ['minimal', 'transparent'].includes(resolvedTheme) ? '' : 'ltr:border-l rtl:border-r rtl:!border-l-0',
                 ui.cell({ class: props.ui?.slots?.cell }),
                 ui.cellHover({ class: props.ui?.slots?.cellHover }),
                 ui.option({ class: props.ui?.slots?.option })
