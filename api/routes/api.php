@@ -9,6 +9,7 @@ use App\Http\Controllers\Auth\UserController;
 use App\Http\Controllers\Auth\VerificationController;
 use App\Http\Controllers\Forms\FormController;
 use App\Http\Controllers\Forms\FormStatsController;
+use App\Http\Controllers\Forms\FormSummaryController;
 use App\Http\Controllers\Forms\FormSubmissionController;
 use App\Http\Controllers\Forms\Integration\FormIntegrationsController;
 use App\Http\Controllers\Forms\Integration\FormIntegrationsEventController;
@@ -160,6 +161,12 @@ Route::group(['middleware' => 'auth.multi'], function () {
                 Route::middleware('pro-form')->group(function () {
                     Route::get('form-stats/{form}', [FormStatsController::class, 'getFormStats'])->name('form.stats');
                     Route::get('form-stats-details/{form}', [FormStatsController::class, 'getFormStatsDetails'])->name('form.stats-details');
+                });
+
+                // Summary endpoints with rate limiting
+                Route::middleware('throttle:summary')->group(function () {
+                    Route::get('form-summary/{form}', [FormSummaryController::class, 'getSummary'])->name('form.summary');
+                    Route::get('form-summary/{form}/field/{fieldId}/values', [FormSummaryController::class, 'getFieldValues'])->name('form.summary.field-values');
                 });
             });
         });

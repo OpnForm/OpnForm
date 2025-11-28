@@ -8,6 +8,7 @@
     "text_class": "text-blue-900",
     "available_in": ["classic", "focused"],
     "is_input": true,
+    "summary_type": "text_list",
     "default_values": {
       "multi_lines": false,
       "max_char_limit": 2000,
@@ -23,6 +24,7 @@
     "text_class": "text-blue-900",
     "available_in": ["classic", "focused"],
     "is_input": true,
+    "summary_type": "text_list",
     "default_values": {
       "max_char_limit": 2000,
       "placeholder": "Write your answer"
@@ -37,6 +39,7 @@
     "text_class": "text-green-900",
     "available_in": ["classic", "focused"],
     "is_input": true,
+    "summary_type": "date_summary",
     "default_values": {}
   },
   "url": {
@@ -48,6 +51,7 @@
     "text_class": "text-blue-900",
     "available_in": ["classic", "focused"],
     "is_input": true,
+    "summary_type": "text_list",
     "default_values": {
       "max_char_limit": 2000,
       "placeholder": "https://example.com"
@@ -62,6 +66,7 @@
     "text_class": "text-blue-900",
     "available_in": ["classic", "focused"],
     "is_input": true,
+    "summary_type": "text_list",
     "default_values": {
       "placeholder": "+1 202 555 0142"
     }
@@ -75,6 +80,7 @@
     "text_class": "text-blue-900",
     "available_in": ["classic", "focused"],
     "is_input": true,
+    "summary_type": "text_list",
     "default_values": {
       "max_char_limit": 2000,
       "placeholder": "name@example.com"
@@ -89,6 +95,7 @@
     "text_class": "text-red-900",
     "available_in": ["classic", "focused"],
     "is_input": true,
+    "summary_type": "boolean",
     "default_values": {}
   },
   "select": {
@@ -100,6 +107,7 @@
     "text_class": "text-red-900",
     "available_in": ["classic", "focused"],
     "is_input": true,
+    "summary_type": "distribution",
     "default_values": {
       "placeholder": "Select an option",
       "select": {
@@ -119,6 +127,7 @@
     "text_class": "text-red-900",
     "available_in": ["classic", "focused"],
     "is_input": true,
+    "summary_type": "distribution",
     "default_values": {
       "select": {
         "options": [
@@ -139,6 +148,7 @@
     "text_class": "text-red-900",
     "available_in": ["classic", "focused"],
     "is_input": true,
+    "summary_type": "distribution",
     "default_values": {
       "placeholder": "Select options",
       "multi_select": {
@@ -158,6 +168,7 @@
     "text_class": "text-red-900",
     "available_in": ["classic", "focused"],
     "is_input": true,
+    "summary_type": "matrix",
     "default_values": {
       "rows": ["Row 1"],
       "columns": [1, 2, 3],
@@ -175,6 +186,7 @@
     "text_class": "text-purple-900",
     "available_in": ["classic", "focused"],
     "is_input": true,
+    "summary_type": "numeric_stats",
     "default_values": {
       "placeholder": "Type a number"
     }
@@ -188,6 +200,7 @@
     "text_class": "text-purple-900",
     "available_in": ["classic", "focused"],
     "is_input": true,
+    "summary_type": "rating",
     "default_values": {
       "rating_max_value": 5
     }
@@ -201,6 +214,7 @@
     "text_class": "text-purple-900",
     "available_in": ["classic", "focused"],
     "is_input": true,
+    "summary_type": "numeric_stats",
     "default_values": {
       "scale_min_value": 1,
       "scale_max_value": 5,
@@ -216,6 +230,7 @@
     "text_class": "text-purple-900",
     "available_in": ["classic", "focused"],
     "is_input": true,
+    "summary_type": "numeric_stats",
     "default_values": {
       "slider_min_value": 0,
       "slider_max_value": 50,
@@ -231,6 +246,7 @@
     "text_class": "text-pink-900",
     "available_in": ["classic", "focused"],
     "is_input": true,
+    "summary_type": "file_count",
     "default_values": {}
   },
   "signature": {
@@ -242,17 +258,19 @@
     "text_class": "text-pink-900",
     "available_in": ["classic", "focused"],
     "is_input": true,
+    "summary_type": "file_count",
     "default_values": {}
   },
   "barcode": {
     "name": "barcode",
     "title": "Barcode Reader",
-    "icon": "i-material-symbols-barcode-scanner-rounded", 
+    "icon": "i-material-symbols-barcode-scanner-rounded",
     "default_block_name": "Scan Barcode",
     "bg_class": "bg-pink-100",
     "text_class": "text-pink-900",
     "available_in": ["classic", "focused"],
     "is_input": true,
+    "summary_type": "text_list",
     "default_values": {
       "decoders": ["qr_reader", "ean_reader", "ean_8_reader"]
     }
@@ -260,12 +278,13 @@
   "qrcode": {
     "name": "qrcode",
     "title": "QR Code Reader",
-    "icon": "i-material-symbols-qr-code-scanner-rounded", 
+    "icon": "i-material-symbols-qr-code-scanner-rounded",
     "default_block_name": "Scan QR Code",
     "bg_class": "bg-pink-100",
     "text_class": "text-pink-900",
     "available_in": ["classic", "focused"],
     "is_input": true,
+    "summary_type": "text_list",
     "default_values": {
       "decoders": ["qr_reader"]
     },
@@ -280,6 +299,7 @@
     "text_class": "text-blue-900",
     "available_in": ["classic", "focused"],
     "is_input": true,
+    "summary_type": "text_list",
     "default_values": {
       "secret_input": true,
       "multi_lines": false,
@@ -297,6 +317,7 @@
     "text_class": "text-red-900",
     "available_in": ["classic", "focused"],
     "is_input": true,
+    "summary_type": "boolean",
     "default_values": {
       "use_toggle_switch": true
     },
@@ -311,6 +332,7 @@
     "text_class": "text-green-900",
     "available_in": ["classic", "focused"],
     "is_input": true,
+    "summary_type": "payment",
     "self_hosted": false,
     "max_count": 1,
     "auth_required": true
