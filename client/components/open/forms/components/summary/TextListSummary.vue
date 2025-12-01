@@ -1,14 +1,26 @@
 <template>
   <div>
-    <div class="divide-y divide-neutral-100">
+    <div class="divide-y">
       <div
         v-for="(value, index) in displayedValues"
         :key="index"
         class="py-2.5 flex items-center justify-between group"
       >
+        <!-- File field -->
+        <a
+          v-if="isFileType"
+          :href="value"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="inline-flex items-center gap-2 px-3 py-2 border border-neutral-200 rounded-lg hover:bg-neutral-50 transition-colors text-sm text-neutral-600"
+        >
+          <UIcon name="i-heroicons-arrow-top-right-on-square" class="w-4 h-4 text-neutral-400" />
+          <span class="truncate max-w-xs">{{ getDisplayFileName(value) }}</span>
+        </a>
+
         <!-- URL field -->
         <a
-          v-if="fieldType === 'url'"
+          v-else-if="fieldType === 'url'"
           :href="value"
           target="_blank"
           rel="noopener noreferrer"
@@ -52,7 +64,7 @@
       v-if="displayedValues.length === 0"
       class="text-center py-4 text-neutral-400 text-sm"
     >
-      No responses
+      {{ isFileType ? 'No files uploaded' : 'No responses' }}
     </div>
 
     <!-- Load More Button -->
@@ -85,8 +97,8 @@ const props = defineProps({
 const { fieldValues } = useFormSummary()
 
 const fieldType = computed(() => props.field.type)
+const isFileType = computed(() => ['files', 'signature'].includes(fieldType.value))
 
-// Local state
 const displayedValues = ref([...(props.field.data?.values || [])])
 const nextOffset = ref(props.field.data?.next_offset || 10)
 const hasMore = ref(props.field.data?.has_more || false)
@@ -94,6 +106,21 @@ const totalCount = ref(props.field.data?.total_count || 0)
 const isLoadingMore = ref(false)
 
 const remainingCount = computed(() => totalCount.value - displayedValues.value.length)
+
+const getDisplayFileName = (url) => {
+  if (!url) return 'Unknown file'
+  try {
+    const parts = url.split('/')
+    let fileName = parts[parts.length - 1]
+    // Remove query params
+    fileName = fileName.split('?')[0] || fileName
+    // Remove UUID suffix (format: name_uuid.ext)
+    const uuidSuffixPattern = /_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(\.[^.]+)?$/i
+    return fileName.replace(uuidSuffixPattern, '$1')
+  } catch {
+    return 'File'
+  }
+}
 
 // Load more function
 const loadMore = async () => {
@@ -133,12 +160,12 @@ watch(() => props.field.data, (newData) => {
 const menuItems = (value) => [
   {
     label: 'View Submission',
-    click: () => {
+    onClick: () => {
       navigateTo({
         name: 'forms-slug-show-submissions',
         params: { slug: props.form.slug },
-        query: { search: value }
-      }, { external: true })
+        query: { view: value }
+      }, { open: '_blank' })
     }
   }
 ]

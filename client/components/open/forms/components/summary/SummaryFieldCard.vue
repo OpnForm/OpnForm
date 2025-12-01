@@ -24,12 +24,11 @@
       </div>
 
       <!-- Chart Toggle -->
-      <div
-        v-if="field.summary_type === 'distribution' || field.summary_type === 'boolean'"
-        class="flex items-center gap-2"
-      >
-        <USwitch v-model="showPieChart" label="Pie chart" />
-      </div>
+      <USwitch 
+        v-if="['distribution', 'boolean'].includes(field.summary_type)" 
+        v-model="showPieChart" 
+        label="Pie chart"
+      />
     </div>
 
     <!-- Content -->
@@ -54,7 +53,6 @@ import RatingSummary from "./RatingSummary.vue"
 import BooleanSummary from "./BooleanSummary.vue"
 import DateSummary from "./DateSummary.vue"
 import MatrixSummary from "./MatrixSummary.vue"
-import FileSummary from "./FileSummary.vue"
 import PaymentSummary from "./PaymentSummary.vue"
 
 const props = defineProps({
@@ -76,7 +74,6 @@ const summaryComponent = computed(() => {
     boolean: BooleanSummary,
     date_summary: DateSummary,
     matrix: MatrixSummary,
-    file_list: FileSummary,
     payment: PaymentSummary,
   }
 

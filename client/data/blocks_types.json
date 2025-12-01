@@ -246,7 +246,7 @@
     "text_class": "text-pink-900",
     "available_in": ["classic", "focused"],
     "is_input": true,
-    "summary_type": "file_list",
+    "summary_type": "text_list",
     "default_values": {}
   },
   "signature": {
@@ -258,7 +258,7 @@
     "text_class": "text-pink-900",
     "available_in": ["classic", "focused"],
     "is_input": true,
-    "summary_type": "file_list",
+    "summary_type": "text_list",
     "default_values": {}
   },
   "barcode": {

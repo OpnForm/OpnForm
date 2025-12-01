@@ -17,6 +17,7 @@ class FormSummaryRequest extends FormRequest
             'date_from' => ['nullable', 'date', 'before_or_equal:date_to'],
             'date_to' => ['nullable', 'date', 'after_or_equal:date_from'],
             'status' => ['nullable', 'in:all,completed,partial'],
+            'offset' => ['nullable', 'integer', 'min:0'],
         ];
     }
 
@@ -33,5 +34,10 @@ class FormSummaryRequest extends FormRequest
     public function getDateTo(): ?string
     {
         return $this->input('date_to');
+    }
+
+    public function getOffset(): int
+    {
+        return (int) $this->input('offset', 0);
     }
 }

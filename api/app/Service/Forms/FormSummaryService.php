@@ -8,6 +8,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\URL;
 
 class FormSummaryService
 {
@@ -77,7 +78,7 @@ class FormSummaryService
         $inputProperties = $this->getInputProperties($form);
 
         // Process all fields in single pass
-        $fieldSummaries = $this->processAllFields($inputProperties, $submissions, $totalSubmissions);
+        $fieldSummaries = $this->processAllFields($inputProperties, $submissions, $totalSubmissions, $form->id);
 
         return [
             'total_submissions' => $totalSubmissions,
@@ -89,7 +90,7 @@ class FormSummaryService
      * Process all fields in single iteration through submissions
      * O(submissions × fields) but only ONE database query
      */
-    private function processAllFields(Collection $properties, Collection $submissions, int $total): array
+    private function processAllFields(Collection $properties, Collection $submissions, int $total, int $formId): array
     {
         // Initialize accumulators for each field
         $accumulators = [];
@@ -119,7 +120,7 @@ class FormSummaryService
         // Finalize and format results
         $results = [];
         foreach ($properties as $prop) {
-            $results[] = $this->finalizeField($prop, $accumulators[$prop['id']], $total);
+            $results[] = $this->finalizeField($prop, $accumulators[$prop['id']], $total, $formId);
         }
 
         return $results;
@@ -137,7 +138,6 @@ class FormSummaryService
             'text_list' => ['values' => [], 'answered' => 0],
             'date_summary' => ['dates' => [], 'answered' => 0],
             'matrix' => ['rows' => [], 'answered' => 0],
-            'file_list' => ['files' => [], 'answered' => 0],
             'payment' => ['total_amount' => 0, 'answered' => 0],
             default => ['answered' => 0],
         };
@@ -157,7 +157,6 @@ class FormSummaryService
                 'text_list' => $this->accumulateText($acc, $value),
                 'date_summary' => $this->accumulateDate($acc, $value),
                 'matrix' => $this->accumulateMatrix($acc, $value, $property),
-                'file_list' => $this->accumulateFileList($acc, $value),
                 'payment' => $this->accumulatePayment($acc, $value),
                 default => null,
             };
@@ -217,12 +216,31 @@ class FormSummaryService
 
     private function accumulateText(array &$acc, mixed $value): void
     {
+        // Handle arrays (e.g., file uploads with multiple files)
+        if (is_array($value) && !$this->isAssociativeArray($value)) {
+            foreach ($value as $item) {
+                if (count($acc['values']) >= self::TEXT_LIST_LIMIT) {
+                    break;
+                }
+                $stringValue = $this->extractStringValue($item);
+                if ($stringValue !== null) {
+                    $acc['values'][] = $stringValue;
+                }
+            }
+            return;
+        }
+
         // Convert to string, only keep first N values for preview
         $stringValue = $this->extractStringValue($value);
 
         if ($stringValue !== null && count($acc['values']) < self::TEXT_LIST_LIMIT) {
             $acc['values'][] = $stringValue;
         }
+    }
+
+    private function isAssociativeArray(array $arr): bool
+    {
+        return array_keys($arr) !== range(0, count($arr) - 1);
     }
 
     private function accumulateDate(array &$acc, mixed $value): void
@@ -248,20 +266,6 @@ class FormSummaryService
 
             $columnKey = is_array($column) ? json_encode($column) : (string) $column;
             $acc['rows'][$row][$columnKey] = ($acc['rows'][$row][$columnKey] ?? 0) + 1;
-        }
-    }
-
-    private function accumulateFileList(array &$acc, mixed $value): void
-    {
-        // Collect actual file URLs/paths
-        if (is_array($value)) {
-            foreach ($value as $file) {
-                if (is_string($file) && !empty($file)) {
-                    $acc['files'][] = $file;
-                }
-            }
-        } elseif (is_string($value) && !empty($value)) {
-            $acc['files'][] = $value;
         }
     }
 
@@ -349,7 +353,7 @@ class FormSummaryService
         return null;
     }
 
-    private function finalizeField(array $property, array $acc, int $total): array
+    private function finalizeField(array $property, array $acc, int $total, int $formId): array
     {
         $summaryType = $this->getSummaryType($property['type'] ?? '');
 
@@ -360,21 +364,22 @@ class FormSummaryService
             'answered_count' => $acc['answered'],
             'total_submissions' => $total,
             'summary_type' => $summaryType,
-            'data' => $this->formatData($summaryType, $acc, $property),
+            'data' => $this->formatData($summaryType, $acc, $property, $formId),
         ];
     }
 
-    private function formatData(string $summaryType, array $acc, array $property): array
+    private function formatData(string $summaryType, array $acc, array $property, int $formId): array
     {
+        $fieldType = $property['type'] ?? '';
+
         return match ($summaryType) {
             'distribution' => $this->formatDistribution($acc),
             'numeric_stats' => $this->formatNumericStats($acc),
             'rating' => $this->formatRating($acc, $property),
             'boolean' => $this->formatBoolean($acc),
-            'text_list' => $this->formatTextList($acc),
+            'text_list' => $this->formatTextList($acc, $fieldType, $formId),
             'date_summary' => $this->formatDateSummary($acc),
             'matrix' => $this->formatMatrix($acc, $property),
-            'file_list' => ['files' => $acc['files'] ?? []],
             'payment' => $this->formatPayment($acc),
             default => [],
         };
@@ -450,15 +455,39 @@ class FormSummaryService
         ];
     }
 
-    private function formatTextList(array $acc): array
+    private function formatTextList(array $acc, string $fieldType = '', int $formId = 0): array
     {
+        $values = $this->generateSignedFileUrls($acc['values'], $fieldType, $formId);
+
         return [
-            'values' => $acc['values'],
-            'displayed_count' => count($acc['values']),
+            'values' => $values,
+            'displayed_count' => count($values),
             'total_count' => $acc['answered'],
             'has_more' => $acc['answered'] > self::TEXT_LIST_LIMIT,
             'next_offset' => self::TEXT_LIST_LIMIT,
         ];
+    }
+
+    /**
+     * Generate signed URLs for file types (files, signature)
+     */
+    private function generateSignedFileUrls(array $values, string $fieldType, int $formId): array
+    {
+        if (!in_array($fieldType, ['files', 'signature'], true) || $formId <= 0) {
+            return $values;
+        }
+
+        return array_map(function ($file) use ($formId) {
+            if (empty($file)) {
+                return $file;
+            }
+
+            return URL::signedRoute(
+                'open.forms.submissions.file',
+                [$formId, $file],
+                now()->addMinutes(10)
+            );
+        }, $values);
     }
 
     private function formatDateSummary(array $acc): array
@@ -545,15 +574,29 @@ class FormSummaryService
 
             $value = $data[$fieldId] ?? null;
             if ($this->hasValue($value)) {
-                $stringValue = $this->extractStringValue($value);
-                if ($stringValue !== null) {
-                    $allValues[] = $stringValue;
+                // Handle arrays (e.g., file uploads with multiple files)
+                if (is_array($value) && !$this->isAssociativeArray($value)) {
+                    foreach ($value as $item) {
+                        $stringValue = $this->extractStringValue($item);
+                        if ($stringValue !== null) {
+                            $allValues[] = $stringValue;
+                        }
+                    }
+                } else {
+                    $stringValue = $this->extractStringValue($value);
+                    if ($stringValue !== null) {
+                        $allValues[] = $stringValue;
+                    }
                 }
             }
         }
 
         $totalCount = count($allValues);
         $paginatedValues = array_slice($allValues, $offset, self::TEXT_LIST_LIMIT);
+
+        // Generate signed URLs for file types
+        $fieldType = $property['type'] ?? '';
+        $paginatedValues = $this->generateSignedFileUrls($paginatedValues, $fieldType, $form->id);
 
         return [
             'values' => $paginatedValues,

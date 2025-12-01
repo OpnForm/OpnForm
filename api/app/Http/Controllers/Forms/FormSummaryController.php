@@ -8,7 +8,6 @@ use App\Models\Forms\Form;
 use App\Models\Workspace;
 use App\Service\Forms\FormSummaryService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
 class FormSummaryController extends Controller
 {
@@ -32,24 +31,17 @@ class FormSummaryController extends Controller
         return response()->json($summary);
     }
 
-    public function getFieldValues(Request $request, Workspace $workspace, Form $form, string $fieldId): JsonResponse
+    public function getFieldValues(FormSummaryRequest $request, Workspace $workspace, Form $form, string $fieldId): JsonResponse
     {
         $this->authorize('view', $form);
-
-        $request->validate([
-            'offset' => ['nullable', 'integer', 'min:0'],
-            'status' => ['nullable', 'in:all,completed,partial'],
-            'date_from' => ['nullable', 'date'],
-            'date_to' => ['nullable', 'date'],
-        ]);
 
         $values = $this->summaryService->getFieldTextValues(
             $form,
             $fieldId,
-            (int) $request->input('offset', 0),
-            $request->input('date_from'),
-            $request->input('date_to'),
-            $request->input('status', 'completed')
+            $request->getOffset(),
+            $request->getDateFrom(),
+            $request->getDateTo(),
+            $request->getStatus()
         );
 
         if ($values === null) {
