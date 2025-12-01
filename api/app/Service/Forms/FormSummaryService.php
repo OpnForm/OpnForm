@@ -23,7 +23,7 @@ class FormSummaryService
 
     private function loadBlockTypes(): array
     {
-        $path = base_path('../client/data/blocks_types.json');
+        $path = resource_path('data/forms/blocks_types.json');
 
         if (!File::exists($path)) {
             Log::warning('blocks_types.json not found, using empty config');
@@ -128,6 +128,7 @@ class FormSummaryService
     private function initializeAccumulator(array $property): array
     {
         $summaryType = $this->getSummaryType($property['type'] ?? '');
+        ray('summaryType', $summaryType);
 
         return match ($summaryType) {
             'distribution' => ['counts' => [], 'answered' => 0],
