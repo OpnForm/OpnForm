@@ -1,13 +1,49 @@
 <template>
   <div>
-    <!-- Values List -->
     <div class="divide-y divide-neutral-100">
       <div
         v-for="(value, index) in displayedValues"
         :key="index"
         class="py-2.5 flex items-center justify-between group"
       >
-        <span class="text-neutral-700 truncate flex-1 pr-4">{{ value }}</span>
+        <!-- URL field -->
+        <a
+          v-if="fieldType === 'url'"
+          :href="value"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="text-neutral-700 truncate flex-1 pr-4"
+        >
+          {{ value }}
+        </a>
+
+        <!-- Email field -->
+        <a
+          v-else-if="fieldType === 'email'"
+          :href="'mailto:' + value"
+          class="text-neutral-700 truncate flex-1 pr-4"
+        >
+          {{ value }}
+        </a>
+
+        <!-- Rich text field -->
+        <div
+          v-else-if="fieldType === 'rich_text'"
+          class="text-neutral-700 truncate flex-1 pr-4"
+          v-html="value"
+        />
+
+        <!-- Default text -->
+        <span v-else class="text-neutral-700 truncate flex-1 pr-4">{{ value }}</span>
+
+        <UDropdownMenu :items="menuItems(value)" :popper="{ placement: 'bottom-end' }">
+          <UButton
+            color="neutral"
+            variant="ghost"
+            icon="i-heroicons-ellipsis-vertical"
+            size="xs"
+          />
+        </UDropdownMenu>
       </div>
     </div>
 
@@ -47,6 +83,8 @@ const props = defineProps({
 })
 
 const { fieldValues } = useFormSummary()
+
+const fieldType = computed(() => props.field.type)
 
 // Local state
 const displayedValues = ref([...(props.field.data?.values || [])])
@@ -91,5 +129,18 @@ watch(() => props.field.data, (newData) => {
   hasMore.value = newData?.has_more || false
   totalCount.value = newData?.total_count || 0
 }, { deep: true })
+
+const menuItems = (value) => [
+  {
+    label: 'View Submission',
+    click: () => {
+      navigateTo({
+        name: 'forms-slug-show-submissions',
+        params: { slug: props.form.slug },
+        query: { search: value }
+      }, { external: true })
+    }
+  }
+]
 </script>
 

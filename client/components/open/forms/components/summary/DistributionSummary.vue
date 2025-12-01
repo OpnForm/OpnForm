@@ -15,7 +15,7 @@
         <!-- Bar -->
         <div class="flex-1 bg-neutral-100 rounded-full h-6 overflow-hidden">
           <div
-            class="h-full bg-neutral-300 rounded-full transition-all duration-300"
+            class="h-full bg-blue-400 rounded-full transition-all duration-300"
             :style="{ width: item.percentage + '%' }"
           />
         </div>

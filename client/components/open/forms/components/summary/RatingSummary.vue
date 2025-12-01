@@ -20,7 +20,6 @@
             class="w-5 h-5 text-amber-400"
           />
         </div>
-        <span class="text-sm text-neutral-500">{{ data.count }} responses</span>
       </div>
 
       <!-- Distribution bars -->

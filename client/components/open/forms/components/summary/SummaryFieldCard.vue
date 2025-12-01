@@ -54,7 +54,7 @@ import RatingSummary from "./RatingSummary.vue"
 import BooleanSummary from "./BooleanSummary.vue"
 import DateSummary from "./DateSummary.vue"
 import MatrixSummary from "./MatrixSummary.vue"
-import FileCountSummary from "./FileCountSummary.vue"
+import FileSummary from "./FileSummary.vue"
 import PaymentSummary from "./PaymentSummary.vue"
 
 const props = defineProps({
@@ -76,7 +76,7 @@ const summaryComponent = computed(() => {
     boolean: BooleanSummary,
     date_summary: DateSummary,
     matrix: MatrixSummary,
-    file_count: FileCountSummary,
+    file_list: FileSummary,
     payment: PaymentSummary,
   }
 

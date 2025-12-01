@@ -31,7 +31,7 @@
     </div>
 
     <!-- Loading State -->
-    <div v-if="isLoading" class="space-y-4">
+    <div v-if="isLoading" class="space-y-4 pt-8">
       <USkeleton v-for="i in 3" :key="i" class="h-40 w-full rounded-lg" />
     </div>
 

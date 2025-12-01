@@ -1,41 +1,41 @@
 <template>
   <div>
+    <!-- Empty state -->
+    <div
+      v-if="!hasData"
+      class="text-center py-4 text-neutral-400 text-sm"
+    >
+      No responses
+    </div>
+
     <!-- Bar Chart View -->
-    <div v-if="!showPieChart" class="space-y-2">
-      <div
-        v-for="item in distribution"
-        :key="item.value"
-        class="flex items-center gap-3"
-      >
-        <!-- Label -->
-        <div class="w-16 text-sm text-neutral-700 flex-shrink-0">
-          {{ item.value }}
+    <div v-else-if="!showPieChart">
+      <!-- Single stacked bar -->
+      <div class="flex rounded-full h-8 overflow-hidden">
+        <div
+          class="bg-blue-400 flex items-center justify-center text-xs font-medium text-white transition-all duration-300"
+          :style="{ width: yesPercentage + '%' }"
+        >
+          <span v-if="yesPercentage >= 15">{{ yesPercentage }}%</span>
         </div>
-
-        <!-- Bar -->
-        <div class="flex-1 bg-neutral-100 rounded-full h-6 overflow-hidden">
-          <div
-            class="h-full rounded-full transition-all duration-300"
-            :class="item.value === 'Yes' ? 'bg-green-400' : 'bg-neutral-300'"
-            :style="{ width: item.percentage + '%' }"
-          />
-        </div>
-
-        <!-- Stats -->
-        <div class="w-12 text-right text-sm text-neutral-500 flex-shrink-0">
-          {{ item.percentage }}%
-        </div>
-        <div class="w-24 text-right text-sm text-neutral-400 flex-shrink-0">
-          {{ item.count }} {{ item.count === 1 ? 'response' : 'responses' }}
+        <div
+          class="bg-neutral-300 flex items-center justify-center text-xs font-medium text-neutral-600 transition-all duration-300"
+          :style="{ width: noPercentage + '%' }"
+        >
+          <span v-if="noPercentage >= 15">{{ noPercentage }}%</span>
         </div>
       </div>
 
-      <!-- Empty state -->
-      <div
-        v-if="distribution.length === 0"
-        class="text-center py-4 text-neutral-400 text-sm"
-      >
-        No responses
+      <!-- Legend -->
+      <div class="flex justify-center gap-6 mt-3">
+        <div class="flex items-center gap-2">
+          <div class="w-3 h-3 rounded-sm bg-green-400" />
+          <span class="text-sm text-neutral-600">Yes ({{ yesCount }})</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <div class="w-3 h-3 rounded-sm bg-neutral-300" />
+          <span class="text-sm text-neutral-600">No ({{ noCount }})</span>
+        </div>
       </div>
     </div>
 
@@ -47,16 +47,13 @@
 
       <!-- Legend -->
       <div class="space-y-2">
-        <div
-          v-for="(item, index) in distribution"
-          :key="item.value"
-          class="flex items-center gap-2"
-        >
-          <div
-            class="w-3 h-3 rounded-sm flex-shrink-0"
-            :style="{ backgroundColor: chartColors[index] }"
-          />
-          <span class="text-sm text-neutral-700">{{ item.value }}</span>
+        <div class="flex items-center gap-2">
+          <div class="w-3 h-3 rounded-sm bg-green-400" />
+          <span class="text-sm text-neutral-700">Yes ({{ yesCount }})</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <div class="w-3 h-3 rounded-sm bg-neutral-300" />
+          <span class="text-sm text-neutral-700">No ({{ noCount }})</span>
         </div>
       </div>
     </div>
@@ -74,14 +71,23 @@ const props = defineProps({
   showPieChart: { type: Boolean, default: false },
 })
 
-const chartColors = ['#4ADE80', '#D1D5DB'] // green-400, neutral-300
+const chartColors = ['#51a2ff', '#D1D5DB'] // blue-400, neutral-300
 
 const distribution = computed(() => props.field.data?.distribution || [])
+
+const yesItem = computed(() => distribution.value.find(item => item.value === 'Yes') || { count: 0, percentage: 0 })
+const noItem = computed(() => distribution.value.find(item => item.value === 'No') || { count: 0, percentage: 0 })
+
+const yesCount = computed(() => yesItem.value.count)
+const noCount = computed(() => noItem.value.count)
+const yesPercentage = computed(() => yesItem.value.percentage)
+const noPercentage = computed(() => noItem.value.percentage)
+const hasData = computed(() => yesCount.value > 0 || noCount.value > 0)
 
 const chartData = computed(() => ({
   labels: distribution.value.map(item => item.value),
   datasets: [{
-    data: distribution.value.map(item => item.count),
+    data: [yesCount.value, noCount.value],
     backgroundColor: chartColors,
     borderWidth: 0,
   }]
@@ -97,8 +103,10 @@ const chartOptions = {
     tooltip: {
       callbacks: {
         label: (context) => {
-          const item = distribution.value[context.dataIndex]
-          return `${item.value}: ${item.count} (${item.percentage}%)`
+          const label = context.label
+          const count = context.raw
+          const percentage = label === 'Yes' ? yesPercentage.value : noPercentage.value
+          return `${label}: ${count} (${percentage}%)`
         }
       }
     }

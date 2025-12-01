@@ -137,7 +137,7 @@ class FormSummaryService
             'text_list' => ['values' => [], 'answered' => 0],
             'date_summary' => ['dates' => [], 'answered' => 0],
             'matrix' => ['rows' => [], 'answered' => 0],
-            'file_count' => ['answered' => 0, 'total_files' => 0],
+            'file_list' => ['files' => [], 'answered' => 0],
             'payment' => ['total_amount' => 0, 'answered' => 0],
             default => ['answered' => 0],
         };
@@ -157,7 +157,7 @@ class FormSummaryService
                 'text_list' => $this->accumulateText($acc, $value),
                 'date_summary' => $this->accumulateDate($acc, $value),
                 'matrix' => $this->accumulateMatrix($acc, $value, $property),
-                'file_count' => $this->accumulateFileCount($acc, $value),
+                'file_list' => $this->accumulateFileList($acc, $value),
                 'payment' => $this->accumulatePayment($acc, $value),
                 default => null,
             };
@@ -251,12 +251,17 @@ class FormSummaryService
         }
     }
 
-    private function accumulateFileCount(array &$acc, mixed $value): void
+    private function accumulateFileList(array &$acc, mixed $value): void
     {
+        // Collect actual file URLs/paths
         if (is_array($value)) {
-            $acc['total_files'] += count($value);
-        } elseif (!empty($value)) {
-            $acc['total_files'] += 1;
+            foreach ($value as $file) {
+                if (is_string($file) && !empty($file)) {
+                    $acc['files'][] = $file;
+                }
+            }
+        } elseif (is_string($value) && !empty($value)) {
+            $acc['files'][] = $value;
         }
     }
 
@@ -369,7 +374,7 @@ class FormSummaryService
             'text_list' => $this->formatTextList($acc),
             'date_summary' => $this->formatDateSummary($acc),
             'matrix' => $this->formatMatrix($acc, $property),
-            'file_count' => ['count' => $acc['answered'], 'total_files' => $acc['total_files'] ?? 0],
+            'file_list' => ['files' => $acc['files'] ?? []],
             'payment' => $this->formatPayment($acc),
             default => [],
         };
