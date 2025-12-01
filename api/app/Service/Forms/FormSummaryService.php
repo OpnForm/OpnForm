@@ -128,7 +128,6 @@ class FormSummaryService
     private function initializeAccumulator(array $property): array
     {
         $summaryType = $this->getSummaryType($property['type'] ?? '');
-        ray('summaryType', $summaryType);
 
         return match ($summaryType) {
             'distribution' => ['counts' => [], 'answered' => 0],
