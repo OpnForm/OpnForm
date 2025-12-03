@@ -100,7 +100,8 @@ export const vSelectTheme = {
           'focus-within:ring-0 focus-within:shadow-[inset_0_-2px_0_0_var(--color-form)]'
         ],
         chevronGradient: 'bg-gradient-to-r from-transparent to-transparent',
-        chevronContainer: 'bg-transparent'
+        chevronContainer: 'bg-transparent',
+        button: '!pl-0'
       }
     },
     // Open state styling for when popover is open (even if not focused)

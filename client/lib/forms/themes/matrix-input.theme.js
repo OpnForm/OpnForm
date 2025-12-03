@@ -61,7 +61,8 @@ export const matrixInputTheme = {
         ],
         cell: 'border-transparent',
         cellHover: 'hover:bg-neutral-50 dark:hover:bg-neutral-900',
-        option: 'focus-visible:outline-none focus-visible:ring-0'
+        option: 'focus-visible:outline-none focus-visible:ring-0',
+        rowCell: '!px-0'
       }
     },
     size: {
