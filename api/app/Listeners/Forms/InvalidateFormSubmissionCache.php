@@ -9,7 +9,8 @@ class InvalidateFormSubmissionCache
 {
     public function __construct(
         private FormSummaryService $summaryService
-    ) {}
+    ) {
+    }
 
     /**
      * Handle the event.
