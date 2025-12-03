@@ -4,7 +4,7 @@
 export const textAreaInputTheme = {
   slots: {
     input: [
-      'flex-1 appearance-none w-full',
+      'appearance-none w-full',
       'border',
       'bg-white dark:bg-notion-dark-light',
       'text-neutral-700 dark:text-neutral-300',
