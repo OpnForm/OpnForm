@@ -60,7 +60,7 @@ export const matrixInputTheme = {
           'focus-within:ring-0 focus-within:shadow-[inset_0_-2px_0_0_var(--color-form)]'
         ],
         cell: 'border-transparent',
-        cellHover: 'hover:bg-neutral-50 dark:hover:bg-neutral-900',
+        cellHover: 'hover:backdrop-brightness-[0.97] dark:hover:backdrop-brightness-90',
         option: 'focus-visible:outline-none focus-visible:ring-0',
         rowCell: '!px-0'
       }
