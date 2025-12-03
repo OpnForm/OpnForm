@@ -15,7 +15,15 @@
     </SettingsModalPage>
 
     <SettingsModalPage
-      v-if="workspace && !workspace.is_readonly"
+      id="members"
+      label="Members"
+      icon="i-heroicons-user-group"
+    >
+      <LazyWorkspacesSettingsMembers />
+    </SettingsModalPage>
+
+    <SettingsModalPage
+      v-if="workspace && workspace.is_admin"
       id="domains"
       label="Domains"
       icon="i-heroicons-globe-alt"
@@ -24,7 +32,7 @@
     </SettingsModalPage>
     
     <SettingsModalPage
-      v-if="workspace && !workspace.is_readonly"
+      v-if="workspace && workspace.is_admin"
       id="emails"
       label="Emails"
       icon="i-heroicons-envelope"
@@ -33,11 +41,12 @@
     </SettingsModalPage>
 
     <SettingsModalPage
-      id="members"
-      label="Members"
-      icon="i-heroicons-user-group"
+      v-if="workspace && workspace.is_admin"
+      id="sso"
+      label="SSO"
+      icon="i-heroicons-shield-check"
     >
-      <LazyWorkspacesSettingsMembers />
+      <LazyWorkspacesSettingsSso />
     </SettingsModalPage>
 
   </SettingsModal>
@@ -47,6 +56,7 @@
 import { computed } from 'vue'
 import SettingsModal from '~/components/pages/settings/SettingsModal.vue'
 import SettingsModalPage from '~/components/pages/settings/SettingsModalPage.vue'
+import LazyWorkspacesSettingsSso from './sso/index.vue'
 
 const emit = defineEmits(['update:activeTab'])
 

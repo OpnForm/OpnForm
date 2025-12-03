@@ -14,6 +14,7 @@ The following environment variables are used to [configure the Laravel](https://
 There are dedicated configuration pages available for more detailed setup instructions on specific topics:
 
 -   [OAuth Integration Setup](../configuration/oauth-setup)
+-   [OIDC SSO Configuration](../configuration/oidc-sso)
 -   [File Storage (S3)](../configuration/aws-s3)
 -   [Email Configuration (SMTP)](../configuration/email-setup)
 -   [Custom Domain](../configuration/custom-domain)
@@ -21,21 +22,22 @@ There are dedicated configuration pages available for more detailed setup instru
 
 ### Configuration Environment Variables
 
-| Variable Name                    | Description                                                                                                                   |
-| -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `H_CAPTCHA_SITE_KEY`             | Site key for hCaptcha integration.                                                                                            |
-| `H_CAPTCHA_SECRET_KEY`           | Secret key for hCaptcha integration.                                                                                          |
-| `RE_CAPTCHA_SITE_KEY`            | Site key for reCAPTCHA integration.                                                                                           |
-| `RE_CAPTCHA_SECRET_KEY`          | Secret key for reCAPTCHA integration.                                                                                         |
-| `OPEN_AI_API_KEY`                | API key for accessing OpenAI services.                                                                                        |
-| `UNSPLASH_ACCESS_KEY`            | Access key for Unsplash API.                                                                                                  |
-| `UNSPLASH_SECRET_KEY`            | Secret key for Unsplash API.                                                                                                  |
-| `FRONT_URL`                      | Public facing URL of the front-end.                                                                                           |
-| `FRONT_API_SECRET`               | Shared secret with the front-end.                                                                                             |
-| `JWT_TTL`                        | Time to live for JSON Web Tokens (JWT).                                                                                       |
-| `JWT_SECRET`                     | Secret key used to sign JWTs.                                                                                                 |
-| `JWT_SKIP_IP_UA_VALIDATION`      | Set to `true` to disable JWT IP and User Agent validation (defaults to `false`). Useful for dynamic IPs.                      |
-| `CUSTOM_CODE_ENABLE_SELF_HOSTED` | Enables execution of user-provided custom code on self-hosted deployments. Defaults to `false` for safety reasons (XSS etc.). |
+| Variable Name                    | Description                                                                                                                                                                               |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `H_CAPTCHA_SITE_KEY`             | Site key for hCaptcha integration.                                                                                                                                                        |
+| `H_CAPTCHA_SECRET_KEY`           | Secret key for hCaptcha integration.                                                                                                                                                      |
+| `RE_CAPTCHA_SITE_KEY`            | Site key for reCAPTCHA integration.                                                                                                                                                       |
+| `RE_CAPTCHA_SECRET_KEY`          | Secret key for reCAPTCHA integration.                                                                                                                                                     |
+| `OPEN_AI_API_KEY`                | API key for accessing OpenAI services.                                                                                                                                                    |
+| `UNSPLASH_ACCESS_KEY`            | Access key for Unsplash API.                                                                                                                                                              |
+| `UNSPLASH_SECRET_KEY`            | Secret key for Unsplash API.                                                                                                                                                              |
+| `FRONT_URL`                      | Public facing URL of the front-end.                                                                                                                                                       |
+| `FRONT_API_SECRET`               | Shared secret with the front-end.                                                                                                                                                         |
+| `JWT_TTL`                        | Time to live for JSON Web Tokens (JWT).                                                                                                                                                   |
+| `JWT_SECRET`                     | Secret key used to sign JWTs.                                                                                                                                                             |
+| `JWT_SKIP_IP_UA_VALIDATION`      | Set to `true` to disable JWT IP and User Agent validation (defaults to `false`). Useful for dynamic IPs.                                                                                  |
+| `OIDC_FORCE_LOGIN`               | When set to `true`, password-based authentication is disabled and users must authenticate via OIDC SSO. See [Force Login Mode](../configuration/oidc-sso#7-force-login-mode) for details. |
+| `CUSTOM_CODE_ENABLE_SELF_HOSTED` | Enables execution of user-provided custom code on self-hosted deployments. Defaults to `false` for safety reasons (XSS etc.).                                                             |
 
 ### OAuth Integration Environment Variables
 

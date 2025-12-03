@@ -44,6 +44,7 @@ export function useFormInput(props, context, options = {}) {
   const injectedTheme = inject('formTheme', null)
   const injectedSize = inject('formSize', null)
   const injectedBorderRadius = inject('formBorderRadius', null)
+  const injectedForm = inject('form', null)
 
   // Resolve theme values with proper reactivity
   const resolvedTheme = computed(() => {
@@ -58,6 +59,10 @@ export function useFormInput(props, context, options = {}) {
     return props.borderRadius || injectedBorderRadius?.value || 'small'
   })
 
+  const resolvedForm = computed(() => {
+    return props.form || injectedForm?.value || null
+  })
+
   const inputStyle = computed(() => {
     return {
       "--tw-ring-color": props.color,
@@ -66,25 +71,25 @@ export function useFormInput(props, context, options = {}) {
 
   const hasValidation = computed(() => {
     return (
-      props.form !== null &&
-      props.form !== undefined &&
-      _has(props.form, "errors")
+      resolvedForm.value !== null &&
+      resolvedForm.value !== undefined &&
+      _has(resolvedForm.value, "errors")
     )
   })
 
   const hasError = computed(() => {
-    return hasValidation.value && props.form?.errors?.has(props.name)
+    return hasValidation.value && resolvedForm.value?.errors?.has(props.name)
   })
 
   const compVal = computed({
     get: () => {
-      if (props.form) {
-        return _get(props.form, (composableOptions.formPrefixKey || "") + props.name)
+      if (resolvedForm.value) {
+        return _get(resolvedForm.value, (composableOptions.formPrefixKey || "") + props.name)
       }
       return content.value
     },
     set: (val) => {
-      if (props.form) {
+      if (resolvedForm.value) {
         const fullPath = (composableOptions.formPrefixKey || "") + props.name
         const pathParts = fullPath.split('.')
         
@@ -98,7 +103,7 @@ export function useFormInput(props, context, options = {}) {
         //   replaced with an empty object so the nested structure can be created.
         // - This ensures the form data structure is always valid for deeply nested fields.
         if (pathParts.length > 1) {
-          let current = props.form
+          let current = resolvedForm.value
           for (let i = 0; i < pathParts.length - 1; i++) {
             const part = pathParts[i]
             if (!current[part] || typeof current[part] !== 'object') {
@@ -108,13 +113,13 @@ export function useFormInput(props, context, options = {}) {
           }
         }
         
-        _set(props.form, fullPath, val)
+        _set(resolvedForm.value, fullPath, val)
       } else {
         content.value = val
       }
 
       if (hasValidation.value) {
-        props.form.errors.clear(props.name)
+        resolvedForm.value.errors.clear(props.name)
       }
 
       context.emit("update:modelValue", compVal.value)
@@ -128,8 +133,11 @@ export function useFormInput(props, context, options = {}) {
         wrapperProps[key] = props[key]
       }
     })
-    // Add resolved theme to wrapper props
+    // Add resolved theme values to wrapper props
     wrapperProps.theme = resolvedTheme.value
+    wrapperProps.size = resolvedSize.value
+    wrapperProps.borderRadius = resolvedBorderRadius.value
+    wrapperProps.form = resolvedForm.value
     return wrapperProps
   })
 
@@ -183,6 +191,7 @@ export function useFormInput(props, context, options = {}) {
     resolvedTheme,
     resolvedSize,
     resolvedBorderRadius,
+    resolvedForm,
     // Centralized UI variants - ready to use in templates
     ui,
   }

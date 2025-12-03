@@ -65,6 +65,12 @@ class AppServiceProvider extends ServiceProvider
         Route::bind('user', function ($value) {
             return \App\Models\User::findOrFail((int) $value);
         });
+
+        // OIDC connection binding - load with workspace relationship for policy checks
+        Route::bind('connection', function ($value) {
+            return \App\Enterprise\Oidc\Models\IdentityConnection::with('workspace')
+                ->findOrFail((int) $value);
+        });
     }
 
     /**

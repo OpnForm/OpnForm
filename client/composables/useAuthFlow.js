@@ -32,11 +32,33 @@ export const useAuthFlow = () => {
   const { logEvent } = useAmplitude()
   const router = useRouter()
 
+  // 2FA modal state
+  const showTwoFactorModal = ref(false)
+  const pendingAuthToken = ref(null)
+  const pendingAuthContext = ref(null)
+
   /**
    * Core authentication success handler  
-   * Coordinates token storage, analytics, and UI feedback (cache management handled by useAuth)
+   * Now checks for 2FA requirement before proceeding
    */
   const handleAuthSuccess = async (tokenData, source, isNewUser = false) => {
+    // Check if 2FA is required
+    if (tokenData.requires_2fa && tokenData.pending_auth_token) {
+      // Store pending auth context and show modal
+      pendingAuthToken.value = tokenData.pending_auth_token
+      pendingAuthContext.value = { source, isNewUser }
+      showTwoFactorModal.value = true
+      return
+    }
+
+    // No 2FA required, proceed with normal flow
+    await proceedWithAuthSuccess(tokenData, source, isNewUser)
+  }
+
+  /**
+   * Proceed with authentication after 2FA verification or when 2FA not required
+   */
+  const proceedWithAuthSuccess = async (tokenData, source, isNewUser = false) => {
     // 1. Set token in store
     authStore.setToken(tokenData.token, tokenData.expires_in)
 
@@ -76,6 +98,49 @@ export const useAuthFlow = () => {
     } catch (error) {
       console.error(error)
     }
+  }
+
+  /**
+   * Handle 2FA error responses consistently
+   * Checks if a 422 error is actually a 2FA requirement (not a validation error)
+   * @param {Error} error - The error object from the API call
+   * @returns {Object|null} - The response data if it's a 2FA requirement, null otherwise
+   */
+  const handleTwoFactorError = (error) => {
+    // Check if this is a 422 response with requires_2fa flag
+    if (error.response?.status === 422 && error.response?._data?.requires_2fa) {
+      // This is a 2FA requirement, not a validation error
+      return error.response._data
+    }
+    // This is a real error, return null to indicate it should be thrown
+    return null
+  }
+
+  /**
+   * Handle 2FA verification cancellation
+   */
+  const handleTwoFactorCancel = () => {
+    showTwoFactorModal.value = false
+    pendingAuthToken.value = null
+    pendingAuthContext.value = null
+  }
+
+  /**
+   * Handle 2FA verification success
+   */
+  const handleTwoFactorVerified = async (tokenData) => {
+    showTwoFactorModal.value = false
+    
+    // Proceed with auth success using verified token data
+    await proceedWithAuthSuccess(
+      tokenData,
+      pendingAuthContext.value?.source || 'credentials',
+      pendingAuthContext.value?.isNewUser || false
+    )
+    
+    // Clear pending context
+    pendingAuthToken.value = null
+    pendingAuthContext.value = null
   }
 
   /**
@@ -154,6 +219,13 @@ export const useAuthFlow = () => {
     
     // Distinct logout methods
     handleManualLogout,
-    handleTokenExpiry
+    handleTokenExpiry,
+    
+    // 2FA modal state and handlers
+    showTwoFactorModal,
+    pendingAuthToken,
+    handleTwoFactorVerified,
+    handleTwoFactorCancel,
+    handleTwoFactorError,
   }
 } 

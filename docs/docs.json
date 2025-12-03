@@ -37,7 +37,8 @@
               "configuration/aws-s3",
               "configuration/email-setup",
               "configuration/custom-domain",
-              "configuration/subdomain-redirect"
+              "configuration/subdomain-redirect",
+              "configuration/oidc-sso"
             ]
           }
         ]

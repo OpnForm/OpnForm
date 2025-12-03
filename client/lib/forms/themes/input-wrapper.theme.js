@@ -8,7 +8,7 @@ export const inputWrapperTheme = {
       'relative flex flex-col gap-1'
     ],
     help: 'text-neutral-500',
-    error: 'has-error text-xs text-red-500 mt-1 break-words whitespace-break-spaces',
+    error: 'has-error text-xs text-red-500 break-words whitespace-break-spaces',
     media: '',
     // classes for the media component root (e.g., <BlockMediaLayout />)
     mediaComponent: '',
@@ -62,10 +62,10 @@ export const inputWrapperTheme = {
     { mediaStyle: 'intrinsic', borderRadius: 'full', class: { mediaImg: 'rounded-[20px]' } },
 
     // Text size adjustments for focused presentation (help and error)
-    { presentation: 'focused', size: 'xs', class: { help: 'text-sm', error: 'text-sm text-red-500 mt-0 leading-none' } },
-    { presentation: 'focused', size: 'sm', class: { help: 'text-sm', error: 'text-sm mt-0 leading-none' } },
-    { presentation: 'focused', size: 'md', class: { help: 'text-base', error: 'text-sm mt-0 leading-none' } },
-    { presentation: 'focused', size: 'lg', class: { help: 'text-lg', error: 'text-base mt-0 leading-none' } }
+    { presentation: 'focused', size: 'xs', class: { help: 'text-sm', error: 'text-sm text-red-500 leading-none' } },
+    { presentation: 'focused', size: 'sm', class: { help: 'text-sm', error: 'text-sm leading-none' } },
+    { presentation: 'focused', size: 'md', class: { help: 'text-base', error: 'text-sm leading-none' } },
+    { presentation: 'focused', size: 'lg', class: { help: 'text-lg', error: 'text-base leading-none' } }
   ],
   defaultVariants: {
     size: 'md',
