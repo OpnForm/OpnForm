@@ -2,53 +2,53 @@
   <div>
     <div class="divide-y">
       <div
-        v-for="(value, index) in displayedValues"
+        v-for="(item, index) in displayedValues"
         :key="index"
         class="py-2.5 flex items-center justify-between group"
       >
         <!-- File field -->
         <a
           v-if="isFileType"
-          :href="value"
+          :href="item.value"
           target="_blank"
           rel="noopener noreferrer"
           class="inline-flex items-center gap-2 px-3 py-2 border border-neutral-200 rounded-lg hover:bg-neutral-50 transition-colors text-sm text-neutral-600"
         >
           <UIcon name="i-heroicons-arrow-top-right-on-square" class="w-4 h-4 text-neutral-400" />
-          <span class="truncate max-w-xs">{{ getDisplayFileName(value) }}</span>
+          <span class="truncate max-w-xs">{{ getDisplayFileName(item.value) }}</span>
         </a>
 
         <!-- URL field -->
         <a
           v-else-if="fieldType === 'url'"
-          :href="value"
+          :href="item.value"
           target="_blank"
           rel="noopener noreferrer"
           class="text-neutral-700 truncate flex-1 pr-4"
         >
-          {{ value }}
+          {{ item.value }}
         </a>
 
         <!-- Email field -->
         <a
           v-else-if="fieldType === 'email'"
-          :href="'mailto:' + value"
+          :href="'mailto:' + item.value"
           class="text-neutral-700 truncate flex-1 pr-4"
         >
-          {{ value }}
+          {{ item.value }}
         </a>
 
         <!-- Rich text field -->
         <div
           v-else-if="fieldType === 'rich_text'"
           class="text-neutral-700 truncate flex-1 pr-4"
-          v-html="value"
+          v-html="item.value"
         />
 
         <!-- Default text -->
-        <span v-else class="text-neutral-700 truncate flex-1 pr-4">{{ value }}</span>
+        <span v-else class="text-neutral-700 truncate flex-1 pr-4">{{ item.value }}</span>
 
-        <UDropdownMenu :items="menuItems(value)" :popper="{ placement: 'bottom-end' }">
+        <UDropdownMenu :items="menuItems(item)" :popper="{ placement: 'bottom-end' }">
           <UButton
             color="neutral"
             variant="ghost"
@@ -157,14 +157,14 @@ watch(() => props.field.data, (newData) => {
   totalCount.value = newData?.total_count || 0
 }, { deep: true })
 
-const menuItems = (value) => [
+const menuItems = (item) => [
   {
     label: 'View Submission',
     onClick: () => {
       navigateTo({
         name: 'forms-slug-show-submissions',
         params: { slug: props.form.slug },
-        query: { view: value }
+        query: { view: item.submission_id }
       }, { open: '_blank' })
     }
   }

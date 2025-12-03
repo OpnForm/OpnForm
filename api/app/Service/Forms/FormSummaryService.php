@@ -112,7 +112,7 @@ class FormSummaryService
                 $value = $data[$fieldId] ?? null;
 
                 if ($this->hasValue($value)) {
-                    $this->accumulateValue($accumulators[$fieldId], $value, $prop);
+                    $this->accumulateValue($accumulators[$fieldId], $value, $prop, $submission->id);
                 }
             }
         }
@@ -143,7 +143,7 @@ class FormSummaryService
         };
     }
 
-    private function accumulateValue(array &$acc, mixed $value, array $property): void
+    private function accumulateValue(array &$acc, mixed $value, array $property, int $submissionId): void
     {
         $summaryType = $this->getSummaryType($property['type'] ?? '');
         $acc['answered']++;
@@ -154,7 +154,7 @@ class FormSummaryService
                 'numeric_stats' => $this->accumulateNumeric($acc, $value),
                 'rating' => $this->accumulateRating($acc, $value),
                 'boolean' => $this->accumulateBoolean($acc, $value),
-                'text_list' => $this->accumulateText($acc, $value),
+                'text_list' => $this->accumulateText($acc, $value, $submissionId),
                 'date_summary' => $this->accumulateDate($acc, $value),
                 'matrix' => $this->accumulateMatrix($acc, $value, $property),
                 'payment' => $this->accumulatePayment($acc, $value),
@@ -214,7 +214,7 @@ class FormSummaryService
         $acc[$key]++;
     }
 
-    private function accumulateText(array &$acc, mixed $value): void
+    private function accumulateText(array &$acc, mixed $value, int $submissionId): void
     {
         // Handle arrays (e.g., file uploads with multiple files)
         if (is_array($value) && !$this->isAssociativeArray($value)) {
@@ -224,9 +224,13 @@ class FormSummaryService
                 }
                 $stringValue = $this->extractStringValue($item);
                 if ($stringValue !== null) {
-                    $acc['values'][] = $stringValue;
+                    $acc['values'][] = [
+                        'value' => $stringValue,
+                        'submission_id' => $submissionId,
+                    ];
                 }
             }
+
             return;
         }
 
@@ -234,7 +238,10 @@ class FormSummaryService
         $stringValue = $this->extractStringValue($value);
 
         if ($stringValue !== null && count($acc['values']) < self::TEXT_LIST_LIMIT) {
-            $acc['values'][] = $stringValue;
+            $acc['values'][] = [
+                'value' => $stringValue,
+                'submission_id' => $submissionId,
+            ];
         }
     }
 
@@ -470,6 +477,7 @@ class FormSummaryService
 
     /**
      * Generate signed URLs for file types (files, signature)
+     * Values are objects: {value: string, submission_id: int}
      */
     private function generateSignedFileUrls(array $values, string $fieldType, int $formId): array
     {
@@ -477,16 +485,18 @@ class FormSummaryService
             return $values;
         }
 
-        return array_map(function ($file) use ($formId) {
-            if (empty($file)) {
-                return $file;
+        return array_map(function ($item) use ($formId) {
+            if (empty($item['value'])) {
+                return $item;
             }
 
-            return URL::signedRoute(
+            $item['value'] = URL::signedRoute(
                 'open.forms.submissions.file',
-                [$formId, $file],
+                [$formId, $item['value']],
                 now()->addMinutes(10)
             );
+
+            return $item;
         }, $values);
     }
 
@@ -560,7 +570,7 @@ class FormSummaryService
 
         // Get submissions with this field value
         $submissions = $query
-            ->select(['data', 'created_at'])
+            ->select(['id', 'data', 'created_at'])
             ->orderByDesc('created_at')
             ->get();
 
@@ -579,13 +589,19 @@ class FormSummaryService
                     foreach ($value as $item) {
                         $stringValue = $this->extractStringValue($item);
                         if ($stringValue !== null) {
-                            $allValues[] = $stringValue;
+                            $allValues[] = [
+                                'value' => $stringValue,
+                                'submission_id' => $submission->id,
+                            ];
                         }
                     }
                 } else {
                     $stringValue = $this->extractStringValue($value);
                     if ($stringValue !== null) {
-                        $allValues[] = $stringValue;
+                        $allValues[] = [
+                            'value' => $stringValue,
+                            'submission_id' => $submission->id,
+                        ];
                     }
                 }
             }
