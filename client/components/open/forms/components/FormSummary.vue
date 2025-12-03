@@ -5,7 +5,7 @@
         Submission Summary
       </h2>
 
-      <VForm size="sm" class="flex flex-wrap items-end gap-1">
+      <VForm size="sm" form-class="flex flex-wrap items-end gap-1">
         <SelectInput
           v-if="form.enable_partial_submissions"
           :form="filterForm"
