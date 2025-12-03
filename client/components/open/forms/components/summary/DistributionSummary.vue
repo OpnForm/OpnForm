@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="p-4">
     <!-- Bar Chart View -->
     <div v-if="!showPieChart" class="space-y-2">
       <div

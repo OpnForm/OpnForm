@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="p-4">
     <!-- Empty state -->
     <div
       v-if="!hasData"

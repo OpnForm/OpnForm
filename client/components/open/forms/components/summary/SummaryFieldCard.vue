@@ -32,7 +32,7 @@
     </div>
 
     <!-- Content -->
-    <div class="p-4 max-h-80 overflow-y-auto overflow-x-auto">
+    <div class="max-h-80 overflow-y-auto overflow-x-auto">
       <component
         :is="summaryComponent"
         :field="field"

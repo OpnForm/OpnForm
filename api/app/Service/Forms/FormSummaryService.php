@@ -57,6 +57,24 @@ class FormSummaryService
         });
     }
 
+    private function getFormSummaryCacheVersionKey(Form $form): string
+    {
+        return 'form_summary_version_' . $form->id;
+    }
+
+    private function getFormSummaryCacheVersion(Form $form): int
+    {
+        return (int) Cache::get($this->getFormSummaryCacheVersionKey($form), 0);
+    }
+
+    /**
+     * Clear all summary cache entries for a form by incrementing its cache version
+     */
+    public function clearFormSummaryCache(Form $form): void
+    {
+        Cache::increment($this->getFormSummaryCacheVersionKey($form));
+    }
+
     private function computeSummary(Form $form, ?string $dateFrom, ?string $dateTo, string $status): array
     {
         $query = $this->buildBaseQuery($form, $dateFrom, $dateTo, $status);
@@ -682,9 +700,12 @@ class FormSummaryService
 
     private function getCacheKey(Form $form, ?string $dateFrom, ?string $dateTo, string $status): string
     {
+        $version = $this->getFormSummaryCacheVersion($form);
+
         return sprintf(
-            'form_summary_%d_%s_%s_%s_%d_',
+            'form_summary_%d_v%d_%s_%s_%s_%d',
             $form->id,
+            $version,
             $dateFrom ?? 'all',
             $dateTo ?? 'all',
             $status,

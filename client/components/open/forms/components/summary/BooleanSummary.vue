@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="p-4">
     <!-- Empty state -->
     <div
       v-if="!hasData"
@@ -29,7 +29,7 @@
       <!-- Legend -->
       <div class="flex justify-center gap-6 mt-3">
         <div class="flex items-center gap-2">
-          <div class="w-3 h-3 rounded-sm bg-green-400" />
+          <div class="w-3 h-3 rounded-sm bg-blue-400" />
           <span class="text-sm text-neutral-600">Yes ({{ yesCount }})</span>
         </div>
         <div class="flex items-center gap-2">
@@ -48,7 +48,7 @@
       <!-- Legend -->
       <div class="space-y-2">
         <div class="flex items-center gap-2">
-          <div class="w-3 h-3 rounded-sm bg-green-400" />
+          <div class="w-3 h-3 rounded-sm bg-blue-400" />
           <span class="text-sm text-neutral-700">Yes ({{ yesCount }})</span>
         </div>
         <div class="flex items-center gap-2">

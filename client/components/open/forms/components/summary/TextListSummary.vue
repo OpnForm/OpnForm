@@ -4,7 +4,7 @@
       <div
         v-for="(item, index) in displayedValues"
         :key="index"
-        class="py-2.5 flex items-center justify-between group"
+        class="px-4 py-2.5 flex items-center justify-between group"
       >
         <!-- File field -->
         <a
@@ -62,13 +62,13 @@
     <!-- Empty state -->
     <div
       v-if="displayedValues.length === 0"
-      class="text-center py-4 text-neutral-400 text-sm"
+      class="text-center p-4 text-neutral-400 text-sm"
     >
       {{ isFileType ? 'No files uploaded' : 'No responses' }}
     </div>
 
     <!-- Load More Button -->
-    <div v-if="hasMore" class="pt-3 border-t border-neutral-100 mt-2">
+    <div v-if="hasMore" class="p-4 border-t border-neutral-100">
       <UButton
         color="neutral"
         variant="ghost"
