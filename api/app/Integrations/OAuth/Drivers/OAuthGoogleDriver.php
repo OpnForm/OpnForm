@@ -83,7 +83,13 @@ class OAuthGoogleDriver implements OAuthDriver, SupportsEmailRestrictionsContrac
     {
         return match ($intent) {
             'auth' => ['openid', 'profile', 'email'],
-            'integration' => ['openid', 'profile', 'email', 'https://www.googleapis.com/auth/drive.file'],
+            'integration' => [
+                'openid',
+                'profile',
+                'email',
+                'https://www.googleapis.com/auth/spreadsheets',
+                'https://www.googleapis.com/auth/drive.file',
+            ],
             default => ['openid', 'profile', 'email'],
         };
     }
