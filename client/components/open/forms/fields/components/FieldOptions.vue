@@ -354,6 +354,12 @@
         label="Use radio buttons"
         @update:model-value="onFieldWithoutDropdownChange"
       />
+      <toggle-switch-input
+        :form="field"
+        name="shuffle_options"
+        label="Shuffle options order"
+        help="Display options in random order to each respondent"
+      />
       
       <!-- Min/Max Selection Constraints for multi_select only -->
       <template v-if="field.type === 'multi_select'">
