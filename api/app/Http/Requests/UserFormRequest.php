@@ -238,6 +238,11 @@ abstract class UserFormRequest extends \Illuminate\Foundation\Http\FormRequest
             // Settings
             'settings' => 'nullable|array',
             'settings.navigation_arrows' => 'sometimes|boolean',
+
+            // Analytics
+            'analytics' => 'nullable|array',
+            'analytics.provider' => ['nullable', Rule::in(['meta_pixel', 'google_analytics', 'gtm'])],
+            'analytics.tracking_id' => 'nullable|required_with:analytics.provider|string|max:50',
         ];
     }
 
