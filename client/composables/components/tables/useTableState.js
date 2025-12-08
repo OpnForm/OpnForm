@@ -24,7 +24,7 @@ export function useTableState(form, withActions = false) {
 
       const baseColumns = form.value.properties
         .filter((field) => {
-          return !['nf-text', 'nf-code', 'nf-page-break', 'nf-divider', 'nf-image'].includes(field.type)
+          return field.type && typeof field.type === 'string' && !field.type.startsWith('nf-')
         })
         .map(col => {
           const { columns: matrixColumns, ...rest } = col
@@ -314,6 +314,19 @@ export function useTableState(form, withActions = false) {
           type: 'status',
           enableColumnFilter: true,
           filterFn: 'equals',
+          enableResizing: true,
+          minSize: 100,
+          maxSize: 500,
+        })
+      }
+
+      // Add IP address column if needed
+      if (form.value?.is_pro && (form.value.enable_ip_tracking ?? false)) {
+        cols.push({
+          id: 'ip_address',
+          accessorKey: 'ip_address',
+          header: 'IP Address',
+          type: 'ip_address',
           enableResizing: true,
           minSize: 100,
           maxSize: 500,

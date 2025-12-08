@@ -4,6 +4,7 @@
       <component
         :is="componentVal"
         v-bind="boundProps"
+        @input-filled="$emit('input-filled', { blockId: block?.id })"
       />
       <template #fallback>
         <USkeleton class="w-full h-16 my-1.5" />
@@ -42,10 +43,10 @@
       class="border-b my-4 w-full mx-2"
     />
     <div
-      v-else-if="block.type === 'nf-image'"
+      v-else-if="block.type === 'nf-image' && (isAdminPreview || (!isAdminPreview && block.image_block))"
       :id="block.id"
-      :key="block.id"
-      class="my-4 w-full px-2"
+      :key="'image-' + block.id"
+      class="my-4 w-full"
       :class="[getFieldAlignClasses(block)]"
       @dblclick="editFieldOptions"
     >
@@ -63,8 +64,33 @@
         v-else
         :alt="block.name"
         :src="block.image_block"
-        class="max-w-full inline-block rounded-lg"
+        class="max-w-full inline-block"
+        :class="roundedClass"
       >
+    </div>
+    <div
+      v-else-if="block.type === 'nf-video' && (isAdminPreview || (!isAdminPreview && block.video_block))"
+      :id="block.id"
+      :key="'video-' + block.id"
+      class="my-4 w-full"
+      :class="[getFieldAlignClasses(block)]"
+      @dblclick="editFieldOptions"
+    >
+      <div
+        v-if="!block.video_block"
+        class="p-4 border border-dashed text-center"
+      >
+        <a
+          href="#"
+          class="text-blue-800 dark:text-blue-200"
+          @click.prevent="editFieldOptions"
+        >Open block settings to add video URL.</a>
+      </div>
+      <EmbedMedia
+        v-else
+        :src="block.video_block"
+        :is-dark="darkMode"
+      />
     </div>
   </div>
 </template>
@@ -85,6 +111,7 @@ const form = computed(() => props.formManager?.config?.value || {})
 const dataForm = computed(() => props.formManager?.form || {})
 const darkMode = computed(() => props.formManager?.darkMode?.value || false)
 const strategy = computed(() => props.formManager?.strategy?.value || {})
+const isAdminPreview = computed(() => strategy.value?.admin?.showAdminControls || false)
 
 // Use centralized fieldState from manager
 const fieldState = computed(() => props.formManager?.fieldState)
@@ -97,7 +124,11 @@ const componentInfo = computed(() => {
   let componentName
   if (field.type === 'text' && field.multi_lines) componentName = 'TextAreaInput'
   else if (field.type === 'url' && field.file_upload) componentName = 'FileInput'
+  // In focused mode, use FocusedSelectorInput by default unless explicitly disabled
+  else if (['select','multi_select'].includes(field.type) && form.value.presentation_style === 'focused' && field.use_focused_selector !== false) componentName = 'FocusedSelectorInput'
   else if (['select','multi_select'].includes(field.type) && field.without_dropdown) componentName = 'FlatSelectInput'
+  // In focused mode, use FocusedToggleInput by default unless explicitly disabled
+  else if (field.type === 'checkbox' && form.value.presentation_style === 'focused' && field.use_focused_toggle !== false) componentName = 'FocusedToggleInput'
   else if (field.type === 'checkbox' && field.use_toggle_switch) componentName = 'ToggleSwitchInput'
   else if (field.type === 'signature') componentName = 'SignatureInput'
   else if (field.type === 'phone_number' && !field.use_simple_text_input) componentName = 'PhoneInput'
@@ -160,6 +191,16 @@ const shouldInjectBetweenMedia = computed(() => (
   !(strategy.value?.display?.forceClassicPresentation === true)
 )) 
 
+const roundedClass = computed(() => {
+  const radius = form.value?.border_radius || 'small'
+  const map = {
+    none: 'rounded-none',
+    small: 'rounded-lg',
+    full: 'rounded-[20px]'
+  }
+  return map[radius] || 'rounded-lg'
+})
+
 const boundProps = computed(() => {
   const field = props.block
   if (!field) return {}
@@ -198,6 +239,7 @@ const boundProps = computed(() => {
     inputProperties.multiple = (field.type === 'multi_select')
     inputProperties.allowCreation = (field.allow_creation === true)
     inputProperties.searchable = (inputProperties.options.length > 4)
+    inputProperties.clearable = !unified.required
     if (field.type === 'multi_select') {
       inputProperties.minSelection = field.min_selection || null
       inputProperties.maxSelection = field.max_selection || null

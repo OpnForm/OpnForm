@@ -29,8 +29,8 @@
       class="flex justify-end px-3 py-3.5 border-t border-neutral-200 dark:border-neutral-700"
     >
       <UPagination
-        v-model="page"
-        :page-count="pageCount"
+        v-model:page="page"
+        :items-per-page="pageCount"
         :total="forms.length"
       />
     </div>

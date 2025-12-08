@@ -18,7 +18,7 @@
       :mentions="form.properties"
       :disable-mention="!form.is_pro"
       :disabled="!form.is_pro"
-      name="settings.send_to"
+      name="data.send_to"
       required
       label="Send To"
     >
@@ -41,14 +41,14 @@
       <MentionInput
         :form="integrationData"
         :mentions="form.properties"
-        name="settings.sender_name"
+        name="data.sender_name"
         label="Sender Name"
         class="flex-1"
       />
       <text-input
         v-if="selfHosted"
         :form="integrationData"
-        name="settings.sender_email"
+        name="data.sender_email"
         label="Sender Email"
         help="If supported by email provider - default otherwise"
         class="flex-1"
@@ -58,27 +58,27 @@
       :form="integrationData"
       :mentions="form.properties"
       required
-      name="settings.subject"
+      name="data.subject"
       label="Subject"
     />
     <rich-text-area-input
       :form="integrationData"
       :enable-mentions="true"
       :mentions="form.properties"
-      name="settings.email_content"
+      name="data.email_content"
       label="Email Content"
     />
     <toggle-switch-input
       :form="integrationData"
-      name="settings.include_submission_data"
+      name="data.include_submission_data"
       class="mt-4"
       label="Include submission data"
       help="If enabled the email will contain form submission answers"
     />
     <toggle-switch-input
-      v-if="integrationData.settings.include_submission_data"
+      v-if="integrationData.data.include_submission_data"
       :form="integrationData"
-      name="settings.include_hidden_fields_submission_data"
+      name="data.include_hidden_fields_submission_data"
       class="mt-4"
       label="Include hidden fields"
       help="If enabled the email will contain hidden fields"
@@ -86,7 +86,7 @@
     <toggle-switch-input
       v-if="form.editable_submissions"
       :form="integrationData"
-      name="settings.link_edit_submission"
+      name="data.link_edit_submission"
       class="mt-4"
       label="Edit Submission Link"
     />
@@ -94,7 +94,7 @@
       :form="integrationData"
       :mentions="form.properties"
       class="mt-4"
-      name="settings.reply_to"
+      name="data.reply_to"
       label="Reply To"
       help="If empty, Reply-to will be your own email."
     />
@@ -135,8 +135,8 @@ onBeforeMount(() => {
     include_submission_data: true,
     include_hidden_fields_submission_data: false,
   })) {
-    if (props.integrationData.settings[keyname] === undefined) {
-      props.integrationData.settings[keyname] = defaultValue
+    if (props.integrationData.data[keyname] === undefined) {
+      props.integrationData.data[keyname] = defaultValue
     }
   }
 })

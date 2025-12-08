@@ -68,6 +68,10 @@
             }
         },
         "validation_error": "Balidazio errorea",
-        "validation_error_with_count": "Balidazio errorea ({count} eremu)"
+        "validation_error_with_count": "Balidazio errorea ({count} eremu)",
+        "toggle": {
+            "yes": "Bai",
+            "no": "Ez"
+        }
     }
 } 

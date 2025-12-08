@@ -3,9 +3,11 @@ description: Vue and Nuxt guidelines
 globs: client/**.*
 alwaysApply: false
 ---
+
 You are an expert in Nuxt, Vue.js, Vue Router, Pinia, VueUse, NuxtUI v3 library and Tailwind, with a deep understanding of best practices and performance optimization techniques in these technologies.
 
 ## Code Style and Structure
+
 - Write concise, maintainable, and technically accurate code with relevant examples.
 - Use functional and declarative programming patterns; avoid classes.
 - Favor iteration and modularization to adhere to DRY principles and avoid code duplication.
@@ -15,30 +17,129 @@ You are an expert in Nuxt, Vue.js, Vue Router, Pinia, VueUse, NuxtUI v3 library 
 - For promises and async, always use ().then().error().finally() syntax over try/catch/await
 
 ## Naming Conventions
+
 - Use lowercase with dashes for directories (e.g., components/auth-wizard).
 - Favor named exports for functions.
 
 We don't use typescript, javascript only (except when really required for config file for instance).
 
 ## Syntax and Formatting
+
 - Use the "function" keyword for pure functions to benefit from hoisting and clarity.
 - Always use the Vue Composition API script setup style. If a legacy file still using options API, it it's short then directly update the script section. If it's longer and a bit more complex, make the requried change using the existing options API and at the end ask if you should migrate to composition API.
 
 ## UI and Styling
+
 - Use Nuxt UI v3 components (https://ui.nuxt.com/components) and Tailwind for components and styling. Ex: <UModal>, <UPopover>, <UToolTip>, <UBadge> etc... Essentially use NuxtUI for everything but for form components.
 - Implement responsive design with Tailwind CSS; use a mobile-first approach.
 - Build UI components using atomic design principles, organizing them from smallest to largest (e.g., atoms, molecules, organisms, pages).
 - Icons: use the <Icon> component, and for icon names always use `i-library-icon` syntax.
 
+## Form Component Theming
+
+Form components use the **tailwind-variants (tv)** library with a standardized pattern for styling:
+
+### Theme Structure
+
+Each form component has a corresponding theme file in `lib/forms/themes/`:
+
+- Theme files export a `themeObject` (e.g., `textInputTheme`, `focusedSelectorInputTheme`)
+- Themes define `slots` (HTML elements) with base Tailwind classes
+- Themes define `variants` (size, theme, borderRadius, hasError, disabled, etc.)
+- Themes define `defaultVariants` (fallback values)
+
+Example theme structure:
+
+```javascript
+// lib/forms/themes/text-input.theme.js
+export const textInputTheme = {
+  slots: {
+    input: 'flex-1 w-full border bg-white text-neutral-700 focus:outline-hidden',
+    help: 'text-neutral-500'
+  },
+  variants: {
+    theme: { default: { input: 'border-neutral-300' }, ... },
+    size: { md: { input: 'px-4 py-2 text-base' }, ... },
+    hasError: { true: { input: '!ring-red-500 !border-transparent' } }
+  },
+  defaultVariants: { theme: 'default', size: 'md', hasError: false }
+}
+```
+
+### Composable Integration
+
+The `useFormInput` composable sets up tv with the theme:
+
+```javascript
+// In composable: simple, no ui merging here
+return tv(composableOptions.variants, { twMerge: true })({
+    theme: resolvedTheme.value,
+    size: resolvedSize.value,
+    // ... variant values
+});
+```
+
+### UI Overrides in Components
+
+**In templates**, pass `props.ui?.slots?.slotName` via the `class` parameter to every slot function call:
+
+```vue
+<!-- CORRECT: Pass ui overrides via class parameter -->
+<input :class="ui.input({ class: props.ui?.slots?.input })" />
+<div :class="ui.container({ class: props.ui?.slots?.container })" />
+```
+
+**NOT like this:**
+
+```vue
+<!-- WRONG: Don't pass ui separately -->
+<input :class="ui.input()" />
+<!-- Missing ui override -->
+```
+
+### How It Works
+
+1. **Composable** calls `tv(theme, { twMerge: true })` - simple setup
+2. **Theme** defines base classes for each slot
+3. **Component template** calls slot functions with `{ class: props.ui?.slots?.slotName }`
+4. **tv slot function** automatically merges:
+    - Base classes from theme
+    - Custom classes from `class` parameter
+    - Result via twMerge (handles conflicts intelligently)
+
+### Example: FocusedToggleInput
+
+```javascript
+// Parent passes ui override
+ui: { slots: { container: 'max-w-xs' } }
+
+// FocusedSelectorInput template uses it
+<div :class="ui.container({ class: props.ui?.slots?.container })">
+  <!-- Result: 'space-y-2 focus:outline-hidden max-w-xs' ✅ -->
+</div>
+```
+
+### Key Rules
+
+- ✅ **Always pass ui overrides** via `class` parameter in templates
+- ✅ **Call tv() once** per slot function (don't pre-merge in composable)
+- ✅ **Enable twMerge** in tv config: `tv(theme, { twMerge: true })`
+- ✅ **One theme file** per component type (textInputTheme, focusedSelectorInputTheme, etc.)
+- ❌ **Don't merge props.ui in composable** - let tv slot functions handle it
+
 Forms
+
 - For forms inputs, use the components in client/components/forms such as <TextInput> etc.
 - Wrap then in @VForm.vue
+- All form components must support the theme + ui override pattern above
 
 Performance Optimization
+
 - Leverage VueUse functions where applicable to enhance reactivity and performance.
 - Wrap asynchronous components in Suspense with a fallback UI made with <USkeleton/> components.
 - Use dynamic loading for non-critical components.
 
 Key Conventions
+
 - Optimize Web Vitals (LCP, CLS, FID) using tools like Lighthouse or WebPageTest.
 - Implement proper error boundaries or try-catch mechanisms to handle errors gracefully, especially in asynchronous operations.

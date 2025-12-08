@@ -38,7 +38,7 @@
           Telegram message actions
         </h4>
         <notifications-message-actions
-          v-model="integrationData.settings"
+          v-model="integrationData.data"
           :form="form"
         />
       </template>

@@ -5,34 +5,45 @@
       @close="showForgotModal = false"
     />
 
-    <form
+    <two-factor-verification-modal
+      v-if="pendingAuthToken"
+      :show="showTwoFactorModal"
+      :pending-auth-token="pendingAuthToken"
+      @verified="handleTwoFactorVerifiedAndRedirect"
+      @cancel="handleTwoFactorCancel"
+    />
+
+    <v-form
       method="POST"
-      class="mt-4"
+      :form="form"
       @submit.prevent="login"
     >
       <!-- Email -->
       <text-input
         name="email"
-        :form="form"
         label="Email"
-        :required="true"
+        required
         placeholder="Your email address"
+        @blur="checkOidcOptions"
       />
 
-      <!-- Password -->
+      <!-- Password - hidden if OIDC available and not forced to show -->
+      <VTransition name="fadeHeight">
       <text-input
+        v-if="showPasswordField"
+        ref="passwordInputRef"
         native-type="password"
         placeholder="Your password"
         name="password"
-        :form="form"
         label="Password"
-        :required="true"
+        required
+        @input-filled="login"
       />
+      </VTransition>  
 
-      <!-- Remember Me -->
-      <div class="relative flex items-center mt-3">
+      <!-- Remember Me & Forgot Password - only show when password field is visible -->
+      <div v-if="showPasswordField" class="relative flex items-center mt-1.5">
         <CheckboxInput
-          :form="form"
           class="w-full md:w-1/2"
           name="remember"
           size="small"
@@ -57,7 +68,7 @@
         size="lg"
         :loading="form.busy"
         type="submit"
-        label="Log in to continue"
+        :label="oidcAvailable && !showPasswordField ? 'Continue' : 'Log in to continue'"
       />
 
       <UButton
@@ -93,7 +104,7 @@
           Sign Up
         </NuxtLink>
       </p>
-    </form>
+    </v-form>
 
     <!-- Google One Tap -->
     <ClientOnly>
@@ -123,6 +134,12 @@ defineEmits(['openRegister'])
 const oAuth = useOAuth()
 const router = useRouter()
 const { login: loginMutationFactory } = useAuth()
+const authFlow = useAuthFlow()
+const { showTwoFactorModal, pendingAuthToken, handleTwoFactorVerified, handleTwoFactorCancel } = authFlow
+
+// Feature flags
+const oidcAvailable = computed(() => useFeatureFlag('oidc.available', false))
+const oidcForced = computed(() => useFeatureFlag('oidc.forced', false))
 
 // Reactive data
 const form = useForm({
@@ -133,6 +150,20 @@ const form = useForm({
 
 const loginMutation = loginMutationFactory()
 const showForgotModal = ref(false)
+const showPasswordField = ref(!oidcAvailable.value || oidcForced.value)
+const passwordInputRef = ref(null)
+
+// Watch for password field visibility to focus it
+watch(showPasswordField, async (newValue) => {
+  if (newValue) {
+    await nextTick()
+    // Find the password input element by name/id
+    const passwordInput = document.querySelector('input[name="password"][type="password"]')
+    if (passwordInput) {
+      passwordInput.focus()
+    }
+  }
+})
 
 // Lifecycle
 onMounted(() => {
@@ -146,9 +177,71 @@ onMounted(() => {
 })
 
 // Methods
+const checkOidcOptions = async () => {
+  if (!oidcAvailable.value || !form.email || form.busy) {
+    return
+  }
+
+  form.post('/auth/oidc/options', { body: { email: form.email } })
+    .then(async (response) => {
+      if (response.action === 'redirect') {
+        // Get the redirect URL from the backend
+        try {
+          const redirectResponse = await form.post(`/auth/${response.slug}/redirect`)
+          
+          if (redirectResponse.redirect_url) {
+            // Redirect to OIDC provider
+            window.location.href = redirectResponse.redirect_url
+            return
+          } else if (redirectResponse.error) {
+            // Handle error from redirect endpoint
+            useAlert().error(redirectResponse.error || 'Failed to initiate OIDC authentication')
+            showPasswordField.value = true
+            return
+          }
+        } catch (error) {
+          // Handle network or server errors
+          const errorMessage = error.response?._data?.error || error.response?._data?.message || 'Failed to initiate OIDC authentication'
+          useAlert().error(errorMessage)
+          showPasswordField.value = true
+          return
+        }
+      } else if (response.action === 'blocked') {
+        // OIDC is forced but no connection found
+        useAlert().error('OIDC authentication is required. Please contact your administrator.')
+        return
+      } else {
+        // Fallback to password login
+        showPasswordField.value = true
+      }
+    })
+    .catch((error) => {
+      // Form automatically handles 422 validation errors (invalid email, etc.)
+      // Only show password field as fallback for non-validation errors
+      if (error.response?.status !== 422) {
+        showPasswordField.value = true
+      }
+    })
+}
+
 const login = () => {
+  // If OIDC is available and password field is hidden, check OIDC options first
+  if (oidcAvailable.value && !showPasswordField.value && form.email) {
+    checkOidcOptions()
+    return
+  }
+
+  // Normal password login
+  if (!form.password && showPasswordField.value) {
+    useAlert().error('Password is required')
+    return
+  }
+
   form.mutate(loginMutation).then(() => {
-    redirect()
+    // If 2FA modal is shown, don't redirect yet (handled in handleTwoFactorVerified)
+    if (!showTwoFactorModal.value) {
+      redirect()
+    }
   }).catch((error) => {
     console.log(error)
     if (error.response?._data?.message == "You must change your credentials when in self host mode") {
@@ -189,5 +282,10 @@ const signInwithGoogle = () => {
   } catch (error) {
     showOAuthError(error)
   }
+}
+
+const handleTwoFactorVerifiedAndRedirect = async (tokenData) => {
+  await handleTwoFactorVerified(tokenData)
+  redirect()
 }
 </script>

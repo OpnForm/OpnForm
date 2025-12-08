@@ -34,11 +34,24 @@
         title="Checkbox"
       />
       <toggle-switch-input
+        v-if="!isFocused"
         :form="field"
         name="use_toggle_switch"
         label="Use toggle switch"
         help="If enabled, checkbox will be replaced with a toggle switch"
       />
+      <template v-else>
+        <flat-select-input
+          v-model="field.focused_checkbox_style"
+          name="focused_checkbox_style"
+          class="mt-3"
+          :form="field"
+          :options="focusedCheckboxStyleOptions"
+          label="Checkbox style"
+          help="Choose how the checkbox appears in focused mode"
+          @update:model-value="onFieldFocusedCheckboxStyleChange"
+        />
+      </template>
     </div>
 
     <!-- File Uploads -->
@@ -321,16 +334,24 @@
         @update:model-value="onFieldOptionsChange"
       />
       <toggle-switch-input
+        v-if="isFocused"
+        :model-value="field.use_focused_selector === false"
+        label="Use dropdown instead"
+        help="Use classic dropdown instead of focused selector with keyboard shortcuts"
+        @update:model-value="onFieldUseDropdownInFocusedChange"
+      />
+      <toggle-switch-input
+        v-if="!isFocusedSelectorActive"
         :form="field"
         name="allow_creation"
         label="Allow respondent to create new options"
         @update:model-value="onFieldAllowCreationChange"
       />
       <toggle-switch-input
+        v-if="!isFocusedSelectorActive"
         :form="field"
         name="without_dropdown"
-        label="Always show all select options"
-        help="Options won't be in a dropdown anymore, but will all be visible"
+        label="Use radio buttons"
         @update:model-value="onFieldWithoutDropdownChange"
       />
       
@@ -736,8 +757,19 @@ export default {
     isFocused() {
       return this.form?.presentation_style === 'focused'
     },
+    isFocusedSelectorActive() {
+      // Focused selector is active when in focused mode AND not explicitly disabled
+      return this.isFocused && this.field.use_focused_selector !== false
+    },
     hasPlaceholder() {
       return !this.typesWithoutPlaceholder.includes(this.field.type)
+    },
+    focusedCheckboxStyleOptions() {
+      return [
+        { name: 'Yes/No selector (Y/N shortcuts)', value: 'focused_toggle' },
+        { name: 'Toggle switch', value: 'toggle_switch' },
+        { name: 'Classic checkbox', value: 'checkbox' }
+      ]
     },
     mbLimit() {
       return  (this.form?.workspace && this.form?.workspace.max_file_size) ? this.form?.workspace?.max_file_size : 10
@@ -815,6 +847,26 @@ export default {
       },
       immediate: true
     },
+    isFocused: {
+      handler(val) {
+        // When switching to focused mode for checkbox, set default style if not set
+        if (val && this.field.type === 'checkbox' && !this.field.focused_checkbox_style) {
+          this.field.focused_checkbox_style = 'focused_toggle'
+          this.field.use_focused_toggle = true
+        }
+      },
+      immediate: true
+    },
+    isFocusedSelectorActive: {
+      handler(val) {
+        // When focused selector becomes active, ensure conflicting options are disabled
+        if (val && ['select', 'multi_select'].includes(this.field.type)) {
+          this.field.without_dropdown = false
+          this.field.allow_creation = false
+        }
+      },
+      immediate: true
+    }
   },
 
   created() {
@@ -878,6 +930,19 @@ export default {
     onFieldWithoutDropdownChange(val) {
       this.field.without_dropdown = val
       if (this.field.without_dropdown) {
+        this.field.allow_creation = false
+        this.field.use_focused_selector = false
+      }
+    },
+    onFieldUseDropdownInFocusedChange(val) {
+      // Inverted logic: when "use dropdown instead" is ON, disable focused selector
+      this.field.use_focused_selector = !val
+      if (!this.field.use_focused_selector) {
+        // When disabling focused selector (using dropdown instead), no need to disable other options
+        // User can choose dropdown with creation or without_dropdown
+      } else {
+        // When enabling focused selector, force disable conflicting options
+        this.field.without_dropdown = false
         this.field.allow_creation = false
       }
     },
@@ -959,6 +1024,10 @@ export default {
         this.field.slider_step_value = 1
       } else if (["select", "multi_select"].includes(this.field.type) && !this.field[this.field.type]?.options) {
         this.field[this.field.type] = { options: [] }
+      } else if (this.field.type === "checkbox" && this.isFocused && !this.field.focused_checkbox_style) {
+        // Default to focused toggle in focused mode
+        this.field.focused_checkbox_style = 'focused_toggle'
+        this.field.use_focused_toggle = true
       }
     },
     updateMatrixField(newField) {
@@ -979,6 +1048,20 @@ export default {
     clearMinMaxSelection() {
       this.field.min_selection = null
       this.field.max_selection = null
+    },
+    onFieldFocusedCheckboxStyleChange(val) {
+      this.field.focused_checkbox_style = val
+      // Update field flags based on selection
+      if (val === 'focused_toggle') {
+        this.field.use_focused_toggle = true
+        this.field.use_toggle_switch = false
+      } else if (val === 'toggle_switch') {
+        this.field.use_focused_toggle = false
+        this.field.use_toggle_switch = true
+      } else {
+        this.field.use_focused_toggle = false
+        this.field.use_toggle_switch = false
+      }
     }
   }
 }

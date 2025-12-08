@@ -16,7 +16,8 @@ class FormSubmission extends Model
     protected $fillable = [
         'data',
         'completion_time',
-        'status'
+        'status',
+        'meta'
     ];
 
     protected function casts(): array
@@ -24,6 +25,7 @@ class FormSubmission extends Model
         return [
             'data' => 'array',
             'completion_time' => 'integer',
+            'meta' => 'array',
         ];
     }
 

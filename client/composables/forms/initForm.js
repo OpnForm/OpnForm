@@ -48,6 +48,9 @@ export const initForm = (defaultValue = {}, withDefaultProperties = false) => {
 
     // Custom SEO
     seo_meta: {},
+    
+    // Settings for various features
+    settings: {},
 
     ...defaultValue,
   })
@@ -66,12 +69,14 @@ function getDefaultProperties() {
       type: "text",
       hidden: false,
       required: true,
+      placeholder: "Enter your full name",
       id: generateUUID(),
     },
     {
       name: "Email",
       type: "email",
       hidden: false,
+      placeholder: "Enter your email address",
       id: generateUUID(),
     },
     {
@@ -79,6 +84,7 @@ function getDefaultProperties() {
       type: "text",
       hidden: false,
       multi_lines: true,
+      placeholder: "Type your message here",
       id: generateUUID(),
     },
   ]
@@ -130,6 +136,27 @@ export function setFormDefaults(formData) {
       name: property.name === '' || property.name === null || property.name === undefined ? 'Untitled' : property.name,
     }))
   }
+  
+  // Ensure settings object exists and is a plain object (not a readonly proxy)
+  ensureSettingsObject(filledFormData)
 
   return filledFormData
+}
+
+/**
+ * Ensures the settings object exists and is a writable plain object.
+ * This is crucial for reactive forms where settings might be undefined or a readonly proxy.
+ * 
+ * @param {Object} formData - The form data object
+ */
+export function ensureSettingsObject(formData) {
+  if (!formData) return
+  
+  const s = formData.settings
+  if (!s || typeof s !== 'object' || Array.isArray(s)) {
+    formData.settings = {}
+  } else if (Object.isFrozen(s) || !Object.isExtensible(s)) {
+    // If settings is readonly/frozen, create a new writable copy
+    formData.settings = { ...s }
+  }
 }

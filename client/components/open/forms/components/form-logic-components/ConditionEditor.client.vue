@@ -51,7 +51,7 @@ export default {
     rules() {
       return this.form.properties
         .filter((property) => {
-          return !property.type.startsWith("nf-")
+          return property.type && typeof property.type === 'string' && !property.type.startsWith("nf-")
         })
         .map((property) => {
           const workspaceId = this.form.workspace_id

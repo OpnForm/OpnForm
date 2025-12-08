@@ -42,12 +42,12 @@
       v-else
       :style="inputStyle"
       class="cursor-pointer"
-      :class="ui.container()"
+      :class="ui.container({ class: props.ui?.slots?.container })"
       tabindex="0"
       role="button"
       aria-label="Click to open a camera"
       @click="startScanning"
-      @keydown.enter.prevent="startScanning"
+      @keydown.enter="handleEnterPress"
     >
       <div class="flex w-full items-center justify-center">
         <div class="text-center">
@@ -87,7 +87,8 @@ export default {
     decoders: {
       type: Array,
       default: () => []
-    }
+    },
+    preventEnter: {type: Boolean, default: true},
   },
 
   setup(props, context) {
@@ -95,7 +96,8 @@ export default {
       variants: fileInputTheme
     })
     return {
-      ...formInput
+      ...formInput,
+      props
     }
   },
 
@@ -118,6 +120,12 @@ export default {
   },
 
   methods: {
+    handleEnterPress(event) {
+      if (this.preventEnter) {
+        event.preventDefault()
+        this.startScanning()
+      }
+    },
     startScanning() {
       if (this.disabled) return
       this.isScanning = true

@@ -39,6 +39,11 @@ class FormSpamService
 
     private function shouldCheck(Form $form): bool
     {
+        // Check if creator exists before accessing its properties
+        if (!$form->creator) {
+            return false;
+        }
+
         if ($form->creator->is_blocked || $form->creator->admin || $form->creator->moderator) {
             return false;
         }

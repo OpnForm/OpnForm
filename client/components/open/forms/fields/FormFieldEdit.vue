@@ -128,7 +128,7 @@ onMounted(() => {
 })
 
 const isBlockField = computed(() => {
-  return field.value && field.value.type.startsWith('nf')
+  return field.value && field.value.type && typeof field.value.type === 'string' && field.value.type.startsWith('nf')
 })
 
 const typeCanBeChanged = computed(() => {

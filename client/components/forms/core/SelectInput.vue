@@ -38,7 +38,7 @@
           <div class="flex items-center truncate ltr-only:mr-6 rtl-only:ml-6">
             <span
               class="truncate"
-              :class="ui.selected()"
+              :class="ui.selected({ class: props.ui?.slots?.selected })"
             >
               {{ getOptionNames(selectedValues).join(', ') }}
             </span>
@@ -51,7 +51,7 @@
             :option-name="getOptionName(option)"
           >
             <div class="flex items-center truncate ltr-only:mr-6 rtl-only:ml-6">
-              <div :class="ui.selected()">
+              <div :class="ui.selected({ class: props.ui?.slots?.selected })">
                 {{ getOptionName(option) }}
               </div>
             </div>
@@ -67,7 +67,7 @@
           <span class="flex">
             <p
               class="flex-grow"
-              :class="ui.option()"
+              :class="ui.option({ class: props.ui?.slots?.option })"
             >
               {{ getOptionName(option) }}
             </p>
@@ -93,7 +93,7 @@
       v-if="multiple && (minSelection || maxSelection) && selectedCount > 0"
       #bottom_after_help
     >
-      <small :class="ui.help()">
+      <small :class="ui.help({ class: props.ui?.slots?.help })">
         <span v-if="minSelection && maxSelection">
           {{ selectedCount }} of {{ minSelection }}-{{ maxSelection }}
         </span>
@@ -154,7 +154,8 @@ export default {
     })
 
     return {
-      ...formInput
+      ...formInput,
+      props
     }
   },
   data() {
@@ -204,6 +205,10 @@ export default {
     updateModelValue(newValues) {
       if (newValues === null) newValues = []
       this.selectedValues = newValues
+      if (!this.multiple) {
+        const hasValue = newValues !== null && newValues !== undefined && newValues !== ''
+        if (hasValue) this.$emit('input-filled')
+      }
     },
     updateOptions(newItem) {
       if (newItem) {

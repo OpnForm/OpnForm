@@ -68,6 +68,10 @@
             }
         },
         "validation_error": "Chyba overenia",
-        "validation_error_with_count": "Chyba overenia ({count} polí)"
+        "validation_error_with_count": "Chyba overenia ({count} polí)",
+        "toggle": {
+            "yes": "Áno",
+            "no": "Nie"
+        }
     }
 }

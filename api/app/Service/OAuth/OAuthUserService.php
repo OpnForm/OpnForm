@@ -4,6 +4,7 @@ namespace App\Service\OAuth;
 
 use App\Integrations\OAuth\OAuthProviderService;
 use App\Models\User;
+use App\Enterprise\Oidc\ExternalUserFactory;
 use App\Service\WorkspaceInviteService;
 use Illuminate\Http\Exceptions\HttpResponseException;
 
@@ -24,7 +25,8 @@ use Illuminate\Http\Exceptions\HttpResponseException;
 class OAuthUserService
 {
     public function __construct(
-        private OAuthContextService $contextService
+        private OAuthContextService $contextService,
+        private ExternalUserFactory $userFactory,
     ) {
     }
 
@@ -75,17 +77,13 @@ class OAuthUserService
         // For widget flows: gets from session context
         $utmData = $this->contextService->getUtmData() ?? $this->contextService->getWidgetContext()['utm_data'] ?? null;
 
-        $user = User::create([
-            'name' => $userData['name'],
-            'email' => $email,
-            'email_verified_at' => now(),
-            'utm_data' => is_string($utmData) ? json_decode($utmData, true) : $utmData,
-            'meta' => [
-                'signup_provider' => $providerService->value,
-                'signup_provider_user_id' => $userData['provider_user_id'],
-                'registration_ip' => request()->ip()
-            ],
-        ]);
+        $user = $this->userFactory->createVerifiedExternalUser(
+            name: $userData['name'],
+            email: $email,
+            provider: $providerService->value,
+            providerUserId: $userData['provider_user_id'] ?? null,
+            utmData: $utmData,
+        );
 
         // Get workspace and role using WorkspaceInviteService
         $workspaceInviteService = app(WorkspaceInviteService::class);

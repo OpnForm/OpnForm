@@ -1,6 +1,6 @@
 <template>
   <div v-if="isVisible" class="relative group">
-    <a class="github-button" href="https://github.com/jhumanj/opnform" data-color-scheme="no-preference: light; light: light; dark: dark;" data-size="large" data-show-count="true" aria-label="Star jhumanj/opnform on GitHub">Star</a>
+    <a class="github-button" href="https://github.com/OpnForm/OpnForm" data-color-scheme="no-preference: light; light: light; dark: dark;" data-size="large" data-show-count="true" aria-label="Star OpnForm on GitHub">Star</a>
     <UButton
       class="absolute -top-2 -right-2 z-10 bg-white dark:bg-gray-800 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
       aria-label="Hide"

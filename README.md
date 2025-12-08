@@ -1,21 +1,21 @@
 # OpnForm
 
 <p align="center">
-<img src="https://github.com/JhumanJ/OpnForm/blob/main/client/public/img/social-preview.jpg?raw=true">
+<img src="https://github.com/OpnForm/OpnForm/blob/main/client/public/img/social-preview.jpg?raw=true">
 </p>
 
 <p align="center">
-<a href="https://github.com/JhumanJ/OpnForm/stargazers"><img src="https://img.shields.io/github/stars/JhumanJ/OpnForm" alt="Github Stars"></a>
+<a href="https://github.com/OpnForm/OpnForm/stargazers"><img src="https://img.shields.io/github/stars/OpnForm/OpnForm" alt="Github Stars"></a>
 </a>
-<a href="https://github.com/JhumanJ/OpnForm/pulse"><img src="https://img.shields.io/github/commit-activity/m/JhumanJ/OpnForm" alt="Commits per month"></a>
+<a href="https://github.com/OpnForm/OpnForm/pulse"><img src="https://img.shields.io/github/commit-activity/m/OpnForm/OpnForm" alt="Commits per month"></a>
 <a href="https://hub.docker.com/r/jhumanj/opnform-api">
 <img src="https://img.shields.io/docker/pulls/jhumanj/opnform-api">
 </a>
-<a href="https://github.com/JhumanJ/OpnForm/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-AGPLv3-purple" alt="License">
-<a href="https://github.com/JhumanJ/OpnForm/issues/new"><img src="https://img.shields.io/badge/Report a bug-Github-%231F80C0" alt="Report a bug"></a>
-<a href="https://github.com/JhumanJ/OpnForm/discussions/new?category=q-a"><img src="https://img.shields.io/badge/Ask a question-Github-%231F80C0" alt="Ask a question"></a>
+<a href="https://github.com/OpnForm/OpnForm/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-AGPLv3-purple" alt="License">
+<a href="https://github.com/OpnForm/OpnForm/issues/new"><img src="https://img.shields.io/badge/Report a bug-Github-%231F80C0" alt="Report a bug"></a>
+<a href="https://github.com/OpnForm/OpnForm/discussions/new?category=q-a"><img src="https://img.shields.io/badge/Ask a question-Github-%231F80C0" alt="Ask a question"></a>
 <a href="https://feedback.opnform.com"><img src="https://img.shields.io/badge/Feature request-Featurebase-%231F80C0" alt="Ask a question"></a>
-<a href="https://discord.gg/YTSjU2a9TS"><img src="https://dcbadge.vercel.app/api/server/YTSjU2a9TS?style=flat" alt="Ask a question"></a>
+<a href="https://discord.gg/YTSjU2a9TS"><img src="https://img.shields.io/badge/OpnForm-Discord-%235865F2.svg" alt="Ask a question"></a>
 </p>
 
 OpnForm is an open-source form builder.
@@ -52,4 +52,13 @@ If you need help or have questions, please join our [Discord community](https://
 
 ## License
 
-OpnForm is open-source under the GNU Affero General Public License Version 3 (AGPLv3) or any later version. You can find it [here](https://github.com/JhumanJ/OpnForm/blob/main/LICENSE).
+OpnForm is **open-source** under the GNU Affero General Public License Version 3 (AGPLv3) or any later version. You can find it [here](https://github.com/OpnForm/OpnForm/blob/main/LICENSE).
+
+### Dual Licensing
+
+OpnForm uses a dual-license model to make the project sustainable:
+
+-   **Core OpnForm** (AGPL-3.0): The main application is free and open-source under AGPLv3, giving you the freedom to use, modify, and distribute it.
+-   **Enterprise Edition** (Proprietary): Advanced features under `api/app/Enterprise/` are available under our [Enterprise License](https://github.com/OpnForm/OpnForm/blob/main/api/app/Enterprise/LICENSE) and [Enterprise Terms](https://opnform.com/terms-conditions). These features help fund ongoing development and keep OpnForm sustainable.
+
+By offering Enterprise features alongside our open-source core, we can continue to invest in making OpnForm better for everyone while keeping the project financially sustainable.

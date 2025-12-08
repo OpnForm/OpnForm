@@ -24,6 +24,7 @@
         :class="optionClasses(isSelected(option))"
       >
         <button
+          type="button"
           class="group flex flex-col items-center justify-center transition-colors focus:outline-hidden w-full h-full"
           :class="[buttonClasses(disabled || option.disabled), option.class ? (typeof option.class === 'function' ? option.class(isSelected(option)) : option.class) : {}, isSelected(option) ? 'text-form-color' : 'text-inherit']"
           :aria-selected="isSelected(option) ? 'true' : 'false'"

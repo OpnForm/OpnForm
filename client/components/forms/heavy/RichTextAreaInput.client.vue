@@ -9,7 +9,7 @@
 
     <div
       class="rich-editor resize-y notranslate relative"
-      :class="ui.container()"
+      :class="ui.container({ class: props.ui?.slots?.container })"
       :style="inputStyle"
     >
       <MentionDropdown
@@ -99,7 +99,7 @@
       v-if="maxCharLimit && showCharLimit"
       #bottom_after_help
     >
-      <small :class="ui.help()">
+      <small :class="ui.help({ class: props.ui?.slots?.help })">
         {{ charCount }}/{{ maxCharLimit }}
       </small>
     </template>

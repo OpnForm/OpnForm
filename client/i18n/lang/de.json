@@ -68,6 +68,10 @@
             }
         },
         "validation_error": "Validierungsfehler",
-        "validation_error_with_count": "Validierungsfehler ({count} Felder)"
+        "validation_error_with_count": "Validierungsfehler ({count} Felder)",
+        "toggle": {
+            "yes": "Ja",
+            "no": "Nein"
+        }
     }
 } 

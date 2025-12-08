@@ -5,9 +5,7 @@
       v-model:open="isLoginModalOpen"
       title="Login to OpnForm"
       :dismissible="!appStore.isUnauthorizedError"
-      :content="{
-        onPointerDownOutside: (event) => { if (event.target?.closest('#credential_picker_container')) {return event.preventDefault()}}
-      }"
+      @pointer-down-outside="handlePointerDownOutside"
     >
       <template #body>
         <template v-if="appStore.isUnauthorizedError">
@@ -54,6 +52,7 @@
       :ui="{ content: 'sm:max-w-lg' }"
       title="Create an account"
       :dismissible="!appStore.isUnauthorizedError"
+      @pointer-down-outside="handlePointerDownOutside"
     >
       <template #body>
         <RegisterForm
@@ -155,5 +154,16 @@ const logout = () => {
   appStore.quickLoginModal = false
   appStore.quickRegisterModal = false
   useRouter().push('/login')
+}
+
+// Handle pointer down outside modal to allow Google One Tap interaction
+const handlePointerDownOutside = (event) => {
+  const target = event.target
+  // Allow interaction with Google One Tap picker
+  if (target?.closest('#credential_picker_container') || 
+      target?.closest('iframe[src*="accounts.google.com"]') ||
+      target?.id === 'credential_picker_iframe') {
+    event.preventDefault()
+  }
 }
 </script>

@@ -85,6 +85,9 @@ class FormLogicConditionChecker
 
     private function checkEquals($condition, $fieldValue): bool
     {
+        if (!isset($condition['value'])) {
+            return false;
+        }
         // For numeric values, convert to numbers before comparison
         if (
             $this->areValidNumbers($condition, $fieldValue) &&
@@ -99,6 +102,9 @@ class FormLogicConditionChecker
 
     private function checkContains($condition, $fieldValue): bool
     {
+        if (!isset($condition['value'])) {
+            return false;
+        }
         if (is_array($fieldValue)) {
             return in_array($condition['value'], $fieldValue);
         }
@@ -107,6 +113,9 @@ class FormLogicConditionChecker
 
     private function checkMatrixContains($condition, $fieldValue): bool
     {
+        if (!isset($condition['value'])) {
+            return false;
+        }
 
         foreach ($condition['value'] as $key => $value) {
             if (!(array_key_exists($key, $condition['value']) && array_key_exists($key, $fieldValue))) {
@@ -121,6 +130,9 @@ class FormLogicConditionChecker
 
     private function checkMatrixEquals($condition, $fieldValue): bool
     {
+        if (!isset($condition['value'])) {
+            return false;
+        }
         foreach ($condition['value'] as $key => $value) {
             if ($condition['value'][$key] !== $fieldValue[$key]) {
                 return false;
@@ -139,6 +151,9 @@ class FormLogicConditionChecker
             return $this->checkEquals($condition, $fieldValue);
         }
 
+        if (!isset($condition['value'])) {
+            return false;
+        }
         if (is_array($condition['value'])) {
             return count(array_intersect($condition['value'], $fieldValue)) === count($condition['value']);
         } else {
@@ -148,11 +163,17 @@ class FormLogicConditionChecker
 
     private function checkStartsWith($condition, $fieldValue): bool
     {
+        if (!isset($condition['value'])) {
+            return false;
+        }
         return str_starts_with($fieldValue, $condition['value']);
     }
 
     private function checkEndsWith($condition, $fieldValue): bool
     {
+        if (!isset($condition['value'])) {
+            return false;
+        }
         return str_ends_with($fieldValue, $condition['value']);
     }
 
@@ -406,6 +427,9 @@ class FormLogicConditionChecker
     private function checkLength($condition, $fieldValue, $operator = '==='): bool
     {
         if (!$fieldValue || strlen($fieldValue) === 0) {
+            return false;
+        }
+        if (!isset($condition['value'])) {
             return false;
         }
         switch ($operator) {

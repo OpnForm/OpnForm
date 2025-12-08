@@ -68,6 +68,10 @@
             }
         },
         "validation_error": "Lỗi xác thực",
-        "validation_error_with_count": "Lỗi xác thực ({count} trường)"
+        "validation_error_with_count": "Lỗi xác thực ({count} trường)",
+        "toggle": {
+            "yes": "Có",
+            "no": "Không"
+        }
     }
 } 

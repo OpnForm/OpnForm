@@ -4,6 +4,8 @@ namespace App\Service\Forms;
 
 use App\Models\Forms\Form;
 use Carbon\Carbon;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\URL;
 
 class FormSubmissionFormatter
 {
@@ -112,22 +114,18 @@ class FormSubmissionFormatter
             $fields = $fields->merge($removeFields);
         }
         $fields = $fields->filter(function ($field) {
-            return !in_array($field['type'], ['nf-text', 'nf-code', 'nf-page-break', 'nf-divider', 'nf-image']);
+            return !Str::of($field['type'])->startsWith('nf-');
         })->values();
 
         $returnArray = [];
         foreach ($fields as $field) {
-
-            if (in_array($field['id'], ['nf-text', 'nf-code', 'nf-page-break', 'nf-divider', 'nf-image'])) {
-                continue;
-            }
 
             if ($field['removed'] ?? false) {
                 $field['name'] = $field['name'] . ' (deleted)';
             }
 
             // Add ID to avoid name clashes
-            $field['name'] = $field['name'] . ' (' . \Str::of($field['id']) . ')';
+            $field['name'] = $field['name'] . ' (' . Str::of($field['id']) . ')';
 
             // If not present skip
             if (!isset($data[$field['id']])) {
@@ -255,7 +253,7 @@ class FormSubmissionFormatter
                         return [
                             'unsigned_url' => route('open.forms.submissions.file', [$formId, $file]),
                             'signed_url' => $this->getFileUrl($formId, $file),
-                            'label' => \Str::limit($file, 20, '[...].' . end($splitText)),
+                            'label' => Str::limit($file, 20, '[...].' . end($splitText)),
                         ];
                     })->toArray();
                 } else {
@@ -296,7 +294,7 @@ class FormSubmissionFormatter
     private function getFileUrl($formId, $file)
     {
         try {
-            return $this->useSignedUrlForFiles ? \URL::signedRoute(
+            return $this->useSignedUrlForFiles ? URL::signedRoute(
                 'open.forms.submissions.file',
                 [$formId, $file]
             ) : route('open.forms.submissions.file', [$formId, $file]);

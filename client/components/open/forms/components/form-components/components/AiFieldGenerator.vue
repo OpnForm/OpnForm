@@ -1,7 +1,7 @@
 <template>
   <div>
     <UPopover v-model:open="isPopoverOpen" arrow :content="popoverContent">
-      <UTooltip text="Add question with AI">
+      <UTooltip text="Add question with AI" arrow>
         <UButton
           size="sm"
           color="neutral"

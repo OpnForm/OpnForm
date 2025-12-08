@@ -68,6 +68,10 @@
             }
         },
         "validation_error": "प्रमाणीकरण त्रुटी",
-        "validation_error_with_count": "प्रमाणीकरण त्रुटी ({count} फील्ड)"
+        "validation_error_with_count": "प्रमाणीकरण त्रुटी ({count} फील्ड)",
+        "toggle": {
+            "yes": "होय",
+            "no": "नाही"
+        }
     }
 } 

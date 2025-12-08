@@ -68,6 +68,10 @@
             }
         },
         "validation_error": "Doğrulama Hatası",
-        "validation_error_with_count": "Doğrulama Hatası ({count} alan)"
+        "validation_error_with_count": "Doğrulama Hatası ({count} alan)",
+        "toggle": {
+            "yes": "Evet",
+            "no": "Hayır"
+        }
     }
 } 

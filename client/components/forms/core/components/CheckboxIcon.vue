@@ -3,12 +3,12 @@
     <Icon
       v-show="isChecked"
       name="i-material-symbols-check-box"
-      :class="ui.checkedIcon()"
+      :class="ui.checkedIcon({ class: props.ui?.slots?.checkedIcon })"
     />
     <Icon
       v-show="!isChecked"
       name="i-material-symbols-check-box-outline-blank"
-      :class="ui.uncheckedIcon()"
+      :class="ui.uncheckedIcon({ class: props.ui?.slots?.uncheckedIcon })"
     />
   </div>
 </template>

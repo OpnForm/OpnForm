@@ -28,12 +28,12 @@
       title="Pro plan required"
       description="Please upgrade your account to setup a custom domain."
       :actions="[{
-        label: 'Try Pro plan',
+        label: 'Upgrade to Pro',
         color: 'warning',
         variant: 'solid',
         onClick: () => openSubscriptionModal({
           modal_title: 'Upgrade to use your own domain',
-          modal_description: 'Try our Pro plan for free today, and unlock custom domains and other features such as advanced customization, forms analytics, integrations, and more!'
+          modal_description: 'Upgrade to our Pro plan to unlock custom domains and other premium features such as advanced customization, forms analytics, integrations, and more!'
         })
       }]"
     />

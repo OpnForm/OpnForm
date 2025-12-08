@@ -68,6 +68,10 @@
             }
         },
         "validation_error": "Chyba ověření",
-        "validation_error_with_count": "Chyba ověření ({count} polí)"
+        "validation_error_with_count": "Chyba ověření ({count} polí)",
+        "toggle": {
+            "yes": "Ano",
+            "no": "Ne"
+        }
     }
 } 

@@ -68,6 +68,10 @@
             }
         },
         "validation_error": "Error de validación",
-        "validation_error_with_count": "Error de validación ({count} campos)"
+        "validation_error_with_count": "Error de validación ({count} campos)",
+        "toggle": {
+            "yes": "Sí",
+            "no": "No"
+        }
     }
 } 

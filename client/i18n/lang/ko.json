@@ -68,6 +68,10 @@
             }
         },
         "validation_error": "유효성 검사 오류",
-        "validation_error_with_count": "유효성 검사 오류 ({count}개 필드)"
+        "validation_error_with_count": "유효성 검사 오류 ({count}개 필드)",
+        "toggle": {
+            "yes": "예",
+            "no": "아니오"
+        }
     }
 } 

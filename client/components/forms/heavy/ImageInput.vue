@@ -11,7 +11,7 @@
         aria-expanded="true"
         aria-labelledby="listbox-label"
         class="cursor-pointer relative w-full"
-        :class="ui.button()"
+        :class="ui.button({ class: props.ui?.slots?.button })"
         :style="inputStyle"
         @click.prevent="showUploadModal = true"
       >
@@ -64,15 +64,23 @@
     <UModal
       v-model:open="showUploadModal"
       title="Upload an image"
-      :ui="{ content: 'sm:max-w-xl' }"
+      :ui="{ content: 'sm:max-w-xl', body: 'pt-2!' }"
     >
       <template #body>
         <div class="max-w-3xl mx-auto lg:max-w-none">
-          <div class="sm:grid sm:grid-cols-1 sm:gap-4 sm:items-start">
-            <div class="sm:col-span-2 mb-5">
+          <UTabs
+            v-model="activeTab"
+            :items="tabItems"
+            :content="false"
+            variant="link"
+            class="mb-2"
+          />
+
+          <div v-if="activeTab === 'upload'" class="sm:grid sm:grid-cols-1 sm:gap-4 sm:items-start">
+            <div class="sm:col-span-2 mb-5 mt-2">
               <div
                 v-cloak
-                class="w-full flex justify-center items-center px-6 pt-5 pb-6 border-2 border-neutral-300 border-dashed rounded-md h-128"
+                class="w-full flex justify-center items-center px-6 pt-5 pb-6 border-2 border-neutral-300 border-dashed rounded-md h-54"
                 @dragover.prevent="onUploadDragoverEvent($event)"
                 @drop.prevent="onUploadDropEvent($event)"
               >
@@ -124,6 +132,24 @@
               </div>
             </div>
           </div>
+
+          <div v-else-if="activeTab === 'unsplash'">
+            <UnsplashImages @selectImage="selectUnsplashImage" />
+          </div>
+
+          <div v-else-if="activeTab === 'url'" class="p-4">
+            <TextInput
+              v-model="urlInput"
+              name="image_url"
+              label="Enter the URL of the image you want to use"
+              placeholder="https://example.com/image.jpg"
+            />
+            <div class="mt-4 flex justify-end gap-2">
+              <UButton color="primary" :disabled="!urlInput" @click="insertUrl">
+                Insert
+              </UButton>
+            </div>
+          </div>
         </div>
       </template>
     </UModal>
@@ -135,6 +161,7 @@ import { inputProps, useFormInput } from "../useFormInput.js"
 import { storeFile } from "~/lib/file-uploads.js"
 import { formsApi } from '~/api'
 import { imageInputTheme } from '~/lib/forms/themes/image-input.theme.js'
+import { useFeatureFlag } from '~/composables/useFeatureFlag.js'
 
 export default {
   components: {  },
@@ -148,12 +175,15 @@ export default {
       variants: imageInputTheme
     })
     return {
-      ...formInput
+      ...formInput,
+      props
     }
   },
 
   data: () => ({
     showUploadModal: false,
+    activeTab: 'upload',
+    urlInput: '',
 
     file: [],
     uploadDragoverTracking: false,
@@ -164,6 +194,16 @@ export default {
   computed: {
     currentUrl() {
       return this.compVal
+    },
+    tabItems() {
+      const baseTabs = [
+        { label: 'Upload', value: 'upload' },
+        { label: 'URL', value: 'url' },
+      ]
+      if (useFeatureFlag('services.unsplash')) {
+        baseTabs.splice(1, 0, { label: 'Unsplash', value: 'unsplash' })
+      }
+      return baseTabs
     },
   },
 
@@ -193,10 +233,20 @@ export default {
       this.droppedFiles(e.dataTransfer.files)
     },
     onUploadPasteEvent(e) {
-      if (!this.showUploadModal) return
+      if (!this.showUploadModal || this.activeTab !== 'upload') return
       this.uploadDragoverEvent = false
       this.uploadDragoverTracking = false
       this.droppedFiles(e.clipboardData.files)
+    },
+    selectUnsplashImage(imageUrl) {
+      this.compVal = imageUrl
+      this.showUploadModal = false
+    },
+    insertUrl() {
+      if (!this.urlInput || !/^https?:\/\/[^\s$.?#].[^\s]*$/i.test(this.urlInput)) return
+      this.compVal = this.urlInput
+      this.urlInput = ''
+      this.showUploadModal = false
     },
     droppedFiles(droppedFiles) {
       if (!droppedFiles) return

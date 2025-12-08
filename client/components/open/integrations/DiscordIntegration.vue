@@ -6,7 +6,7 @@
   >
     <text-input
       :form="integrationData"
-      name="settings.discord_webhook_url"
+      name="data.discord_webhook_url"
       label="Discord webhook url"
       help="help"
       required
@@ -30,7 +30,7 @@
       Discord message options
     </h4>
     <notifications-message-actions
-      v-model="integrationData.settings"
+      v-model="integrationData.data"
       :form="form"
     />
   </IntegrationWrapper>

@@ -68,6 +68,10 @@
             }
         },
         "validation_error": "تصدیق کی خرابی",
-        "validation_error_with_count": "تصدیق کی خرابی ({count} فیلڈز)"
+        "validation_error_with_count": "تصدیق کی خرابی ({count} فیلڈز)",
+        "toggle": {
+            "yes": "ہاں",
+            "no": "نہیں"
+        }
     }
 } 

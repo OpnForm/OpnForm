@@ -68,6 +68,10 @@
             }
         },
         "validation_error": "சரிபார்ப்பு பிழை",
-        "validation_error_with_count": "சரிபார்ப்பு பிழை ({count} புலங்கள்)"
+        "validation_error_with_count": "சரிபார்ப்பு பிழை ({count} புலங்கள்)",
+        "toggle": {
+            "yes": "ஆம்",
+            "no": "இல்லை"
+        }
     }
 } 

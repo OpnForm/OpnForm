@@ -126,7 +126,73 @@ You normally **don’t** need to add headers manually.
 
 ---
 
-## 7. Checklist for New Composables
+## 7. Form Integration with TanStack Query
+
+Forms in OpnForm (`@/composables/lib/vForm/Form.js`) provide a higher-level abstraction for handling form state, validation, and submission. They integrate seamlessly with TanStack Query mutations:
+
+### When to Use Forms
+
+**Use `Form` class when:**
+
+-   You need comprehensive form state management (busy, successful, recentlySuccessful)
+-   Form has client-side or server-side validation
+-   You need built-in error extraction and display
+-   User needs visual feedback during submission (loading states, success messages)
+
+**Use direct TanStack Query when:**
+
+-   Simple data operations without validation
+-   No complex form state management needed
+-   Direct server-state management is sufficient
+
+### Form + Mutation Integration
+
+Pass a TanStack Query mutation to `form.mutate()` or `form.mutateAsync()`:
+
+```js
+// Create mutation from a query composable
+const { update } = useWorkspaces();
+const updateMutation = update(workspaceId);
+
+// Use it with form
+const form = useForm({ name: "My Workspace" });
+
+const handleSubmit = () => {
+    form.mutate(updateMutation)
+        .then((response) => {
+            useAlert().success("Updated!");
+            // Handle success (redirect, cache invalidation, etc.)
+        })
+        .catch((error) => {
+            // Form automatically handles validation errors
+            // error.data contains extracted validation failures
+            if (error.response?.status !== 422) {
+                useAlert().error("Something went wrong");
+            }
+        });
+};
+```
+
+### Form State Lifecycle
+
+1. **`form.busy`** – True while mutation is pending
+2. **`form.successful`** – True after successful mutation
+3. **`form.recentlySuccessful`** – Auto-reverts to false after 2s (for UI feedback like "Saved!" messages)
+4. **`form.errors`** – Populated automatically from validation responses
+
+### Key Benefits of Form Class
+
+| Feature            | Form Class                          | Direct Mutation    |
+| ------------------ | ----------------------------------- | ------------------ |
+| Loading state      | ✅ Automatic `form.busy`            | Manual `isPending` |
+| Error extraction   | ✅ Auto-extracts from response      | Manual parsing     |
+| Validation support | ✅ Built-in precognition            | Via TanStack Query |
+| Success feedback   | ✅ `form.recentlySuccessful`        | Manual state       |
+| File uploads       | ✅ Automatic FormData serialization | Manual handling    |
+
+---
+
+## 8. Checklist for New Composables
 
 -   [ ] Map 1-to-1 with an API module
 -   [ ] Provide `list`, `detail`, and the necessary mutations

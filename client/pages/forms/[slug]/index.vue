@@ -14,7 +14,7 @@
       </div>
       <template v-else>
         <OpenCompleteForm
-          ref="openCompleteForm"
+          ref="openCompleteFormRef"
           :form="form"
           class="w-full grow min-h-0"
           :dark-mode="darkMode"
@@ -59,10 +59,9 @@ if (import.meta.server) {
   await suspense()
 }
 
-const openCompleteForm = ref(null)
+const openCompleteFormRef = ref(null)
 
 const passwordEntered = function (password) {
-  console.log('passwordEntered', password)
   const cookie = useCookie('password-' + slug, {
     maxAge: 60 * 60 * 7,
     sameSite: 'none',
@@ -71,14 +70,13 @@ const passwordEntered = function (password) {
   cookie.value = sha256(password)
   nextTick(() => {
     refetchForm().then(() => {
-      console.log('form.value', form.value)
       if (form.value?.is_password_protected) {
         // Add another nextTick to ensure the component is fully rendered after refetch
         nextTick(() => {
-          if (openCompleteForm.value && typeof openCompleteForm.value.addPasswordError === 'function') {
-            openCompleteForm.value.addPasswordError(t('forms.invalid_password'))
+          if (openCompleteFormRef.value && typeof openCompleteFormRef.value.addPasswordError === 'function') {
+            openCompleteFormRef.value.addPasswordError(t('forms.invalid_password'))
           } else {
-            console.warn('OpenCompleteForm ref not available or addPasswordError method not found')
+            console.warn('openCompleteFormRef ref not available or addPasswordError method not found')
           }
         })
       } else {

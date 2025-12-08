@@ -27,7 +27,7 @@
               <a
                 target="_blank"
                 class="flex items-center gap-x-1 hover:no-underline"
-                href="https://github.com/jhumanj/opnform"
+                href="https://github.com/OpnForm/OpnForm"
               >
               <span
                 class="absolute inset-0"

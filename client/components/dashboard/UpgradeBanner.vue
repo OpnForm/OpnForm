@@ -9,8 +9,8 @@
     description="Remove OpnForm branding, customize forms further, use your custom domain, integrate with your favorite tools, invite users, and more!"
     :actions="[
       {
-        label: 'Try for free',
-        onClick: () => openSubscriptionModal({modal_title: 'Try our Pro plan for free today!'})
+        label: 'Upgrade now',
+        onClick: () => openSubscriptionModal({modal_title: 'Upgrade to Pro plan'})
       },
       {
         label: 'Close',

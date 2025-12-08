@@ -68,6 +68,10 @@
             }
         },
         "validation_error": "Valideringsfel",
-        "validation_error_with_count": "Valideringsfel ({count} fält)"
+        "validation_error_with_count": "Valideringsfel ({count} fält)",
+        "toggle": {
+            "yes": "Ja",
+            "no": "Nej"
+        }
     }
 } 

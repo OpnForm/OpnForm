@@ -11,17 +11,20 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Hash;
+use Laragear\TwoFactor\Contracts\TwoFactorAuthenticatable as TwoFactorAuthenticatableContract;
+use Laragear\TwoFactor\TwoFactorAuthentication;
 use Laravel\Cashier\Billable;
 use Laravel\Sanctum\HasApiTokens;
 use Tymon\JWTAuth\Contracts\JWTSubject;
 
-class User extends Authenticatable implements JWTSubject, CachableAttributes
+class User extends Authenticatable implements JWTSubject, CachableAttributes, TwoFactorAuthenticatableContract
 {
     use Billable;
     use HasFactory;
     use Notifiable;
     use HasApiTokens;
     use CachesAttributes;
+    use TwoFactorAuthentication;
 
     public const ROLE_ADMIN = 'admin';
     public const ROLE_USER = 'user';
@@ -46,6 +49,10 @@ class User extends Authenticatable implements JWTSubject, CachableAttributes
         'utm_data',
         'meta',
         'blocked_at'
+    ];
+
+    protected $dispatchesEvents = [
+        'created' => \App\Events\Models\UserCreated::class,
     ];
 
     /**
@@ -323,6 +330,16 @@ class User extends Authenticatable implements JWTSubject, CachableAttributes
     }
 
     /**
+     * Get the OIDC user identities.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function userIdentities()
+    {
+        return $this->hasMany(\App\Enterprise\Oidc\Models\UserIdentity::class, 'user_id');
+    }
+
+    /**
      * @return int
      */
     public function getJWTIdentifier()
@@ -343,11 +360,7 @@ class User extends Authenticatable implements JWTSubject, CachableAttributes
 
     public function getIsRiskyAttribute()
     {
-        return $this->created_at->isAfter(now()->subDays(3)) || // created in last 3 days
-            $this->subscriptions()->where(function ($q) {
-                $q->where('stripe_status', 'trialing')
-                    ->orWhere('stripe_status', 'active');
-            })->first()?->onTrial();
+        return $this->created_at->isAfter(now()->subDays(3));
     }
 
     public function flushCache()

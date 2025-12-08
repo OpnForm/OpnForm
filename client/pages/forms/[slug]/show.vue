@@ -175,7 +175,6 @@
 </template>
 
 <script setup>
-import { computed } from "vue"
 import { formatNumber, formatNumberWithCommas } from "~/lib/utils.js"
 import FormSidebar from "../../../components/layouts/FormSidebar.vue"
 import ExtraMenu from "../../../components/pages/forms/show/ExtraMenu.vue"

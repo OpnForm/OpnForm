@@ -14,12 +14,12 @@
         class="w-full  @3xl:max-w-1/2 order-2"
         :class="isLeft ? '@3xl:order-1' : '@3xl:order-2'"
       >
-        <div class="@3xl:p-4 @7xl:p-6 mb-4" :class="ui.mediaContainer()">
+        <div class="@3xl:p-4 @7xl:p-6 mb-4" :class="ui.mediaContainer({ class: props.ui?.slots?.mediaContainer })">
           <BlockMediaLayout
             :image="image"
             :fallback-height="null"
-            :class="ui.mediaComponent()"
-            :img-class="ui.mediaImg()"
+            :class="ui.mediaComponent({ class: props.ui?.slots?.mediaComponent })"
+            :img-class="ui.mediaImg({ class: props.ui?.slots?.mediaImg })"
           />
         </div>
       </div>
@@ -35,13 +35,14 @@ import { sideMediaSmallTheme } from '~/lib/forms/themes/side-media-small.theme.j
 const props = defineProps({
   image: { type: Object, required: true },
   side: { type: String, default: 'left' }, // 'left' | 'right'
-  borderRadius: { type: String, default: 'small' } // 'none' | 'small' | 'full'
+  borderRadius: { type: String, default: 'small' }, // 'none' | 'small' | 'full'
+  ui: { type: Object, default: () => ({}) }
 })
 
 const isLeft = computed(() => (props.side || 'left') === 'left')
 
 const ui = computed(() => {
-  return tv(sideMediaSmallTheme)({
+  return tv(sideMediaSmallTheme, props.ui)({
     borderRadius: props.borderRadius || 'small'
   })
 })

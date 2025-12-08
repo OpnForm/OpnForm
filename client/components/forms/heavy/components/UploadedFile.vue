@@ -1,7 +1,7 @@
 <template>
   <div
     class="overflow-hidden"
-    :class="[variantSlots.root(), { 'bg-white': !disabled, 'bg-gray-300': disabled }]"
+    :class="[variantSlots.root({ class: props.ui?.slots?.root }), { 'bg-white': !disabled, 'bg-gray-300': disabled }]"
     :title="file.file.name"
   >
     <div
@@ -75,17 +75,18 @@ export default {
     file: { type: Object, default: null },
     disabled: { type: Boolean, default: false },
     showRemove: { type: Boolean, default: true },
+    ui: { type: Object, default: () => ({}) }
   },
   emits: ['remove'],
   data: () => ({
     isImageHide: false,
   }),
-  setup() {
+  setup(props) {
     const injectedTheme = inject('formTheme', null)
     const resolvedTheme = computed(() => injectedTheme?.value || 'default')
-    const uploadedVariants = computed(() => tv(uploadedFileTheme, {}))
+    const uploadedVariants = computed(() => tv(uploadedFileTheme, props.ui || {}))
     const variantSlots = computed(() => uploadedVariants.value({ theme: resolvedTheme.value }))
-    return { variantSlots }
+    return { variantSlots, props }
   },
 }
 </script>

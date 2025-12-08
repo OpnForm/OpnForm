@@ -68,6 +68,10 @@
             }
         },
         "validation_error": "Błąd walidacji",
-        "validation_error_with_count": "Błąd walidacji ({count} pola)"
+        "validation_error_with_count": "Błąd walidacji ({count} pola)",
+        "toggle": {
+            "yes": "Tak",
+            "no": "Nie"
+        }
     }
 } 

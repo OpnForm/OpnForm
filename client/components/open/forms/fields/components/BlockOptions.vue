@@ -40,7 +40,7 @@
           :columns="6"
         />
         <OptionSelectorInput
-          v-if="['nf-text', 'nf-image'].includes(field.type)"
+          v-if="['nf-text', 'nf-image', 'nf-video'].includes(field.type)"
           v-model="field.align"
           name="align"
           class="mt-4 w-2/3"
@@ -106,6 +106,19 @@
         :form="field"
         label="Upload Image"
         :required="false"
+      />
+    </div>
+    
+    <div
+      v-else-if="field.type == 'nf-video'"
+      class="border-t mt-4"
+    >
+      <TextInput
+        name="video_block"
+        class="mx-4"
+        :form="field"
+        label="Video URL"
+        help="You can add a video URL here. It will be displayed as a video block."
       />
     </div>
 

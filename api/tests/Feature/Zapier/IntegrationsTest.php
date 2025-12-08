@@ -5,6 +5,7 @@ use App\Models\User;
 use Laravel\Sanctum\Sanctum;
 
 use function Pest\Laravel\assertDatabaseCount;
+use function Pest\Laravel\assertSoftDeleted;
 use function Pest\Laravel\delete;
 use function Pest\Laravel\post;
 use function PHPUnit\Framework\assertEquals;
@@ -100,7 +101,7 @@ test('delete an integration', function () {
     ])
         ->assertOk();
 
-    assertDatabaseCount('form_integrations', 0);
+    assertSoftDeleted('form_integrations', ['id' => $integration->id]);
 });
 
 test('cannot delete an integration with an incorrect hook url', function () {

@@ -3,14 +3,18 @@ import { computed, toValue } from 'vue'
 export function useFocusedStructure(formConfig, managerState, formData, fieldState) {
   const form = computed(() => toValue(formConfig) || { properties: [] })
 
-  const isHidden = (field) => {
-    try { return !!fieldState.getState(field).hidden } catch { return !!field?.hidden }
+  const isFieldHidden = (field) => {
+    try {
+      return !!fieldState.getState(field).hidden
+    } catch {
+      return !!field?.hidden
+    }
   }
 
   const visibleProperties = computed(() => {
     const properties = form.value.properties || []
     // Focused: one field per page; exclude hidden fields so slides are never empty
-    return properties.filter(field => !isHidden(field))
+    return properties.filter(field => !isFieldHidden(field))
   })
 
   const fieldGroups = computed(() => {
@@ -57,10 +61,27 @@ export function useFocusedStructure(formConfig, managerState, formData, fieldSta
 
   // Utilities used by editor/drag in classic; provide no-ops or simple mapping
   const getPageForField = (fieldIndex) => {
-    const properties = visibleProperties.value || []
-    if (properties.length === 0) return 0
-    if (fieldIndex < 0 || fieldIndex >= properties.length) return 0
-    return fieldIndex
+    const allProperties = form.value.properties || []
+    const visible = visibleProperties.value || []
+    
+    // Get the field from the full properties array
+    const field = allProperties[fieldIndex]
+    
+    // If field is hidden, return current page (don't change it)
+    if (field && isFieldHidden(field)) {
+      return managerState?.currentPage ?? 0
+    }
+    
+    // Find the index of this field in visible properties
+    const visibleIndex = visible.findIndex(f => f?.id === field?.id)
+    
+    if (visibleIndex >= 0) {
+      return visibleIndex
+    }
+    
+    // Fallback
+    if (visible.length === 0) return 0
+    return Math.min(fieldIndex, visible.length - 1)
   }
 
   const setPageForField = (fieldIndex) => {
@@ -103,7 +124,8 @@ export function useFocusedStructure(formConfig, managerState, formData, fieldSta
     getPaymentBlock,
     getTargetDropIndex,
     determineInsertIndex,
-    setPageForField
+    setPageForField,
+    isFieldHidden
   }
 }
 

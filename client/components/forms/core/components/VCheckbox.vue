@@ -1,19 +1,19 @@
 <template>
-  <div :class="ui.container()">
+  <div :class="ui.container({ class: props.ui?.slots?.container })">
     <input
       :id="id || name"
       v-model="internalValue"
       :value="value"
       :name="name"
       type="checkbox"
-      :class="ui.input()"
+      :class="ui.input({ class: props.ui?.slots?.input })"
       :style="colorStyle"
       :disabled="disabled ? true : null"
       @keydown="handleKeydown"
     >
     <label
       :for="id || name"
-      :class="ui.label()"
+      :class="ui.label({ class: props.ui?.slots?.label })"
     >
       <slot />
     </label>

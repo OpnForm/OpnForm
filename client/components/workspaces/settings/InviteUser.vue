@@ -60,12 +60,12 @@
           title="Pro plan required"
           description="Please upgrade your account to invite users to your workspace."
           :actions="[{
-            label: 'Try Pro plan',
+            label: 'Upgrade to Pro',
             color: 'warning',
             variant: 'solid',
             onClick: () => openSubscriptionModal({
               modal_title: 'Upgrade to invite users to your workspace',
-              modal_description: 'Try our Pro plan for free today, and unlock team collaboration features along with customized branding, form analytics, custom domains, and more!'
+              modal_description: 'Upgrade to our Pro plan to unlock team collaboration features along with customized branding, form analytics, custom domains, and more!'
             })
           }]"
         />

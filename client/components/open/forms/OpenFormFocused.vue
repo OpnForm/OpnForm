@@ -1,5 +1,5 @@
 <template>
-  <form v-if="form" @submit.prevent="" class="@container w-full relative overflow-hidden flex flex-col min-h-full">
+  <form ref="formElement" v-if="form" @submit.prevent="" class="@container w-full relative overflow-hidden flex flex-col min-h-full">
     <!-- Fixed fullscreen background from form cover -->
     <div v-if="form.cover_picture" class="absolute inset-0 pointer-events-none">
       <BlockMediaLayout :image="coverMedia" alt="Form cover image" />
@@ -47,12 +47,18 @@
       </template>
       <component v-else :is="currentLayoutComponent" v-bind="currentLayoutProps" :key="currentIndex">
         <div class="relative">
-          <BlockRenderer :block="currentBlock" :form-manager="formManager" />
+          <BlockRenderer :block="currentBlock" :form-manager="formManager" @input-filled="onInputFilled" />
         </div>
-        <div class="mt-2 flex gap-2 justify-start" :class="{'flex-col justify-normal! items-center': isLast &&form.use_captcha}">
+        <div v-if="!props.formManager?.state.isSubmitted" class="mt-2 flex gap-2" :class="[getFieldAlignClasses(currentBlock), {'flex-col justify-normal! items-center': isLast &&form.use_captcha}]">
           <slot name="submit-btn" v-if="isLast" :loading="isProcessing">
             <CaptchaWrapper v-if="form.use_captcha" :form-manager="formManager" />
-            <open-form-button :form="form" class="mt-0.5 px-6" :loading="isProcessing" @click.prevent="emit('submit')">
+            <open-form-button 
+              native-type="button" 
+              :form="form" 
+              class="mt-0.5 px-6" 
+              :loading="isProcessing" 
+              @click.prevent.stop="handleSubmitClick"
+            >
               {{ form.submit_button_text || $t('forms.buttons.submit') }}
             </open-form-button>
           </slot>
@@ -166,6 +172,21 @@ const handleNextClick = () => {
   })
 }
 
+const onInputFilled = () => {
+  // On last page, submit the form instead of advancing
+  if (isLast.value) {
+    // Don't submit if already processing
+    if (isProcessing.value) {
+      return
+    }
+    emit('submit')
+    return
+  }
+  
+  // On non-last pages, advance to next page
+  handleNextClick()
+}
+
 const coverMedia = computed(() => ({
   url: form.value?.cover_picture,
   focal_point: form.value?.cover_settings?.focal_point,
@@ -176,6 +197,67 @@ const borderRadius = computed(() => form.value?.border_radius || 'small')
 
 // Preload images used by the form (cover/logo/blocks)
 useFormImagePreloader(form, state)
+
+// Auto-focus the input field after page transition
+const formElement = ref(null)
+const focusCurrentInput = () => {
+  if (import.meta.server || isTemplateMode.value || !form.value?.auto_focus) return
+  
+  nextTick(() => {
+    // Wait for transition to complete (500ms as defined in SlidingTransition)
+    setTimeout(() => {
+      // Find the first visible focusable input element in the current form
+      if (!formElement.value) return
+      
+      const focusableSelectors = [
+        'input:not([type="hidden"]):not([disabled])',
+        'textarea:not([disabled])',
+        'select:not([disabled])',
+        'button[aria-haspopup="listbox"]:not([disabled])', // VSelect dropdown trigger
+        '[contenteditable="true"]',
+        'button[role="radio"]:not([disabled])',
+        'button[role="checkbox"]:not([disabled])',
+        '[role="listbox"][tabindex="0"]' // FocusedSelectorInput container
+      ]
+      
+      const focusableElements = formElement.value.querySelectorAll(focusableSelectors.join(', '))
+      
+      // Find the first truly visible focusable element
+      let firstVisible = null
+      for (const element of focusableElements) {
+        // Skip if element has hidden attribute
+        if (element.hasAttribute('hidden')) continue
+        
+        // Skip if element has aria-hidden="true"
+        if (element.getAttribute('aria-hidden') === 'true') continue
+        
+        // Check visibility: element is visible if it has layout (offsetParent) or client rects
+        if (element.offsetParent !== null || element.getClientRects().length > 0) {
+          firstVisible = element
+          break
+        }
+      }
+      
+      if (firstVisible && typeof firstVisible.focus === 'function') {
+        firstVisible.focus({ preventScroll: true })
+      }
+    }, 550) // Slightly longer than transition speed to ensure it's complete
+  })
+}
+
+// Watch for page changes and auto-focus (only if auto_focus is enabled)
+watch(currentIndex, () => {
+  if (form.value?.auto_focus) {
+    focusCurrentInput()
+  }
+})
+
+// Focus on initial mount (only if auto_focus is enabled)
+onMounted(() => {
+  if (form.value?.auto_focus) {
+    focusCurrentInput()
+  }
+})
 
 // Slots/utilities
 const slots = useSlots()
@@ -218,5 +300,23 @@ const goPrev = () => {
     }
   }
 }
+const handleSubmitClick = (event) => {
+  // Prevent form submission if button is disabled/processing
+  if (isProcessing.value) {
+    event?.preventDefault()
+    return
+  }
+  
+  emit('submit')
+}
+
 const goNext = () => { if (!isLast.value) handleNextClick() }
+
+// If block is text block, or any other block that has an align property, use the align property to determine the justify class
+function getFieldAlignClasses(field) {
+  if (!field?.align || field.align === 'left') return 'justify-start'
+  else if (field.align === 'right') return 'justify-end'
+  else if (field.align === 'center') return 'justify-center'
+  else return 'justify-start'
+}
 </script>

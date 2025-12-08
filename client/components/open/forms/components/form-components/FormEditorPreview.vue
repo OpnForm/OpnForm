@@ -72,7 +72,11 @@
             v-if="!isExpanded && form && form.presentation_style === 'focused'"
             class="absolute top-2 right-2 z-20 flex items-center gap-2"
           >
-            <UTooltip text="Add block">
+            <UTooltip
+              text="Add block"
+              :kbds="['meta', 'B']"
+              arrow
+            >
               <UButton
                 icon="i-heroicons-plus"
                 color="neutral"
@@ -221,6 +225,12 @@ function isValidIndex(index) {
 watch(() => currentSlideIndex.value, (newIndex) => {
   try {
     if (isFocusedEditing.value && isValidIndex(newIndex) && workingFormStore.selectedFieldIndex !== newIndex) {
+      // Skip if the field at this index is hidden
+      const field = workingFormStore.content?.properties?.[newIndex]
+      const struct = workingFormStore.structureService
+      if (field && struct && typeof struct.isFieldHidden === 'function' && struct.isFieldHidden(field)) {
+        return
+      }
       // Update the selected field to follow the currently focused slide
       workingFormStore.setEditingField(newIndex)
     }
@@ -233,7 +243,12 @@ watch(() => currentSlideIndex.value, (newIndex) => {
 watch(() => workingFormStore.selectedFieldIndex, (newIndex) => {
   try {
     if (isFocusedEditing.value && isValidIndex(newIndex)) {
+      // Skip if the selected field is hidden
+      const field = workingFormStore.content?.properties?.[newIndex]
       const struct = workingFormStore.structureService
+      if (field && struct && typeof struct.isFieldHidden === 'function' && struct.isFieldHidden(field)) {
+        return
+      }
       if (struct && typeof struct.setPageForField === 'function') {
         struct.setPageForField(newIndex)
       }

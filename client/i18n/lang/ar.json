@@ -68,6 +68,10 @@
             }
         },
         "validation_error": "خطأ في التحقق",
-        "validation_error_with_count": "خطأ في التحقق ({count} حقول)"
+        "validation_error_with_count": "خطأ في التحقق ({count} حقول)",
+        "toggle": {
+            "yes": "نعم",
+            "no": "لا"
+        }
     }
 } 

@@ -7,7 +7,7 @@ use Illuminate\Contracts\Validation\ValidationRule;
 
 class ValidPhoneInputRule implements ValidationRule
 {
-    public ?int $reason = 0;
+    public \libphonenumber\ValidationResult|int|null $reason = 0;
 
     public function passes($attribute, $value)
     {

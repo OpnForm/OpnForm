@@ -120,6 +120,11 @@ export const useWorkingFormStore = defineStore("working_form", {
       if (this.selectedFieldIndex !== -1 && previousIndex !== this.selectedFieldIndex) {
         // Find which page contains the selected field and set to that page
         if (this.structureService) {
+          // Skip if the selected field is hidden
+          const field = this.content?.properties?.[this.selectedFieldIndex]
+          if (field && typeof this.structureService.isFieldHidden === 'function' && this.structureService.isFieldHidden(field)) {
+            return
+          }
           this.structureService.setPageForField(this.selectedFieldIndex)
         }
       }
@@ -258,13 +263,15 @@ export const useWorkingFormStore = defineStore("working_form", {
       newBlock.hidden = false
       newBlock.help_position = "below_input"
 
-      // If the type was changed due to actual_input, apply original type's change settings
-      if (originalBlockDefinition?.actual_input && originalBlockDefinition?.type_change_settings) {
-        Object.assign(newBlock, originalBlockDefinition.type_change_settings)
-      }
-
+      // Apply effective block's default_values (base block defaults)
       if (effectiveBlockDefinition?.default_values) {
         Object.assign(newBlock, effectiveBlockDefinition.default_values)
+      }
+
+      // Apply original block's default_values to override effective block defaults when using actual_input
+      // (e.g., password secret_input, toggle_switch use_toggle_switch)
+      if (originalBlockDefinition?.actual_input && originalBlockDefinition?.default_values) {
+        Object.assign(newBlock, originalBlockDefinition.default_values)
       }
 
       const insertIndex = this.determineInsertIndex(index)

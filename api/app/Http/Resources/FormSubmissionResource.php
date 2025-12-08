@@ -47,12 +47,17 @@ class FormSubmissionResource extends JsonResource
 
     private function addExtraData()
     {
-        $this->data = array_merge($this->data, [
+        $extraData = [
             'status' => $this->status,
             'created_at' => $this->created_at->toDateTimeString(),
             'id' => $this->id,
-            'submission_id' => Hashids::encode($this->id),
-        ]);
+            'submission_id' => Hashids::encode($this->id)
+        ];
+        if ($this->form->enable_ip_tracking && $this->form->is_pro && !empty($this->meta)) {
+            $extraData['ip_address'] = $this->meta['ip_address'] ?? null;
+        }
+
+        $this->data = array_merge($this->data, $extraData);
     }
 
     /**

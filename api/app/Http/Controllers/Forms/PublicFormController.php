@@ -110,15 +110,11 @@ class PublicFormController extends Controller
     /**
      * Handle partial form submissions
      *
-     * @param Request $request
+     * @param array $submissionData
      * @return \Illuminate\Http\JsonResponse
      */
-    private function handlePartialSubmissions(Request $request, Form $form)
+    private function handlePartialSubmissions(array $submissionData, Form $form)
     {
-
-        // Process submission data to extract submission ID
-        $submissionData = $this->processSubmissionIdentifiers($request, $request->all());
-
         // Validate that at least one field has a value
         $hasValue = false;
         foreach ($submissionData as $key => $value) {
@@ -133,19 +129,13 @@ class PublicFormController extends Controller
             ], 422);
         }
 
-        // Explicitly mark this as a partial submission
         $submissionData['is_partial'] = true;
-
-        // Use the same job as regular submissions to ensure consistent processing
         $job = new StoreFormSubmissionJob($form, $submissionData);
         $job->handle();
 
-        // Get the submission ID
-        $submissionId = $job->getSubmissionId();
-
         return $this->success([
             'message' => 'Partial submission saved',
-            'submission_hash' => Hashids::encode($submissionId)
+            'submission_hash' => Hashids::encode($job->getSubmissionId())
         ]);
     }
 
@@ -156,17 +146,28 @@ class PublicFormController extends Controller
 
         $isFirstSubmission = ($form->submissions_count === 0);
 
-        // Handle partial submissions
+        // Check for partial submission flag early (before validation)
         $isPartial = $request->get('is_partial') ?? false;
-        if ($isPartial && $form->enable_partial_submissions && $form->is_pro) {
-            return $this->handlePartialSubmissions($request, $form);
-        }
 
-        // Get validated data (includes all metadata)
-        $submissionData = $request->validated();
+        // Use raw data for partial submissions (don't validate all required fields)
+        // Use validated data for complete submissions
+        $submissionData = ($isPartial && $form->enable_partial_submissions && $form->is_pro)
+            ? $request->all()
+            : $request->validated();
 
         // Process submission hash and ID
         $submissionData = $this->processSubmissionIdentifiers($request, $submissionData);
+
+        // Add IP address for tracking if enabled
+        unset($submissionData['submitter_ip']);
+        if ($form->enable_ip_tracking && $form->is_pro) {
+            $submissionData['submitter_ip'] = $request->ip();
+        }
+
+        // Handle partial submissions
+        if ($isPartial && $form->enable_partial_submissions && $form->is_pro) {
+            return $this->handlePartialSubmissions($submissionData, $form);
+        }
 
         // Create the job with all data (including metadata)
         $job = new StoreFormSubmissionJob($form, $submissionData);

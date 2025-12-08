@@ -68,6 +68,10 @@
             }
         },
         "validation_error": "ధ్రువీకరణ లోపం",
-        "validation_error_with_count": "ధ్రువీకరణ లోపం ({count} ఫీల్డ్‌లు)"
+        "validation_error_with_count": "ధ్రువీకరణ లోపం ({count} ఫీల్డ్‌లు)",
+        "toggle": {
+            "yes": "అవును",
+            "no": "కాదు"
+        }
     }
 } 

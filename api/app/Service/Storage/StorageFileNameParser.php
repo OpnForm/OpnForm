@@ -30,7 +30,7 @@ class StorageFileNameParser
     public function getMovedFileName(): ?string
     {
         if ($this->fileName && $this->extension) {
-            $fileName = substr($this->fileName, 0, 50) . '_' . $this->uuid . '.' . $this->extension;
+            $fileName = mb_substr($this->fileName, 0, 50) . '_' . $this->uuid . '.' . $this->extension;
             $fileName = preg_replace('#\p{C}+#u', '', $fileName); // avoid CorruptedPathDetected exceptions
 
             return $fileName ? S3KeyCleaner::sanitize($fileName) : null;

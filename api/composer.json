@@ -1,5 +1,5 @@
 {
-    "name": "jhumanj/opnform",
+    "name": "opnform/opnform",
     "description": "A beautiful open-source form builder ",
     "keywords": [
       "form",
@@ -21,6 +21,7 @@
         "google/apiclient": "^2.16",
         "guzzlehttp/guzzle": "*",
         "jolicode/slack-php-api": "^4.8",
+        "laragear/two-factor": "^3.0",
         "laravel/cashier": "*",
         "laravel/framework": "^11.9",
         "laravel/horizon": "*",
@@ -72,7 +73,13 @@
       "extra": {
         "laravel": {
           "dont-discover": [
-            "laravel/dusk"
+            "laravel/dusk",
+            "nunomaduro/collision",
+            "pestphp/pest-plugin-laravel",
+            "spatie/laravel-ignition",
+            "barryvdh/laravel-ide-helper",
+            "laravel/pint",
+            "laravel/sail"
           ]
         },
         "google/apiclient-services": [

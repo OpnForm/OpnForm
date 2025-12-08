@@ -205,6 +205,20 @@ const workingFormStore = useWorkingFormStore()
 const crisp = useCrisp()
 const amplitude = useAmplitude()
 
+// Keyboard shortcut to open add field sidebar
+defineShortcuts({
+  meta_b: {
+    handler: () => {
+      workingFormStore.openAddFieldSidebar()
+    }
+  },
+  ctrl_b: {
+    handler: () => {
+      workingFormStore.openAddFieldSidebar()
+    }
+  }
+})
+
 // Computed properties
 const activeTab = computed(() => workingFormStore.activeTab)
 

@@ -68,6 +68,10 @@
             }
         },
         "validation_error": "検証エラー",
-        "validation_error_with_count": "検証エラー（{count}フィールド）"
+        "validation_error_with_count": "検証エラー（{count}フィールド）",
+        "toggle": {
+            "yes": "はい",
+            "no": "いいえ"
+        }
     }
 } 

@@ -12,7 +12,7 @@
       :autocomplete="autocomplete"
       :pattern="pattern"
       :style="inputStyle"
-      :class="ui.input()"
+      :class="ui.input({ class: props.ui?.slots?.input })"
       :name="name"
       :accept="accept"
       :placeholder="placeholder"
@@ -20,7 +20,7 @@
       :max="max"
       :maxlength="maxCharLimit"
       @change="onChange"
-      @keydown.enter.prevent="onEnterPress"
+      @keydown.enter="onEnterPress"
       @focus="onFocus"
       @blur="onBlur"
     >
@@ -36,7 +36,7 @@
       v-if="maxCharLimit && showCharLimit"
       #bottom_after_help
     >
-      <small :class="ui.help()">
+      <small :class="ui.help({ class: props.ui?.slots?.help })">
         {{ charCount }}/{{ maxCharLimit }}
       </small>
     </template>
@@ -67,6 +67,7 @@ export default {
     autocomplete: {type: [Boolean, String, Object], default: null},
     maxCharLimit: {type: Number, required: false, default: null},
     pattern: {type: String, default: null},
+    preventEnter: {type: Boolean, default: true},
   },
 
   setup(props, context) {
@@ -88,14 +89,18 @@ export default {
     }
 
     const onEnterPress = (event) => {
-      event.preventDefault()
+      if (props.preventEnter) {
+        event.preventDefault()
+      }
+      context.emit('input-filled')
       return false
     }
 
     return {
       ...formInput,
       onEnterPress,
-      onChange
+      onChange,
+      props
     }
   },
   computed: {

@@ -68,6 +68,10 @@
             }
         },
         "validation_error": "Error de validació",
-        "validation_error_with_count": "Error de validació ({count} camps)"
+        "validation_error_with_count": "Error de validació ({count} camps)",
+        "toggle": {
+            "yes": "Sí",
+            "no": "No"
+        }
     }
 } 

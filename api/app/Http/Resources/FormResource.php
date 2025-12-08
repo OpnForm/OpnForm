@@ -32,6 +32,7 @@ class FormResource extends JsonResource
                 'redirect_url' => $this->redirect_url,
                 'submissions_url' => $this->submissions_url,
                 'database_fields_update' => $this->database_fields_update,
+                'clear_empty_fields_on_update' => $this->clear_empty_fields_on_update,
                 'cleanings' => $this->getCleanigns(),
                 'can_be_indexed' => $this->can_be_indexed,
                 'password' => $this->password,

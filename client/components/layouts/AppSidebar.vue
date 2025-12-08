@@ -122,12 +122,12 @@ const navigationSections = computed(() => [
       }),
       // Show upgrade for non-pro users
       ...(workspace.value && !workspace.value.is_pro && !isSelfHosted.value ? [createNavItem({
-        label: 'Try our Pro plan',
+        label: 'Upgrade to Pro',
         icon: 'i-heroicons-sparkles-solid', 
         onClick: () => {
           useAmplitude().logEvent('app_sidebar_upgrade_click')
           openSubscriptionModal({
-            modal_title: 'Try our Pro plan for free today!',
+            modal_title: 'Upgrade to Pro plan',
           })
         },
         color: 'primary' // Override default color

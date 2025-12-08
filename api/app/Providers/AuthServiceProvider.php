@@ -33,6 +33,7 @@ class AuthServiceProvider extends ServiceProvider
         Template::class => TemplatePolicy::class,
         OAuthProvider::class => OAuthProviderPolicy::class,
         PersonalAccessToken::class => PersonalAccessTokenPolicy::class,
+        \App\Enterprise\Oidc\Models\IdentityConnection::class => \App\Enterprise\Oidc\Policies\IdentityConnectionPolicy::class,
     ];
 
     /**

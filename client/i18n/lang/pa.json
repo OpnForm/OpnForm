@@ -68,6 +68,10 @@
             }
         },
         "validation_error": "ਪ੍ਰਮਾਣਿਕਤਾ ਗਲਤੀ",
-        "validation_error_with_count": "ਪ੍ਰਮਾਣਿਕਤਾ ਗਲਤੀ ({count} ਖੇਤਰ)"
+        "validation_error_with_count": "ਪ੍ਰਮਾਣਿਕਤਾ ਗਲਤੀ ({count} ਖੇਤਰ)",
+        "toggle": {
+            "yes": "ਹਾਂ",
+            "no": "ਨਹੀਂ"
+        }
     }
 } 

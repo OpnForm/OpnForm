@@ -362,12 +362,80 @@ paths:
                                         example: Invite deleted successfully.
                 "403":
                     description: Forbidden
+    "/open/workspaces/{workspaceId}/forms":
+        get:
+            tags:
+                - Forms
+            summary: List Workspace Forms
+            description: "Retrieve all forms within a specific workspace. Requires `forms-read` ability."
+            security:
+                - bearerAuth: []
+            parameters:
+                - name: workspaceId
+                  in: path
+                  required: true
+                  schema:
+                      type: number
+                      description: ID of the workspace to retrieve forms from.
+                - name: page
+                  in: query
+                  required: false
+                  schema:
+                      type: number
+                      minimum: 1
+                      default: 1
+                  description: "Pagination page number"
+            responses:
+                "200":
+                    description: Successful
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    data:
+                                        type: array
+                                        items:
+                                            $ref: "#/components/schemas/Form"
+                                    links:
+                                        type: object
+                                        properties:
+                                            first:
+                                                type: string
+                                            last:
+                                                type: string
+                                            prev:
+                                                type: string
+                                                nullable: true
+                                            next:
+                                                type: string
+                                                nullable: true
+                                    meta:
+                                        type: object
+                                        properties:
+                                            current_page:
+                                                type: number
+                                            from:
+                                                type: number
+                                            last_page:
+                                                type: number
+                                            per_page:
+                                                type: number
+                                            to:
+                                                type: number
+                                            total:
+                                                type: number
+                "403":
+                    description: "Forbidden – token lacks forms-read ability or you do not have access to the workspace"
+                "404":
+                    description: "Workspace not found"
     "/open/forms":
         get:
             tags:
                 - Forms
             summary: List Forms
-            description: Retrieve all forms accessible to the token holder.
+            description: "Retrieve all forms accessible to the token holder across all workspaces. **Deprecated**: Use `/open/workspaces/{workspaceId}/forms` instead."
+            deprecated: true
             security:
                 - bearerAuth: []
             responses:

@@ -51,14 +51,19 @@ class Form {
   }
 
   data() {
-    return this.keys().reduce(
-      (data, key) => ({ ...data, [key]: this[key] }),
-      {},
-    )
+    return this._getSerializableData()
   }
 
   keys() {
     return Object.keys(this).filter((key) => !Form.ignore.includes(key))
+  }
+
+  // Internal helper to safely collect form values even if a field is named "data"
+  _getSerializableData() {
+    return this.keys().reduce(
+      (acc, key) => ({ ...acc, [key]: this[key] }),
+      {},
+    )
   }
 
   startProcessing() {
@@ -145,9 +150,9 @@ class Form {
     }
 
     if (method.toLowerCase() === "get") {
-      config.params = { ...this.data(), ...config.params }
+      config.params = { ...this._getSerializableData(), ...config.params }
     } else {
-      config.body = { ...this.data(), ...config.data, ...config.body }
+      config.body = { ...this._getSerializableData(), ...config.data, ...config.body }
 
       if (hasFiles(config.data) && !config.transformRequest) {
         config.transformRequest = [(data) => serialize(data)]
@@ -182,9 +187,9 @@ class Form {
       ...config,
     }
     if (method.toLowerCase() === "get") {
-      config.params = { ...this.data(), ...config.params }
+      config.params = { ...this._getSerializableData(), ...config.params }
     } else {
-      config.body = { ...this.data(), ...config.data }
+      config.body = { ...this._getSerializableData(), ...config.data }
 
       if (hasFiles(config.data) && !config.transformRequest) {
         config.transformRequest = [(data) => serialize(data)]
@@ -246,7 +251,7 @@ class Form {
   mutateAsync(mutation, options = {}) {
     this.startProcessing()
     
-    const payload = { ...this.data(), ...options.data }
+    const payload = { ...this._getSerializableData(), ...options.data }
     
     // Handle file uploads if needed
     const processedPayload = hasFiles(payload) && options.transformRequest

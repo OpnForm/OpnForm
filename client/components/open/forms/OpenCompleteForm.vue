@@ -22,7 +22,7 @@
           <div class="w-full">
             <div class="form-group flex flex-wrap w-full max-w-sm mx-auto">
               <div class="relative w-full px-2">
-                <text-input :form="passwordForm" name="password" native-type="password" label="Password" :help="t('forms.password_protected')" />
+                <text-input :form="passwordForm" name="password" native-type="password" label="Password" :help="t('forms.password_protected')" @keydown.enter.prevent="passwordEntered" />
               </div>
             </div>
             <div class="flex flex-wrap justify-center w-full text-center">
@@ -128,6 +128,7 @@ import { useI18n } from 'vue-i18n'
 import { useIsIframe } from '~/composables/useIsIframe'
 import Loader from '~/components/global/Loader.vue'
 import { tailwindcssPaletteGenerator } from '~/lib/colors.js'
+import { useRouter } from 'vue-router'
 
 const props = defineProps({
   form: { type: Object, required: true },
@@ -146,6 +147,7 @@ const emit = defineEmits(['submitted', 'password-entered', 'restarted'])
 
 const { t, setLocale } = useI18n()
 const route = useRoute()
+const router = useRouter()
 const alert = useAlert()
 const workingFormStore = useWorkingFormStore()
 const { data: user } = useAuth().user()
@@ -358,10 +360,26 @@ const restart = async () => {
   submittedData.value = null
   submissionId.value = null
   const queryString = route.fullPath.split('?')[1] || ''
+  const urlParams = new URLSearchParams(queryString)
+  
+  // Determine if we should clear the form completely for a fresh start
+  const shouldClearUrl = props.form.editable_submissions
+  
+  if (shouldClearUrl) {
+    // Remove submission_id parameter and navigate to clean URL
+    urlParams.delete('submission_id')
+    const newQueryString = urlParams.toString()
+    const newPath = newQueryString ? `${route.path}?${newQueryString}` : route.path
+    await router.replace(newPath)
+  }
+  
+  // Single restart call with conditional options
   await formManager.restart({
-    urlParams: new URLSearchParams(queryString),
-    submissionId: null
+    urlParams: shouldClearUrl ? new URLSearchParams() : urlParams,
+    submissionId: null,
+    skipUrlParams: shouldClearUrl
   })
+  
   emit('restarted', true)
 }
 

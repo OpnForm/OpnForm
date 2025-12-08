@@ -12,6 +12,7 @@
         type="color"
         class="mr-2"
         :name="name"
+        @keydown.enter="onEnterPress"
       >
       <slot name="label">
         <InputLabel
@@ -38,6 +39,7 @@ import { colorInputTheme } from "~/lib/forms/themes/color-input.theme.js"
 
 const props = defineProps({
   ...inputProps,
+  preventEnter: { type: Boolean, default: true }
 })
 
 const emit = defineEmits(['update:modelValue', 'focus', 'blur'])
@@ -45,4 +47,11 @@ const emit = defineEmits(['update:modelValue', 'focus', 'blur'])
 const { compVal, inputWrapperProps } = useFormInput(props, { emit }, {
   variants: colorInputTheme
 })
+
+const onEnterPress = (event) => {
+  if (props.preventEnter) {
+    event.preventDefault()
+    return false
+  }
+}
 </script>

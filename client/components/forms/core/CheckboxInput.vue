@@ -20,7 +20,7 @@
         >
           <InputHelp
             :help="help"
-            :help-classes="ui.help()"
+            :help-classes="ui.help({ class: props.ui?.slots?.help })"
           >
             <template #after-help>
               <slot name="bottom_after_help" />
@@ -40,7 +40,7 @@
         >
           <InputHelp
             :help="help"
-            :help-classes="ui.help()"
+            :help-classes="ui.help({ class: props.ui?.slots?.help })"
           >
             <template #after-help>
               <slot name="bottom_after_help" />
@@ -79,7 +79,8 @@ export default {
       variants: checkboxInputTheme
     })
     return {
-      ...formInput
+      ...formInput,
+      props
     }
   },
 

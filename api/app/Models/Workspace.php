@@ -28,6 +28,10 @@ class Workspace extends Model implements CachableAttributes
         'settings'
     ];
 
+    protected $dispatchesEvents = [
+        'created' => \App\Events\Models\WorkspaceCreated::class,
+    ];
+
     protected $appends = [
         'is_pro',
         'is_trialing',
@@ -232,6 +236,16 @@ class Workspace extends Model implements CachableAttributes
     public function forms()
     {
         return $this->hasMany(Form::class);
+    }
+
+    /**
+     * Get the OIDC identity connections for this workspace.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function identityConnections()
+    {
+        return $this->hasMany(\App\Enterprise\Oidc\Models\IdentityConnection::class);
     }
 
     /**

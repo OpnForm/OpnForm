@@ -27,6 +27,7 @@ return [
         'open.workspaces.create',
         'open.workspaces.update',
         'open.workspaces.delete',
+        'open.workspaces.forms.index',
 
         // Workspace User Management
         'open.workspaces.users.index',

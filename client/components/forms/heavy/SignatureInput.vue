@@ -6,7 +6,7 @@
 
     <div
       v-if="loading || file"
-      :class="ui.container()"
+      :class="ui.container({ class: props.ui?.slots?.container })"
     >
       <div
         v-if="loading"
@@ -31,7 +31,7 @@
       v-else
       ref="signaturePad"
       class="not-draggable"
-      :class="ui.container()"
+      :class="ui.container({ class: props.ui?.slots?.container })"
       height="150px"
       :name="name"
       :options="{ onEnd, penColor }"
@@ -40,7 +40,7 @@
     <template #bottom_after_help>
       <small
         v-if="!file"
-        :class="ui.help()"
+        :class="ui.help({ class: props.ui?.slots?.help })"
         class="flex-auto"
       >
         <input
@@ -52,15 +52,15 @@
           @change="manualFileUpload"
         >
         <a
-          :class="ui.help()"
+          :class="ui.help({ class: props.ui?.slots?.help })"
           href="#"
           @click.prevent="openFileUpload"
         >{{ $t('forms.signatureInput.uploadFileInstead') }}</a>
       </small>
 
-      <small :class="ui.help()">
+      <small :class="ui.help({ class: props.ui?.slots?.help })">
         <a
-          :class="ui.help()"
+          :class="ui.help({ class: props.ui?.slots?.help })"
           href="#"
           @click.prevent="clear"
         >{{ $t('forms.signatureInput.clear') }}</a>
@@ -92,7 +92,8 @@ export default {
       variants: signatureInputTheme
     })
     return {
-      ...formInput
+      ...formInput,
+      props
     }
   },
 

@@ -27,6 +27,7 @@ class Kernel extends ConsoleKernel
         $schedule->command('forms:integration-events-cleanup')->daily();
         if (config('app.self_hosted')) {
             $schedule->command('app:scheduler-status --mode=record')->everyMinute();
+            $schedule->command('telemetry:ping')->hourly();
         }
     }
 

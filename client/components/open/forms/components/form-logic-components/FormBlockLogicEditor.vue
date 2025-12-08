@@ -265,6 +265,7 @@ export default {
           "nf-page-break",
           "nf-divider",
           "nf-image",
+          "nf-video",
         ].includes(this.field.type)
       ) {
         if (this.field.hidden) {

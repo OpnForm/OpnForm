@@ -216,8 +216,7 @@ export default {
       "Remove OpnForm branding",
       "Priority support",
       "Form Analytics",
-      "Custom sender email (SMTP)",
-      "API access",
+      "Custom sender email (SMTP)"
     ],
   }),
 

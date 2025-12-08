@@ -68,7 +68,11 @@
       }
     },
     "validation_error": "Помилка валідації",
-    "validation_error_with_count": "Помилка валідації ({count} полів)"
+    "validation_error_with_count": "Помилка валідації ({count} полів)",
+        "toggle": {
+            "yes": "Так",
+            "no": "Ні"
+        }
   }
 }
 

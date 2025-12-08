@@ -3,12 +3,12 @@
     <Icon
       v-show="isChecked"
       name="ic:round-radio-button-checked"
-      :class="ui.checkedIcon()"
+      :class="ui.checkedIcon({ class: props.ui?.slots?.checkedIcon })"
     />
     <Icon
       v-show="!isChecked"
       name="ic:round-radio-button-unchecked"
-      :class="ui.uncheckedIcon()"
+      :class="ui.uncheckedIcon({ class: props.ui?.slots?.uncheckedIcon })"
     />
   </div>
 </template>

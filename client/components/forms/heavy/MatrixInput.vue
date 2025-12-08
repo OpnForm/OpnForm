@@ -3,21 +3,21 @@
     <template #label>
       <slot name="label" />
     </template>
-    <div :class="ui.container()">
+    <div :class="ui.container({ class: props.ui?.slots?.container })">
       <table class="w-full table-auto">
         <thead class="">
           <tr>
-            <th class="ltr:text-left rtl:text-right w-auto max-w-xs" :class="ui.headerCell()" />
+            <th class="ltr:text-left rtl:text-right w-auto max-w-xs" :class="ui.headerCell({ class: props.ui?.slots?.headerCell })" />
             <td
               v-for="column in columns"
               :key="column"
               :class="[
                 resolvedTheme === 'minimal' ? '' : 'ltr:border-l rtl:border-r rtl:!border-l-0',
                 'max-w-24 overflow-hidden',
-                ui.cell()
+                ui.cell({ class: props.ui?.slots?.cell })
               ]"
             >
-              <div :class="ui.headerCell()">
+              <div :class="ui.headerCell({ class: props.ui?.slots?.headerCell })">
                 {{ column }}
               </div>
             </td>
@@ -32,7 +32,7 @@
             :aria-label="`${row} options`"
           >
             <td class="ltr:text-left rtl:text-right w-auto max-w-24 overflow-hidden">
-              <div :class="ui.rowCell()">
+              <div :class="ui.rowCell({ class: props.ui?.slots?.rowCell })">
                 {{ row }}
               </div>
             </td>
@@ -44,14 +44,14 @@
               :aria-checked="compVal && compVal[row] === column"
               :class="[
                 resolvedTheme === 'minimal' ? '' : 'ltr:border-l rtl:border-r rtl:!border-l-0',
-                ui.cell(),
-                ui.cellHover(),
-                ui.option()
+                ui.cell({ class: props.ui?.slots?.cell }),
+                ui.cellHover({ class: props.ui?.slots?.cellHover }),
+                ui.option({ class: props.ui?.slots?.option })
               ]"
               @click="onSelect(row, column)"
               @keydown="onKeyDown($event, row, column)"
             >
-              <div :class="ui.iconWrapper()">
+              <div :class="ui.iconWrapper({ class: props.ui?.slots?.iconWrapper })">
                 <RadioButtonIcon
                   v-if="compVal"
                   :key="row+column"

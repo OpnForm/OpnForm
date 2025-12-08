@@ -1,15 +1,21 @@
 <template>
   <div class="relative h-[calc(100vh-55px)] overflow-y-auto">
     <div class="flex gap-2 sticky top-0 bg-white border-b z-10 p-4">
-      <UButton
-        color="neutral"
-        variant="subtle"
-        icon="i-heroicons-plus"
-        class="flex-grow justify-center"
-        @click.prevent="openAddFieldSidebar"
+      <UTooltip
+        text="Shortcut"
+        :kbds="['meta', 'B']"
+        arrow
       >
-        Add Block
-      </UButton>
+        <UButton
+          color="neutral"
+          variant="subtle"
+          icon="i-heroicons-plus"
+          class="flex-grow justify-center"
+          @click.prevent="openAddFieldSidebar"
+        >
+          Add Block
+        </UButton>
+      </UTooltip>
     </div>
 
     <div class="p-4">
@@ -41,6 +47,7 @@
               class="group flex items-center gap-x-0.5 py-1.5 pr-1"
             >
               <BlockTypeIcon
+                v-if="element.type && typeof element.type === 'string'"
                 :type="element.type"
                 class="ml-2"
               />
@@ -81,7 +88,7 @@
                 </button>
               </UTooltip>
               <UTooltip
-                v-if="!element.type.startsWith('nf-')"
+                v-if="element.type && typeof element.type === 'string' && !element.type.startsWith('nf-')"
                 :text="element.required ? 'Make it optional' : 'Make it required'"
                 arrow
               >

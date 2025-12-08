@@ -68,6 +68,10 @@
             }
         },
         "validation_error": "Kesalahan validasi",
-        "validation_error_with_count": "Kesalahan validasi ({count} kolom)"
+        "validation_error_with_count": "Kesalahan validasi ({count} kolom)",
+        "toggle": {
+            "yes": "Ya",
+            "no": "Ora"
+        }
     }
 } 

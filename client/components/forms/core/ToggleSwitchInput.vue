@@ -23,7 +23,7 @@
         >
           <InputHelp
             :help="help"
-            :help-classes="ui.help()"
+            :help-classes="ui.help({ class: props.ui?.slots?.help })"
           >
             <template #after-help>
               <slot name="bottom_after_help" />
@@ -35,6 +35,7 @@
             :label="label"
             :required="required"
             :theme="theme"
+            :native-for="id ? id : name"
           />
         </slot>
         <slot
@@ -43,7 +44,7 @@
         >
           <InputHelp
             :help="help"
-            :help-classes="ui.help()"
+            :help-classes="ui.help({ class: props.ui?.slots?.help })"
           >
             <template #after-help>
               <slot name="bottom_after_help" />
@@ -97,7 +98,8 @@ export default {
     return {
       ...formInput,
       colorStyle,
-      handleKeydown
+      handleKeydown,
+      props
     }
   },
 

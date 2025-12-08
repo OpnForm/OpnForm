@@ -68,6 +68,10 @@
             }
         },
         "validation_error": "Ошибка валидации",
-        "validation_error_with_count": "Ошибка валидации ({count} поля)"
+        "validation_error_with_count": "Ошибка валидации ({count} поля)",
+        "toggle": {
+            "yes": "Да",
+            "no": "Нет"
+        }
     }
 } 

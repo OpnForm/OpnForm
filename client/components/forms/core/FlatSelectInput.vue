@@ -11,7 +11,7 @@
     />
     <div
       v-else
-      :class="ui.container()"
+      :class="ui.container({ class: props.ui?.slots?.container })"
       :role="multiple ? 'group' : 'radiogroup'"
       :aria-label="label || `Select ${multiple ? 'options' : 'option'}`"
     >
@@ -23,7 +23,7 @@
           :key="option[optionKey]"
           :role="multiple?'checkbox':'radio'"
           :aria-checked="isSelected(option[optionKey])"
-          :class="ui.option({ optionDisabled: disabled || disableOptions.includes(option[optionKey]) || isOptionDisabled(option[optionKey]) })"
+          :class="ui.option({ optionDisabled: disabled || disableOptions.includes(option[optionKey]) || isOptionDisabled(option[optionKey]), class: props.ui?.slots?.option })"
           :tabindex="getOptionTabIndex(index)"
           @click="onSelect(option[optionKey])"
           @keydown="handleKeydown($event, index)"
@@ -61,7 +61,7 @@
       </template>
       <div
         v-else
-        :class="[ui.option(), '!text-neutral-500 !cursor-not-allowed']"
+        :class="[ui.option({ class: props.ui?.slots?.option }), '!text-neutral-500 !cursor-not-allowed']"
       >
         {{ $t('forms.select.noOptionAvailable') }}
       </div>
@@ -75,7 +75,7 @@
       v-if="multiple && (minSelection || maxSelection) && selectedCount > 0"
       #bottom_after_help
     >
-      <small :class="ui.help()">
+      <small :class="ui.help({ class: props.ui?.slots?.help })">
         <span v-if="minSelection && maxSelection">
           {{ selectedCount }} of {{ minSelection }}-{{ maxSelection }}
         </span>
@@ -130,7 +130,8 @@ export default {
       }
     })
     return {
-      ...formInput
+      ...formInput,
+      props
     }
   },
   data() {
@@ -180,7 +181,11 @@ export default {
       } else {
         // For single select, only change value if it's different or clearable
         if (this.compVal !== value || this.clearable) {
-          this.compVal = this.compVal === value && this.clearable ? null : value
+          const nextVal = this.compVal === value && this.clearable ? null : value
+          this.compVal = nextVal
+          if (nextVal !== null && nextVal !== undefined) {
+            this.$emit('input-filled')
+          }
         }
       }
     },

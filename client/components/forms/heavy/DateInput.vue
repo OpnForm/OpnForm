@@ -13,7 +13,7 @@
       <button
         ref="triggerButton"
         class="overflow-hidden"
-        :class="ui.input()"
+        :class="ui.input({ class: props.ui?.slots?.input })"
         :disabled="props.disabled"
         :aria-expanded="pickerOpen"
         :aria-haspopup="true"
@@ -23,7 +23,7 @@
         <div class="flex items-stretch min-w-0">
           <div
             class="grow min-w-0 flex items-center gap-x-2"
-            :class="ui.inner()"
+            :class="ui.inner({ class: props.ui?.slots?.inner })"
           >
             <Icon
               name="heroicons:calendar-20-solid"

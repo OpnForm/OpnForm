@@ -68,6 +68,10 @@
             }
         },
         "validation_error": "Validatiefout",
-        "validation_error_with_count": "Validatiefout ({count} velden)"
+        "validation_error_with_count": "Validatiefout ({count} velden)",
+        "toggle": {
+            "yes": "Ja",
+            "no": "Nee"
+        }
     }
 }

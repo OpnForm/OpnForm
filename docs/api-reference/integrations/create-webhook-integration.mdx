@@ -13,15 +13,15 @@ This endpoint requires a **Personal Access Token** with the `manage-integrations
 ## Request
 
 <ParamField path="form" type="number" required>
-The ID of the form to which the webhook will be added.
+    The ID of the form to which the webhook will be added.
 </ParamField>
 
 <ParamField body="integration_id" type="string" required>
-Must be set to `"webhook"` for webhook integrations.
+    Must be set to `"webhook"` for webhook integrations.
 </ParamField>
 
-<ParamField body="status" type="string">
-The initial status of the webhook. Allowed values: `"active"` (default), `"inactive"`.
+<ParamField body="status" type="string" required>
+    The initial status of the webhook. Allowed values: `"active"`, `"inactive"`.
 </ParamField>
 
 <ParamField body="data" type="object" required>
@@ -31,7 +31,35 @@ Configuration object containing webhook details.
 <ParamField body="webhook_url" type="string" required>
 The URL where form submissions will be sent. Must be a valid HTTP/HTTPS URL.
 </ParamField>
+
+<ParamField body="webhook_secret" type="string">
+    Optional signing secret for HMAC-SHA256 validation. When provided, webhook
+    requests will include an `X-Webhook-Signature` header. Must be at least 12
+    characters. Recommended for security. Should be a random, cryptographically
+    secure string.
+</ParamField>
+
+<ParamField body="webhook_headers" type="object">
+Optional custom HTTP headers to send with each webhook request. Provided as key-value pairs where both keys and values are strings. Maximum 10 headers allowed, each value max 255 characters.
+
+**Blocked headers** (cannot be customized): `Authorization`, `X-Webhook-Signature`, `Content-Type`, `Host`, `Cookie`, `X-CSRF-Token`, `Content-Length`, and others reserved for security.
+
+Example:
+
+```json
+{
+    "X-API-Key": "your-api-key",
+    "X-Custom-ID": "custom-value"
+}
+```
+
+</ParamField>
 </Expandable>
+</ParamField>
+
+<ParamField body="logic" type="object">
+    Optional conditional logic to trigger the webhook only when specific
+    conditions are met.
 </ParamField>
 
 <RequestExample>
@@ -43,7 +71,12 @@ curl -X POST 'https://api.opnform.com/open/forms/123/integrations' \
     "integration_id": "webhook",
     "status": "active",
     "data": {
-      "webhook_url": "https://example.com/opnform-hook"
+      "webhook_url": "https://example.com/opnform-hook",
+      "webhook_secret": "whsec_1234567890abcdefghijklmnop",
+      "webhook_headers": {
+        "X-API-Key": "my-api-key",
+        "X-Custom-Header": "custom-value"
+      }
     }
   }'
 ```
@@ -63,7 +96,12 @@ curl -X POST 'https://api.opnform.com/open/forms/123/integrations' \
     "integration_id": "webhook",
     "status": "active",
     "data": {
-      "webhook_url": "https://example.com/opnform-hook"
+      "webhook_url": "https://example.com/opnform-hook",
+      "webhook_secret": "whsec_1234567890abcdefghijklmnop",
+      "webhook_headers": {
+        "X-API-Key": "my-api-key",
+        "X-Custom-Header": "custom-value"
+      }
     }
   }
 }
@@ -74,15 +112,48 @@ curl -X POST 'https://api.opnform.com/open/forms/123/integrations' \
 
 `404 Not Found` – Form not found.
 
-`422 Unprocessable Entity` – Validation error (e.g., invalid webhook URL).
+`422 Unprocessable Entity` – Validation error (e.g., invalid webhook URL, webhook_secret too short, blocked header).
 
 <ResponseExample>
 ```json Error
 {
-  "message": "The webhook url must be a valid URL.",
+  "message": "The given data was invalid.",
   "errors": {
-    "data.webhook_url": ["The webhook url must be a valid URL."]
+    "data.webhook_url": ["The webhook url must be a valid URL."],
+    "data.webhook_secret": ["The webhook secret must be at least 12 characters."],
+    "data.webhook_headers": ["The 'Authorization' header cannot be customized for security reasons."]
   }
 }
 ```
 </ResponseExample>
+
+## Security
+
+If you provide a `webhook_secret` when creating the webhook, OpnForm will sign each webhook request with an HMAC-SHA256 signature. This allows you to verify that the webhook came from OpnForm and hasn't been tampered with.
+
+Each webhook request will include:
+
+-   **`X-Webhook-Signature` header**: Contains the signature in format `sha256=HEXADECIMAL_VALUE`
+-   **Custom headers**: Any headers you specified in `webhook_headers` (except blocked headers)
+
+### Blocked Headers
+
+For security reasons, the following headers cannot be customized:
+
+-   `Authorization`
+-   `X-Webhook-Signature`
+-   `Content-Type`
+-   `Content-Length`
+-   `Host`
+-   `Cookie`
+-   `X-CSRF-Token`
+-   `X-Forwarded-For`
+-   `X-Forwarded-Proto`
+-   `X-Real-IP`
+
+See [Validating Webhook Signatures](/api-reference/integrations/webhook-security) for implementation examples.
+
+<Warning>
+    Do not commit webhook secrets to version control. Use environment variables
+    or secure vaults to manage them.
+</Warning>

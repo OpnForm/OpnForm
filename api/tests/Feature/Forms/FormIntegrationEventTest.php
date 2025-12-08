@@ -6,10 +6,10 @@ it('can fetch form integration events', function () {
     $form = $this->createForm($user, $workspace);
 
     $data = [
-        'status' => true,
+        'status' => 'active',
         'integration_id' => 'email',
         'logic' => null,
-        'settings' => [
+        'data' => [
             'send_to' => 'test@test.com',
             'sender_name' => 'OpnForm',
             'subject' => 'New form submission',

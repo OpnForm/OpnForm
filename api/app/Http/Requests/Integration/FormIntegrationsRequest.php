@@ -41,16 +41,21 @@ class FormIntegrationsRequest extends FormRequest
      */
     public function rules()
     {
-        return array_merge([
+        $rules = array_merge([
             'integration_id' => ['required', Rule::in(array_keys(FormIntegration::getAllIntegrations()))],
             'oauth_id' => [
                 $this->isOAuthRequired() ? 'required' : 'nullable',
                 Rule::exists('oauth_providers', 'id')
             ],
-            'settings' => 'present|array',
-            'status' => 'required|boolean',
+            'data' => [
+                'present',
+                'array',
+            ],
+            'status' => ['required', Rule::in([FormIntegration::STATUS_ACTIVE, FormIntegration::STATUS_INACTIVE])],
             'logic' => [new IntegrationLogicRule()],
         ], $this->integrationRules);
+
+        return $rules;
     }
 
     /**
@@ -65,7 +70,7 @@ class FormIntegrationsRequest extends FormRequest
         $fields = [];
         foreach ($this->rules() as $key => $value) {
             $fields[$key] = $attributes[$key] ?? Str::of($key)
-                ->replace('settings.', '')
+                ->replace('data.', '')
                 ->headline()
                 ->toString();
         }
@@ -81,18 +86,16 @@ class FormIntegrationsRequest extends FormRequest
     private function loadIntegrationRules()
     {
         foreach ($this->integrationClassName::getValidationRules($this->form) as $key => $value) {
-            $this->integrationRules['settings.' . $key] = $value;
+            $this->integrationRules['data.' . $key] = $value;
         }
     }
 
     public function toIntegrationData(): array
     {
         return $this->integrationClassName::formatData([
-            'status' => ($this->validated(
-                'status'
-            )) ? FormIntegration::STATUS_ACTIVE : FormIntegration::STATUS_INACTIVE,
+            'status' => $this->validated('status'),
             'integration_id' => $this->validated('integration_id'),
-            'data' => $this->validated('settings') ?? [],
+            'data' => $this->validated('data') ?? [],
             'logic' => $this->validated('logic') ?? [],
             'oauth_id' => $this->validated('oauth_id'),
         ]);

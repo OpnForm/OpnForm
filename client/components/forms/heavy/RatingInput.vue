@@ -18,7 +18,8 @@
         :class="ui.star({
           disabled: disabled,
           isActive: i <= compVal,
-          isHover: i > compVal && i <= hoverRating
+          isHover: i > compVal && i <= hoverRating,
+          class: props.ui?.slots?.star
         })"
         role="button"
         :tabindex="getStarTabIndex(i)"
@@ -30,7 +31,7 @@
       >
         <Icon
           name="heroicons:star-20-solid"
-          :class="ui.icon()"
+          :class="ui.icon({ class: props.ui?.slots?.icon })"
         />
       </div>
     </div>
@@ -62,7 +63,8 @@ export default {
       variants: ratingInputTheme
     })
     return {
-      ...formInput
+      ...formInput,
+      props
     }
   },
 
@@ -103,6 +105,9 @@ export default {
         this.compVal = 0
       } else {
         this.compVal = val
+        if (val && val > 0) {
+          this.$emit('input-filled')
+        }
       }
     },
     handleKeydown(event, currentStar) {

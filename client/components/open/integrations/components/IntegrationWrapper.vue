@@ -6,7 +6,7 @@
     <div class="flex justify-between">
       <slot name="status">
         <toggle-switch-input
-          v-model="modelValue.status"
+          v-model="statusToggle"
           name="status"
           label="Enabled"
         />
@@ -37,20 +37,28 @@
               </div>
               <div class="flex-grow">
                 <h3 class="font-semibold">
-                  Logic
+                  {{ hasLogic ? 'Logic configured' : 'Add logic' }}
                 </h3>
                 <p class="text-neutral-500 text-xs">
-                  Only run integration when a condition is met
+                  {{ hasLogic ? 'Conditions control when integration runs' : 'Set conditions for when to run' }}
                 </p>
               </div>
             </div>
           </template>
-          <condition-editor
-            ref="filter-editor"
-            v-model="modelValue.logic"
-            class="mt-4 rounded-md integration-logic"
-            :form="form"
-          />
+
+
+          <p class="text-xs font-medium text-gray-600 mb-2 mt-4">When should this integration run?</p>
+          <p class="text-neutral-500 text-xs mb-3">
+            Set <span class="font-semibold">conditions that control when this integration executes</span>. Leave empty to always run.
+          </p>
+          <div class="p-3 border border-gray-200 rounded-lg bg-gray-50/50 mt-4">
+            <condition-editor
+              ref="filter-editor"
+              v-model="modelValue.logic"
+              class="integration-logic"
+              :form="form"
+            />
+          </div>
         </collapse>
       </div>
     </slot>
@@ -71,6 +79,20 @@ const props = defineProps({
 
 defineEmits(["close"])
 const showLogic = ref(!!props.modelValue.logic)
+
+const statusToggle = computed({
+  get: () => props.modelValue.status === 'active',
+  set: (value) => {
+    props.modelValue.status = value ? 'active' : 'inactive'
+  }
+})
+
+const hasLogic = computed(() => {
+  return props.modelValue.logic && (
+    props.modelValue.logic.children?.length > 0 ||
+    props.modelValue.logic.identifier
+  )
+})
 </script>
 
 <style lang="scss">

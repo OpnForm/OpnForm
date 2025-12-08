@@ -16,6 +16,8 @@ class CustomFieldValidationRule implements ValidationRule
      */
     public $implicit = true;
 
+    private bool $errorOccurred = false;
+
     /**
      * Create a new rule instance.
      *
@@ -39,21 +41,26 @@ class CustomFieldValidationRule implements ValidationRule
             return true;
         }
 
-        // Prepare form data with form context if form is provided
-        $formDataWithContext = $this->formData;
-        if ($this->form) {
-            $formDataWithContext = array_merge($this->formData, [
-                'form' => [
-                    'id' => $this->form->id,
-                    'slug' => $this->form->slug,
-                ]
-            ]);
-        }
+        try {
+            // Prepare form data with form context if form is provided
+            $formDataWithContext = $this->formData;
+            if ($this->form) {
+                $formDataWithContext = array_merge($this->formData, [
+                    'form' => [
+                        'id' => $this->form->id,
+                        'slug' => $this->form->slug,
+                    ]
+                ]);
+            }
 
-        return FormLogicConditionChecker::conditionsMet(
-            $logicConditions,
-            $formDataWithContext
-        );
+            return FormLogicConditionChecker::conditionsMet(
+                $logicConditions,
+                $formDataWithContext
+            );
+        } catch (\Exception $e) {
+            $this->errorOccurred = true;
+            return false;
+        }
     }
 
     public function validate(string $attribute, mixed $value, Closure $fail): void
@@ -70,6 +77,9 @@ class CustomFieldValidationRule implements ValidationRule
      */
     public function message()
     {
+        if ($this->errorOccurred) {
+            return 'An validation logic error occurred';
+        }
         return isset($this->validation['error_message']) ? $this->validation['error_message'] : 'Invalid input';
     }
 }

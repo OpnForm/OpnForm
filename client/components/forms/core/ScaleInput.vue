@@ -14,9 +14,9 @@
         :key="i"
         :class="[
           { 'font-semibold': compVal === i },
-          ui.button(),
-          compVal !== i ? ui.buttonUnselected() : '',
-          compVal !== i ? ui.buttonHover() : ''
+          ui.button({ class: props.ui?.slots?.button }),
+          compVal !== i ? ui.buttonUnselected({ class: props.ui?.slots?.buttonUnselected }) : '',
+          compVal !== i ? ui.buttonHover({ class: props.ui?.slots?.buttonHover }) : ''
         ]"
         class="focus-visible:ring-2 focus-visible:ring-form/100 focus-visible:outline-none"
         :style="btnStyle(i === compVal)"
@@ -60,7 +60,8 @@ export default {
       variants: scaleInputTheme
     })
     return {
-      ...formInput
+      ...formInput,
+      props
     }
   },
 
@@ -130,6 +131,9 @@ export default {
         this.compVal = null
       } else {
         this.compVal = val
+        if (val !== null && val !== undefined) {
+          this.$emit('input-filled')
+        }
       }
     },
     handleKeydown(event, currentIndex) {

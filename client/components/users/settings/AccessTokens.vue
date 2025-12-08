@@ -23,32 +23,13 @@
           label="Create New Token"
           icon="i-heroicons-plus"
           :loading="loading"
-          :disabled="!user.is_pro"
           @click="accessTokenModal = true"
         />
       </div>
     </div>
 
-    <UAlert
-      v-if="!user.is_pro"
-      icon="i-heroicons-user-group-20-solid"
-      color="warning"
-      variant="subtle"
-      title="Pro plan required"
-      description="Please upgrade your account to create and manage access tokens."
-      :actions="[{
-        label: 'Try Pro plan',
-        color: 'warning',
-        variant: 'solid',
-        onClick: () => openSubscriptionModal({
-          modal_title: 'Upgrade to start using our API',
-          modal_description: 'Try our Pro plan for free today, and unlock access to our API but also to our other features such as curstomized branding, forms analytics, custom domains, and more!'
-        })
-      }]"
-    />
-
     <!-- Tokens List -->
-    <div v-if="user.is_pro" class="space-y-4">
+    <div class="space-y-4">
       <div v-if="tokens?.length === 0 && !loading" class="text-center py-12">
         <UIcon 
           name="i-heroicons-key" 
@@ -99,7 +80,7 @@
     </div>
 
     <!-- API Information -->
-    <div v-if="user.is_pro" class="space-y-4 pt-8 border-t border-neutral-200">
+    <div class="space-y-4 pt-8 border-t border-neutral-200">
       <div>
         <h3 class="text-lg font-medium text-neutral-900">API Information</h3>
         <p class="text-sm text-neutral-500 mt-1">
@@ -155,18 +136,13 @@ import opnformConfig from '~/opnform.config.js'
 import AbilitiesBadges from '~/components/users/settings/access-tokens/AbilitiesBadges.vue'
 
 const accessTokenModal = ref(false)
-const { openSubscriptionModal } = useAppModals()
 const alert = useAlert()
-
-const { data: user } = useAuth().user()
 
 // Use TanStack Query instead of Pinia store
 const { list, remove: removeToken } = useTokens()
 
-// Fetch tokens only if user is pro
-const { data: tokens, isLoading: loading } = list({}, {
-  enabled: computed(() => user.value?.is_pro || false)
-})
+// Fetch tokens
+const { data: tokens, isLoading: loading } = list({})
 
 // Delete token mutation
 const deleteTokenMutation = removeToken()

@@ -146,11 +146,18 @@ export function useFormManager(initialFormConfig, initialMode = FormMode.LIVE, o
    * Navigates to the next page, handling validation and payment intent creation.
    */
   const nextPage = async () => {
-    if (state.isProcessing) return false
+    if (state.isProcessing) {
+      return false
+    }
+
+    // Check if we're already on the last page - if so, don't do anything (no validation, no advance)
+    const isCurrentlyLastPage = structure.value.isLastPage.value
+    if (isCurrentlyLastPage) {
+      return false
+    }
 
     // Derive fields and conditions up-front so we can decide if we need a loading state
     const currentPageFields = structure.value.getPageFields(state.currentPage)
-    const isCurrentlyLastPage = structure.value.isLastPage.value 
     const paymentBlock = structure.value.currentPagePaymentBlock.value
 
     // Determine if this step requires validation via validation helper filtering
@@ -169,7 +176,9 @@ export function useFormManager(initialFormConfig, initialMode = FormMode.LIVE, o
 
     try {
       // 1. Validate current page if needed
-      if (needsValidation) await validation.validateCurrentPage(currentPageFields, strategy.value)
+      if (needsValidation) {
+        await validation.validateCurrentPage(currentPageFields, strategy.value)
+      }
 
       // 2. Process payment (Create Payment Intent if applicable)
       if (paymentBlock) {
@@ -190,7 +199,8 @@ export function useFormManager(initialFormConfig, initialMode = FormMode.LIVE, o
       state.isProcessing = false
       return true
 
-    } catch {
+    } catch (error) {
+      console.error('[useFormManager] nextPage: Error occurred', error)
       // Use validation composable's failure handler
       validation.onValidationFailure({
         fieldGroups: structure.value.fieldGroups.value, // Pass reactive groups
@@ -341,12 +351,17 @@ export function useFormManager(initialFormConfig, initialMode = FormMode.LIVE, o
     state.isProcessing = false
     timer.reset() // Reset timer via composable
     timer.start() // Restart timer
+
+    // Use resetAndFill with empty object to properly clear originalData and all fields
+    form.resetAndFill({})    
+    pendingSubmissionService?.clear()
     
     // Reinitialize the form to reapply URL parameters and default values
     await initialize({
       urlParams: options.urlParams,
       submissionId: options.submissionId, // Explicitly pass submissionId (usually null)
-      skipPendingSubmission: true // Don't reload from localStorage on restart
+      skipPendingSubmission: true, // Don't reload from localStorage on restart
+      skipUrlParams: options.skipUrlParams // Pass through the skipUrlParams option
     })
   }
   

@@ -68,6 +68,10 @@
             }
         },
         "validation_error": "যাচাইকরণ ত্রুটি",
-        "validation_error_with_count": "যাচাইকরণ ত্রুটি ({count}টি ক্ষেত্র)"
+        "validation_error_with_count": "যাচাইকরণ ত্রুটি ({count}টি ক্ষেত্র)",
+        "toggle": {
+            "yes": "হ্যাঁ",
+            "no": "না"
+        }
     }
 } 

@@ -17,6 +17,12 @@ class CheckSpamFormPrompt extends Prompt
 
         Analyze this form for spam/phishing. Focus on CONTENT RISK, not user characteristics.
 
+        **CRITICAL: Focus on FORM FIELD CONTENT, not the title!**
+        - Form titles are often generic/default and users frequently forget to change them
+        - Titles like "Untitled Form", "New Form", or template names are COMMON and NOT suspicious
+        - Pay attention to actual field names, placeholders, field types, and descriptions
+        - The real spam indicators are in WHAT fields are being collected, not the form title
+
         <formContent>
         {formContent}
         </formContent>
@@ -48,13 +54,16 @@ class CheckSpamFormPrompt extends Prompt
         - General contact/support forms
 
         **IMPORTANT GUIDELINES:**
+        - **IGNORE generic/default titles** - "Untitled Form", "New Form", template names are normal
+        - **Focus on FIELD CONTENT** - field names, placeholders, and what data is being collected
         - User age/registration date is NOT a spam indicator
         - Non-English content is NOT suspicious
         - Adult content is acceptable unless clearly illegal
-        - Vague titles are common and legitimate
+        - Vague or generic titles are common and legitimate - do NOT flag based on title alone
         - Login forms = phishing, Registration forms = often legitimate
         - Subscribed users get benefit of doubt
         - When uncertain, prefer allowing over flagging
+        - Title alone should NEVER be the deciding factor - always examine actual form fields
 
         Classify as: SPAM (block), ADMIN REVIEW (flag), or LEGITIMATE (allow).
         Respond with JSON: {"is_spam": boolean, "needs_admin_review": boolean, "reason": "explanation"}

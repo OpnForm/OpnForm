@@ -32,7 +32,7 @@ export function useFormValidation(formConfig, form, managerState) {
     try {
       await formRef.value.validate(httpMethod, validationUrl, {}, fieldIds)
     } catch (error) {
-      console.error('Validation error:', error)
+      console.error('[useFormValidation] validateFields: Validation error (precognition)', error)
       useAlert().formValidationError(error.data)
       throw error
     }
