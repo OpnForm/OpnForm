@@ -223,11 +223,6 @@ const buildQuillOptions = (includeFullscreen = false) => {
   // Build formats array dynamically based on enabled features
   const baseFormats = ['bold', 'color', 'italic', 'link', 'strike', 'underline', 'header', 'list']
   
-  // Add mention format when mentions are enabled
-  if (props.enableMentions) {
-    baseFormats.push('mention')
-  }
-  
   const baseOptions = {
     placeholder: props.placeholder || '',
     theme: 'snow',
@@ -258,6 +253,15 @@ const buildQuillOptions = (includeFullscreen = false) => {
       ...baseOptions.modules, 
       ...props.editorOptions.modules 
     } 
+  }
+  
+  // Ensure mention format is always included when mentions are enabled
+  // (must be done after merge to not be overwritten by editorOptions.formats)
+  if (props.enableMentions) {
+    const formats = mergedOptions.formats || baseFormats
+    if (!formats.includes('mention')) {
+      mergedOptions.formats = [...formats, 'mention']
+    }
   }
   
   // Add fullscreen button to toolbar if enabled and requested

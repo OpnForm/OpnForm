@@ -5,6 +5,11 @@ export function useParseMention(content, mentionsAllowed, form, formData) {
     return content
   }
 
+  // DOMParser is only available in browser, skip on server
+  if (!import.meta.client || typeof DOMParser === 'undefined') {
+    return content
+  }
+
   const formatter = new FormSubmissionFormatter(form, formData).setOutputStringsOnly()
   const formattedData = formatter.getFormattedData()
 
