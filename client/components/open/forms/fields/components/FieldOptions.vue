@@ -357,8 +357,7 @@
       <toggle-switch-input
         :form="field"
         name="shuffle_options"
-        label="Shuffle options order"
-        help="Display options in random order to each respondent"
+        label="Randomize options order"
       />
       
       <!-- Min/Max Selection Constraints for multi_select only -->
