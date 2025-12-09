@@ -21,6 +21,7 @@
         "google/apiclient": "^2.16",
         "guzzlehttp/guzzle": "*",
         "jolicode/slack-php-api": "^4.8",
+        "laragear/two-factor": "^3.0",
         "laravel/cashier": "*",
         "laravel/framework": "^11.9",
         "laravel/horizon": "*",

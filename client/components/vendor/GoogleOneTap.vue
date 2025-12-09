@@ -1,12 +1,22 @@
 <template>
-  <div 
-    v-if="shouldShowOneTap"
-    id="g_id_onload"
-    :data-client_id="googleClientId"
-    :data-context="context"
-    :data-cancel_on_tap_outside="false"
-    data-use_fedcm_for_prompt="false"
-  />
+  <div>
+    <two-factor-verification-modal
+      v-if="pendingAuthToken"
+      :show="showTwoFactorModal"
+      :pending-auth-token="pendingAuthToken"
+      @verified="handleTwoFactorVerifiedAndRedirect"
+      @cancel="handleTwoFactorCancel"
+    />
+    
+    <div 
+      v-if="shouldShowOneTap"
+      id="g_id_onload"
+      :data-client_id="googleClientId"
+      :data-context="context"
+      :data-cancel_on_tap_outside="false"
+      data-use_fedcm_for_prompt="false"
+    />
+  </div>
 </template>
 
 <script setup>
@@ -26,6 +36,7 @@ const widgetCallbackMutation = widgetCallback()
 const oneTapInitialized = ref(false)
 const googleClientId = computed(() => useFeatureFlag('services.google.client_id'))
 const authFlow = useAuthFlow()
+const { showTwoFactorModal, pendingAuthToken, handleTwoFactorVerified, handleTwoFactorCancel: handleTwoFactorCancelFromFlow, handleTwoFactorError } = authFlow
 const router = useRouter()
 
 // Only show One Tap if Google auth is enabled and user is not authenticated
@@ -103,10 +114,41 @@ const initializeOneTap = () => {
   }
 }
 
+const handleTwoFactorCancel = () => {
+  // User cancelled 2FA, close the modal
+  handleTwoFactorCancelFromFlow()
+  // No redirect needed as they're still on the same page
+}
+
+const handleTwoFactorVerifiedAndRedirect = async (tokenData) => {
+  await handleTwoFactorVerified(tokenData)
+  
+  // Handle redirect based on user status
+  if (tokenData.new_user) {
+    router.push({ name: "forms-create" })
+    useAlert().success("You're now registered with your Google account! Welcome to OpnForm.")
+    useAlert().success("Time to create your first form!")
+  } else {
+    useAlert().success('Successfully signed in with Google!')
+    router.push({ name: "home" })
+  }
+}
+
 const handleAuthenticationResponse = async (response) => {
   try {
     // Handle authentication flow (user was not logged in)
+    // handleAuthSuccess will check for requires_2fa and show modal if needed
     await authFlow.handleAuthSuccess(response, 'google_one_tap', response.new_user)
+    
+    // If 2FA modal is shown, don't redirect yet (handled in handleTwoFactorVerifiedAndRedirect)
+    if (showTwoFactorModal.value) {
+      return
+    }
+    
+    // Only proceed with redirect if we have a token (2FA not required)
+    if (!response.token) {
+      return
+    }
     
     if (!response.new_user) {
       // Handle existing user login
@@ -158,15 +200,22 @@ const handleCredentialResponse = (response) => {
     data: requestData
   }).then((response) => {
     // Handle both authentication and integration responses
-    if (response.token) {
+    if (response.token || (response.requires_2fa && response.pending_auth_token)) {
       // Authentication flow - user was not logged in
+      // handleAuthSuccess will check for requires_2fa and show modal if needed
       handleAuthenticationResponse(response)
     } else {
       useAlert().error('Google One Tap authentication failed')
     }
   }).catch((error) => {
-    console.error('Google One Tap authentication error:', error)
-    useAlert().error(error.response?._data?.message || 'Google One Tap authentication failed')
+    // Handle 422 responses that indicate 2FA is required (not validation errors)
+    const twoFactorResponse = handleTwoFactorError(error)
+    if (twoFactorResponse) {
+      handleAuthenticationResponse(twoFactorResponse)
+    } else {
+      console.error('Google One Tap authentication error:', error)
+      useAlert().error(error.response?._data?.message || 'Google One Tap authentication failed')
+    }
   })
 }
 

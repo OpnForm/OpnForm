@@ -1,24 +1,22 @@
 <template>
-  <VForm size="sm"
+  <VForm size="md"
     method="POST"
+    :form="form"
     @submit.prevent="register"
-    class="flex flex-col gap-1"
   >
     <!-- Name -->
     <text-input
       name="name"
-      :form="form"
       label="Name"
       placeholder="Your name"
-      :required="true"
+      required
     />
 
     <!-- Email -->
     <text-input
       name="email"
-      :form="form"
       label="Email"
-      :required="true"
+      required
       :disabled="disableEmail"
       placeholder="Your email address"
     />
@@ -27,10 +25,9 @@
       v-if="!disableEmail && !isSetup"
       name="hear_about_us"
       :options="hearAboutUsOptions"
-      :form="form"
       placeholder="Select option"
       label="How did you hear about us?"
-      :required="true"
+      required
     />
 
     <!-- Password -->
@@ -38,9 +35,8 @@
       native-type="password"
       placeholder="Enter password"
       name="password"
-      :form="form"
       label="Password"
-      :required="true"
+      required
       @focus="isPasswordFocused = true"
       @blur="isPasswordFocused = false"
     />
@@ -52,8 +48,7 @@
     <!-- Password Confirmation-->
     <text-input
       native-type="password"
-      :form="form"
-      :required="true"
+      required
       placeholder="Enter confirm password"
       name="password_confirmation"
       label="Confirm Password"
@@ -62,7 +57,7 @@
     <!-- Captcha -->
     <div
       v-if="reCaptchaSiteKey"
-      class="my-4 px-2 mx-auto w-max"
+      class="my-2 px-2 mx-auto w-max"
     >
       <CaptchaInput
         ref="captcha"
@@ -73,10 +68,9 @@
     </div>
 
     <checkbox-input
-      :form="form"
       name="agree_terms"
-      class="my-3"
-      :required="true"
+      class="my-2"
+      required
       v-if="!useFeatureFlag('self_hosted')"
     >
       <template #label>
@@ -104,7 +98,7 @@
 
     <!-- Submit Button -->
     <UButton
-      class="mt-4"
+      class="mt-2"
       block
       size="lg"
       :loading="form.busy"
@@ -113,7 +107,7 @@
     />
 
     <template v-if="useFeatureFlag('services.google.auth') && !useFeatureFlag('self_hosted') && !isSetup">
-      <p class="text-neutral-500 text-sm text-center my-4">
+      <p class="text-neutral-500 text-sm text-center my-2">
         OR
       </p>
       <UButton
@@ -129,7 +123,7 @@
       />
     </template>
 
-    <p v-if="!isSetup" class="text-neutral-500 mt-4 text-sm text-center">
+    <p v-if="!isSetup" class="text-neutral-500 mt-2 text-sm text-center">
       Already have an account?
       <a
         v-if="isQuick"

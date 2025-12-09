@@ -351,8 +351,7 @@
         v-if="!isFocusedSelectorActive"
         :form="field"
         name="without_dropdown"
-        label="Always show all select options"
-        help="Options won't be in a dropdown anymore, but will all be visible"
+        label="Use radio buttons"
         @update:model-value="onFieldWithoutDropdownChange"
       />
       

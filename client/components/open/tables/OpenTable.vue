@@ -230,7 +230,6 @@ const tableState = useTableState(
 const { tableColumns: allColumns, columnVisibility, columnPinning, columnSizing, columnWrapping, columnOrder, handleColumnResize: handleColumnResizeState } = tableState
 
 const tableColumns = computed(() => {
-  console.log('tableColumns changed')
   return allColumns.value.filter(column => !['actions', 'select'].includes(column.id))
 })
 

@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\Traits\ManagesJWT;
 use App\Http\Resources\OAuthProviderResource;
 use App\Integrations\OAuth\OAuthProviderService;
 use App\Service\OAuth\OAuthProviderService as OAuthProviderServiceClass;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -101,12 +102,12 @@ class OAuthFlowOrchestrator
      * Process OAuth callback
      * Retrieves context from state token and creates/authenticates user
      */
-    public function processCallback(string $provider, array $params): array
+    public function processCallback(string $provider, array $params): JsonResponse
     {
         try {
             $providerService = OAuthProviderService::from($provider);
         } catch (\ValueError $e) {
-            abort(400, "Invalid OAuth provider: {$provider}");
+            return response()->json(['error' => "Invalid OAuth provider: {$provider}"], 400);
         }
 
         // Get user data from OAuth provider
@@ -117,7 +118,7 @@ class OAuthFlowOrchestrator
         $context = $this->contextService->getContext($stateToken);
 
         if (!$context) {
-            abort(419, 'OAuth context expired or invalid state');
+            return response()->json(['error' => 'OAuth context expired or invalid state'], 419);
         }
 
         $intent = $context['intent'];
@@ -135,18 +136,22 @@ class OAuthFlowOrchestrator
      * Handles widget flows (Google One Tap) that don't use state tokens
      * Extracts and stores context for user creation
      */
-    public function processWidgetCallback(string $service, Request $request): array
+    public function processWidgetCallback(string $service, Request $request): JsonResponse
     {
         try {
             $providerService = OAuthProviderService::from($service);
         } catch (\ValueError $e) {
-            abort(400, "Invalid OAuth provider: {$service}");
+            return response()->json(['error' => "Invalid OAuth provider: {$service}"], 400);
         }
         $intent = $request->input('intent');
         $inviteToken = $request->input('invite_token');
 
         // Validate intent requirements
-        $this->validateIntentRequirements($intent, $providerService);
+        try {
+            $this->validateIntentRequirements($intent, $providerService);
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
+            return response()->json(['error' => $e->getMessage()], $e->getStatusCode());
+        }
 
         // Handle invite validation for auth flows
         $invitedEmail = null;
@@ -181,7 +186,7 @@ class OAuthFlowOrchestrator
         array $userData,
         ?string $inviteToken = null,
         ?string $invitedEmail = null
-    ): array {
+    ): JsonResponse {
         return match ($intent) {
             self::INTENT_AUTH => $this->handleAuthenticationFlow(
                 $providerService,
@@ -193,7 +198,7 @@ class OAuthFlowOrchestrator
                 $providerService,
                 $userData
             ),
-            default => abort(400, 'Invalid intent')
+            default => response()->json(['error' => 'Invalid intent'], 400)
         };
     }
 
@@ -206,9 +211,13 @@ class OAuthFlowOrchestrator
         array $userData,
         ?string $inviteToken = null,
         ?string $invitedEmail = null
-    ): array {
+    ): JsonResponse {
         // Generic email validation (no provider-specific logic)
-        $this->inviteService->validateEmailRestrictions($userData['email'], $invitedEmail);
+        try {
+            $this->inviteService->validateEmailRestrictions($userData['email'], $invitedEmail);
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
+            return response()->json(['error' => $e->getMessage()], $e->getStatusCode());
+        }
 
         // Find or create user
         $user = $this->oauthUserService->findOrCreateUser($userData, $providerService, $inviteToken);
@@ -216,18 +225,20 @@ class OAuthFlowOrchestrator
         // Create/update OAuth provider record
         $this->oauthProviderService->createOrUpdateProvider($user, $providerService, $userData);
 
-        // Return JWT token for authentication
-        $response = $this->sendLoginResponse($user);
-        return $response->getData(true);
+        // sendLoginResponse() automatically handles 2FA check and blocked user check
+        return $this->sendLoginResponse($user, [
+            'method' => 'oauth',
+            'provider' => $providerService->value,
+        ]);
     }
 
     /**
      * Handle integration flow (connect OAuth provider to existing user)
      */
-    private function handleIntegrationFlow(OAuthProviderService $providerService, array $userData): array
+    private function handleIntegrationFlow(OAuthProviderService $providerService, array $userData): JsonResponse
     {
         if (!Auth::check()) {
-            abort(401, 'Authentication required for integration connections');
+            return response()->json(['error' => 'Authentication required for integration connections'], 401);
         }
 
         /** @var \App\Models\User $user */
@@ -243,11 +254,11 @@ class OAuthFlowOrchestrator
         // Retrieve context data (autoClose and intention from stored context)
         $context = $this->contextService->getContext() ?? [];
 
-        return [
+        return response()->json([
             'provider' => OAuthProviderResource::make($oauthProvider),
             'autoClose' => $context['autoClose'] ?? false,
             'intention' => $context['intention'] ?? null,
-        ];
+        ]);
     }
 
     /**

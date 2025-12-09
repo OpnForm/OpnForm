@@ -23,6 +23,9 @@ export const optionSelectorInputTheme = {
       },
       notion: {
         option: ['border-notion-input-border dark:border-notion-input-borderDark', 'hover:backdrop-brightness-95']
+      },
+      transparent: {
+        option: ['border-neutral-300', 'bg-transparent', 'hover:bg-neutral-50']
       }
     },
     size: {

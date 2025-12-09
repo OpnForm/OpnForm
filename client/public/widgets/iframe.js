@@ -473,11 +473,14 @@
 /**
  * Starting from here is OpnForm custom code.
  * @type {string}
+ * @param {Object} options
  */
-function initEmbed(formSlug) {
+function initEmbed(formSlug, options = {}) {
   if (!formSlug) {
     return
   }
+
+  const { autoResize = true } = options || {}
 
   window.addEventListener('message', function (event) {
     // Make sure that the event data has the type `form-submitted`
@@ -492,6 +495,10 @@ function initEmbed(formSlug) {
       window.top.location.href = event.data.form.redirect_target_url
     }
   })
+
+  if (!autoResize) {
+    return
+  }
 
   document.addEventListener("DOMContentLoaded", function () {
     iFrameResize({log: false, checkOrigin: false}, '#' + formSlug)

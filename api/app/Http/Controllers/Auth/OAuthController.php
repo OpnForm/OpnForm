@@ -33,9 +33,9 @@ class OAuthController extends Controller
     public function callback(Request $request, string $provider)
     {
         $params = $request->all();
-        $result = $this->flowOrchestrator->processCallback($provider, $params);
 
-        return response()->json($result);
+        // Orchestrator now returns JsonResponse directly with proper status codes
+        return $this->flowOrchestrator->processCallback($provider, $params);
     }
 
     /**
@@ -49,8 +49,7 @@ class OAuthController extends Controller
             'utm_data' => 'sometimes|array',
         ]);
 
-        $result = $this->flowOrchestrator->processWidgetCallback($service, $request);
-
-        return response()->json($result);
+        // Orchestrator now returns JsonResponse directly with proper status codes
+        return $this->flowOrchestrator->processWidgetCallback($service, $request);
     }
 }

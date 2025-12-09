@@ -40,7 +40,7 @@ export default defineNitroPlugin((nitroApp) => {
 
       const matched = normalizedAllowed.find((allowedHost) => hostMatchesAllowed(refererHost, allowedHost))
       if (matched) {
-        ancestors.push(`https://${matched}`)
+        ancestors.push(`https://${refererHost}`)
       }
 
       // Restrict embedding to localhost + (optionally) matched allowlisted domain

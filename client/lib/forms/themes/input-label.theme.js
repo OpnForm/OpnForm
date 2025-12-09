@@ -8,7 +8,8 @@ export const inputLabelTheme = {
       'input-label inline align-baseline',
       'text-neutral-700 dark:text-neutral-300'
     ],
-    requiredDot: 'text-red-500 dark:text-red-400 rounded-full bg-red-500/20 dark:bg-red-500/20 required-dot inline-flex items-center align-middle ml-1 *:size-4 *:-m-0.5'
+    requiredDot: 'relative size-[12px] text-red-500 dark:text-red-400 rounded-full bg-red-500/20 dark:bg-red-500/20 required-dot inline-flex items-center justify-center ml-1 align-middle',
+    star: 'absolute size-4 left-1/2 top-1/2 -translate-y-1/2 -translate-x-1/2'
   },
   variants: {
     presentation: {
@@ -29,6 +30,9 @@ export const inputLabelTheme = {
       },
       minimal: {
         label: 'font-medium text-neutral-600 dark:text-neutral-400'
+      },
+      transparent: {
+        label: 'font-semibold'
       }
     },
     size: {
@@ -37,6 +41,7 @@ export const inputLabelTheme = {
       },
       sm: {
         label: 'text-xs',
+        requiredDot: 'mb-[2px]!'
       },
       md: {
         label: 'text-sm',
@@ -44,7 +49,7 @@ export const inputLabelTheme = {
       },
       lg: {
         label: 'text-base',
-        requiredDot: '*:size-5 mt-[-3px]!'
+        requiredDot: 'mt-[-3px]!'
       }
     },
     uppercaseLabels: {

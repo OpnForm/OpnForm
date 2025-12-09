@@ -5,10 +5,14 @@ title: "[BUG] "
 assignees: ""
 ---
 
-**Describe the bug**
-A clear and concise description of what the bug is.
+#### Describe the bug
 
-**To Reproduce**
+<!-- A clear and concise description of what the bug is. -->
+
+#### To reproduce
+
+<!--
+
 Steps to reproduce the behavior:
 
 1. Go to '...'
@@ -16,17 +20,30 @@ Steps to reproduce the behavior:
 3. Scroll down to '....'
 4. See error
 
-**Expected behavior**
-A clear and concise description of what you expected to happen.
+-->
 
-**Screenshots**
-If applicable, add screenshots to help explain your problem.
+#### Expected behavior
 
-**Environment (please complete the following information):**
+<!--A clear and concise description of what you expected to happen. -->
 
--   Envionement [Cloud, Docker, Self-hosted, etc.]
--   Browser [e.g. chrome, safari]
--   OpnForm Version [e.g. 22]
+#### Screenshots
 
-**Additional context**
-Add any other context about the problem here.
+<!-- If applicable, add screenshots to help explain your problem. -->
+
+#### Environment (please complete the following information):
+
+-   #### Environment 
+
+    <!-- [Cloud, Docker, Self-hosted, etc.] -->
+
+-   #### Browser 
+
+    <!--[e.g. chrome, safari] -->
+
+-   #### OpnForm version 
+
+    <!--[e.g. 22] -->
+
+#### Additional context
+
+<!-- Add any other context about the problem here. -->
