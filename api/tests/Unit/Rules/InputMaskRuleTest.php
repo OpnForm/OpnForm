@@ -76,3 +76,136 @@ it('can validate mask with mixed characters', function () {
         $failCalled = false; // Reset for next iteration
     }
 });
+
+it('can validate mask with optional characters', function () {
+    $failCalled = false;
+    $fail = function () use (&$failCalled) {
+        $failCalled = true;
+    };
+    // Mask: 999?999
+    // Parsed: 9(required), 9(required), 9?(optional), 9(required), 9(required), 9(required)
+    // Required: 5 digits (positions 1,2,4,5,6), Optional: 1 digit (position 3)
+    $validator = new InputMaskRule('999?999');
+
+    // Should accept 5 digits (all required, optional skipped)
+    $validator->validate('value', '12345', $fail);
+    $this->assertFalse($failCalled, "Validation should pass for 5 digits (all required)");
+    $failCalled = false;
+
+    // Should accept 6 digits (all required + optional filled)
+    $validator->validate('value', '123456', $fail);
+    $this->assertFalse($failCalled, "Validation should pass for 6 digits (all filled)");
+    $failCalled = false;
+
+    // Should fail with only 4 digits (not enough required - need at least 5)
+    $validator->validate('value', '1234', $fail);
+    $this->assertTrue($failCalled, "Validation should fail for only 4 digits (need 5 required)");
+    $failCalled = false;
+
+    // Should fail with only 3 digits (not enough required)
+    $validator->validate('value', '123', $fail);
+    $this->assertTrue($failCalled, "Validation should fail for only 3 digits");
+    $failCalled = false;
+
+    // Should fail with only 2 digits (not enough required)
+    $validator->validate('value', '12', $fail);
+    $this->assertTrue($failCalled, "Validation should fail for only 2 digits");
+    $failCalled = false;
+
+    // Should fail with 7 digits (too many - max is 6)
+    $validator->validate('value', '1234567', $fail);
+    $this->assertTrue($failCalled, "Validation should fail for 7 digits (exceeds max)");
+});
+
+it('can validate mask with optional at start', function () {
+    $failCalled = false;
+    $fail = function () use (&$failCalled) {
+        $failCalled = true;
+    };
+    // Mask: ?999
+    // Note: ? at start has no previous token, so it's ignored
+    // Parsed: 9(required), 9(required), 9(required)
+    // Required: 3 digits
+    $validator = new InputMaskRule('?999');
+
+    // Should accept 3 digits (all required)
+    $validator->validate('value', '123', $fail);
+    $this->assertFalse($failCalled, "Validation should pass for 3 digits");
+    $failCalled = false;
+
+    // Should fail with only 2 digits (not enough required - need 3)
+    $validator->validate('value', '12', $fail);
+    $this->assertTrue($failCalled, "Validation should fail for only 2 digits");
+    $failCalled = false;
+
+    // Should fail with 4 digits (too many - max is 3)
+    $validator->validate('value', '1234', $fail);
+    $this->assertTrue($failCalled, "Validation should fail for 4 digits (exceeds max)");
+    $failCalled = false;
+
+    // Should fail with non-numeric (mask expects only digits)
+    $validator->validate('value', 'a123', $fail);
+    $this->assertTrue($failCalled, "Validation should fail for non-numeric input");
+});
+
+it('can validate mask with optional middle character', function () {
+    $failCalled = false;
+    $fail = function () use (&$failCalled) {
+        $failCalled = true;
+    };
+    // Mask: 99?9-9999
+    // Parsed: 9(required), 9?(optional), 9(required), -(literal), 9(required), 9(required), 9(required), 9(required)
+    // Required: 1 digit + 1 digit + 4 digits = 6 digits minimum
+    // Optional: 1 digit (middle position)
+    // Max: 7 digits (with optional filled)
+    $validator = new InputMaskRule('99?9-9999');
+
+    // Should accept with 2-digit prefix (optional skipped): 2 + 4 = 6 digits
+    $validator->validate('value', '12-3456', $fail);
+    $this->assertFalse($failCalled, "Validation should pass for 2-digit prefix (optional skipped)");
+    $failCalled = false;
+
+    // Should accept with 3-digit prefix (optional filled): 3 + 4 = 7 digits
+    $validator->validate('value', '123-4567', $fail);
+    $this->assertFalse($failCalled, "Validation should pass for 3-digit prefix (optional filled)");
+    $failCalled = false;
+
+    // Should fail with only 1 digit prefix (not enough required)
+    $validator->validate('value', '1-2345', $fail);
+    $this->assertTrue($failCalled, "Validation should fail for 1-digit prefix");
+    $failCalled = false;
+
+    // Should fail with incomplete suffix
+    $validator->validate('value', '12-345', $fail);
+    $this->assertTrue($failCalled, "Validation should fail for incomplete suffix");
+});
+
+it('can validate empty mask pattern', function () {
+    $failCalled = false;
+    $fail = function () use (&$failCalled) {
+        $failCalled = true;
+    };
+
+    // Empty mask should be invalid (backend should prevent this, but test the rule)
+    $validator = new InputMaskRule('');
+    $validator->validate('value', 'any', $fail);
+    // Empty mask pattern should fail validation
+    $this->assertTrue($failCalled, "Empty mask should fail validation");
+});
+
+it('can validate mask with only literals', function () {
+    $failCalled = false;
+    $fail = function () use (&$failCalled) {
+        $failCalled = true;
+    };
+    $validator = new InputMaskRule('()');
+
+    // Should accept exact literal match
+    $validator->validate('value', '()', $fail);
+    $this->assertFalse($failCalled, "Validation should pass for exact literal match");
+    $failCalled = false;
+
+    // Should fail with different characters
+    $validator->validate('value', '[]', $fail);
+    $this->assertTrue($failCalled, "Validation should fail for different literals");
+});

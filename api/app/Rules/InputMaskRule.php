@@ -22,7 +22,9 @@ class InputMaskRule implements ValidationRule
         }
 
         if ($value && !$this->validateValueAgainstMask($value, $this->mask)) {
-            $fail("Does not match the required format: " . $this->mask);
+            // Escape the mask pattern to prevent XSS in error messages
+            $safeMask = htmlspecialchars($this->mask, ENT_QUOTES, 'UTF-8');
+            $fail("Does not match the required format: " . $safeMask);
         }
     }
 
@@ -62,6 +64,31 @@ class InputMaskRule implements ValidationRule
             } else {
                 // Pattern characters must match the regex
                 if (preg_match($maskToken['regex'], $char)) {
+                    // For optional tokens, check if we should consume or skip
+                    // If skipping would allow us to match all remaining required tokens and literals, skip it
+                    if ($maskToken['optional']) {
+                        // Calculate remaining required pattern tokens and literals after this optional one
+                        $remainingRequired = 0;
+                        $remainingLiterals = 0;
+                        for ($j = $maskIndex + 1; $j < count($maskTokens); $j++) {
+                            if ($maskTokens[$j]['literal']) {
+                                $remainingLiterals++;
+                            } elseif (!$maskTokens[$j]['optional']) {
+                                $remainingRequired++;
+                            }
+                        }
+
+                        // Calculate remaining input characters (excluding already matched literals)
+                        $remainingInput = strlen($value) - $valueIndex;
+
+                        // If we don't have enough input for all remaining required tokens + literals, skip this optional
+                        if ($remainingInput <= ($remainingRequired + $remainingLiterals)) {
+                            $maskIndex++; // Skip the optional mask token
+                            continue;
+                        }
+                    }
+
+                    // Consume the character
                     $valueIndex++;
                     $maskIndex++;
                 } else {

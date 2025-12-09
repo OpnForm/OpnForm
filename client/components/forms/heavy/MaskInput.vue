@@ -20,8 +20,11 @@
       :min="min"
       :max="max"
       :maxlength="maxCharLimit"
+      :aria-label="mask ? `${label || name}, format: ${mask}` : (label || name)"
+      :aria-describedby="mask && help ? `${name}-mask-help` : null"
       @change="onChange"
       @keydown.enter="onEnterPress"
+      @paste="handlePaste"
       @focus="onFocus"
       @blur="onBlur"
     >
@@ -87,6 +90,8 @@ export default {
 
     const maskedValue = ref('')
     const inputRef = ref(null)
+    // Track if we're updating compVal internally to prevent watcher loops
+    let isInternalUpdate = false
 
     const displayValue = computed({
       get() {
@@ -106,7 +111,7 @@ export default {
     })
 
     const handleInput = (event) => {
-      const inputValue = event.target.value
+      const inputValue = typeof event === 'string' ? event : event.target.value
 
       if (!props.mask || !isValidMask.value) {
         // No mask or invalid mask - behave as normal input
@@ -114,8 +119,12 @@ export default {
         return
       }
 
-      // Remove underscores from input value for processing
-      const cleanInputValue = inputValue.replace(/_/g, '')
+      // Store cursor position before processing
+      const cursorBefore = inputRef.value?.selectionStart || 0
+      
+      // Remove slot characters from input value for processing
+      const slotCharRegex = new RegExp(props.slotChar.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')
+      const cleanInputValue = inputValue.replace(slotCharRegex, '')
       
       // Get the previous formatted value to compare
       const previousFormatted = maskedValue.value
@@ -123,11 +132,11 @@ export default {
 
       // If the formatted value is the same as before, it means the new character was invalid
       // In this case, we should revert to the previous state
-      if (formatted === previousFormatted && cleanInputValue.length > previousFormatted.length) {
+      if (formatted === previousFormatted && cleanInputValue.length > previousFormatted.replace(/[^a-zA-Z0-9]/g, '').length) {
         // Invalid character entered - revert the input
         nextTick(() => {
           if (inputRef.value) {
-            const cursorPos = inputRef.value.selectionStart - 1
+            const cursorPos = Math.max(0, cursorBefore - 1)
             inputRef.value.value = getDisplayValue(previousFormatted)
             // Set cursor position to where it was before the invalid character
             if (inputRef.value.setSelectionRange && cursorPos >= 0) {
@@ -140,22 +149,67 @@ export default {
 
       // Valid input - update the values
       maskedValue.value = formatted
+      isInternalUpdate = true
       compVal.value = formatted
 
+      // Calculate new cursor position based on how many characters were added/removed
+      const previousUnmaskedLength = previousFormatted.replace(/[^a-zA-Z0-9]/g, '').length
+      const newUnmaskedLength = formatted.replace(/[^a-zA-Z0-9]/g, '').length
+      const charsAdded = newUnmaskedLength - previousUnmaskedLength
+      
       // Update input display value
       nextTick(() => {
         if (inputRef.value) {
           const displayValue = getDisplayValue(formatted)
           if (inputRef.value.value !== displayValue) {
-            const cursorPos = inputRef.value.selectionStart
+            // Calculate cursor position: try to maintain relative position
+            let newCursorPos = cursorBefore
+            if (charsAdded > 0) {
+              // Character added - move cursor forward
+              newCursorPos = Math.min(displayValue.length, cursorBefore + charsAdded)
+            } else if (charsAdded < 0) {
+              // Character removed - keep cursor at same position
+              newCursorPos = Math.max(0, cursorBefore + charsAdded)
+            }
+            
             inputRef.value.value = displayValue
-            // Maintain cursor position logic here
+            // Set cursor position
             if (inputRef.value.setSelectionRange) {
-              inputRef.value.setSelectionRange(cursorPos, cursorPos)
+              inputRef.value.setSelectionRange(newCursorPos, newCursorPos)
             }
           }
         }
       })
+    }
+
+    const handlePaste = (event) => {
+      if (!props.mask || !isValidMask.value) {
+        return // Let default paste behavior handle it
+      }
+
+      event.preventDefault()
+      const pastedText = (event.clipboardData || window.clipboardData).getData('text')
+      
+      if (pastedText) {
+        // Format the pasted text according to the mask
+        const formatted = formatValue(pastedText)
+        maskedValue.value = formatted
+        isInternalUpdate = true
+        compVal.value = formatted
+        
+        // Update display
+        nextTick(() => {
+          if (inputRef.value) {
+            const displayValue = getDisplayValue(formatted)
+            inputRef.value.value = displayValue
+            // Set cursor to end of formatted value
+            const cursorPos = displayValue.length
+            if (inputRef.value.setSelectionRange) {
+              inputRef.value.setSelectionRange(cursorPos, cursorPos)
+            }
+          }
+        })
+      }
     }
 
     const effectivePlaceholder = computed(() => {
@@ -168,14 +222,23 @@ export default {
     watch(() => props.mask, (newMask) => {
       if (!newMask) {
         maskedValue.value = compVal.value || ''
-      } else if (compVal.value) {
+      } else if (compVal.value && isValidMask.value) {
         // Reformat existing value with new mask
-        maskedValue.value = formatValue(compVal.value)
+        isInternalUpdate = true
+        const reformatted = formatValue(compVal.value)
+        maskedValue.value = reformatted
+        compVal.value = reformatted
       }
     })
 
-    // Watch for compVal changes from parent
+    // Watch for compVal changes from parent (but skip if we're the ones updating it)
     watch(compVal, (newVal) => {
+      // Skip if this update was triggered by our own handleInput
+      if (isInternalUpdate) {
+        isInternalUpdate = false
+        return
+      }
+      
       if (props.mask && isValidMask.value && newVal) {
         maskedValue.value = formatValue(newVal)
       } else {
@@ -212,6 +275,7 @@ export default {
       onEnterPress,
       onChange,
       handleInput,
+      handlePaste,
       maskedValue,
       effectivePlaceholder,
       inputRef,

@@ -1,14 +1,31 @@
 import { computed, toRef } from 'vue'
 
+/**
+ * Mask pattern tokens mapping
+ * @constant
+ */
+const MASK_PATTERNS = {
+  '9': /[0-9]/,
+  'a': /[a-zA-Z]/,
+  '*': /[a-zA-Z0-9]/
+}
+
+/**
+ * Regex pattern to validate mask format
+ * Allows: 9 (digit), a (letter), * (alphanumeric), ? (optional), and common punctuation
+ * @constant
+ */
+const MASK_VALIDATION_REGEX = /^[9a*().\s\-?]*$/
+
+/**
+ * Composable for handling input masking functionality
+ * @param {string|import('vue').Ref<string>} maskPattern - The mask pattern (e.g., "(999) 999-9999")
+ * @param {string} slotChar - Character to display for empty slots (default: '_')
+ * @returns {Object} Mask utility functions
+ */
 export function useInputMask(maskPattern, slotChar = '_') {
   // Convert to ref if not already reactive
   const mask = toRef(maskPattern)
-
-  const maskTokens = {
-    '9': /[0-9]/,
-    'a': /[a-zA-Z]/,
-    '*': /[a-zA-Z0-9]/
-  }
 
   const parseMask = (maskValue) => {
     if (!maskValue) return []
@@ -28,8 +45,8 @@ export function useInputMask(maskPattern, slotChar = '_') {
 
       tokens.push({
         char,
-        regex: maskTokens[char] || null,
-        literal: !maskTokens[char],
+        regex: MASK_PATTERNS[char] || null,
+        literal: !MASK_PATTERNS[char],
         optional: false
       })
     }
@@ -49,11 +66,19 @@ export function useInputMask(maskPattern, slotChar = '_') {
     }).join('')
   })
 
+  /**
+   * Formats a raw input value according to the mask pattern
+   * Removes non-alphanumeric characters and applies mask formatting
+   * @param {string} value - The raw input value
+   * @returns {string} The formatted value with mask literals included
+   */
   const formatValue = (value) => {
     if (!mask.value || !value) return value
 
     const tokens = parsedMask.value
-    const cleanValue = value.replace(/[^\w]/g, '')
+    // Remove all non-alphanumeric characters (including slotChar)
+    // This ensures we only process actual input characters
+    const cleanValue = value.replace(/[^a-zA-Z0-9]/g, '')
     let formatted = ''
     let valueIndex = 0
     
@@ -79,9 +104,16 @@ export function useInputMask(maskPattern, slotChar = '_') {
     return formatted
   }
 
+  /**
+   * Extracts only the alphanumeric characters from a masked value
+   * Removes all mask literals and slot characters
+   * @param {string} value - The masked value
+   * @returns {string} The unmasked value (alphanumeric only)
+   */
   const getUnmaskedValue = (value) => {
     if (!value) return value
-    return value.replace(/[^\w]/g, '')
+    // Remove all non-alphanumeric characters (including mask literals and slotChar)
+    return value.replace(/[^a-zA-Z0-9]/g, '')
   }
 
   const isComplete = (value) => {
@@ -94,16 +126,26 @@ export function useInputMask(maskPattern, slotChar = '_') {
     return cleanValue.length >= requiredLength
   }
 
+  /**
+   * Validates if the mask pattern is valid
+   * @returns {boolean} True if mask is valid or empty
+   */
   const isValidMask = computed(() => {
     if (!mask.value) return true
-    return /^[9a*().\s\-?]*$/.test(mask.value)
+    return MASK_VALIDATION_REGEX.test(mask.value)
   })
 
+  /**
+   * Generates the display value with slot characters for empty positions
+   * @param {string} value - The current value (may be masked or unmasked)
+   * @returns {string} The display value with slot characters for empty positions
+   */
   const getDisplayValue = (value) => {
     if (!mask.value) return value || ''
 
     const tokens = parsedMask.value
-    const cleanValue = value ? value.replace(/[^\w]/g, '') : ''
+    // Extract only alphanumeric characters from the value
+    const cleanValue = value ? value.replace(/[^a-zA-Z0-9]/g, '') : ''
     let display = ''
     let valueIndex = 0
     
@@ -115,12 +157,12 @@ export function useInputMask(maskPattern, slotChar = '_') {
       
       if (valueIndex >= cleanValue.length) {
         if (token.optional) {
-          // For optional tokens, show underscore if we have a value but not enough characters
+          // For optional tokens, show slotChar only if we have some value
           if (cleanValue.length > 0) {
             display += slotChar
           }
         } else {
-          // For required tokens, always show underscore
+          // For required tokens, always show slotChar
           display += slotChar
         }
         continue
