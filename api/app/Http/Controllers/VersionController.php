@@ -55,8 +55,9 @@ class VersionController extends Controller
     public function restore(Request $request, int $versionId)
     {
         $version = Version::findOrFail($versionId);
-        $user = $version->user;
-        if (!$user->is_pro) {
+
+        // Check if current authenticated user is pro
+        if (!$request->user()->is_pro) {
             return $this->error([
                 'message' => 'You need to be a Pro user to restore this version',
             ]);

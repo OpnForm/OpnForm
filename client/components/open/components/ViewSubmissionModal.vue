@@ -10,7 +10,7 @@
         </h2>
 
         <div class="flex items-center gap-2">
-          <SubmissionHistory :form="form" :submission-id="submission?.id" />
+          <SubmissionHistory v-if="submission?.id" :form="form" :submission-id="submission.id" />
           
           <UPagination
             v-model:page="currentPage"
