@@ -88,6 +88,26 @@ export const vSelectTheme = {
         ],
         chevronGradient: 'bg-gradient-to-r from-transparent to-neutral-100 dark:to-notion-dark-light',
         chevronContainer: 'bg-neutral-100 dark:bg-notion-dark-light'
+      },
+      transparent: {
+        anchor: [
+          'border-0',
+          'bg-transparent dark:bg-transparent',
+          'text-neutral-700 dark:text-neutral-300',
+          'shadow-[inset_0_-1px_0_0_rgb(212_212_212)] dark:shadow-[inset_0_-1px_0_0_rgb(82_82_82)]',
+          '!rounded-none',
+          'transition-shadow duration-200',
+          'focus-within:ring-0 focus-within:shadow-[inset_0_-2px_0_0_var(--color-form)]'
+        ],
+        chevronGradient: 'bg-gradient-to-r from-transparent to-transparent',
+        chevronContainer: 'bg-transparent',
+        button: '!pl-0'
+      }
+    },
+    // Open state styling for when popover is open (even if not focused)
+    isOpen: {
+      true: {
+        anchor: 'ring-2 ring-form/100 outline-none'
       }
     },
     size: {
@@ -166,6 +186,19 @@ export const vSelectTheme = {
       }
     }
   },
+  // Ensure transparent theme uses bottom-only highlight when open
+  compoundVariants: [
+    {
+      theme: 'transparent',
+      isOpen: true,
+      class: { anchor: 'ring-0 shadow-[inset_0_-2px_0_0_var(--color-form)] outline-none' }
+    },
+    {
+      theme: 'transparent',
+      focused: true,
+      class: { anchor: 'focus-within:ring-0 focus-within:shadow-[inset_0_-2px_0_0_var(--color-form)] outline-none' }
+    }
+  ],
   defaultVariants: {
     theme: 'default',
     size: 'md',
