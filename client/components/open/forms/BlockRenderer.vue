@@ -24,8 +24,9 @@
     >
       <TextBlock
         :content="block.content"
+        :mentions-allowed="true"
         :form="form"
-        :form-data="dataForm"
+        :form-data="debouncedFormData"
         :media="shouldInjectBetweenMedia ? block.image : null"
       />
     </div>
@@ -96,9 +97,11 @@
 </template>
 
 <script setup>
+import { refDebounced } from '@vueuse/core'
 import ClientOnlyWrapper from '~/components/global/ClientOnlyWrapper.vue'
 import { useComponentRegistry } from '~/composables/components/useComponentRegistry'
 import TextBlock from '~/components/forms/core/TextBlock.vue'
+import { useParseMention } from '@/composables/components/useParseMention'
 
 const props = defineProps({
   block: { type: Object, required: false, default: null },
@@ -112,6 +115,10 @@ const dataForm = computed(() => props.formManager?.form || {})
 const darkMode = computed(() => props.formManager?.darkMode?.value || false)
 const strategy = computed(() => props.formManager?.strategy?.value || {})
 const isAdminPreview = computed(() => strategy.value?.admin?.showAdminControls || false)
+
+// Debounce form data changes to avoid excessive re-renders when user types
+const formDataForMentions = computed(() => dataForm.value?.data?.() || {})
+const debouncedFormData = refDebounced(formDataForMentions, 300)
 
 // Use centralized fieldState from manager
 const fieldState = computed(() => props.formManager?.fieldState)
@@ -201,10 +208,25 @@ const roundedClass = computed(() => {
   return map[radius] || 'rounded-lg'
 })
 
+// Process mentions helper
+// Set asText=true to strip HTML (for plain text attributes like placeholder)
+const processMention = (content, { asText = false } = {}) => {
+  if (!content) return content
+  const processed = useParseMention(content, true, form.value, debouncedFormData.value)
+  if (!processed || !asText) return processed
+  // Strip HTML tags to get plain text
+  return processed.replace(/<[^>]*>/g, '')
+}
+
 const boundProps = computed(() => {
   const field = props.block
   if (!field) return {}
   const unified = fieldState.value?.getState(field) || { required: !!field?.required, effectiveDisabled: !!field?.disabled, hiddenIndicator: !!field?.hidden }
+
+  // Process mentions in placeholder and help
+  // Placeholder needs plain text (strip HTML), help supports HTML
+  const processedPlaceholder = processMention(field.placeholder, { asText: true })
+  const processedHelp = processMention(field.help)
 
   const inputProperties = {
     key: field.id,
@@ -212,8 +234,8 @@ const boundProps = computed(() => {
     form: dataForm.value,
     label: (field.hide_field_name) ? null : field.name + (unified.hiddenIndicator ? ' (Hidden Field)' : ''),
     color: form.value.color,
-    placeholder: field.placeholder,
-    help: field.help,
+    placeholder: processedPlaceholder,
+    help: processedHelp,
     helpPosition: (field.help_position) ? field.help_position : 'below_input',
     uppercaseLabels: form.value.uppercase_labels == 1 || form.value.uppercase_labels == true,
     maxCharLimit: (field.max_char_limit) ? parseInt(field.max_char_limit) : null,
