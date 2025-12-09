@@ -14,12 +14,15 @@ export function useInputMask(maskPattern, slotChar = '_') {
     if (!maskValue) return []
 
     const tokens = []
-    let optional = false
 
     for (let i = 0; i < maskValue.length; i++) {
       const char = maskValue[i]
+      
+      // If we encounter '?', mark the previous token as optional
       if (char === '?') {
-        optional = true
+        if (tokens.length > 0) {
+          tokens[tokens.length - 1].optional = true
+        }
         continue
       }
 
@@ -27,7 +30,7 @@ export function useInputMask(maskPattern, slotChar = '_') {
         char,
         regex: maskTokens[char] || null,
         literal: !maskTokens[char],
-        optional
+        optional: false
       })
     }
     return tokens
@@ -93,7 +96,7 @@ export function useInputMask(maskPattern, slotChar = '_') {
 
   const isValidMask = computed(() => {
     if (!mask.value) return true
-    return /^[9a*().?\s-]*$/.test(mask.value)
+    return /^[9a*().\s\-?]*$/.test(mask.value)
   })
 
   const getDisplayValue = (value) => {

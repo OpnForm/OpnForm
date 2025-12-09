@@ -28,7 +28,7 @@ class InputMaskRule implements ValidationRule
 
     private function validateMaskPattern(string $mask): bool
     {
-        return preg_match('/^[9a*().\\-?\\s]*$/', $mask);
+        return preg_match('/^[9a*().\s\-?]*$/', $mask);
     }
 
     private function validateValueAgainstMask(string $value, string $mask): bool
@@ -82,7 +82,6 @@ class InputMaskRule implements ValidationRule
     private function parseMask(string $mask): array
     {
         $tokens = [];
-        $optional = false;
         $patterns = [
             '9' => '/[0-9]/',
             'a' => '/[a-zA-Z]/',
@@ -92,8 +91,11 @@ class InputMaskRule implements ValidationRule
         for ($i = 0; $i < strlen($mask); $i++) {
             $char = $mask[$i];
 
+            // If we encounter '?', mark the previous token as optional
             if ($char === '?') {
-                $optional = true;
+                if (count($tokens) > 0) {
+                    $tokens[count($tokens) - 1]['optional'] = true;
+                }
                 continue;
             }
 
@@ -101,7 +103,7 @@ class InputMaskRule implements ValidationRule
                 'char' => $char,
                 'regex' => $patterns[$char] ?? null,
                 'literal' => !isset($patterns[$char]),
-                'optional' => $optional
+                'optional' => false
             ];
         }
 

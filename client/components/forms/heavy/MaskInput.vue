@@ -74,7 +74,7 @@ export default {
   },
 
   setup(props, context) {
-    const { formatValue, isValidMask, getDisplayValue } = useInputMask(() => props.mask, props.slotChar)
+    const { formatValue, isValidMask, getDisplayValue, getUnmaskedValue } = useInputMask(() => props.mask, props.slotChar)
 
     const { compVal } = useFormInput(
       props,
@@ -217,12 +217,19 @@ export default {
       inputRef,
       isValidMask,
       displayValue,
+      getUnmaskedValue,
       props
     }
   },
   computed: {
     charCount() {
-      return this.compVal ? this.compVal.length : 0
+      if (!this.compVal) return 0
+      // If mask is active, count only unmasked characters (exclude mask literals)
+      if (this.mask && this.isValidMask) {
+        const unmasked = this.getUnmaskedValue(this.compVal)
+        return unmasked ? unmasked.length : 0
+      }
+      return this.compVal.length
     },
   },
 }
