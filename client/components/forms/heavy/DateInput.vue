@@ -13,7 +13,7 @@
       <button
         ref="triggerButton"
         class="overflow-hidden"
-        :class="ui.input({ class: props.ui?.slots?.input })"
+        :class="ui.input({ class: props.ui?.slots?.input, isOpen: pickerOpen })"
         :disabled="props.disabled"
         :aria-expanded="pickerOpen"
         :aria-haspopup="true"
@@ -47,7 +47,7 @@
           </div>
           <button
             v-if="fromDate && !props.disabled"
-            class="hover:bg-neutral-50 dark:hover:bg-neutral-900 ltr:border-l rtl:border-r px-2 flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-form/100 focus-visible:ring-inset"
+            :class="ui.clearButton({ class: props.ui?.slots?.clearButton })"
             :aria-label="'Clear date'"
             @click.prevent="clear()"
             @keydown="handleClearKeydown"
