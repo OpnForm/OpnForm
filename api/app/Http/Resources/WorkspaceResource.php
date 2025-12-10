@@ -32,18 +32,28 @@ class WorkspaceResource extends JsonResource
     public function toArray($request)
     {
         if ($this->restrictForGuest) {
-            // Minimal public shape: avoid leaking workspace details
+            // Minimal public shape: include custom code for form rendering
             return [
                 'id' => $this->resource->id,
                 'max_file_size' => $this->resource->max_file_size / 1000000,
+                'custom_code' => $this->is_pro ? $this->custom_code : null,
+                'custom_css' => $this->is_pro ? $this->custom_css : null,
             ];
         }
 
-        return array_merge(parent::toArray($request), [
+        $data = array_merge(parent::toArray($request), [
             'max_file_size' => $this->max_file_size / 1000000,
             'is_readonly' => $this->isReadonlyUser($request->user()),
             'is_admin' => $this->isAdminUser($request->user()),
             'users_count' => $this->users_count,
         ]);
+
+        // Only include custom code fields for admin users
+        if ($this->isAdminUser($request->user())) {
+            $data['custom_code'] = $this->custom_code;
+            $data['custom_css'] = $this->custom_css;
+        }
+
+        return $data;
     }
 }

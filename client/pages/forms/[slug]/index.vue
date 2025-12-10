@@ -140,8 +140,10 @@ onMounted(() => {
 
       const canExecuteCustomCode = isCustomDomain || (isSelfHosted && allowSelfHosted)
 
-      if (form.value.custom_code && canExecuteCustomCode) {
-        const scriptEl = document.createRange().createContextualFragment(form.value.custom_code)
+      // Concatenate workspace and form custom code when injecting
+      const codeToInject = effectiveCustomCode.value
+      if (codeToInject && canExecuteCustomCode) {
+        const scriptEl = document.createRange().createContextualFragment(codeToInject)
         try {
           document.head.append(scriptEl)
         } catch (e) {
@@ -243,6 +245,26 @@ const getHtmlClass = computed(() => {
   }
 })
 
+// Concatenate workspace and form custom code (workspace first, then form)
+// Only when actually injecting into head tag
+const effectiveCustomCode = computed(() => {
+  const workspaceCode = form.value?.workspace?.custom_code || ''
+  const formCode = form.value?.custom_code || ''
+  
+  if (!workspaceCode && !formCode) return null
+  
+  return (workspaceCode + '\n' + formCode).trim()
+})
+
+const effectiveCustomCss = computed(() => {
+  const workspaceCss = form.value?.workspace?.custom_css || ''
+  const formCss = form.value?.custom_css || ''
+  
+  if (!workspaceCss && !formCss) return null
+  
+  return (workspaceCss + '\n' + formCss).trim()
+})
+
 useHead({
   htmlAttrs: {
     dir: () => form.value?.layout_rtl ? 'rtl' : 'ltr',
@@ -268,8 +290,8 @@ useHead({
     },
   ] : {},
   script: [{ src: '/widgets/iframeResizer.contentWindow.min.js' }],
-  style: computed(() => form.value?.custom_css ? [
-    { key: 'custom-css', textContent: form.value.custom_css }
+  style: computed(() => effectiveCustomCss.value ? [
+    { key: 'custom-css', textContent: effectiveCustomCss.value }
   ] : [])
 })
 
