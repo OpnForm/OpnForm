@@ -5,9 +5,9 @@ namespace App\Integrations\Handlers;
 use App\Models\Forms\Form;
 use App\Open\MentionParser;
 use App\Service\Forms\FormSubmissionFormatter;
+use App\Service\Forms\SubmissionUrlService;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Arr;
-use Vinkla\Hashids\Facades\Hashids;
 
 class TelegramIntegration extends AbstractIntegrationHandler
 {
@@ -86,9 +86,9 @@ class TelegramIntegration extends AbstractIntegrationHandler
             $links[] = "[✍️ Edit Form](" . $url . ")";
         }
         if (Arr::get($settings, 'link_edit_submission', true) && $this->form->editable_submissions) {
-            $submissionId = Hashids::encode($this->submissionData['submission_id']);
+            $editUrl = SubmissionUrlService::buildEditUrl($this->form, $this->submissionData['submission_id']);
             $buttonText = $this->escapeMarkdownV2($this->form->editable_submissions_button_text);
-            $url = $this->escapeMarkdownV2($this->form->share_url . "?submission_id=" . $submissionId);
+            $url = $this->escapeMarkdownV2($editUrl);
             $links[] = "[✍️ " . $buttonText . "](" . $url . ")";
         }
         if (count($links) > 0) {
