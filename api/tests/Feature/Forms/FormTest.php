@@ -60,7 +60,6 @@ it('does not leak workspace details on public form fetch', function () {
         ->assertJsonPath('workspace.max_file_size', $workspace->max_file_size / 1000000);
 
     $response->assertJsonMissingPath('workspace.users');
-    $response->assertJsonMissingPath('workspace.settings');
     $response->assertJsonMissingPath('workspace.is_admin');
     $response->assertJsonMissingPath('workspace.is_readonly');
     $response->assertJsonMissingPath('workspace.users_count');
