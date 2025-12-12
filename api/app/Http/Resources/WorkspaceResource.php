@@ -32,12 +32,15 @@ class WorkspaceResource extends JsonResource
     public function toArray($request)
     {
         if ($this->restrictForGuest) {
-            // Minimal public shape: include custom code for form rendering
+            // Minimal public shape: include settings with custom code for form rendering
+            $settings = $this->settings ?? [];
             return [
                 'id' => $this->resource->id,
                 'max_file_size' => $this->resource->max_file_size / 1000000,
-                'custom_code' => $this->is_pro ? $this->custom_code : null,
-                'custom_css' => $this->is_pro ? $this->custom_css : null,
+                'settings' => $this->is_pro ? [
+                    'custom_code' => $settings['custom_code'] ?? null,
+                    'custom_css' => $settings['custom_css'] ?? null,
+                ] : [],
             ];
         }
 
@@ -47,12 +50,6 @@ class WorkspaceResource extends JsonResource
             'is_admin' => $this->isAdminUser($request->user()),
             'users_count' => $this->users_count,
         ]);
-
-        // Only include custom code fields for admin users
-        if ($this->isAdminUser($request->user())) {
-            $data['custom_code'] = $this->custom_code;
-            $data['custom_css'] = $this->custom_css;
-        }
 
         return $data;
     }

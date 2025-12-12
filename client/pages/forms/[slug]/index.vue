@@ -248,7 +248,8 @@ const getHtmlClass = computed(() => {
 // Concatenate workspace and form custom code (workspace first, then form)
 // Only when actually injecting into head tag
 const effectiveCustomCode = computed(() => {
-  const workspaceCode = form.value?.workspace?.custom_code || ''
+  const workspaceSettings = form.value?.workspace?.settings || {}
+  const workspaceCode = workspaceSettings.custom_code || ''
   const formCode = form.value?.custom_code || ''
   
   if (!workspaceCode && !formCode) return null
@@ -257,7 +258,8 @@ const effectiveCustomCode = computed(() => {
 })
 
 const effectiveCustomCss = computed(() => {
-  const workspaceCss = form.value?.workspace?.custom_css || ''
+  const workspaceSettings = form.value?.workspace?.settings || {}
+  const workspaceCss = workspaceSettings.custom_css || ''
   const formCss = form.value?.custom_css || ''
   
   if (!workspaceCss && !formCss) return null

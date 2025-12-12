@@ -169,8 +169,9 @@ const saveChanges = () => {
 
 const initCustomCode = () => {
   if (!workspace.value) return
-  customCodeForm.custom_code = workspace.value.custom_code || ''
-  customCodeForm.custom_css = workspace.value.custom_css || ''
+  const settings = workspace.value.settings || {}
+  customCodeForm.custom_code = settings.custom_code || ''
+  customCodeForm.custom_css = settings.custom_css || ''
 }
 
 onMounted(() => {

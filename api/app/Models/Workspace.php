@@ -26,8 +26,6 @@ class Workspace extends Model implements CachableAttributes
         'user_id',
         'custom_domain',
         'settings',
-        'custom_code',
-        'custom_css',
     ];
 
     protected $dispatchesEvents = [
