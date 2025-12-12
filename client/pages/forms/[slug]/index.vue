@@ -13,6 +13,11 @@
         </p>
       </div>
       <template v-else>
+        <FormAnalyticsScript
+          v-if="form.analytics"
+          ref="analyticsScriptRef"
+          :form="form"
+        />
         <OpenCompleteForm
           ref="openCompleteFormRef"
           :form="form"
@@ -20,6 +25,7 @@
           :dark-mode="darkMode"
           :mode="FormMode.LIVE"
           @password-entered="passwordEntered"
+          @submitted="onFormSubmitted"
         />
       </template>
     </div>
@@ -28,6 +34,7 @@
 
 <script setup>
 import OpenCompleteForm from "~/components/open/forms/OpenCompleteForm.vue"
+import FormAnalyticsScript from "~/components/open/forms/FormAnalyticsScript.vue"
 import sha256 from 'js-sha256'
 import { onBeforeRouteLeave } from 'vue-router'
 import {
@@ -60,6 +67,13 @@ if (import.meta.server) {
 }
 
 const openCompleteFormRef = ref(null)
+const analyticsScriptRef = ref(null)
+
+const onFormSubmitted = () => {
+  if (analyticsScriptRef.value?.trackFormSubmit) {
+    analyticsScriptRef.value.trackFormSubmit()
+  }
+}
 
 const passwordEntered = function (password) {
   const cookie = useCookie('password-' + slug, {
