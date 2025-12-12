@@ -37,6 +37,10 @@ export const formsApi = {
   stats: (workspaceId, formId, options) => apiService.get(`/open/workspaces/${workspaceId}/form-stats/${formId}`, options),
   statsDetails: (workspaceId, formId, options) => apiService.get(`/open/workspaces/${workspaceId}/form-stats-details/${formId}`, options),
 
+  // Form summary
+  summary: (workspaceId, formId, options) => apiService.get(`/open/workspaces/${workspaceId}/form-summary/${formId}`, options),
+  summaryFieldValues: (workspaceId, formId, fieldId, options) => apiService.get(`/open/workspaces/${workspaceId}/form-summary/${formId}/field/${fieldId}/values`, options),
+
   // File operations
   assets: {
     upload: (data, options) => apiService.post('/open/forms/assets/upload', data, options),
