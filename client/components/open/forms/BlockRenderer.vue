@@ -210,23 +210,34 @@ const roundedClass = computed(() => {
 
 // Process mentions helper
 // Set asText=true to strip HTML (for plain text attributes like placeholder)
-const processMention = (content, { asText = false } = {}) => {
+const processMention = async (content, { asText = false } = {}) => {
   if (!content) return content
-  const processed = useParseMention(content, true, form.value, debouncedFormData.value)
+  const processed = await useParseMention(content, true, form.value, debouncedFormData.value)
   if (!processed || !asText) return processed
   // Strip HTML tags to get plain text
   return processed.replace(/<[^>]*>/g, '')
 }
 
+// Process mentions in placeholder and help (async)
+const processedPlaceholder = ref('')
+const processedHelp = ref('')
+
+watch(() => [props.block?.placeholder, props.block?.help, form.value, debouncedFormData.value], async () => {
+  const field = props.block
+  if (!field) {
+    processedPlaceholder.value = ''
+    processedHelp.value = ''
+    return
+  }
+  
+  processedPlaceholder.value = await processMention(field.placeholder, { asText: true }) || ''
+  processedHelp.value = await processMention(field.help) || ''
+}, { immediate: true })
+
 const boundProps = computed(() => {
   const field = props.block
   if (!field) return {}
   const unified = fieldState.value?.getState(field) || { required: !!field?.required, effectiveDisabled: !!field?.disabled, hiddenIndicator: !!field?.hidden }
-
-  // Process mentions in placeholder and help
-  // Placeholder needs plain text (strip HTML), help supports HTML
-  const processedPlaceholder = processMention(field.placeholder, { asText: true })
-  const processedHelp = processMention(field.help)
 
   const inputProperties = {
     key: field.id,
@@ -234,8 +245,8 @@ const boundProps = computed(() => {
     form: dataForm.value,
     label: (field.hide_field_name) ? null : field.name + (unified.hiddenIndicator ? ' (Hidden Field)' : ''),
     color: form.value.color,
-    placeholder: processedPlaceholder,
-    help: processedHelp,
+    placeholder: processedPlaceholder.value,
+    help: processedHelp.value,
     helpPosition: (field.help_position) ? field.help_position : 'below_input',
     uppercaseLabels: form.value.uppercase_labels == 1 || form.value.uppercase_labels == true,
     maxCharLimit: (field.max_char_limit) ? parseInt(field.max_char_limit) : null,
