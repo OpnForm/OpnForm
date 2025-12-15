@@ -283,6 +283,11 @@ Route::group(['middleware' => 'auth.multi'], function () {
             [\App\Http\Controllers\Admin\AdminController::class, 'unblockUser']
         );
 
+        Route::post(
+            'disable-two-factor-authentication',
+            [\App\Http\Controllers\Admin\AdminController::class, 'disableTwoFactorAuthentication']
+        );
+
         Route::group(['prefix'  => 'billing'], function () {
             Route::get('{user}/email', [\App\Http\Controllers\Admin\BillingController::class, 'getEmail']);
             Route::patch('/email', [\App\Http\Controllers\Admin\BillingController::class, 'updateEmail']);
