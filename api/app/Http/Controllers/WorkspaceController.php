@@ -79,11 +79,13 @@ class WorkspaceController extends Controller
             ], 403);
         }
 
-        $settings = $request->workspace->settings ?? [];
-        $settings['custom_code'] = $request->custom_code;
-        $settings['custom_css'] = $request->custom_css;
-
-        $request->workspace->update(['settings' => $settings]);
+        $validated = $request->validated();
+        $request->workspace->update([
+            'settings' => array_merge($request->workspace->settings ?? [], [
+                'custom_code' => $validated['custom_code'] ?? null,
+                'custom_css' => $validated['custom_css'] ?? null,
+            ]),
+        ]);
 
         return new WorkspaceResource($request->workspace);
     }

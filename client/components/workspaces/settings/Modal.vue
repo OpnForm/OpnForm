@@ -57,9 +57,6 @@
     >
       <LazyWorkspacesSettingsCustomCode />
     </SettingsModalPage>
-
-    
-
   </SettingsModal>
 </template>
 
