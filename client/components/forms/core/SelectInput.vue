@@ -36,7 +36,25 @@
       <template #selected="{ option }">
         <template v-if="multiple">
           <div class="flex items-center truncate ltr-only:mr-6 rtl-only:ml-6">
+            <!-- Show images for multiple select if enabled -->
+            <template v-if="hasImages && getSelectedOptionsWithImages().length > 0">
+              <div class="flex items-center gap-1">
+                <img
+                  v-for="(opt, idx) in getSelectedOptionsWithImages().slice(0, 3)"
+                  :key="idx"
+                  :src="opt.image"
+                  :alt="opt.name"
+                  :title="opt.name"
+                  :class="imageSizeClass"
+                  class="rounded object-cover"
+                >
+                <span v-if="selectedValues.length > 3" class="text-sm text-neutral-500">
+                  +{{ selectedValues.length - 3 }}
+                </span>
+              </div>
+            </template>
             <span
+              v-else
               class="truncate"
               :class="ui.selected({ class: props.ui?.slots?.selected })"
             >
@@ -50,8 +68,19 @@
             :option="option"
             :option-name="getOptionName(option)"
           >
-            <div class="flex items-center truncate ltr-only:mr-6 rtl-only:ml-6">
-              <div :class="ui.selected({ class: props.ui?.slots?.selected })">
+            <div class="flex items-center truncate ltr-only:mr-6 rtl-only:ml-6 gap-2">
+              <img
+                v-if="hasImages && getOptionImage(option)"
+                :src="getOptionImage(option)"
+                :alt="getOptionName(option)"
+                :title="optionDisplayMode === 'image_only' ? getOptionName(option) : ''"
+                :class="imageSizeClass"
+                class="rounded object-cover shrink-0"
+              >
+              <div
+                v-if="optionDisplayMode !== 'image_only'"
+                :class="ui.selected({ class: props.ui?.slots?.selected })"
+              >
                 {{ getOptionName(option) }}
               </div>
             </div>
@@ -64,8 +93,26 @@
           :option="option"
           :selected="selected"
         >
-          <span class="flex">
+          <span class="flex items-center">
+            <!-- Image (if enabled) -->
+            <img
+              v-if="hasImages && option.image"
+              :src="option.image"
+              :alt="option.name"
+              :title="optionDisplayMode === 'image_only' ? option.name : ''"
+              :class="[imageSizeClass, 'mr-3']"
+              class="rounded object-cover shrink-0"
+            >
+            <!-- Placeholder if no image but images enabled -->
+            <div
+              v-else-if="hasImages && !option.image"
+              :class="[imageSizeClass, 'mr-3 bg-neutral-200 dark:bg-neutral-700 rounded flex items-center justify-center shrink-0']"
+            >
+              <Icon name="heroicons:photo" class="w-4 h-4 text-neutral-400" />
+            </div>
+            <!-- Text (unless image_only mode) -->
             <p
+              v-if="optionDisplayMode !== 'image_only'"
               class="flex-grow"
               :class="ui.option({ class: props.ui?.slots?.option })"
             >
@@ -138,7 +185,9 @@ export default {
     dropdownClass: { type: String, default: 'w-full' },
     remote: { type: Function, default: null },
     minSelection: { type: Number, default: null },
-    maxSelection: { type: Number, default: null }
+    maxSelection: { type: Number, default: null },
+    optionDisplayMode: { type: String, default: 'text_only' },
+    optionImageSize: { type: String, default: 'md' }
   },
   setup(props, context) {
     const additionalVariants = computed(() => ({
@@ -172,6 +221,17 @@ export default {
       if (!this.multiple || !Array.isArray(this.selectedValues)) return 0
       return this.selectedValues.length
     },
+    hasImages() {
+      return ['text_and_image', 'image_only'].includes(this.optionDisplayMode)
+    },
+    imageSizeClass() {
+      const sizes = {
+        sm: 'w-12 h-12',
+        md: 'w-20 h-20',
+        lg: 'w-28 h-28'
+      }
+      return sizes[this.optionImageSize] || sizes.md
+    },
   },
   watch: {
     compVal: {
@@ -201,6 +261,23 @@ export default {
     getOptionNames(values) {
       if (!Array.isArray(values)) return []
       return values.map(val => this.getOptionName(val)).filter(Boolean)
+    },
+    getOptionImage(val) {
+      if (val == null) return null
+      const option = this.finalOptions.find((optionCandidate) => {
+        return optionCandidate && optionCandidate[this.optionKey] === val ||
+          (typeof val === 'object' && val && optionCandidate && optionCandidate[this.optionKey] === val[this.optionKey])
+      })
+      return option?.image || null
+    },
+    getSelectedOptionsWithImages() {
+      if (!Array.isArray(this.selectedValues)) return []
+      return this.selectedValues
+        .map(val => {
+          const option = this.finalOptions.find(opt => opt && opt[this.optionKey] === val)
+          return option
+        })
+        .filter(opt => opt && opt.image)
     },
     updateModelValue(newValues) {
       if (newValues === null) newValues = []
