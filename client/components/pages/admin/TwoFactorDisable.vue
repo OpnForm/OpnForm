@@ -33,7 +33,7 @@
             :loading="form.busy"
             type="submit"
             class="grow"
-            :label=" 'Disable Two-Factor Authentication'"
+            :label="'Disable Two-Factor Authentication'"
           />
         </div>
       </VForm>

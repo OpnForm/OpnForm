@@ -321,6 +321,13 @@ class AdminController extends Controller
         ]);
 
         $user = User::findOrFail($request->get('user_id'));
+
+        if ($user->admin) {
+            return $this->error([
+                'message' => 'You cannot disable 2FA for an admin.'
+            ]);
+        }
+
         if (!$user->hasTwoFactorEnabled()) {
             return $this->error([
                 'message' => "Two-factor authentication is not enabled."
@@ -335,6 +342,8 @@ class AdminController extends Controller
             'user_email' => $user->email,
             'reason' => $request->get('reason')
         ]);
+
+        $user->two_factor_enabled = false;
 
         return $this->success([
             'message' => "Two-factor authentication has been disabled successfully.",
