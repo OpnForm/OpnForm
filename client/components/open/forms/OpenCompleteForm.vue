@@ -284,7 +284,7 @@ useHead({
   )
 })
 
-watch(() => props.form.language, (newLanguage) => {
+watch(() => props.form?.language, (newLanguage) => {
   if (newLanguage && typeof newLanguage === 'string') {
     setLocale(newLanguage)
   } else {

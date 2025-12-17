@@ -130,6 +130,7 @@ abstract class AbstractIntegrationHandler
             $formattedData[$field['id']] = [
                 'value' => $field['value'],
                 'name' => $field['name'],
+                'type' => $field['type']
             ];
         }
 
