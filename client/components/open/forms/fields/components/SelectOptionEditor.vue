@@ -107,6 +107,7 @@
           label="Add Option"
           color="neutral"
           variant="outline"
+          size="sm"
           block
           @click="addOption"
         />
