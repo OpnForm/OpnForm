@@ -63,6 +63,9 @@ class AdminController extends Controller
 
         $user->makeVisible('meta');
 
+        // Get two-factor authentication status
+        $user->two_factor_enabled = $user->hasTwoFactorEnabled();
+
         $workspaces = $user->workspaces()
             ->withCount('forms')
             ->get()
@@ -307,6 +310,44 @@ class AdminController extends Controller
 
         return $this->success([
             'message' => "The payment has been successfully refunded."
+        ]);
+    }
+
+    public function disableTwoFactorAuthentication(Request $request)
+    {
+        $request->validate([
+            'user_id' => 'required',
+            'reason' => 'required'
+        ]);
+
+        $user = User::findOrFail($request->get('user_id'));
+
+        if ($user->admin) {
+            return $this->error([
+                'message' => 'You cannot disable 2FA for an admin.'
+            ]);
+        }
+
+        if (!$user->hasTwoFactorEnabled()) {
+            return $this->error([
+                'message' => "Two-factor authentication is not enabled."
+            ]);
+        }
+
+        // Disable 2FA
+        $user->disableTwoFactorAuth();
+
+        self::log('Disable Two-Factor Authentication ', [
+            'user_id' => $user->id,
+            'user_email' => $user->email,
+            'reason' => $request->get('reason')
+        ]);
+
+        $user->two_factor_enabled = false;
+
+        return $this->success([
+            'message' => "Two-factor authentication has been disabled successfully.",
+            'user' => $user->makeVisible('meta')
         ]);
     }
 

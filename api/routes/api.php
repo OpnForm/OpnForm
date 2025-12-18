@@ -145,6 +145,7 @@ Route::group(['middleware' => 'auth.multi'], function () {
                 )->name('forms.index');
                 Route::put('/custom-domains', [WorkspaceController::class, 'saveCustomDomain'])->name('save-custom-domains');
                 Route::put('/email-settings', [WorkspaceController::class, 'saveEmailSettings'])->name('save-email-settings');
+                Route::put('/custom-code-settings', [WorkspaceController::class, 'saveCustomCodeSettings'])->name('save-custom-code-settings');
                 Route::put('/', [WorkspaceController::class, 'update'])->name('update');
                 Route::delete('/', [WorkspaceController::class, 'delete'])->name('delete');
 
@@ -280,6 +281,11 @@ Route::group(['middleware' => 'auth.multi'], function () {
         Route::post(
             'unblock-user',
             [\App\Http\Controllers\Admin\AdminController::class, 'unblockUser']
+        );
+
+        Route::post(
+            'disable-two-factor-authentication',
+            [\App\Http\Controllers\Admin\AdminController::class, 'disableTwoFactorAuthentication']
         );
 
         Route::group(['prefix'  => 'billing'], function () {

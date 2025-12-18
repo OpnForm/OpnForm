@@ -17,7 +17,7 @@
       <v-select
         class="min-w-0"
         v-model="selectedCountryCode"
-        input-class="ltr-only:rounded-r-none rtl:rounded-l-none!"
+        :input-class="resolvedTheme === 'transparent' ? '!rounded-none' : 'ltr-only:rounded-r-none rtl:rounded-l-none!'"
         :data="countries"
         :disabled="disabled || countries.length===1"
         :searchable="true"

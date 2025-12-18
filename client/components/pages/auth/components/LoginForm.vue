@@ -135,7 +135,7 @@ const oAuth = useOAuth()
 const router = useRouter()
 const { login: loginMutationFactory } = useAuth()
 const authFlow = useAuthFlow()
-const { showTwoFactorModal, pendingAuthToken, handleTwoFactorVerified, handleTwoFactorCancel } = authFlow
+const { showTwoFactorModal, pendingAuthToken, handleTwoFactorVerified, handleTwoFactorCancel, handleTwoFactorError } = authFlow
 
 // Feature flags
 const oidcAvailable = computed(() => useFeatureFlag('oidc.available', false))
@@ -243,6 +243,14 @@ const login = () => {
       redirect()
     }
   }).catch((error) => {
+    // Check if this is a 2FA requirement (422 with requires_2fa flag)
+    const twoFactorData = handleTwoFactorError(error)
+    if (twoFactorData) {
+      // This is a 2FA requirement, already handled in onError, just return
+      return
+    }
+    
+    // Handle other errors
     console.log(error)
     if (error.response?._data?.message == "You must change your credentials when in self host mode") {
       redirect()

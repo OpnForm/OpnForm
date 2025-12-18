@@ -35,6 +35,18 @@ export function usePartialSubmission(formConfig, formDataRef, pendingSubmissionS
     }
   }
 
+  /**
+   * Clears the submission hash from both localStorage and memory.
+   * Call this after successful form submission to prevent stale data.
+   */
+  const clearSubmissionHash = () => {
+    pendingSubmissionService.setSubmissionHash(null)
+    const key = pendingSubmissionService.formPendingSubmissionKey?.value
+    if (key) {
+      submissionHashes.value.delete(key)
+    }
+  }
+
   const debouncedSync = () => {
     // Clear existing timeout to reset the timer
     if (syncTimeout) {
@@ -126,11 +138,20 @@ export function usePartialSubmission(formConfig, formDataRef, pendingSubmissionS
     window.addEventListener('beforeunload', handleBeforeUnload)
   }
 
-  const stopSync = () => {
+  /**
+   * Stops the partial submission sync.
+   * @param {Object} options - Options for stopping
+   * @param {boolean} options.skipFinalSync - If true, skip the final sync (use when about to do a complete submission)
+   */
+  const stopSync = (options = {}) => {
     if (import.meta.server) return
     
-    // Final sync before stopping if we have a hash
-    if (getSubmissionHash()) {
+    const { skipFinalSync = false } = options
+    
+    // Only sync before stopping if we have a hash AND we're not skipping
+    // Skip when doing a final submission to avoid race conditions where
+    // the partial submission (is_partial: true) arrives after the final submission
+    if (!skipFinalSync && getSubmissionHash()) {
       syncImmediately()
     }
     
@@ -166,6 +187,7 @@ export function usePartialSubmission(formConfig, formDataRef, pendingSubmissionS
     syncToServer: debouncedSync, // Expose the debounced version externally
     syncImmediately, // Also expose the immediate sync for critical situations
     getSubmissionHash, // Use the getter that prioritizes localStorage
-    setSubmissionHash // Use the setter that updates both
+    setSubmissionHash, // Use the setter that updates both
+    clearSubmissionHash // Clear hash from both localStorage and memory after successful submission
   }
 }

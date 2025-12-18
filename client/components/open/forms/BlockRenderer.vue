@@ -101,6 +101,7 @@ import { refDebounced } from '@vueuse/core'
 import ClientOnlyWrapper from '~/components/global/ClientOnlyWrapper.vue'
 import { useComponentRegistry } from '~/composables/components/useComponentRegistry'
 import TextBlock from '~/components/forms/core/TextBlock.vue'
+import { shuffleArray } from '~/lib/utils.js'
 import { useParseMention } from '@/composables/components/useParseMention'
 
 const props = defineProps({
@@ -208,6 +209,14 @@ const roundedClass = computed(() => {
   return map[radius] || 'rounded-lg'
 })
 
+// Map select options once at component creation (shuffle if enabled)
+const selectOptions = (() => {
+  const field = props.block
+  if (!field || !['select', 'multi_select'].includes(field.type)) return null
+  const options = field[field.type]?.options?.map(option => ({ name: option.name, value: option.name })) ?? []
+  return field.shuffle_options && options.length > 1 ? shuffleArray(options) : options
+})()
+
 // Process mentions helper
 // Set asText=true to strip HTML (for plain text attributes like placeholder)
 const processMention = async (content, { asText = false } = {}) => {
@@ -266,9 +275,7 @@ const boundProps = computed(() => {
   if (field.type === 'barcode') inputProperties.decoders = field.decoders
 
   if (['select', 'multi_select'].includes(field.type)) {
-    inputProperties.options = (field[field.type])
-      ? field[field.type].options.map(option => ({ name: option.name, value: option.name }))
-      : []
+    inputProperties.options = selectOptions ?? []
     inputProperties.multiple = (field.type === 'multi_select')
     inputProperties.allowCreation = (field.allow_creation === true)
     inputProperties.searchable = (inputProperties.options.length > 4)

@@ -16,6 +16,7 @@
         { name: 'Notion', value: 'notion' },
         { name: 'Simple (no shadows)', value: 'simple' },
         { name: 'Minimal', value: 'minimal' },
+        { name: 'Transparent', value: 'transparent' }
       ]"
       :form="form"
       label="Form Theme"
@@ -119,6 +120,7 @@
         class="mb-4"
       />
       <OptionSelectorInput
+        v-if="form.theme !== 'transparent'"
         label="Input Roundness"
         v-model="form.border_radius"
         seamless
