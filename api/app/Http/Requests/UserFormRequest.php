@@ -242,7 +242,13 @@ abstract class UserFormRequest extends \Illuminate\Foundation\Http\FormRequest
             // Analytics
             'analytics' => 'nullable|array',
             'analytics.provider' => ['nullable', Rule::in(['meta_pixel', 'google_analytics', 'gtm'])],
-            'analytics.tracking_id' => 'nullable|required_with:analytics.provider|string|max:50',
+            'analytics.tracking_id' => [
+                'nullable',
+                'string',
+                'max:50',
+                'regex:/^[A-Za-z0-9\-_\.]+$/', // Only allow safe characters (alphanumeric, dash, underscore, dot)
+                'required_if:analytics.provider,meta_pixel,google_analytics,gtm',
+            ],
         ];
     }
 

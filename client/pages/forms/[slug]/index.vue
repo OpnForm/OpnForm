@@ -14,7 +14,7 @@
       </div>
       <template v-else>
         <FormAnalyticsScript
-          v-if="form.analytics"
+          v-if="form.analytics?.provider && form.analytics?.tracking_id"
           ref="analyticsScriptRef"
           :form="form"
         />

@@ -95,5 +95,12 @@ const trackingIdConfig = computed(() => {
   const provider = form.value?.analytics?.provider
   return providerConfig[provider] || { label: 'Tracking ID', placeholder: '', help: '' }
 })
+
+// Clear tracking_id when provider is cleared
+watch(() => form.value?.analytics?.provider, (newVal) => {
+  if (!newVal && form.value?.analytics) {
+    form.value.analytics.tracking_id = null
+  }
+})
 </script>
 
