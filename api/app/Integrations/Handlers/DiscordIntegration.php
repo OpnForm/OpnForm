@@ -5,8 +5,8 @@ namespace App\Integrations\Handlers;
 use App\Models\Forms\Form;
 use App\Open\MentionParser;
 use App\Service\Forms\FormSubmissionFormatter;
+use App\Service\Forms\SubmissionUrlService;
 use Illuminate\Support\Arr;
-use Vinkla\Hashids\Facades\Hashids;
 
 class DiscordIntegration extends AbstractIntegrationHandler
 {
@@ -46,8 +46,8 @@ class DiscordIntegration extends AbstractIntegrationHandler
             $externalLinks[] = '[**✍️ Edit Form**](' . $editFormURL . ')';
         }
         if (Arr::get($settings, 'link_edit_submission', true) && $this->form->editable_submissions) {
-            $submissionId = Hashids::encode($this->submissionData['submission_id']);
-            $externalLinks[] = '[**✍️ ' . $this->form->editable_submissions_button_text . '**](' . $this->form->share_url . '?submission_id=' . $submissionId . ')';
+            $editUrl = SubmissionUrlService::buildEditUrl($this->form, $this->submissionData['submission_id']);
+            $externalLinks[] = '[**✍️ ' . $this->form->editable_submissions_button_text . '**](' . $editUrl . ')';
         }
 
         $color = hexdec(str_replace('#', '', $this->form->color));

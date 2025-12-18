@@ -30,6 +30,7 @@ export function useFormSubmission(formConfig, form) {
     }
     
     // Add submission ID if provided (for editable submissions)
+    // Supports both UUID (new secure format) and Hashid (legacy format)
     if (options.submissionId) {
       metadata.submission_id = options.submissionId
     }
@@ -44,7 +45,7 @@ export function useFormSubmission(formConfig, form) {
    * @param {Number} [options.completionTime] - Form completion time in seconds.
    * @param {String} [options.captchaToken] - Captcha verification token.
    * @param {String} [options.submissionHash] - Hash for partial submissions.
-   * @param {String} [options.submissionId] - ID for editable submissions.
+   * @param {String} [options.submissionId] - UUID or Hashid for editable submissions.
    * @returns {Promise<Object>} The response data from the submission endpoint.
    * @throws {Error} If submission fails.
    */

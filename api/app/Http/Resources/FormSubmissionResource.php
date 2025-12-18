@@ -4,8 +4,8 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\URL;
-use Vinkla\Hashids\Facades\Hashids;
 use Stevebauman\Purify\Facades\Purify;
+use App\Service\Forms\SubmissionUrlService;
 
 /**
  * @property array $data
@@ -35,7 +35,7 @@ class FormSubmissionResource extends JsonResource
         ], ($this->publiclyAccessed) ? [] : [
             'form_id' => $this->form_id,
             'id' => $this->id,
-            'submission_id' => Hashids::encode($this->id),
+            'submission_id' => SubmissionUrlService::getSubmissionIdentifier($this->resource),
         ]);
     }
 
@@ -51,7 +51,7 @@ class FormSubmissionResource extends JsonResource
             'status' => $this->status,
             'created_at' => $this->created_at->toDateTimeString(),
             'id' => $this->id,
-            'submission_id' => Hashids::encode($this->id)
+            'submission_id' => SubmissionUrlService::getSubmissionIdentifier($this->resource)
         ];
         if ($this->form->enable_ip_tracking && $this->form->is_pro && !empty($this->meta)) {
             $extraData['ip_address'] = $this->meta['ip_address'] ?? null;

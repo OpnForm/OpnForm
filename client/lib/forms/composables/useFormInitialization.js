@@ -1,6 +1,7 @@
 import { toValue } from 'vue'
 import { formsApi } from '~/api'
 import clonedeep from 'clone-deep'
+import { createError } from '#app'
 
 /**
  * @fileoverview Composable for initializing form data, with complete handling of 
@@ -32,8 +33,16 @@ export function useFormInitialization(formConfig, form, pendingSubmission) {
     
     // 2. Try loading from submission ID
     if (options.submissionId) {
-      const loaded = await tryLoadFromSubmissionId(options.submissionId)
-      if (loaded) return // Exit if loaded successfully
+      try {
+        const loaded = await tryLoadFromSubmissionId(options.submissionId)
+        if (loaded) return // Exit if loaded successfully
+      } catch (error) {
+        // If 404 error, re-throw to show 404 page
+        if (error?.statusCode === 404) {
+          throw error
+        }
+        // For other errors, continue with form initialization
+      }
     }
     
     // 3. Try loading from pendingSubmission
@@ -200,7 +209,8 @@ export function useFormInitialization(formConfig, form, pendingSubmission) {
 
   /**
    * Attempts to load form data from an existing submission.
-   * @param {String} submissionId - ID of the submission to load
+   * Supports both UUID (new format) and Hashid (legacy format) identifiers.
+   * @param {String} submissionId - UUID or Hashid of the submission to load
    * @returns {Promise<Boolean>} - Whether loading was successful
    */
   const tryLoadFromSubmissionId = async (submissionId) => {
@@ -225,15 +235,25 @@ export function useFormInitialization(formConfig, form, pendingSubmission) {
           })
           return true
         } else {
-          console.warn(`Submission ${submissionIdValue} for form ${slug} loaded but returned no data.`)
-          form.reset()
-          return false
+          // No data returned - throw 404 error to show 404 page instead of rendering form
+          throw createError({
+            statusCode: 404,
+            statusMessage: 'Submission not found'
+          })
         }
       })
       .catch(error => {
-        console.error(`Error loading submission ${submissionIdValue} for form ${slug}:`, error)
-        form.reset()
-        return false
+        // Handle 404 errors - throw to show 404 page instead of rendering form
+        if (error?.response?.status === 404 || error?.statusCode === 404) {
+          throw createError({
+            statusCode: 404,
+            statusMessage: 'Submission not found'
+          })
+        } else {
+          console.error(`Error loading submission ${submissionIdValue} for form ${slug}:`, error)
+          form.reset()
+          return false
+        }
       })
   }
 

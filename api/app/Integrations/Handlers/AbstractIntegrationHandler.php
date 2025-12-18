@@ -8,10 +8,10 @@ use App\Models\Forms\Form;
 use App\Models\Integration\FormIntegrationsEvent;
 use App\Service\Forms\FormSubmissionFormatter;
 use App\Service\Forms\FormLogicConditionChecker;
+use App\Service\Forms\SubmissionUrlService;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Vinkla\Hashids\Facades\Hashids;
 
 abstract class AbstractIntegrationHandler
 {
@@ -142,7 +142,7 @@ abstract class AbstractIntegrationHandler
             'message' => 'Please do not use the `submission` field. It is deprecated and will be removed in the future.'
         ];
         if ($form->is_pro && $form->editable_submissions && isset($submissionData['submission_id'])) {
-            $data['edit_link'] = $form->share_url . '?submission_id=' . Hashids::encode($submissionData['submission_id']);
+            $data['edit_link'] = SubmissionUrlService::buildEditUrl($form, $submissionData['submission_id']);
         }
 
         return $data;
