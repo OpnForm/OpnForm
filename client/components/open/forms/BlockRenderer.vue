@@ -219,10 +219,11 @@ const selectOptions = (() => {
 
 // Process mentions helper
 // Set asText=true to strip HTML (for plain text attributes like placeholder)
-const processMention = async (content, { asText = false } = {}) => {
+const processMention = (content, { asText = false } = {}) => {
   if (!content) return content
-  const processed = await useParseMention(content, true, form.value, debouncedFormData.value)
-  if (!processed || !asText) return processed
+  const processed = useParseMention(content, true, form.value, debouncedFormData.value)
+  if (!processed) return content
+  if (!asText) return processed
   // Strip HTML tags to get plain text
   return processed.replace(/<[^>]*>/g, '')
 }
@@ -231,16 +232,16 @@ const processMention = async (content, { asText = false } = {}) => {
 const processedPlaceholder = ref('')
 const processedHelp = ref('')
 
-watch(() => [props.block?.placeholder, props.block?.help, form.value, debouncedFormData.value], async () => {
+watch(() => [props.block?.placeholder, props.block?.help, form.value, debouncedFormData.value], () => {
   const field = props.block
   if (!field) {
     processedPlaceholder.value = ''
     processedHelp.value = ''
     return
   }
-  
-  processedPlaceholder.value = await processMention(field.placeholder, { asText: true }) || ''
-  processedHelp.value = await processMention(field.help) || ''
+
+  processedPlaceholder.value = processMention(field.placeholder, { asText: true }) || ''
+  processedHelp.value = processMention(field.help) || ''
 }, { immediate: true })
 
 const boundProps = computed(() => {
