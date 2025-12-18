@@ -49,6 +49,14 @@
       <LazyWorkspacesSettingsSso />
     </SettingsModalPage>
 
+    <SettingsModalPage
+      v-if="workspace && workspace.is_admin"
+      id="custom-code"
+      label="Custom Code"
+      icon="i-heroicons-code-bracket"
+    >
+      <LazyWorkspacesSettingsCustomCode />
+    </SettingsModalPage>
   </SettingsModal>
 </template>
 
@@ -57,6 +65,7 @@ import { computed } from 'vue'
 import SettingsModal from '~/components/pages/settings/SettingsModal.vue'
 import SettingsModalPage from '~/components/pages/settings/SettingsModalPage.vue'
 import LazyWorkspacesSettingsSso from './sso/index.vue'
+import LazyWorkspacesSettingsCustomCode from './CustomCode.vue'
 
 const emit = defineEmits(['update:activeTab'])
 

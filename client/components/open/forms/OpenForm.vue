@@ -183,6 +183,8 @@ const formPageIndex = computed(() => props.formManager.state.currentPage)
 const strategy = computed(() => props.formManager.strategy.value)
 const structure = props.formManager.structure
 
+// Slots/utilities
+const slots = useSlots()
 
 const hasPaymentBlock = computed(() => structure.value?.currentPageHasPaymentBlock?.value ?? false)
 
@@ -242,7 +244,7 @@ const isProcessing = computed(() => props.formManager.state.isProcessing)
 const isSubmitted = computed(() => !!props.formManager?.state.isSubmitted)
 const shouldDisplayForm = computed(() => {
   const showAdminControls = !!props.formManager?.strategy?.value?.admin?.showAdminControls
-  return (!isSubmitted.value && !form.value?.is_closed && !form.value?.max_number_of_submissions_reached) || showAdminControls
+  return (!isSubmitted.value && !form.value?.is_closed && !form.value?.max_number_of_submissions_reached && !slots.password) || showAdminControls
 })
 const submittedData = computed(() => props.formManager?.form?.data?.() ?? null)
 
