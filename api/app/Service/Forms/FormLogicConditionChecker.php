@@ -618,6 +618,10 @@ class FormLogicConditionChecker
                 return $this->checkIsEmpty($propertyCondition, $value);
             case 'is_not_empty':
                 return !$this->checkIsEmpty($propertyCondition, $value);
+            case 'exists_in_submissions':
+                return $this->checkExistsInSubmissions($propertyCondition, $value);
+            case 'does_not_exist_in_submissions':
+                return !$this->checkExistsInSubmissions($propertyCondition, $value);
         }
 
         return false;
@@ -658,6 +662,10 @@ class FormLogicConditionChecker
                 return $this->checkNextMonth($propertyCondition, $value);
             case 'next_year':
                 return $this->checkNextYear($propertyCondition, $value);
+            case 'exists_in_submissions':
+                return $this->checkExistsInSubmissions($propertyCondition, $value);
+            case 'does_not_exist_in_submissions':
+                return !$this->checkExistsInSubmissions($propertyCondition, $value);
         }
 
         return false;
@@ -674,6 +682,10 @@ class FormLogicConditionChecker
                 return $this->checkIsEmpty($propertyCondition, $value);
             case 'is_not_empty':
                 return !$this->checkIsEmpty($propertyCondition, $value);
+            case 'exists_in_submissions':
+                return $this->checkExistsInSubmissions($propertyCondition, $value);
+            case 'does_not_exist_in_submissions':
+                return !$this->checkExistsInSubmissions($propertyCondition, $value);
         }
 
         return false;
@@ -702,6 +714,10 @@ class FormLogicConditionChecker
                 return $this->checkMatrixContains($propertyCondition, $value);
             case 'does_not_contain':
                 return !$this->checkMatrixContains($propertyCondition, $value);
+            case 'exists_in_submissions':
+                return $this->checkExistsInSubmissions($propertyCondition, $value);
+            case 'does_not_exist_in_submissions':
+                return !$this->checkExistsInSubmissions($propertyCondition, $value);
         }
 
         return false;
