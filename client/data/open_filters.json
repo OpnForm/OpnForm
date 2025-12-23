@@ -368,6 +368,22 @@
         "format": {
           "type":"object"
         }
+      },
+      "exists_in_submissions": {
+        "expected_type": "boolean",
+        "format": {
+          "type": "enum",
+          "values": [true]
+        },
+        "custom_validation_only": true
+      },
+      "does_not_exist_in_submissions": {
+        "expected_type": "boolean",
+        "format": {
+          "type": "enum",
+          "values": [true]
+        },
+        "custom_validation_only": true
       }
     }
   },
@@ -616,6 +632,22 @@
       },
       "content_length_less_than_or_equal_to": {
         "expected_type": "number"
+      },
+      "exists_in_submissions": {
+        "expected_type": "boolean",
+        "format": {
+          "type": "enum",
+          "values": [true]
+        },
+        "custom_validation_only": true
+      },
+      "does_not_exist_in_submissions": {
+        "expected_type": "boolean",
+        "format": {
+          "type": "enum",
+          "values": [true]
+        },
+        "custom_validation_only": true
       }
     }
   },
@@ -650,6 +682,22 @@
             true
           ]
         }
+      },
+      "exists_in_submissions": {
+        "expected_type": "boolean",
+        "format": {
+          "type": "enum",
+          "values": [true]
+        },
+        "custom_validation_only": true
+      },
+      "does_not_exist_in_submissions": {
+        "expected_type": "boolean",
+        "format": {
+          "type": "enum",
+          "values": [true]
+        },
+        "custom_validation_only": true
       }
     }
   },
@@ -684,6 +732,22 @@
             true
           ]
         }
+      },
+      "exists_in_submissions": {
+        "expected_type": "boolean",
+        "format": {
+          "type": "enum",
+          "values": [true]
+        },
+        "custom_validation_only": true
+      },
+      "does_not_exist_in_submissions": {
+        "expected_type": "boolean",
+        "format": {
+          "type": "enum",
+          "values": [true]
+        },
+        "custom_validation_only": true
       }
     }
   },
@@ -814,6 +878,22 @@
           "type": "empty",
           "values": "{}"
         }
+      },
+      "exists_in_submissions": {
+        "expected_type": "boolean",
+        "format": {
+          "type": "enum",
+          "values": [true]
+        },
+        "custom_validation_only": true
+      },
+      "does_not_exist_in_submissions": {
+        "expected_type": "boolean",
+        "format": {
+          "type": "enum",
+          "values": [true]
+        },
+        "custom_validation_only": true
       }
     }
   },
@@ -906,6 +986,22 @@
       },
       "content_length_less_than_or_equal_to": {
         "expected_type": "number"
+      },
+      "exists_in_submissions": {
+        "expected_type": "boolean",
+        "format": {
+          "type": "enum",
+          "values": [true]
+        },
+        "custom_validation_only": true
+      },
+      "does_not_exist_in_submissions": {
+        "expected_type": "boolean",
+        "format": {
+          "type": "enum",
+          "values": [true]
+        },
+        "custom_validation_only": true
       }
     }
   },
