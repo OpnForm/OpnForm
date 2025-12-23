@@ -7,6 +7,7 @@ use App\Models\Forms\Form;
 use App\Rules\CustomSlugRule;
 use App\Rules\FormPropertyLogicRule;
 use App\Rules\PaymentBlockConfigurationRule;
+use App\Rules\SelectOptionsRule;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Contracts\Validation\Validator;
@@ -216,6 +217,12 @@ abstract class UserFormRequest extends \Illuminate\Foundation\Http\FormRequest
             'properties.*.without_dropdown' => 'boolean|nullable',
             'properties.*.min_selection' => 'integer|nullable|min:0',
             'properties.*.max_selection' => 'integer|nullable|min:1',
+
+            // Select / Multi Select options validation
+            'properties.*.option_display_mode' => ['sometimes', 'nullable', Rule::in(['text_only', 'text_and_image', 'image_only'])],
+            'properties.*.option_image_size' => ['sometimes', 'nullable', Rule::in(['sm', 'md', 'lg'])],
+            'properties.*.select.options' => ['sometimes', new SelectOptionsRule('select')],
+            'properties.*.multi_select.options' => ['sometimes', new SelectOptionsRule('multi_select')],
 
             // Advanced Options
             'properties.*.generates_uuid' => 'boolean|nullable',
