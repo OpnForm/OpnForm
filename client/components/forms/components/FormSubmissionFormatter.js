@@ -1,5 +1,36 @@
 import { format, parseISO } from 'date-fns'
 
+// Singleton cache for formatter instances (keyed by form slug)
+const formatterCache = new Map()
+
+// Get or create a cached formatter instance for a form
+export function getCachedFormatter(form, formData) {
+  const cacheKey = form?.slug
+  if (!cacheKey) {
+    return new FormSubmissionFormatter(form, formData)
+  }
+  
+  let formatter = formatterCache.get(cacheKey)
+  if (!formatter) {
+    formatter = new FormSubmissionFormatter(form, formData)
+    formatterCache.set(cacheKey, formatter)
+  } else {
+    // Update form and formData for existing formatter
+    formatter.updateData(form, formData)
+  }
+  
+  return formatter
+}
+
+// Clear formatter cache (e.g., when navigating away from form)
+export function clearFormatterCache(formSlug = null) {
+  if (formSlug) {
+    formatterCache.delete(formSlug)
+  } else {
+    formatterCache.clear()
+  }
+}
+
 export class FormSubmissionFormatter {
   constructor(form, formData) {
     this.form = form
@@ -8,6 +39,11 @@ export class FormSubmissionFormatter {
     this.outputStringsOnly = false
     this.showGeneratedIds = false
     this.datesIsoFormat = false
+  }
+
+  updateData(form, formData) {
+    this.form = form
+    this.formData = formData
   }
 
   setCreateLinks() {

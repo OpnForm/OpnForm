@@ -1,11 +1,16 @@
-import { FormSubmissionFormatter } from '~/components/forms/components/FormSubmissionFormatter'
+import { getCachedFormatter } from '~/components/forms/components/FormSubmissionFormatter'
 
 export function useParseMention(content, mentionsAllowed, form, formData) {
   if (!mentionsAllowed || !form || !formData) {
     return content
   }
 
-  const formatter = new FormSubmissionFormatter(form, formData).setOutputStringsOnly()
+  // DOMParser is only available in browser, skip on server
+  if (!import.meta.client || typeof DOMParser === 'undefined') {
+    return content
+  }
+
+  const formatter = getCachedFormatter(form, formData).setOutputStringsOnly()
   const formattedData = formatter.getFormattedData()
 
   // Create a new DOMParser
