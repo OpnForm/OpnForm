@@ -17,13 +17,6 @@ it('cannot submit form with failed exists_in_submissions validation condition fo
                         ['id' => 'United Kingdom', 'name' => 'United Kingdom'],
                     ],
                 ],
-            ],
-            [
-                'id' => 'title',
-                'name' => 'Name',
-                'type' => 'title',
-                'hidden' => false,
-                'required' => false,
                 'validation' => [
                     'error_conditions' => [
                         'actions' => [],
@@ -45,6 +38,13 @@ it('cannot submit form with failed exists_in_submissions validation condition fo
                     ],
                     'error_message' => 'This country has already been selected',
                 ],
+            ],
+            [
+                'id' => 'title',
+                'name' => 'Name',
+                'type' => 'title',
+                'hidden' => false,
+                'required' => false
             ],
         ],
     ]);
@@ -70,13 +70,6 @@ it('cannot submit form with failed exists_in_submissions validation condition fo
                 'type' => 'date',
                 'hidden' => false,
                 'required' => false,
-            ],
-            [
-                'id' => 'title',
-                'name' => 'Name',
-                'type' => 'title',
-                'hidden' => false,
-                'required' => false,
                 'validation' => [
                     'error_conditions' => [
                         'actions' => [],
@@ -98,6 +91,13 @@ it('cannot submit form with failed exists_in_submissions validation condition fo
                     ],
                     'error_message' => 'This date has already been used',
                 ],
+            ],
+            [
+                'id' => 'title',
+                'name' => 'Name',
+                'type' => 'title',
+                'hidden' => false,
+                'required' => false
             ],
         ],
     ]);
@@ -129,13 +129,6 @@ it('cannot submit form with failed exists_in_submissions validation condition fo
                         ['id' => 'reading', 'name' => 'Reading'],
                     ],
                 ],
-            ],
-            [
-                'id' => 'title',
-                'name' => 'Name',
-                'type' => 'title',
-                'hidden' => false,
-                'required' => false,
                 'validation' => [
                     'error_conditions' => [
                         'actions' => [],
@@ -158,6 +151,13 @@ it('cannot submit form with failed exists_in_submissions validation condition fo
                     'error_message' => 'These interests have already been selected',
                 ],
             ],
+            [
+                'id' => 'title',
+                'name' => 'Name',
+                'type' => 'title',
+                'hidden' => false,
+                'required' => false
+            ],
         ],
     ]);
     $formData = ['multi_select_field' => ['Sports', 'Music']];
@@ -177,13 +177,6 @@ it('cannot submit form with failed exists_in_submissions validation condition fo
                 'id' => 'rating_field',
                 'name' => 'Rating',
                 'type' => 'rating',
-                'hidden' => false,
-                'required' => false,
-            ],
-            [
-                'id' => 'title',
-                'name' => 'Name',
-                'type' => 'title',
                 'hidden' => false,
                 'required' => false,
                 'validation' => [
@@ -206,7 +199,14 @@ it('cannot submit form with failed exists_in_submissions validation condition fo
                         ],
                     ],
                     'error_message' => 'This rating value already exists',
-                ],
+                ]
+            ],
+            [
+                'id' => 'title',
+                'name' => 'Name',
+                'type' => 'title',
+                'hidden' => false,
+                'required' => false
             ],
         ],
     ]);
@@ -230,13 +230,6 @@ it('cannot submit form with failed exists_in_submissions validation condition fo
                 'type' => 'scale',
                 'hidden' => false,
                 'required' => false,
-            ],
-            [
-                'id' => 'title',
-                'name' => 'Name',
-                'type' => 'title',
-                'hidden' => false,
-                'required' => false,
                 'validation' => [
                     'error_conditions' => [
                         'actions' => [],
@@ -257,7 +250,14 @@ it('cannot submit form with failed exists_in_submissions validation condition fo
                         ],
                     ],
                     'error_message' => 'This scale value already exists',
-                ],
+                ]
+            ],
+            [
+                'id' => 'title',
+                'name' => 'Name',
+                'type' => 'title',
+                'hidden' => false,
+                'required' => false
             ],
         ],
     ]);
@@ -281,13 +281,6 @@ it('cannot submit form with failed exists_in_submissions validation condition fo
                 'type' => 'slider',
                 'hidden' => false,
                 'required' => false,
-            ],
-            [
-                'id' => 'title',
-                'name' => 'Name',
-                'type' => 'title',
-                'hidden' => false,
-                'required' => false,
                 'validation' => [
                     'error_conditions' => [
                         'actions' => [],
@@ -309,6 +302,13 @@ it('cannot submit form with failed exists_in_submissions validation condition fo
                     ],
                     'error_message' => 'This slider value already exists',
                 ],
+            ],
+            [
+                'id' => 'title',
+                'name' => 'Name',
+                'type' => 'title',
+                'hidden' => false,
+                'required' => false
             ],
         ],
     ]);
@@ -338,13 +338,6 @@ it('can submit form with does_not_exist_in_submissions validation condition for 
                         ['id' => 'United States', 'name' => 'United Kingdom'],
                     ],
                 ],
-            ],
-            [
-                'id' => 'title',
-                'name' => 'Name',
-                'type' => 'title',
-                'hidden' => false,
-                'required' => false,
                 'validation' => [
                     'error_conditions' => [
                         'actions' => [],
@@ -366,6 +359,13 @@ it('can submit form with does_not_exist_in_submissions validation condition for 
                     ],
                     'error_message' => 'This country has already been selected',
                 ],
+            ],
+            [
+                'id' => 'title',
+                'name' => 'Name',
+                'type' => 'title',
+                'hidden' => false,
+                'required' => false
             ],
         ],
     ]);
@@ -391,14 +391,7 @@ it('cannot submit form with failed exists_in_submissions validation condition fo
                 'hidden' => false,
                 'required' => false,
                 'rows' => ['Row 1', 'Row 2'],
-                'columns' => ['Column 1', 'Column 2']
-            ],
-            [
-                'id' => 'title',
-                'name' => 'Name',
-                'type' => 'title',
-                'hidden' => false,
-                'required' => false,
+                'columns' => ['Column 1', 'Column 2'],
                 'validation' => [
                     'error_conditions' => [
                         'actions' => [],
@@ -420,6 +413,13 @@ it('cannot submit form with failed exists_in_submissions validation condition fo
                     ],
                     'error_message' => 'This matrix value already exists',
                 ],
+            ],
+            [
+                'id' => 'title',
+                'name' => 'Name',
+                'type' => 'title',
+                'hidden' => false,
+                'required' => false
             ],
         ],
     ]);
