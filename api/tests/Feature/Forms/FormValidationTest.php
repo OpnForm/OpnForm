@@ -429,7 +429,7 @@ it('cannot submit form with failed exists_in_submissions validation condition fo
         'Row 2' => 'Column 2',
     ];
 
-    $formData = ['matrix_field' => $matrixValue];
+    $formData = ['matrix_field' => $matrixValue, 'title' => 'Name'];
     $this->postJson(route('forms.answer', $form->slug), $formData)
         ->assertStatus(422)
         ->assertJson([
