@@ -86,6 +86,7 @@ Route::group(['middleware' => 'auth.multi'], function () {
             ->where('plan', '(' . implode('|', SubscriptionController::SUBSCRIPTION_PLANS) . ')');
         Route::get('/billing-portal', [SubscriptionController::class, 'billingPortal'])->name('billing-portal');
         Route::get('/users-count', [SubscriptionController::class, 'getUsersCount'])->name('users-count');
+        Route::post('/upgrade-to-yearly', [SubscriptionController::class, 'upgradeToYearly'])->name('upgrade-to-yearly');
     });
 
     Route::prefix('open')->name('open.')->group(function () {
