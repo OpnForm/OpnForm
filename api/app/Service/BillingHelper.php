@@ -25,7 +25,6 @@ class BillingHelper
     public static function getLineItemInterval(SubscriptionItem $item)
     {
         return $item->price->recurring->interval === 'year' ? 'yearly' : 'monthly';
-        ;
     }
 
     public static function getSubscriptionInterval(Subscription $subscription)
@@ -33,7 +32,7 @@ class BillingHelper
         try {
             $stripeSub = $subscription->asStripeSubscription();
             $lineItems = collect($stripeSub->items);
-            $productId = BillingHelper::getProductId('default');
+            $productId = self::getProductId('default');
 
             if (!$productId) {
                 return null;
