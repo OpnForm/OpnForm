@@ -131,9 +131,15 @@ class SubscriptionController extends Controller
         }
 
         // Upgrade the subscription to yearly plan
-        $subscription = $user->subscription();
-        $yearlyPriceId = BillingHelper::getPricing('default')['yearly'];
-        $subscription->swap($yearlyPriceId);
+        try {
+            $subscription = $user->subscription();
+            $yearlyPriceId = BillingHelper::getPricing('default')['yearly'];
+            $subscription->swap($yearlyPriceId);
+        } catch (\Exception $e) {
+            return $this->error([
+                "message" => $e?->getMessage() || "Failed to upgrade the subscription to yearly plan.",
+            ]);
+        }
 
         return $this->success(['message' => 'Congratulations! Your plan has been upgraded to yearly.']);
     }

@@ -247,7 +247,13 @@ const handleUpgrade = async () => {
     closeModal()
   }).catch((error) => {
     loading.value = false
-    alert.error(error.data?.message || 'Failed to upgrade to yearly plan. Please try again later.')
+    let message = error.data?.message || 'Failed to upgrade to yearly plan. Please try again later.'
+    let actions = [{
+      label: 'Manage Billing',
+      icon: 'i-heroicons-arrow-top-right-on-square',
+      onclick: () => { window.open('/home?user-settings=billing', '_blank') }
+    }]
+    alert.error(message, 10000, { actions })
   })
 }
 </script>
