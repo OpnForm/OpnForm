@@ -1,10 +1,20 @@
 <template>
-  <copy-content
-    :content="embedCode"
-    label="Copy Code"
-    tracking-event="embed_code_copy_click"
-    :tracking-properties="{form_id: form.id, form_slug: form.slug}"
-  />
+  <div class="space-y-3">
+    <UAlert
+      icon="i-heroicons-sparkles"
+      color="primary"
+      variant="subtle"
+      title="New embed with SDK support"
+      description="We've upgraded the embed code with our new JavaScript SDK. Copy this new code to enable event callbacks and programmatic control. Your existing embed will continue to work. The SDK provides access to form events (submit, error, dataChange) and methods like setField(), toggleDarkMode(), and more."
+    />
+    
+    <copy-content
+      :content="embedCode"
+      label="Copy Code"
+      tracking-event="embed_code_copy_click"
+      :tracking-properties="{form_id: form.id, form_slug: form.slug}"
+    />
+  </div>
 </template>
 
 <script>
