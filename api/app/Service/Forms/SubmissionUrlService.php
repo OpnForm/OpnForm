@@ -17,7 +17,7 @@ class SubmissionUrlService
      */
     public static function getSubmissionIdentifier(FormSubmission $submission): string
     {
-        return $submission->uuid_token ?? Hashids::encode($submission->id);
+        return $submission->public_id ?? Hashids::encode($submission->id);
     }
 
     /**

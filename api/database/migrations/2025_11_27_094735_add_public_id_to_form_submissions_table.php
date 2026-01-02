@@ -11,8 +11,8 @@ return new class () extends Migration {
     public function up(): void
     {
         Schema::table('form_submissions', function (Blueprint $table) {
-            $table->uuid('uuid_token')->nullable()->unique()->after('id');
-            $table->index('uuid_token');
+            $table->uuid('public_id')->nullable()->unique()->after('id');
+            $table->index('public_id');
         });
     }
 
@@ -22,8 +22,9 @@ return new class () extends Migration {
     public function down(): void
     {
         Schema::table('form_submissions', function (Blueprint $table) {
-            $table->dropIndex(['uuid_token']);
-            $table->dropColumn('uuid_token');
+            $table->dropIndex(['public_id']);
+            $table->dropColumn('public_id');
         });
     }
 };
+

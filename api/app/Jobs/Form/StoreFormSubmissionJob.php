@@ -60,9 +60,7 @@ class StoreFormSubmissionJob implements ShouldQueue
      * @param array $submissionData Form data including metadata fields (submission_id, completion_time, etc.)
      * @return void
      */
-    public function __construct(public Form $form, public array $submissionData)
-    {
-    }
+    public function __construct(public Form $form, public array $submissionData) {}
 
     /**
      * Execute the job.
@@ -190,7 +188,7 @@ class StoreFormSubmissionJob implements ShouldQueue
 
         // Generate a new UUID for new submissions
         if (!$this->submissionId) {
-            $submission->uuid_token = \Illuminate\Support\Str::uuid()->toString();
+            $submission->public_id = \Illuminate\Support\Str::uuid()->toString();
         }
 
         // Store IP address in meta if IP tracking is enabled

@@ -218,11 +218,12 @@ class PublicFormController extends Controller
         // Check if it's a UUID (new format)
         if (Str::isUuid($submissionIdentifier)) {
             $submission = $form->submissions()
-                ->where('uuid_token', $submissionIdentifier)
+                ->where('public_id', $submissionIdentifier)
                 ->first();
-            if ($submission) {
-                $submissionData['submission_id'] = $submission->id;
+            if (!$submission) {
+                abort(404, 'Submission not found');
             }
+            $submissionData['submission_id'] = $submission->id;
             unset($submissionData['submission_hash']);
             return $submissionData;
         }
@@ -244,9 +245,7 @@ class PublicFormController extends Controller
             abort(404);
         }
         if ($form->workspace == null || !$form->editable_submissions) {
-            return $this->error([
-                'message' => 'Not allowed.',
-            ]);
+            abort(403);
         }
 
         $submission = null;
@@ -254,7 +253,7 @@ class PublicFormController extends Controller
         // Try UUID lookup first (new format)
         if (Str::isUuid($submission_id)) {
             $submission = $form->submissions()
-                ->where('uuid_token', $submission_id)
+                ->where('public_id', $submission_id)
                 ->first();
         }
 
@@ -266,9 +265,9 @@ class PublicFormController extends Controller
                 $submission = $form->submissions()->find($numericId);
 
                 // CRITICAL: If submission has UUID, return 404 (force UUID usage)
-                if ($submission && $submission->uuid_token) {
+                if ($submission && $submission->public_id) {
                     return $this->error([
-                        'message' => 'Submission not found. Please use the secure UUID link.'
+                        'message' => 'Submission not found.'
                     ], 404);
                 }
             }

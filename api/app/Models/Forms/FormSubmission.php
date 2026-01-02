@@ -18,7 +18,7 @@ class FormSubmission extends Model
         'completion_time',
         'status',
         'meta',
-        'uuid_token'
+        'public_id'
     ];
 
     protected function casts(): array
@@ -27,7 +27,7 @@ class FormSubmission extends Model
             'data' => 'array',
             'completion_time' => 'integer',
             'meta' => 'array',
-            'uuid_token' => 'string',
+            'public_id' => 'string',
         ];
     }
 
