@@ -24,16 +24,17 @@
     const r = document.body.querySelector(".nf-main")
     r && r.remove()
     const p = document.createElement("div");
-    (p.className = `nf-main ${i}`),
-      (p.innerHTML = `<div class='nf-popup'><iframe src='${e}' frameborder='0' marginheight='0' marginwidth='0' title='OpnForm'></iframe></div>`)
-    p.querySelector("iframe").style.maxWidth = `${a}px`
+    (p.className = `nf-main ${i}`)
+    const d = document.createElement("div");
+    (d.className = "nf-popup"), p.appendChild(d)
+    let c = !1, l = null
     const s = document.createElement("div");
     (s.className = "nf-emoji"),
       (s.role = "button"),
       (s.style.backgroundColor = `${o}`),
       (s.innerHTML = `<span class='nf-emoji-icon'>${t}</span><span class='nf-emoji-icon-close'><svg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='1.5' stroke='currentColor' class='w-8 h-8'>\n  <path stroke-linecap='round' stroke-linejoin='round' d='M6 18L18 6M6 6l12 12' />\n</svg>\n</span>`),
       (s.onclick = () => {
-        p.classList.toggle("open")
+        c || ((l = document.createElement("iframe")), (l.src = e), (l.title = "OpnForm"), (l.style.maxWidth = `${a}px`), d.appendChild(l), (c = !0)), p.classList.toggle("open")
       }),
       p.appendChild(s),
       document.body.appendChild(p)

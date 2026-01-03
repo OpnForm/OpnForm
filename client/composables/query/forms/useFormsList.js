@@ -7,22 +7,13 @@ export function useFormsList(workspaceId, options = {}) {
   // Separate API filters and custom options from TanStack Query options
   const { fetchAll, ...queryOptions } = options
 
-  const queryClient = useQueryClient()
-
   const query = useInfiniteQuery({
     queryKey: computed(() => ['forms', 'list', workspaceId.value]),
     queryFn: ({ pageParam = 1 }) => {
       const apiFilters = { page: pageParam }
-      return formsApi.list(workspaceId.value, { params: apiFilters }).then(res => {
-        // Prime cache for each form
-        res?.data?.forEach(form => {
-          queryClient.setQueryData(['forms', form.id], form)
-          if (form.slug) {
-            queryClient.setQueryData(['forms', 'slug', form.slug], form)
-          }
-        })
-        return res
-      })
+      // Note: List endpoint returns lightweight form data (no properties).
+      // Individual form detail queries will fetch the full form when needed.
+      return formsApi.list(workspaceId.value, { params: apiFilters })
     },
     initialPageParam: 1,
     getNextPageParam: (lastPage) => {
