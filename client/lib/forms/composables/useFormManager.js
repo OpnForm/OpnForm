@@ -233,8 +233,11 @@ export function useFormManager(initialFormConfig, initialMode = FormMode.LIVE, o
 
     try {
       // Stop partial submission sync during submission if enabled
+      // Use skipFinalSync: true to prevent a race condition where the partial submission
+      // (with is_partial: true) arrives at the server after the final submission,
+      // overwriting the 'completed' status back to 'partial'
       if (!import.meta.server && toValue(config).enable_partial_submissions && strategy.value.submission.enablePartialSubmissions) {
-        partialSubmissionService.stopSync() // This will sync immediately before stopping
+        partialSubmissionService.stopSync({ skipFinalSync: true })
       }
       
       // 1. Stop Timer & Get Time
@@ -286,7 +289,10 @@ export function useFormManager(initialFormConfig, initialMode = FormMode.LIVE, o
       // 7. Clear pending submission data on successful submit
       pendingSubmissionService?.clear()
       
-      // 8. Handle amplitude logging
+      // 8. Clear partial submission hash to prevent stale data
+      partialSubmissionService?.clearSubmissionHash()
+      
+      // 9. Handle amplitude logging
       if (import.meta.client) {
         const amplitude = useAmplitude()
         amplitude.logEvent('form_submission', {
@@ -295,7 +301,7 @@ export function useFormManager(initialFormConfig, initialMode = FormMode.LIVE, o
         })
       }
       
-      // 9. Handle postMessage communication for iframe integration
+      // 10. Handle postMessage communication for iframe integration
       if (import.meta.client) {
         const isIframe = useIsIframe()
         const formConfig = toValue(config)
@@ -320,7 +326,7 @@ export function useFormManager(initialFormConfig, initialMode = FormMode.LIVE, o
         window.postMessage(payload, '*')
       }
       
-      // 10. Handle redirect if server response includes redirect info
+      // 11. Handle redirect if server response includes redirect info
       if (import.meta.client && submissionResult?.redirect && submissionResult?.redirect_url) {
         window.location.href = submissionResult.redirect_url
       }

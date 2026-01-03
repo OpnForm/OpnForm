@@ -153,6 +153,7 @@ const workingFormStore = useWorkingFormStore()
 const { data: user } = useAuth().user()
 const passwordForm = useForm({ password: null })
 // Removed unused hidePasswordDisabledMsg (was always false and unused)
+// submission_id can be UUID (new secure format) or Hashid (legacy format)
 const submissionId = ref(route.query.submission_id || null)
 const submittedData = ref(null)
 const showFirstSubmissionModal = ref(false)
@@ -284,7 +285,7 @@ useHead({
   )
 })
 
-watch(() => props.form.language, (newLanguage) => {
+watch(() => props.form?.language, (newLanguage) => {
   if (newLanguage && typeof newLanguage === 'string') {
     setLocale(newLanguage)
   } else {
@@ -388,8 +389,21 @@ const editSubmission = () => {
   window.parent.location.href = editUrl
 }
 
+const addPasswordError = (msg) => {
+  passwordForm.errors.set('password', msg)
+}
+
+// Inject password error from parent
+const passwordError = inject('passwordError', ref(null))
+
+// Watch for password error from parent and display it
+watch(passwordError, (errorMsg) => {
+  if (errorMsg) {
+    addPasswordError(errorMsg)
+  }
+}, { immediate: true })
+
 const passwordEntered = () => {
-  console.log('passwordEntered', passwordForm.password)
   if (passwordForm.password) {
     emit('password-entered', passwordForm.password)
   } else {
@@ -397,12 +411,7 @@ const passwordEntered = () => {
   }
 }
 
-const addPasswordError = (msg) => {
-  passwordForm.errors.set('password', msg)
-}
-
 defineExpose({
-  addPasswordError,
   restart,
   formManager
 })

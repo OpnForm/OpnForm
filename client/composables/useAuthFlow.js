@@ -27,15 +27,15 @@ export const initServiceClients = (userData) => {
   useCrisp().setUser(userData)
 }
 
+// Shared state for 2FA modal - ensures all instances of useAuthFlow share the same state
+const showTwoFactorModal = ref(false)
+const pendingAuthToken = ref(null)
+const pendingAuthContext = ref(null)
+
 export const useAuthFlow = () => {
   const authStore = useAuthStore()
   const { logEvent } = useAmplitude()
   const router = useRouter()
-
-  // 2FA modal state
-  const showTwoFactorModal = ref(false)
-  const pendingAuthToken = ref(null)
-  const pendingAuthContext = ref(null)
 
   /**
    * Core authentication success handler  

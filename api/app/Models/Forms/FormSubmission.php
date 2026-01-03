@@ -29,7 +29,8 @@ class FormSubmission extends Model implements VersionableNestedDiff
         'data',
         'completion_time',
         'status',
-        'meta'
+        'meta',
+        'public_id'
     ];
 
     protected function casts(): array
@@ -38,6 +39,7 @@ class FormSubmission extends Model implements VersionableNestedDiff
             'data' => 'array',
             'completion_time' => 'integer',
             'meta' => 'array',
+            'public_id' => 'string',
         ];
     }
 

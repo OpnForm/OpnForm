@@ -235,3 +235,44 @@ it('submits as completed on non-pro forms', function () {
     $submission = FormSubmission::first();
     expect($submission->status)->toBe(FormSubmission::STATUS_COMPLETED);
 });
+
+it('cannot revert a completed submission back to partial', function () {
+    $user = $this->actingAsProUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace, [
+        'enable_partial_submissions' => true
+    ]);
+
+    // Step 1: Create a partial submission
+    $formData = $this->generateFormSubmissionData($form, ['text' => 'Initial']);
+    $formData['is_partial'] = true;
+
+    $partialResponse = $this->postJson(route('forms.answer', $form->slug), $formData)
+        ->assertSuccessful();
+
+    $submissionHash = $partialResponse->json('submission_hash');
+
+    // Step 2: Complete the submission
+    $completeData = $this->generateFormSubmissionData($form, ['text' => 'Complete']);
+    $completeData['submission_hash'] = $submissionHash;
+
+    $this->postJson(route('forms.answer', $form->slug), $completeData)
+        ->assertSuccessful();
+
+    // Verify it's completed
+    $submission = FormSubmission::first();
+    expect($submission->status)->toBe(FormSubmission::STATUS_COMPLETED);
+
+    // Step 3: Try to send another partial submission with the same hash
+    // This simulates a race condition where a delayed partial request arrives after completion
+    $latePartialData = $this->generateFormSubmissionData($form, ['text' => 'Late partial update']);
+    $latePartialData['is_partial'] = true;
+    $latePartialData['submission_hash'] = $submissionHash;
+
+    $this->postJson(route('forms.answer', $form->slug), $latePartialData)
+        ->assertSuccessful();
+
+    // Verify the submission status was NOT reverted to partial
+    $submission->refresh();
+    expect($submission->status)->toBe(FormSubmission::STATUS_COMPLETED);
+});
