@@ -252,7 +252,7 @@ describe('Form Analytics Validation', function () {
 });
 
 describe('Form Analytics Pro Feature Gating', function () {
-    it('cleans analytics for non-pro users on form create', function () {
+    it('warns about analytics cleaning for non-pro users on form create', function () {
         $user = $this->actingAsUser(); // Non-pro user
         $workspace = $this->createUserWorkspace($user);
         $form = $this->makeForm($user, $workspace, [
@@ -263,32 +263,37 @@ describe('Form Analytics Pro Feature Gating', function () {
         ]);
         $formData = (new FormResource($form))->toArray(request());
 
+        // Form is created with analytics (stored in DB), but response indicates cleaning will happen when shared
         $response = $this->postJson(route('open.forms.store', $formData))
             ->assertSuccessful();
 
-        $createdForm = \App\Models\Forms\Form::find($response->json('form.id'));
-        expect($createdForm->analytics)->toBeEmpty();
+        // Response message should indicate Pro features will be disabled when sharing
+        expect($response->json('message'))->toContain('Pro features you used will be disabled');
     });
 
-    it('cleans analytics for non-pro users on form update', function () {
+    it('cleans analytics when public form is fetched for non-pro user', function () {
         $user = $this->actingAsUser(); // Non-pro user
         $workspace = $this->createUserWorkspace($user);
-        $form = $this->createForm($user, $workspace);
+        $form = $this->createForm($user, $workspace, [
+            'analytics' => [
+                'provider' => 'meta_pixel',
+                'tracking_id' => '1234567890123456',
+            ],
+            'visibility' => 'public', // Must be public to be fetched via public endpoint
+        ]);
 
-        $form->analytics = [
-            'provider' => 'google_analytics',
-            'tracking_id' => 'G-TESTID123',
-        ];
-        $formData = (new FormResource($form))->toArray(request());
+        // Logout to access as guest (public form endpoint)
+        $this->actingAsGuest();
 
-        $response = $this->putJson(route('open.forms.update', $form->id), $formData)
+        // Public endpoint cleans pro features
+        $response = $this->getJson(route('forms.show', $form->slug))
             ->assertSuccessful();
 
-        $form->refresh();
-        expect($form->analytics)->toBeEmpty();
+        // Analytics should be cleaned (empty) in response
+        expect($response->json('analytics'))->toBeEmpty();
     });
 
-    it('preserves analytics for pro users', function () {
+    it('preserves analytics when public form is fetched for pro user', function () {
         $user = $this->actingAsProUser();
         $workspace = $this->createUserWorkspace($user);
         $form = $this->createForm($user, $workspace, [
@@ -296,12 +301,35 @@ describe('Form Analytics Pro Feature Gating', function () {
                 'provider' => 'gtm',
                 'tracking_id' => 'GTM-PROACC01',
             ],
+            'visibility' => 'public',
         ]);
 
-        // Re-fetch to verify it's persisted
+        // Logout to access as guest (public form endpoint)
+        $this->actingAsGuest();
+
+        // Public endpoint should preserve analytics for pro workspace
+        $response = $this->getJson(route('forms.show', $form->slug))
+            ->assertSuccessful();
+
+        expect($response->json('analytics'))->toBeArray();
+        expect($response->json('analytics.provider'))->toBe('gtm');
+        expect($response->json('analytics.tracking_id'))->toBe('GTM-PROACC01');
+    });
+
+    it('preserves analytics in database for non-pro users', function () {
+        $user = $this->actingAsUser(); // Non-pro user
+        $workspace = $this->createUserWorkspace($user);
+        $form = $this->createForm($user, $workspace, [
+            'analytics' => [
+                'provider' => 'meta_pixel',
+                'tracking_id' => '1234567890123456',
+            ],
+        ]);
+
+        // Re-fetch from DB to verify it's persisted (cleaning only affects response, not storage)
         $form->refresh();
         expect($form->analytics)->toBeArray();
-        expect($form->analytics['provider'])->toBe('gtm');
-        expect($form->analytics['tracking_id'])->toBe('GTM-PROACC01');
+        expect($form->analytics['provider'])->toBe('meta_pixel');
+        expect($form->analytics['tracking_id'])->toBe('1234567890123456');
     });
 });
