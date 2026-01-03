@@ -7,6 +7,7 @@ use App\Rules\PropertyValidators\CorePropertyValidator;
 use App\Rules\PropertyValidators\LogicPropertyValidator;
 use App\Rules\PropertyValidators\PaymentPropertyValidator;
 use App\Rules\PropertyValidators\PropertyValidatorInterface;
+use App\Rules\PropertyValidators\SelectOptionsPropertyValidator;
 use App\Rules\PropertyValidators\TypePropertyValidator;
 use Closure;
 use Illuminate\Contracts\Validation\DataAwareRule;
@@ -45,6 +46,7 @@ class FormPropertiesRule implements ValidationRule, ValidatorAwareRule, DataAwar
             new TypePropertyValidator(),
             new PaymentPropertyValidator($workspace),
             new LogicPropertyValidator(),
+            new SelectOptionsPropertyValidator(),
         ];
     }
 

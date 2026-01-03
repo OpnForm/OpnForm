@@ -203,12 +203,16 @@ const roundedClass = computed(() => {
 })
 
 // Map select options once at component creation (shuffle if enabled)
-const selectOptions = (() => {
+const selectOptions = computed(() => {
   const field = props.block
   if (!field || !['select', 'multi_select'].includes(field.type)) return null
-  const options = field[field.type]?.options?.map(option => ({ name: option.name, value: option.name })) ?? []
+  const options = field[field.type]?.options?.map(option => ({ 
+    name: option.name, 
+    value: option.name,
+    image: option.image || null  // Include image if present
+  })) ?? []
   return field.shuffle_options && options.length > 1 ? shuffleArray(options) : options
-})()
+})
 
 const boundProps = computed(() => {
   const field = props.block
@@ -242,11 +246,14 @@ const boundProps = computed(() => {
   if (field.type === 'barcode') inputProperties.decoders = field.decoders
 
   if (['select', 'multi_select'].includes(field.type)) {
-    inputProperties.options = selectOptions ?? []
+    inputProperties.options = selectOptions.value ?? []
     inputProperties.multiple = (field.type === 'multi_select')
     inputProperties.allowCreation = (field.allow_creation === true)
     inputProperties.searchable = (inputProperties.options.length > 4)
     inputProperties.clearable = !unified.required
+    // Image display options
+    inputProperties.optionDisplayMode = field.option_display_mode || 'text_only'
+    inputProperties.optionImageSize = field.option_image_size || 'md'
     if (field.type === 'multi_select') {
       inputProperties.minSelection = field.min_selection || null
       inputProperties.maxSelection = field.max_selection || null
