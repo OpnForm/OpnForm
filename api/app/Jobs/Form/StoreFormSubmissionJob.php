@@ -60,7 +60,9 @@ class StoreFormSubmissionJob implements ShouldQueue
      * @param array $submissionData Form data including metadata fields (submission_id, completion_time, etc.)
      * @return void
      */
-    public function __construct(public Form $form, public array $submissionData) {}
+    public function __construct(public Form $form, public array $submissionData)
+    {
+    }
 
     /**
      * Execute the job.
