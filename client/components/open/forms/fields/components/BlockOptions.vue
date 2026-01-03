@@ -74,6 +74,8 @@
         :form="field"
         label="Content"
         :required="false"
+        enable-mentions
+        :mentions="form.properties"
       />
     </div>
 

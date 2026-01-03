@@ -34,9 +34,15 @@ const props = defineProps({
   ui: { type: Object, default: () => ({}) }
 })
 
-const processedContent = computed(() => {
-  return useParseMention(props.content, props.mentionsAllowed, props.form, props.formData)
-})
+const processedContent = ref(props.content)
+
+watch(() => [props.content, props.mentionsAllowed, props.form, props.formData], async () => {
+  if (props.mentionsAllowed && props.form && props.formData) {
+    processedContent.value = await useParseMention(props.content, props.mentionsAllowed, props.form, props.formData)
+  } else {
+    processedContent.value = props.content
+  }
+}, { immediate: true })
 
 const injectedSize = inject('formSize', null)
 const injectedBorderRadius = inject('formBorderRadius', null)
