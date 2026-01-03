@@ -11,8 +11,22 @@ const props = defineProps({
 })
 
 const provider = computed(() => props.form?.analytics?.provider)
-const trackingId = computed(() => props.form?.analytics?.tracking_id)
+const rawTrackingId = computed(() => props.form?.analytics?.tracking_id)
 const formId = computed(() => props.form?.id)
+
+/**
+ * Sanitize tracking ID to prevent XSS injection.
+ * Only allows alphanumeric characters, dashes, underscores, and dots.
+ * This provides defense-in-depth alongside backend validation.
+ */
+const sanitizeTrackingId = (id) => {
+  if (!id || typeof id !== 'string') return null
+  const sanitized = id.replace(/[^A-Za-z0-9\-_.]/g, '')
+  // Return null if sanitization removed characters (indicates potentially malicious input)
+  return sanitized === id ? sanitized : null
+}
+
+const trackingId = computed(() => sanitizeTrackingId(rawTrackingId.value))
 
 const shouldInjectScripts = computed(() => {
   return import.meta.client && provider.value && trackingId.value
@@ -79,6 +93,8 @@ const headConfig = computed(() => {
 useHead(headConfig)
 
 const trackFormSubmit = () => {
+  // Explicit SSR guard to prevent window access during server-side rendering
+  if (!import.meta.client) return
   if (!shouldInjectScripts.value) return
   const providerConfig = getProviderConfig(formId.value)
   providerConfig[provider.value]?.trackSubmit(props.form, trackingId.value)
