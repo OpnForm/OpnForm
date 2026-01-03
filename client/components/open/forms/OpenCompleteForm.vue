@@ -285,7 +285,7 @@ useHead({
   )
 })
 
-watch(() => props.form.language, (newLanguage) => {
+watch(() => props.form?.language, (newLanguage) => {
   if (newLanguage && typeof newLanguage === 'string') {
     setLocale(newLanguage)
   } else {
@@ -389,8 +389,21 @@ const editSubmission = () => {
   window.parent.location.href = editUrl
 }
 
+const addPasswordError = (msg) => {
+  passwordForm.errors.set('password', msg)
+}
+
+// Inject password error from parent
+const passwordError = inject('passwordError', ref(null))
+
+// Watch for password error from parent and display it
+watch(passwordError, (errorMsg) => {
+  if (errorMsg) {
+    addPasswordError(errorMsg)
+  }
+}, { immediate: true })
+
 const passwordEntered = () => {
-  console.log('passwordEntered', passwordForm.password)
   if (passwordForm.password) {
     emit('password-entered', passwordForm.password)
   } else {
@@ -398,12 +411,7 @@ const passwordEntered = () => {
   }
 }
 
-const addPasswordError = (msg) => {
-  passwordForm.errors.set('password', msg)
-}
-
 defineExpose({
-  addPasswordError,
   restart,
   formManager
 })

@@ -9,7 +9,10 @@
 
     <div
       class="rich-editor resize-y notranslate relative"
-      :class="ui.container({ class: props.ui?.slots?.container })"
+      :class="[
+        ui.container({ class: props.ui?.slots?.container }),
+        { 'theme-transparent': resolvedTheme === 'transparent' }
+      ]"
       :style="inputStyle"
     >
       <MentionDropdown
@@ -60,7 +63,11 @@
 
       <!-- Editor Container for Fullscreen -->
       <div class="flex-1 overflow-hidden">
-        <div class="rich-editor h-full" style="resize: none;">
+        <div 
+          class="rich-editor h-full" 
+          :class="{ 'theme-transparent': resolvedTheme === 'transparent' }"
+          style="resize: none;"
+        >
           <MentionDropdown
             v-if="enableMentions && mentionState"
             :mention-state="mentionState"
@@ -153,7 +160,7 @@ const props = defineProps({
 })
 const emit = defineEmits(['update:modelValue'])
 
-const { compVal, inputStyle, inputWrapperProps, ui } = useFormInput(props, { emit }, {
+const { compVal, inputStyle, inputWrapperProps, ui, resolvedTheme } = useFormInput(props, { emit }, {
   variants: richTextAreaInputTheme,
   additionalVariants: {
     focused: true // focus style is handled via focus-within by CSS
@@ -304,6 +311,13 @@ const showCharLimit = computed(() => {
 </script>
 
 <style lang="scss">
+// Transparent theme specific styles
+.rich-editor.theme-transparent {
+  .ql-editor {
+    padding: 12px 0;
+  }
+}
+
 .rich-editor {
   .ql-container {
     border-bottom: 0px !important;

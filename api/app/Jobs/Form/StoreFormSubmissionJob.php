@@ -184,9 +184,18 @@ class StoreFormSubmissionJob implements ShouldQueue
         }
         $submission->data = $formData;
         $submission->completion_time = $this->completionTime;
-        $submission->status = $this->isPartial
-            ? FormSubmission::STATUS_PARTIAL
-            : FormSubmission::STATUS_COMPLETED;
+
+        // Determine submission status
+        // Never allow a completed submission to be reverted to partial (prevents race conditions)
+        if ($this->isPartial) {
+            // Only set partial status if submission is new OR not already completed
+            if (!$this->submissionId || $submission->status !== FormSubmission::STATUS_COMPLETED) {
+                $submission->status = FormSubmission::STATUS_PARTIAL;
+            }
+            // If already completed, keep it completed (ignore the partial flag)
+        } else {
+            $submission->status = FormSubmission::STATUS_COMPLETED;
+        }
 
         // Generate a new UUID for new submissions
         if (!$this->submissionId) {

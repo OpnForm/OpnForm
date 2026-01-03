@@ -115,10 +115,14 @@ class GenerateTaxExport extends Command
             $queryOptions['created']['gte'] = Carbon::parse($startDate)->startOfDay()->timestamp;
         }
         if ($endDate) {
-            $queryOptions['created']['lte'] = Carbon::parse($endDate)->endOfDay()->timestamp;
+            $queryOptions['created']['lte'] = Carbon::createFromFormat('Y-m-d', $endDate)->endOfDay()->timestamp;
         }
 
+        $this->info('Fetching invoices from Stripe...');
         $invoices = Cashier::stripe()->invoices->all($queryOptions);
+        $totalResults = $invoices->count();
+        $this->info("Initial batch contains {$totalResults} invoices");
+
         $bar = $this->output->createProgressBar();
         $bar->start();
 
@@ -129,7 +133,6 @@ class GenerateTaxExport extends Command
         $totalInvoice = 0;
         $processedInvoiceCount = 0;
         $defaultedToFranceCount = 0;
-        $totalResults = 0;
 
         // Volume metrics
         $grossVolumeUsd = 0;
@@ -140,14 +143,22 @@ class GenerateTaxExport extends Command
         $taxTotalEur = 0;
 
         do {
-            $batchSize = count($invoices->data);
-            $totalResults += $batchSize;
+            if (empty($invoices->data)) {
+                $this->line('No invoices found in this batch.');
+                break;
+            }
 
             foreach ($invoices as $invoice) {
                 $totalInvoice++;
 
-                // Ignore if payment was refunded or not successful
-                if (($invoice->payment_intent->status ?? null) !== 'succeeded') {
+                // Check for payment status
+                // Since we query with status='paid', check invoice status first
+                // payment_intent->status may not always be available/expanded
+                $invoiceStatus = $invoice->status ?? null;
+                $paymentIntentStatus = $invoice->payment_intent->status ?? null;
+
+                // Accept if invoice is paid OR payment_intent succeeded
+                if ($invoiceStatus !== 'paid' && $paymentIntentStatus !== 'succeeded') {
                     $paymentNotSuccessfulCount++;
                     continue;
                 }
@@ -200,6 +211,8 @@ class GenerateTaxExport extends Command
 
                 // No need for sleep - Stripe API can handle the request rate
                 $invoices = Cashier::stripe()->invoices->all($queryOptions);
+                $batchSize = count($invoices->data);
+                $totalResults += $batchSize;
             } catch (\Exception $e) {
                 $this->error("Error fetching next batch of invoices: {$e->getMessage()}");
                 break;
@@ -243,6 +256,9 @@ class GenerateTaxExport extends Command
         $this->info(' - Gross volume: €' . number_format($grossVolumeEur, 2));
         $this->info(' - Tax collected: €' . number_format($taxTotalEur, 2));
         $this->info(' - Net volume: €' . number_format($netVolumeEur, 2));
+        $this->line('');
+        $this->comment('Note: EUR amounts are GROSS (before Stripe fees) to match Stripe Dashboard.');
+        $this->comment('Calculated as: balance_transaction->amount (NET) + balance_transaction->fee = GROSS.');
 
         return Command::SUCCESS;
     }
@@ -351,8 +367,38 @@ class GenerateTaxExport extends Command
 
         $totalEur = 0;
         if (isset($invoice->charge) && isset($invoice->charge->balance_transaction)) {
-            $totalEur = $invoice->charge->balance_transaction->amount ?? 0;
+            // Fast path: invoice has embedded charge (OpnForm-style accounts)
+            $bt = $invoice->charge->balance_transaction;
+            // balance_transaction->amount is NET (after fees), add fees back to get GROSS
+            $netEur = $bt->amount ?? 0;
+            $feeEur = $bt->fee ?? 0;
+            $totalEur = $netEur + $feeEur; // GROSS = NET + fees
+        } else {
+            // Fallback: Stripe no longer embeds charge on invoice
+            // Fetch the Charge explicitly by invoice ID, then read its balance_transaction
+            try {
+                $charges = Cashier::stripe()->charges->all([
+                    'invoice' => $invoice->id,
+                    'limit' => 1,
+                    'expand' => ['data.balance_transaction'],
+                ]);
+
+                $charge = $charges->data[0] ?? null;
+
+                if ($charge && isset($charge->balance_transaction)) {
+                    $bt = $charge->balance_transaction;
+                    // balance_transaction->amount is NET (after fees), add fees back to get GROSS
+                    $netEur = $bt->amount ?? 0;
+                    $feeEur = $bt->fee ?? 0;
+                    $totalEur = $netEur + $feeEur; // GROSS = NET + fees
+                }
+            } catch (\Exception $e) {
+                // Silently continue if charge retrieval fails - EUR will remain 0
+            }
         }
+
+        // Note: We calculate GROSS EUR (NET + fees) to match Stripe Dashboard
+        // balance_transaction->amount = NET, balance_transaction->fee = Stripe fees
 
         $taxAmountCollectedEur = $taxRate > 0 ? $totalEur * $taxRate / ($taxRate + 100) : 0;
 

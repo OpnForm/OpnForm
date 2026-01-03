@@ -49,6 +49,20 @@ export const matrixInputTheme = {
         cell: 'border-transparent',
         cellHover: 'hover:bg-neutral-200/50 dark:hover:bg-neutral-900',
         option: 'border-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-form focus-visible:outline-offset-[-2px] focus-visible:ring-0'
+      },
+      transparent: {
+        container: [
+          'border-0',
+          'bg-transparent',
+          'shadow-[inset_0_-1px_0_0_rgb(212_212_212)] dark:shadow-[inset_0_-1px_0_0_rgb(82_82_82)]',
+          '!rounded-none',
+          'transition-shadow duration-200',
+          'focus-within:ring-0 focus-within:shadow-[inset_0_-2px_0_0_var(--color-form)]'
+        ],
+        cell: 'border-transparent',
+        cellHover: 'hover:backdrop-brightness-[0.97] dark:hover:backdrop-brightness-90',
+        option: 'focus-visible:outline-none focus-visible:ring-0',
+        rowCell: '!px-0'
       }
     },
     size: {

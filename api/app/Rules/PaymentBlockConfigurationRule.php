@@ -14,6 +14,11 @@ class PaymentBlockConfigurationRule implements ValidationRule
     protected array $field;
     protected ?Workspace $workspace;
 
+    /**
+     * Cached stripe currency codes (static to persist across instances)
+     */
+    protected static ?array $stripeCurrencyCodes = null;
+
     public function __construct(array $properties, ?Workspace $workspace = null)
     {
         $this->properties = $properties;
@@ -22,13 +27,14 @@ class PaymentBlockConfigurationRule implements ValidationRule
 
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
-        // Set the field
+        // Early bail - $value is the type, skip all processing for non-payment blocks
+        if ($value !== 'payment') {
+            return;
+        }
+
+        // Set the field only for payment blocks
         $fieldIndex = explode('.', $attribute)[1];
         $this->field = $this->properties[$fieldIndex];
-
-        if ($this->field['type'] !== 'payment') {
-            return; // If not a payment block, validation passes
-        }
 
         // Payment block not allowed if self hosted
         if (config('app.self_hosted')) {
@@ -46,16 +52,19 @@ class PaymentBlockConfigurationRule implements ValidationRule
             return;
         }
 
-
         // Amount validation
         if (!isset($this->field['amount']) || !is_numeric($this->field['amount']) || $this->field['amount'] < 1) {
             $fail('Amount must be a number greater than 1');
             return;
         }
 
-        // Currency validation
-        $stripeCurrencies = json_decode(file_get_contents(resource_path('data/stripe_currencies.json')), true);
-        if (!isset($this->field['currency']) || !in_array(strtoupper($this->field['currency']), array_column($stripeCurrencies, 'code'))) {
+        // Currency validation (lazy-load and cache currency codes)
+        if (self::$stripeCurrencyCodes === null) {
+            $stripeCurrencies = json_decode(file_get_contents(resource_path('data/stripe_currencies.json')), true);
+            self::$stripeCurrencyCodes = array_column($stripeCurrencies, 'code');
+        }
+
+        if (!isset($this->field['currency']) || !in_array(strtoupper($this->field['currency']), self::$stripeCurrencyCodes)) {
             $fail('Currency must be a valid currency');
             return;
         }

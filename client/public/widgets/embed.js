@@ -125,9 +125,12 @@
   // Iframe popup
   const mainDiv = document.createElement("div")
   mainDiv.className = `nf-main ${position}`
-  mainDiv.innerHTML = `<div class='nf-popup'><iframe src='${formUrl}' frameborder='0' marginheight='0' marginwidth='0' title='OpnForm'></iframe></div>`
-  const iframe = mainDiv.querySelector("iframe")
-  iframe.style.maxWidth = `${width}px`
+  const popupDiv = document.createElement("div")
+  popupDiv.className = "nf-popup"
+  mainDiv.appendChild(popupDiv)
+  
+  let iframeCreated = false
+  let iframe = null
 
   // Emoji button
   const emojiButton = document.createElement("div")
@@ -139,6 +142,15 @@
 </svg>
 </span>`
   emojiButton.onclick = () => {
+    // Create iframe only on first click
+    if (!iframeCreated) {
+      iframe = document.createElement("iframe")
+      iframe.src = formUrl
+      iframe.title = "OpnForm"
+      iframe.style.maxWidth = `${width}px`
+      popupDiv.appendChild(iframe)
+      iframeCreated = true
+    }
     mainDiv.classList.toggle("open")
   }
   mainDiv.appendChild(emojiButton)

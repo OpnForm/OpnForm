@@ -11,12 +11,12 @@ NC='\033[0m'
 # ASCII Art
 echo -e "${BLUE}"
 cat << "EOF"
-  ____              ______                    
- / __ \____  ____  / ____/___  _________ ___ 
+  ____              ______
+ / __ \____  ____  / ____/___  _________ ___
 / / / / __ \/ __ \/ /_  / __ \/ ___/ __ `__ \
 / /_/ / /_/ / / / / __/ / /_/ / /  / / / / / /
-\____/ .___/_/ /_/_/    \____/_/  /_/ /_/ /_/ 
-    /_/                                       
+\____/ .___/_/ /_/_/    \____/_/  /_/ /_/ /_/
+    /_/
 EOF
 echo -e "${NC}"
 
@@ -46,6 +46,20 @@ else
     echo -e "${GREEN}Development mode - skipping .env generation (using docker-compose environment variables)${NC}"
 fi
 
+# Detect compose binary: prefer Docker Compose v2 plugin ("docker compose"), fallback to "docker-compose"
+declare -a COMPOSE_CMD
+if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
+  COMPOSE_CMD=(docker compose)
+elif command -v docker-compose >/dev/null 2>&1; then
+  COMPOSE_CMD=(docker-compose)
+else
+  echo -e "${YELLOW}Neither 'docker compose' nor 'docker-compose' found.${NC}"
+  echo "Install Compose v2 (recommended):"
+  echo "  sudo apt-get update && sudo apt-get install -y docker-compose-plugin"
+  echo "Or install docker-compose classic."
+  exit 1
+fi
+
 # Determine which compose file to use
 if [ "$DEV_MODE" = true ]; then
     echo -e "${YELLOW}Development mode enabled - using minimal setup with docker-compose.dev.yml${NC}"
@@ -55,16 +69,16 @@ else
     COMPOSE_FILE="docker-compose.yml"
 fi
 
-# Check for override file and build compose command
-COMPOSE_CMD="docker compose -f $COMPOSE_FILE"
+# Build compose args as array
+COMPOSE_ARGS=(-f "$COMPOSE_FILE")
 if [ -f "docker-compose.override.yml" ]; then
     echo -e "${BLUE}Found docker-compose.override.yml - including local overrides${NC}"
-    COMPOSE_CMD="$COMPOSE_CMD -f docker-compose.override.yml"
+    COMPOSE_ARGS+=(-f "docker-compose.override.yml")
 fi
 
 # Start Docker containers
 echo -e "${GREEN}Starting Docker containers...${NC}"
-$COMPOSE_CMD up -d
+"${COMPOSE_CMD[@]}" "${COMPOSE_ARGS[@]}" up -d
 
 # Display access instructions
 if [ "$DEV_MODE" = true ]; then
