@@ -9,6 +9,12 @@ namespace App\Rules\PropertyValidators;
 class TypePropertyValidator implements PropertyValidatorInterface
 {
     /**
+     * Regex pattern for input mask validation
+     * Allows: 9 (digit), a (letter), * (alphanumeric), ? (optional), and common punctuation
+     */
+    private const INPUT_MASK_PATTERN = '/^[9a*().\s\-?]*$/';
+
+    /**
      * Type-specific validation rules.
      * Key = property type, Value = array of field => validation config
      */
@@ -19,6 +25,7 @@ class TypePropertyValidator implements PropertyValidatorInterface
             'max_char_limit' => ['type' => 'integer', 'min' => 1],
             'show_char_limit' => ['type' => 'boolean'],
             'secret_input' => ['type' => 'boolean'],
+            'input_mask' => ['type' => 'input_mask'],
         ],
 
         // Date field rules
@@ -55,15 +62,6 @@ class TypePropertyValidator implements PropertyValidatorInterface
             'use_toggle_switch' => ['type' => 'boolean'],
         ],
 
-        // Advanced options (can apply to multiple types)
-        'text' => [
-            'multi_lines' => ['type' => 'boolean'],
-            'max_char_limit' => ['type' => 'integer', 'min' => 1],
-            'show_char_limit' => ['type' => 'boolean'],
-            'secret_input' => ['type' => 'boolean'],
-            'generates_uuid' => ['type' => 'boolean'],
-            'generates_auto_increment_id' => ['type' => 'boolean'],
-        ],
     ];
 
     /**
@@ -150,6 +148,15 @@ class TypePropertyValidator implements PropertyValidatorInterface
 
             case 'nullable':
                 // No validation needed - field can be anything
+                break;
+
+            case 'input_mask':
+                if (!is_string($value)) {
+                    return "The {$field} field must be a string.";
+                }
+                if (!preg_match(self::INPUT_MASK_PATTERN, $value)) {
+                    return "The {$field} field contains invalid characters. Allowed: 9 (digit), a (letter), * (alphanumeric), ? (optional), and punctuation (().-).";
+                }
                 break;
         }
 
