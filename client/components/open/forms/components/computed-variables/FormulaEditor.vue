@@ -13,6 +13,7 @@
         @input="onInput"
         @keydown="onKeydown"
         @paste="onPaste"
+        @blur="applyHighlighting"
       />
       
       <!-- Insert Buttons -->
@@ -64,7 +65,7 @@
 <script setup>
 import FormulaFieldPicker from './FormulaFieldPicker.vue'
 import FormulaFunctionPicker from './FormulaFunctionPicker.vue'
-import { validateFormula, formulaToDisplay, getFunctionNames } from '~/lib/formulas/index.js'
+import { validateFormula, getFunctionNames } from '~/lib/formulas/index.js'
 
 const props = defineProps({
   modelValue: {
@@ -88,7 +89,6 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue', 'validation'])
 
 const editorRef = ref(null)
-const showFieldPicker = ref(false)
 const hasError = ref(false)
 
 // Save selection/cursor position before it's lost
@@ -98,15 +98,6 @@ function saveSelection() {
   const selection = window.getSelection()
   if (selection.rangeCount > 0 && editorRef.value?.contains(selection.anchorNode)) {
     savedRange = selection.getRangeAt(0).cloneRange()
-  }
-}
-
-function restoreSelection() {
-  if (savedRange && editorRef.value) {
-    editorRef.value.focus()
-    const selection = window.getSelection()
-    selection.removeAllRanges()
-    selection.addRange(savedRange)
   }
 }
 
@@ -154,14 +145,105 @@ function toStorageFormat(html) {
 // Get list of known function names for syntax highlighting
 const knownFunctions = computed(() => {
   try {
-    return getFunctionNames()
+    const names = getFunctionNames()
+    return names.length > 0 ? names : defaultFunctionNames
   } catch {
-    return []
+    return defaultFunctionNames
   }
 })
 
-// Convert storage format to display HTML
-// Note: We apply syntax highlighting carefully to avoid corrupting HTML
+// Default function names as fallback
+const defaultFunctionNames = [
+  'SUM', 'AVERAGE', 'MIN', 'MAX', 'ROUND', 'FLOOR', 'CEIL', 'ABS', 'MOD', 'POWER', 'SQRT',
+  'CONCAT', 'UPPER', 'LOWER', 'TRIM', 'LEFT', 'RIGHT', 'MID', 'LEN', 'SUBSTITUTE', 'REPLACE', 'FIND', 'SEARCH', 'REPT', 'TEXT',
+  'IF', 'AND', 'OR', 'NOT', 'XOR', 'ISBLANK', 'ISNUMBER', 'ISTEXT', 'IFERROR', 'IFBLANK', 'COALESCE', 'SWITCH', 'IFS', 'CHOOSE'
+]
+
+// Escape HTML entities
+function escapeHtml(text) {
+  const div = document.createElement('div')
+  div.textContent = text
+  return div.innerHTML
+}
+
+// Tokenize formula into parts for safe highlighting
+function tokenizeFormula(formula, fieldMap) {
+  const tokens = []
+  let remaining = formula
+  
+  // Build function pattern with fallback
+  const funcNames = knownFunctions.value
+  const funcPatternStr = funcNames.length > 0 
+    ? `^(${funcNames.join('|')})(?=\\s*\\()`
+    : '^$' // Never match if no functions
+  
+  while (remaining.length > 0) {
+    // Try to match field reference {fieldId}
+    const fieldMatch = remaining.match(/^\{([^}]+)\}/)
+    if (fieldMatch) {
+      const fieldId = fieldMatch[1]
+      const field = fieldMap.get(fieldId)
+      if (field) {
+        tokens.push({ type: 'pill', id: fieldId, name: field.name, fieldType: field.type })
+      } else {
+        tokens.push({ type: 'text', value: fieldMatch[0] })
+      }
+      remaining = remaining.slice(fieldMatch[0].length)
+      continue
+    }
+    
+    // Try to match function name (followed by parenthesis)
+    if (funcNames.length > 0) {
+      const funcPattern = new RegExp(funcPatternStr, 'i')
+      const funcMatch = remaining.match(funcPattern)
+      if (funcMatch) {
+        tokens.push({ type: 'function', value: funcMatch[1] })
+        remaining = remaining.slice(funcMatch[1].length)
+        continue
+      }
+    }
+    
+    // Try to match string literals
+    const stringMatch = remaining.match(/^("[^"]*"|'[^']*')/)
+    if (stringMatch) {
+      tokens.push({ type: 'string', value: stringMatch[0] })
+      remaining = remaining.slice(stringMatch[0].length)
+      continue
+    }
+    
+    // Try to match numbers (including decimals)
+    const numberMatch = remaining.match(/^\d+\.?\d*/)
+    if (numberMatch) {
+      tokens.push({ type: 'number', value: numberMatch[0] })
+      remaining = remaining.slice(numberMatch[0].length)
+      continue
+    }
+    
+    // Try to match comparison operators (multi-char first)
+    const compMatch = remaining.match(/^(<=|>=|<>|!=|==|<|>|=)/)
+    if (compMatch) {
+      tokens.push({ type: 'operator', value: compMatch[0] })
+      remaining = remaining.slice(compMatch[0].length)
+      continue
+    }
+    
+    // Try to match arithmetic operators and parentheses
+    const opMatch = remaining.match(/^[+\-*/(),]/)
+    if (opMatch) {
+      tokens.push({ type: 'operator', value: opMatch[0] })
+      remaining = remaining.slice(opMatch[0].length)
+      continue
+    }
+    
+    // Take one character as plain text
+    tokens.push({ type: 'text', value: remaining[0] })
+    remaining = remaining.slice(1)
+  }
+  
+  return tokens
+}
+
+// Convert storage format to display HTML with syntax highlighting
 function toDisplayFormat(formula) {
   if (!formula) return ''
   
@@ -176,9 +258,10 @@ function toDisplayFormat(formula) {
   // Build HTML from tokens
   return tokens.map(token => {
     switch (token.type) {
-      case 'pill':
+      case 'pill': {
         const isVariable = token.fieldType === 'computed'
-        return `<span class="formula-pill ${isVariable ? 'formula-pill-variable' : ''}" data-field-id="${token.id}" contenteditable="false">${escapeHtml(token.name)}</span>`
+        return `<span class="formula-pill ${isVariable ? 'formula-pill-variable' : ''}" data-field-id="${escapeHtml(token.id)}" contenteditable="false">${escapeHtml(token.name)}</span>`
+      }
       case 'function':
         return `<span class="formula-function">${escapeHtml(token.value)}</span>`
       case 'number':
@@ -193,88 +276,88 @@ function toDisplayFormat(formula) {
   }).join('')
 }
 
-// Escape HTML entities
-function escapeHtml(text) {
-  const div = document.createElement('div')
-  div.textContent = text
-  return div.innerHTML
+// Get current cursor position as text offset
+function getCursorOffset() {
+  const selection = window.getSelection()
+  if (!selection.rangeCount || !editorRef.value) return 0
+  
+  const range = selection.getRangeAt(0)
+  const preCaretRange = range.cloneRange()
+  preCaretRange.selectNodeContents(editorRef.value)
+  preCaretRange.setEnd(range.endContainer, range.endOffset)
+  
+  // Get text length before cursor
+  return preCaretRange.toString().length
 }
 
-// Tokenize formula into parts for safe highlighting
-function tokenizeFormula(formula, fieldMap) {
-  const tokens = []
-  let remaining = formula
+// Set cursor position by text offset
+function setCursorOffset(offset) {
+  if (!editorRef.value) return
   
-  while (remaining.length > 0) {
-    let matched = false
+  const selection = window.getSelection()
+  const range = document.createRange()
+  
+  let currentOffset = 0
+  let found = false
+  
+  function walkNodes(node) {
+    if (found) return
     
-    // Try to match field reference {fieldId}
-    const fieldMatch = remaining.match(/^\{([^}]+)\}/)
-    if (fieldMatch) {
-      const fieldId = fieldMatch[1]
-      const field = fieldMap.get(fieldId)
-      if (field) {
-        tokens.push({ type: 'pill', id: fieldId, name: field.name, fieldType: field.type })
-      } else {
-        tokens.push({ type: 'text', value: fieldMatch[0] })
+    if (node.nodeType === Node.TEXT_NODE) {
+      const nodeLength = node.textContent.length
+      if (currentOffset + nodeLength >= offset) {
+        range.setStart(node, offset - currentOffset)
+        range.setEnd(node, offset - currentOffset)
+        found = true
+        return
       }
-      remaining = remaining.slice(fieldMatch[0].length)
-      matched = true
-      continue
+      currentOffset += nodeLength
+    } else if (node.nodeType === Node.ELEMENT_NODE) {
+      // For pill elements, count as single character in terms of cursor position
+      if (node.classList?.contains('formula-pill')) {
+        const pillName = node.textContent
+        if (currentOffset + pillName.length >= offset) {
+          // Position cursor after the pill
+          range.setStartAfter(node)
+          range.setEndAfter(node)
+          found = true
+          return
+        }
+        currentOffset += pillName.length
+      } else {
+        for (const child of node.childNodes) {
+          walkNodes(child)
+          if (found) return
+        }
+      }
     }
-    
-    // Try to match function name (followed by parenthesis)
-    const funcPattern = new RegExp(`^(${knownFunctions.value.join('|')})(?=\\s*\\()`, 'i')
-    const funcMatch = remaining.match(funcPattern)
-    if (funcMatch) {
-      tokens.push({ type: 'function', value: funcMatch[1] })
-      remaining = remaining.slice(funcMatch[1].length)
-      matched = true
-      continue
-    }
-    
-    // Try to match string literals
-    const stringMatch = remaining.match(/^("[^"]*"|'[^']*')/)
-    if (stringMatch) {
-      tokens.push({ type: 'string', value: stringMatch[0] })
-      remaining = remaining.slice(stringMatch[0].length)
-      matched = true
-      continue
-    }
-    
-    // Try to match numbers
-    const numberMatch = remaining.match(/^\d+\.?\d*/)
-    if (numberMatch) {
-      tokens.push({ type: 'number', value: numberMatch[0] })
-      remaining = remaining.slice(numberMatch[0].length)
-      matched = true
-      continue
-    }
-    
-    // Try to match comparison operators (multi-char first)
-    const compMatch = remaining.match(/^(<=|>=|<>|<|>|=)/)
-    if (compMatch) {
-      tokens.push({ type: 'operator', value: compMatch[0] })
-      remaining = remaining.slice(compMatch[0].length)
-      matched = true
-      continue
-    }
-    
-    // Try to match arithmetic operators
-    const opMatch = remaining.match(/^[+\-*\/]/)
-    if (opMatch) {
-      tokens.push({ type: 'operator', value: opMatch[0] })
-      remaining = remaining.slice(opMatch[0].length)
-      matched = true
-      continue
-    }
-    
-    // Take one character as plain text
-    tokens.push({ type: 'text', value: remaining[0] })
-    remaining = remaining.slice(1)
   }
   
-  return tokens
+  walkNodes(editorRef.value)
+  
+  if (!found) {
+    // Position at end if offset not found
+    range.selectNodeContents(editorRef.value)
+    range.collapse(false)
+  }
+  
+  selection.removeAllRanges()
+  selection.addRange(range)
+}
+
+// Apply syntax highlighting while preserving cursor position
+function applyHighlighting() {
+  if (!editorRef.value) return
+  
+  const cursorOffset = getCursorOffset()
+  const formula = toStorageFormat(editorRef.value.innerHTML)
+  const highlighted = toDisplayFormat(formula)
+  
+  // Only update if content changed
+  if (editorRef.value.innerHTML !== highlighted) {
+    editorRef.value.innerHTML = highlighted
+    setCursorOffset(cursorOffset)
+  }
 }
 
 // Initialize editor content
@@ -286,7 +369,7 @@ onMounted(() => {
 })
 
 // Watch for external changes
-watch(() => props.modelValue, (newVal, oldVal) => {
+watch(() => props.modelValue, (newVal) => {
   if (editorRef.value) {
     const currentFormula = toStorageFormat(editorRef.value.innerHTML)
     if (currentFormula !== newVal) {
@@ -295,10 +378,19 @@ watch(() => props.modelValue, (newVal, oldVal) => {
   }
 })
 
+// Debounce timer for highlighting
+let highlightTimer = null
+
 function onInput() {
   const formula = toStorageFormat(editorRef.value.innerHTML)
   emit('update:modelValue', formula)
   validateAndEmit()
+  
+  // Debounced highlighting
+  clearTimeout(highlightTimer)
+  highlightTimer = setTimeout(() => {
+    applyHighlighting()
+  }, 500)
 }
 
 function onKeydown(e) {
@@ -419,6 +511,9 @@ function insertFunction(func) {
   
   savedRange = null
   onInput()
+  
+  // Apply highlighting immediately for functions
+  setTimeout(() => applyHighlighting(), 50)
 }
 
 // Expose for parent component
@@ -467,7 +562,7 @@ defineExpose({
 /* Syntax highlighting */
 .formula-input :deep(.formula-function) {
   color: #0891b2;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .formula-input :deep(.formula-operator) {
@@ -477,6 +572,7 @@ defineExpose({
 
 .formula-input :deep(.formula-number) {
   color: #059669;
+  font-weight: 500;
 }
 
 .formula-input :deep(.formula-string) {

@@ -134,9 +134,10 @@ export class Evaluator {
     const operand = this.evaluate(node.operand)
 
     switch (node.operator) {
-      case '-':
+      case '-': {
         const num = this.toNumber(operand)
         return num === null ? null : -num
+      }
       case 'NOT':
         return !this.toBoolean(operand)
       default:
@@ -160,7 +161,7 @@ export class Evaluator {
 
     try {
       return func(...args)
-    } catch (error) {
+    } catch {
       // Function errors return null
       return null
     }

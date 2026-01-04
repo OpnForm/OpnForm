@@ -1,12 +1,12 @@
 <template>
   <UModal
     v-model:open="isOpen"
-    :ui="{ width: 'sm:max-w-xl' }"
+    :ui="{ width: 'sm:max-w-5xl' }"
   >
     <template #content>
-      <div class="p-6">
+      <div class="flex flex-col h-[80vh]">
         <!-- Header -->
-        <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center justify-between p-4 border-b flex-shrink-0">
           <h3 class="text-lg font-semibold">
             {{ isEditing ? 'Edit Variable' : 'Create Variable' }}
           </h3>
@@ -19,100 +19,224 @@
           />
         </div>
         
-        <div class="space-y-4">
-          <!-- Name Input -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">
-              Name <span class="text-red-500">*</span>
-            </label>
-            <UInput
-              v-model="localVariable.name"
-              placeholder="e.g., Total Price"
-              :color="errors.name ? 'error' : undefined"
-            />
-            <p
-              v-if="errors.name"
-              class="mt-1 text-sm text-red-500"
-            >
-              {{ errors.name }}
-            </p>
-          </div>
-
-          <!-- Formula Editor -->
-          <div>
-            <div class="flex items-center justify-between mb-1">
-              <label class="block text-sm font-medium text-gray-700">
-                Formula <span class="text-red-500">*</span>
-              </label>
-              <UButton
-                size="xs"
-                color="neutral"
-                variant="ghost"
-                icon="i-heroicons-question-mark-circle"
-                @click="showReference = true"
-              >
-                Help
-              </UButton>
-            </div>
-            
-            <FormulaEditor
-              v-model="localVariable.formula"
-              :form="form"
-              :current-variable-id="localVariable.id"
-              :other-variables="otherVariables"
-              @validation="handleValidation"
-            />
-            
-            <p
-              v-if="errors.formula"
-              class="mt-1 text-sm text-red-500"
-            >
-              {{ errors.formula }}
-            </p>
-          </div>
-
-          <!-- Validation Status -->
-          <div
-            v-if="localVariable.formula"
-            class="p-3 rounded-lg"
-            :class="validationResult.valid ? 'bg-green-50' : 'bg-red-50'"
-          >
-            <div class="flex items-center gap-2">
-              <Icon
-                :name="validationResult.valid ? 'i-heroicons-check-circle' : 'i-heroicons-exclamation-circle'"
-                :class="validationResult.valid ? 'text-green-500' : 'text-red-500'"
-                class="h-5 w-5"
-              />
-              <span
-                class="text-sm"
-                :class="validationResult.valid ? 'text-green-700' : 'text-red-700'"
-              >
-                {{ validationResult.valid ? 'Valid formula' : validationResult.errors[0]?.message }}
-              </span>
-            </div>
-            <!-- Preview -->
-            <div
-              v-if="validationResult.valid && previewValue !== '—'"
-              class="mt-2 pt-2 border-t border-green-200"
-            >
-              <div class="flex items-center justify-between text-sm">
-                <span class="text-green-600">
-                  {{ usingLivePreview ? 'Live result:' : 'Sample result:' }}
-                </span>
-                <span class="font-mono font-medium text-green-700">{{ previewValue }}</span>
-              </div>
-              <p class="text-xs text-green-600 mt-1">
-                {{ usingLivePreview 
-                  ? 'Using values from form preview. Fill in the preview to see results.' 
-                  : 'Using sample values. Fill in the form preview for live results.' 
-                }}
+        <!-- Main Content - Two Columns -->
+        <div class="flex flex-1 min-h-0">
+          <!-- Left Column: Formula Editor -->
+          <div class="w-1/2 border-r flex flex-col">
+            <div class="p-4 border-b bg-gray-50">
+              <h4 class="font-medium text-gray-900 flex items-center gap-2">
+                <Icon name="i-heroicons-code-bracket" class="w-4 h-4" />
+                Formula Definition
+              </h4>
+              <p class="text-xs text-gray-500 mt-1">
+                Define your variable name and formula
               </p>
+            </div>
+            
+            <div class="p-4 flex-1 overflow-y-auto space-y-4">
+              <!-- Name Input -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">
+                  Variable Name <span class="text-red-500">*</span>
+                </label>
+                <UInput
+                  v-model="localVariable.name"
+                  placeholder="e.g., Total Price, Dog Age"
+                  :color="errors.name ? 'error' : undefined"
+                />
+                <p
+                  v-if="errors.name"
+                  class="mt-1 text-sm text-red-500"
+                >
+                  {{ errors.name }}
+                </p>
+              </div>
+
+              <!-- Formula Editor -->
+              <div>
+                <div class="flex items-center justify-between mb-1">
+                  <label class="block text-sm font-medium text-gray-700">
+                    Formula <span class="text-red-500">*</span>
+                  </label>
+                  <UButton
+                    size="xs"
+                    color="neutral"
+                    variant="ghost"
+                    icon="i-heroicons-question-mark-circle"
+                    @click="showReference = true"
+                  >
+                    Function Reference
+                  </UButton>
+                </div>
+                
+                <FormulaEditor
+                  v-model="localVariable.formula"
+                  :form="form"
+                  :current-variable-id="localVariable.id"
+                  :other-variables="otherVariables"
+                  @validation="handleValidation"
+                />
+                
+                <p
+                  v-if="errors.formula"
+                  class="mt-1 text-sm text-red-500"
+                >
+                  {{ errors.formula }}
+                </p>
+              </div>
+
+              <!-- Validation Status -->
+              <div
+                v-if="localVariable.formula"
+                class="p-3 rounded-lg"
+                :class="validationResult.valid ? 'bg-green-50' : 'bg-red-50'"
+              >
+                <div class="flex items-center gap-2">
+                  <Icon
+                    :name="validationResult.valid ? 'i-heroicons-check-circle' : 'i-heroicons-exclamation-circle'"
+                    :class="validationResult.valid ? 'text-green-500' : 'text-red-500'"
+                    class="h-5 w-5 flex-shrink-0"
+                  />
+                  <span
+                    class="text-sm"
+                    :class="validationResult.valid ? 'text-green-700' : 'text-red-700'"
+                  >
+                    {{ validationResult.valid ? 'Valid formula' : validationResult.errors[0]?.message }}
+                  </span>
+                </div>
+              </div>
+
+              <!-- Result Display -->
+              <div v-if="validationResult.valid && localVariable.formula" class="p-4 bg-blue-50 rounded-lg">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-2">
+                    <Icon name="i-heroicons-calculator" class="w-5 h-5 text-blue-600" />
+                    <span class="text-sm font-medium text-blue-900">Result</span>
+                  </div>
+                  <span class="text-lg font-mono font-bold text-blue-700">
+                    {{ computedResult }}
+                  </span>
+                </div>
+                <p class="text-xs text-blue-600 mt-2">
+                  Fill in the test form on the right to see real-time results
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Right Column: Test Form -->
+          <div class="w-1/2 flex flex-col bg-gray-50">
+            <div class="p-4 border-b bg-white">
+              <h4 class="font-medium text-gray-900 flex items-center gap-2">
+                <Icon name="i-heroicons-beaker" class="w-4 h-4" />
+                Test Your Formula
+              </h4>
+              <p class="text-xs text-gray-500 mt-1">
+                Enter sample values to preview the calculation
+              </p>
+            </div>
+            
+            <div class="p-4 flex-1 overflow-y-auto">
+              <div v-if="testableFields.length === 0" class="text-center py-8 text-gray-500">
+                <Icon name="i-heroicons-information-circle" class="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                <p class="text-sm">Add fields to your formula to test with sample values</p>
+              </div>
+              
+              <div v-else class="space-y-4">
+                <div class="bg-white rounded-lg p-4 border border-gray-200">
+                  <h5 class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">
+                    Form Field Values
+                  </h5>
+                  <div class="space-y-3">
+                    <div v-for="field in testableFields" :key="field.id">
+                      <label class="block text-sm font-medium text-gray-700 mb-1">
+                        {{ field.name }}
+                        <span class="text-xs text-gray-400 font-normal ml-1">({{ field.type }})</span>
+                      </label>
+                      
+                      <!-- Number input -->
+                      <UInput
+                        v-if="isNumericField(field)"
+                        v-model.number="testValues[field.id]"
+                        type="number"
+                        :placeholder="`Enter ${field.name}`"
+                        size="sm"
+                      />
+                      
+                      <!-- Checkbox input -->
+                      <UCheckbox
+                        v-else-if="field.type === 'checkbox'"
+                        v-model="testValues[field.id]"
+                        :label="field.name"
+                      />
+                      
+                      <!-- Select input -->
+                      <USelect
+                        v-else-if="field.type === 'select'"
+                        v-model="testValues[field.id]"
+                        :options="getSelectOptions(field)"
+                        placeholder="Select an option"
+                        size="sm"
+                      />
+                      
+                      <!-- Text input (default) -->
+                      <UInput
+                        v-else
+                        v-model="testValues[field.id]"
+                        :placeholder="`Enter ${field.name}`"
+                        size="sm"
+                      />
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Computed Variables in Formula -->
+                <div v-if="referencedVariables.length > 0" class="bg-white rounded-lg p-4 border border-purple-200">
+                  <h5 class="text-xs font-medium text-purple-600 uppercase tracking-wide mb-3">
+                    Referenced Variables
+                  </h5>
+                  <div class="space-y-2">
+                    <div 
+                      v-for="cv in referencedVariables" 
+                      :key="cv.id"
+                      class="flex items-center justify-between p-2 bg-purple-50 rounded"
+                    >
+                      <span class="text-sm text-purple-700">{{ cv.name }}</span>
+                      <span class="font-mono text-sm text-purple-900">
+                        {{ getComputedVariableValue(cv) }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Quick Actions -->
+                <div class="flex gap-2">
+                  <UButton
+                    size="xs"
+                    color="neutral"
+                    variant="outline"
+                    icon="i-heroicons-arrow-path"
+                    @click="resetTestValues"
+                  >
+                    Reset Values
+                  </UButton>
+                  <UButton
+                    size="xs"
+                    color="neutral"
+                    variant="outline"
+                    icon="i-heroicons-sparkles"
+                    @click="fillSampleValues"
+                  >
+                    Fill Sample Data
+                  </UButton>
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
         <!-- Footer -->
-        <div class="flex justify-end gap-3 mt-6 pt-4 border-t">
+        <div class="flex justify-end gap-3 p-4 border-t bg-gray-50 flex-shrink-0">
           <UButton
             color="neutral"
             variant="outline"
@@ -133,18 +257,13 @@
   </UModal>
 
   <!-- Function Reference Modal -->
-  <FunctionReference
-    v-model="showReference"
-  />
+  <FunctionReference v-model="showReference" />
 </template>
 
 <script setup>
 import FormulaEditor from './FormulaEditor.vue'
 import FunctionReference from './FunctionReference.vue'
-import { validateFormula, evaluateFormula } from '~/lib/formulas/index.js'
-import { useFormEditorPreviewData } from '~/composables/useFormEditorPreviewData.js'
-
-const { getAllData: getPreviewData, hasData: hasPreviewData } = useFormEditorPreviewData()
+import { evaluateFormula, extractFieldIds } from '~/lib/formulas/index.js'
 
 const props = defineProps({
   modelValue: {
@@ -169,7 +288,6 @@ const isOpen = computed({
 })
 
 const isEditing = computed(() => !!props.variable?.id)
-
 const showReference = ref(false)
 
 const defaultVariable = {
@@ -182,12 +300,163 @@ const defaultVariable = {
 const localVariable = ref({ ...defaultVariable })
 const errors = ref({})
 const validationResult = ref({ valid: true, errors: [] })
+const testValues = ref({})
 
 // Other computed variables (excluding current one being edited)
 const otherVariables = computed(() => {
   const all = props.form?.computed_variables || []
   return all.filter(v => v.id !== localVariable.value.id)
 })
+
+// Get all fields from the form
+const allFields = computed(() => {
+  return (props.form?.properties || [])
+    .filter(p => p.type && !p.type.startsWith('nf-'))
+    .map(p => ({
+      id: p.id,
+      name: p.name,
+      type: p.type,
+      options: p.options || p[p.type]?.options || []
+    }))
+})
+
+// Extract field IDs referenced in the formula
+const referencedFieldIds = computed(() => {
+  if (!localVariable.value.formula) return []
+  try {
+    return extractFieldIds(localVariable.value.formula)
+  } catch {
+    return []
+  }
+})
+
+// Get fields that are used in the formula (for test form)
+const testableFields = computed(() => {
+  const refIds = new Set(referencedFieldIds.value)
+  return allFields.value.filter(f => refIds.has(f.id))
+})
+
+// Get computed variables referenced in the formula
+const referencedVariables = computed(() => {
+  const refIds = new Set(referencedFieldIds.value)
+  return otherVariables.value.filter(v => refIds.has(v.id))
+})
+
+// Check if field is numeric type
+function isNumericField(field) {
+  return ['number', 'rating', 'scale', 'slider'].includes(field.type)
+}
+
+// Get select options for a field
+function getSelectOptions(field) {
+  const options = field.options || []
+  if (Array.isArray(options)) {
+    return options.map(opt => typeof opt === 'string' ? opt : opt.name || opt.value || opt)
+  }
+  return []
+}
+
+// Calculate value of a computed variable
+function getComputedVariableValue(cv) {
+  try {
+    const context = { ...testValues.value }
+    // First evaluate other variables this one might depend on
+    for (const v of otherVariables.value) {
+      if (v.id !== cv.id) {
+        try {
+          context[v.id] = evaluateFormula(v.formula, context)
+        } catch {
+          context[v.id] = null
+        }
+      }
+    }
+    const result = evaluateFormula(cv.formula, context)
+    return formatResult(result)
+  } catch {
+    return '—'
+  }
+}
+
+// Calculate the current formula result
+const computedResult = computed(() => {
+  if (!validationResult.value.valid || !localVariable.value.formula) {
+    return '—'
+  }
+
+  try {
+    const context = { ...testValues.value }
+    
+    // Evaluate other computed variables first
+    for (const v of otherVariables.value) {
+      try {
+        context[v.id] = evaluateFormula(v.formula, context)
+      } catch {
+        context[v.id] = null
+      }
+    }
+
+    const result = evaluateFormula(localVariable.value.formula, context)
+    return formatResult(result)
+  } catch {
+    return 'Error'
+  }
+})
+
+// Format result for display
+function formatResult(result) {
+  if (result === null || result === undefined) {
+    return '—'
+  }
+  
+  if (typeof result === 'number') {
+    return Number.isInteger(result) ? result.toString() : result.toFixed(2)
+  }
+  
+  if (typeof result === 'boolean') {
+    return result ? 'TRUE' : 'FALSE'
+  }
+  
+  if (typeof result === 'string') {
+    return result.length > 50 ? `"${result.substring(0, 50)}..."` : `"${result}"`
+  }
+  
+  return String(result)
+}
+
+// Reset test values
+function resetTestValues() {
+  testValues.value = {}
+}
+
+// Fill sample values based on field types
+function fillSampleValues() {
+  const newValues = {}
+  for (const field of testableFields.value) {
+    switch (field.type) {
+      case 'number':
+      case 'slider':
+        newValues[field.id] = 10
+        break
+      case 'rating':
+        newValues[field.id] = 4
+        break
+      case 'scale':
+        newValues[field.id] = 5
+        break
+      case 'checkbox':
+        newValues[field.id] = true
+        break
+      case 'select': {
+        const options = getSelectOptions(field)
+        newValues[field.id] = options[0] || ''
+        break
+      }
+      default:
+        newValues[field.id] = field.name || 'Sample'
+    }
+  }
+  testValues.value = newValues
+}
 
 // Watch for variable prop changes
 watch(() => props.variable, (newVal) => {
@@ -209,6 +478,14 @@ watch(isOpen, (newVal) => {
       localVariable.value = { ...defaultVariable }
     }
     errors.value = {}
+    testValues.value = {}
+    
+    // Auto-fill sample values on open if there are testable fields
+    nextTick(() => {
+      if (testableFields.value.length > 0) {
+        fillSampleValues()
+      }
+    })
   }
 })
 
@@ -216,76 +493,6 @@ watch(isOpen, (newVal) => {
 function handleValidation(result) {
   validationResult.value = result
 }
-
-// Check if we have live preview data from the form editor
-const usingLivePreview = computed(() => hasPreviewData())
-
-// Calculate preview value
-const previewValue = computed(() => {
-  if (!validationResult.value.valid || !localVariable.value.formula) {
-    return '—'
-  }
-
-  try {
-    // Build context - prefer live preview data if available
-    const context = {}
-    const fields = props.form?.properties || []
-    const liveData = getPreviewData()
-    
-    for (const field of fields) {
-      // Use live preview data if available
-      if (liveData[field.id] !== undefined && liveData[field.id] !== null && liveData[field.id] !== '') {
-        context[field.id] = liveData[field.id]
-      } else {
-        // Fall back to sample values
-        switch (field.type) {
-          case 'number':
-          case 'rating':
-          case 'scale':
-          case 'slider':
-            context[field.id] = 10
-            break
-          case 'text':
-          case 'email':
-            context[field.id] = field.name || 'Sample'
-            break
-          case 'checkbox':
-            context[field.id] = true
-            break
-          default:
-            context[field.id] = field.name || 'Sample'
-        }
-      }
-    }
-
-    // Add other computed variables
-    for (const v of otherVariables.value) {
-      try {
-        context[v.id] = evaluateFormula(v.formula, context)
-      } catch {
-        context[v.id] = null
-      }
-    }
-
-    const result = evaluateFormula(localVariable.value.formula, context)
-    
-    if (result === null || result === undefined) {
-      return '—'
-    }
-    
-    if (typeof result === 'number') {
-      return Number.isInteger(result) ? result : result.toFixed(2)
-    }
-    
-    if (typeof result === 'string' && result.length > 30) {
-      return `"${result.substring(0, 30)}..."`
-    }
-    
-    return typeof result === 'string' ? `"${result}"` : String(result)
-  } catch {
-    return 'Error'
-  }
-})
 
 const canSave = computed(() => {
   return localVariable.value.name?.trim() && 
@@ -311,7 +518,6 @@ function validate() {
 
 function save() {
   if (!validate()) return
-  
   emit('save', { ...localVariable.value })
 }
 
