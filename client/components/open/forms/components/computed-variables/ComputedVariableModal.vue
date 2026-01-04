@@ -303,6 +303,7 @@ const localVariable = ref({ ...defaultVariable })
 const errors = ref({})
 const validationResult = ref({ valid: true, errors: [] })
 const testValues = ref({})
+const currentFormulaFieldIds = ref([])
 
 // Other computed variables (excluding current one being edited)
 const otherVariables = computed(() => {
@@ -311,27 +312,37 @@ const otherVariables = computed(() => {
 })
 
 // Get all fields from the form
+// Use id if available, otherwise generate a stable identifier from name (same logic as FormulaEditor)
 const allFields = computed(() => {
   return (props.form?.properties || [])
     .filter(p => p.type && !p.type.startsWith('nf-'))
-    .map(p => ({
-      id: p.id,
+    .map((p, index) => ({
+      id: p.id || `field_${index}_${(p.name || '').toLowerCase().replace(/\s+/g, '_')}`,
       name: p.name,
       type: p.type,
       options: p.options || p[p.type]?.options || []
     }))
 })
 
-// Extract field IDs referenced in the formula
+// Extract field IDs referenced in the formula (using tracked ref for reactivity)
 const referencedFieldIds = computed(() => {
-  const formula = localVariable.value.formula
-  if (!formula) return []
-  try {
-    return extractFieldIds(formula)
-  } catch {
-    return []
-  }
+  // Access currentFormulaFieldIds to ensure reactivity
+  return currentFormulaFieldIds.value
 })
+
+// Update field IDs when formula changes
+function updateReferencedFieldIds() {
+  const formula = localVariable.value.formula
+  if (!formula) {
+    currentFormulaFieldIds.value = []
+    return
+  }
+  try {
+    currentFormulaFieldIds.value = extractFieldIds(formula)
+  } catch {
+    currentFormulaFieldIds.value = []
+  }
+}
 
 // Get fields that are used in the formula (for test form)
 const testableFields = computed(() => {
@@ -483,9 +494,11 @@ watch(isOpen, (newVal) => {
     }
     errors.value = {}
     testValues.value = {}
+    currentFormulaFieldIds.value = []
     
-    // Auto-fill sample values on open if there are testable fields
+    // Update field IDs and auto-fill sample values
     nextTick(() => {
+      updateReferencedFieldIds()
       if (testableFields.value.length > 0) {
         fillSampleValues()
       }
@@ -493,9 +506,12 @@ watch(isOpen, (newVal) => {
   }
 })
 
-// Watch formula changes to update test values for new fields
+// Watch formula changes to update referenced field IDs and test values
 watch(() => localVariable.value.formula, () => {
-  // When formula changes, fill sample values for any new fields
+  // First, update the referenced field IDs
+  updateReferencedFieldIds()
+  
+  // Then, fill sample values for any new fields
   nextTick(() => {
     const currentFields = new Set(Object.keys(testValues.value))
     for (const field of testableFields.value) {
@@ -521,7 +537,7 @@ watch(() => localVariable.value.formula, () => {
       }
     }
   })
-})
+}, { immediate: true })
 
 // Handle validation from formula editor
 function handleValidation(result) {

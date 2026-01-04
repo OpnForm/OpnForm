@@ -102,11 +102,12 @@ function saveSelection() {
 }
 
 // Available fields from form
+// Use id if available, otherwise generate a stable identifier from name
 const availableFields = computed(() => {
   return (props.form?.properties || [])
     .filter(p => p.type && !p.type.startsWith('nf-'))
-    .map(p => ({
-      id: p.id,
+    .map((p, index) => ({
+      id: p.id || `field_${index}_${(p.name || '').toLowerCase().replace(/\s+/g, '_')}`,
       name: p.name,
       type: p.type
     }))
