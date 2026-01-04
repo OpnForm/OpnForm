@@ -1,7 +1,7 @@
 <template>
   <div class="p-4">
-    <div class="flex justify-between items-center mb-4">
-      <div>
+    <div class="flex justify-between items-start gap-4 mb-4">
+      <div class="min-w-0">
         <h3 class="text-lg font-semibold text-gray-900">
           Variables
         </h3>
@@ -12,6 +12,7 @@
       <UButton
         icon="i-heroicons-plus"
         color="primary"
+        class="flex-shrink-0 whitespace-nowrap"
         @click="openCreateModal"
       >
         Add Variable

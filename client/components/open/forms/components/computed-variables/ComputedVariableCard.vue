@@ -1,25 +1,28 @@
 <template>
-  <div class="border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors">
-    <div class="flex items-start justify-between">
-      <div class="flex items-start gap-3 min-w-0 flex-1">
-        <div class="flex-shrink-0 w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
-          <Icon
-            name="i-heroicons-variable"
-            class="h-4 w-4 text-purple-600"
-          />
-        </div>
-        <div class="min-w-0 flex-1">
-          <h4 class="font-medium text-gray-900 truncate">
-            {{ variable.name }}
-          </h4>
-          <p class="text-sm text-gray-500 mt-1 font-mono truncate">
-            {{ displayFormula }}
-          </p>
-        </div>
+  <div class="border border-gray-200 rounded-lg p-3 hover:border-gray-300 transition-colors">
+    <div class="flex items-center gap-3">
+      <!-- Icon -->
+      <div class="flex-shrink-0 w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+        <Icon
+          name="i-heroicons-variable"
+          class="h-4 w-4 text-purple-600"
+        />
       </div>
       
+      <!-- Name (truncated) -->
+      <div class="min-w-0 flex-1">
+        <h4 class="font-medium text-gray-900 truncate" :title="variable.name">
+          {{ variable.name }}
+        </h4>
+        <p class="text-xs text-gray-500 font-mono truncate" :title="displayFormula">
+          {{ displayFormula }}
+        </p>
+      </div>
+      
+      <!-- Actions (aligned right) -->
       <UDropdownMenu
         :items="menuItems"
+        class="flex-shrink-0"
       >
         <UButton
           icon="i-heroicons-ellipsis-vertical"

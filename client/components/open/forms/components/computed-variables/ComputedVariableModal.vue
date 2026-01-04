@@ -89,12 +89,19 @@
               >
                 {{ validationResult.valid ? 'Valid formula' : validationResult.errors[0]?.message }}
               </span>
-              <span
-                v-if="validationResult.valid && previewValue !== '—'"
-                class="ml-auto text-sm font-medium text-green-700"
-              >
-                Preview: {{ previewValue }}
-              </span>
+            </div>
+            <!-- Sample Preview -->
+            <div
+              v-if="validationResult.valid && previewValue !== '—'"
+              class="mt-2 pt-2 border-t border-green-200"
+            >
+              <div class="flex items-center justify-between text-sm">
+                <span class="text-green-600">Sample result:</span>
+                <span class="font-mono font-medium text-green-700">{{ previewValue }}</span>
+              </div>
+              <p class="text-xs text-green-600 mt-1">
+                Using sample values for fields. Actual result will depend on form responses.
+              </p>
             </div>
           </div>
         </div>

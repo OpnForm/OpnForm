@@ -19,24 +19,43 @@
         
         <!-- Content -->
         <div class="flex flex-1 overflow-hidden">
-          <!-- Category Sidebar -->
-          <div class="w-40 border-r p-4 space-y-1">
-            <button
-              v-for="category in categories"
-              :key="category.id"
-              class="w-full text-left px-3 py-2 rounded-md text-sm"
-              :class="activeCategory === category.id 
-                ? 'bg-blue-50 text-blue-700 font-medium' 
-                : 'text-gray-600 hover:bg-gray-50'"
-              @click="activeCategory = category.id"
-            >
-              {{ category.label }}
-            </button>
+          <!-- Sidebar with Search + Categories -->
+          <div class="w-48 border-r flex flex-col">
+            <!-- Search -->
+            <div class="p-3 border-b">
+              <UInput
+                v-model="search"
+                placeholder="Search functions..."
+                icon="i-heroicons-magnifying-glass"
+                size="sm"
+              />
+            </div>
+            
+            <!-- Category Buttons -->
+            <div class="p-3 space-y-1 flex-1 overflow-y-auto">
+              <button
+                v-for="category in categories"
+                :key="category.id"
+                class="w-full text-left px-3 py-2 rounded-md text-sm"
+                :class="activeCategory === category.id 
+                  ? 'bg-blue-50 text-blue-700 font-medium' 
+                  : 'text-gray-600 hover:bg-gray-50'"
+                @click="activeCategory = category.id"
+              >
+                {{ category.label }}
+                <span class="ml-1 text-xs text-gray-400">
+                  ({{ getCategoryCount(category.id) }})
+                </span>
+              </button>
+            </div>
           </div>
 
           <!-- Functions List -->
           <div class="flex-1 p-6 overflow-y-auto">
             <div class="max-w-3xl">
+              <p v-if="filteredFunctions.length === 0" class="text-gray-500 text-center py-8">
+                No functions found matching "{{ search }}"
+              </p>
               <div
                 v-for="func in filteredFunctions"
                 :key="func.name"
@@ -97,6 +116,7 @@ const categories = [
 ]
 
 const activeCategory = ref('all')
+const search = ref('')
 
 const allFunctions = computed(() => {
   return Object.entries(functionMeta).map(([name, meta]) => ({
@@ -106,9 +126,38 @@ const allFunctions = computed(() => {
 })
 
 const filteredFunctions = computed(() => {
-  if (activeCategory.value === 'all') {
-    return allFunctions.value
+  let funcs = allFunctions.value
+  
+  // Filter by category
+  if (activeCategory.value !== 'all') {
+    funcs = funcs.filter(f => f.category === activeCategory.value)
   }
-  return allFunctions.value.filter(f => f.category === activeCategory.value)
+  
+  // Filter by search
+  if (search.value) {
+    const term = search.value.toLowerCase()
+    funcs = funcs.filter(f => 
+      f.name.toLowerCase().includes(term) || 
+      f.description.toLowerCase().includes(term) ||
+      f.signature?.toLowerCase().includes(term)
+    )
+  }
+  
+  return funcs
+})
+
+function getCategoryCount(categoryId) {
+  if (categoryId === 'all') {
+    return allFunctions.value.length
+  }
+  return allFunctions.value.filter(f => f.category === categoryId).length
+}
+
+// Reset search when modal closes
+watch(isOpen, (open) => {
+  if (!open) {
+    search.value = ''
+    activeCategory.value = 'all'
+  }
 })
 </script>

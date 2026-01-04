@@ -33,9 +33,13 @@ export class Validator {
       
     } catch (error) {
       if (error instanceof FormulaError) {
-        result.addError(error.message, error.position)
+        // Don't include position in error message - it's confusing with field pills
+        // The position counts raw characters including {field_id} which appears as a pill
+        const message = this.cleanErrorMessage(error.message)
+        result.addError(message)
       } else {
-        result.addError(`Syntax error: ${error.message}`)
+        const message = this.cleanErrorMessage(error.message)
+        result.addError(`Syntax error: ${message}`)
       }
     }
 
@@ -155,6 +159,14 @@ export class Validator {
     }
 
     return null
+  }
+
+  /**
+   * Clean error message by removing confusing position references
+   */
+  cleanErrorMessage(message) {
+    // Remove "at position X" since positions are confusing with field pills
+    return message.replace(/\s+at position \d+/gi, '')
   }
 
   /**
