@@ -12,11 +12,14 @@ export { Validator, validateFormula } from './validator.js'
 export { DependencyGraph, buildDependencyGraph } from './dependency-graph.js'
 export { functions, functionMeta, getFunctionsByCategory, getFunctionNames, hasFunction, getFunction } from './functions/index.js'
 
+// Import evaluate for local use
+import { evaluate as _evaluate } from './evaluator.js'
+
 /**
  * Parse and evaluate a formula in one step
  */
 export function evaluateFormula(formula, context = {}) {
-  return evaluate(formula, context)
+  return _evaluate(formula, context)
 }
 
 /**
