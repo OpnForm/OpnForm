@@ -6,6 +6,7 @@ use App\Events\Forms\FormSubmitted;
 use App\Open\MentionParser;
 use App\Service\Forms\FormSubmissionFormatter;
 use App\Service\Forms\SubmissionUrlService;
+use App\Service\Formulas\ComputedVariableEvaluator;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Str;
@@ -14,6 +15,7 @@ use Symfony\Component\Mime\Email;
 class FormEmailNotification extends Notification
 {
     public FormSubmitted $event;
+    private ?array $computedValues = null;
 
     /**
      * Create a new notification instance.
@@ -23,6 +25,20 @@ class FormEmailNotification extends Notification
     public function __construct(FormSubmitted $event, private $integrationData)
     {
         $this->event = $event;
+    }
+
+    /**
+     * Get computed variable values for this submission
+     */
+    private function getComputedValues(): array
+    {
+        if ($this->computedValues === null) {
+            $this->computedValues = ComputedVariableEvaluator::evaluateForSubmission(
+                $this->event->form,
+                $this->event->data
+            );
+        }
+        return $this->computedValues;
     }
 
     private function getMailer(): string
@@ -129,7 +145,11 @@ class FormEmailNotification extends Notification
 
     private function getSenderName(): string
     {
-        $parser = new MentionParser($this->integrationData->sender_name ?? config('app.name'), $this->formatSubmissionData(false));
+        $parser = new MentionParser(
+            $this->integrationData->sender_name ?? config('app.name'),
+            $this->formatSubmissionData(false),
+            $this->getComputedValues()
+        );
         return $parser->parseAsText();
     }
 
@@ -147,14 +167,18 @@ class FormEmailNotification extends Notification
 
     private function parseReplyTo(string $replyTo): ?string
     {
-        $parser = new MentionParser($replyTo, $this->formatSubmissionData(false));
+        $parser = new MentionParser($replyTo, $this->formatSubmissionData(false), $this->getComputedValues());
         return $parser->parseAsText();
     }
 
     private function getSubject(): string
     {
         $defaultSubject = 'New form submission';
-        $parser = new MentionParser($this->integrationData->subject ?? $defaultSubject, $this->formatSubmissionData(false));
+        $parser = new MentionParser(
+            $this->integrationData->subject ?? $defaultSubject,
+            $this->formatSubmissionData(false),
+            $this->getComputedValues()
+        );
         return $parser->parseAsText();
     }
 
@@ -197,7 +221,11 @@ class FormEmailNotification extends Notification
 
     private function getEmailContent(): string
     {
-        $parser = new MentionParser($this->integrationData->email_content ?? '', $this->formatSubmissionData());
+        $parser = new MentionParser(
+            $this->integrationData->email_content ?? '',
+            $this->formatSubmissionData(),
+            $this->getComputedValues()
+        );
         return $parser->parse();
     }
 

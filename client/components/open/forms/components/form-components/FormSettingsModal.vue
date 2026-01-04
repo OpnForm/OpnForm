@@ -21,6 +21,14 @@
     </SettingsModalPage>
 
     <SettingsModalPage
+      id="variables"
+      label="Variables"
+      icon="i-heroicons-variable"
+    >
+      <ComputedVariablesTab />
+    </SettingsModalPage>
+
+    <SettingsModalPage
       id="security"
       label="Security & Access"
       icon="i-heroicons-shield-check"
@@ -55,6 +63,7 @@ import FormSubmissionSettings from '~/components/open/forms/components/form-comp
 import FormSecurityAccess from '~/components/open/forms/components/form-components/FormSecurityAccess.vue'
 import FormCustomSeo from '~/components/open/forms/components/form-components/FormCustomSeo.vue'
 import FormCustomCode from '~/components/open/forms/components/form-components/FormCustomCode.vue'
+import ComputedVariablesTab from '~/components/open/forms/components/computed-variables/ComputedVariablesTab.vue'
 
 const emit = defineEmits(['close', 'update:activeTab'])
 
