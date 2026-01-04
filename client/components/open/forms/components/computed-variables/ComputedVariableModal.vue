@@ -90,17 +90,22 @@
                 {{ validationResult.valid ? 'Valid formula' : validationResult.errors[0]?.message }}
               </span>
             </div>
-            <!-- Sample Preview -->
+            <!-- Preview -->
             <div
               v-if="validationResult.valid && previewValue !== '—'"
               class="mt-2 pt-2 border-t border-green-200"
             >
               <div class="flex items-center justify-between text-sm">
-                <span class="text-green-600">Sample result:</span>
+                <span class="text-green-600">
+                  {{ usingLivePreview ? 'Live result:' : 'Sample result:' }}
+                </span>
                 <span class="font-mono font-medium text-green-700">{{ previewValue }}</span>
               </div>
               <p class="text-xs text-green-600 mt-1">
-                Using sample values for fields. Actual result will depend on form responses.
+                {{ usingLivePreview 
+                  ? 'Using values from form preview. Fill in the preview to see results.' 
+                  : 'Using sample values. Fill in the form preview for live results.' 
+                }}
               </p>
             </div>
           </div>
@@ -137,6 +142,9 @@
 import FormulaEditor from './FormulaEditor.vue'
 import FunctionReference from './FunctionReference.vue'
 import { validateFormula, evaluateFormula } from '~/lib/formulas/index.js'
+import { useFormEditorPreviewData } from '~/composables/useFormEditorPreviewData.js'
+
+const { getAllData: getPreviewData, hasData: hasPreviewData } = useFormEditorPreviewData()
 
 const props = defineProps({
   modelValue: {
@@ -209,6 +217,9 @@ function handleValidation(result) {
   validationResult.value = result
 }
 
+// Check if we have live preview data from the form editor
+const usingLivePreview = computed(() => hasPreviewData())
+
 // Calculate preview value
 const previewValue = computed(() => {
   if (!validationResult.value.valid || !localVariable.value.formula) {
@@ -216,27 +227,34 @@ const previewValue = computed(() => {
   }
 
   try {
-    // Build sample context
+    // Build context - prefer live preview data if available
     const context = {}
     const fields = props.form?.properties || []
+    const liveData = getPreviewData()
     
     for (const field of fields) {
-      switch (field.type) {
-        case 'number':
-        case 'rating':
-        case 'scale':
-        case 'slider':
-          context[field.id] = 10
-          break
-        case 'text':
-        case 'email':
-          context[field.id] = field.name || 'Sample'
-          break
-        case 'checkbox':
-          context[field.id] = true
-          break
-        default:
-          context[field.id] = field.name || 'Sample'
+      // Use live preview data if available
+      if (liveData[field.id] !== undefined && liveData[field.id] !== null && liveData[field.id] !== '') {
+        context[field.id] = liveData[field.id]
+      } else {
+        // Fall back to sample values
+        switch (field.type) {
+          case 'number':
+          case 'rating':
+          case 'scale':
+          case 'slider':
+            context[field.id] = 10
+            break
+          case 'text':
+          case 'email':
+            context[field.id] = field.name || 'Sample'
+            break
+          case 'checkbox':
+            context[field.id] = true
+            break
+          default:
+            context[field.id] = field.name || 'Sample'
+        }
       }
     }
 

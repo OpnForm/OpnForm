@@ -160,53 +160,121 @@ const knownFunctions = computed(() => {
   }
 })
 
-// Convert storage format to display HTML with syntax highlighting
+// Convert storage format to display HTML
+// Note: We apply syntax highlighting carefully to avoid corrupting HTML
 function toDisplayFormat(formula) {
   if (!formula) return ''
-  
-  let html = formula
   
   // Build field map
   const fieldMap = new Map()
   availableFields.value.forEach(f => fieldMap.set(f.id, f))
   availableVariables.value.forEach(v => fieldMap.set(v.id, v))
   
-  // First, replace {fieldId} with pill elements using a placeholder
-  const placeholders = []
-  html = html.replace(/\{([^}]+)\}/g, (match, fieldId) => {
-    const field = fieldMap.get(fieldId)
-    if (field) {
-      const isVariable = field.type === 'computed'
-      const placeholder = `__PILL_${placeholders.length}__`
-      placeholders.push(`<span class="formula-pill ${isVariable ? 'formula-pill-variable' : ''}" data-field-id="${fieldId}" contenteditable="false">${field.name}</span>`)
-      return placeholder
+  // Tokenize the formula to apply highlighting safely
+  const tokens = tokenizeFormula(formula, fieldMap)
+  
+  // Build HTML from tokens
+  return tokens.map(token => {
+    switch (token.type) {
+      case 'pill':
+        const isVariable = token.fieldType === 'computed'
+        return `<span class="formula-pill ${isVariable ? 'formula-pill-variable' : ''}" data-field-id="${token.id}" contenteditable="false">${escapeHtml(token.name)}</span>`
+      case 'function':
+        return `<span class="formula-function">${escapeHtml(token.value)}</span>`
+      case 'number':
+        return `<span class="formula-number">${escapeHtml(token.value)}</span>`
+      case 'string':
+        return `<span class="formula-string">${escapeHtml(token.value)}</span>`
+      case 'operator':
+        return `<span class="formula-operator">${escapeHtml(token.value)}</span>`
+      default:
+        return escapeHtml(token.value)
     }
-    return match
-  })
+  }).join('')
+}
+
+// Escape HTML entities
+function escapeHtml(text) {
+  const div = document.createElement('div')
+  div.textContent = text
+  return div.innerHTML
+}
+
+// Tokenize formula into parts for safe highlighting
+function tokenizeFormula(formula, fieldMap) {
+  const tokens = []
+  let remaining = formula
   
-  // Highlight function names (followed by parenthesis)
-  const funcPattern = new RegExp(`\\b(${knownFunctions.value.join('|')})\\s*(?=\\()`, 'gi')
-  html = html.replace(funcPattern, '<span class="formula-function">$1</span>')
+  while (remaining.length > 0) {
+    let matched = false
+    
+    // Try to match field reference {fieldId}
+    const fieldMatch = remaining.match(/^\{([^}]+)\}/)
+    if (fieldMatch) {
+      const fieldId = fieldMatch[1]
+      const field = fieldMap.get(fieldId)
+      if (field) {
+        tokens.push({ type: 'pill', id: fieldId, name: field.name, fieldType: field.type })
+      } else {
+        tokens.push({ type: 'text', value: fieldMatch[0] })
+      }
+      remaining = remaining.slice(fieldMatch[0].length)
+      matched = true
+      continue
+    }
+    
+    // Try to match function name (followed by parenthesis)
+    const funcPattern = new RegExp(`^(${knownFunctions.value.join('|')})(?=\\s*\\()`, 'i')
+    const funcMatch = remaining.match(funcPattern)
+    if (funcMatch) {
+      tokens.push({ type: 'function', value: funcMatch[1] })
+      remaining = remaining.slice(funcMatch[1].length)
+      matched = true
+      continue
+    }
+    
+    // Try to match string literals
+    const stringMatch = remaining.match(/^("[^"]*"|'[^']*')/)
+    if (stringMatch) {
+      tokens.push({ type: 'string', value: stringMatch[0] })
+      remaining = remaining.slice(stringMatch[0].length)
+      matched = true
+      continue
+    }
+    
+    // Try to match numbers
+    const numberMatch = remaining.match(/^\d+\.?\d*/)
+    if (numberMatch) {
+      tokens.push({ type: 'number', value: numberMatch[0] })
+      remaining = remaining.slice(numberMatch[0].length)
+      matched = true
+      continue
+    }
+    
+    // Try to match comparison operators (multi-char first)
+    const compMatch = remaining.match(/^(<=|>=|<>|<|>|=)/)
+    if (compMatch) {
+      tokens.push({ type: 'operator', value: compMatch[0] })
+      remaining = remaining.slice(compMatch[0].length)
+      matched = true
+      continue
+    }
+    
+    // Try to match arithmetic operators
+    const opMatch = remaining.match(/^[+\-*\/]/)
+    if (opMatch) {
+      tokens.push({ type: 'operator', value: opMatch[0] })
+      remaining = remaining.slice(opMatch[0].length)
+      matched = true
+      continue
+    }
+    
+    // Take one character as plain text
+    tokens.push({ type: 'text', value: remaining[0] })
+    remaining = remaining.slice(1)
+  }
   
-  // Highlight operators
-  html = html.replace(/([+\-*\/])/g, '<span class="formula-operator">$1</span>')
-  
-  // Highlight comparison operators
-  html = html.replace(/(&lt;=|&gt;=|&lt;&gt;|&lt;|&gt;|=)/g, '<span class="formula-operator">$1</span>')
-  
-  // Highlight numbers
-  html = html.replace(/\b(\d+\.?\d*)\b/g, '<span class="formula-number">$1</span>')
-  
-  // Highlight string literals
-  html = html.replace(/"([^"]*)"/g, '<span class="formula-string">"$1"</span>')
-  html = html.replace(/'([^']*)'/g, '<span class="formula-string">\'$1\'</span>')
-  
-  // Restore pill placeholders
-  placeholders.forEach((pill, i) => {
-    html = html.replace(`__PILL_${i}__`, pill)
-  })
-  
-  return html
+  return tokens
 }
 
 // Initialize editor content
