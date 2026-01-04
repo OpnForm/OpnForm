@@ -1,108 +1,121 @@
 <template>
   <UModal
     v-model:open="isOpen"
-    :title="isEditing ? 'Edit Variable' : 'Create Variable'"
     :ui="{ width: 'sm:max-w-xl' }"
   >
-    <template #body>
-      <div class="space-y-4">
-        <!-- Name Input -->
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">
-            Name <span class="text-red-500">*</span>
-          </label>
-          <UInput
-            v-model="localVariable.name"
-            placeholder="e.g., Total Price"
-            :color="errors.name ? 'red' : undefined"
+    <template #content>
+      <div class="p-6">
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-semibold">
+            {{ isEditing ? 'Edit Variable' : 'Create Variable' }}
+          </h3>
+          <UButton
+            icon="i-heroicons-x-mark"
+            color="neutral"
+            variant="ghost"
+            size="sm"
+            @click="close"
           />
-          <p
-            v-if="errors.name"
-            class="mt-1 text-sm text-red-500"
-          >
-            {{ errors.name }}
-          </p>
         </div>
-
-        <!-- Formula Editor -->
-        <div>
-          <div class="flex items-center justify-between mb-1">
-            <label class="block text-sm font-medium text-gray-700">
-              Formula <span class="text-red-500">*</span>
+        
+        <div class="space-y-4">
+          <!-- Name Input -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">
+              Name <span class="text-red-500">*</span>
             </label>
-            <UButton
-              size="xs"
-              color="neutral"
-              variant="ghost"
-              icon="i-heroicons-question-mark-circle"
-              @click="showReference = true"
-            >
-              Help
-            </UButton>
-          </div>
-          
-          <FormulaEditor
-            v-model="localVariable.formula"
-            :form="form"
-            :current-variable-id="localVariable.id"
-            :other-variables="otherVariables"
-            @validation="handleValidation"
-          />
-          
-          <p
-            v-if="errors.formula"
-            class="mt-1 text-sm text-red-500"
-          >
-            {{ errors.formula }}
-          </p>
-        </div>
-
-        <!-- Validation Status -->
-        <div
-          v-if="localVariable.formula"
-          class="p-3 rounded-lg"
-          :class="validationResult.valid ? 'bg-green-50' : 'bg-red-50'"
-        >
-          <div class="flex items-center gap-2">
-            <Icon
-              :name="validationResult.valid ? 'i-heroicons-check-circle' : 'i-heroicons-exclamation-circle'"
-              :class="validationResult.valid ? 'text-green-500' : 'text-red-500'"
-              class="h-5 w-5"
+            <UInput
+              v-model="localVariable.name"
+              placeholder="e.g., Total Price"
+              :color="errors.name ? 'error' : undefined"
             />
-            <span
-              class="text-sm"
-              :class="validationResult.valid ? 'text-green-700' : 'text-red-700'"
+            <p
+              v-if="errors.name"
+              class="mt-1 text-sm text-red-500"
             >
-              {{ validationResult.valid ? 'Valid formula' : validationResult.errors[0]?.message }}
-            </span>
-            <span
-              v-if="validationResult.valid"
-              class="ml-auto text-sm font-medium"
-              :class="validationResult.valid ? 'text-green-700' : 'text-red-700'"
+              {{ errors.name }}
+            </p>
+          </div>
+
+          <!-- Formula Editor -->
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <label class="block text-sm font-medium text-gray-700">
+                Formula <span class="text-red-500">*</span>
+              </label>
+              <UButton
+                size="xs"
+                color="neutral"
+                variant="ghost"
+                icon="i-heroicons-question-mark-circle"
+                @click="showReference = true"
+              >
+                Help
+              </UButton>
+            </div>
+            
+            <FormulaEditor
+              v-model="localVariable.formula"
+              :form="form"
+              :current-variable-id="localVariable.id"
+              :other-variables="otherVariables"
+              @validation="handleValidation"
+            />
+            
+            <p
+              v-if="errors.formula"
+              class="mt-1 text-sm text-red-500"
             >
-              Preview: {{ previewValue }}
-            </span>
+              {{ errors.formula }}
+            </p>
+          </div>
+
+          <!-- Validation Status -->
+          <div
+            v-if="localVariable.formula"
+            class="p-3 rounded-lg"
+            :class="validationResult.valid ? 'bg-green-50' : 'bg-red-50'"
+          >
+            <div class="flex items-center gap-2">
+              <Icon
+                :name="validationResult.valid ? 'i-heroicons-check-circle' : 'i-heroicons-exclamation-circle'"
+                :class="validationResult.valid ? 'text-green-500' : 'text-red-500'"
+                class="h-5 w-5"
+              />
+              <span
+                class="text-sm"
+                :class="validationResult.valid ? 'text-green-700' : 'text-red-700'"
+              >
+                {{ validationResult.valid ? 'Valid formula' : validationResult.errors[0]?.message }}
+              </span>
+              <span
+                v-if="validationResult.valid && previewValue !== '—'"
+                class="ml-auto text-sm font-medium text-green-700"
+              >
+                Preview: {{ previewValue }}
+              </span>
+            </div>
           </div>
         </div>
-      </div>
-    </template>
 
-    <template #footer>
-      <div class="flex justify-end gap-3">
-        <UButton
-          color="neutral"
-          variant="outline"
-          @click="close"
-        >
-          Cancel
-        </UButton>
-        <UButton
-          color="primary"
-          :disabled="!canSave"
-          @click="save"
-        >
-          {{ isEditing ? 'Save Changes' : 'Create Variable' }}
-        </UButton>
+        <!-- Footer -->
+        <div class="flex justify-end gap-3 mt-6 pt-4 border-t">
+          <UButton
+            color="neutral"
+            variant="outline"
+            @click="close"
+          >
+            Cancel
+          </UButton>
+          <UButton
+            color="primary"
+            :disabled="!canSave"
+            @click="save"
+          >
+            {{ isEditing ? 'Save Changes' : 'Create Variable' }}
+          </UButton>
+        </div>
       </div>
     </template>
   </UModal>

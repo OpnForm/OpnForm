@@ -15,18 +15,11 @@
           <p class="text-sm text-gray-500 mt-1 font-mono truncate">
             {{ displayFormula }}
           </p>
-          <div class="flex items-center gap-2 mt-2">
-            <span class="text-xs text-gray-400">Preview:</span>
-            <span class="text-sm font-medium text-gray-700">
-              {{ previewValue }}
-            </span>
-          </div>
         </div>
       </div>
       
-      <UDropdown
+      <UDropdownMenu
         :items="menuItems"
-        :popper="{ placement: 'bottom-end' }"
       >
         <UButton
           icon="i-heroicons-ellipsis-vertical"
@@ -34,13 +27,13 @@
           variant="ghost"
           size="sm"
         />
-      </UDropdown>
+      </UDropdownMenu>
     </div>
   </div>
 </template>
 
 <script setup>
-import { evaluateFormula, formulaToDisplay } from '~/lib/formulas/index.js'
+import { formulaToDisplay } from '~/lib/formulas/index.js'
 
 const props = defineProps({
   variable: {
@@ -62,82 +55,20 @@ const displayFormula = computed(() => {
   return formulaToDisplay(props.variable.formula, fields, variables)
 })
 
-// Calculate preview value using sample data
-const previewValue = computed(() => {
-  try {
-    // Build sample context from form fields
-    const context = {}
-    const fields = props.form?.properties || []
-    
-    for (const field of fields) {
-      // Use sample values based on field type
-      switch (field.type) {
-        case 'number':
-        case 'rating':
-        case 'scale':
-        case 'slider':
-          context[field.id] = 10
-          break
-        case 'text':
-        case 'email':
-          context[field.id] = field.name || 'Sample'
-          break
-        case 'checkbox':
-          context[field.id] = true
-          break
-        default:
-          context[field.id] = field.name || 'Sample'
-      }
-    }
-
-    // Add other computed variables (evaluated in order)
-    const otherVars = (props.form?.computed_variables || []).filter(v => v.id !== props.variable.id)
-    for (const v of otherVars) {
-      try {
-        context[v.id] = evaluateFormula(v.formula, context)
-      } catch {
-        context[v.id] = null
-      }
-    }
-
-    const result = evaluateFormula(props.variable.formula, context)
-    
-    if (result === null || result === undefined) {
-      return '—'
-    }
-    
-    if (typeof result === 'number') {
-      return Number.isInteger(result) ? result : result.toFixed(2)
-    }
-    
-    if (typeof result === 'boolean') {
-      return result ? 'true' : 'false'
-    }
-    
-    if (typeof result === 'string' && result.length > 50) {
-      return `"${result.substring(0, 50)}..."`
-    }
-    
-    return typeof result === 'string' ? `"${result}"` : String(result)
-  } catch (error) {
-    return 'Error'
-  }
-})
-
 const menuItems = [
   [
     {
       label: 'Edit',
       icon: 'i-heroicons-pencil-square',
-      click: () => emit('edit', props.variable)
+      onSelect: () => emit('edit', props.variable)
     }
   ],
   [
     {
       label: 'Delete',
       icon: 'i-heroicons-trash',
-      color: 'red',
-      click: () => {
+      color: 'error',
+      onSelect: () => {
         if (confirm(`Are you sure you want to delete "${props.variable.name}"?`)) {
           emit('delete', props.variable)
         }
