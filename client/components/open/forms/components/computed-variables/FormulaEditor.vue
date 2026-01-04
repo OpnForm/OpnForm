@@ -394,9 +394,11 @@ function onInput() {
 }
 
 function onKeydown(e) {
-  // Prevent enter key from creating new lines
-  if (e.key === 'Enter') {
+  // Allow Shift+Enter for line breaks, prevent plain Enter to avoid accidental form submission
+  if (e.key === 'Enter' && !e.shiftKey) {
+    // Insert a line break instead of preventing
     e.preventDefault()
+    document.execCommand('insertLineBreak')
   }
 }
 
@@ -566,7 +568,7 @@ defineExpose({
 }
 
 .formula-input :deep(.formula-operator) {
-  color: #dc2626;
+  color: #6366f1;
   font-weight: 600;
 }
 

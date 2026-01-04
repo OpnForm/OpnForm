@@ -4,7 +4,7 @@
     :ui="{ width: 'sm:max-w-5xl' }"
   >
     <template #content>
-      <div class="flex flex-col h-[80vh]">
+      <div class="flex flex-col h-[80vh] bg-white">
         <!-- Header -->
         <div class="flex items-center justify-between p-4 border-b flex-shrink-0">
           <h3 class="text-lg font-semibold">
@@ -22,8 +22,8 @@
         <!-- Main Content - Two Columns -->
         <div class="flex flex-1 min-h-0">
           <!-- Left Column: Formula Editor -->
-          <div class="w-1/2 border-r flex flex-col">
-            <div class="p-4 border-b bg-gray-50">
+          <div class="w-1/2 border-r flex flex-col bg-white">
+            <div class="p-4 border-b">
               <h4 class="font-medium text-gray-900 flex items-center gap-2">
                 <Icon name="i-heroicons-code-bracket" class="w-4 h-4" />
                 Formula Definition
@@ -117,16 +117,16 @@
                     {{ computedResult }}
                   </span>
                 </div>
-                <p class="text-xs text-blue-600 mt-2">
-                  Fill in the test form on the right to see real-time results
+                <p v-if="testableFields.length === 0" class="text-xs text-blue-600 mt-2">
+                  Add fields to your formula to test with sample values
                 </p>
               </div>
             </div>
           </div>
           
           <!-- Right Column: Test Form -->
-          <div class="w-1/2 flex flex-col bg-gray-50">
-            <div class="p-4 border-b bg-white">
+          <div class="w-1/2 flex flex-col bg-white">
+            <div class="p-4 border-b">
               <h4 class="font-medium text-gray-900 flex items-center gap-2">
                 <Icon name="i-heroicons-beaker" class="w-4 h-4" />
                 Test Your Formula
@@ -137,13 +137,15 @@
             </div>
             
             <div class="p-4 flex-1 overflow-y-auto">
-              <div v-if="testableFields.length === 0" class="text-center py-8 text-gray-500">
+              <div v-if="testableFields.length === 0 && referencedVariables.length === 0" class="text-center py-8 text-gray-500">
                 <Icon name="i-heroicons-information-circle" class="w-8 h-8 mx-auto mb-2 text-gray-400" />
                 <p class="text-sm">Add fields to your formula to test with sample values</p>
+                <p class="text-xs text-gray-400 mt-2">Use the "Field" button in the formula editor</p>
               </div>
               
               <div v-else class="space-y-4">
-                <div class="bg-white rounded-lg p-4 border border-gray-200">
+                <!-- Form Fields -->
+                <div v-if="testableFields.length > 0" class="rounded-lg p-4 border border-gray-200">
                   <h5 class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">
                     Form Field Values
                   </h5>
@@ -191,7 +193,7 @@
                 </div>
                 
                 <!-- Computed Variables in Formula -->
-                <div v-if="referencedVariables.length > 0" class="bg-white rounded-lg p-4 border border-purple-200">
+                <div v-if="referencedVariables.length > 0" class="rounded-lg p-4 border border-purple-200">
                   <h5 class="text-xs font-medium text-purple-600 uppercase tracking-wide mb-3">
                     Referenced Variables
                   </h5>
@@ -236,7 +238,7 @@
         </div>
 
         <!-- Footer -->
-        <div class="flex justify-end gap-3 p-4 border-t bg-gray-50 flex-shrink-0">
+        <div class="flex justify-end gap-3 p-4 border-t flex-shrink-0">
           <UButton
             color="neutral"
             variant="outline"
@@ -322,9 +324,10 @@ const allFields = computed(() => {
 
 // Extract field IDs referenced in the formula
 const referencedFieldIds = computed(() => {
-  if (!localVariable.value.formula) return []
+  const formula = localVariable.value.formula
+  if (!formula) return []
   try {
-    return extractFieldIds(localVariable.value.formula)
+    return extractFieldIds(formula)
   } catch {
     return []
   }
@@ -333,6 +336,7 @@ const referencedFieldIds = computed(() => {
 // Get fields that are used in the formula (for test form)
 const testableFields = computed(() => {
   const refIds = new Set(referencedFieldIds.value)
+  // Filter fields that are referenced in the formula
   return allFields.value.filter(f => refIds.has(f.id))
 })
 
@@ -489,6 +493,36 @@ watch(isOpen, (newVal) => {
   }
 })
 
+// Watch formula changes to update test values for new fields
+watch(() => localVariable.value.formula, () => {
+  // When formula changes, fill sample values for any new fields
+  nextTick(() => {
+    const currentFields = new Set(Object.keys(testValues.value))
+    for (const field of testableFields.value) {
+      if (!currentFields.has(field.id)) {
+        // New field added, set a sample value
+        switch (field.type) {
+          case 'number':
+          case 'slider':
+            testValues.value[field.id] = 10
+            break
+          case 'rating':
+            testValues.value[field.id] = 4
+            break
+          case 'scale':
+            testValues.value[field.id] = 5
+            break
+          case 'checkbox':
+            testValues.value[field.id] = true
+            break
+          default:
+            testValues.value[field.id] = field.name || 'Sample'
+        }
+      }
+    }
+  })
+})
+
 // Handle validation from formula editor
 function handleValidation(result) {
   validationResult.value = result
@@ -516,9 +550,24 @@ function validate() {
   return Object.keys(errors.value).length === 0
 }
 
+// Normalize formula by trimming and collapsing whitespace
+function normalizeFormula(formula) {
+  if (!formula) return ''
+  // Trim leading/trailing whitespace and collapse multiple spaces/newlines into single space
+  return formula.trim().replace(/\s+/g, ' ')
+}
+
 function save() {
   if (!validate()) return
-  emit('save', { ...localVariable.value })
+  
+  // Normalize the formula before saving
+  const normalizedVariable = {
+    ...localVariable.value,
+    name: localVariable.value.name.trim(),
+    formula: normalizeFormula(localVariable.value.formula)
+  }
+  
+  emit('save', normalizedVariable)
 }
 
 function close() {
