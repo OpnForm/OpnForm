@@ -36,9 +36,9 @@ const props = defineProps({
 
 const processedContent = ref(props.content)
 
-watch(() => [props.content, props.mentionsAllowed, props.form, props.formData], async () => {
+watch(() => [props.content, props.mentionsAllowed, props.form, props.formData], () => {
   if (props.mentionsAllowed && props.form && props.formData) {
-    processedContent.value = await useParseMention(props.content, props.mentionsAllowed, props.form, props.formData)
+    processedContent.value = useParseMention(props.content, props.mentionsAllowed, props.form, props.formData)
   } else {
     processedContent.value = props.content
   }

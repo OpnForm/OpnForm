@@ -44,6 +44,11 @@ export class FormSubmissionFormatter {
   updateData(form, formData) {
     this.form = form
     this.formData = formData
+    // Reset configuration flags to default state for clean reuse
+    this.createLinks = false
+    this.outputStringsOnly = false
+    this.showGeneratedIds = false
+    this.datesIsoFormat = false
   }
 
   setCreateLinks() {

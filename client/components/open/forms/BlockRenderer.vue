@@ -228,7 +228,7 @@ const processMention = (content, { asText = false } = {}) => {
   return processed.replace(/<[^>]*>/g, '')
 }
 
-// Process mentions in placeholder and help (async)
+// Process mentions in placeholder and help text
 const processedPlaceholder = ref('')
 const processedHelp = ref('')
 

@@ -130,6 +130,7 @@ import Loader from '~/components/global/Loader.vue'
 import { tailwindcssPaletteGenerator } from '~/lib/colors.js'
 import { useRouter } from 'vue-router'
 import { clearFormatterCache } from '~/components/forms/components/FormSubmissionFormatter.js'
+import { clearMentionCache } from '~/composables/components/useParseMention.js'
 
 const props = defineProps({
   form: { type: Object, required: true },
@@ -295,8 +296,9 @@ watch(() => props.form?.language, (newLanguage) => {
 
 onBeforeUnmount(() => {
   setLocale('en')
-  // Clear formatter cache for this form to prevent memory leaks
+  // Clear caches for this form to prevent memory leaks
   clearFormatterCache(props.form?.slug)
+  clearMentionCache()
 })
 
 const handleScrollToError = () => {
