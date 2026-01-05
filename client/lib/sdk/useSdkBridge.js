@@ -145,14 +145,12 @@ export function useSdkBridge(options) {
           break
 
         case 'setDarkMode':
-          if (darkMode) {
+          {
             const enabled = payload.enabled
             if (enabled === 'auto') {
-              darkMode.value = 'auto'
               handleDarkMode('auto')
             } else {
-              darkMode.value = enabled ? 'dark' : 'light'
-              handleDarkMode(darkMode.value)
+              handleDarkMode(enabled ? 'dark' : 'light')
             }
             result = { success: true }
           }

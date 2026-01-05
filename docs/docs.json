@@ -136,7 +136,8 @@
             "group": "Front-end",
             "pages": [
               "front-end/data-fetching",
-              "front-end/forms"
+              "front-end/forms",
+              "front-end/javascript-sdk"
             ]
           }
         ]
