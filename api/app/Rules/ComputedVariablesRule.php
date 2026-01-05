@@ -164,7 +164,7 @@ class ComputedVariablesRule implements ValidationRule, ValidatorAwareRule, DataA
         // Validate result_type (optional)
         if (isset($variable['result_type']) && $variable['result_type'] !== null) {
             if (! in_array($variable['result_type'], self::VALID_RESULT_TYPES, true)) {
-                $errors['result_type'] = 'The result type must be one of: '.implode(', ', self::VALID_RESULT_TYPES).'.';
+                $errors['result_type'] = 'The result type must be one of: ' . implode(', ', self::VALID_RESULT_TYPES) . '.';
             }
         }
 
@@ -252,7 +252,7 @@ class ComputedVariablesRule implements ValidationRule, ValidatorAwareRule, DataA
             $cycle = $this->findCycle($nodeId, $graph, $visited, $recursionStack, []);
             if ($cycle !== null) {
                 $cycleNames = array_map(fn ($id) => $variableMap[$id] ?? $id, $cycle);
-                $errors[] = 'Circular dependency detected: '.implode(' → ', $cycleNames);
+                $errors[] = 'Circular dependency detected: ' . implode(' → ', $cycleNames);
 
                 break; // Report only the first cycle
             }

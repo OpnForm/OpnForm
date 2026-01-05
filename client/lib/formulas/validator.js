@@ -1,6 +1,6 @@
 import { NodeType, FormulaError, ValidationResult } from './types.js'
 import { Parser } from './parser.js'
-import { hasFunction, getFunctionNames, functionMeta } from './functions/index.js'
+import { hasFunction, getFunctionNames } from './functions/index.js'
 
 /**
  * Function argument requirements for validation
