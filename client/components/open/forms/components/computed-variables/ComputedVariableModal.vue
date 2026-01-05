@@ -1,7 +1,7 @@
 <template>
   <UModal
     v-model:open="isOpen"
-    :ui="{ width: 'sm:max-w-5xl' }"
+    :ui="{ content: 'sm:max-w-5xl' }"
   >
     <template #content>
       <div class="flex flex-col h-[80vh] bg-white">
