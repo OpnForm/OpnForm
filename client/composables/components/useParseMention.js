@@ -30,19 +30,37 @@ function extractMentionFieldIds(content) {
 /**
  * Parse content and replace mention placeholders with actual form values.
  * Uses caching to avoid re-parsing unchanged content.
+ * 
+ * SSR Behavior: Returns original content on server-side since DOMParser is
+ * browser-only. Components using this should handle hydration by re-computing
+ * on client mount (e.g., using watch with immediate: false after initial render).
+ * 
+ * @param {string} content - HTML content potentially containing mention spans
+ * @param {boolean} mentionsAllowed - Whether to process mentions
+ * @param {Object} form - Form object with slug and properties
+ * @param {Object} formData - Current form field values
+ * @returns {string} Processed content with mentions replaced by values
  */
 export function useParseMention(content, mentionsAllowed, form, formData) {
+  // Early return for disabled mentions or missing dependencies
   if (!mentionsAllowed || !form || !formData) {
     return content
   }
 
-  // DOMParser is only available in browser, skip on server
-  if (!import.meta.client || typeof DOMParser === 'undefined') {
+  // Early return for empty/falsy content
+  if (!content) {
     return content
   }
 
-  // Quick check: if no mentions in content, return as-is
-  if (!content || !content.includes('mention-field-id')) {
+  // SSR guard: DOMParser is browser-only API
+  // During SSR, return original content to avoid hydration mismatch
+  // The client will re-process after hydration with actual formData
+  if (typeof window === 'undefined' || typeof DOMParser === 'undefined') {
+    return content
+  }
+
+  // Quick check: if no mentions in content, return as-is (avoid DOM parsing overhead)
+  if (!content.includes('mention-field-id')) {
     return content
   }
 
@@ -68,11 +86,19 @@ export function useParseMention(content, mentionsAllowed, form, formData) {
     const fallback = element.getAttribute('mention-fallback')
     const value = formattedData[fieldId]
 
-    if (value !== undefined && value !== null && value !== '') {
+    // Check if value is "empty" - null, undefined, or empty string
+    // Note: 0 and false are valid values that should be rendered
+    const isEmpty = value === undefined || value === null || value === ''
+
+    if (!isEmpty) {
       if (Array.isArray(value)) {
         element.textContent = value.join(', ')
+      } else if (typeof value === 'boolean') {
+        // Render booleans in a user-friendly way
+        element.textContent = value ? 'Yes' : 'No'
       } else {
-        element.textContent = value
+        // String, number (including 0), etc.
+        element.textContent = String(value)
       }
     } else if (fallback) {
       element.textContent = fallback

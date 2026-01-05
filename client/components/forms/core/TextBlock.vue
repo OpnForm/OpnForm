@@ -34,15 +34,19 @@ const props = defineProps({
   ui: { type: Object, default: () => ({}) }
 })
 
-const processedContent = ref(props.content)
+// Compute initial value inline to avoid flash of unprocessed content
+const computeProcessedContent = () => {
+  if (props.mentionsAllowed && props.form && props.formData) {
+    return useParseMention(props.content, props.mentionsAllowed, props.form, props.formData)
+  }
+  return props.content
+}
+
+const processedContent = ref(computeProcessedContent())
 
 watch(() => [props.content, props.mentionsAllowed, props.form, props.formData], () => {
-  if (props.mentionsAllowed && props.form && props.formData) {
-    processedContent.value = useParseMention(props.content, props.mentionsAllowed, props.form, props.formData)
-  } else {
-    processedContent.value = props.content
-  }
-}, { immediate: true })
+  processedContent.value = computeProcessedContent()
+})
 
 const injectedSize = inject('formSize', null)
 const injectedBorderRadius = inject('formBorderRadius', null)
