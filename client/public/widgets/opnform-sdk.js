@@ -1,3 +1,4 @@
+/* eslint-disable */
 /**
  * OpnForm JavaScript SDK
  * Enables programmatic interaction with embedded OpnForm forms
