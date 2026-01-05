@@ -114,7 +114,7 @@ class Evaluator
         $leftNum = $this->toNumber($left);
         $rightNum = $this->toNumber($right);
 
-        if ($leftNum === null || $rightNum === null || $rightNum === 0) {
+        if ($leftNum === null || $rightNum === null || $rightNum == 0) {
             return null;
         }
 
@@ -142,7 +142,7 @@ class Evaluator
         }
 
         // Evaluate all arguments
-        $args = array_map(fn($arg) => $this->evaluateNode($arg), $node['args']);
+        $args = array_map(fn ($arg) => $this->evaluateNode($arg), $node['args']);
 
         try {
             return FunctionRegistry::call($funcName, $args);

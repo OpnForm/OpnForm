@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use App\Http\Requests\Workspace\CustomDomainRequest;
 use App\Models\Forms\Form;
 use App\Rules\CustomSlugRule;
+use App\Rules\ComputedVariablesRule;
 use App\Rules\FormPropertiesRule;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
@@ -160,12 +161,8 @@ abstract class UserFormRequest extends \Illuminate\Foundation\Http\FormRequest
             // Replaces ~35 wildcard rules (properties.*) with one efficient rule
             'properties' => ['required', 'array', new FormPropertiesRule($workspace)],
 
-            // Computed Variables
-            'computed_variables' => 'nullable|array',
-            'computed_variables.*.id' => 'required|string|regex:/^cv_/',
-            'computed_variables.*.name' => 'required|string|max:100',
-            'computed_variables.*.formula' => 'required|string|max:2000',
-            'computed_variables.*.result_type' => ['nullable', Rule::in(['number', 'text', 'auto'])],
+            // Computed Variables - Single-pass validation with formula syntax checking
+            'computed_variables' => ['nullable', 'array', new ComputedVariablesRule()],
 
             // Security & Privacy
             'can_be_indexed' => 'boolean',

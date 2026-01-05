@@ -104,7 +104,7 @@ class MathFunctions
     {
         $num = self::toNumber($value);
         $div = self::toNumber($divisor);
-        if ($num === null || $div === null || $div === 0) {
+        if ($num === null || $div === null || $div == 0) {
             return null;
         }
         return fmod($num, $div);

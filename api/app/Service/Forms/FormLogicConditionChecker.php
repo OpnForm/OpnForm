@@ -25,12 +25,12 @@ class FormLogicConditionChecker
     public static function conditionsMetWithForm(?array $conditions, array $formData, ?Form $form): bool
     {
         $checker = new self($conditions, $formData);
-        
+
         // If form has computed variables, evaluate them
         if ($form && !empty($form->computed_variables)) {
             $checker->computedValues = ComputedVariableEvaluator::evaluateForSubmission($form, $formData);
         }
-        
+
         return $checker->conditionsAreMet($conditions, $formData);
     }
 
@@ -52,12 +52,12 @@ class FormLogicConditionChecker
         if (isset($this->formData[$fieldId])) {
             return $this->formData[$fieldId];
         }
-        
+
         // Then check computed variables
         if ($this->computedValues !== null && isset($this->computedValues[$fieldId])) {
             return $this->computedValues[$fieldId];
         }
-        
+
         return null;
     }
 
@@ -103,12 +103,12 @@ class FormLogicConditionChecker
     {
         $type = $propertyCondition['property_meta']['type'] ?? null;
         $fieldId = $propertyCondition['property_meta']['id'] ?? '';
-        
+
         // Handle computed variables (cv_ prefix)
         if (str_starts_with($fieldId, 'cv_') || $type === 'computed') {
             return $this->computedVariableConditionMet($propertyCondition, $value);
         }
-        
+
         switch ($type) {
             case 'text':
             case 'url':
@@ -138,7 +138,7 @@ class FormLogicConditionChecker
 
         return false;
     }
-    
+
     /**
      * Handle conditions for computed variables
      * Computed variables can be numbers, text, or booleans
@@ -146,12 +146,12 @@ class FormLogicConditionChecker
     private function computedVariableConditionMet(array $propertyCondition, $value): bool
     {
         $operator = $propertyCondition['operator'] ?? null;
-        
+
         // Check if value is numeric and use number conditions
         if (is_numeric($value)) {
             return $this->numberConditionMet($propertyCondition, $value);
         }
-        
+
         // Check if value is boolean
         if (is_bool($value)) {
             return match ($operator) {
@@ -160,7 +160,7 @@ class FormLogicConditionChecker
                 default => false
             };
         }
-        
+
         // Default to text conditions
         return $this->textConditionMet($propertyCondition, $value);
     }

@@ -1,6 +1,62 @@
 import { NodeType, FormulaError, ValidationResult } from './types.js'
 import { Parser } from './parser.js'
-import { hasFunction, getFunctionNames } from './functions/index.js'
+import { hasFunction, getFunctionNames, functionMeta } from './functions/index.js'
+
+/**
+ * Function argument requirements for validation
+ */
+const FUNCTION_ARGS = {
+  // Math functions
+  SUM: { min: 1 },
+  AVERAGE: { min: 1 },
+  MIN: { min: 1 },
+  MAX: { min: 1 },
+  ROUND: { min: 1, max: 2 },
+  FLOOR: { min: 1, max: 1 },
+  CEIL: { min: 1, max: 1 },
+  ABS: { min: 1, max: 1 },
+  MOD: { min: 2, max: 2 },
+  POWER: { min: 2, max: 2 },
+  SQRT: { min: 1, max: 1 },
+  
+  // Text functions
+  CONCAT: { min: 1 },
+  UPPER: { min: 1, max: 1 },
+  LOWER: { min: 1, max: 1 },
+  TRIM: { min: 1, max: 1 },
+  LEFT: { min: 2, max: 2 },
+  RIGHT: { min: 2, max: 2 },
+  MID: { min: 3, max: 3 },
+  LEN: { min: 1, max: 1 },
+  SUBSTITUTE: { min: 3, max: 4 },
+  REPLACE: { min: 4, max: 4 },
+  FIND: { min: 2, max: 3 },
+  SEARCH: { min: 2, max: 3 },
+  REPT: { min: 2, max: 2 },
+  TEXT: { min: 2, max: 2 },
+  
+  // Logic functions
+  IF: { min: 2, max: 3 },
+  AND: { min: 1 },
+  OR: { min: 1 },
+  NOT: { min: 1, max: 1 },
+  XOR: { min: 2 },
+  ISBLANK: { min: 1, max: 1 },
+  ISNUMBER: { min: 1, max: 1 },
+  ISTEXT: { min: 1, max: 1 },
+  IFERROR: { min: 2, max: 2 },
+  IFBLANK: { min: 2, max: 2 },
+  COALESCE: { min: 1 },
+  SWITCH: { min: 3 },
+  IFS: { min: 2 },
+  CHOOSE: { min: 2 },
+  
+  // Array functions
+  COUNT: { min: 1, max: 1 },
+  ISEMPTY: { min: 1, max: 1 },
+  CONTAINS: { min: 2, max: 2 },
+  JOIN: { min: 1, max: 2 }
+}
 
 /**
  * Validator for formula expressions
@@ -11,6 +67,15 @@ export class Validator {
     this.availableFields = options.availableFields || [] // Array of { id, name, type }
     this.availableVariables = options.availableVariables || [] // Array of { id, name }
     this.currentVariableId = options.currentVariableId || null // ID of variable being edited (to detect self-reference)
+    
+    // Build field name lookup map for better error messages
+    this.fieldNameMap = {}
+    for (const f of this.availableFields) {
+      this.fieldNameMap[f.id] = f.name
+    }
+    for (const v of this.availableVariables) {
+      this.fieldNameMap[v.id] = v.name
+    }
   }
 
   /**
@@ -25,8 +90,8 @@ export class Validator {
     }
 
     try {
-      // Parse the formula
-      const ast = Parser.parse(formula)
+      // Parse the formula with field names for better error messages
+      const ast = Parser.parse(formula, { fieldNames: this.fieldNameMap })
       
       // Validate the AST
       this.validateNode(ast, result)
@@ -44,6 +109,13 @@ export class Validator {
     }
 
     return result
+  }
+
+  /**
+   * Get display name for a field ID
+   */
+  getFieldDisplayName(fieldId) {
+    return this.fieldNameMap[fieldId] || fieldId
   }
 
   /**
@@ -86,7 +158,8 @@ export class Validator {
 
     // Check for self-reference
     if (fieldId === this.currentVariableId) {
-      result.addError(`Variable cannot reference itself`)
+      const varName = this.getFieldDisplayName(fieldId)
+      result.addError(`Variable '${varName}' cannot reference itself. This would create a circular dependency.`)
       return
     }
 
@@ -95,12 +168,18 @@ export class Validator {
     const variable = this.availableVariables.find(v => v.id === fieldId)
 
     if (!field && !variable) {
-      // Try to suggest similar field names
-      const suggestion = this.findSimilarField(fieldId)
-      if (suggestion) {
-        result.addError(`Unknown field "${fieldId}". Did you mean "${suggestion}"?`)
+      // Check if it looks like a UUID (deleted field)
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(fieldId)
+      if (isUuid) {
+        result.addError(`This field was deleted or renamed. Please select a different field.`)
       } else {
-        result.addError(`Unknown field "${fieldId}"`)
+        // Try to suggest similar field names
+        const suggestion = this.findSimilarFieldByName(fieldId)
+        if (suggestion) {
+          result.addError(`Unknown field '${fieldId}'. Did you mean '${suggestion}'?`)
+        } else {
+          result.addError(`Unknown field '${fieldId}'`)
+        }
       }
     }
   }
@@ -115,21 +194,39 @@ export class Validator {
     if (!hasFunction(funcName)) {
       const suggestion = this.findSimilarFunction(funcName)
       if (suggestion) {
-        result.addError(`Unknown function "${funcName}". Did you mean "${suggestion}"?`)
+        result.addError(`Unknown function '${funcName}'. Did you mean '${suggestion}'?`)
       } else {
-        result.addError(`Unknown function "${funcName}"`)
+        result.addError(`Unknown function '${funcName}'. Check the function reference for available functions.`)
       }
       return
     }
 
-    // Validate function arguments
+    // Validate argument count
+    const argReqs = FUNCTION_ARGS[funcName]
+    if (argReqs) {
+      const argCount = node.args.length
+      if (argReqs.min !== undefined && argCount < argReqs.min) {
+        if (argReqs.max === argReqs.min) {
+          result.addError(`Function ${funcName}() requires exactly ${argReqs.min} argument${argReqs.min === 1 ? '' : 's'}, but got ${argCount}.`)
+        } else {
+          result.addError(`Function ${funcName}() requires at least ${argReqs.min} argument${argReqs.min === 1 ? '' : 's'}, but got ${argCount}.`)
+        }
+        return
+      }
+      if (argReqs.max !== undefined && argCount > argReqs.max) {
+        result.addError(`Function ${funcName}() accepts at most ${argReqs.max} argument${argReqs.max === 1 ? '' : 's'}, but got ${argCount}.`)
+        return
+      }
+    }
+
+    // Validate function arguments recursively
     for (const arg of node.args) {
       this.validateNode(arg, result)
     }
   }
 
   /**
-   * Find similar field name for suggestions
+   * Find similar field name for suggestions (by ID)
    */
   findSimilarField(fieldId) {
     const allIds = [
@@ -140,6 +237,24 @@ export class Validator {
     for (const id of allIds) {
       if (this.levenshteinDistance(fieldId.toLowerCase(), id.toLowerCase()) <= 2) {
         return id
+      }
+    }
+
+    return null
+  }
+
+  /**
+   * Find similar field by name for suggestions
+   */
+  findSimilarFieldByName(searchName) {
+    const allNames = [
+      ...this.availableFields.map(f => f.name),
+      ...this.availableVariables.map(v => v.name)
+    ]
+
+    for (const name of allNames) {
+      if (name && this.levenshteinDistance(searchName.toLowerCase(), name.toLowerCase()) <= 2) {
+        return name
       }
     }
 
@@ -226,3 +341,4 @@ export function validateFormula(formula, options = {}) {
   const validator = new Validator(options)
   return validator.validate(formula)
 }
+

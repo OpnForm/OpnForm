@@ -6,6 +6,7 @@
 import { mathFunctions } from './math.js'
 import { textFunctions } from './text.js'
 import { logicFunctions } from './logic.js'
+import { arrayFunctions } from './array.js'
 
 /**
  * All available functions
@@ -13,7 +14,8 @@ import { logicFunctions } from './logic.js'
 export const functions = {
   ...mathFunctions,
   ...textFunctions,
-  ...logicFunctions
+  ...logicFunctions,
+  ...arrayFunctions
 }
 
 /**
@@ -258,6 +260,32 @@ export const functionMeta = {
     signature: 'CHOOSE(index, value1, value2, ...)',
     description: 'Returns value at index position',
     examples: ['CHOOSE(2, "a", "b", "c") → "b"']
+  },
+
+  // Array functions
+  COUNT: {
+    category: 'array',
+    signature: 'COUNT(value)',
+    description: 'Returns number of elements in an array or 1 for non-empty values',
+    examples: ['COUNT({Files}) → 3', 'COUNT({Multi Select}) → 2']
+  },
+  ISEMPTY: {
+    category: 'array',
+    signature: 'ISEMPTY(value)',
+    description: 'Returns true if value is null, empty string, or empty array',
+    examples: ['ISEMPTY({Files}) → true if no files', 'ISEMPTY({Text}) → true if blank']
+  },
+  CONTAINS: {
+    category: 'array',
+    signature: 'CONTAINS(array, value)',
+    description: 'Returns true if array contains the value (case-sensitive)',
+    examples: ['CONTAINS({Tags}, "urgent") → true', 'CONTAINS({Multi Select}, "Option A")']
+  },
+  JOIN: {
+    category: 'array',
+    signature: 'JOIN(array, separator?)',
+    description: 'Joins array elements into a string with separator',
+    examples: ['JOIN({Tags}, ", ") → "tag1, tag2"', 'JOIN({Multi Select}, " | ")']
   }
 }
 

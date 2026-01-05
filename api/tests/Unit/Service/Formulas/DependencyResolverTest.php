@@ -139,14 +139,14 @@ describe('Dependency Resolver', function () {
         });
     });
 
-    describe('buildFromVariables', function () {
+    describe('fromVariables', function () {
         it('creates resolver from array of variables', function () {
             $variables = [
                 ['id' => 'cv_1', 'name' => 'Var 1', 'formula' => '{field1}'],
                 ['id' => 'cv_2', 'name' => 'Var 2', 'formula' => '{cv_1} + {field2}']
             ];
 
-            $resolver = DependencyResolver::buildFromVariables($variables);
+            $resolver = DependencyResolver::fromVariables($variables);
             $order = $resolver->getEvaluationOrder();
 
             expect($order)->toHaveCount(2);

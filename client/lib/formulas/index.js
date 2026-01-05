@@ -12,8 +12,9 @@ export { Validator, validateFormula } from './validator.js'
 export { DependencyGraph, buildDependencyGraph } from './dependency-graph.js'
 export { functions, functionMeta, getFunctionsByCategory, getFunctionNames, hasFunction, getFunction } from './functions/index.js'
 
-// Import evaluate for local use
+// Import for local use
 import { evaluate as _evaluate } from './evaluator.js'
+import { Validator as _Validator } from './validator.js'
 
 /**
  * Parse and evaluate a formula in one step
@@ -40,7 +41,7 @@ export function validate(formula, options = {}) {
  * Extract field references from a formula
  */
 export function extractFieldIds(formula) {
-  return Validator.extractFieldReferences(formula)
+  return _Validator.extractFieldReferences(formula)
 }
 
 /**

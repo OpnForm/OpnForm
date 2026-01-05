@@ -39,7 +39,7 @@ class DependencyResolver
             if (isset($this->dependents[$depId])) {
                 $this->dependents[$depId] = array_filter(
                     $this->dependents[$depId],
-                    fn($id) => $id !== $variableId
+                    fn ($id) => $id !== $variableId
                 );
             }
         }

@@ -49,6 +49,12 @@ class FunctionRegistry
         'SWITCH' => [LogicFunctions::class, 'SWITCH'],
         'IFS' => [LogicFunctions::class, 'IFS'],
         'CHOOSE' => [LogicFunctions::class, 'CHOOSE'],
+
+        // Array functions
+        'COUNT' => [ArrayFunctions::class, 'COUNT'],
+        'ISEMPTY' => [ArrayFunctions::class, 'ISEMPTY'],
+        'CONTAINS' => [ArrayFunctions::class, 'CONTAINS'],
+        'JOIN' => [ArrayFunctions::class, 'JOIN'],
     ];
 
     public static function has(string $name): bool

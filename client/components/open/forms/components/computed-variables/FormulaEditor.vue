@@ -101,11 +101,15 @@ function saveSelection() {
   }
 }
 
+// Field types that are not supported in formulas
+const unsupportedFieldTypes = ['matrix']
+
 // Available fields from form
 // Use id if available, otherwise generate a stable identifier from name
+// Filter out non-field blocks (nf-*) and unsupported types (matrix)
 const availableFields = computed(() => {
   return (props.form?.properties || [])
-    .filter(p => p.type && !p.type.startsWith('nf-'))
+    .filter(p => p.type && !p.type.startsWith('nf-') && !unsupportedFieldTypes.includes(p.type))
     .map((p, index) => ({
       id: p.id || `field_${index}_${(p.name || '').toLowerCase().replace(/\s+/g, '_')}`,
       name: p.name,
@@ -540,7 +544,7 @@ defineExpose({
 .formula-input :deep(.formula-pill) {
   display: inline-flex;
   align-items: center;
-  padding: 2px 8px;
+  padding: 2px 4px;
   margin: 0 2px;
   background-color: #dbeafe;
   color: #1d4ed8;

@@ -1,48 +1,42 @@
 <?php
 
-use App\Models\Forms\Form;
-use App\Models\User;
 use App\Open\MentionParser;
 use App\Service\Forms\FormLogicConditionChecker;
 use App\Service\Formulas\ComputedVariableEvaluator;
 
-describe('Computed Variables Integration', function () {
-    beforeEach(function () {
-        $this->user = User::factory()->create();
-        $this->workspace = $this->user->workspaces()->first();
-    });
+uses(\Tests\TestHelpers::class);
 
+beforeEach(function () {
+    $this->user = $this->createUser();
+    $this->workspace = $this->createUserWorkspace($this->user);
+});
+
+describe('Computed Variables Integration', function () {
     describe('Form storage', function () {
         it('stores computed variables on form', function () {
-            $form = Form::factory()
-                ->for($this->workspace)
-                ->for($this->user, 'creator')
-                ->create([
-                    'computed_variables' => [
-                        [
-                            'id' => 'cv_total',
-                            'name' => 'Total',
-                            'formula' => '{price} * {quantity}'
-                        ]
+            $form = $this->createForm($this->user, $this->workspace, [
+                'computed_variables' => [
+                    [
+                        'id' => 'cv_total',
+                        'name' => 'Total',
+                        'formula' => '{price} * {quantity}'
                     ]
-                ]);
+                ]
+            ]);
 
             expect($form->computed_variables)->toHaveCount(1);
             expect($form->computed_variables[0]['id'])->toBe('cv_total');
         });
 
         it('returns computed variables in API response', function () {
-            $form = Form::factory()
-                ->for($this->workspace)
-                ->for($this->user, 'creator')
-                ->create([
-                    'computed_variables' => [
-                        ['id' => 'cv_test', 'name' => 'Test', 'formula' => '1 + 1']
-                    ]
-                ]);
+            $form = $this->createForm($this->user, $this->workspace, [
+                'computed_variables' => [
+                    ['id' => 'cv_test', 'name' => 'Test', 'formula' => '1 + 1']
+                ]
+            ]);
 
             $response = $this->actingAs($this->user)
-                ->getJson(route('api.open.forms.show', [$form->slug, 'api_token']))
+                ->getJson(route('forms.show', $form->slug))
                 ->assertSuccessful();
 
             expect($response->json('computed_variables'))->toHaveCount(1);
@@ -88,14 +82,11 @@ describe('Computed Variables Integration', function () {
 
     describe('FormLogicConditionChecker with computed variables', function () {
         it('evaluates conditions with numeric computed variables', function () {
-            $form = Form::factory()
-                ->for($this->workspace)
-                ->for($this->user, 'creator')
-                ->create([
-                    'computed_variables' => [
-                        ['id' => 'cv_total', 'name' => 'Total', 'formula' => '{price} * {quantity}']
-                    ]
-                ]);
+            $form = $this->createForm($this->user, $this->workspace, [
+                'computed_variables' => [
+                    ['id' => 'cv_total', 'name' => 'Total', 'formula' => '{price} * {quantity}']
+                ]
+            ]);
 
             $condition = [
                 'value' => [
@@ -119,14 +110,11 @@ describe('Computed Variables Integration', function () {
         });
 
         it('evaluates conditions with text computed variables', function () {
-            $form = Form::factory()
-                ->for($this->workspace)
-                ->for($this->user, 'creator')
-                ->create([
-                    'computed_variables' => [
-                        ['id' => 'cv_greeting', 'name' => 'Greeting', 'formula' => 'CONCAT("Hello, ", {name})']
-                    ]
-                ]);
+            $form = $this->createForm($this->user, $this->workspace, [
+                'computed_variables' => [
+                    ['id' => 'cv_greeting', 'name' => 'Greeting', 'formula' => 'CONCAT("Hello, ", {name})']
+                ]
+            ]);
 
             $condition = [
                 'value' => [
@@ -147,14 +135,11 @@ describe('Computed Variables Integration', function () {
         });
 
         it('handles is_empty operator for computed variables', function () {
-            $form = Form::factory()
-                ->for($this->workspace)
-                ->for($this->user, 'creator')
-                ->create([
-                    'computed_variables' => [
-                        ['id' => 'cv_result', 'name' => 'Result', 'formula' => 'IFBLANK({optional}, "")']
-                    ]
-                ]);
+            $form = $this->createForm($this->user, $this->workspace, [
+                'computed_variables' => [
+                    ['id' => 'cv_result', 'name' => 'Result', 'formula' => 'IFBLANK({optional}, "")']
+                ]
+            ]);
 
             $condition = [
                 'value' => [

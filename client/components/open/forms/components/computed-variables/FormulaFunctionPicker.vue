@@ -59,7 +59,8 @@ const categories = [
   { id: 'all', label: 'All' },
   { id: 'math', label: 'Math' },
   { id: 'text', label: 'Text' },
-  { id: 'logic', label: 'Logic' }
+  { id: 'logic', label: 'Logic' },
+  { id: 'array', label: 'Array' }
 ]
 
 const activeCategory = ref('all')

@@ -61,8 +61,9 @@
                 :key="func.name"
                 class="mb-8 pb-6 border-b last:border-b-0"
               >
-                <h4 class="font-mono text-base font-semibold text-blue-600">
-                  {{ func.signature }}
+                <h4 class="font-mono text-base font-semibold">
+                  <span class="text-blue-600">{{ getFunctionName(func.signature) }}</span>
+                  <span class="text-gray-400">{{ getFunctionArgs(func.signature) }}</span>
                 </h4>
                 <p class="text-sm text-gray-600 mt-2">
                   {{ func.description }}
@@ -76,9 +77,16 @@
                     <code
                       v-for="(example, i) in func.examples"
                       :key="i"
-                      class="block text-sm text-gray-700 font-mono"
+                      class="block text-sm font-mono py-0.5"
                     >
-                      {{ example }}
+                      <template v-if="example.includes('→')">
+                        <span class="text-gray-700">{{ example.split('→')[0].trim() }}</span>
+                        <span class="mx-2 text-gray-400">→</span>
+                        <span class="text-emerald-600 font-medium">{{ example.split('→')[1].trim() }}</span>
+                      </template>
+                      <template v-else>
+                        <span class="text-gray-700">{{ example }}</span>
+                      </template>
                     </code>
                   </div>
                 </div>
@@ -112,7 +120,8 @@ const categories = [
   { id: 'all', label: 'All' },
   { id: 'math', label: 'Math' },
   { id: 'text', label: 'Text' },
-  { id: 'logic', label: 'Logic' }
+  { id: 'logic', label: 'Logic' },
+  { id: 'array', label: 'Array' }
 ]
 
 const activeCategory = ref('all')
@@ -151,6 +160,18 @@ function getCategoryCount(categoryId) {
     return allFunctions.value.length
   }
   return allFunctions.value.filter(f => f.category === categoryId).length
+}
+
+function getFunctionName(sig) {
+  if (!sig) return ''
+  const index = sig.indexOf('(')
+  return index > -1 ? sig.substring(0, index) : sig
+}
+
+function getFunctionArgs(sig) {
+  if (!sig) return ''
+  const index = sig.indexOf('(')
+  return index > -1 ? sig.substring(index) : ''
 }
 
 // Reset search when modal closes

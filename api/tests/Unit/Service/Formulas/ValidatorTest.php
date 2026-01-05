@@ -5,30 +5,35 @@ use App\Service\Formulas\Validator;
 describe('Formula Validator', function () {
     describe('syntax validation', function () {
         it('validates correct syntax', function () {
-            $result = Validator::validate('1 + 2');
-            expect($result['valid'])->toBe(true);
-            expect($result['errors'])->toHaveCount(0);
+            $validator = new Validator();
+            $result = $validator->validate('1 + 2');
+            expect($result->valid)->toBe(true);
+            expect($result->errors)->toHaveCount(0);
         });
 
         it('rejects empty formulas', function () {
-            $result = Validator::validate('');
-            expect($result['valid'])->toBe(false);
-            expect($result['errors'][0]['message'])->toContain('empty');
+            $validator = new Validator();
+            $result = $validator->validate('');
+            expect($result->valid)->toBe(false);
+            expect($result->errors[0]['message'])->toContain('empty');
         });
 
         it('rejects whitespace-only formulas', function () {
-            $result = Validator::validate('   ');
-            expect($result['valid'])->toBe(false);
+            $validator = new Validator();
+            $result = $validator->validate('   ');
+            expect($result->valid)->toBe(false);
         });
 
         it('rejects invalid syntax', function () {
-            $result = Validator::validate('1 + + 2');
-            expect($result['valid'])->toBe(false);
+            $validator = new Validator();
+            $result = $validator->validate('1 + + 2');
+            expect($result->valid)->toBe(false);
         });
 
         it('rejects unterminated strings', function () {
-            $result = Validator::validate('"unterminated');
-            expect($result['valid'])->toBe(false);
+            $validator = new Validator();
+            $result = $validator->validate('"unterminated');
+            expect($result->valid)->toBe(false);
         });
     });
 
@@ -38,21 +43,19 @@ describe('Formula Validator', function () {
                 ['id' => 'field1', 'name' => 'Field 1'],
                 ['id' => 'field2', 'name' => 'Field 2']
             ];
-            $result = Validator::validate('{field1} + {field2}', [
-                'availableFields' => $fields
-            ]);
-            expect($result['valid'])->toBe(true);
+            $validator = new Validator(['availableFields' => $fields]);
+            $result = $validator->validate('{field1} + {field2}');
+            expect($result->valid)->toBe(true);
         });
 
         it('rejects unknown field references', function () {
             $fields = [
                 ['id' => 'field1', 'name' => 'Field 1']
             ];
-            $result = Validator::validate('{unknown_field}', [
-                'availableFields' => $fields
-            ]);
-            expect($result['valid'])->toBe(false);
-            expect($result['errors'][0]['message'])->toContain('Unknown field');
+            $validator = new Validator(['availableFields' => $fields]);
+            $result = $validator->validate('{unknown_field}');
+            expect($result->valid)->toBe(false);
+            expect($result->errors[0]['message'])->toContain('Unknown field');
         });
 
         it('suggests similar field names', function () {
@@ -60,30 +63,32 @@ describe('Formula Validator', function () {
                 ['id' => 'field1', 'name' => 'Field 1'],
                 ['id' => 'field2', 'name' => 'Field 2']
             ];
-            $result = Validator::validate('{field}', [
-                'availableFields' => $fields
-            ]);
-            expect($result['valid'])->toBe(false);
-            expect($result['errors'][0]['message'])->toContain('Did you mean');
+            $validator = new Validator(['availableFields' => $fields]);
+            $result = $validator->validate('{field}');
+            expect($result->valid)->toBe(false);
+            expect($result->errors[0]['message'])->toContain('Did you mean');
         });
     });
 
     describe('function validation', function () {
         it('validates known functions', function () {
-            $result = Validator::validate('SUM(1, 2, 3)');
-            expect($result['valid'])->toBe(true);
+            $validator = new Validator();
+            $result = $validator->validate('SUM(1, 2, 3)');
+            expect($result->valid)->toBe(true);
         });
 
         it('rejects unknown functions', function () {
-            $result = Validator::validate('UNKNOWN_FUNC()');
-            expect($result['valid'])->toBe(false);
-            expect($result['errors'][0]['message'])->toContain('Unknown function');
+            $validator = new Validator();
+            $result = $validator->validate('UNKNOWN_FUNC()');
+            expect($result->valid)->toBe(false);
+            expect($result->errors[0]['message'])->toContain('Unknown function');
         });
 
         it('suggests similar function names', function () {
-            $result = Validator::validate('SUMM(1, 2)');
-            expect($result['valid'])->toBe(false);
-            expect($result['errors'][0]['message'])->toContain('Did you mean');
+            $validator = new Validator();
+            $result = $validator->validate('SUMM(1, 2)');
+            expect($result->valid)->toBe(false);
+            expect($result->errors[0]['message'])->toContain('Did you mean');
         });
     });
 
@@ -95,24 +100,26 @@ describe('Formula Validator', function () {
                 ['id' => 'cv_var2', 'name' => 'Variable 2']
             ];
 
-            $result = Validator::validate('{cv_var1} + {field1}', [
+            $validator = new Validator([
                 'availableFields' => $fields,
                 'availableVariables' => $variables
             ]);
-            expect($result['valid'])->toBe(true);
+            $result = $validator->validate('{cv_var1} + {field1}');
+            expect($result->valid)->toBe(true);
         });
 
         it('detects self-reference', function () {
             $fields = [['id' => 'field1', 'name' => 'Field 1']];
             $variables = [['id' => 'cv_var1', 'name' => 'Variable 1']];
 
-            $result = Validator::validate('{cv_var1} + 1', [
+            $validator = new Validator([
                 'availableFields' => $fields,
                 'availableVariables' => $variables,
                 'currentVariableId' => 'cv_var1'
             ]);
-            expect($result['valid'])->toBe(false);
-            expect($result['errors'][0]['message'])->toContain('reference itself');
+            $result = $validator->validate('{cv_var1} + 1');
+            expect($result->valid)->toBe(false);
+            expect($result->errors[0]['message'])->toContain('reference itself');
         });
     });
 

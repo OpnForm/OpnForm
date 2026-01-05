@@ -39,7 +39,7 @@ describe('ComputedVariableEvaluator', function () {
         $submissionData = ['a' => 3, 'b' => 7];
 
         $evaluator = new ComputedVariableEvaluator($variables, $submissionData);
-        $result = $evaluator->evaluate('cv_sum');
+        $result = $evaluator->getValue('cv_sum');
 
         expect($result)->toBe(10.0);
     });
@@ -62,13 +62,13 @@ describe('ComputedVariableEvaluator', function () {
         ];
 
         $evaluator1 = new ComputedVariableEvaluator($variables, ['score' => 95]);
-        expect($evaluator1->evaluate('cv_grade'))->toBe('A');
+        expect($evaluator1->getValue('cv_grade'))->toBe('A');
 
         $evaluator2 = new ComputedVariableEvaluator($variables, ['score' => 85]);
-        expect($evaluator2->evaluate('cv_grade'))->toBe('B');
+        expect($evaluator2->getValue('cv_grade'))->toBe('B');
 
         $evaluator3 = new ComputedVariableEvaluator($variables, ['score' => 70]);
-        expect($evaluator3->evaluate('cv_grade'))->toBe('C');
+        expect($evaluator3->getValue('cv_grade'))->toBe('C');
     });
 
     it('handles missing field values gracefully', function () {
@@ -78,7 +78,7 @@ describe('ComputedVariableEvaluator', function () {
         $submissionData = [];
 
         $evaluator = new ComputedVariableEvaluator($variables, $submissionData);
-        $result = $evaluator->evaluate('cv_result');
+        $result = $evaluator->getValue('cv_result');
 
         expect($result)->toBe('default');
     });
@@ -89,7 +89,7 @@ describe('ComputedVariableEvaluator', function () {
         ];
 
         $evaluator = new ComputedVariableEvaluator($variables, []);
-        $result = $evaluator->evaluate('cv_nonexistent');
+        $result = $evaluator->getValue('cv_nonexistent');
 
         expect($result)->toBe(null);
     });
@@ -108,7 +108,7 @@ describe('ComputedVariableEvaluator', function () {
         $submissionData = ['a' => 3, 'b' => 4];
 
         $evaluator = new ComputedVariableEvaluator($variables, $submissionData);
-        $result = $evaluator->evaluate('cv_complex');
+        $result = $evaluator->getValue('cv_complex');
 
         expect($result)->toBe(5.0);
     });
@@ -120,7 +120,7 @@ describe('ComputedVariableEvaluator', function () {
         $submissionData = ['values' => [1, 2, 3, 4, 5]];
 
         $evaluator = new ComputedVariableEvaluator($variables, $submissionData);
-        $result = $evaluator->evaluate('cv_sum');
+        $result = $evaluator->getValue('cv_sum');
 
         expect($result)->toBe(15.0);
     });
