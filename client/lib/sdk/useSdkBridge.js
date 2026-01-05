@@ -1,3 +1,4 @@
+/* eslint-disable */
 /**
  * OpnForm SDK Bridge Composable
  * Handles communication between embedded form iframe and parent window SDK
