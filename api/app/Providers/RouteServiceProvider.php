@@ -50,6 +50,11 @@ class RouteServiceProvider extends ServiceProvider
         RateLimiter::for('api', function (Request $request) {
             return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
         });
+
+        // Rate limit for summary endpoints: 30 requests per minute per user
+        RateLimiter::for('summary', function (Request $request) {
+            return Limit::perMinute(30)->by($request->user()?->id ?: $request->ip());
+        });
     }
 
     protected function registerGlobalRouteParamConstraints()
