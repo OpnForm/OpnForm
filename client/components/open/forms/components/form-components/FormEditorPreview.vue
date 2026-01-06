@@ -112,7 +112,7 @@
 </template>
 
 <script setup>
-import { computed, ref, watch, onMounted } from 'vue'
+import { computed, ref, watch, onMounted, onUnmounted } from 'vue'
 import OpenCompleteForm from '../../OpenCompleteForm.vue'
 import {handleDarkMode, useDarkMode} from "~/lib/forms/public-page.js"
 import { useWorkingFormStore } from '~/stores/working_form'
@@ -120,10 +120,12 @@ import { storeToRefs } from 'pinia'
 import { FormMode } from "~/lib/forms/FormModeStrategy.js"
 import { useCrisp } from '~/composables/useCrisp.js'
 import TrackClick from '~/components/global/TrackClick.vue'
+import { useFormEditorPreviewData } from '~/composables/useFormEditorPreviewData.js'
 
 const { hideChat, showChat } = useCrisp()
 
 const workingFormStore = useWorkingFormStore()
+const { setPreviewData, setPreviewFormManager, clearData: clearPreviewData } = useFormEditorPreviewData()
 
 const parent = ref(null)
 const formPreview = ref(null)
@@ -168,6 +170,24 @@ watch(formMode, () => {
 onMounted(() => {
   handleDarkModeChange()
 })
+
+onUnmounted(() => {
+  clearPreviewData()
+})
+
+// Watch for preview form data changes and share them
+watch(() => formPreview.value?.formManager?.form?.data?.(), (newData) => {
+  if (newData) {
+    setPreviewData(newData)
+  }
+}, { deep: true })
+
+// Also share the form manager reference
+watch(() => formPreview.value?.formManager, (manager) => {
+  if (manager) {
+    setPreviewFormManager(manager)
+  }
+}, { immediate: true })
 
 function handleDarkModeChange() {
   handleDarkMode(form.value.dark_mode, parent.value)

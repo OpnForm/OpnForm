@@ -67,6 +67,7 @@ class FormResource extends JsonResource
             'presentation_style' => $this->presentation_style ?? 'classic',
             'cover_settings' => $this->cover_settings ?? new \stdClass(),
             'translations' => $this->translations ?? new \stdClass(),
+            'computed_variables' => $this->computed_variables ?? [],
         ]);
     }
 
