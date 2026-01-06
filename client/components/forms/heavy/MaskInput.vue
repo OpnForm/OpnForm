@@ -76,7 +76,7 @@ const props = defineProps({
 
 const emit = defineEmits(['input-filled'])
 
-const { formatValue, isValidMask, getDisplayValue, getUnmaskedValue, getMaskPlaceholder, parsedMask } = useInputMask(() => props.mask, props.slotChar)
+const { formatValue, isValidMask, getDisplayValue, getUnmaskedValue, getMaskPlaceholder, parsedMask } = useInputMask(() => props.mask, () => props.slotChar)
 
 const {
   compVal,

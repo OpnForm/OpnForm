@@ -706,59 +706,7 @@
         @update:model-value="onFieldGenAutoIdChange"
       />
 
-      <UPopover
-        v-if="!field.multi_lines"
-        arrow
-        :content="{ side: 'left', align: 'center' }"
-      >
-        <UButton
-          class="mt-4"
-          block
-          color="neutral"
-          variant="outline"
-          :trailing-icon="field.input_mask ? 'i-heroicons-check-circle' : ''"
-          label="Input Mask Pattern"
-        />
-        <template #content>
-          <div class="p-4">
-            <TextInput
-              name="input_mask"
-              :form="field"
-              label="Input Mask Pattern"
-              placeholder="(999) 999-9999"
-              @update:model-value="onInputMaskChange"
-            >
-              <template #help>
-                <InputHelp>
-                  <span>
-                    <b>Format:</b> 9=number, a=letter, *=both, ?=optional
-                    <br/>
-                    <b>Examples:</b> (999) 999-9999, 999-99-9999, a*-999
-                    <br/>
-                    <a
-                      href="#"
-                      class="text-blue-500 hover:underline"
-                      @click.prevent="crisp.openHelpdeskArticle('how-to-set-mask-pattern-197qqps')"
-                  >
-                    Learn more?
-                  </a>
-                  </span>
-                </InputHelp>
-              </template>
-            </TextInput>
-            <TextInput
-              v-if="field.input_mask"
-              name="slot_char"
-              :form="field"
-              class="mt-2"
-              label="Slot Character"
-              placeholder="_"
-              :max-char-limit="1"
-              help="The character to use when the input is empty"
-            />
-          </div>
-        </template>
-      </UPopover>
+      <InputMaskOptions :field="field" />
     </div>
 
   <!--  (moved above for focused mode)  -->
@@ -772,6 +720,7 @@ import CountryFlag from 'vue-country-flag-next'
 import MatrixFieldOptions from './MatrixFieldOptions.vue'
 import PaymentFieldOptions from './PaymentFieldOptions.vue'
 import HiddenRequiredDisabled from './HiddenRequiredDisabled.vue'
+import InputMaskOptions from './InputMaskOptions.vue'
 import EditorSectionHeader from '~/components/open/forms/components/form-components/EditorSectionHeader.vue'
 import ProTag from '~/components/app/ProTag.vue'
 import { format } from 'date-fns'
@@ -781,7 +730,7 @@ import BlockMediaOptions from '~/components/open/forms/components/media/BlockMed
 
 export default {
   name: 'FieldOptions',
-  components: { CountryFlag, MatrixFieldOptions, HiddenRequiredDisabled, EditorSectionHeader, PaymentFieldOptions, ProTag, BlockMediaOptions },
+  components: { CountryFlag, MatrixFieldOptions, HiddenRequiredDisabled, InputMaskOptions, EditorSectionHeader, PaymentFieldOptions, ProTag, BlockMediaOptions },
   props: {
     field: {
       type: Object,
@@ -794,10 +743,7 @@ export default {
   },
   setup() {
     const { current: currentWorkspace } = useCurrentWorkspace()
-    return {
-      currentWorkspace,
-      crisp: useCrisp()
-    }
+    return { currentWorkspace }
   },
   data() {
     return {
@@ -1123,25 +1069,6 @@ export default {
       } else {
         this.field.use_focused_toggle = false
         this.field.use_toggle_switch = false
-      }
-    },
-    onInputMaskChange(val) {
-      // Ensure val is a string
-      if (typeof val !== 'string') {
-        return
-      }
-      
-      // Only allow characters: a, 9, *, ?, and common punctuation for input masks
-      // Match backend regex: /^[9a*().\s\-?]*$/
-      const allowedChars = /^[9a*().\s\-?]*$/
-      if (val && !allowedChars.test(val)) {
-        // Remove invalid characters
-        const cleanedValue = val.replace(/[^9a*().\s\-?]/g, '')
-        this.field.input_mask = cleanedValue
-      }
-
-      if (val) {
-        this.field.slot_char = this.field.slot_char ?? '_'
       }
     }
   }

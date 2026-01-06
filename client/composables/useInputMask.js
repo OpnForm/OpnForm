@@ -19,13 +19,16 @@ const MASK_VALIDATION_REGEX = /^[9a*().\s\-?]*$/
 
 /**
  * Composable for handling input masking functionality
- * @param {string|import('vue').Ref<string>} maskPattern - The mask pattern (e.g., "(999) 999-9999")
- * @param {string} slotChar - Character to display for empty slots (default: '_')
+ * @param {string|import('vue').Ref<string>|Function} maskPattern - The mask pattern (e.g., "(999) 999-9999")
+ * @param {string|import('vue').Ref<string>|Function} slotCharParam - Character to display for empty slots (default: '_')
  * @returns {Object} Mask utility functions
  */
-export function useInputMask(maskPattern, slotChar = '_') {
+export function useInputMask(maskPattern, slotCharParam = '_') {
   // Convert to ref if not already reactive
   const mask = toRef(maskPattern)
+  const slotCharRef = toRef(slotCharParam)
+  // Computed to handle the slot char with fallback
+  const slotChar = computed(() => slotCharRef.value || '_')
 
   const parseMask = (maskValue) => {
     if (!maskValue) return []
@@ -148,6 +151,7 @@ export function useInputMask(maskPattern, slotChar = '_') {
     const cleanValue = value ? value.replace(/[^a-zA-Z0-9]/g, '') : ''
     let display = ''
     let valueIndex = 0
+    const slot = slotChar.value
     
     for (const token of tokens) {
       if (token.literal) {
@@ -159,11 +163,11 @@ export function useInputMask(maskPattern, slotChar = '_') {
         if (token.optional) {
           // For optional tokens, show slotChar only if we have some value
           if (cleanValue.length > 0) {
-            display += slotChar
+            display += slot
           }
         } else {
           // For required tokens, always show slotChar
-          display += slotChar
+          display += slot
         }
         continue
       }
@@ -172,7 +176,7 @@ export function useInputMask(maskPattern, slotChar = '_') {
         display += cleanValue[valueIndex]
         valueIndex++
       } else if (!token.optional) {
-        display += slotChar
+        display += slot
       }
     }
     
