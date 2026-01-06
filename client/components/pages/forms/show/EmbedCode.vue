@@ -1,10 +1,20 @@
 <template>
+  <div class="space-y-3">
+    <UAlert
+      icon="i-heroicons-sparkles"
+      color="primary"
+      variant="subtle"
+      title="New embed with SDK support"
+      description="We've upgraded the embed code with our new JavaScript SDK. Copy this new code to enable event callbacks and programmatic control. Your existing embed will continue to work. The SDK provides access to form events (submit, error, dataChange) and methods like setField(), toggleDarkMode(), and more."
+    />
+    
     <copy-content
       :content="embedCode"
       label="Copy Code"
       tracking-event="embed_code_copy_click"
       :tracking-properties="{form_id: form.id, form_slug: form.slug}"
     />
+  </div>
 </template>
 
 <script>
@@ -26,9 +36,17 @@ export default {
 
   computed: {
     embedCode() {
-      const autoResize = this.form?.presentation_style !== 'focused'
       // eslint-disable no-useless-escape
-      return `${this.iframeCode}<script type="text/javascript" onload="initEmbed('${this.form.slug}', { autoResize: ${autoResize} })" src="${appUrl("/widgets/iframe.min.js")}"><\/script>`
+      return `${this.iframeCode}<script src="${appUrl("/widgets/opnform-sdk.min.js")}"><\/script>
+<script>
+  // OpnForm SDK - Listen to form events
+  opnform.on('submit', function(data) {
+    console.log('Form submitted:', data);
+  });
+  
+  // More SDK methods: opnform.get('${this.form.slug}').setField(id, value)
+  // Docs: https://docs.opnform.com/sdk
+<\/script>`
     },
     iframeCode() {
       const share_url = this.extraQueryParam
