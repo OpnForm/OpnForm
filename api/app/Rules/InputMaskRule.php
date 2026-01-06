@@ -30,7 +30,7 @@ class InputMaskRule implements ValidationRule
 
     private function validateMaskPattern(string $mask): bool
     {
-        return preg_match('/^[9a*().\s\-?]*$/', $mask);
+        return (bool) preg_match('/^[9a*().\s\-?]*$/', $mask);
     }
 
     private function validateValueAgainstMask(string $value, string $mask): bool

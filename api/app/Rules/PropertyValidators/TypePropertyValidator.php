@@ -26,6 +26,7 @@ class TypePropertyValidator implements PropertyValidatorInterface
             'show_char_limit' => ['type' => 'boolean'],
             'secret_input' => ['type' => 'boolean'],
             'input_mask' => ['type' => 'input_mask'],
+            'slot_char' => ['type' => 'slot_char'],
         ],
 
         // Date field rules
@@ -156,6 +157,19 @@ class TypePropertyValidator implements PropertyValidatorInterface
                 }
                 if (!preg_match(self::INPUT_MASK_PATTERN, $value)) {
                     return "The {$field} field contains invalid characters. Allowed: 9 (digit), a (letter), * (alphanumeric), ? (optional), and punctuation (().-).";
+                }
+                break;
+
+            case 'slot_char':
+                if (!is_string($value)) {
+                    return "The {$field} field must be a string.";
+                }
+                if (mb_strlen($value) !== 1) {
+                    return "The {$field} field must be exactly one character.";
+                }
+                // Disallow alphanumeric characters as slot char (they would conflict with input)
+                if (preg_match('/^[a-zA-Z0-9]$/', $value)) {
+                    return "The {$field} field cannot be a letter or number.";
                 }
                 break;
         }

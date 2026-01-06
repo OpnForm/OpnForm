@@ -209,3 +209,37 @@ it('can validate mask with only literals', function () {
     $validator->validate('value', '[]', $fail);
     $this->assertTrue($failCalled, "Validation should fail for different literals");
 });
+
+it('can validate mask containing only question marks', function () {
+    $failCalled = false;
+    $fail = function () use (&$failCalled) {
+        $failCalled = true;
+    };
+
+    // Mask: ? (single question mark at start with nothing before it)
+    // The ? has no previous token to make optional, so it's effectively an empty mask
+    $validator = new InputMaskRule('?');
+
+    // Empty value should pass (no tokens to validate)
+    $validator->validate('value', '', $fail);
+    $this->assertFalse($failCalled, "Empty value should pass for mask with only ?");
+    $failCalled = false;
+
+    // Any non-empty value should fail (no tokens to consume input)
+    $validator->validate('value', 'a', $fail);
+    $this->assertTrue($failCalled, "Non-empty value should fail for mask with only ?");
+    $failCalled = false;
+
+    // Mask: ??? (multiple question marks)
+    // All ? have no previous tokens, so effectively empty mask
+    $validator = new InputMaskRule('???');
+
+    // Empty value should pass
+    $validator->validate('value', '', $fail);
+    $this->assertFalse($failCalled, "Empty value should pass for mask with only ???");
+    $failCalled = false;
+
+    // Any value should fail (no tokens to consume input)
+    $validator->validate('value', '123', $fail);
+    $this->assertTrue($failCalled, "Non-empty value should fail for mask with only ???");
+});
