@@ -31,15 +31,22 @@
           :class="{ '!border-b-0': index === versions.length - 1 }"
         >
           <img
+            v-if="version.user?.photo_url"
             :src="version.user.photo_url"
-            :alt="version.user.name"
+            :alt="version.user?.name || 'User'"
             class="w-8 h-8 rounded-full"
           />
+          <div
+            v-else
+            class="w-8 h-8 rounded-full bg-neutral-200 flex items-center justify-center text-neutral-500 text-xs font-medium"
+          >
+            {{ (version.user?.name || 'U').charAt(0).toUpperCase() }}
+          </div>
           <div class="min-w-0 flex-1">
             <div class="flex items-center justify-between gap-2">
               <div class="truncate">
                 <div class="text-sm font-medium text-neutral-900">
-                  {{ version.user.name }}
+                  {{ version.user?.name || 'Unknown user' }}
                 </div>
                 <div class="text-xs text-neutral-500">
                   {{ formatDate(version.created_at) }}

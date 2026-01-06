@@ -59,7 +59,10 @@ class FormController extends Controller
 
         // Use for restore form version
         if (request()->has('version_id') && $form->is_pro) {
-            $version = Version::findOrFail(request()->get('version_id'));
+            // Verify that the version belongs to this form to prevent unauthorized access
+            $version = Version::where('versionable_id', $form->id)
+                ->where('versionable_type', Form::class)
+                ->findOrFail(request()->get('version_id'));
             $versionedForm = $version->getModel();
 
             // Fill any attributes missing from the version snapshot with values from the live form

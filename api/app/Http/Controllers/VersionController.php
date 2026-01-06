@@ -39,9 +39,11 @@ class VersionController extends Controller
 
         abort_unless(method_exists($model, 'versions'), 400, 'Model is not versionable');
 
+        // Limit versions to prevent N+1 issues when calling diff() in the filter loop
         $versions = $model->versions()
             ->with('user')
             ->latest('created_at')
+            ->take(50)
             ->get()
             ->filter(function ($version) {
                 $diff = $version->diff();
