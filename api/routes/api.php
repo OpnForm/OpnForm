@@ -50,9 +50,9 @@ Route::group(['middleware' => 'auth.multi'], function () {
     Route::post('logout', [LoginController::class, 'logout'])->name('logout');
 
     // Versions
-    Route::prefix('versions')->group(function () {
-        Route::get('{model_type}/{id}', [VersionController::class, 'index']);
-        Route::post('{versionId}/restore', [VersionController::class, 'restore']);
+    Route::prefix('versions')->name('versions.')->group(function () {
+        Route::get('{model_type}/{id}', [VersionController::class, 'index'])->name('index');
+        Route::post('{versionId}/restore', [VersionController::class, 'restore'])->name('restore');
     });
 
     // Unsplash

@@ -108,8 +108,13 @@ onMounted(() => {
 })
 
 const fetchVersions = async () => {
-  const response = await versionsApi.list('form', form.value.id)
-  versions.value = response || []
+  try {
+    const response = await versionsApi.list('form', form.value.id)
+    versions.value = response || []
+  } catch (error) {
+    console.error('Failed to fetch form versions:', error)
+    versions.value = []
+  }
 }
 
 const formatDate = (val) => {

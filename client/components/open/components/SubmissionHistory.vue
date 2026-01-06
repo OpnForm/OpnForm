@@ -119,8 +119,13 @@ watch(() => props.submissionId, () => {
 })
 
 const fetchVersions = async () => {
-  const response = await versionsApi.list('submission', props.submissionId)
-  versions.value = response || []
+  try {
+    const response = await versionsApi.list('submission', props.submissionId)
+    versions.value = response || []
+  } catch (error) {
+    console.error('Failed to fetch submission versions:', error)
+    versions.value = []
+  }
 }
 
 const formatDate = (val) => {

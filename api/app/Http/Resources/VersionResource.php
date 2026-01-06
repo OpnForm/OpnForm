@@ -17,11 +17,11 @@ class VersionResource extends JsonResource
         return [
             'id' => $this->version_id,
             'created_at' => $this->created_at,
-            'user' => [
+            'user' => $this->user ? [
                 'id' => $this->user->id,
                 'name' => $this->user->name,
                 'photo_url' => $this->user->photo_url,
-            ],
+            ] : null,
             'diff' => $this->diff()  // Computed differences
         ];
     }

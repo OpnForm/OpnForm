@@ -57,14 +57,22 @@ class VersionController extends Controller
     public function restore(Request $request, int $versionId)
     {
         $version = Version::findOrFail($versionId);
-        $user = $version->user;
-        if (!$user->is_pro) {
+
+        // Check the CURRENT authenticated user's pro status, not the version creator's
+        if (!$request->user()->is_pro) {
             return $this->error([
                 'message' => 'You need to be a Pro user to restore this version',
             ]);
         }
 
-        $this->authorize('update', $version->getModel());
+        $model = $version->getModel();
+
+        // Verify version belongs to the model (prevents cross-model version access)
+        if ($version->versionable_id != $model->id || $version->versionable_type !== get_class($model)) {
+            abort(404, 'Version not found');
+        }
+
+        $this->authorize('update', $model);
 
         $version->revert();
 
