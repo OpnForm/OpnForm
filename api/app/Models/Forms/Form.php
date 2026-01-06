@@ -113,6 +113,9 @@ class Form extends Model implements CachableAttributes
 
         // Custom SEO
         'seo_meta',
+
+        // Analytics
+        'analytics',
     ];
 
     protected function casts(): array
@@ -133,6 +136,7 @@ class Form extends Model implements CachableAttributes
             'clear_empty_fields_on_update' => 'boolean',
             'presentation_style' => 'string',
             'settings' => 'array',
+            'analytics' => 'array',
         ];
     }
 
