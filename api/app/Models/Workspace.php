@@ -25,7 +25,7 @@ class Workspace extends Model implements CachableAttributes
         'icon',
         'user_id',
         'custom_domain',
-        'settings'
+        'settings',
     ];
 
     protected $dispatchesEvents = [
@@ -236,6 +236,16 @@ class Workspace extends Model implements CachableAttributes
     public function forms()
     {
         return $this->hasMany(Form::class);
+    }
+
+    /**
+     * Get the OIDC identity connections for this workspace.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function identityConnections()
+    {
+        return $this->hasMany(\App\Enterprise\Oidc\Models\IdentityConnection::class);
     }
 
     /**

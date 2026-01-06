@@ -12,7 +12,7 @@
         :native-for="id ? id : name"
         :uppercase-labels="uppercaseLabels"
         :theme="theme"
-        :size="resolvedSize"
+        :size="size"
         :presentation="presentationStyle"
         :ui="ui?.label"
       />
@@ -77,6 +77,7 @@
 </template>
 
 <script setup>
+import { computed, inject, ref } from 'vue'
 import InputLabel from './InputLabel.vue'
 import InputHelp from './InputHelp.vue'
 import {twMerge} from "tailwind-merge"
@@ -100,22 +101,9 @@ const props = defineProps({
   media: { type: Object, default: null },
   // Theme configuration as strings for tailwind-variants
   theme: {type: String, default: 'default'},
-  size: {type: String, default: null}, 
-  borderRadius: {type: String, default: null},
+  size: {type: String, default: 'md'}, 
+  borderRadius: {type: String, default: 'small'},
   ui: {type: Object, default: () => ({})}
-})
-
-// Inject theme values for centralized resolution
-const injectedSize = inject('formSize', null)
-const injectedBorderRadius = inject('formBorderRadius', null)
-
-// Resolve size with proper reactivity
-const resolvedSize = computed(() => {
-  return props.size || injectedSize?.value || 'md'
-})
-
-const resolvedBorderRadius = computed(() => {
-  return props.borderRadius || injectedBorderRadius?.value || 'small'
 })
 
 const injectedPresentationStyle = computed(() => {
@@ -125,8 +113,8 @@ const injectedPresentationStyle = computed(() => {
 // OPTIMIZED: Single computed following Nuxt UI pattern
 const ui = computed(() => {
   return tv(inputWrapperTheme, props.ui)({
-    size: resolvedSize.value,
-    borderRadius: resolvedBorderRadius.value,
+    size: props.size,
+    borderRadius: props.borderRadius,
     mediaStyle: 'intrinsic',
     presentation: injectedPresentationStyle.value
   })

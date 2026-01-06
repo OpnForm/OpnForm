@@ -36,14 +36,25 @@ class Google
 
     public function refreshToken(): static
     {
-        $this->client->refreshToken($this->formIntegration->provider->refresh_token);
+        $provider = $this->formIntegration->provider;
+        if (!$provider?->refresh_token) {
+            return $this;
+        }
+
+        $this->client->refreshToken($provider->refresh_token);
 
         $token = $this->client->getAccessToken();
+        if (!$token || !isset($token['access_token'])) {
+            return $this;
+        }
 
-        $this->formIntegration->provider->update([
-            'access_token' => $token['access_token'],
-            'refresh_token' => $token['refresh_token'],
-        ]);
+        $updateData = ['access_token' => $token['access_token']];
+
+        if (isset($token['refresh_token'])) {
+            $updateData['refresh_token'] = $token['refresh_token'];
+        }
+
+        $provider->update($updateData);
 
         return $this;
     }

@@ -1,0 +1,281 @@
+---
+title: OIDC SSO Configuration
+description: Complete guide to configuring OpenID Connect Single Sign-On for your workspace
+---
+
+<Info>
+    **Enterprise Feature**: OIDC SSO is part of our Enterprise Edition. During
+    the beta period: - **Self-hosted**: Free to use (no subscription required) -
+    **Cloud**: Available on Pro plan (will move to Enterprise plan soon) This
+    feature helps fund ongoing development and keeps OpnForm sustainable. For
+    more information about Enterprise licensing, see our [Enterprise
+    Terms](https://opnform.com/terms-conditions).
+</Info>
+
+OpnForm supports OpenID Connect (OIDC) based Single Sign-On (SSO), allowing users to authenticate using their organization's identity provider (IdP) such as Azure Entra ID, Authentik, Okta, or any OIDC-compliant provider.
+
+<Info>
+    OpnForm handles OIDC redirect URLs automatically. You don't need to manually
+    configure redirect URLs in your OIDC provider - the system generates them
+    dynamically and displays them in the connection settings.
+</Info>
+
+## Features
+
+-   **Domain-Based Routing**: Automatically routes users to the correct OIDC provider based on their email domain
+-   **Group-to-Role Mapping**: Automatically assign workspace roles based on IdP groups
+-   **Custom Field Mappings**: Support for custom claim field names from your IdP
+-   **Automatic User Provisioning**: Creates users automatically on first login
+-   **Force Login Mode**: Optionally require all users to authenticate via OIDC
+
+## Prerequisites
+
+Before setting up OIDC SSO, ensure you have:
+
+1. An OIDC-compliant identity provider (IdP) configured
+2. OAuth client credentials (Client ID and Client Secret) from your IdP
+3. Admin access to the workspace where you want to configure SSO
+4. The issuer URL from your IdP (typically found in the `.well-known/openid-configuration` endpoint)
+
+## Setup Steps
+
+<Steps>
+<Step title="Get OIDC Provider Information">
+    From your identity provider, collect the following information:
+
+    -   **Issuer URL**: The base URL of your IdP (e.g., `https://idp.company.com` or `https://login.microsoftonline.com/{tenant-id}/v2.0`)
+    -   **Client ID**: OAuth client identifier
+    -   **Client Secret**: OAuth client secret
+    -   **Email Domain**: The domain you want to use for routing (e.g., `company.com`)
+
+    <Tip>
+        The issuer URL is typically found in your IdP's OpenID configuration endpoint:
+        `{issuer}/.well-known/openid-configuration`
+    </Tip>
+
+</Step>
+
+<Step title="Create OIDC Connection">
+    1. Navigate to your workspace settings
+    2. Go to the **SSO** section
+    3. Click **Add Connection**
+    4. Fill in the connection details:
+
+        -   **Name**: Display name for this connection (e.g., "Company SSO")
+        -   **Slug**: Unique identifier used in URLs (e.g., `company-sso`)
+        -   **Email Domain**: Domain for routing users (e.g., `company.com`)
+        -   **Issuer URL**: Your IdP's issuer URL
+        -   **Client ID**: OAuth client ID from your IdP
+        -   **Client Secret**: OAuth client secret from your IdP
+
+    <Check>
+        The redirect URI will be displayed automatically. Copy this URL and add it to your IdP's allowed redirect URIs.
+    </Check>
+
+</Step>
+
+<Step title="Configure Redirect URI in IdP">
+    1. Copy the redirect URI shown in the connection form
+    2. In your IdP's application settings, add this redirect URI to the allowed redirect URIs list
+    3. Save the configuration in your IdP
+
+    <Warning>
+        **Important**: The redirect URI must match exactly. Ensure you copy the full URL including the protocol (https://) and path.
+    </Warning>
+
+</Step>
+
+<Step title="Configure Group-to-Role Mapping (Optional)">
+    If your IdP provides group information in the ID token, you can map IdP groups to workspace roles:
+
+    1. In the connection settings, expand **Role Mappings**
+    2. Click **Add Mapping**
+    3. Enter the IdP group name (as it appears in your ID token)
+    4. Select the corresponding workspace role (owner, admin, editor, or member)
+    5. Repeat for each group you want to map
+
+    <Info>
+        If a user belongs to multiple groups, the highest privilege role will be assigned. Role priority: owner > admin > editor > member.
+    </Info>
+
+</Step>
+
+<Step title="Configure Field Mappings (Optional)">
+    If your IdP uses non-standard claim names for email or name:
+
+    1. In the connection settings, expand **Field Mappings**
+    2. Enter the custom claim field name for email (if different from `email`)
+    3. Enter the custom claim field name for name (if different from `name`)
+    4. Save the connection
+
+    <Note>
+        If field mappings are not configured, OpnForm will use standard OIDC claim names (`email`, `name`, etc.).
+    </Note>
+
+</Step>
+
+<Step title="Enable and Test">
+    1. Ensure the connection is **Enabled**
+    2. Save the connection
+    3. Test the login flow:
+        -   Navigate to the login page
+        -   Enter an email address matching your configured domain
+        -   You should be redirected to your IdP for authentication
+        -   After successful authentication, you'll be redirected back and logged in
+
+    <Check>
+        If everything is configured correctly, users with emails from your domain will automatically be routed to your IdP for authentication.
+    </Check>
+
+</Step>
+</Steps>
+
+## Force Login Mode
+
+Force Login Mode requires all users to authenticate via OIDC, disabling password-based login.
+
+### Configuration
+
+Set the `OIDC_FORCE_LOGIN` environment variable to `true` in your backend `.env` file:
+
+```bash
+OIDC_FORCE_LOGIN=true
+```
+
+<Warning>
+    **Important**: Ensure at least one OIDC connection is configured and enabled
+    before enabling `force_login`. If no connections exist, password login will
+    remain available as a fallback.
+</Warning>
+
+### Behavior
+
+When enabled:
+
+-   Password-based login attempts are blocked
+-   Users attempting password login receive: "Password-based login is disabled. Please use OIDC authentication."
+-   The login form automatically redirects users to their OIDC provider based on email domain
+-   If `force_login` is enabled but no OIDC connections exist, password login remains available as a fallback
+
+### Use Cases
+
+-   Organizations requiring all users to authenticate via corporate SSO
+-   Security policies mandating centralized identity management
+-   Compliance requirements for authentication methods
+
+For more details, see the [Environment Variables](../configuration/environment-variables#oidc_force_login) documentation.
+
+## Supported Providers
+
+OpnForm is compatible with any OIDC-compliant identity provider, including:
+
+-   **Azure Entra ID** (formerly Azure AD)
+-   **Authentik**
+-   **Okta**
+-   **Keycloak**
+-   **Google Workspace** (via OIDC)
+-   Any other OIDC-compliant provider
+
+### Azure Entra ID Specific Notes
+
+-   May require additional scopes (e.g., `groups`) to include groups in the ID token
+-   Configure group claims in Azure AD app registration → Token configuration
+-   Choose "Security groups" or "Directory roles" as needed
+
+### Authentik Specific Notes
+
+-   Groups are typically included automatically in ID tokens
+-   Standard OIDC configuration works out of the box
+
+## Troubleshooting
+
+<AccordionGroup>
+<Accordion title="Users Not Being Redirected to IdP">
+    **Possible causes:**
+
+    -   Email domain doesn't match the configured domain
+    -   Connection is disabled
+    -   Domain not properly configured in connection settings
+
+    **Solution**: Verify the domain matches exactly (case-insensitive) and the connection is enabled.
+
+</Accordion>
+
+<Accordion title="Redirect URI Mismatch Error">
+    **Possible causes:**
+
+    -   Redirect URI not added to IdP's allowed list
+    -   Redirect URI copied incorrectly
+    -   HTTPS/HTTP mismatch
+
+    **Solution**: Copy the exact redirect URI from the connection settings and ensure it's added to your IdP's allowed redirect URIs. Verify HTTPS is used in production.
+
+</Accordion>
+
+<Accordion title="Groups Not Mapping to Roles">
+    **Possible causes:**
+
+    -   Groups not included in ID token
+    -   Group names don't match exactly
+    -   Group claim not configured in IdP
+
+    **Solution**: Verify groups are included in your ID token. Check group names match exactly (case-sensitive). For Azure AD, configure group claims in app registration settings.
+
+</Accordion>
+
+<Accordion title="User Creation Fails">
+    **Possible causes:**
+
+    -   Email claim missing from ID token
+    -   Field mappings incorrect
+    -   Account with same email already exists (account linking blocked for security)
+
+    **Solution**: Verify email is present in ID token. Check field mappings if using custom claim names. For existing accounts, contact administrator to link accounts.
+
+</Accordion>
+
+<Accordion title="Force Login Not Working">
+    **Possible causes:**
+
+    -   `OIDC_FORCE_LOGIN` not set to `true`
+    -   No OIDC connections configured
+    -   Environment variable not loaded (restart required)
+
+    **Solution**: Verify environment variable is set correctly. Ensure at least one OIDC connection exists and is enabled. Restart application after changing environment variables.
+
+</Accordion>
+</AccordionGroup>
+
+## Security Considerations
+
+### HTTPS Requirement
+
+In production, all OIDC redirects require HTTPS. Ensure your application is served over HTTPS before configuring OIDC.
+
+### Account Linking
+
+For security, OpnForm prevents automatic linking of existing accounts. If a user with the same email already exists but isn't linked to the OIDC connection, authentication will fail with a message to contact the administrator.
+
+### SSO-Only Accounts
+
+Users created via OIDC SSO are created with:
+
+-   Random 64-character password (prevents password-based login)
+-   Email automatically verified
+-   Provider metadata stored for tracking
+
+These accounts can only authenticate via OIDC, not with passwords.
+
+## Best Practices
+
+-   **Test First**: Always test with a small group before rolling out to all users
+-   **Monitor Logs**: Check application logs for OIDC-related errors during initial setup
+-   **Backup Access**: Ensure at least one admin account can still access the system if OIDC fails
+-   **Regular Updates**: Keep your IdP configuration in sync with OpnForm connection settings
+-   **Documentation**: Document your IdP configuration for future reference
+
+<Check>
+    With properly configured OIDC SSO, your users can seamlessly authenticate
+    using their organization's identity provider, improving security and user
+    experience.
+</Check>

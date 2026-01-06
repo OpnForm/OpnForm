@@ -351,9 +351,13 @@
         v-if="!isFocusedSelectorActive"
         :form="field"
         name="without_dropdown"
-        label="Always show all select options"
-        help="Options won't be in a dropdown anymore, but will all be visible"
+        label="Use radio buttons"
         @update:model-value="onFieldWithoutDropdownChange"
+      />
+      <toggle-switch-input
+        :form="field"
+        name="shuffle_options"
+        label="Randomize options order"
       />
       
       <!-- Min/Max Selection Constraints for multi_select only -->

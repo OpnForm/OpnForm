@@ -52,6 +52,13 @@ If you need help or have questions, please join our [Discord community](https://
 
 ## License
 
-OpnForm is open-source under the GNU Affero General Public License Version 3 (AGPLv3) or any later version. You can find it [here](https://github.com/OpnForm/OpnForm/blob/main/LICENSE).
+OpnForm is **open-source** under the GNU Affero General Public License Version 3 (AGPLv3) or any later version. You can find it [here](https://github.com/OpnForm/OpnForm/blob/main/LICENSE).
 
-**Note**: The `/integrations` directory is licensed under MIT License to comply with third-party platform requirements (e.g., n8n requires MIT-licensed community nodes). See [integrations/LICENSE](integrations/LICENSE) for details.
+### Dual Licensing
+
+OpnForm uses a dual-license model to make the project sustainable:
+
+-   **Core OpnForm** (AGPL-3.0): The main application is free and open-source under AGPLv3, giving you the freedom to use, modify, and distribute it.
+-   **Enterprise Edition** (Proprietary): Advanced features under `api/app/Enterprise/` are available under our [Enterprise License](https://github.com/OpnForm/OpnForm/blob/main/api/app/Enterprise/LICENSE) and [Enterprise Terms](https://opnform.com/terms-conditions). These features help fund ongoing development and keep OpnForm sustainable.
+
+By offering Enterprise features alongside our open-source core, we can continue to invest in making OpnForm better for everyone while keeping the project financially sustainable.

@@ -4,13 +4,13 @@
     :class="ui.label({ class: props.ui?.slots?.label })"
   >
     <slot>
-      <span class="align-baseline">{{ label }}</span>
+      <span>{{ label }}</span>
       <span
         v-if="required"
         :class="ui.requiredDot({ class: props.ui?.slots?.requiredDot })"
         aria-hidden="true"
       >
-        <Icon name="i-ix-mandatory" />
+        <Icon :class="ui.star({ class: props.ui?.slots?.star })" name="i-ix-mandatory" />
       </span>
     </slot>
   </label>
@@ -42,5 +42,4 @@ const ui = computed(() => {
     uppercaseLabels: props.uppercaseLabels
   })
 })
-
 </script>

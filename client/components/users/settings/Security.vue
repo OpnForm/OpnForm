@@ -61,24 +61,8 @@
       </VForm>
     </div>
 
-    <!-- Two-Factor Authentication (Future Enhancement) -->
     <div class="pt-8 border-t border-neutral-200">
-      <div class="flex flex-col gap-2 items-start">
-        <div>
-          <h3 class="text-lg font-medium text-neutral-900">Two-Factor Authentication</h3>
-          <p class="text-sm text-neutral-500 mt-1">
-            Add an extra layer of security to your account.
-          </p>
-        </div>
-        
-        <UButton
-          color="primary"
-          disabled
-        >
-          Coming Soon
-        </UButton>
-        
-      </div>
+      <UsersSettingsTwoFactorAuth />
     </div>
   </div>
 </template>

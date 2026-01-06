@@ -58,7 +58,7 @@ export class FormSubmissionFormatter {
       case 'people':
         return this.formatPeopleValue(value)
       case 'multi_select':
-        return this.outputStringsOnly ? value.join(', ') : value
+        return this.outputStringsOnly && Array.isArray(value) ? value.join(', ') : value
       case 'relation':
         return this.formatRelationValue(value)
       default:

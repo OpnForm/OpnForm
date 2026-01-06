@@ -344,6 +344,7 @@ export default {
         hasError: this.hasError,
         disabled: this.disabled,
         focused: this.isFocused,
+        isOpen: this.isOpen,
         multiple: this.multiple,
         searchable: this.isSearchable
       })
@@ -534,23 +535,32 @@ export default {
       }
     },
     setupVirtualizer () {
-      if (!this.$refs.scrollRef || !this.filteredOptions || this.filteredOptions.length === 0) {
+      const scrollEl = this.$refs.scrollRef
+      const previousScrollTop = scrollEl?.scrollTop ?? null
+
+      // Restore scroll position after DOM updates (prevents jump on multi-select)
+      const restoreScroll = () => {
+        if (previousScrollTop === null) return
+        this.$nextTick(() => {
+          if (this.$refs.scrollRef) {
+            this.$refs.scrollRef.scrollTop = previousScrollTop
+          }
+        })
+      }
+
+      if (!scrollEl || !this.filteredOptions?.length) {
         this.virtualizer = null
         return
       }
       
       // Clean up existing virtualizer
-      if (this.virtualizer) {
-        this.virtualizer = null
-      }
+      this.virtualizer = null
       
       // Skip virtualization if list fits in visible height
-      const dropdownEl = this.$refs.scrollRef
-      const maxVisibleHeight = dropdownEl && dropdownEl.clientHeight ? dropdownEl.clientHeight : 0
-      const estimatedItemSize = this.estimatedItemSizePx
-      const estimatedTotal = this.filteredOptions.length * estimatedItemSize
+      const maxVisibleHeight = scrollEl.clientHeight || 0
+      const estimatedTotal = this.filteredOptions.length * this.estimatedItemSizePx
       if (maxVisibleHeight && estimatedTotal <= maxVisibleHeight) {
-        this.virtualizer = null
+        restoreScroll()
         return
       }
 
@@ -559,9 +569,10 @@ export default {
         getScrollElement: () => this.$refs.scrollRef,
         estimateSize: () => this.estimatedItemSizePx,
         overscan: 5,
-        // Dynamic measurement so item height adapts to content
-        measureElement: (el) => (el ? el.getBoundingClientRect().height : 0)
+        measureElement: (el) => el?.getBoundingClientRect().height ?? 0
       })
+
+      restoreScroll()
     },
     isSelected (value) {
       if (!this.modelValue) return false

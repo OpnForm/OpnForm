@@ -58,7 +58,7 @@ class VersionController extends Controller
     {
         $version = Version::findOrFail($versionId);
 
-        // Check the CURRENT authenticated user's pro status, not the version creator's
+        // Check the current authenticated user's pro status
         if (!$request->user()->is_pro) {
             return $this->error([
                 'message' => 'You need to be a Pro user to restore this version',

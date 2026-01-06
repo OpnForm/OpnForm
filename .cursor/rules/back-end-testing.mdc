@@ -6,28 +6,79 @@ globs: api/tests/**/*.php
 You are an expert in Laravel testing, particularly with Pest PHP for the Laravel back-end.
 
 Key Principles
-- Write concise, isolated tests that verify specific functionality.
-- Follow the Arrange-Act-Assert pattern for test structure.
-- Use descriptive test names that explain what is being tested.
-- Prefer Pest PHP's expressive syntax over traditional PHPUnit syntax.
-- Use mocking and test doubles appropriately to isolate components.
-- Organize tests by the component they are testing.
+
+-   Write concise, isolated tests that verify specific functionality.
+-   Follow the Arrange-Act-Assert pattern for test structure.
+-   Use descriptive test names that explain what is being tested.
+-   Prefer Pest PHP's expressive syntax over traditional PHPUnit syntax.
+-   Use mocking and test doubles appropriately to isolate components.
+-   Organize tests by the component they are testing.
 
 Test Structure
-- `tests/Feature/`: Contains feature tests that test the application as a whole.
-- `tests/Unit/`: Contains unit tests that test individual components in isolation.
-  - `Unit/Rules/`: Tests for validation rules.
-  - `Unit/Service/`: Tests for service classes.
-  - `Unit/Services/`: Tests for service classes (alternative structure).
-- `tests/Helpers/`: Contains helper classes used across tests.
-- `tests/Browser/`: Contains browser tests using Laravel Dusk.
+
+-   `tests/Feature/`: Contains feature tests that test the application as a whole.
+-   `tests/Unit/`: Contains unit tests that test individual components in isolation.
+    -   `Unit/Rules/`: Tests for validation rules.
+    -   `Unit/Service/`: Tests for service classes.
+    -   `Unit/Services/`: Tests for service classes (alternative structure).
+-   `tests/Helpers/`: Contains helper classes used across tests.
+-   `tests/Browser/`: Contains browser tests using Laravel Dusk.
 
 Test Configuration
-- Use `tests/Pest.php` for Pest PHP configuration.
-- Use `tests/TestCase.php` as the base test case class.
-- Use `tests/TestHelpers.php` for common helper methods.
+
+-   Use `tests/Pest.php` for Pest PHP configuration.
+-   Use `tests/TestCase.php` as the base test case class.
+-   Use `tests/TestHelpers.php` for common helper methods.
+
+Test Helpers
+The `TestHelpers` trait provides convenient methods for creating test data and authenticating users in tests. All test classes should use this trait.
+
+User Creation
+
+-   `createUser(array $data = [])`: Creates a standard user with factory defaults. Override attributes via `$data`.
+-   `createProUser()`: Creates a user with an active Pro subscription.
+-   `createTrialingUser()`: Creates a user with a trialing subscription.
+
+User Authentication
+
+-   `actingAsUser(?User $user = null)`: Authenticates as a user via login endpoint. Creates a user if none provided.
+-   `actingAsProUser(?User $user = null)`: Authenticates as a Pro user. Creates a Pro user if none provided.
+-   `actingAsTrialingUser(?User $user = null)`: Authenticates as a trialing user. Creates a trialing user if none provided.
+-   `actingAsGuest()`: Logs out and asserts guest status.
+-   `actingAsAdmin(?User $user = null)`: Authenticates as an admin user. Creates an admin user (via config) if none provided.
+
+Workspace Creation
+
+-   `createUserWorkspace(User $user)`: Creates a workspace named "Form Testing" and associates it with the user as admin.
+
+Form Creation
+
+-   `makeForm(User $user, Workspace $workspace, array $data = [])`: Creates a form model instance without saving to database. Includes default properties (text, number, rating, scale, slider, select, multi_select, date, checkbox, URL, email, phone_number, files).
+-   `createForm(User $user, Workspace $workspace, array $data = [])`: Creates and saves a form with default properties. Override attributes via `$data`.
+
+Form Integrations
+
+-   `createFormIntegration($integrationId, $formId, $settings = [])`: Creates a form integration via API endpoint. Returns the created integration data.
+
+Form Submissions
+
+-   `generateFormSubmissionData(Form $form, array $data = [], bool $asFormSubmissionData = false)`: Generates fake form submission data based on form properties. Use `$asFormSubmissionData = true` to format as stored in FormSubmission model.
+
+Example Usage
+
+```php
+it('can create a form submission', function () {
+    $user = $this->actingAsUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace);
+
+    $submissionData = $this->generateFormSubmissionData($form);
+    // ... test submission creation
+});
+```
 
 Unit Testing Best Practices
+
 1. **Test in Isolation**: Mock dependencies to ensure true unit testing.
 2. **Single Responsibility**: Each test should verify one specific behavior.
 3. **Descriptive Names**: Use descriptive test names that explain what is being tested.
@@ -40,82 +91,91 @@ Unit Testing Best Practices
 10. **Consistent Patterns**: Follow consistent patterns for similar types of tests.
 
 Writing Unit Tests
-- Use Pest PHP's expressive syntax:
-  ```php
-  it('can parse filenames', function () {
-      $fileName = 'example_85e16d7b-58ed-43bc-8dce-7d3ff7d69f41.png';
-      $parsedFilename = StorageFileNameParser::parse($fileName);
-      expect($parsedFilename->fileName)->toBe('example');
-  });
-  ```
 
-- Group related tests with describe():
-  ```php
-  describe('StorageFile validation', function () {
-      it('accepts valid URLs without validation', function () {
-          $validator = new StorageFile();
-          expect($validator->passes('file', 'https://example.com/file.pdf'))->toBeTrue();
-      });
+-   Use Pest PHP's expressive syntax:
 
-      it('rejects files with invalid UUID format', function () {
-          $validator = new StorageFile();
-          expect($validator->passes('file', 'invalid-uuid.jpg'))->toBeFalse();
-      });
-  });
-  ```
+    ```php
+    it('can parse filenames', function () {
+        $fileName = 'example_85e16d7b-58ed-43bc-8dce-7d3ff7d69f41.png';
+        $parsedFilename = StorageFileNameParser::parse($fileName);
+        expect($parsedFilename->fileName)->toBe('example');
+    });
+    ```
 
-- Use beforeEach() for common setup:
-  ```php
-  beforeEach(function () {
-      Storage::fake('local');
-  });
-  ```
+-   Group related tests with describe():
 
-- Mock dependencies:
-  ```php
-  it('rejects non-existent files', function () {
-      $uuid = Str::uuid();
-      $fileName = 'file-name_' . $uuid . '.jpg';
+    ```php
+    describe('StorageFile validation', function () {
+        it('accepts valid URLs without validation', function () {
+            $validator = new StorageFile();
+            expect($validator->passes('file', 'https://example.com/file.pdf'))->toBeTrue();
+        });
 
-      Storage::shouldReceive('exists')
-          ->with('tmp/' . $uuid)
-          ->andReturn(false);
+        it('rejects files with invalid UUID format', function () {
+            $validator = new StorageFile();
+            expect($validator->passes('file', 'invalid-uuid.jpg'))->toBeFalse();
+        });
+    });
+    ```
 
-      $validator = new StorageFile();
-      expect($validator->passes('file', $fileName))->toBeFalse();
-  });
-  ```
+-   Use beforeEach() for common setup:
 
-- Test edge cases:
-  ```php
-  it('can clean non-utf characters', function () {
-      $fileName = 'Образец_для_заполнения_85e16d7b-58ed-43bc-8dce-7d3ff7d69f41.png';
-      $parsedFilename = StorageFileNameParser::parse($fileName);
-      expect($parsedFilename->getMovedFileName())->toBe('___85e16d7b-58ed-43bc-8dce-7d3ff7d69f41.png');
-  });
-  ```
+    ```php
+    beforeEach(function () {
+        Storage::fake('local');
+    });
+    ```
+
+-   Mock dependencies:
+
+    ```php
+    it('rejects non-existent files', function () {
+        $uuid = Str::uuid();
+        $fileName = 'file-name_' . $uuid . '.jpg';
+
+        Storage::shouldReceive('exists')
+            ->with('tmp/' . $uuid)
+            ->andReturn(false);
+
+        $validator = new StorageFile();
+        expect($validator->passes('file', $fileName))->toBeFalse();
+    });
+    ```
+
+-   Test edge cases:
+    ```php
+    it('can clean non-utf characters', function () {
+        $fileName = 'Образец_для_заполнения_85e16d7b-58ed-43bc-8dce-7d3ff7d69f41.png';
+        $parsedFilename = StorageFileNameParser::parse($fileName);
+        expect($parsedFilename->getMovedFileName())->toBe('___85e16d7b-58ed-43bc-8dce-7d3ff7d69f41.png');
+    });
+    ```
 
 Testing Validation Rules
-- Create instances of the rule class.
-- Test both valid and invalid inputs.
-- Verify error messages for invalid inputs.
-- Test edge cases and boundary conditions.
+
+-   Create instances of the rule class.
+-   Test both valid and invalid inputs.
+-   Verify error messages for invalid inputs.
+-   Test edge cases and boundary conditions.
 
 Testing Service Classes
-- Mock dependencies using Mockery.
-- Test each public method in isolation.
-- Verify correct behavior for both success and failure cases.
-- Test edge cases and error handling.
+
+-   Mock dependencies using Mockery.
+-   Test each public method in isolation.
+-   Verify correct behavior for both success and failure cases.
+-   Test edge cases and error handling.
 
 Running Tests
-- Run all tests: `php artisan test`
-- Run unit tests only: `php artisan test --testsuite=Unit`
-- Run a specific test file: `php artisan test --filter=StorageFileTest`
-- Run tests with coverage: `php artisan test --coverage`
+
+-   Run all tests: `php artisan test`
+-   Run unit tests only: `php artisan test --testsuite=Unit`
+-   Run a specific test file: `php artisan test --filter=StorageFileTest`
+-   Run tests with coverage: `php artisan test --coverage`
 
 Debugging Tests
-- Use ray() for debugging test execution.
-- Use dd() or dump() for quick inspection of variables.
-- Check for race conditions in asynchronous tests.
-- Verify that the database is being properly reset between tests.
-- Ensure that tests are not dependent on each other. 
+
+-   Use ray() for debugging test execution.
+-   Use dd() or dump() for quick inspection of variables.
+-   Check for race conditions in asynchronous tests.
+-   Verify that the database is being properly reset between tests.
+-   Ensure that tests are not dependent on each other.

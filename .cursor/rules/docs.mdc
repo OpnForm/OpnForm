@@ -363,6 +363,34 @@ When adding a new API endpoint to the documentation, you must update multiple fi
 
 Example workflow: When adding a new workspace forms endpoint, you would create `docs/api-reference/forms/list-workspace-forms.mdx`, add it to the Forms group in `docs.json`, add the path definition to `openapi.yaml`, and add the route to `sanctum-routes.php` if needed.
 
+### Updating the API changelog
+
+For significant API documentation changes, update `docs/api-reference/changelog.mdx` to inform API consumers:
+
+**Always update the changelog for:**
+
+- New API endpoints
+- Breaking changes (removed fields, changed response formats)
+- Deprecated endpoints or features
+- Changes to authentication or permissions
+- Performance optimizations that affect response structure
+
+**Changelog entry format:**
+
+```markdown
+## YYYY-MM-DD – Brief description
+
+Summary of what changed and why.
+
+### What changed
+
+- Bullet points of specific changes
+
+### Migration guide (if breaking)
+
+Code examples showing before/after usage
+```
+
 ### Accessibility requirements
 
 - Include descriptive alt text for all images and diagrams

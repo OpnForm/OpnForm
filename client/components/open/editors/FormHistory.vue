@@ -156,7 +156,7 @@ const restoreVersion = async (version) => {
   await formsApi.get(form.value.slug, { params: { version_id: version.id } }).then((response) => {
     workingFormStore.reset()
     workingFormStore.set(useForm(response))
-    useAlert().success('Version restored successfully on editor. Please publish form to save the changes.')
+    alert.success('Version restored successfully on editor. Please publish form to save the changes.')
     isHistoryModalOpen.value = false
   })
   .catch(() => {

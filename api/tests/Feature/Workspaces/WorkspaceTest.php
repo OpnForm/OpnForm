@@ -228,3 +228,81 @@ it('includes users_count attribute', function () {
     $workspace->flush();
     expect($workspace->fresh()->users_count)->toBe(2);
 });
+
+describe('Custom Code Settings', function () {
+    it('can save custom code settings for workspace', function () {
+        $user = $this->actingAsProUser();
+        $workspace = $this->createUserWorkspace($user);
+
+        $this->putJson(route('open.workspaces.save-custom-code-settings', $workspace), [
+            'custom_code' => '<script>console.log("test")</script>',
+            'custom_css' => 'body { color: red; }',
+        ])->assertSuccessful();
+
+        $workspace->refresh();
+        expect($workspace->settings['custom_code'])->toBe('<script>console.log("test")</script>');
+        expect($workspace->settings['custom_css'])->toBe('body { color: red; }');
+    });
+
+    it('prevents free users from saving custom code settings', function () {
+        $user = $this->actingAsUser();
+        $workspace = $this->createUserWorkspace($user);
+
+        $this->putJson(route('open.workspaces.save-custom-code-settings', $workspace), [
+            'custom_code' => '<script>test</script>',
+        ])->assertStatus(403);
+    });
+
+    it('validates custom CSS with CssOnlyRule', function () {
+        $user = $this->actingAsProUser();
+        $workspace = $this->createUserWorkspace($user);
+
+        $this->putJson(route('open.workspaces.save-custom-code-settings', $workspace), [
+            'custom_css' => '<script>evil()</script>',
+        ])->assertStatus(422);
+    });
+
+    it('allows nullable custom code and css', function () {
+        $user = $this->actingAsProUser();
+        $workspace = $this->createUserWorkspace($user);
+        $workspace->update(['settings' => ['custom_code' => 'old', 'custom_css' => 'old']]);
+
+        $this->putJson(route('open.workspaces.save-custom-code-settings', $workspace), [
+            'custom_code' => null,
+            'custom_css' => null,
+        ])->assertSuccessful();
+
+        $workspace->refresh();
+        expect($workspace->settings['custom_code'])->toBeNull();
+        expect($workspace->settings['custom_css'])->toBeNull();
+    });
+
+    it('preserves other settings when saving custom code', function () {
+        $user = $this->actingAsProUser();
+        $workspace = $this->createUserWorkspace($user);
+        $workspace->update(['settings' => ['email_settings' => ['host' => 'smtp.test.com']]]);
+
+        $this->putJson(route('open.workspaces.save-custom-code-settings', $workspace), [
+            'custom_code' => '<script>test</script>',
+        ])->assertSuccessful();
+
+        $workspace->refresh();
+        expect($workspace->settings['custom_code'])->toBe('<script>test</script>');
+        expect($workspace->settings['email_settings']['host'])->toBe('smtp.test.com');
+    });
+
+    it('prevents non-admin users from saving custom code settings', function () {
+        // Create workspace with an admin
+        $admin = $this->createProUser();
+        $workspace = $this->createUserWorkspace($admin);
+
+        // Create and login as a readonly user attached to the workspace
+        $readonlyUser = $this->createProUser();
+        $workspace->users()->attach($readonlyUser, ['role' => 'user']);
+        $this->actingAsProUser($readonlyUser);
+
+        $this->putJson(route('open.workspaces.save-custom-code-settings', $workspace), [
+            'custom_code' => '<script>test</script>',
+        ])->assertStatus(403);
+    });
+});

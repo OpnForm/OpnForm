@@ -1,7 +1,7 @@
 {
   "text": {
     "name": "text",
-    "title": "Text Input",
+    "title": "Text",
     "icon": "i-heroicons-bars-3-bottom-left",
     "default_block_name": "Your name",
     "bg_class": "bg-blue-100",
@@ -16,7 +16,7 @@
   },
   "rich_text": {
     "name": "rich_text",
-    "title": "Rich Text Input",
+    "title": "Rich Text",
     "icon": "i-heroicons-bars-3-20-solid",
     "default_block_name": "Description",
     "bg_class": "bg-blue-100",
@@ -30,7 +30,7 @@
   },
   "date": {
     "name": "date",
-    "title": "Date Input",
+    "title": "Date",
     "icon": "i-heroicons-calendar-20-solid",
     "default_block_name": "Date",
     "bg_class": "bg-green-100",
@@ -41,7 +41,7 @@
   },
   "url": {
     "name": "url",
-    "title": "URL Input",
+    "title": "URL",
     "icon": "i-heroicons-link-20-solid",
     "default_block_name": "Link",
     "bg_class": "bg-blue-100",
@@ -55,7 +55,7 @@
   },
   "phone_number": {
     "name": "phone_number",
-    "title": "Phone Input",
+    "title": "Phone",
     "icon": "i-heroicons-phone-20-solid",
     "default_block_name": "Phone Number",
     "bg_class": "bg-blue-100",
@@ -68,7 +68,7 @@
   },
   "email": {
     "name": "email",
-    "title": "Email Input",
+    "title": "Email",
     "icon": "i-heroicons-at-symbol-20-solid",
     "default_block_name": "Email",
     "bg_class": "bg-blue-100",
@@ -82,7 +82,7 @@
   },
   "checkbox": {
     "name": "checkbox",
-    "title": "Checkbox Input",
+    "title": "Checkbox",
     "icon": "i-heroicons-check-circle",
     "default_block_name": "Checkbox",
     "bg_class": "bg-red-100",
@@ -93,7 +93,7 @@
   },
   "select": {
     "name": "select",
-    "title": "Select Input",
+    "title": "Select",
     "icon": "i-heroicons-chevron-up-down-20-solid",
     "default_block_name": "Select",
     "bg_class": "bg-red-100",
@@ -110,9 +110,29 @@
       }
     }
   },
+  "radio": {
+    "name": "radio",
+    "title": "Radio Button",
+    "icon": "i-material-symbols-radio-button-checked-outline",
+    "default_block_name": "Radio",
+    "bg_class": "bg-red-100",
+    "text_class": "text-red-900",
+    "available_in": ["classic", "focused"],
+    "is_input": true,
+    "default_values": {
+      "select": {
+        "options": [
+          { "name": "Option 1", "id": "Option 1" },
+          { "name": "Option 2", "id": "Option 2" }
+        ]
+      },
+      "without_dropdown": true
+    },
+    "actual_input": "select"
+  },
   "multi_select": {
     "name": "multi_select",
-    "title": "Multi-select Input",
+    "title": "Multi-select",
     "icon": "i-heroicons-chevron-up-down-20-solid",
     "default_block_name": "Multi Select",
     "bg_class": "bg-red-100",
@@ -131,7 +151,7 @@
   },
   "matrix": {
     "name": "matrix",
-    "title": "Matrix Input",
+    "title": "Matrix",
     "icon": "i-heroicons-table-cells-20-solid",
     "default_block_name": "Matrix",
     "bg_class": "bg-red-100",
@@ -148,7 +168,7 @@
   },
   "number": {
     "name": "number",
-    "title": "Number Input",
+    "title": "Number",
     "icon": "i-heroicons-hashtag-20-solid",
     "default_block_name": "Number",
     "bg_class": "bg-purple-100",
@@ -161,7 +181,7 @@
   },
   "rating": {
     "name": "rating",
-    "title": "Rating Input",
+    "title": "Rating",
     "icon": "i-heroicons-star",
     "default_block_name": "Rating",
     "bg_class": "bg-purple-100",
@@ -174,7 +194,7 @@
   },
   "scale": {
     "name": "scale",
-    "title": "Scale Input",
+    "title": "Scale",
     "icon": "i-heroicons-scale-20-solid",
     "default_block_name": "Scale",
     "bg_class": "bg-purple-100",
@@ -189,7 +209,7 @@
   },
   "slider": {
     "name": "slider",
-    "title": "Slider Input",
+    "title": "Slider",
     "icon": "i-heroicons-adjustments-horizontal",
     "default_block_name": "Slider",
     "bg_class": "bg-purple-100",
@@ -204,7 +224,7 @@
   },
   "files": {
     "name": "files",
-    "title": "File Input",
+    "title": "File",
     "icon": "i-heroicons-paper-clip",
     "default_block_name": "Files",
     "bg_class": "bg-pink-100",
@@ -215,7 +235,7 @@
   },
   "signature": {
     "name": "signature",
-    "title": "Signature Input",
+    "title": "Signature",
     "icon": "i-heroicons-pencil-square-20-solid",
     "default_block_name": "Signature",
     "bg_class": "bg-pink-100",
@@ -253,7 +273,7 @@
   },
   "password": {
     "name": "password",
-    "title": "Password Input",
+    "title": "Password",
     "icon": "i-heroicons-key",
     "default_block_name": "Password",
     "bg_class": "bg-blue-100",
