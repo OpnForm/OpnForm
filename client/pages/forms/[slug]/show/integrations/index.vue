@@ -96,6 +96,8 @@ useOpnSeoMeta({
 })
 
 const alert = useAlert()
+const route = useRoute()
+const router = useRouter()
 
 const { list, availableIntegrations, integrationsBySection } = useFormIntegrations()
 
@@ -120,6 +122,27 @@ const formIntegrationsList = computed(() => formIntegrationsData.value || [])
 const showIntegrationModal = ref(false)
 const selectedIntegrationKey = ref(null)
 const selectedIntegration = ref(null)
+
+// Handle integration query parameter to auto-open modal
+const handleIntegrationQueryParam = () => {
+  const integrationParam = route.query.integration
+  if (integrationParam && integrations.value.has(integrationParam)) {
+    openIntegration(integrationParam)
+    // Clear the query param after opening
+    router.replace({ query: {} })
+  }
+}
+
+// Watch for integrations to be loaded, then check query param
+watch(
+  () => integrations.value.size,
+  (size) => {
+    if (size > 0) {
+      handleIntegrationQueryParam()
+    }
+  },
+  { immediate: true }
+)
 
 const openIntegration = (itemKey) => {
   if (!itemKey || !integrations.value.has(itemKey)) {
