@@ -475,14 +475,6 @@ class FormLogicConditionChecker
                 // For scalar values
                 $query->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(data, '$.\"$fieldId\"')) = ?", [$fieldValue]);
             }
-        } elseif ($dbConnection === 'sqlite') {
-            if (is_array($fieldValue)) {
-                // For array values - json_extract returns JSON array string like ["a","b"]
-                $query->whereRaw("json_extract(data, '$.\"$fieldId\"') = ?", [json_encode($fieldValue)]);
-            } else {
-                // For scalar values - json_extract returns unquoted value
-                $query->whereRaw("json_extract(data, '$.\"$fieldId\"') = ?", [$fieldValue]);
-            }
         } else {
             // PostgreSQL
             if (is_array($fieldValue)) {
