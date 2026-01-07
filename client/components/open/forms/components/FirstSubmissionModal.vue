@@ -42,12 +42,13 @@
           </p>
           <NuxtLink
             :to="integrationsPageUrl"
+            target="_blank"
             class="text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 hover:underline flex items-center gap-1"
             @click="trackIntegrationsLinkClick"
           >
             View all integrations
             <Icon
-              name="heroicons:arrow-right"
+              name="heroicons:arrow-top-right-on-square-16-solid"
               size="12px"
             />
           </NuxtLink>
@@ -109,8 +110,7 @@
           >
             <Icon
               :name="integration.icon"
-              class="text-neutral-500 group-hover:text-neutral-700 dark:group-hover:text-white transition-colors"
-              size="24px"
+              class="w-6 h-6 text-neutral-500 group-hover:text-neutral-700 dark:group-hover:text-white transition-colors"
             />
             <p class="text-xs text-neutral-600 dark:text-neutral-400 mt-1.5 text-center font-medium truncate w-full">
               {{ integration.name }}
@@ -120,28 +120,6 @@
               class="absolute top-1 right-1"
               size="xs"
             />
-          </div>
-        </div>
-      </div>
-
-      <!-- Help Links -->
-      <div class="border-t border-neutral-200 dark:border-neutral-700 pt-5 mt-5">
-        <p class="text-neutral-500 font-medium text-xs text-center mb-3">
-          Need help?
-        </p>
-        <div class="flex justify-center gap-4">
-          <div
-            v-for="(item, i) in helpLinks"
-            :key="i"
-            role="button"
-            class="flex items-center gap-2 text-neutral-500 hover:text-neutral-700 dark:hover:text-white transition-colors cursor-pointer"
-            @click="item.action"
-          >
-            <Icon
-              :name="item.icon"
-              size="18px"
-            />
-            <span class="text-xs font-medium">{{ item.label }}</span>
           </div>
         </div>
       </div>
@@ -173,9 +151,7 @@ const isModalOpen = computed({
 })
 
 const confetti = useConfetti()
-const crisp = useCrisp()
 const amplitude = useAmplitude()
-const router = useRouter()
 
 watch(() => props.show, () => {
   if (props.show) {
@@ -217,21 +193,6 @@ const popularIntegrations = computed(() => [
   }
 ])
 
-const helpLinks = computed(() => {
-  return [
-    {
-      'label': 'Help Center',
-      'icon': 'heroicons:book-open',
-      'action': () => crisp.openHelpdesk()
-    },
-    {
-      'label': 'Contact Us',
-      'icon': 'heroicons:chat-bubble-left-right',
-      'action': () => { crisp.openAndShowChat() }
-    },
-  ]
-})
-
 const trackOpenDbClick = () => {
   const submissionsUrl = props.form.submissions_url
   window.open(submissionsUrl, '_blank')
@@ -244,19 +205,13 @@ const trackIntegrationsLinkClick = () => {
 
 const openEmailIntegration = () => {
   amplitude.logEvent('form_first_submission_modal_email_integration_click')
-  isModalOpen.value = false
-  router.push({
-    path: integrationsPageUrl.value,
-    query: { integration: 'email' }
-  })
+  const url = `${integrationsPageUrl.value}?integration=email`
+  window.open(url, '_blank')
 }
 
 const openIntegrationPage = (integration) => {
   amplitude.logEvent('form_first_submission_modal_integration_click', { integration_id: integration.id })
-  isModalOpen.value = false
-  router.push({
-    path: integrationsPageUrl.value,
-    query: { integration: integration.id }
-  })
+  const url = `${integrationsPageUrl.value}?integration=${integration.id}`
+  window.open(url, '_blank')
 }
 </script>

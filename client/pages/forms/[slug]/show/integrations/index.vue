@@ -123,27 +123,7 @@ const showIntegrationModal = ref(false)
 const selectedIntegrationKey = ref(null)
 const selectedIntegration = ref(null)
 
-// Handle integration query parameter to auto-open modal
-const handleIntegrationQueryParam = () => {
-  const integrationParam = route.query.integration
-  if (integrationParam && integrations.value.has(integrationParam)) {
-    openIntegration(integrationParam)
-    // Clear the query param after opening
-    router.replace({ query: {} })
-  }
-}
-
-// Watch for integrations to be loaded, then check query param
-watch(
-  () => integrations.value.size,
-  (size) => {
-    if (size > 0) {
-      handleIntegrationQueryParam()
-    }
-  },
-  { immediate: true }
-)
-
+// Define openIntegration first (before the watch that uses it)
 const openIntegration = (itemKey) => {
   if (!itemKey || !integrations.value.has(itemKey)) {
     return alert.error("Integration not found")
@@ -164,6 +144,27 @@ const openIntegration = (itemKey) => {
   selectedIntegration.value = integrations.value.get(selectedIntegrationKey.value)
   showIntegrationModal.value = true
 }
+
+// Handle integration query parameter to auto-open modal
+const handleIntegrationQueryParam = () => {
+  const integrationParam = route.query.integration
+  if (integrationParam && integrations.value.has(integrationParam)) {
+    openIntegration(integrationParam)
+    // Clear the query param after opening
+    router.replace({ query: {} })
+  }
+}
+
+// Watch for integrations to be loaded, then check query param
+watch(
+  () => integrations.value.size,
+  (size) => {
+    if (size > 0) {
+      handleIntegrationQueryParam()
+    }
+  },
+  { immediate: true }
+)
 
 const closeIntegrationModal = () => {
   showIntegrationModal.value = false
