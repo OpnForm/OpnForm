@@ -1,6 +1,6 @@
 <?php
 
-it('cannot submit form with failed exists_in_submissions validation condition for select field', function () {
+it('cannot submit form with duplicate value when does_not_exist_in_submissions validation is used for select field', function () {
     $user = $this->actingAsUser();
     $workspace = $this->createUserWorkspace($user);
     $form = $this->createForm($user, $workspace, [
@@ -26,7 +26,9 @@ it('cannot submit form with failed exists_in_submissions validation condition fo
                                 [
                                     'identifier' => 'select_field',
                                     'value' => [
-                                        'operator' => 'exists_in_submissions',
+                                        // Use does_not_exist to ensure uniqueness
+                                        // Validation passes if value doesn't exist, fails if it does
+                                        'operator' => 'does_not_exist_in_submissions',
                                         'property_meta' => [
                                             'id' => 'select_field',
                                             'type' => 'select',
@@ -49,6 +51,12 @@ it('cannot submit form with failed exists_in_submissions validation condition fo
         ],
     ]);
 
+    // First, create an existing submission with the same value
+    $form->submissions()->create([
+        'data' => ['select_field' => 'United States'],
+    ]);
+
+    // Now try to submit the same value - should fail validation because value already exists
     $formData = [
         'select_field' => 'United States'
     ];
@@ -59,7 +67,7 @@ it('cannot submit form with failed exists_in_submissions validation condition fo
         ]);
 });
 
-it('cannot submit form with failed exists_in_submissions validation condition for date field', function () {
+it('cannot submit form with duplicate value when does_not_exist_in_submissions validation is used for date field', function () {
     $user = $this->actingAsUser();
     $workspace = $this->createUserWorkspace($user);
     $form = $this->createForm($user, $workspace, [
@@ -79,7 +87,7 @@ it('cannot submit form with failed exists_in_submissions validation condition fo
                                 [
                                     'identifier' => 'date_field',
                                     'value' => [
-                                        'operator' => 'exists_in_submissions',
+                                        'operator' => 'does_not_exist_in_submissions',
                                         'property_meta' => [
                                             'id' => 'date_field',
                                             'type' => 'date',
@@ -103,6 +111,13 @@ it('cannot submit form with failed exists_in_submissions validation condition fo
     ]);
 
     $testDate = now()->format('Y-m-d');
+
+    // First, create an existing submission with the same date
+    $form->submissions()->create([
+        'data' => ['date_field' => $testDate],
+    ]);
+
+    // Now try to submit the same date - should fail validation because date already exists
     $formData = ['date_field' => $testDate];
     $this->postJson(route('forms.answer', $form->slug), $formData)
         ->assertStatus(422)
@@ -111,7 +126,7 @@ it('cannot submit form with failed exists_in_submissions validation condition fo
         ]);
 });
 
-it('cannot submit form with failed exists_in_submissions validation condition for multi_select field', function () {
+it('cannot submit form with duplicate value when does_not_exist_in_submissions validation is used for multi_select field', function () {
     $user = $this->actingAsUser();
     $workspace = $this->createUserWorkspace($user);
     $form = $this->createForm($user, $workspace, [
@@ -138,7 +153,7 @@ it('cannot submit form with failed exists_in_submissions validation condition fo
                                 [
                                     'identifier' => 'multi_select_field',
                                     'value' => [
-                                        'operator' => 'exists_in_submissions',
+                                        'operator' => 'does_not_exist_in_submissions',
                                         'property_meta' => [
                                             'id' => 'multi_select_field',
                                             'type' => 'multi_select',
@@ -160,6 +175,13 @@ it('cannot submit form with failed exists_in_submissions validation condition fo
             ],
         ],
     ]);
+
+    // First, create an existing submission with the same values
+    $form->submissions()->create([
+        'data' => ['multi_select_field' => ['Sports', 'Music']],
+    ]);
+
+    // Now try to submit the same values - should fail validation because values already exist
     $formData = ['multi_select_field' => ['Sports', 'Music']];
     $this->postJson(route('forms.answer', $form->slug), $formData)
         ->assertStatus(422)
@@ -168,7 +190,7 @@ it('cannot submit form with failed exists_in_submissions validation condition fo
         ]);
 });
 
-it('cannot submit form with failed exists_in_submissions validation condition for rating field', function () {
+it('cannot submit form with duplicate value when does_not_exist_in_submissions validation is used for rating field', function () {
     $user = $this->actingAsUser();
     $workspace = $this->createUserWorkspace($user);
     $form = $this->createForm($user, $workspace, [
@@ -188,7 +210,7 @@ it('cannot submit form with failed exists_in_submissions validation condition fo
                                 [
                                     'identifier' => 'rating_field',
                                     'value' => [
-                                        'operator' => 'exists_in_submissions',
+                                        'operator' => 'does_not_exist_in_submissions',
                                         'property_meta' => [
                                             'id' => 'rating_field',
                                             'type' => 'rating',
@@ -211,6 +233,12 @@ it('cannot submit form with failed exists_in_submissions validation condition fo
         ],
     ]);
 
+    // First, create an existing submission with the same rating
+    $form->submissions()->create([
+        'data' => ['rating_field' => 5],
+    ]);
+
+    // Now try to submit the same rating - should fail validation because rating already exists
     $formData = ['rating_field' => 5];
     $this->postJson(route('forms.answer', $form->slug), $formData)
         ->assertStatus(422)
@@ -219,7 +247,7 @@ it('cannot submit form with failed exists_in_submissions validation condition fo
         ]);
 });
 
-it('cannot submit form with failed exists_in_submissions validation condition for scale field', function () {
+it('cannot submit form with duplicate value when does_not_exist_in_submissions validation is used for scale field', function () {
     $user = $this->actingAsUser();
     $workspace = $this->createUserWorkspace($user);
     $form = $this->createForm($user, $workspace, [
@@ -239,7 +267,7 @@ it('cannot submit form with failed exists_in_submissions validation condition fo
                                 [
                                     'identifier' => 'scale_field',
                                     'value' => [
-                                        'operator' => 'exists_in_submissions',
+                                        'operator' => 'does_not_exist_in_submissions',
                                         'property_meta' => [
                                             'id' => 'scale_field',
                                             'type' => 'scale',
@@ -262,6 +290,12 @@ it('cannot submit form with failed exists_in_submissions validation condition fo
         ],
     ]);
 
+    // First, create an existing submission with the same scale value
+    $form->submissions()->create([
+        'data' => ['scale_field' => 7],
+    ]);
+
+    // Now try to submit the same scale value - should fail validation because it already exists
     $formData = ['scale_field' => 7];
     $this->postJson(route('forms.answer', $form->slug), $formData)
         ->assertStatus(422)
@@ -270,7 +304,7 @@ it('cannot submit form with failed exists_in_submissions validation condition fo
         ]);
 });
 
-it('cannot submit form with failed exists_in_submissions validation condition for slider field', function () {
+it('cannot submit form with duplicate value when does_not_exist_in_submissions validation is used for slider field', function () {
     $user = $this->actingAsUser();
     $workspace = $this->createUserWorkspace($user);
     $form = $this->createForm($user, $workspace, [
@@ -290,7 +324,7 @@ it('cannot submit form with failed exists_in_submissions validation condition fo
                                 [
                                     'identifier' => 'slider_field',
                                     'value' => [
-                                        'operator' => 'exists_in_submissions',
+                                        'operator' => 'does_not_exist_in_submissions',
                                         'property_meta' => [
                                             'id' => 'slider_field',
                                             'type' => 'slider',
@@ -313,6 +347,12 @@ it('cannot submit form with failed exists_in_submissions validation condition fo
         ],
     ]);
 
+    // First, create an existing submission with the same slider value
+    $form->submissions()->create([
+        'data' => ['slider_field' => 50],
+    ]);
+
+    // Now try to submit the same slider value - should fail validation because it already exists
     $formData = ['slider_field' => 50];
     $this->postJson(route('forms.answer', $form->slug), $formData)
         ->assertStatus(422)
@@ -379,7 +419,7 @@ it('can submit form with does_not_exist_in_submissions validation condition for 
         ]);
 });
 
-it('cannot submit form with failed exists_in_submissions validation condition for matrix field', function () {
+it('cannot submit form with duplicate value when does_not_exist_in_submissions validation is used for matrix field', function () {
     $user = $this->actingAsUser();
     $workspace = $this->createUserWorkspace($user);
     $form = $this->createForm($user, $workspace, [
@@ -401,7 +441,7 @@ it('cannot submit form with failed exists_in_submissions validation condition fo
                                 [
                                     'identifier' => 'matrix_field',
                                     'value' => [
-                                        'operator' => 'exists_in_submissions',
+                                        'operator' => 'does_not_exist_in_submissions',
                                         'property_meta' => [
                                             'id' => 'matrix_field',
                                             'type' => 'matrix',
@@ -424,6 +464,17 @@ it('cannot submit form with failed exists_in_submissions validation condition fo
         ],
     ]);
 
+    // First, create an existing submission with the same matrix values
+    $form->submissions()->create([
+        'data' => [
+            'matrix_field' => [
+                'Row 1' => 'Column 1',
+                'Row 2' => 'Column 2',
+            ]
+        ],
+    ]);
+
+    // Now try to submit the same values - should fail validation because values already exist
     $submissionData = [
         'matrix_field' => [
             'Row 1' => 'Column 1',

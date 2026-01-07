@@ -461,36 +461,43 @@ class FormLogicConditionChecker
             return false;
         }
 
-        return FormSubmission::where('form_id', $formId)
-            ->where('status', '!=', FormSubmission::STATUS_PARTIAL)
-            ->where(function ($query) use ($condition, $fieldValue) {
-                $fieldId = $condition['property_meta']['id'];
+        $dbConnection = config('database.default');
+        $fieldId = $condition['property_meta']['id'];
 
-                if (config('database.default') === 'mysql') {
-                    // For scalar values
-                    $query->where(function ($q) use ($fieldId, $fieldValue) {
-                        $q->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(data, '$.\"$fieldId\"')) = ?", [$fieldValue]);
+        $query = FormSubmission::where('form_id', $formId)
+            ->where('status', '!=', FormSubmission::STATUS_PARTIAL);
 
-                        // For array values
-                        if (is_array($fieldValue)) {
-                            $q->orWhereRaw("JSON_CONTAINS(JSON_EXTRACT(data, '$.\"$fieldId\"'), ?)", [json_encode($fieldValue)]);
-                        }
-                    });
-                } else {
-                    $query->where(function ($q) use ($fieldId, $fieldValue) {
-                        // For scalar values
-                        $q->whereRaw("data->? = ?::jsonb", [$fieldId, json_encode($fieldValue)]);
+        if ($dbConnection === 'mysql') {
+            if (is_array($fieldValue)) {
+                // For array values (multi_select, matrix)
+                $query->whereRaw("JSON_CONTAINS(JSON_EXTRACT(data, '$.\"$fieldId\"'), ?)", [json_encode($fieldValue)]);
+            } else {
+                // For scalar values
+                $query->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(data, '$.\"$fieldId\"')) = ?", [$fieldValue]);
+            }
+        } elseif ($dbConnection === 'sqlite') {
+            if (is_array($fieldValue)) {
+                // For array values - json_extract returns JSON array string like ["a","b"]
+                $query->whereRaw("json_extract(data, '$.\"$fieldId\"') = ?", [json_encode($fieldValue)]);
+            } else {
+                // For scalar values - json_extract returns unquoted value
+                $query->whereRaw("json_extract(data, '$.\"$fieldId\"') = ?", [$fieldValue]);
+            }
+        } else {
+            // PostgreSQL
+            if (is_array($fieldValue)) {
+                // For array values (multi_select, matrix)
+                $query->whereRaw("data->? @> ?::jsonb", [
+                    $fieldId,
+                    json_encode($fieldValue)
+                ]);
+            } else {
+                // For scalar values
+                $query->whereRaw("data->? = ?::jsonb", [$fieldId, json_encode($fieldValue)]);
+            }
+        }
 
-                        // For array values
-                        if (is_array($fieldValue)) {
-                            $q->orWhereRaw("data->? @> ?::jsonb", [
-                                $fieldId,
-                                json_encode($fieldValue)
-                            ]);
-                        }
-                    });
-                }
-            })->exists();
+        return $query->exists();
     }
 
     private function textConditionMet(array $propertyCondition, $value): bool
