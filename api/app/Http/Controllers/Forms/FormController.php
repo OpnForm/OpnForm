@@ -10,6 +10,7 @@ use App\Http\Resources\FormListResource;
 use App\Http\Resources\FormResource;
 use App\Models\Forms\Form;
 use App\Models\Forms\FormSubmission;
+use App\Models\Version;
 use App\Models\Workspace;
 use App\Notifications\Forms\MobileEditorEmail;
 use App\Service\Forms\FormCleaner;
@@ -63,6 +64,28 @@ class FormController extends Controller
     public function show(Form $form)
     {
         $this->authorize('view', $form);
+
+        // Use for restore form version
+        if (request()->has('version_id') && $form->is_pro) {
+            // Verify that the version belongs to this form to prevent unauthorized access
+            $version = Version::where('versionable_id', $form->id)
+                ->where('versionable_type', Form::class)
+                ->findOrFail(request()->get('version_id'));
+            $versionedForm = $version->getModel();
+
+            // Fill any attributes missing from the version snapshot with values from the live form
+            $missingAttributes = array_diff_key($form->getAttributes(), $versionedForm->getAttributes());
+            foreach ($missingAttributes as $key => $value) {
+                $versionedForm->setAttribute($key, $value);
+            }
+
+            // Preserve already loaded relationships from the current form
+            foreach ($form->getRelations() as $relationName => $relationValue) {
+                $versionedForm->setRelation($relationName, $relationValue);
+            }
+
+            $form = $versionedForm;
+        }
 
         return (new FormResource($form))->setCleanings(
             $this->formCleaner->processForm(request(), $form)->simulateCleaning($form->workspace)->getPerformedCleanings()

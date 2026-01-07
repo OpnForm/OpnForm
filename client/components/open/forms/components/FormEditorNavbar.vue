@@ -64,6 +64,7 @@
       />
     </div>
 
+    <FormHistory />
     <UndoRedo />
 
     <div
@@ -116,6 +117,7 @@
 
 <script setup>
 import { storeToRefs } from 'pinia'
+import FormHistory from '~/components/open/editors/FormHistory.vue'
 import UndoRedo from '~/components/open/editors/UndoRedo.vue'
 import FormSettingsModal from '~/components/open/forms/components/form-components/FormSettingsModal.vue'
 import EditableTag from '~/components/app/EditableTag.vue'
