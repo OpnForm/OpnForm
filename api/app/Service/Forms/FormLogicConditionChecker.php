@@ -461,22 +461,39 @@ class FormLogicConditionChecker
             return false;
         }
 
-        $dbConnection = config('database.default');
         $fieldId = $condition['property_meta']['id'];
 
+        // Validate field ID format to prevent SQL injection
+        // Field IDs should only contain alphanumeric characters, underscores, and hyphens
+        if (!preg_match('/^[a-zA-Z0-9_-]+$/', $fieldId)) {
+            return false;
+        }
+
+        $dbConnection = config('database.default');
+
+        // Use lockForUpdate to prevent race conditions when checking for uniqueness
         $query = FormSubmission::where('form_id', $formId)
-            ->where('status', '!=', FormSubmission::STATUS_PARTIAL);
+            ->where('status', '!=', FormSubmission::STATUS_PARTIAL)
+            ->lockForUpdate();
 
         if ($dbConnection === 'mysql') {
+            // MySQL: Use fully parameterized JSON path query
+            // JSON_EXTRACT with CONCAT for safe field ID handling
             if (is_array($fieldValue)) {
                 // For array values (multi_select, matrix)
-                $query->whereRaw("JSON_CONTAINS(JSON_EXTRACT(data, '$.\"$fieldId\"'), ?)", [json_encode($fieldValue)]);
+                $query->whereRaw(
+                    "JSON_CONTAINS(JSON_EXTRACT(data, CONCAT('\$.\"', ?, '\"')), ?)",
+                    [$fieldId, json_encode($fieldValue)]
+                );
             } else {
                 // For scalar values
-                $query->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(data, '$.\"$fieldId\"')) = ?", [$fieldValue]);
+                $query->whereRaw(
+                    "JSON_UNQUOTE(JSON_EXTRACT(data, CONCAT('\$.\"', ?, '\"'))) = ?",
+                    [$fieldId, $fieldValue]
+                );
             }
         } else {
-            // PostgreSQL
+            // PostgreSQL: Already uses parameterized queries with -> operator
             if (is_array($fieldValue)) {
                 // For array values (multi_select, matrix)
                 $query->whereRaw("data->? @> ?::jsonb", [

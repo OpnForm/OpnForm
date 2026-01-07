@@ -375,7 +375,7 @@ it('can submit form with does_not_exist_in_submissions validation condition for 
                 'select' => [
                     'options' => [
                         ['id' => 'United States', 'name' => 'United States'],
-                        ['id' => 'United States', 'name' => 'United Kingdom'],
+                        ['id' => 'United Kingdom', 'name' => 'United Kingdom'],
                     ],
                 ],
                 'validation' => [
