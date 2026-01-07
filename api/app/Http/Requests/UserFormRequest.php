@@ -5,8 +5,7 @@ namespace App\Http\Requests;
 use App\Http\Requests\Workspace\CustomDomainRequest;
 use App\Models\Forms\Form;
 use App\Rules\CustomSlugRule;
-use App\Rules\FormPropertyLogicRule;
-use App\Rules\PaymentBlockConfigurationRule;
+use App\Rules\FormPropertiesRule;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Contracts\Validation\Validator;
@@ -157,72 +156,9 @@ abstract class UserFormRequest extends \Illuminate\Foundation\Http\FormRequest
             'enable_partial_submissions' => 'boolean',
             'enable_ip_tracking' => 'boolean',
 
-            // Properties
-            'properties' => 'required|array',
-            'properties.*.id' => 'required',
-            'properties.*.name' => 'required',
-            'properties.*.type' => ['required', new PaymentBlockConfigurationRule($this->properties, $workspace)],
-            'properties.*.placeholder' => 'sometimes|nullable',
-            'properties.*.prefill' => 'sometimes|nullable',
-            'properties.*.help' => 'sometimes|nullable',
-            'properties.*.help_position' => ['sometimes', Rule::in(['below_input', 'above_input'])],
-            'properties.*.hidden' => 'boolean|nullable',
-            'properties.*.required' => 'boolean|nullable',
-            'properties.*.multiple' => 'boolean|nullable',
-            'properties.*.timezone' => 'sometimes|nullable',
-            'properties.*.width' => ['sometimes', Rule::in(['full', '1/2', '1/3', '2/3', '1/3', '3/4', '1/4'])],
-            'properties.*.align' => ['sometimes', Rule::in(['left', 'center', 'right', 'justify'])],
-            'properties.*.allowed_file_types' => 'sometimes|nullable',
-            'properties.*.use_toggle_switch' => 'boolean|nullable',
-
-            // Media (Focused mode only)
-            'properties.*.image' => 'sometimes|nullable|array',
-            'properties.*.image.url' => 'sometimes|nullable|url',
-            'properties.*.image.alt' => 'sometimes|nullable|string|max:125',
-            'properties.*.image.layout' => ['sometimes', 'nullable', Rule::in([
-                'between',
-                'left-small',
-                'right-small',
-                'left-split',
-                'right-split',
-                'background'
-            ])],
-            'properties.*.image.focal_point' => 'sometimes|nullable|array',
-            'properties.*.image.focal_point.x' => 'sometimes|nullable|numeric|min:0|max:100',
-            'properties.*.image.focal_point.y' => 'sometimes|nullable|numeric|min:0|max:100',
-            'properties.*.image.brightness' => 'sometimes|nullable|integer|min:-100|max:100',
-
-            // Logic
-            'properties.*.logic' => ['array', 'nullable', new FormPropertyLogicRule()],
-
-            // Form blocks
-            'properties.*.content' => 'sometimes|nullable',
-
-            // Text field
-            'properties.*.multi_lines' => 'boolean|nullable',
-            'properties.*.max_char_limit' => 'integer|nullable|min:1',
-            'properties.*.show_char_limit ' => 'boolean|nullable',
-            'properties.*.secret_input' => 'boolean|nullable',
-
-            // Date field
-            'properties.*.with_time' => 'boolean|nullable',
-            'properties.*.date_range' => 'boolean|nullable',
-            'properties.*.prefill_today' => 'boolean|nullable',
-            'properties.*.disable_past_dates' => 'boolean|nullable',
-            'properties.*.disable_future_dates' => 'boolean|nullable',
-
-            // Select / Multi Select field
-            'properties.*.allow_creation' => 'boolean|nullable',
-            'properties.*.without_dropdown' => 'boolean|nullable',
-            'properties.*.min_selection' => 'integer|nullable|min:0',
-            'properties.*.max_selection' => 'integer|nullable|min:1',
-
-            // Advanced Options
-            'properties.*.generates_uuid' => 'boolean|nullable',
-            'properties.*.generates_auto_increment_id' => 'boolean|nullable',
-
-            // For file (min and max)
-            'properties.*.max_file_size' => 'min:1|numeric',
+            // Properties - Single-pass validation for performance
+            // Replaces ~35 wildcard rules (properties.*) with one efficient rule
+            'properties' => ['required', 'array', new FormPropertiesRule($workspace)],
 
             // Security & Privacy
             'can_be_indexed' => 'boolean',
@@ -248,10 +184,8 @@ abstract class UserFormRequest extends \Illuminate\Foundation\Http\FormRequest
      */
     public function messages()
     {
-        return [
-            'properties.*.name.required' => 'The form block number :position is missing a name.',
-            'properties.*.type.required' => 'The form block number :position is missing a type.',
-            'properties.*.max_char_limit.min' => 'The form block number :position max character limit must be at least 1 OR Empty'
-        ];
+        // Note: Property-specific messages are now handled by FormPropertiesRule
+        // for better performance (single-pass validation)
+        return [];
     }
 }
