@@ -102,7 +102,6 @@ const props = defineProps({
 
 const alert = useAlert()
 const { openSubscriptionModal } = useAppModals()
-const { data: user } = useAuth().user()
 const isHistoryModalOpen = ref(false)
 const versions = ref([])
 const { submissionDetailById, invalidateSubmission } = useFormSubmissions()
@@ -151,7 +150,7 @@ const getFieldName = (key) => {
 }
 
 const onRestore = async (version) => {
-  if(!user.value.is_pro) {
+  if (!props.form.is_pro) {
     openSubscriptionModal({ modal_title: 'Upgrade to restore submission history' })
     return
   }
