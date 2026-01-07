@@ -1,0 +1,114 @@
+---
+title: Disable Two-Factor Authentication
+description: Administrative command to disable two-factor authentication for users
+---
+
+The `user:disable-two-factor` command allows administrators to disable two-factor authentication (2FA) for users who have lost access to their authenticator app or recovery codes.
+
+<Warning>
+    This command should only be used in exceptional circumstances when a user
+    cannot access their 2FA device or recovery codes. All usage is logged for
+    security auditing purposes.
+</Warning>
+
+## Command Signature
+
+```bash
+php artisan user:disable-two-factor {user_email} {reason}
+```
+
+## Parameters
+
+| Parameter    | Description                                                               |
+| ------------ | ------------------------------------------------------------------------- |
+| `user_email` | The email address of the user whose 2FA should be disabled (required)     |
+| `reason`     | The reason for disabling 2FA (required) - used for audit logging purposes |
+
+## Usage
+
+Run the command from the `api` directory:
+
+```bash
+cd api
+php artisan user:disable-two-factor user@example.com "User lost access to authenticator app"
+```
+
+## Command Behavior
+
+The command performs the following checks and actions:
+
+1. **Confirmation Prompt**: The command will ask for confirmation before proceeding:
+
+    ```
+    Are you sure you want to disable two-factor authentication for user user@example.com? (yes/no) [yes]:
+    ```
+
+2. **User Validation**: Verifies that the user exists in the system
+
+3. **Admin Protection**: Prevents disabling 2FA for admin users - the command will fail with an error if attempted
+
+4. **2FA Status Check**: Verifies that the user actually has 2FA enabled before attempting to disable it
+
+5. **Disable 2FA**: Calls the `disableTwoFactorAuth()` method on the user model to disable 2FA
+
+6. **Audit Logging**: Logs the action to the Slack admin channel with:
+    - User ID
+    - User email
+    - Reason provided
+
+## Example Output
+
+### Successful Execution
+
+```bash
+$ php artisan user:disable-two-factor user@example.com "User lost access to authenticator app"
+
+Are you sure you want to disable two-factor authentication for user user@example.com? (yes/no) [yes]: yes
+
+Two-factor authentication has been disabled successfully.
+```
+
+### Error Cases
+
+**User Not Found:**
+
+```bash
+$ php artisan user:disable-two-factor nonexistent@example.com "Test"
+
+Are you sure you want to disable two-factor authentication for user nonexistent@example.com? (yes/no) [yes]: yes
+
+User not found.
+```
+
+**Admin User:**
+
+```bash
+$ php artisan user:disable-two-factor admin@example.com "Test"
+
+Are you sure you want to disable two-factor authentication for user admin@example.com? (yes/no) [yes]: yes
+
+You cannot disable 2FA for an admin.
+```
+
+**2FA Not Enabled:**
+
+```bash
+$ php artisan user:disable-two-factor user@example.com "Test"
+
+Are you sure you want to disable two-factor authentication for user user@example.com? (yes/no) [yes]: yes
+
+Two-factor authentication is not enabled.
+```
+
+## Security Considerations
+
+-   **Audit Trail**: All 2FA disable operations are logged to the Slack admin channel (`slack_admin`) for security auditing
+-   **Admin Protection**: Admin users cannot have their 2FA disabled via this command for security reasons
+-   **Confirmation Required**: The command requires explicit confirmation before proceeding
+-   **Reason Required**: A reason must be provided for audit purposes
+
+## Related Documentation
+
+-   Users who can access their authenticator app or recovery codes should disable 2FA through their account settings in the application
+-   Administrators can also disable 2FA for users via the admin panel interface
+
