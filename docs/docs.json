@@ -67,7 +67,6 @@
             "group": "Forms",
             "pages": [
               "api-reference/forms/list-workspace-forms",
-              "api-reference/forms/list-forms",
               "api-reference/forms/create-form",
               "api-reference/forms/get-form",
               "api-reference/forms/update-form",

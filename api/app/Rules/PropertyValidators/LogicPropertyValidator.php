@@ -1,13 +1,12 @@
 <?php
 
-namespace App\Rules;
+namespace App\Rules\PropertyValidators;
 
-use Closure;
-use Illuminate\Contracts\Validation\DataAwareRule;
-use Illuminate\Contracts\Validation\ValidationRule;
-use Illuminate\Support\Str;
-
-class FormPropertyLogicRule implements DataAwareRule, ValidationRule
+/**
+ * Validates logic configuration for form properties.
+ * Checks that conditions and actions are properly configured.
+ */
+class LogicPropertyValidator implements PropertyValidatorInterface
 {
     public const ACTIONS_VALUES = [
         'show-block',
@@ -18,26 +17,66 @@ class FormPropertyLogicRule implements DataAwareRule, ValidationRule
         'disable-block',
     ];
 
-    private static $conditionMappingData = null;
+    private static ?array $conditionMappingData = null;
 
-    public static function getConditionMapping()
+    private bool $isConditionCorrect = true;
+    private bool $isActionCorrect = true;
+    private array $conditionErrors = [];
+    private array $field = [];
+    private string $operator = '';
+
+    public static function getConditionMapping(): array
     {
-        return config('opnform.condition_mapping');
+        if (self::$conditionMappingData === null) {
+            self::$conditionMappingData = config('opnform.condition_mapping');
+        }
+
+        return self::$conditionMappingData;
     }
 
-    private $isConditionCorrect = true;
+    public function validate(array $property, int $index, array $context): array
+    {
+        $errors = [];
 
-    private $isActionCorrect = true;
+        // Reset state for this validation
+        $this->isConditionCorrect = true;
+        $this->isActionCorrect = true;
+        $this->conditionErrors = [];
+        $this->field = $property;
 
-    private $conditionErrors = [];
+        $logic = $property['logic'] ?? null;
 
-    private $field = [];
+        // Early bail for empty/null logic
+        if (empty($logic) || !is_array($logic)) {
+            return $errors;
+        }
 
-    private $data = [];
+        // Validate logic is an array (nullable)
+        if (!is_array($logic)) {
+            $errors['logic'] = 'The logic field must be an array.';
+            return $errors;
+        }
 
-    private $operator = '';
+        // If no conditions, logic is valid (empty logic)
+        if (!isset($logic['conditions'])) {
+            return $errors;
+        }
 
-    private function checkBaseCondition($condition)
+        // Check conditions
+        $this->checkConditions($logic['conditions']);
+
+        // Check actions
+        $this->checkActions($logic['actions'] ?? null);
+
+        // Build error message if validation failed
+        if (!$this->isConditionCorrect || !$this->isActionCorrect) {
+            $errors['logic'] = $this->buildErrorMessage($property['name'] ?? 'Unknown');
+        }
+
+        return $errors;
+    }
+
+    private function checkBaseCondition(array $condition): void
     {
         if (!isset($condition['value'])) {
             $this->isConditionCorrect = false;
@@ -67,19 +106,22 @@ class FormPropertyLogicRule implements DataAwareRule, ValidationRule
         $operator = $condition['value']['operator'];
         $this->operator = $operator;
 
-        if (!isset(self::getConditionMapping()[$typeField])) {
+        // Get mapping once for this check
+        $mapping = self::getConditionMapping();
+
+        if (!isset($mapping[$typeField])) {
             $this->isConditionCorrect = false;
             $this->conditionErrors[] = 'configuration not found for condition type';
             return;
         }
 
-        if (!isset(self::getConditionMapping()[$typeField]['comparators'][$operator])) {
+        if (!isset($mapping[$typeField]['comparators'][$operator])) {
             $this->isConditionCorrect = false;
             $this->conditionErrors[] = 'configuration not found for condition operator';
             return;
         }
 
-        $comparatorDef = self::getConditionMapping()[$typeField]['comparators'][$operator];
+        $comparatorDef = $mapping[$typeField]['comparators'][$operator];
         $needsValue = !empty((array)$comparatorDef);
 
         if ($needsValue && !isset($condition['value']['value'])) {
@@ -112,11 +154,13 @@ class FormPropertyLogicRule implements DataAwareRule, ValidationRule
         }
     }
 
-    private function valueHasCorrectType($type, $value)
+    private function valueHasCorrectType(?string $type, mixed $value): bool
     {
-        if ($type === 'string' && isset(self::getConditionMapping()[$this->field['type']]['comparators'][$this->operator]['format'])) {
-            $format = self::getConditionMapping()[$this->field['type']]['comparators'][$this->operator]['format'];
-            if ($format['type'] === 'regex') {
+        if ($type === 'string') {
+            $mapping = self::getConditionMapping();
+            $fieldType = $this->field['type'] ?? null;
+            $format = $mapping[$fieldType]['comparators'][$this->operator]['format'] ?? null;
+            if ($format && ($format['type'] ?? null) === 'regex') {
                 try {
                     preg_match('/' . $value . '/', '');
                     return true;
@@ -139,31 +183,34 @@ class FormPropertyLogicRule implements DataAwareRule, ValidationRule
         return true;
     }
 
-    private function checkConditions($conditions)
+    private function checkConditions(mixed $conditions): void
     {
+        if (!is_array($conditions)) {
+            $this->isConditionCorrect = false;
+            $this->conditionErrors[] = 'conditions must be an array';
+            return;
+        }
+
         if (array_key_exists('operatorIdentifier', $conditions)) {
             if (($conditions['operatorIdentifier'] !== 'and') && ($conditions['operatorIdentifier'] !== 'or')) {
                 $this->conditionErrors[] = 'missing operator';
                 $this->isConditionCorrect = false;
-
                 return;
             }
 
             if (isset($conditions['operatorIdentifier']['children'])) {
                 $this->conditionErrors[] = 'extra condition';
                 $this->isConditionCorrect = false;
-
                 return;
             }
 
-            if (!is_array($conditions['children'])) {
+            if (!isset($conditions['children']) || !is_array($conditions['children'])) {
                 $this->conditionErrors[] = 'wrong sub-condition type';
                 $this->isConditionCorrect = false;
-
                 return;
             }
 
-            foreach ($conditions['children'] as &$child) {
+            foreach ($conditions['children'] as $child) {
                 $this->checkConditions($child);
             }
         } elseif (isset($conditions['identifier'])) {
@@ -171,88 +218,47 @@ class FormPropertyLogicRule implements DataAwareRule, ValidationRule
         }
     }
 
-    private function checkActions($actions)
+    private function checkActions(mixed $actions): void
     {
-        if (is_array($actions) && count($actions) > 0) {
-            foreach ($actions as $val) {
-                if (
-                    !in_array($val, static::ACTIONS_VALUES) ||
-                    (in_array($this->field['type'], ['nf-text', 'nf-code', 'nf-page-break', 'nf-divider', 'nf-image', 'nf-video']) && !in_array($val, ['hide-block', 'show-block'])) ||
-                    (isset($this->field['hidden']) && $this->field['hidden'] && !in_array($val, ['show-block', 'require-answer'])) ||
-                    (isset($this->field['required']) && $this->field['required'] && !in_array($val, ['make-it-optional', 'hide-block', 'disable-block'])) ||
-                    (isset($this->field['disabled']) && $this->field['disabled'] && !in_array($val, ['enable-block', 'require-answer', 'make-it-optional']))
-                ) {
-                    $this->isActionCorrect = false;
-                    break;
-                }
-            }
-        } else {
+        if (!is_array($actions) || count($actions) === 0) {
             $this->isActionCorrect = false;
+            return;
+        }
+
+        $layoutBlocks = ['nf-text', 'nf-code', 'nf-page-break', 'nf-divider', 'nf-image', 'nf-video'];
+        $fieldType = $this->field['type'] ?? null;
+        $isHidden = $this->field['hidden'] ?? false;
+        $isRequired = $this->field['required'] ?? false;
+        $isDisabled = $this->field['disabled'] ?? false;
+
+        foreach ($actions as $action) {
+            if (
+                !in_array($action, self::ACTIONS_VALUES) ||
+                (in_array($fieldType, $layoutBlocks) && !in_array($action, ['hide-block', 'show-block'])) ||
+                ($isHidden && !in_array($action, ['show-block', 'require-answer'])) ||
+                ($isRequired && !in_array($action, ['make-it-optional', 'hide-block', 'disable-block'])) ||
+                ($isDisabled && !in_array($action, ['enable-block', 'require-answer', 'make-it-optional']))
+            ) {
+                $this->isActionCorrect = false;
+                break;
+            }
         }
     }
 
-    /**
-     * Determine if the validation rule passes.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @return bool
-     */
-    public function passes($attribute, $value)
+    private function buildErrorMessage(string $fieldName): string
     {
-        $this->setProperty($attribute);
-        if (isset($value['conditions'])) {
-            $this->checkConditions($value['conditions']);
-            $this->checkActions($value['actions'] ?? null);
-        }
+        $message = '';
 
-        return $this->isConditionCorrect && $this->isActionCorrect;
-    }
-
-    public function validate(string $attribute, mixed $value, Closure $fail): void
-    {
-        if (!$this->passes($attribute, $value)) {
-            $fail($this->message());
-        }
-    }
-
-    /**
-     * Get the validation error message.
-     */
-    public function message()
-    {
-        $message = null;
         if (!$this->isConditionCorrect) {
-            $message = 'The logic conditions for ' . $this->field['name'] . ' are not complete.';
+            $message = "The logic conditions for {$fieldName} are not complete.";
         } elseif (!$this->isActionCorrect) {
-            $message = 'The logic actions for ' . $this->field['name'] . ' are not valid.';
+            $message = "The logic actions for {$fieldName} are not valid.";
         }
+
         if (count($this->conditionErrors) > 0) {
-            return $message . ' Error detail(s): ' . implode(', ', $this->conditionErrors);
+            $message .= ' Error detail(s): ' . implode(', ', $this->conditionErrors);
         }
 
         return $message;
-    }
-
-    /**
-     * Set the data under validation.
-     *
-     * @param  array  $data
-     * @return $this
-     */
-    public function setData($data)
-    {
-        $this->data = $data;
-        $this->isConditionCorrect = true;
-        $this->isActionCorrect = true;
-        $this->conditionErrors = [];
-
-        return $this;
-    }
-
-    private function setProperty(string $attributeKey)
-    {
-        $attributeKey = Str::of($attributeKey)->replace('.logic', '')->toString();
-        $this->field = \Arr::get($this->data, $attributeKey);
     }
 }
