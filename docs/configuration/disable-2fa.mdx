@@ -1,0 +1,66 @@
+---
+title: Disable Two-Factor Authentication
+description: Administrative command to disable two-factor authentication for users
+---
+
+The `user:disable-two-factor` command allows administrators to disable two-factor authentication (2FA) for users who have lost access to their authenticator app or recovery codes.
+
+<Warning>
+    This command should only be used in exceptional circumstances. All usage is logged for security auditing purposes.
+</Warning>
+
+## Command Signature
+
+```bash
+php artisan user:disable-two-factor {user_email} {reason} [--force] [--allow-admin]
+```
+
+| Parameter/Option | Description                                                                    |
+| ---------------- | ------------------------------------------------------------------------------ |
+| `user_email`     | The email address of the user (case-insensitive)                               |
+| `reason`         | Reason for disabling 2FA (required for audit logging)                          |
+| `--force`        | Skip confirmation prompt (non-admin users only)                                |
+| `--allow-admin`  | Allow disabling 2FA for admin users (always requires interactive confirmation) |
+
+## Usage Examples
+
+```bash
+# Standard usage (with confirmation prompt)
+php artisan user:disable-two-factor user@example.com "User lost access to authenticator app"
+
+# Non-interactive mode
+php artisan user:disable-two-factor user@example.com "Automated recovery" --force
+
+# For admin users (requires confirmation, cannot use --force)
+php artisan user:disable-two-factor admin@example.com "Emergency access" --allow-admin
+```
+
+## Running in Docker
+
+<Tabs>
+<Tab title="Docker Compose">
+```bash
+# Non-interactive
+docker compose exec api php artisan user:disable-two-factor user@example.com "Lost authenticator" --force
+
+# Interactive (for admin users)
+docker compose exec -it api php artisan user:disable-two-factor admin@example.com "Emergency" --allow-admin
+```
+</Tab>
+
+<Tab title="Docker (standalone)">
+```bash
+docker exec <container_name> php artisan user:disable-two-factor user@example.com "Lost authenticator" --force
+```
+</Tab>
+</Tabs>
+
+<Note>
+    Use `-it` flags for interactive commands (without `--force`) to allow the confirmation prompt.
+</Note>
+
+## Security Notes
+
+- All operations are logged to the Slack admin channel with user ID, email, reason, and admin override status
+- Admin users require `--allow-admin` flag and cannot bypass confirmation with `--force`
+- Users who can access their authenticator should disable 2FA through their account settings instead

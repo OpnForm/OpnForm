@@ -461,36 +461,52 @@ class FormLogicConditionChecker
             return false;
         }
 
-        return FormSubmission::where('form_id', $formId)
+        $fieldId = $condition['property_meta']['id'];
+
+        // Validate field ID format to prevent SQL injection
+        // Field IDs should only contain alphanumeric characters, underscores, and hyphens
+        if (!preg_match('/^[a-zA-Z0-9_-]+$/', $fieldId)) {
+            return false;
+        }
+
+        $dbConnection = config('database.default');
+
+        // Use lockForUpdate to prevent race conditions when checking for uniqueness
+        $query = FormSubmission::where('form_id', $formId)
             ->where('status', '!=', FormSubmission::STATUS_PARTIAL)
-            ->where(function ($query) use ($condition, $fieldValue) {
-                $fieldId = $condition['property_meta']['id'];
+            ->lockForUpdate();
 
-                if (config('database.default') === 'mysql') {
-                    // For scalar values
-                    $query->where(function ($q) use ($fieldId, $fieldValue) {
-                        $q->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(data, '$.\"$fieldId\"')) = ?", [$fieldValue]);
+        if ($dbConnection === 'mysql') {
+            // MySQL: Use fully parameterized JSON path query
+            // JSON_EXTRACT with CONCAT for safe field ID handling
+            if (is_array($fieldValue)) {
+                // For array values (multi_select, matrix)
+                $query->whereRaw(
+                    "JSON_CONTAINS(JSON_EXTRACT(data, CONCAT('\$.\"', ?, '\"')), ?)",
+                    [$fieldId, json_encode($fieldValue)]
+                );
+            } else {
+                // For scalar values
+                $query->whereRaw(
+                    "JSON_UNQUOTE(JSON_EXTRACT(data, CONCAT('\$.\"', ?, '\"'))) = ?",
+                    [$fieldId, $fieldValue]
+                );
+            }
+        } else {
+            // PostgreSQL: Already uses parameterized queries with -> operator
+            if (is_array($fieldValue)) {
+                // For array values (multi_select, matrix)
+                $query->whereRaw("data->? @> ?::jsonb", [
+                    $fieldId,
+                    json_encode($fieldValue)
+                ]);
+            } else {
+                // For scalar values
+                $query->whereRaw("data->? = ?::jsonb", [$fieldId, json_encode($fieldValue)]);
+            }
+        }
 
-                        // For array values
-                        if (is_array($fieldValue)) {
-                            $q->orWhereRaw("JSON_CONTAINS(JSON_EXTRACT(data, '$.\"$fieldId\"'), ?)", [json_encode($fieldValue)]);
-                        }
-                    });
-                } else {
-                    $query->where(function ($q) use ($fieldId, $fieldValue) {
-                        // For scalar values
-                        $q->whereRaw("data->? = ?::jsonb", [$fieldId, json_encode($fieldValue)]);
-
-                        // For array values
-                        if (is_array($fieldValue)) {
-                            $q->orWhereRaw("data->? @> ?::jsonb", [
-                                $fieldId,
-                                json_encode($fieldValue)
-                            ]);
-                        }
-                    });
-                }
-            })->exists();
+        return $query->exists();
     }
 
     private function textConditionMet(array $propertyCondition, $value): bool
@@ -618,6 +634,10 @@ class FormLogicConditionChecker
                 return $this->checkIsEmpty($propertyCondition, $value);
             case 'is_not_empty':
                 return !$this->checkIsEmpty($propertyCondition, $value);
+            case 'exists_in_submissions':
+                return $this->checkExistsInSubmissions($propertyCondition, $value);
+            case 'does_not_exist_in_submissions':
+                return !$this->checkExistsInSubmissions($propertyCondition, $value);
         }
 
         return false;
@@ -658,6 +678,10 @@ class FormLogicConditionChecker
                 return $this->checkNextMonth($propertyCondition, $value);
             case 'next_year':
                 return $this->checkNextYear($propertyCondition, $value);
+            case 'exists_in_submissions':
+                return $this->checkExistsInSubmissions($propertyCondition, $value);
+            case 'does_not_exist_in_submissions':
+                return !$this->checkExistsInSubmissions($propertyCondition, $value);
         }
 
         return false;
@@ -674,6 +698,10 @@ class FormLogicConditionChecker
                 return $this->checkIsEmpty($propertyCondition, $value);
             case 'is_not_empty':
                 return !$this->checkIsEmpty($propertyCondition, $value);
+            case 'exists_in_submissions':
+                return $this->checkExistsInSubmissions($propertyCondition, $value);
+            case 'does_not_exist_in_submissions':
+                return !$this->checkExistsInSubmissions($propertyCondition, $value);
         }
 
         return false;
@@ -702,6 +730,10 @@ class FormLogicConditionChecker
                 return $this->checkMatrixContains($propertyCondition, $value);
             case 'does_not_contain':
                 return !$this->checkMatrixContains($propertyCondition, $value);
+            case 'exists_in_submissions':
+                return $this->checkExistsInSubmissions($propertyCondition, $value);
+            case 'does_not_exist_in_submissions':
+                return !$this->checkExistsInSubmissions($propertyCondition, $value);
         }
 
         return false;
