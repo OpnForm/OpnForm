@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\Forms\Form;
 use App\Models\Traits\CachableAttributes;
 use App\Models\Traits\CachesAttributes;
+use App\Service\BillingHelper;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
@@ -37,6 +38,7 @@ class Workspace extends Model implements CachableAttributes
         'is_trialing',
         'is_enterprise',
         'users_count',
+        'is_yearly_plan',
     ];
 
     protected function casts(): array
@@ -52,6 +54,7 @@ class Workspace extends Model implements CachableAttributes
         'is_trialing',
         'is_enterprise',
         'is_risky',
+        'is_yearly_plan',
         'submissions_count',
         'max_file_size',
         'custom_domain_count',
@@ -179,6 +182,30 @@ class Workspace extends Model implements CachableAttributes
             }
 
             return true;
+        });
+    }
+
+    public function getIsYearlyPlanAttribute()
+    {
+        if (!pricing_enabled()) {
+            return false;
+        }
+
+        return $this->remember('is_yearly_plan', 15 * 60, function (): bool {
+            $owners = $this->relationLoaded('users')
+                ? $this->users->where('pivot.role', 'admin')
+                : $this->owners()->get();
+
+            foreach ($owners as $owner) {
+                if ($owner->is_subscribed) {
+                    $subscription = $owner->subscription();
+                    if ($subscription && BillingHelper::getSubscriptionInterval($subscription) === 'yearly') {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
         });
     }
 
