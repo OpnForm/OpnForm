@@ -74,7 +74,7 @@ it('cannot restore version as non-pro user', function () {
 
     // Non-pro user should get error response
     $response = $this->postJson(route('versions.restore', ['versionId' => $version->version_id]));
-    
+
     // Should fail with pro user requirement error
     expect($response->json('message'))->toBe('You need to be a Pro user to restore this version');
 });
