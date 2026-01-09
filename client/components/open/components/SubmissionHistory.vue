@@ -5,7 +5,8 @@
     arrow
   >
     <UButton
-      :disabled="!versions.length"
+      :disabled="isLoading || !versions.length"
+      :loading="isLoading"
       size="sm"
       color="neutral"
       variant="outline"
@@ -104,6 +105,7 @@ const alert = useAlert()
 const { openSubscriptionModal } = useAppModals()
 const isHistoryModalOpen = ref(false)
 const versions = ref([])
+const isLoading = ref(false)
 const { submissionDetailById, invalidateSubmission } = useFormSubmissions()
 const submissionDetailQuery = submissionDetailById(props.form.id, props.submissionId, { enabled: false })
 
@@ -118,12 +120,15 @@ watch(() => props.submissionId, () => {
 })
 
 const fetchVersions = async () => {
+  isLoading.value = true
   try {
     const response = await versionsApi.list('submission', props.submissionId)
     versions.value = response || []
   } catch (error) {
     console.error('Failed to fetch submission versions:', error)
     versions.value = []
+  } finally {
+    isLoading.value = false
   }
 }
 

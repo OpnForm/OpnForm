@@ -79,6 +79,23 @@ it('cannot restore version as non-pro user', function () {
     expect($response->json('message'))->toBe('You need to be a Pro user to restore this version');
 });
 
+it('cannot restore version for unauthorized form', function () {
+    $user = $this->actingAsProUser();
+    $otherUser = $this->createUser();
+    $workspace = $this->createUserWorkspace($otherUser);
+    $form = $this->createForm($otherUser, $workspace);
+
+    // Update to create version
+    $form->title = 'Updated Title';
+    $form->save();
+
+    $version = $form->versions()->latest()->first();
+
+    // Pro user should not be able to restore another user's form version
+    $this->postJson(route('versions.restore', ['versionId' => $version->version_id]))
+        ->assertStatus(403);
+});
+
 it('cannot restore non-existent version', function () {
     $user = $this->actingAsProUser();
 

@@ -15,13 +15,10 @@ class VersionController extends Controller
         'submission' => FormSubmission::class,
     ];
 
-    protected function getModelClass(string $alias): \Illuminate\Http\JsonResponse|string
+    protected function getModelClass(string $alias): string
     {
         if (!isset($this->modelAliases[$alias])) {
-            return $this->error([
-                'success' => false,
-                'message' => 'Invalid model alias',
-            ]);
+            abort(400, 'Invalid model alias');
         }
         return $this->modelAliases[$alias];
     }
@@ -29,9 +26,6 @@ class VersionController extends Controller
     public function index(Request $request, string $modelType, int $id)
     {
         $modelClass = $this->getModelClass($modelType);
-        if ($modelClass instanceof \Illuminate\Http\JsonResponse) {
-            return $modelClass;
-        }
 
         $model = $modelClass::findOrFail($id);
 
@@ -65,12 +59,12 @@ class VersionController extends Controller
             ]);
         }
 
-        $model = $version->getModel();
-
-        // Verify version belongs to the model (prevents cross-model version access)
-        if ($version->versionable_id != $model->id || $version->versionable_type !== get_class($model)) {
+        // Get the actual model from the database to verify ownership (prevents IDOR)
+        $modelClass = $version->versionable_type;
+        if (!class_exists($modelClass)) {
             abort(404, 'Version not found');
         }
+        $model = $modelClass::findOrFail($version->versionable_id);
 
         $this->authorize('update', $model);
 

@@ -5,7 +5,8 @@
     arrow
   >
     <UButton
-      :disabled="!versions.length"
+      :disabled="isLoading || !versions.length"
+      :loading="isLoading"
       size="sm"
       color="neutral"
       variant="outline"
@@ -100,6 +101,7 @@ const workingFormStore = useWorkingFormStore()
 const { content: form } = storeToRefs(workingFormStore)
 const isHistoryModalOpen = ref(false)
 const versions = ref([])
+const isLoading = ref(false)
 
 onMounted(() => {
   if (form.value) {
@@ -108,12 +110,15 @@ onMounted(() => {
 })
 
 const fetchVersions = async () => {
+  isLoading.value = true
   try {
     const response = await versionsApi.list('form', form.value.id)
     versions.value = response || []
   } catch (error) {
     console.error('Failed to fetch form versions:', error)
     versions.value = []
+  } finally {
+    isLoading.value = false
   }
 }
 
