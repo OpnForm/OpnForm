@@ -60,6 +60,7 @@ export default {
       hasInput: false,
       inputComponent: {
         text: "TextInput",
+        rich_text: "TextInput",
         number: "TextInput",
         rating: "TextInput",
         scale: "TextInput",
