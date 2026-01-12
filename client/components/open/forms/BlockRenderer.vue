@@ -136,6 +136,7 @@ const componentInfo = computed(() => {
   if (!field || !field.type) return null
   let componentName
   if (field.type === 'text' && field.multi_lines) componentName = 'TextAreaInput'
+  else if (field.type === 'text' && field.input_mask) componentName = 'MaskInput'
   else if (field.type === 'url' && field.file_upload) componentName = 'FileInput'
   // In focused mode, use FocusedSelectorInput by default unless explicitly disabled
   else if (['select','multi_select'].includes(field.type) && form.value.presentation_style === 'focused' && field.use_focused_selector !== false) componentName = 'FocusedSelectorInput'
@@ -320,6 +321,9 @@ const boundProps = computed(() => {
     inputProperties.unavailableCountries = field.unavailable_countries ?? []
   } else if (field.type === 'text' && field.secret_input) {
     inputProperties.nativeType = 'password'
+  } else if(field.type === 'text' && field.input_mask) {
+    inputProperties.mask = field.input_mask
+    inputProperties.slotChar = field.slot_char
   } else if (field.type === 'payment') {
     inputProperties.direction = form.value.layout_rtl ? 'rtl' : 'ltr'
     inputProperties.currency = field.currency

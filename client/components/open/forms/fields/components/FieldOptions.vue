@@ -703,6 +703,8 @@
         help="If you enable this, we will hide this field and fill it a unique incrementing number on each new form submission"
         @update:model-value="onFieldGenAutoIdChange"
       />
+
+      <InputMaskOptions :field="field" />
     </div>
 
   <!--  (moved above for focused mode)  -->
@@ -716,6 +718,7 @@ import CountryFlag from 'vue-country-flag-next'
 import MatrixFieldOptions from './MatrixFieldOptions.vue'
 import PaymentFieldOptions from './PaymentFieldOptions.vue'
 import HiddenRequiredDisabled from './HiddenRequiredDisabled.vue'
+import InputMaskOptions from './InputMaskOptions.vue'
 import EditorSectionHeader from '~/components/open/forms/components/form-components/EditorSectionHeader.vue'
 import ProTag from '~/components/app/ProTag.vue'
 import MentionInput from '~/components/forms/heavy/MentionInput.vue'
@@ -726,7 +729,7 @@ import BlockMediaOptions from '~/components/open/forms/components/media/BlockMed
 
 export default {
   name: 'FieldOptions',
-  components: { CountryFlag, MatrixFieldOptions, HiddenRequiredDisabled, EditorSectionHeader, PaymentFieldOptions, ProTag, BlockMediaOptions, MentionInput },
+  components: { CountryFlag, MatrixFieldOptions, HiddenRequiredDisabled, InputMaskOptions, EditorSectionHeader, PaymentFieldOptions, ProTag, BlockMediaOptions, MentionInput },
   props: {
     field: {
       type: Object,
