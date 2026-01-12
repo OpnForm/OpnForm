@@ -72,6 +72,7 @@ class FormSubmissionController extends Controller
     public function fetch(Form $form, $submission_id)
     {
         $submission = $form->submissions()->where('id', $submission_id)->firstOrFail();
+        $this->authorize('view', $submission);
         return new FormSubmissionResource($submission);
     }
 

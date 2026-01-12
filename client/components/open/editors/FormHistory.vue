@@ -94,7 +94,6 @@ import { versionsApi } from '~/api/versions'
 import { formsApi } from '~/api/forms'
 import { format } from 'date-fns'
 
-const alert = useAlert()
 const { openSubscriptionModal } = useAppModals()
 const workingFormStore = useWorkingFormStore()
 
@@ -154,18 +153,18 @@ const onRestore = async (version) => {
     return
   }
 
-  alert.confirm('Are you sure you want to restore this version?', () => restoreVersion(version))
+  useAlert().confirm('Are you sure you want to restore this version?', () => restoreVersion(version))
 }
 
 const restoreVersion = async (version) => {
-  await formsApi.get(form.value.slug, { params: { version_id: version.id } }).then((response) => {
+  try {
+    const response = await formsApi.get(form.value.slug, { params: { version_id: version.id } })
     workingFormStore.reset()
     workingFormStore.set(useForm(response))
-    alert.success('Version restored successfully on editor. Please publish form to save the changes.')
+    useAlert().success('Version restored successfully on editor. Please publish form to save the changes.')
     isHistoryModalOpen.value = false
-  })
-  .catch(() => {
-    alert.error('Failed to restore version')
-  })
+  } catch {
+    useAlert().error('Failed to restore version')
+  }
 }
 </script>

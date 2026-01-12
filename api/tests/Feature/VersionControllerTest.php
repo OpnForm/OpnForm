@@ -81,9 +81,12 @@ it('cannot restore version as non-pro user', function () {
 
 it('cannot restore version for unauthorized form', function () {
     $user = $this->actingAsProUser();
+    // Pro user needs a workspace to be considered "pro" (is_pro checks workspace owners)
+    $this->createUserWorkspace($user);
+
     $otherUser = $this->createUser();
-    $workspace = $this->createUserWorkspace($otherUser);
-    $form = $this->createForm($otherUser, $workspace);
+    $otherWorkspace = $this->createUserWorkspace($otherUser);
+    $form = $this->createForm($otherUser, $otherWorkspace);
 
     // Update to create version
     $form->title = 'Updated Title';

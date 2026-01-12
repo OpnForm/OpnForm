@@ -101,7 +101,6 @@ const props = defineProps({
   }
 })
 
-const alert = useAlert()
 const { openSubscriptionModal } = useAppModals()
 const isHistoryModalOpen = ref(false)
 const versions = ref([])
@@ -160,19 +159,19 @@ const onRestore = async (version) => {
     return
   }
 
-  alert.confirm('Are you sure you want to restore this version?', () => restoreVersion(version))
+  useAlert().confirm('Are you sure you want to restore this version?', () => restoreVersion(version))
 }
 
 const restoreVersion = async (version) => {
-  await versionsApi.restore(version.id).then((_response) => {
+  try {
+    await versionsApi.restore(version.id)
     submissionDetailQuery.refetch()
     invalidateSubmission(props.submissionId)
     useAlert().success('Submission restored successfully')
-    fetchVersions()
-    isHistoryModalOpen.value = false  
-  })
-  .catch(() => {
-    alert.error('Failed to restore version')
-  })
+    await fetchVersions()
+    isHistoryModalOpen.value = false
+  } catch {
+    useAlert().error('Failed to restore version')
+  }
 }
 </script>
