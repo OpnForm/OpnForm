@@ -72,9 +72,9 @@ const menuItems = [
       icon: 'i-heroicons-trash',
       color: 'error',
       onSelect: () => {
-        if (confirm(`Are you sure you want to delete "${props.variable.name}"?`)) {
+        useAlert().confirm(`Are you sure you want to delete "${props.variable.name}"?`, () => {
           emit('delete', props.variable)
-        }
+        })
       }
     }
   ]
