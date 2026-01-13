@@ -3,5 +3,5 @@
  * Internal SDK utilities for form-parent communication
  */
 
-export { useSdkBridge } from './useSdkBridge'
+export { useSdkBridge, createLocalSDK, OpnFormLocalSDK, EVENTS } from './useSdkBridge'
 
