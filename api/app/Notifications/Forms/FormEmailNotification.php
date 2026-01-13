@@ -5,10 +5,10 @@ namespace App\Notifications\Forms;
 use App\Events\Forms\FormSubmitted;
 use App\Open\MentionParser;
 use App\Service\Forms\FormSubmissionFormatter;
+use App\Service\Forms\SubmissionUrlService;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Str;
-use Vinkla\Hashids\Facades\Hashids;
 use Symfony\Component\Mime\Email;
 
 class FormEmailNotification extends Notification
@@ -41,6 +41,7 @@ class FormEmailNotification extends Notification
             config([
                 'mail.mailers.custom_smtp.host' => $emailSettings['host'],
                 'mail.mailers.custom_smtp.port' => $emailSettings['port'],
+                'mail.mailers.custom_smtp.encryption' => array_key_exists('encryption', $emailSettings) ? $emailSettings['encryption'] : 'tls',
                 'mail.mailers.custom_smtp.username' => $emailSettings['username'],
                 'mail.mailers.custom_smtp.password' => $emailSettings['password']
             ]);
@@ -204,7 +205,11 @@ class FormEmailNotification extends Notification
     private function getEncodedSubmissionId(): ?string
     {
         $submissionId = $this->event->data['submission_id'] ?? null;
-        return $submissionId ? Hashids::encode($submissionId) : null;
+        if (!$submissionId) {
+            return null;
+        }
+
+        return SubmissionUrlService::getSubmissionIdentifierById($this->event->form, $submissionId);
     }
 
     public static function validateEmail($email): bool
