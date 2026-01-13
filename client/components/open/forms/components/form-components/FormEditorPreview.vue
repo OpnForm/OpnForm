@@ -221,19 +221,39 @@ function isValidIndex(index) {
   return typeof index === 'number' && index >= 0 && index < total
 }
 
+// Helper to get the absolute property index from a visible page index in focused mode
+function getAbsoluteIndexFromVisiblePage(visiblePageIndex) {
+  const struct = workingFormStore.structureService
+  if (!struct || typeof struct.getPageFields !== 'function') return visiblePageIndex
+  
+  const pageFields = struct.getPageFields(visiblePageIndex)
+  if (!pageFields || pageFields.length === 0) return visiblePageIndex
+  
+  const field = pageFields[0]
+  const properties = workingFormStore.content?.properties || []
+  const absoluteIndex = properties.findIndex(p => p?.nf_id === field?.nf_id)
+  
+  return absoluteIndex >= 0 ? absoluteIndex : visiblePageIndex
+}
+
 // Sync selected field with current page in focused mode while editing
 watch(() => currentSlideIndex.value, (newIndex) => {
   try {
-    if (isFocusedEditing.value && isValidIndex(newIndex) && workingFormStore.selectedFieldIndex !== newIndex) {
-      // Skip if the field at this index is hidden
-      const field = workingFormStore.content?.properties?.[newIndex]
-      const struct = workingFormStore.structureService
-      if (field && struct && typeof struct.isFieldHidden === 'function' && struct.isFieldHidden(field)) {
-        return
-      }
-      // Update the selected field to follow the currently focused slide
-      workingFormStore.setEditingField(newIndex)
+    if (!isFocusedEditing.value) return
+    
+    // Convert visible page index to absolute property index
+    const absoluteIndex = getAbsoluteIndexFromVisiblePage(newIndex)
+    
+    if (!isValidIndex(absoluteIndex) || workingFormStore.selectedFieldIndex === absoluteIndex) return
+    
+    // Skip if the field at this index is hidden
+    const field = workingFormStore.content?.properties?.[absoluteIndex]
+    const struct = workingFormStore.structureService
+    if (field && struct && typeof struct.isFieldHidden === 'function' && struct.isFieldHidden(field)) {
+      return
     }
+    // Update the selected field to follow the currently focused slide
+    workingFormStore.setEditingField(absoluteIndex)
   } catch (e) {
     console.error(e)
   }
@@ -261,7 +281,8 @@ watch(() => workingFormStore.selectedFieldIndex, (newIndex) => {
 function handleAddBlock() {
   try {
     workingFormStore.activeTab = 'build'
-    workingFormStore.openAddFieldSidebar(currentSlideIndex.value)
+    const absoluteIndex = getAbsoluteIndexFromVisiblePage(currentSlideIndex.value)
+    workingFormStore.openAddFieldSidebar(absoluteIndex)
   } catch (e) {
     console.error(e)
   }
@@ -270,7 +291,8 @@ function handleAddBlock() {
 function handleEditCurrent() {
   try {
     workingFormStore.activeTab = 'build'
-    workingFormStore.openSettingsForField(currentSlideIndex.value, true)
+    const absoluteIndex = getAbsoluteIndexFromVisiblePage(currentSlideIndex.value)
+    workingFormStore.openSettingsForField(absoluteIndex, true)
   } catch (e) {
     console.error(e)
   }
@@ -296,12 +318,12 @@ const moreMenuItems = computed(() => ([
 ]))
 
 function handleDuplicateCurrent() {
-  const index = currentSlideIndex.value
+  const index = getAbsoluteIndexFromVisiblePage(currentSlideIndex.value)
   workingFormStore.duplicateField(index)
 }
 
 function handleDeleteCurrent() {
-  const index = currentSlideIndex.value
+  const index = getAbsoluteIndexFromVisiblePage(currentSlideIndex.value)
   workingFormStore.removeField(index)
 }
 </script>

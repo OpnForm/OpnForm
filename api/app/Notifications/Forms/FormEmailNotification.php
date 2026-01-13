@@ -41,6 +41,7 @@ class FormEmailNotification extends Notification
             config([
                 'mail.mailers.custom_smtp.host' => $emailSettings['host'],
                 'mail.mailers.custom_smtp.port' => $emailSettings['port'],
+                'mail.mailers.custom_smtp.encryption' => array_key_exists('encryption', $emailSettings) ? $emailSettings['encryption'] : 'tls',
                 'mail.mailers.custom_smtp.username' => $emailSettings['username'],
                 'mail.mailers.custom_smtp.password' => $emailSettings['password']
             ]);
