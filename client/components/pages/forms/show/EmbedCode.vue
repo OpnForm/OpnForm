@@ -35,7 +35,7 @@ export default {
   });
   
   // More SDK methods: opnform.get('${this.form.slug}').setField(id, value)
-  // Docs: https://docs.opnform.com/sdk
+  // Docs: https://docs.opnform.com/front-end/javascript-sdk
 <\/script>`
     },
     iframeCode() {
