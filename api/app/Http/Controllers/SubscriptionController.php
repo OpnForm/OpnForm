@@ -124,6 +124,14 @@ class SubscriptionController extends Controller
                 "message" => "Please ask an admin to upgrade the workspace to yearly plan.",
             ]);
         }
+
+        // Verify the user's subscription is actually tied to this workspace (user must be an owner)
+        if (!$workspace->owners()->where('users.id', $user->id)->exists()) {
+            return $this->error([
+                "message" => "You must be an owner of this workspace to upgrade its subscription.",
+            ]);
+        }
+
         if ($workspace->is_yearly_plan) {
             return $this->error([
                 "message" => "The workspace is already on yearly plan.",
@@ -135,9 +143,12 @@ class SubscriptionController extends Controller
             $subscription = $user->subscription();
             $yearlyPriceId = BillingHelper::getPricing('default')['yearly'];
             $subscription->swap($yearlyPriceId);
+
+            // Invalidate cached is_yearly_plan attribute
+            $workspace->forgetCachedAttribute('is_yearly_plan');
         } catch (\Exception $e) {
             return $this->error([
-                "message" => $e?->getMessage() || "Failed to upgrade the subscription to yearly plan.",
+                "message" => $e?->getMessage() ?? "Failed to upgrade the subscription to yearly plan.",
             ]);
         }
 

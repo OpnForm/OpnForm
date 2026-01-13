@@ -87,12 +87,12 @@
                 v-for="(benefit, index) in benefits"
                 :key="benefit"
                 :style="{ transitionDelay: `${400 + index * 100}ms` }"
-                class="flex items-start gap-3 group"
+                class="flex items-center gap-3 group"
               >
                 <div class="relative">
                   <Icon
                     name="heroicons:check-circle"
-                    class="w-6 h-6 text-primary flex-shrink-0 mt-0.5 transform transition-all duration-300 group-hover:scale-110"
+                    class="w-5 h-5 text-primary flex-shrink-0 transform transition-all duration-300 group-hover:scale-110"
                   />
                   <div class="absolute inset-0 bg-primary/20 rounded-full blur-md opacity-0 group-hover:opacity-50 transition-opacity duration-300"></div>
                 </div>
@@ -160,6 +160,8 @@
 </template>
 
 <script setup>
+import { useStorage } from '@vueuse/core'
+
 const amplitude = useAmplitude()
 const auth = useAuth()
 const { data: user } = auth.user()
@@ -167,23 +169,23 @@ const { current: workspace } = useCurrentWorkspace()
 
 const alert = useAlert()
 const loading = ref(false)
-const upgradeForm = useForm({
-  workspace_id: workspace.value?.id
-})
+const upgradeForm = useForm({})
 
-// Storage key for tracking last shown date
-const STORAGE_KEY = 'yearly_upgrade_modal_last_shown'
+// Use VueUse's useStorage for reactive localStorage
+const lastShownDate = useStorage(
+  'yearly_upgrade_modal_last_shown',
+  null,
+  import.meta.server ? undefined : localStorage
+)
 
-// Helper function to check if modal can be shown (once per month)
-const canShowModal = () => {
+// Check if enough time has passed since last shown (non-reactive check)
+const hasEnoughTimePassed = () => {
   if (!import.meta.client) return false
-
-  const lastShown = localStorage.getItem(STORAGE_KEY)
-  if (!lastShown) return true // Never shown before
+  if (!lastShownDate.value) return true // Never shown before
   
-  const lastShownDate = new Date(lastShown)
+  const lastShown = new Date(lastShownDate.value)
   const now = new Date()
-  const daysSinceLastShown = Math.floor((now - lastShownDate) / (1000 * 60 * 60 * 24))
+  const daysSinceLastShown = Math.floor((now - lastShown) / (1000 * 60 * 60 * 24))
   
   // Show if 30 days (1 month) have passed
   return daysSinceLastShown >= 30
@@ -191,34 +193,30 @@ const canShowModal = () => {
 
 // Helper function to save the current date when modal is shown
 const markModalAsShown = () => {
-  if (!import.meta.client) return
-  localStorage.setItem(STORAGE_KEY, new Date().toISOString())
+  lastShownDate.value = new Date().toISOString()
 }
 
-// Determine if modal should be shown
+// Determine if user is eligible for the modal (without time check)
 const isSelfHosted = computed(() => useFeatureFlag('self_hosted'))
-const shouldShowModal = computed(() => {
+const isEligibleForModal = computed(() => {
   return import.meta.client && 
     !isSelfHosted.value && 
     workspace.value?.is_admin &&
     workspace.value?.is_pro && 
-    !workspace.value?.is_yearly_plan &&
-    canShowModal()
+    !workspace.value?.is_yearly_plan
 })
 
 // Modal state - controlled internally
 const isModalOpen = ref(false)
 
-// Watch for when modal should be shown
-watch(shouldShowModal, (newValue) => {
-  if (newValue) {
+// Watch for eligibility - check time only once when becoming eligible
+watch(isEligibleForModal, (isEligible) => {
+  if (isEligible && hasEnoughTimePassed()) {
     isModalOpen.value = true
-    markModalAsShown() // Save the date when modal is shown
+    markModalAsShown()
     amplitude.logEvent('yearly_upgrade_modal_viewed', {
       user_id: user.value?.id,
     })
-  } else {
-    isModalOpen.value = false
   }
 }, { immediate: true })
 
@@ -237,6 +235,8 @@ const handleUpgrade = async () => {
   amplitude.logEvent('yearly_upgrade_button_clicked', {
     user_id: user.value?.id,
   })
+  // Set workspace_id at call time to ensure it's current
+  upgradeForm.workspace_id = workspace.value?.id
   upgradeForm.post('/subscription/upgrade-to-yearly').then(async (response) => {
     alert.success(response.message)
 
