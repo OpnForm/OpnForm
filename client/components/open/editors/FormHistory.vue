@@ -1,17 +1,15 @@
 <template>
   <UTooltip 
     text="Form History" 
-    :content="{ side: 'left' }" 
+    :content="{ side: 'bottom' }" 
     arrow
   >
     <UButton
       :disabled="isLoading || !versions.length"
       :loading="isLoading"
-      size="sm"
       color="neutral"
-      variant="outline"
-      class="disabled:text-neutral-500 shadow-none"
-      icon="i-material-symbols-history"
+      variant="ghost"
+      icon="i-heroicons-clock"
       @click="isHistoryModalOpen=true"
     />
   </UTooltip>

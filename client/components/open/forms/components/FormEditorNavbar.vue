@@ -64,11 +64,12 @@
       />
     </div>
 
-    <FormHistory />
     <UndoRedo />
 
+    <FormHistory />
+
     <div
-      class="flex items-stretch gap-x-2"
+      class="flex items-center gap-x-2"
     >
       <TrackClick name="form_editor_help_button_clicked">
         <UTooltip
@@ -78,9 +79,9 @@
           arrow
         >
           <UButton
-            color="ghost"
+            variant="ghost"
+            color="neutral"
             icon="i-heroicons-question-mark-circle"
-            class="p-2 text-neutral-500 hover:text-neutral-800"
             @click.prevent="crisp.openHelpdesk()"
           />
         </UTooltip>
