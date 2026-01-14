@@ -64,6 +64,9 @@ import OpenForm from "../forms/OpenForm.vue"
 import { FormMode } from "~/lib/forms/FormModeStrategy.js"
 import { useFormManager } from '~/lib/forms/composables/useFormManager'
 
+// Provide form size context for OpenForm (same pattern as OpenCompleteForm)
+provide('formSize', ref('sm'))
+
 const props = defineProps({
   submissionId: {
     type: Number,

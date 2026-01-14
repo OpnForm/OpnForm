@@ -8,15 +8,23 @@
         <h2 class="font-semibold">
           Edit Submission
         </h2>
-        <UButton
-          v-if="props.form?.editable_submissions ?? false"
-          variant="outline"
-          :color="copySuccess ? 'success' : 'primary'"
-          :icon="copySuccess ? 'i-heroicons-check' : 'i-heroicons-clipboard-document'"
-          @click.prevent="copyToClipboard"
-        >
-          <span class="hidden md:inline">{{ copySuccess ? 'Copied!' : 'Copy Public Link' }}</span>
-        </UButton>
+        <div class="flex items-center gap-2">
+          <SubmissionHistory 
+            v-if="submission?.id"
+            :form="form" 
+            :submission-id="submission.id" 
+          />
+          <UButton
+            v-if="props.form?.editable_submissions ?? false"
+            variant="outline"
+            size="sm"
+            :color="copySuccess ? 'success' : 'primary'"
+            :icon="copySuccess ? 'i-heroicons-check' : 'i-heroicons-clipboard-document'"
+            @click.prevent="copyToClipboard"
+          >
+            <span class="hidden md:inline">{{ copySuccess ? 'Copied!' : 'Copy Public Link' }}</span>
+          </UButton>
+        </div>
       </div>
     </template>
     <template #body>
@@ -39,10 +47,14 @@
 </template>
 
 <script setup>
+import SubmissionHistory from "./SubmissionHistory.vue"
 import OpenForm from "../forms/OpenForm.vue"
 import { FormMode } from "~/lib/forms/FormModeStrategy.js"
 import { useFormManager } from '~/lib/forms/composables/useFormManager'
 import { useFormSubmissions } from "~/composables/query/forms/useFormSubmissions"
+
+// Provide form size context for OpenForm (same pattern as OpenCompleteForm)
+provide('formSize', ref('sm'))
 
 const props = defineProps({
   show: { type: Boolean, required: true },
