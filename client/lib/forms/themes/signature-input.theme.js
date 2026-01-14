@@ -5,6 +5,7 @@ export const signatureInputTheme = {
   slots: {
     container: [
       'flex flex-wrap items-center justify-center gap-4',
+      'border border-dashed',
       'focus:outline-hidden'
     ],
     help: 'text-neutral-500'
@@ -36,6 +37,9 @@ export const signatureInputTheme = {
           'bg-neutral-100 dark:bg-notion-dark-light',
           'text-neutral-700 dark:text-neutral-300'
         ]
+      },
+      transparent: {
+        container: '!rounded-none bg-transparent text-neutral-700 dark:text-neutral-300 border-neutral-300 dark:border-neutral-600 hover:bg-neutral-50 dark:hover:bg-notion-dark-light'
       }
     },
     size: {

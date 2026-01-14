@@ -4,7 +4,7 @@ import { initServiceClients } from '~/composables/useAuthFlow'
 
 export function useAuth() {
   const queryClient = useQueryClient()
-  const { handleAuthSuccess, handleManualLogout } = useAuthFlow()
+  const { handleAuthSuccess, handleManualLogout, handleTwoFactorError } = useAuthFlow()
   const { isAuthenticated } = useIsAuthenticated()
 
   // Queries
@@ -69,6 +69,18 @@ export function useAuth() {
         
         // Handle auth flow coordination
         handleAuthSuccess(tokenData, variables?.source || 'credentials')
+      },
+      onError: (error, variables) => {
+        // Check if this is a 2FA requirement (422 with requires_2fa flag)
+        const twoFactorData = handleTwoFactorError(error)
+        if (twoFactorData) {
+          // Handle auth flow coordination (will show 2FA modal)
+          handleAuthSuccess(twoFactorData, variables?.source || 'credentials')
+          return
+        }
+        
+        // This is a real error, let it propagate
+        throw error
       },
       ...options
     })

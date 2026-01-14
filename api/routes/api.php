@@ -87,6 +87,7 @@ Route::group(['middleware' => 'auth.multi'], function () {
             ->where('plan', '(' . implode('|', SubscriptionController::SUBSCRIPTION_PLANS) . ')');
         Route::get('/billing-portal', [SubscriptionController::class, 'billingPortal'])->name('billing-portal');
         Route::get('/users-count', [SubscriptionController::class, 'getUsersCount'])->name('users-count');
+        Route::post('/upgrade-to-yearly', [SubscriptionController::class, 'upgradeToYearly'])->name('upgrade-to-yearly');
     });
 
     Route::prefix('open')->name('open.')->group(function () {
@@ -146,6 +147,7 @@ Route::group(['middleware' => 'auth.multi'], function () {
                 )->name('forms.index');
                 Route::put('/custom-domains', [WorkspaceController::class, 'saveCustomDomain'])->name('save-custom-domains');
                 Route::put('/email-settings', [WorkspaceController::class, 'saveEmailSettings'])->name('save-email-settings');
+                Route::put('/custom-code-settings', [WorkspaceController::class, 'saveCustomCodeSettings'])->name('save-custom-code-settings');
                 Route::put('/', [WorkspaceController::class, 'update'])->name('update');
                 Route::delete('/', [WorkspaceController::class, 'delete'])->name('delete');
 
@@ -289,9 +291,14 @@ Route::group(['middleware' => 'auth.multi'], function () {
             [\App\Http\Controllers\Admin\AdminController::class, 'unblockUser']
         );
 
+        Route::post(
+            'disable-two-factor-authentication',
+            [\App\Http\Controllers\Admin\AdminController::class, 'disableTwoFactorAuthentication']
+        );
+
         Route::group(['prefix'  => 'billing'], function () {
-            Route::get('{user}/email', [\App\Http\Controllers\Admin\BillingController::class, 'getEmail']);
-            Route::patch('/email', [\App\Http\Controllers\Admin\BillingController::class, 'updateEmail']);
+            Route::get('{user}/customer', [\App\Http\Controllers\Admin\BillingController::class, 'getCustomer']);
+            Route::patch('/customer', [\App\Http\Controllers\Admin\BillingController::class, 'updateCustomer']);
             Route::get('{user}/subscriptions', [\App\Http\Controllers\Admin\BillingController::class, 'getSubscriptions']);
             Route::get('{user}/payments', [\App\Http\Controllers\Admin\BillingController::class, 'getPayments']);
         });

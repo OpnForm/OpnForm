@@ -36,7 +36,7 @@ class Form extends Model implements CachableAttributes
 
     public const BORDER_RADIUS = ['none', 'small', 'full'];
 
-    public const THEMES = ['default', 'simple', 'notion', 'minimal'];
+    public const THEMES = ['default', 'simple', 'notion', 'minimal', 'transparent'];
 
     public const PRESENTATION_STYLES = ['classic', 'focused'];
 
@@ -112,6 +112,9 @@ class Form extends Model implements CachableAttributes
 
         // Custom SEO
         'seo_meta',
+
+        // Analytics
+        'analytics',
     ];
 
     protected function casts(): array
@@ -131,6 +134,7 @@ class Form extends Model implements CachableAttributes
             'clear_empty_fields_on_update' => 'boolean',
             'presentation_style' => 'string',
             'settings' => 'array',
+            'analytics' => 'array',
         ];
     }
 

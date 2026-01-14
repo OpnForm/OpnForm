@@ -135,22 +135,37 @@ class GenerateDesXmlExport extends Command
             $queryOptions['created']['gte'] = Carbon::parse($startDate)->startOfDay()->timestamp;
         }
         if ($endDate) {
-            $queryOptions['created']['lte'] = Carbon::parse($endDate)->endOfDay()->timestamp;
+            $queryOptions['created']['lte'] = Carbon::createFromFormat('Y-m-d', $endDate)->endOfDay()->timestamp;
         }
 
+        $this->info('Fetching invoices from Stripe...');
         $invoices = Cashier::stripe()->invoices->all($queryOptions);
+        $totalResults = $invoices->count();
+        $this->info("Initial batch contains {$totalResults} invoices");
+
         $bar = $this->output->createProgressBar();
         $bar->start();
 
         do {
+            if (empty($invoices->data)) {
+                $this->line('No invoices found in this batch.');
+                break;
+            }
+
             foreach ($invoices as $invoice) {
                 // Skip cancelled or uncollectible invoices
                 if ($invoice->status === 'void' || $invoice->status === 'uncollectible' || $invoice->amount_remaining === $invoice->total) {
                     continue;
                 }
 
-                // Ignore if payment was not successful
-                if (($invoice->payment_intent->status ?? null) !== 'succeeded') {
+                // Check for payment status
+                // Since we query with status='paid', check invoice status first
+                // payment_intent->status may not always be available/expanded
+                $invoiceStatus = $invoice->status ?? null;
+                $paymentIntentStatus = $invoice->payment_intent->status ?? null;
+
+                // Accept if invoice is paid OR payment_intent succeeded
+                if ($invoiceStatus !== 'paid' && $paymentIntentStatus !== 'succeeded') {
                     continue;
                 }
 
@@ -169,9 +184,14 @@ class GenerateDesXmlExport extends Command
 
             if (!empty($invoices->data)) {
                 $queryOptions['starting_after'] = end($invoices->data)->id;
+            } else {
+                break;
             }
-            sleep(1);
+
+            // No need for sleep - Stripe API can handle the request rate
             $invoices = Cashier::stripe()->invoices->all($queryOptions);
+            $batchSize = count($invoices->data);
+            $totalResults += $batchSize;
         } while ($invoices->has_more);
 
         $bar->finish();
@@ -255,15 +275,48 @@ class GenerateDesXmlExport extends Command
         }
 
         // Try to get the converted amount from the balance transaction
-        if ($invoice->charge && $invoice->charge->balance_transaction) {
-            return $invoice->charge->balance_transaction->amount / 100;
+        // Fast path: invoice has embedded charge
+        if (isset($invoice->charge) && isset($invoice->charge->balance_transaction)) {
+            $bt = $invoice->charge->balance_transaction;
+            // balance_transaction->amount is NET (after fees), add fees back to get GROSS
+            $netEur = $bt->amount ?? 0;
+            $feeEur = $bt->fee ?? 0;
+            $totalEur = $netEur + $feeEur; // GROSS = NET + fees
+            return $totalEur / 100;
         }
 
-        // Try to get the amount from payment intent
-        if ($invoice->payment_intent && $invoice->payment_intent->charges->data) {
+        // Fallback: Stripe no longer embeds charge on invoice
+        // Fetch the Charge explicitly by invoice ID, then read its balance_transaction
+        try {
+            $charges = Cashier::stripe()->charges->all([
+                'invoice' => $invoice->id,
+                'limit' => 1,
+                'expand' => ['data.balance_transaction'],
+            ]);
+
+            $charge = $charges->data[0] ?? null;
+
+            if ($charge && isset($charge->balance_transaction)) {
+                $bt = $charge->balance_transaction;
+                // balance_transaction->amount is NET (after fees), add fees back to get GROSS
+                $netEur = $bt->amount ?? 0;
+                $feeEur = $bt->fee ?? 0;
+                $totalEur = $netEur + $feeEur; // GROSS = NET + fees
+                return $totalEur / 100;
+            }
+        } catch (\Exception $e) {
+            // Silently continue if charge retrieval fails
+        }
+
+        // Try to get the amount from payment intent (if expanded)
+        if (isset($invoice->payment_intent) && isset($invoice->payment_intent->charges) && isset($invoice->payment_intent->charges->data)) {
             foreach ($invoice->payment_intent->charges->data as $charge) {
-                if ($charge->balance_transaction) {
-                    return $charge->balance_transaction->amount / 100;
+                if (isset($charge->balance_transaction)) {
+                    $bt = $charge->balance_transaction;
+                    $netEur = $bt->amount ?? 0;
+                    $feeEur = $bt->fee ?? 0;
+                    $totalEur = $netEur + $feeEur;
+                    return $totalEur / 100;
                 }
             }
         }

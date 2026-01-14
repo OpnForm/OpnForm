@@ -99,6 +99,7 @@
 import ClientOnlyWrapper from '~/components/global/ClientOnlyWrapper.vue'
 import { useComponentRegistry } from '~/composables/components/useComponentRegistry'
 import TextBlock from '~/components/forms/core/TextBlock.vue'
+import { shuffleArray } from '~/lib/utils.js'
 
 const props = defineProps({
   block: { type: Object, required: false, default: null },
@@ -123,6 +124,7 @@ const componentInfo = computed(() => {
   if (!field || !field.type) return null
   let componentName
   if (field.type === 'text' && field.multi_lines) componentName = 'TextAreaInput'
+  else if (field.type === 'text' && field.input_mask) componentName = 'MaskInput'
   else if (field.type === 'url' && field.file_upload) componentName = 'FileInput'
   // In focused mode, use FocusedSelectorInput by default unless explicitly disabled
   else if (['select','multi_select'].includes(field.type) && form.value.presentation_style === 'focused' && field.use_focused_selector !== false) componentName = 'FocusedSelectorInput'
@@ -201,6 +203,14 @@ const roundedClass = computed(() => {
   return map[radius] || 'rounded-lg'
 })
 
+// Map select options once at component creation (shuffle if enabled)
+const selectOptions = (() => {
+  const field = props.block
+  if (!field || !['select', 'multi_select'].includes(field.type)) return null
+  const options = field[field.type]?.options?.map(option => ({ name: option.name, value: option.name })) ?? []
+  return field.shuffle_options && options.length > 1 ? shuffleArray(options) : options
+})()
+
 const boundProps = computed(() => {
   const field = props.block
   if (!field) return {}
@@ -233,9 +243,7 @@ const boundProps = computed(() => {
   if (field.type === 'barcode') inputProperties.decoders = field.decoders
 
   if (['select', 'multi_select'].includes(field.type)) {
-    inputProperties.options = (field[field.type])
-      ? field[field.type].options.map(option => ({ name: option.name, value: option.name }))
-      : []
+    inputProperties.options = selectOptions ?? []
     inputProperties.multiple = (field.type === 'multi_select')
     inputProperties.allowCreation = (field.allow_creation === true)
     inputProperties.searchable = (inputProperties.options.length > 4)
@@ -274,6 +282,9 @@ const boundProps = computed(() => {
     inputProperties.unavailableCountries = field.unavailable_countries ?? []
   } else if (field.type === 'text' && field.secret_input) {
     inputProperties.nativeType = 'password'
+  } else if(field.type === 'text' && field.input_mask) {
+    inputProperties.mask = field.input_mask
+    inputProperties.slotChar = field.slot_char
   } else if (field.type === 'payment') {
     inputProperties.direction = form.value.layout_rtl ? 'rtl' : 'ltr'
     inputProperties.currency = field.currency

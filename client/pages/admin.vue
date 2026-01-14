@@ -120,10 +120,14 @@
           :user="userInfo"
           @user-updated="onUserUpdate"
         />
+        <TwoFactorDisable
+          :user="userInfo"
+          @user-updated="onUserUpdate"
+        />
         <ExtendTrial
           :user="userInfo"
         />
-        <BillingEmail
+        <BillingCustomer
           :user="userInfo"
         />
         <UserWorkspaces

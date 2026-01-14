@@ -354,6 +354,11 @@
         label="Use radio buttons"
         @update:model-value="onFieldWithoutDropdownChange"
       />
+      <toggle-switch-input
+        :form="field"
+        name="shuffle_options"
+        label="Randomize options order"
+      />
       
       <!-- Min/Max Selection Constraints for multi_select only -->
       <template v-if="field.type === 'multi_select'">
@@ -700,6 +705,8 @@
         help="If you enable this, we will hide this field and fill it a unique incrementing number on each new form submission"
         @update:model-value="onFieldGenAutoIdChange"
       />
+
+      <InputMaskOptions :field="field" />
     </div>
 
   <!--  (moved above for focused mode)  -->
@@ -713,6 +720,7 @@ import CountryFlag from 'vue-country-flag-next'
 import MatrixFieldOptions from './MatrixFieldOptions.vue'
 import PaymentFieldOptions from './PaymentFieldOptions.vue'
 import HiddenRequiredDisabled from './HiddenRequiredDisabled.vue'
+import InputMaskOptions from './InputMaskOptions.vue'
 import EditorSectionHeader from '~/components/open/forms/components/form-components/EditorSectionHeader.vue'
 import ProTag from '~/components/app/ProTag.vue'
 import { format } from 'date-fns'
@@ -722,7 +730,7 @@ import BlockMediaOptions from '~/components/open/forms/components/media/BlockMed
 
 export default {
   name: 'FieldOptions',
-  components: { CountryFlag, MatrixFieldOptions, HiddenRequiredDisabled, EditorSectionHeader, PaymentFieldOptions, ProTag, BlockMediaOptions },
+  components: { CountryFlag, MatrixFieldOptions, HiddenRequiredDisabled, InputMaskOptions, EditorSectionHeader, PaymentFieldOptions, ProTag, BlockMediaOptions },
   props: {
     field: {
       type: Object,

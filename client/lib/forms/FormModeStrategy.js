@@ -89,6 +89,8 @@ export function createFormModeStrategy(mode) {
       strategy.display.enableDisabledFields = true
       strategy.display.showBranding = false
       strategy.display.forceClassicPresentation = true
+      
+      strategy.submission.enablePartialSubmissions = false
       break
 
     case FormMode.EDIT:

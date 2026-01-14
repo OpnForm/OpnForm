@@ -344,6 +344,7 @@ export default {
         hasError: this.hasError,
         disabled: this.disabled,
         focused: this.isFocused,
+        isOpen: this.isOpen,
         multiple: this.multiple,
         searchable: this.isSearchable
       })
