@@ -11,6 +11,21 @@ class FormSubmissionPolicy
     use HandlesAuthorization;
 
     /**
+     * Determine whether the user can view the form submission.
+     */
+    public function view(User $user, FormSubmission $submission)
+    {
+        $form = $submission->form;
+
+        if ($token = $user->currentAccessToken()) {
+            $canAccess = $token->can('forms-read') || $token->can('manage-integrations');
+            return $canAccess && $user->ownsForm($form);
+        }
+
+        return $user->ownsForm($form);
+    }
+
+    /**
      * Determine whether the user can update the form submission.
      */
     public function update(User $user, FormSubmission $submission)

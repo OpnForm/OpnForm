@@ -8,24 +8,34 @@
         <h2 class="font-semibold">
           View Submission
         </h2>
-        <UPagination
-          v-model:page="currentPage"
-          :items-per-page="1"
-          :total="totalSubmissions"
-          size="sm"
-          :sibling-count="0"
-          :ui="{
-            wrapper: 'w-auto',
-            list: 'gap-0',
-            ellipsis: 'hidden',
-            first: 'hidden',
-            last: 'hidden'
-          }"
-        >
-          <template #item="{ page, pageCount }">
-            <span class="text-sm font-medium px-2">{{ page }} of {{ pageCount }}</span>
-          </template>
-        </UPagination>
+
+        <div class="flex items-center gap-2">
+          <SubmissionHistory 
+            v-if="submission?.id"
+            :form="form" 
+            :submission-id="submission.id"
+            @restored="onSubmissionRestored"
+          />
+          
+          <UPagination
+            v-model:page="currentPage"
+            :items-per-page="1"
+            :total="totalSubmissions"
+            size="sm"
+            :sibling-count="0"
+            :ui="{
+              wrapper: 'w-auto',
+              list: 'gap-0',
+              ellipsis: 'hidden',
+              first: 'hidden',
+              last: 'hidden'
+            }"
+          >
+            <template #item="{ page, pageCount }">
+              <span class="text-sm font-medium px-2">{{ page }} of {{ pageCount }}</span>
+            </template>
+          </UPagination>
+        </div>
       </div>
     </template>
 
@@ -50,9 +60,13 @@
 </template>
 
 <script setup>
+import SubmissionHistory from "./SubmissionHistory.vue"
 import OpenForm from "../forms/OpenForm.vue"
 import { FormMode } from "~/lib/forms/FormModeStrategy.js"
 import { useFormManager } from '~/lib/forms/composables/useFormManager'
+
+// Provide form size context for OpenForm (same pattern as OpenCompleteForm)
+provide('formSize', ref('sm'))
 
 const props = defineProps({
   submissionId: {
@@ -67,7 +81,7 @@ const props = defineProps({
   form: { type: Object, required: true }
 })
 
-const emit = defineEmits(["close"])
+const emit = defineEmits(["close", "restored"])
 const route = useRoute()
 const router = useRouter()
 
@@ -130,5 +144,16 @@ const updateUrlWithSubmission = (submissionId) => {
     delete query.view
   }
   router.replace({ query })
+}
+
+const onSubmissionRestored = (restoredData) => {
+  // Re-initialize form manager with restored data
+  formManager.initialize({
+    skipPendingSubmission: true,
+    skipUrlParams: true,
+    defaultData: restoredData
+  })
+  // Emit to parent so it can update its data array
+  emit('restored', restoredData)
 }
 </script>

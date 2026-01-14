@@ -24,6 +24,7 @@ use App\Http\Controllers\Auth\UserInviteController;
 use App\Http\Controllers\Forms\FormPaymentController;
 use App\Http\Controllers\WorkspaceController;
 use App\Http\Controllers\WorkspaceUserController;
+use App\Http\Controllers\VersionController;
 use Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -47,6 +48,12 @@ if (config('app.self_hosted')) {
 
 Route::group(['middleware' => 'auth.multi'], function () {
     Route::post('logout', [LoginController::class, 'logout'])->name('logout');
+
+    // Versions
+    Route::prefix('versions')->name('versions.')->group(function () {
+        Route::get('{model_type}/{id}', [VersionController::class, 'index'])->name('index');
+        Route::post('{versionId}/restore', [VersionController::class, 'restore'])->name('restore');
+    });
 
     // Unsplash
     Route::get('/unsplash', [\App\Http\Controllers\Content\UnsplashController::class, 'index'])->name('unsplash.index');
@@ -175,6 +182,7 @@ Route::group(['middleware' => 'auth.multi'], function () {
 
             Route::prefix('/{form}/submissions')->name('submissions.')->group(function () {
                 Route::get('/', [FormSubmissionController::class, 'submissions'])->name('index');
+                Route::get('/{submission_id}', [FormSubmissionController::class, 'fetch'])->name('fetch');
                 Route::put('/{submission_id}', [FormSubmissionController::class, 'update'])->name('update');
                 Route::post('/export', [FormSubmissionController::class, 'export'])->name('export');
                 Route::get('/export/status/{jobId}', [FormSubmissionController::class, 'exportStatus'])->name('export.status');
