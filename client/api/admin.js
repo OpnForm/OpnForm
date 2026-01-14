@@ -20,8 +20,8 @@ export const adminApi = {
 
   // Billing management
   billing: {
-    getEmail: (userId, options) => apiService.get(`${BASE_PATH}/billing/${userId}/email`, options),
-    updateEmail: (data) => apiService.patch(`${BASE_PATH}/billing/email`, data),
+    getCustomer: (userId, options) => apiService.get(`${BASE_PATH}/billing/${userId}/customer`, options),
+    updateCustomer: (data) => apiService.patch(`${BASE_PATH}/billing/customer`, data),
     getSubscriptions: (userId, options) => apiService.get(`${BASE_PATH}/billing/${userId}/subscriptions`, options),
     getPayments: (userId, options) => apiService.get(`${BASE_PATH}/billing/${userId}/payments`, options)
   },

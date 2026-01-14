@@ -1,14 +1,14 @@
 <template>
   <AdminCard
     v-if="props.user.stripe_id"
-    title="Billing email"
-    icon="heroicons:envelope-16-solid"
+    title="Billing info"
+    icon="heroicons:credit-card-16-solid"
   >
     <p class="text-xs text-neutral-500">
-      You can update the billing email of the subscriber.
+      You can update the billing info of the subscriber in Stripe.
     </p>
     <div
-      v-if="loadingBillingEmail"
+      v-if="loading"
       class="text-neutral-600 dark:text-neutral-400"
     >
       <Loader class="h-6 w-6 mx-auto m-10" />
@@ -16,25 +16,32 @@
     <form
       v-else
       class="mt-6 space-y-6 flex flex-col justify-between"
-      @submit.prevent="updateUserBillingEmail"
+      @submit.prevent="updateBillingCustomer"
     >
-      <div>
+      <div class="space-y-4">
+        <TextInput
+          name="billing_name"
+          :form="form"
+          label="Billing name"
+          :required="true"
+          placeholder="Billing name"
+          :disabled="!customerLoaded"
+        />
         <TextInput
           name="billing_email"
           :form="form"
           label="Billing email"
           native-type="email"
           :required="true"
-          help="Billing email"
           placeholder="Billing email"
-          :disabled="!userCreated"
+          :disabled="!customerLoaded"
         />
         <UButton
           :loading="form.busy"
           type="submit"
           block
-          :disabled="!userCreated"
-          label="Update billing email"
+          :disabled="!customerLoaded"
+          label="Update billing info"
         />
       </div>
     </form>
@@ -48,28 +55,30 @@ const props = defineProps({
     user: { type: Object, required: true }
 })
 
-const loadingBillingEmail = ref(false)
-const userCreated = ref(false)
+const loading = ref(false)
+const customerLoaded = ref(false)
 const form = useForm({
+    billing_name: '',
     billing_email: '',
     user_id: props.user.id
 })
 
 onMounted(() => {
   if (!props.user.stripe_id) return
-    loadingBillingEmail.value = true
-    adminApi.billing.getEmail(props.user.id).then(data => {
-        loadingBillingEmail.value = false
-        userCreated.value = true
-        form.billing_email = data.billing_email
+    loading.value = true
+    adminApi.billing.getCustomer(props.user.id).then(data => {
+        loading.value = false
+        customerLoaded.value = true
+        form.billing_name = data.billing_name || ''
+        form.billing_email = data.billing_email || ''
     }).catch(() => {
-        loadingBillingEmail.value = false
-        userCreated.value = false
+        loading.value = false
+        customerLoaded.value = false
     })
 })
 
-const updateUserBillingEmail = () => {
-    form.patch('/moderator/billing/email')
+const updateBillingCustomer = () => {
+    form.patch('/moderator/billing/customer')
         .then(async (data) => {
             useAlert().success(data.message)
         })
