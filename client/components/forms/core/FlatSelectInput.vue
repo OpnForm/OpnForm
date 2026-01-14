@@ -11,7 +11,10 @@
     />
     <div
       v-else
-      :class="ui.container({ class: props.ui?.slots?.container })"
+      :class="[
+        ui.container({ class: props.ui?.slots?.container }),
+        hasImages ? imageContainerClass : ''
+      ]"
       :role="multiple ? 'group' : 'radiogroup'"
       :aria-label="label || `Select ${multiple ? 'options' : 'option'}`"
     >
@@ -23,28 +26,35 @@
           :key="option[optionKey]"
           :role="multiple?'checkbox':'radio'"
           :aria-checked="isSelected(option[optionKey])"
-          :class="ui.option({ optionDisabled: disabled || disableOptions.includes(option[optionKey]) || isOptionDisabled(option[optionKey]), class: props.ui?.slots?.option })"
+          :class="[
+            ui.option({ optionDisabled: disabled || disableOptions.includes(option[optionKey]) || isOptionDisabled(option[optionKey]), class: props.ui?.slots?.option }),
+            hasImages ? imageOptionClass : ''
+          ]"
           :tabindex="getOptionTabIndex(index)"
           @click="onSelect(option[optionKey])"
           @keydown="handleKeydown($event, index)"
         >
-          <template v-if="multiple">
-            <CheckboxIcon
-              :is-checked="isSelected(option[optionKey])"
-              :color="color"
-              :theme="resolvedTheme"
-            />
+          <!-- Radio/Checkbox icon -->
+          <template v-if="!hasImages || optionDisplayMode !== 'image_only'">
+            <template v-if="multiple">
+              <CheckboxIcon
+                :is-checked="isSelected(option[optionKey])"
+                :color="color"
+                :theme="resolvedTheme"
+              />
+            </template>
+            <template v-else>
+              <RadioButtonIcon
+                :is-checked="isSelected(option[optionKey])"
+                :color="color"
+                :theme="resolvedTheme"
+              />
+            </template>
           </template>
-          <template v-else>
-            <RadioButtonIcon
-              :is-checked="isSelected(option[optionKey])"
-              :color="color"
-              :theme="resolvedTheme"
-            />
-          </template>
+          
           <UTooltip
-            :text="disableOptionsTooltip"
-            :disabled="!disableOptions.includes(option[optionKey])"
+            :text="optionDisplayMode === 'image_only' ? option[displayKey] : disableOptionsTooltip"
+            :disabled="optionDisplayMode !== 'image_only' && !disableOptions.includes(option[optionKey])"
             class="w-full"
           >
             <slot
@@ -52,9 +62,44 @@
               :option="option"
               :selected="isSelected(option[optionKey])"
             >
-              <p class="flex-grow">
-                {{ option[displayKey] }}
-              </p>
+              <div 
+                :class="[
+                  'flex items-center',
+                  hasImages && optionDisplayMode === 'image_only' ? 'justify-center' : ''
+                ]"
+              >
+                <!-- Image -->
+                <div v-if="hasImages" :class="imageWrapperClass">
+                  <img
+                    v-if="option.image"
+                    :src="option.image"
+                    :alt="option[displayKey]"
+                    :class="imageSizeClass"
+                    class="rounded object-cover"
+                  >
+                  <div
+                    v-else
+                    :class="[imageSizeClass, 'bg-neutral-200 dark:bg-neutral-700 rounded flex items-center justify-center']"
+                  >
+                    <Icon name="heroicons:photo" class="w-4 h-4 text-neutral-400" />
+                  </div>
+                  <!-- Selection indicator for image_only mode -->
+                  <div
+                    v-if="optionDisplayMode === 'image_only' && isSelected(option[optionKey])"
+                    class="absolute top-1 right-1 w-5 h-5 rounded-full flex items-center justify-center"
+                    :style="{ backgroundColor: color }"
+                  >
+                    <Icon name="heroicons:check" class="w-3 h-3 text-white" />
+                  </div>
+                </div>
+                <!-- Text (unless image_only mode) -->
+                <p 
+                  v-if="optionDisplayMode !== 'image_only'" 
+                  class="flex-grow"
+                >
+                  {{ option[displayKey] }}
+                </p>
+              </div>
             </slot>
           </UTooltip>
         </div>
@@ -119,7 +164,9 @@ export default {
     disableOptionsTooltip: { type: String, default: "Not allowed" },
     clearable: { type: Boolean, default: false },
     minSelection: { type: Number, default: null },
-    maxSelection: { type: Number, default: null }
+    maxSelection: { type: Number, default: null },
+    optionDisplayMode: { type: String, default: 'text_only' },
+    optionImageSize: { type: String, default: 'md' }
   },
   setup(props, context) {
     const formInput = useFormInput(props, context, {
@@ -154,6 +201,35 @@ export default {
     maxSelectionReached() {
       if (!this.multiple || !this.maxSelection) return false
       return this.selectedCount >= this.maxSelection
+    },
+    hasImages() {
+      return ['text_and_image', 'image_only'].includes(this.optionDisplayMode)
+    },
+    imageSizeClass() {
+      const sizes = {
+        sm: 'w-12 h-12',
+        md: 'w-20 h-20',
+        lg: 'w-28 h-28'
+      }
+      return sizes[this.optionImageSize] || sizes.md
+    },
+    imageContainerClass() {
+      if (this.optionDisplayMode === 'image_only') {
+        return 'flex flex-wrap justify-center gap-2'
+      }
+      return ''
+    },
+    imageOptionClass() {
+      if (this.optionDisplayMode === 'image_only') {
+        return 'flex-col items-center justify-center !p-0 border-2 rounded-lg transition-all'
+      }
+      return ''
+    },
+    imageWrapperClass() {
+      if (this.optionDisplayMode === 'image_only') {
+        return 'relative shrink-0'
+      }
+      return 'relative shrink-0 mr-3'
     },
   },
   methods: {
