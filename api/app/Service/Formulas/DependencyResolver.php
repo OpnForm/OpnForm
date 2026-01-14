@@ -217,4 +217,45 @@ class DependencyResolver
 
         return !empty($tempResolver->detectCycles());
     }
+
+    /**
+     * Get the maximum dependency chain depth.
+     * Returns the longest path length in the dependency graph.
+     */
+    public function getMaxChainDepth(): int
+    {
+        $memo = [];
+
+        $getDepth = function (string $nodeId) use (&$getDepth, &$memo): int {
+            if (isset($memo[$nodeId])) {
+                return $memo[$nodeId];
+            }
+
+            $node = $this->nodes[$nodeId] ?? null;
+            if (!$node) {
+                return 0;
+            }
+
+            $maxChildDepth = 0;
+            foreach ($node['dependencies'] as $depId) {
+                // Only count dependencies that are computed variables
+                if (isset($this->nodes[$depId])) {
+                    $childDepth = $getDepth($depId);
+                    $maxChildDepth = max($maxChildDepth, $childDepth);
+                }
+            }
+
+            $memo[$nodeId] = $maxChildDepth + 1;
+
+            return $memo[$nodeId];
+        };
+
+        $maxDepth = 0;
+        foreach (array_keys($this->nodes) as $nodeId) {
+            $depth = $getDepth($nodeId);
+            $maxDepth = max($maxDepth, $depth);
+        }
+
+        return $maxDepth;
+    }
 }

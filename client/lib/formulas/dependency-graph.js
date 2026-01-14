@@ -236,6 +236,46 @@ export class DependencyGraph {
     
     return tempGraph.detectCycles().length > 0
   }
+
+  /**
+   * Get the maximum dependency chain depth.
+   * Returns the longest path length in the dependency graph.
+   */
+  getMaxChainDepth() {
+    const memo = new Map()
+
+    const getDepth = (nodeId) => {
+      if (memo.has(nodeId)) {
+        return memo.get(nodeId)
+      }
+
+      const node = this.nodes.get(nodeId)
+      if (!node) {
+        return 0
+      }
+
+      let maxChildDepth = 0
+      for (const depId of node.dependencies) {
+        // Only count dependencies that are computed variables
+        if (this.nodes.has(depId)) {
+          const childDepth = getDepth(depId)
+          maxChildDepth = Math.max(maxChildDepth, childDepth)
+        }
+      }
+
+      const depth = maxChildDepth + 1
+      memo.set(nodeId, depth)
+      return depth
+    }
+
+    let maxDepth = 0
+    for (const nodeId of this.nodes.keys()) {
+      const depth = getDepth(nodeId)
+      maxDepth = Math.max(maxDepth, depth)
+    }
+
+    return maxDepth
+  }
 }
 
 /**

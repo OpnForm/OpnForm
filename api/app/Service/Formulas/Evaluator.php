@@ -6,7 +6,11 @@ use App\Service\Formulas\Functions\FunctionRegistry;
 
 class Evaluator
 {
+    private const MAX_DEPTH = 10;
+
     private array $context;
+
+    private int $depth = 0;
 
     public function __construct(array $context = [])
     {
@@ -135,19 +139,30 @@ class Evaluator
 
     private function evaluateFunction(array $node): mixed
     {
-        $funcName = strtoupper($node['name']);
+        $this->depth++;
 
-        if (!FunctionRegistry::has($funcName)) {
-            throw new FormulaException("Unknown function: {$funcName}");
+        if ($this->depth > self::MAX_DEPTH) {
+            $this->depth--;
+            throw new FormulaException('Maximum formula nesting depth exceeded');
         }
 
-        // Evaluate all arguments
-        $args = array_map(fn ($arg) => $this->evaluateNode($arg), $node['args']);
-
         try {
+            $funcName = strtoupper($node['name']);
+
+            if (!FunctionRegistry::has($funcName)) {
+                throw new FormulaException("Unknown function: {$funcName}");
+            }
+
+            // Evaluate all arguments
+            $args = array_map(fn ($arg) => $this->evaluateNode($arg), $node['args']);
+
             return FunctionRegistry::call($funcName, $args);
+        } catch (FormulaException $e) {
+            throw $e;
         } catch (\Exception $e) {
             return null;
+        } finally {
+            $this->depth--;
         }
     }
 

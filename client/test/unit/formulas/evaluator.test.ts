@@ -266,4 +266,18 @@ describe('Formula Evaluator', () => {
       expect(evaluate('10 / {value}', { value: 0 })).toBe(null)
     })
   })
+
+  describe('depth limiting', () => {
+    it('returns null when nesting exceeds max depth of 10', () => {
+      // 11 levels of nesting should fail
+      const formula = 'ABS(ABS(ABS(ABS(ABS(ABS(ABS(ABS(ABS(ABS(ABS(1)))))))))))'
+      expect(evaluate(formula)).toBe(null)
+    })
+
+    it('evaluates formulas within depth limit', () => {
+      // 10 levels deep should work
+      const formula = 'ABS(ABS(ABS(ABS(ABS(ABS(ABS(ABS(ABS(ABS(1))))))))))'
+      expect(evaluate(formula)).toBe(1)
+    })
+  })
 })

@@ -163,6 +163,21 @@ describe('Formula Functions', () => {
       })
     })
 
+    describe('REPT', () => {
+      it('repeats text N times', () => {
+        expect(textFunctions.REPT('ab', 3)).toBe('ababab')
+      })
+
+      it('returns empty string for negative count', () => {
+        expect(textFunctions.REPT('ab', -1)).toBe('')
+      })
+
+      it('limits repetitions to 100 to prevent memory abuse', () => {
+        const result = textFunctions.REPT('x', 200)
+        expect(result.length).toBe(100)
+      })
+    })
+
     describe('FIND/SEARCH', () => {
       it('finds position (case-sensitive)', () => {
         expect(textFunctions.FIND('l', 'Hello')).toBe(3)

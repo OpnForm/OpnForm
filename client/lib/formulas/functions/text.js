@@ -163,14 +163,17 @@ export function SEARCH(findText, withinText, startPos = 1) {
   return index === -1 ? null : index + 1
 }
 
+const MAX_REPT = 100
+
 /**
- * REPT - Repeat text N times
+ * REPT - Repeat text N times (max 100)
  */
 export function REPT(text, times) {
   const str = toString(text)
   const n = Number(times)
   if (isNaN(n) || n < 0) return ''
-  return str.repeat(Math.floor(n))
+  // Limit repetitions to prevent memory abuse
+  return str.repeat(Math.min(Math.floor(n), MAX_REPT))
 }
 
 /**

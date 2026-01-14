@@ -2,6 +2,7 @@
 
 namespace App\Rules;
 
+use App\Service\Formulas\DependencyResolver;
 use App\Service\Formulas\Validator as FormulaValidator;
 use Closure;
 use Illuminate\Contracts\Validation\DataAwareRule;
@@ -15,11 +16,13 @@ use Illuminate\Validation\Validator;
  */
 class ComputedVariablesRule implements ValidationRule, ValidatorAwareRule, DataAwareRule
 {
+    private const MAX_CHAIN_DEPTH = 20;
+
+    private const VALID_RESULT_TYPES = ['number', 'text', 'auto'];
+
     private ?Validator $validator = null;
 
     private array $data = [];
-
-    private const VALID_RESULT_TYPES = ['number', 'text', 'auto'];
 
     /**
      * Set the current validator.
@@ -91,6 +94,14 @@ class ComputedVariablesRule implements ValidationRule, ValidatorAwareRule, DataA
         $circularErrors = $this->detectCircularDependencies($value);
         foreach ($circularErrors as $error) {
             $allErrors['computed_variables'][] = $error;
+        }
+
+        // Check for maximum chain depth (only if no cycles)
+        if (empty($circularErrors)) {
+            $chainDepthError = $this->checkChainDepth($value);
+            if ($chainDepthError !== null) {
+                $allErrors['computed_variables'][] = $chainDepthError;
+            }
         }
 
         // Add errors to validator's message bag
@@ -296,6 +307,21 @@ class ComputedVariablesRule implements ValidationRule, ValidatorAwareRule, DataA
         }
 
         unset($recursionStack[$nodeId]);
+
+        return null;
+    }
+
+    /**
+     * Check if the dependency chain depth exceeds the maximum.
+     */
+    private function checkChainDepth(array $variables): ?string
+    {
+        $resolver = DependencyResolver::fromVariables($variables);
+        $depth = $resolver->getMaxChainDepth();
+
+        if ($depth > self::MAX_CHAIN_DEPTH) {
+            return "Variable dependency chain is too deep ({$depth} levels). Maximum allowed is " . self::MAX_CHAIN_DEPTH . '.';
+        }
 
         return null;
     }

@@ -254,4 +254,18 @@ describe('Formula Evaluator', function () {
             expect(Evaluator::evaluate('10 / {value}', ['value' => 0]))->toBe(null);
         });
     });
+
+    describe('depth limiting', function () {
+        it('returns null when nesting exceeds max depth of 10', function () {
+            // Create a deeply nested formula (11 levels deep should fail)
+            $formula = 'ABS(ABS(ABS(ABS(ABS(ABS(ABS(ABS(ABS(ABS(ABS(1)))))))))))';
+            expect(Evaluator::evaluate($formula))->toBe(null);
+        });
+
+        it('evaluates formulas within depth limit', function () {
+            // 10 levels deep should work
+            $formula = 'ABS(ABS(ABS(ABS(ABS(ABS(ABS(ABS(ABS(ABS(1))))))))))';
+            expect(Evaluator::evaluate($formula))->toBe(1.0);
+        });
+    });
 });

@@ -158,6 +158,11 @@ class MentionParser
             $value = (array) $value;
         }
 
+        // Convert booleans to user-friendly text
+        if (is_bool($value)) {
+            $value = $value ? 'Yes' : 'No';
+        }
+
         if ($this->urlFriendly && $value !== null) {
             return is_array($value)
                 ? array_map('urlencode', $value)

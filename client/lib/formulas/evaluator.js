@@ -2,6 +2,8 @@ import { NodeType, FormulaError } from './types.js'
 import { Parser } from './parser.js'
 import { functions } from './functions/index.js'
 
+const MAX_DEPTH = 10
+
 /**
  * Evaluator for formula AST
  * Evaluates an AST with a given data context
@@ -9,6 +11,7 @@ import { functions } from './functions/index.js'
 export class Evaluator {
   constructor(context = {}) {
     this.context = context // { fieldId: value, ... }
+    this.depth = 0
   }
 
   /**
@@ -149,21 +152,33 @@ export class Evaluator {
    * Evaluate function call
    */
   evaluateFunction(node) {
-    const funcName = node.name.toUpperCase()
-    const func = functions[funcName]
+    this.depth++
 
-    if (!func) {
-      throw new FormulaError(`Unknown function: ${funcName}`)
+    if (this.depth > MAX_DEPTH) {
+      this.depth--
+      throw new FormulaError('Maximum formula nesting depth exceeded')
     }
 
-    // Evaluate all arguments
-    const args = node.args.map(arg => this.evaluate(arg))
-
     try {
+      const funcName = node.name.toUpperCase()
+      const func = functions[funcName]
+
+      if (!func) {
+        throw new FormulaError(`Unknown function: ${funcName}`)
+      }
+
+      // Evaluate all arguments
+      const args = node.args.map(arg => this.evaluate(arg))
+
       return func(...args)
-    } catch {
+    } catch (error) {
+      if (error instanceof FormulaError) {
+        throw error
+      }
       // Function errors return null
       return null
+    } finally {
+      this.depth--
     }
   }
 

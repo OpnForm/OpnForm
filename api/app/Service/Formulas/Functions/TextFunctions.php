@@ -144,6 +144,8 @@ class TextFunctions
         return $pos === false ? null : $pos + 1;
     }
 
+    private const MAX_REPT = 100;
+
     public static function REPT(mixed $text, mixed $times): string
     {
         $str = self::toString($text);
@@ -151,6 +153,9 @@ class TextFunctions
         if ($n < 0) {
             return '';
         }
+        // Limit repetitions to prevent memory abuse
+        $n = min($n, self::MAX_REPT);
+
         return str_repeat($str, $n);
     }
 

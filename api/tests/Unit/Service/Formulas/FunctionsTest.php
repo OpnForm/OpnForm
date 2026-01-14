@@ -157,6 +157,21 @@ describe('Formula Functions', function () {
                 expect(TextFunctions::SUBSTITUTE('hello hello hello', 'hello', 'hi', 2))->toBe('hello hi hello');
             });
         });
+
+        describe('REPT', function () {
+            it('repeats text N times', function () {
+                expect(TextFunctions::REPT('ab', 3))->toBe('ababab');
+            });
+
+            it('returns empty string for negative count', function () {
+                expect(TextFunctions::REPT('ab', -1))->toBe('');
+            });
+
+            it('limits repetitions to 100 to prevent memory abuse', function () {
+                $result = TextFunctions::REPT('x', 200);
+                expect(strlen($result))->toBe(100);
+            });
+        });
     });
 
     describe('Logic Functions', function () {

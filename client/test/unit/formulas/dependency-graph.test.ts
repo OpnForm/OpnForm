@@ -147,4 +147,43 @@ describe('Dependency Graph', () => {
       expect(order.indexOf('cv_1')).toBeLessThan(order.indexOf('cv_2'))
     })
   })
+
+  describe('getMaxChainDepth', () => {
+    it('returns 0 for empty graph', () => {
+      const graph = new DependencyGraph()
+      expect(graph.getMaxChainDepth()).toBe(0)
+    })
+
+    it('returns 1 for single variable without computed dependencies', () => {
+      const graph = new DependencyGraph()
+      graph.addVariable({ id: 'cv_a', name: 'A', formula: '{field1}' })
+      
+      expect(graph.getMaxChainDepth()).toBe(1)
+    })
+
+    it('returns correct depth for chain of dependencies', () => {
+      const graph = new DependencyGraph()
+      graph.addVariable({ id: 'cv_a', name: 'A', formula: '{field1}' })
+      graph.addVariable({ id: 'cv_b', name: 'B', formula: '{cv_a}' })
+      graph.addVariable({ id: 'cv_c', name: 'C', formula: '{cv_b}' })
+      graph.addVariable({ id: 'cv_d', name: 'D', formula: '{cv_c}' })
+      
+      // Chain: cv_d -> cv_c -> cv_b -> cv_a (depth 4)
+      expect(graph.getMaxChainDepth()).toBe(4)
+    })
+
+    it('returns max depth when there are multiple chains', () => {
+      const graph = new DependencyGraph()
+      // Short chain
+      graph.addVariable({ id: 'cv_short', name: 'Short', formula: '{field1}' })
+      
+      // Long chain
+      graph.addVariable({ id: 'cv_1', name: '1', formula: '{field2}' })
+      graph.addVariable({ id: 'cv_2', name: '2', formula: '{cv_1}' })
+      graph.addVariable({ id: 'cv_3', name: '3', formula: '{cv_2}' })
+      
+      // Max depth is 3 (the long chain)
+      expect(graph.getMaxChainDepth()).toBe(3)
+    })
+  })
 })

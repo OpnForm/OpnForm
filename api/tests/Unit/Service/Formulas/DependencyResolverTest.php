@@ -153,4 +153,43 @@ describe('Dependency Resolver', function () {
             expect(array_search('cv_1', $order))->toBeLessThan(array_search('cv_2', $order));
         });
     });
+
+    describe('getMaxChainDepth', function () {
+        it('returns 0 for empty graph', function () {
+            $resolver = new DependencyResolver();
+            expect($resolver->getMaxChainDepth())->toBe(0);
+        });
+
+        it('returns 1 for single variable without computed dependencies', function () {
+            $resolver = new DependencyResolver();
+            $resolver->addVariable(['id' => 'cv_a', 'name' => 'A', 'formula' => '{field1}']);
+
+            expect($resolver->getMaxChainDepth())->toBe(1);
+        });
+
+        it('returns correct depth for chain of dependencies', function () {
+            $resolver = new DependencyResolver();
+            $resolver->addVariable(['id' => 'cv_a', 'name' => 'A', 'formula' => '{field1}']);
+            $resolver->addVariable(['id' => 'cv_b', 'name' => 'B', 'formula' => '{cv_a}']);
+            $resolver->addVariable(['id' => 'cv_c', 'name' => 'C', 'formula' => '{cv_b}']);
+            $resolver->addVariable(['id' => 'cv_d', 'name' => 'D', 'formula' => '{cv_c}']);
+
+            // Chain: cv_d -> cv_c -> cv_b -> cv_a (depth 4)
+            expect($resolver->getMaxChainDepth())->toBe(4);
+        });
+
+        it('returns max depth when there are multiple chains', function () {
+            $resolver = new DependencyResolver();
+            // Short chain
+            $resolver->addVariable(['id' => 'cv_short', 'name' => 'Short', 'formula' => '{field1}']);
+
+            // Long chain
+            $resolver->addVariable(['id' => 'cv_1', 'name' => '1', 'formula' => '{field2}']);
+            $resolver->addVariable(['id' => 'cv_2', 'name' => '2', 'formula' => '{cv_1}']);
+            $resolver->addVariable(['id' => 'cv_3', 'name' => '3', 'formula' => '{cv_2}']);
+
+            // Max depth is 3 (the long chain)
+            expect($resolver->getMaxChainDepth())->toBe(3);
+        });
+    });
 });

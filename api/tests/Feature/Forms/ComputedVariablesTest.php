@@ -78,6 +78,26 @@ describe('Computed Variables Integration', function () {
 
             expect($result)->toBe('<p>Result: N/A</p>');
         });
+
+        it('renders boolean true as Yes', function () {
+            $content = '<p>Active: <span mention mention-field-id="cv_active">Active</span></p>';
+            $computedValues = ['cv_active' => true];
+
+            $parser = new MentionParser($content, [], $computedValues);
+            $result = $parser->parse();
+
+            expect($result)->toBe('<p>Active: Yes</p>');
+        });
+
+        it('renders boolean false as No', function () {
+            $content = '<p>Active: <span mention mention-field-id="cv_active">Active</span></p>';
+            $computedValues = ['cv_active' => false];
+
+            $parser = new MentionParser($content, [], $computedValues);
+            $result = $parser->parse();
+
+            expect($result)->toBe('<p>Active: No</p>');
+        });
     });
 
     describe('FormLogicConditionChecker with computed variables', function () {
