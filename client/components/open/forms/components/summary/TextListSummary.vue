@@ -1,59 +1,90 @@
 <template>
-  <div>
-    <div class="divide-y">
+  <div class="flex flex-col">
+    <div class="divide-y divide-neutral-100">
       <div
         v-for="(item, index) in displayedValues"
         :key="index"
-        class="px-4 py-2.5 flex items-center justify-between group"
+        class="px-4 py-3 flex items-start gap-3 hover:bg-neutral-50 transition-colors group"
       >
-        <!-- File field -->
-        <a
-          v-if="isFileType"
-          :href="item.value"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="inline-flex items-center gap-2 px-3 py-2 border border-neutral-200 rounded-lg hover:bg-neutral-50 transition-colors text-sm text-neutral-600"
-        >
-          <UIcon name="i-heroicons-arrow-top-right-on-square" class="w-4 h-4 text-neutral-400" />
-          <span class="truncate max-w-xs">{{ getDisplayFileName(item.value) }}</span>
-        </a>
+        <!-- Icon based on type -->
+        <div class="mt-0.5 flex-shrink-0">
+          <UIcon 
+            v-if="isFileType" 
+            name="i-heroicons-paper-clip" 
+            class="w-4 h-4 text-neutral-400" 
+          />
+          <UIcon 
+            v-else-if="fieldType === 'email'" 
+            name="i-heroicons-envelope" 
+            class="w-4 h-4 text-neutral-400" 
+          />
+          <UIcon 
+            v-else-if="fieldType === 'url'" 
+            name="i-heroicons-link" 
+            class="w-4 h-4 text-neutral-400" 
+          />
+          <UIcon 
+            v-else 
+            name="i-heroicons-chat-bubble-left-ellipsis" 
+            class="w-4 h-4 text-neutral-400" 
+          />
+        </div>
 
-        <!-- URL field -->
-        <a
-          v-else-if="fieldType === 'url'"
-          :href="item.value"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="text-neutral-700 truncate flex-1 pr-4"
-        >
-          {{ item.value }}
-        </a>
+        <div class="flex-1 min-w-0">
+          <!-- File field -->
+          <a
+            v-if="isFileType"
+            :href="item.value"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="inline-flex items-center gap-2 text-sm font-medium text-neutral-700 hover:text-neutral-900 underline decoration-neutral-300 hover:decoration-neutral-900 underline-offset-2 transition-all"
+          >
+            {{ getDisplayFileName(item.value) }}
+            <UIcon name="i-heroicons-arrow-top-right-on-square" class="w-3 h-3" />
+          </a>
 
-        <!-- Email field -->
-        <a
-          v-else-if="fieldType === 'email'"
-          :href="'mailto:' + item.value"
-          class="text-neutral-700 truncate flex-1 pr-4"
-        >
-          {{ item.value }}
-        </a>
+          <!-- URL field -->
+          <a
+            v-else-if="fieldType === 'url'"
+            :href="item.value"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="text-sm text-blue-600 hover:text-blue-800 hover:underline truncate block"
+          >
+            {{ item.value }}
+          </a>
 
-        <!-- Rich text field -->
-        <div
-          v-else-if="fieldType === 'rich_text'"
-          class="text-neutral-700 truncate flex-1 pr-4"
-          v-html="item.value"
-        />
+          <!-- Email field -->
+          <a
+            v-else-if="fieldType === 'email'"
+            :href="'mailto:' + item.value"
+            class="text-sm text-neutral-700 hover:text-neutral-900 truncate block"
+          >
+            {{ item.value }}
+          </a>
 
-        <!-- Default text -->
-        <span v-else class="text-neutral-700 truncate flex-1 pr-4">{{ item.value }}</span>
+          <!-- Rich text field -->
+          <div
+            v-else-if="fieldType === 'rich_text'"
+            class="text-sm text-neutral-700 prose prose-sm max-w-none line-clamp-3"
+            v-html="item.value"
+          />
 
+          <!-- Default text -->
+          <span v-else class="text-sm text-neutral-700 break-words block">{{ item.value }}</span>
+          
+          <!-- Timestamp (if available in future) -->
+          <!-- <div class="text-xs text-neutral-400 mt-1">2 hours ago</div> -->
+        </div>
+
+        <!-- Actions -->
         <UDropdownMenu :items="menuItems(item)" :popper="{ placement: 'bottom-end' }">
           <UButton
             color="neutral"
             variant="ghost"
-            icon="i-heroicons-ellipsis-vertical"
+            icon="i-heroicons-ellipsis-horizontal"
             size="xs"
+            class="opacity-0 group-hover:opacity-100 transition-opacity"
           />
         </UDropdownMenu>
       </div>
@@ -62,23 +93,27 @@
     <!-- Empty state -->
     <div
       v-if="displayedValues.length === 0"
-      class="text-center p-4 text-neutral-400 text-sm"
+      class="flex flex-col items-center justify-center py-8 text-neutral-400"
     >
-      {{ isFileType ? 'No files uploaded' : 'No responses' }}
+      <UIcon 
+        :name="isFileType ? 'i-heroicons-document' : 'i-heroicons-chat-bubble-bottom-center-text'" 
+        class="w-8 h-8 mb-2 opacity-50" 
+      />
+      <span class="text-sm">{{ isFileType ? 'No files uploaded' : 'No responses' }}</span>
     </div>
 
     <!-- Load More Button -->
-    <div v-if="hasMore" class="p-4 border-t border-neutral-100">
+    <div v-if="hasMore" class="p-3 border-t border-neutral-100 bg-neutral-50/50">
       <UButton
         color="neutral"
-        variant="ghost"
+        variant="soft"
+        block
         size="sm"
         :loading="isLoadingMore"
-        class="w-full"
         @click="loadMore"
       >
         <template v-if="!isLoadingMore">
-          Show more ({{ remainingCount }} remaining)
+          Load more responses ({{ remainingCount }} remaining)
         </template>
       </UButton>
     </div>

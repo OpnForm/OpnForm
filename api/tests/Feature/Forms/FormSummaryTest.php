@@ -14,6 +14,8 @@ describe('Form Summary', function () {
             ->assertSuccessful()
             ->assertJson([
                 'total_submissions' => 0,
+                'processed_submissions' => 0,
+                'is_limited' => false,
                 'fields' => [],
             ]);
     });
@@ -32,7 +34,9 @@ describe('Form Summary', function () {
 
         $this->getJson(route('open.workspaces.form.summary', [$this->workspace, $this->form]))
             ->assertSuccessful()
-            ->assertJsonPath('total_submissions', 5);
+            ->assertJsonPath('total_submissions', 5)
+            ->assertJsonPath('processed_submissions', 5)
+            ->assertJsonPath('is_limited', false);
     });
 
     it('filters by status correctly', function () {

@@ -1,64 +1,68 @@
 <template>
   <div class="p-4">
-    <!-- Bar Chart View -->
-    <div v-if="!showPieChart" class="space-y-2">
-      <div
-        v-for="item in distribution"
-        :key="item.value"
-        class="flex items-center gap-3"
-      >
-        <!-- Label -->
-        <div class="w-24 text-sm text-neutral-700 truncate flex-shrink-0" :title="item.value">
-          {{ item.value }}
-        </div>
-
-        <!-- Bar -->
-        <div class="flex-1 bg-neutral-100 rounded-full h-6 overflow-hidden">
-          <div
-            class="h-full bg-blue-400 rounded-full transition-all duration-300"
-            :style="{ width: item.percentage + '%' }"
-          />
-        </div>
-
-        <!-- Stats -->
-        <div class="w-12 text-right text-sm text-neutral-500 flex-shrink-0">
-          {{ item.percentage }}%
-        </div>
-        <div class="w-24 text-right text-sm text-neutral-400 flex-shrink-0">
-          {{ item.count }} {{ item.count === 1 ? 'response' : 'responses' }}
-        </div>
-      </div>
-
-      <!-- Empty state -->
-      <div
-        v-if="distribution.length === 0"
-        class="text-center py-4 text-neutral-400 text-sm"
-      >
-        No responses
-      </div>
+    <!-- Empty state -->
+    <div
+      v-if="distribution.length === 0"
+      class="flex flex-col items-center justify-center py-8 text-neutral-400"
+    >
+      <UIcon name="i-heroicons-chart-pie" class="w-8 h-8 mb-2 opacity-50" />
+      <span class="text-sm">No responses yet</span>
     </div>
 
-    <!-- Pie Chart View -->
-    <div v-else class="flex flex-col sm:flex-row items-center justify-center gap-8 py-4">
-      <div class="w-48 h-48">
-        <Pie :data="chartData" :options="chartOptions" />
-      </div>
-
-      <!-- Legend -->
-      <div class="space-y-2">
+    <template v-else>
+      <!-- Bar Chart View -->
+      <div v-if="!showPieChart" class="space-y-3">
         <div
           v-for="(item, index) in distribution"
           :key="item.value"
-          class="flex items-center gap-2"
+          class="group"
         >
-          <div
-            class="w-3 h-3 rounded-sm flex-shrink-0"
-            :style="{ backgroundColor: chartColors[index % chartColors.length] }"
-          />
-          <span class="text-sm text-neutral-700">{{ item.value }}</span>
+          <div class="flex items-center justify-between text-sm mb-1">
+            <span class="font-medium text-neutral-700 truncate max-w-[70%]">{{ item.value }}</span>
+            <div class="flex items-center gap-3">
+              <span class="text-neutral-500">{{ item.count }}</span>
+              <span class="font-medium text-neutral-900 w-10 text-right">{{ item.percentage }}%</span>
+            </div>
+          </div>
+          
+          <div class="h-2.5 bg-neutral-100 rounded-full overflow-hidden">
+            <div
+              class="h-full rounded-full transition-all duration-500 ease-out"
+              :class="[
+                'bg-neutral-900 group-hover:bg-neutral-800'
+              ]"
+              :style="{ width: item.percentage + '%', backgroundColor: chartColors[index % chartColors.length] }"
+            />
+          </div>
         </div>
       </div>
-    </div>
+
+      <!-- Pie Chart View -->
+      <div v-else class="flex flex-col sm:flex-row items-center justify-center gap-8 py-2">
+        <div class="w-56 h-56 relative">
+          <Pie :data="chartData" :options="chartOptions" />
+        </div>
+
+        <!-- Legend -->
+        <div class="space-y-2 max-h-60 overflow-y-auto custom-scrollbar pr-2">
+          <div
+            v-for="(item, index) in distribution"
+            :key="item.value"
+            class="flex items-center gap-2.5"
+          >
+            <div
+              class="w-3 h-3 rounded-full flex-shrink-0"
+              :style="{ backgroundColor: chartColors[index % chartColors.length] }"
+            />
+            <div class="text-sm">
+              <span class="text-neutral-700 font-medium">{{ item.value }}</span>
+              <span class="text-neutral-400 mx-1">•</span>
+              <span class="text-neutral-500">{{ item.percentage }}%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </template>
   </div>
 </template>
 

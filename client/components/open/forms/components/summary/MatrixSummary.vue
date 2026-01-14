@@ -2,40 +2,51 @@
   <div class="p-4">
     <div
       v-if="rowNames.length === 0"
-      class="text-center py-4 text-neutral-400 text-sm"
+      class="flex flex-col items-center justify-center py-8 text-neutral-400"
     >
-      No responses
+      <UIcon name="i-heroicons-table-cells" class="w-8 h-8 mb-2 opacity-50" />
+      <span class="text-sm">No matrix data collected yet</span>
     </div>
 
-    <div v-else class="overflow-x-auto">
-      <table class="w-full">
+    <div v-else class="overflow-x-auto custom-scrollbar">
+      <table class="w-full border-separate border-spacing-0">
         <thead>
           <tr>
-            <th class="p-2" />
+            <th class="sticky left-0 bg-white z-10 p-3 border-b border-r border-neutral-100 w-1/4 min-w-[150px]">
+              <span class="text-xs font-medium text-neutral-400 uppercase tracking-wider">Rows / Columns</span>
+            </th>
             <th
               v-for="col in columns"
               :key="col"
-              class="p-2 text-sm text-neutral-700 text-center"
+              class="p-3 text-sm font-semibold text-neutral-700 text-center bg-neutral-50 border-b border-neutral-100 min-w-[100px]"
             >
               {{ col }}
             </th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="rowName in rowNames" :key="rowName">
-            <th class="p-2 text-sm text-left text-neutral-700 whitespace-nowrap">
+          <tr v-for="(rowName, rowIndex) in rowNames" :key="rowName" class="group">
+            <th 
+              class="sticky left-0 z-10 p-3 text-sm font-medium text-left text-neutral-700 border-r border-b border-neutral-100 bg-neutral-50/50 group-hover:bg-neutral-50 transition-colors"
+            >
               {{ rowName }}
             </th>
             <td
               v-for="col in columns"
               :key="col"
-              class="p-2"
+              class="p-2 border-b border-neutral-50"
             >
               <div
-                class="rounded-lg px-4 py-3 text-center text-sm font-medium transition-all"
+                class="rounded-lg px-3 py-2 text-center text-sm transition-all flex flex-col items-center justify-center min-h-[50px]"
                 :class="getCellClass(getPercentage(rowName, col))"
               >
-                {{ formatPercentage(getPercentage(rowName, col)) }}%
+                <span class="font-bold">{{ formatPercentage(getPercentage(rowName, col)) }}%</span>
+                <span 
+                  class="text-[10px] opacity-75 mt-0.5"
+                  v-if="getPercentage(rowName, col) > 0"
+                >
+                  {{ getCount(rowName, col) }}
+                </span>
               </div>
             </td>
           </tr>
@@ -70,26 +81,35 @@ const columns = computed(() => {
   })
 })
 
-const getPercentage = (rowName, col) => {
+const getRowData = (rowName, col) => {
   const rowData = rows.value[rowName]
-  if (!rowData?.distribution) return 0
-  const item = rowData.distribution.find(d => d.value === col)
-  return item?.percentage || 0
+  if (!rowData?.distribution) return null
+  return rowData.distribution.find(d => d.value === col)
+}
+
+const getPercentage = (rowName, col) => {
+  return getRowData(rowName, col)?.percentage || 0
+}
+
+const getCount = (rowName, col) => {
+  return getRowData(rowName, col)?.count || 0
 }
 
 const formatPercentage = (value) => {
-  return Number.isInteger(value) ? value.toFixed(0) : value.toFixed(2)
+  return Number.isInteger(value) ? value.toFixed(0) : value.toFixed(1)
 }
 
 const getCellClass = (percentage) => {
-  if (percentage >= 50) {
-    return 'bg-neutral-600 text-white'
-  } else if (percentage >= 25) {
-    return 'bg-neutral-300 text-neutral-800'
+  if (percentage >= 60) {
+    return 'bg-neutral-900 text-white shadow-sm'
+  } else if (percentage >= 40) {
+    return 'bg-neutral-700 text-white shadow-sm'
+  } else if (percentage >= 20) {
+    return 'bg-neutral-400 text-white'
   } else if (percentage > 0) {
-    return 'bg-neutral-200 text-neutral-700'
+    return 'bg-neutral-100 text-neutral-700'
   }
-  return 'bg-white border border-neutral-200 text-neutral-500'
+  return 'bg-transparent text-neutral-300'
 }
 </script>
 

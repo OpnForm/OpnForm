@@ -1,38 +1,57 @@
 <template>
-  <div class="border border-neutral-300 rounded-lg shadow-xs overflow-hidden">
+  <div class="bg-white border border-neutral-200 rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow duration-200">
     <!-- Header -->
-    <div class="flex items-start gap-3 p-4 bg-neutral-50">
-      <div
-        :class="[
-          'w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0',
-          fieldConfig?.bg_class || 'bg-gray-100'
-        ]"
-      >
-        <UIcon
-          :name="fieldConfig?.icon || 'i-heroicons-question-mark-circle'"
-          :class="[fieldConfig?.text_class || 'text-gray-600', 'w-4 h-4']"
-        />
+    <div class="flex items-center justify-between p-4 border-b border-neutral-100 bg-neutral-50/50">
+      <div class="flex items-center gap-3 min-w-0">
+        <div
+          :class="[
+            'w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ring-1 ring-inset ring-neutral-900/5',
+            fieldConfig?.bg_class || 'bg-neutral-100'
+          ]"
+        >
+          <UIcon
+            :name="fieldConfig?.icon || 'i-heroicons-question-mark-circle'"
+            :class="[fieldConfig?.text_class || 'text-neutral-600', 'w-5 h-5']"
+          />
+        </div>
+
+        <div class="min-w-0">
+          <h3 class="font-semibold text-neutral-900 truncate text-sm sm:text-base">
+            {{ field.name }}
+          </h3>
+          <div class="flex items-center gap-2 text-xs text-neutral-500 mt-0.5">
+            <span class="font-medium text-neutral-700">{{ field.answered_count }}</span> answered
+            <span class="text-neutral-300">•</span>
+            <span class="font-medium text-neutral-700">{{ field.total_submissions - field.answered_count }}</span> skipped
+          </div>
+        </div>
       </div>
 
-      <div class="flex-1 min-w-0">
-        <h3 class="font-medium text-neutral-900 truncate">
-          {{ field.name }}
-        </h3>
-        <p class="text-sm text-neutral-500">
-          {{ field.answered_count }} of {{ field.total_submissions }} answered
-        </p>
+      <!-- Controls -->
+      <div class="flex items-center gap-2 pl-4">
+        <div 
+          v-if="['distribution', 'boolean'].includes(field.summary_type)"
+          class="flex bg-neutral-100 p-0.5 rounded-lg border border-neutral-200"
+        >
+          <button
+            v-for="mode in ['bar', 'pie']"
+            :key="mode"
+            class="px-2 py-1 rounded-md text-xs font-medium transition-all"
+            :class="[
+              (mode === 'pie' ? showPieChart : !showPieChart) 
+                ? 'bg-white text-neutral-900 shadow-sm' 
+                : 'text-neutral-500 hover:text-neutral-700'
+            ]"
+            @click="showPieChart = (mode === 'pie')"
+          >
+            <UIcon :name="mode === 'pie' ? 'i-heroicons-chart-pie' : 'i-heroicons-chart-bar'" class="w-4 h-4" />
+          </button>
+        </div>
       </div>
-
-      <!-- Chart Toggle -->
-      <USwitch 
-        v-if="['distribution', 'boolean'].includes(field.summary_type)" 
-        v-model="showPieChart" 
-        label="Pie chart"
-      />
     </div>
 
     <!-- Content -->
-    <div class="max-h-80 overflow-y-auto overflow-x-auto">
+    <div class="max-h-96 overflow-y-auto overflow-x-auto custom-scrollbar">
       <component
         :is="summaryComponent"
         :field="field"

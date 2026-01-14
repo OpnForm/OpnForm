@@ -14,6 +14,7 @@ class FormSummaryService
 {
     private const TEXT_LIST_LIMIT = 10;
     private const CACHE_TTL_MINUTES = 15;
+    private const MAX_SUBMISSIONS_FOR_SUMMARY = 10000;
 
     private array $blockTypes;
 
@@ -83,23 +84,60 @@ class FormSummaryService
         if ($totalSubmissions === 0) {
             return [
                 'total_submissions' => 0,
+                'processed_submissions' => 0,
+                'is_limited' => false,
                 'fields' => [],
             ];
         }
 
-        // Single query to get all submission data
-        $submissions = $query
-            ->select(['id', 'data', 'created_at'])
-            ->orderByDesc('created_at')
-            ->get();
+        // Check if we need to limit submissions for performance
+        $isLimited = $totalSubmissions > self::MAX_SUBMISSIONS_FOR_SUMMARY;
+        $processedCount = min($totalSubmissions, self::MAX_SUBMISSIONS_FOR_SUMMARY);
 
         $inputProperties = $this->getInputProperties($form);
 
-        // Process all fields in single pass
-        $fieldSummaries = $this->processAllFields($inputProperties, $submissions, $totalSubmissions, $form->id);
+        // Initialize accumulators for each field
+        $accumulators = [];
+        foreach ($inputProperties as $prop) {
+            $accumulators[$prop['id']] = $this->initializeAccumulator($prop);
+        }
+
+        // Process submissions in chunks for memory efficiency
+        // Limited to MAX_SUBMISSIONS_FOR_SUMMARY most recent submissions
+        $this->buildBaseQuery($form, $dateFrom, $dateTo, $status)
+            ->select(['id', 'data', 'created_at'])
+            ->orderByDesc('created_at')
+            ->limit(self::MAX_SUBMISSIONS_FOR_SUMMARY)
+            ->chunk(1000, function ($submissions) use ($inputProperties, &$accumulators) {
+                foreach ($submissions as $submission) {
+                    $data = $submission->data ?? [];
+
+                    // Ensure data is array (handle potential JSON parsing issues)
+                    if (!is_array($data)) {
+                        continue;
+                    }
+
+                    foreach ($inputProperties as $prop) {
+                        $fieldId = $prop['id'];
+                        $value = $data[$fieldId] ?? null;
+
+                        if ($this->hasValue($value)) {
+                            $this->accumulateValue($accumulators[$fieldId], $value, $prop, $submission->id);
+                        }
+                    }
+                }
+            });
+
+        // Finalize and format results
+        $fieldSummaries = [];
+        foreach ($inputProperties as $prop) {
+            $fieldSummaries[] = $this->finalizeField($prop, $accumulators[$prop['id']], $processedCount, $form->id);
+        }
 
         return [
             'total_submissions' => $totalSubmissions,
+            'processed_submissions' => $processedCount,
+            'is_limited' => $isLimited,
             'fields' => $fieldSummaries,
         ];
     }
