@@ -106,6 +106,7 @@
 
 <script setup>
 import { versionsApi } from '~/api/versions'
+import { formsApi } from '~/api/forms'
 import { format, formatDistanceToNow } from 'date-fns'
 
 const props = defineProps({
@@ -116,12 +117,13 @@ const props = defineProps({
   }
 })
 
+const emit = defineEmits(['restored'])
+
 const { openSubscriptionModal } = useAppModals()
 const isHistoryModalOpen = ref(false)
 const versions = ref([])
 const isLoading = ref(false)
-const { submissionDetailById, invalidateSubmission } = useFormSubmissions()
-const submissionDetailQuery = submissionDetailById(props.form.id, props.submissionId, { enabled: false })
+const { invalidateSubmissions } = useFormSubmissions()
 
 onMounted(() => {
   if (props.submissionId) {
@@ -188,8 +190,13 @@ const onRestore = async (version) => {
 const restoreVersion = async (version) => {
   try {
     await versionsApi.restore(version.id)
-    submissionDetailQuery.refetch()
-    invalidateSubmission(props.submissionId)
+    // Fetch the updated submission data
+    const restoredSubmission = await formsApi.submissions.fetch(props.form.id, props.submissionId)
+    // Invalidate the paginated submissions list so the table updates
+    invalidateSubmissions(props.form.id)
+    // Emit event with the inner data object (field values) so parent modal can update its view
+    // The API returns { data: {...fields}, id, form_id, ... } but form manager expects just the data object
+    emit('restored', restoredSubmission.data)
     useAlert().success('Submission restored successfully')
     await fetchVersions()
     isHistoryModalOpen.value = false

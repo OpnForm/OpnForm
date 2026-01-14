@@ -13,7 +13,8 @@
           <SubmissionHistory 
             v-if="submission?.id"
             :form="form" 
-            :submission-id="submission.id" 
+            :submission-id="submission.id"
+            @restored="onSubmissionRestored"
           />
           
           <UPagination
@@ -80,7 +81,7 @@ const props = defineProps({
   form: { type: Object, required: true }
 })
 
-const emit = defineEmits(["close"])
+const emit = defineEmits(["close", "restored"])
 const route = useRoute()
 const router = useRouter()
 
@@ -143,5 +144,16 @@ const updateUrlWithSubmission = (submissionId) => {
     delete query.view
   }
   router.replace({ query })
+}
+
+const onSubmissionRestored = (restoredData) => {
+  // Re-initialize form manager with restored data
+  formManager.initialize({
+    skipPendingSubmission: true,
+    skipUrlParams: true,
+    defaultData: restoredData
+  })
+  // Emit to parent so it can update its data array
+  emit('restored', restoredData)
 }
 </script>

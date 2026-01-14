@@ -12,7 +12,8 @@
           <SubmissionHistory 
             v-if="submission?.id"
             :form="form" 
-            :submission-id="submission.id" 
+            :submission-id="submission.id"
+            @restored="onSubmissionRestored"
           />
           <UButton
             v-if="props.form?.editable_submissions ?? false"
@@ -103,7 +104,7 @@ watch(() => props.show, (newShow) => {
 const { updateSubmission } = useFormSubmissions()
 const updateSubmissionMutation = updateSubmission()
 
-const emit = defineEmits(["close"])
+const emit = defineEmits(["close", "restored"])
 const alert = useAlert()
 
 const updateForm = () => {
@@ -137,5 +138,16 @@ const copyToClipboard = () => {
   setTimeout(() => {
     copySuccess.value = false
   }, 2000)
+}
+
+const onSubmissionRestored = (restoredData) => {
+  // Re-initialize form manager with restored data
+  formManager.initialize({
+    skipPendingSubmission: true,
+    skipUrlParams: true,
+    defaultData: restoredData
+  })
+  // Emit to parent so it can update its data
+  emit('restored', restoredData)
 }
 </script>
