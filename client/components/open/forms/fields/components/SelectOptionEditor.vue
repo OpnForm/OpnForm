@@ -12,13 +12,14 @@
       <!-- Display Settings -->
       <div class="space-y-3">
         <!-- Option Display Mode -->
-        <FlatSelectInput
+        <OptionSelectorInput
           v-model="field.option_display_mode"
           name="option_display_mode"
+          seamless
           :options="[
-            { name: 'Text only', value: 'text_only' },
-            { name: 'Text & Image', value: 'text_and_image' },
-            { name: 'Image only', value: 'image_only' }
+            { name: 'text_only', label: 'Text only' },
+            { name: 'text_and_image', label: 'Text & Image' },
+            { name: 'image_only', label: 'Image only' }
           ]"
           label="Option display style"
         />
@@ -223,9 +224,18 @@ const hasImages = computed(() => ['text_and_image', 'image_only'].includes(props
 
 // Option management functions
 function addOption() {
+  // Generate a unique default name
+  const existingNames = new Set(options.value.map(o => o.name))
+  let counter = options.value.length + 1
+  let defaultName = `Option ${counter}`
+  while (existingNames.has(defaultName)) {
+    counter++
+    defaultName = `Option ${counter}`
+  }
+
   const newOption = {
     id: `option_${Date.now()}`,
-    name: '',
+    name: defaultName,
     image: null
   }
   options.value = [...options.value, newOption]
