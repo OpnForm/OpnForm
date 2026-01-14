@@ -85,6 +85,12 @@ const formNavigationItems = computed(() => [
       active: false
     }),
     createNavItem({
+      label: 'Summary',
+      icon: 'i-heroicons-chart-pie',
+      to: '#',
+      active: false
+    }),
+    createNavItem({
       label: 'Integrations',
       icon: 'i-heroicons-puzzle-piece',
       to: '#',
@@ -108,6 +114,12 @@ const formNavigationItems = computed(() => [
       icon: 'i-heroicons-document-text',
       to: { name: 'forms-slug-show-submissions', params: { slug: props.form?.slug } },
       active: isActiveRoute('forms-slug-show-submissions')
+    }),
+    createNavItem({
+      label: 'Summary',
+      icon: 'i-heroicons-chart-pie',
+      to: { name: 'forms-slug-show-summary', params: { slug: props.form?.slug } },
+      active: isActiveRoute('forms-slug-show-summary')
     }),
     // Hide integrations for read-only workspaces
     ...(workspace.value?.is_readonly ? [] : [createNavItem({
