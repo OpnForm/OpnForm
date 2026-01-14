@@ -231,7 +231,7 @@ function getAbsoluteIndexFromVisiblePage(visiblePageIndex) {
   
   const field = pageFields[0]
   const properties = workingFormStore.content?.properties || []
-  const absoluteIndex = properties.findIndex(p => p?.nf_id === field?.nf_id)
+  const absoluteIndex = properties.findIndex(p => p?.id === field?.id)
   
   return absoluteIndex >= 0 ? absoluteIndex : visiblePageIndex
 }
