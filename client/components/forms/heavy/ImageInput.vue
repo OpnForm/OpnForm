@@ -4,19 +4,25 @@
       <slot name="label" />
     </template>
 
-    <span class="inline-block w-full rounded-md shadow-xs">
+    <span class="inline-block w-full rounded-md shadow-xs" :class="{ 'h-full': compact }">
       <button
         type="button"
         aria-haspopup="listbox"
         aria-expanded="true"
         aria-labelledby="listbox-label"
         class="cursor-pointer relative w-full"
-        :class="ui.button({ class: props.ui?.slots?.button })"
+        :class="[ui.button({ class: props.ui?.slots?.button }), { '!p-0 overflow-hidden h-full': compact }]"
         :style="inputStyle"
         @click.prevent="showUploadModal = true"
       >
         <div
-          v-if="currentUrl == null"
+          v-if="compact && currentUrl == null"
+          class="flex items-center justify-center h-full w-full bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors text-neutral-400"
+        >
+          <Icon name="heroicons:photo" class="h-4 w-4" />
+        </div>
+        <div
+          v-else-if="currentUrl == null"
           class="text-neutral-600 dark:text-neutral-400 flex justify-center"
         >
           <Icon
@@ -27,6 +33,21 @@
             Upload
           </span>
 
+        </div>
+        <div
+          v-else-if="compact"
+          class="relative h-full w-full group"
+        >
+          <img
+            :src="currentUrl"
+            class="h-full w-full object-cover"
+          >
+          <div
+            class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"
+            @click.stop.prevent="clearUrl"
+          >
+            <Icon name="heroicons:trash" class="h-4 w-4 text-white" />
+          </div>
         </div>
         <div
           v-else
@@ -168,6 +189,7 @@ export default {
   mixins: [],
   props: {
     ...inputProps,
+    compact: { type: Boolean, default: false },
   },
 
   setup(props, context) {
