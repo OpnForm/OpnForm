@@ -86,7 +86,7 @@
                   <!-- Selection indicator for image_only mode -->
                   <div
                     v-if="optionDisplayMode === 'image_only' && isSelected(option[optionKey])"
-                    class="absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center"
+                    class="absolute top-1 right-1 w-5 h-5 rounded-full flex items-center justify-center"
                     :style="{ backgroundColor: color }"
                   >
                     <Icon name="heroicons:check" class="w-3 h-3 text-white" />
@@ -221,7 +221,7 @@ export default {
     },
     imageOptionClass() {
       if (this.optionDisplayMode === 'image_only') {
-        return 'flex-col items-center justify-center !p-1 border-2 rounded-lg transition-all'
+        return 'flex-col items-center justify-center !p-0 border-2 rounded-lg transition-all'
       }
       return ''
     },

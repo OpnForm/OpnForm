@@ -7,7 +7,10 @@
     <div
       ref="root"
       :style="optionStyle"
-      :class="variantSlots.container({ class: props.ui?.slots?.container })"
+      :class="[
+        variantSlots.container({ class: props.ui?.slots?.container }),
+        {'grid grid-cols-1 sm:grid-cols-2 gap-2': optionDisplayMode === 'image_only'}
+      ]"
       role="listbox"
       :aria-multiselectable="multiple ? 'true' : 'false'"
       :tabindex="0"
@@ -35,7 +38,7 @@
           </span>
 
           <!-- Image (if enabled) -->
-          <div v-if="hasImages" class="relative shrink-0 mr-3">
+          <div v-if="hasImages" class="relative shrink-0 mr-3" :class="{'flex-1 flex justify-center': optionDisplayMode === 'image_only'}">
             <img
               v-if="option.image"
               :src="option.image"
@@ -52,10 +55,8 @@
           </div>
 
           <!-- Option text -->
-          <span :class="textClasses()">
-            <template v-if="optionDisplayMode !== 'image_only'">
-              {{ getOptionName(option) }}
-            </template>
+          <span v-if="optionDisplayMode !== 'image_only'" :class="textClasses()">
+            {{ getOptionName(option) }}
           </span>
 
           <!-- Checkmark for selected state -->

@@ -48,59 +48,72 @@
           Options
         </label>
         
-        <VueDraggable
-          v-model="options"
-          item-key="id"
-          handle=".drag-handle"
-          :ghost-class="['opacity-50', 'bg-primary-50', 'dark:bg-primary-900/20', 'rounded-lg']"
-          :chosen-class="['bg-primary-100', 'dark:bg-primary-900/30', 'rounded-lg']"
-          :animation="200"
-          class="space-y-1"
-        >
-          <template #default>
-            <div
-              v-for="(option, index) in options"
-              :key="option.id || index"
-              class="flex items-center gap-1 p-1 bg-neutral-50 dark:bg-neutral-800 rounded-lg border border-neutral-200 dark:border-neutral-700"
-            >
-              <!-- Drag handle -->
-              <div class="drag-handle flex items-center cursor-grab active:cursor-grabbing text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300">
-                <Icon name="heroicons:bars-3" class="h-3 w-3" />
-              </div>
+        <div class="rounded-md border border-neutral-200 dark:border-neutral-700 overflow-hidden">
+          <VueDraggable
+            v-model="options"
+            item-key="id"
+            handle=".drag-handle"
+            :ghost-class="['opacity-50', 'bg-primary-50', 'dark:bg-primary-900/20']"
+            :chosen-class="['bg-primary-100', 'dark:bg-primary-900/30']"
+            :animation="200"
+            class="divide-y divide-neutral-200 dark:divide-neutral-700"
+          >
+            <template #default>
+              <div
+                v-for="(option, index) in options"
+                :key="option.id || index"
+                class="flex items-center gap-2 px-2 py-1 bg-white dark:bg-neutral-800"
+              >
+                <!-- Drag handle -->
+                <div class="drag-handle flex items-center cursor-grab active:cursor-grabbing text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 p-1">
+                  <Icon name="heroicons:bars-3" class="h-4 w-4" />
+                </div>
 
-              <!-- Text input -->
-              <TextInput
-                :model-value="option.name"
-                :name="`option_${index}_name`"
-                wrapper-class="mb-0 flex-1 min-w-0"
-                placeholder="Option Text"
-                @update:model-value="updateOptionName(index, $event)"
-              />
+                <!-- Content wrapper -->
+                <div class="flex-1 flex gap-2 min-w-0 items-center">
+                  <!-- Image input (only when images enabled) -->
+                  <div v-if="hasImages" class="shrink-0">
+                    <ImageInput
+                      :model-value="option.image"
+                      :name="`option_${index}_image`"
+                      wrapper-class="mb-0"
+                      size="xs"
+                      compact
+                      class="h-8 w-8"
+                      @update:model-value="updateOptionImage(index, $event)"
+                    />
+                  </div>
 
-              <!-- Image input (only when images enabled) -->
-              <div v-if="hasImages" class="shrink-0 w-20">
-                <ImageInput
-                  :model-value="option.image"
-                  :name="`option_${index}_image`"
-                  wrapper-class="mb-0"
-                  @update:model-value="updateOptionImage(index, $event)"
+                  <!-- Text input -->
+                  <TextInput
+                    :model-value="option.name"
+                    :name="`option_${index}_name`"
+                    wrapper-class="mb-0 flex-1 min-w-0"
+                    size="xs"
+                    :ui="{
+                      input: '!border-0 !ring-0 !shadow-none !px-0 !bg-transparent',
+                      wrapper: '!shadow-none'
+                    }"
+                    placeholder="Option Text"
+                    @update:model-value="updateOptionName(index, $event)"
+                  />
+                </div>
+
+                <!-- Delete button -->
+                <UButton
+                  icon="i-heroicons-trash"
+                  color="error"
+                  variant="ghost"
+                  size="2xs"
+                  class="shrink-0 opacity-50 hover:opacity-100 transition-opacity"
+                  :disabled="options.length <= 1"
+                  title="Remove option"
+                  @click="removeOption(index)"
                 />
               </div>
-
-              <!-- Delete button -->
-              <UButton
-                icon="i-heroicons-trash"
-                color="error"
-                variant="outline"
-                size="sm"
-                class="shrink-0 mt-1"
-                :disabled="options.length <= 1"
-                title="Remove option"
-                @click="removeOption(index)"
-              />
-            </div>
-          </template>
-        </VueDraggable>
+            </template>
+          </VueDraggable>
+        </div>
 
         <!-- Add option button -->
         <UButton
@@ -108,8 +121,9 @@
           label="Add Option"
           color="neutral"
           variant="outline"
-          size="sm"
+          size="xs"
           block
+          class="mt-2"
           @click="addOption"
         />
       </div>

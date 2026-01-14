@@ -45,8 +45,7 @@
                   :src="opt.image"
                   :alt="opt.name"
                   :title="opt.name"
-                  :class="imageSizeClass"
-                  class="rounded object-cover"
+                  class="h-5 w-5 rounded object-cover"
                 >
                 <span v-if="selectedValues.length > 3" class="text-sm text-neutral-500">
                   +{{ selectedValues.length - 3 }}
@@ -74,8 +73,7 @@
                 :src="getOptionImage(option)"
                 :alt="getOptionName(option)"
                 :title="optionDisplayMode === 'image_only' ? getOptionName(option) : ''"
-                :class="imageSizeClass"
-                class="rounded object-cover shrink-0"
+                class="h-5 w-5 rounded object-cover shrink-0"
               >
               <div
                 v-if="optionDisplayMode !== 'image_only'"
