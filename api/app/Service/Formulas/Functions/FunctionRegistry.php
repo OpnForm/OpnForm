@@ -77,7 +77,13 @@ class FunctionRegistry
         if ($func === null) {
             return null;
         }
-        return call_user_func_array($func, $args);
+
+        try {
+            return call_user_func_array($func, $args);
+        } catch (\Throwable $e) {
+            // Gracefully handle any errors (ArgumentCountError, TypeError, etc.)
+            return null;
+        }
     }
 
     public static function getAll(): array

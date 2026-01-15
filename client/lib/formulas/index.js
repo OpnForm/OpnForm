@@ -11,6 +11,8 @@ export { Evaluator, evaluate } from './evaluator.js'
 export { Validator, validateFormula } from './validator.js'
 export { DependencyGraph, buildDependencyGraph } from './dependency-graph.js'
 export { functions, functionMeta, getFunctionsByCategory, getFunctionNames, hasFunction, getFunction } from './functions/index.js'
+export { tokenizeFormula, TokenTypes, getKnownFunctionNames } from './tokenizer.js'
+export { normalizeFormula } from './normalizeFormula.js'
 
 // Import for local use
 import { evaluate as _evaluate } from './evaluator.js'

@@ -65,7 +65,8 @@
 <script setup>
 import FormulaFieldPicker from './FormulaFieldPicker.vue'
 import FormulaFunctionPicker from './FormulaFunctionPicker.vue'
-import { validateFormula, getFunctionNames } from '~/lib/formulas/index.js'
+import { validateFormula } from '~/lib/formulas/index.js'
+import { tokenizeFormula, getKnownFunctionNames } from '~/lib/formulas/tokenizer.js'
 
 const props = defineProps({
   modelValue: {
@@ -148,104 +149,13 @@ function toStorageFormat(html) {
 }
 
 // Get list of known function names for syntax highlighting
-const knownFunctions = computed(() => {
-  try {
-    const names = getFunctionNames()
-    return names.length > 0 ? names : defaultFunctionNames
-  } catch {
-    return defaultFunctionNames
-  }
-})
-
-// Default function names as fallback
-const defaultFunctionNames = [
-  'SUM', 'AVERAGE', 'MIN', 'MAX', 'ROUND', 'FLOOR', 'CEIL', 'ABS', 'MOD', 'POWER', 'SQRT',
-  'CONCAT', 'UPPER', 'LOWER', 'TRIM', 'LEFT', 'RIGHT', 'MID', 'LEN', 'SUBSTITUTE', 'REPLACE', 'FIND', 'SEARCH', 'REPT', 'TEXT',
-  'IF', 'AND', 'OR', 'NOT', 'XOR', 'ISBLANK', 'ISNUMBER', 'ISTEXT', 'IFERROR', 'IFBLANK', 'COALESCE', 'SWITCH', 'IFS', 'CHOOSE'
-]
+const knownFunctions = computed(() => getKnownFunctionNames())
 
 // Escape HTML entities
 function escapeHtml(text) {
   const div = document.createElement('div')
   div.textContent = text
   return div.innerHTML
-}
-
-// Tokenize formula into parts for safe highlighting
-function tokenizeFormula(formula, fieldMap) {
-  const tokens = []
-  let remaining = formula
-  
-  // Build function pattern with fallback
-  const funcNames = knownFunctions.value
-  const funcPatternStr = funcNames.length > 0 
-    ? `^(${funcNames.join('|')})(?=\\s*\\()`
-    : '^$' // Never match if no functions
-  
-  while (remaining.length > 0) {
-    // Try to match field reference {fieldId}
-    const fieldMatch = remaining.match(/^\{([^}]+)\}/)
-    if (fieldMatch) {
-      const fieldId = fieldMatch[1]
-      const field = fieldMap.get(fieldId)
-      if (field) {
-        tokens.push({ type: 'pill', id: fieldId, name: field.name, fieldType: field.type })
-      } else {
-        tokens.push({ type: 'text', value: fieldMatch[0] })
-      }
-      remaining = remaining.slice(fieldMatch[0].length)
-      continue
-    }
-    
-    // Try to match function name (followed by parenthesis)
-    if (funcNames.length > 0) {
-      const funcPattern = new RegExp(funcPatternStr, 'i')
-      const funcMatch = remaining.match(funcPattern)
-      if (funcMatch) {
-        tokens.push({ type: 'function', value: funcMatch[1] })
-        remaining = remaining.slice(funcMatch[1].length)
-        continue
-      }
-    }
-    
-    // Try to match string literals
-    const stringMatch = remaining.match(/^("[^"]*"|'[^']*')/)
-    if (stringMatch) {
-      tokens.push({ type: 'string', value: stringMatch[0] })
-      remaining = remaining.slice(stringMatch[0].length)
-      continue
-    }
-    
-    // Try to match numbers (including decimals)
-    const numberMatch = remaining.match(/^\d+\.?\d*/)
-    if (numberMatch) {
-      tokens.push({ type: 'number', value: numberMatch[0] })
-      remaining = remaining.slice(numberMatch[0].length)
-      continue
-    }
-    
-    // Try to match comparison operators (multi-char first)
-    const compMatch = remaining.match(/^(<=|>=|<>|!=|==|<|>|=)/)
-    if (compMatch) {
-      tokens.push({ type: 'operator', value: compMatch[0] })
-      remaining = remaining.slice(compMatch[0].length)
-      continue
-    }
-    
-    // Try to match arithmetic operators and parentheses
-    const opMatch = remaining.match(/^[+\-*/(),]/)
-    if (opMatch) {
-      tokens.push({ type: 'operator', value: opMatch[0] })
-      remaining = remaining.slice(opMatch[0].length)
-      continue
-    }
-    
-    // Take one character as plain text
-    tokens.push({ type: 'text', value: remaining[0] })
-    remaining = remaining.slice(1)
-  }
-  
-  return tokens
 }
 
 // Convert storage format to display HTML with syntax highlighting
@@ -257,8 +167,8 @@ function toDisplayFormat(formula) {
   availableFields.value.forEach(f => fieldMap.set(f.id, f))
   availableVariables.value.forEach(v => fieldMap.set(v.id, v))
   
-  // Tokenize the formula to apply highlighting safely
-  const tokens = tokenizeFormula(formula, fieldMap)
+  // Tokenize the formula using the extracted tokenizer
+  const tokens = tokenizeFormula(formula, fieldMap, knownFunctions.value)
   
   // Build HTML from tokens
   return tokens.map(token => {

@@ -31,7 +31,7 @@ class Validator
             $this->validateNode($ast, $result);
         } catch (FormulaException $e) {
             $result->addError($e->getMessage(), $e->getPosition());
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             $result->addError("Syntax error: {$e->getMessage()}");
         }
 
