@@ -25,7 +25,7 @@ class Evaluator
             return $evaluator->evaluateNode($ast);
         } catch (FormulaException $e) {
             return null;
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             return null;
         }
     }
@@ -159,7 +159,7 @@ class Evaluator
             return FunctionRegistry::call($funcName, $args);
         } catch (FormulaException $e) {
             throw $e;
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             return null;
         } finally {
             $this->depth--;

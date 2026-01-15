@@ -82,6 +82,7 @@ import FormulaDefinitionPanel from './FormulaDefinitionPanel.vue'
 import FormulaTestPanel from './FormulaTestPanel.vue'
 import FunctionReference from './FunctionReference.vue'
 import { evaluateFormula, extractFieldIds } from '~/lib/formulas/index.js'
+import { normalizeFormula } from '~/lib/formulas/normalizeFormula.js'
 
 const props = defineProps({
   modelValue: {
@@ -260,11 +261,6 @@ function validate() {
   return Object.keys(errors.value).length === 0
 }
 
-// Normalize formula by trimming and collapsing whitespace
-function normalizeFormula(formula) {
-  if (!formula) return ''
-  return formula.trim().replace(/\s+/g, ' ')
-}
 
 function save() {
   if (!validate()) return
