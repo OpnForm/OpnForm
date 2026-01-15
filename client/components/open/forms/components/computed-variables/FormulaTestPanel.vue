@@ -31,7 +31,7 @@
           </div>
           <div class="p-4 bg-white">
             <OpenForm
-              v-if="formManager"
+              v-if="formManagerReady"
               :key="formKey"
               :form-manager="formManager"
               @submit.prevent=""
@@ -159,34 +159,35 @@ const testFormConfig = computed(() => {
 
 // Key to force OpenForm re-render when fields change
 const formKey = computed(() => {
-  return props.referencedFieldIds.sort().join(',')
+  return [...props.referencedFieldIds].sort().join(',')
 })
 
-// Form manager instance (use shallowRef for reactivity in template)
-const formManager = shallowRef(null)
-
-// Setup form manager with the test config
-const setupFormManager = async () => {
-  const config = testFormConfig.value
-  if (!config) {
-    formManager.value = null
-    return
-  }
-  
-  const manager = useFormManager(config, FormMode.PREFILL, {
+// Form manager instance (keep stable to avoid lifecycle hook warnings)
+const formManager = shallowRef(
+  useFormManager(null, FormMode.PREFILL, {
     darkMode: false
   })
-  await manager.initialize()
-  formManager.value = manager
-}
+)
+const formManagerReady = ref(false)
 
 // Initialize form manager when referenced fields change
+// Watch testFormConfig directly to catch all config changes
 watch(
-  () => props.referencedFieldIds,
-  () => {
-    setupFormManager()
+  testFormConfig,
+  async (config) => {
+    if (!config) {
+      formManagerReady.value = false
+      return
+    }
+
+    formManagerReady.value = false
+    await formManager.value.updateConfig(config, {
+      skipPendingSubmission: true,
+      skipUrlParams: true
+    })
+    formManagerReady.value = true
   },
-  { immediate: true }
+  { immediate: true, deep: true }
 )
 
 // Watch form data changes and emit to parent

@@ -21,14 +21,6 @@
     </SettingsModalPage>
 
     <SettingsModalPage
-      id="variables"
-      label="Variables"
-      icon="i-heroicons-variable"
-    >
-      <ComputedVariablesTab />
-    </SettingsModalPage>
-
-    <SettingsModalPage
       id="security"
       label="Security & Access"
       icon="i-heroicons-shield-check"
@@ -45,6 +37,14 @@
     </SettingsModalPage>
 
     <SettingsModalPage
+      id="analytics"
+      label="Analytics"
+      icon="i-heroicons-chart-bar"
+    >
+      <FormAnalyticsSettings />
+    </SettingsModalPage>
+
+    <SettingsModalPage
       id="custom-code"
       label="Custom Code"
       icon="i-heroicons-code-bracket"
@@ -53,11 +53,11 @@
     </SettingsModalPage>
 
     <SettingsModalPage
-      id="analytics"
-      label="Analytics"
-      icon="i-heroicons-chart-bar"
+      id="variables"
+      label="Variables"
+      icon="i-heroicons-variable"
     >
-      <FormAnalyticsSettings />
+      <ComputedVariablesTab />
     </SettingsModalPage>
 
   </SettingsModal>
