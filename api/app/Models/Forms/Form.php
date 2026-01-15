@@ -68,6 +68,7 @@ class Form extends Model implements CachableAttributes, VersionableNestedDiff
         'workspace_id',
         'creator_id',
         'properties',
+        'computed_variables',
         'removed_properties',
 
         'title',
@@ -139,6 +140,7 @@ class Form extends Model implements CachableAttributes, VersionableNestedDiff
     {
         return [
             'properties' => 'array',
+            'computed_variables' => 'array',
             'database_fields_update' => 'array',
             'closes_at' => 'datetime',
             'tags' => 'array',

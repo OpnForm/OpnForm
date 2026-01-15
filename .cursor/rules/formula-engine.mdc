@@ -1,0 +1,352 @@
+---
+description: Formula engine for computed variables - architecture, implementation, and extension guide. Use when working with formulas, computed variables, or extending formula functions.
+globs:
+    - client/lib/formulas/**
+    - api/app/Service/Formulas/**
+    - client/components/open/forms/components/computed-variables/**
+alwaysApply: false
+---
+
+# Formula Engine
+
+The formula engine powers computed variables in OpnForm. It has parallel implementations in JavaScript (client-side) and PHP (server-side) that must stay synchronized.
+
+## Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                      FORMULA PIPELINE                          │
+├─────────────────────────────────────────────────────────────────┤
+│  Input: "{Price} * {Quantity}"                                 │
+│                    ↓                                           │
+│  ┌─────────┐  ┌─────────┐  ┌───────────┐  ┌───────────────┐   │
+│  │ LEXER   │→ │ PARSER  │→ │ VALIDATOR │→ │   EVALUATOR   │   │
+│  │ tokens  │  │  AST    │  │  check    │  │   compute     │   │
+│  └─────────┘  └─────────┘  └───────────┘  └───────────────┘   │
+│                    ↓                                           │
+│  Output: 150.00                                                │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Client-Side (JavaScript)
+
+Location: `client/lib/formulas/`
+
+| File                  | Purpose                                                 |
+| --------------------- | ------------------------------------------------------- |
+| `index.js`            | Main entry point, exports all public APIs               |
+| `types.js`            | TokenType, NodeType, FormulaError, ValidationResult     |
+| `lexer.js`            | Tokenizes formula string into tokens                    |
+| `parser.js`           | Converts tokens into AST (Abstract Syntax Tree)         |
+| `validator.js`        | Validates AST for field existence, function calls, etc. |
+| `evaluator.js`        | Evaluates AST with field values to produce result       |
+| `dependency-graph.js` | Manages variable dependencies, detects cycles           |
+| `functions/`          | Function implementations (math, text, logic, array)     |
+
+### Server-Side (PHP)
+
+Location: `api/app/Service/Formulas/`
+
+| File                             | Purpose                                    |
+| -------------------------------- | ------------------------------------------ |
+| `Lexer.php`                      | Tokenizes formula string                   |
+| `Parser.php`                     | Converts tokens to AST                     |
+| `Validator.php`                  | Validates formula syntax and references    |
+| `Evaluator.php`                  | Evaluates formula with context             |
+| `ComputedVariableEvaluator.php`  | Evaluates all computed vars for submission |
+| `DependencyResolver.php`         | Handles dependency ordering                |
+| `Functions/FunctionRegistry.php` | Function registration and dispatch         |
+| `Functions/*.php`                | Function implementations by category       |
+
+## Token Types
+
+```javascript
+TokenType = {
+    NUMBER: "NUMBER", // 42, 3.14
+    STRING: "STRING", // "hello", 'world'
+    BOOLEAN: "BOOLEAN", // TRUE, FALSE
+    IDENTIFIER: "IDENTIFIER", // Function names: SUM, IF
+    FIELD_REF: "FIELD_REF", // {field-uuid-here}
+    OPERATOR: "OPERATOR", // +, -, *, /
+    COMPARISON: "COMPARISON", // =, <>, <, >, <=, >=
+    LPAREN: "LPAREN", // (
+    RPAREN: "RPAREN", // )
+    COMMA: "COMMA", // ,
+    EOF: "EOF", // End of input
+};
+```
+
+## AST Node Types
+
+```javascript
+NodeType = {
+    NUMBER: "number", // { type: 'number', value: 42 }
+    STRING: "string", // { type: 'string', value: 'hello' }
+    BOOLEAN: "boolean", // { type: 'boolean', value: true }
+    FIELD: "field", // { type: 'field', id: 'uuid' }
+    BINARY: "binary", // { type: 'binary', operator: '+', left, right }
+    UNARY: "unary", // { type: 'unary', operator: '-', operand }
+    FUNCTION: "function", // { type: 'function', name: 'SUM', args: [...] }
+};
+```
+
+## Grammar (Operator Precedence)
+
+From lowest to highest precedence:
+
+1. **Comparison**: `=`, `<>`, `<`, `>`, `<=`, `>=`
+2. **Addition**: `+`, `-`
+3. **Multiplication**: `*`, `/`
+4. **Unary**: `-`, `NOT`
+5. **Primary**: literals, fields, functions, parentheses
+
+## Adding a New Function
+
+### Step 1: Client-Side Implementation
+
+Create or edit the appropriate category file in `client/lib/formulas/functions/`:
+
+```javascript
+// client/lib/formulas/functions/math.js (example)
+
+/**
+ * DOUBLE - Multiplies a number by 2
+ */
+export function DOUBLE(value) {
+    const num = toNumber(value);
+    if (num === null) return null;
+    return num * 2;
+}
+
+// Add to exports
+export const mathFunctions = {
+    // ... existing functions
+    DOUBLE,
+};
+```
+
+### Step 2: Register in Function Index
+
+Update `client/lib/formulas/functions/index.js`:
+
+```javascript
+// Add to functionMeta for documentation
+export const functionMeta = {
+    // ... existing
+    DOUBLE: {
+        category: "math",
+        signature: "DOUBLE(number)",
+        description: "Multiplies a number by 2",
+        examples: ["DOUBLE(5) → 10", "DOUBLE({Price}) → 200"],
+    },
+};
+```
+
+### Step 3: Add Validator Argument Rules
+
+Update `client/lib/formulas/validator.js`:
+
+```javascript
+const FUNCTION_ARGS = {
+    // ... existing
+    DOUBLE: { min: 1, max: 1 },
+};
+```
+
+### Step 4: Server-Side Implementation
+
+Create or edit the appropriate PHP class in `api/app/Service/Formulas/Functions/`:
+
+```php
+// api/app/Service/Formulas/Functions/MathFunctions.php
+
+public static function DOUBLE(mixed $value): ?float
+{
+    $num = self::toNumber($value);
+    if ($num === null) {
+        return null;
+    }
+    return $num * 2;
+}
+```
+
+### Step 5: Register in PHP Function Registry
+
+Update `api/app/Service/Formulas/Functions/FunctionRegistry.php`:
+
+```php
+private static array $functions = [
+    // ... existing
+    'DOUBLE' => [MathFunctions::class, 'DOUBLE'],
+];
+```
+
+## Function Categories
+
+| Category | Purpose                     | Examples                       |
+| -------- | --------------------------- | ------------------------------ |
+| `math`   | Numeric calculations        | SUM, AVERAGE, ROUND, SQRT      |
+| `text`   | String manipulation         | CONCAT, UPPER, LEFT, TRIM      |
+| `logic`  | Conditionals and booleans   | IF, AND, OR, ISBLANK           |
+| `array`  | Array/collection operations | COUNT, ISEMPTY, CONTAINS, JOIN |
+
+## Field References
+
+Fields are referenced using curly braces with UUIDs:
+
+- Storage format: `{cbcf05ab-8ae0-4570-ba81-fc108e593c31}`
+- Display format: `{Field Name}` (converted for UI)
+
+Conversion utilities:
+
+```javascript
+import {
+    formulaToDisplay,
+    formulaToStorage,
+    extractFieldIds,
+} from "~/lib/formulas";
+
+// Convert for display
+formulaToDisplay("{uuid}", fields, variables); // → '{Field Name}'
+
+// Convert for storage
+formulaToStorage("{Field Name}", fields, variables); // → '{uuid}'
+
+// Extract all field IDs
+extractFieldIds(formula); // → ['uuid1', 'uuid2']
+```
+
+## Dependency Management
+
+Computed variables can reference other computed variables. The `DependencyGraph` class:
+
+- Builds a directed graph of dependencies
+- Detects circular references
+- Returns topological sort order for evaluation
+
+```javascript
+import { buildDependencyGraph } from "~/lib/formulas";
+
+const graph = buildDependencyGraph(computedVariables);
+const order = graph.getEvaluationOrder(); // throws if cycle detected
+const cycles = graph.detectCycles(); // returns array of cycle paths
+```
+
+## Error Handling
+
+### FormulaError
+
+Custom error class with position tracking:
+
+```javascript
+throw new FormulaError("Missing operator between values", position);
+```
+
+### ValidationResult
+
+Accumulates errors/warnings during validation:
+
+```javascript
+const result = new ValidationResult();
+result.addError("Unknown function XYZ");
+result.valid; // false
+result.errors; // [{ message, position, type }]
+```
+
+### Error Message Guidelines
+
+- Don't expose raw UUIDs to users; use field names
+- Suggest corrections (typos, missing operators)
+- Provide actionable guidance
+
+## UI Components
+
+Location: `client/components/open/forms/components/computed-variables/`
+
+| Component                    | Purpose                                        |
+| ---------------------------- | ---------------------------------------------- |
+| `ComputedVariableModal.vue`  | Main modal, orchestrates sub-components        |
+| `FormulaDefinitionPanel.vue` | Left panel - name & formula input              |
+| `FormulaTestPanel.vue`       | Right panel - test with real form fields       |
+| `FormulaEditor.vue`          | Rich formula input with field/function pickers |
+| `FormulaFieldPicker.vue`     | Dropdown to select form fields                 |
+| `FormulaFunctionPicker.vue`  | Dropdown to select functions                   |
+| `FunctionReference.vue`      | Full function documentation                    |
+
+## Testing Formulas
+
+Client-side testing in the modal uses `OpenForm` component with:
+
+- `FormMode.PREFILL` - allows editing field values
+- Only displays fields referenced in the formula
+- Size forced to `sm` for compact display
+
+## Null Handling
+
+- Missing/undefined field values → `null`
+- Invalid operations (e.g., divide by zero) → `null`
+- Functions should gracefully handle `null` inputs
+- Display `NULL` (not `—`) to users for null results
+
+## Type Coercion
+
+The engine handles type coercion:
+
+- Numbers: `"42"` → `42`, `true` → `1`, `false` → `0`
+- Booleans: `0`, `""`, `null` → `false`, everything else → `true`
+- String concat: `+` with strings concatenates: `"Hello" + 42` → `"Hello42"`
+
+## Unsupported Features
+
+Currently NOT supported:
+
+- Array literals (`[1, 2, 3]`) - not implemented
+- Matrix field type - filtered out of field picker
+- Date/time functions - not yet implemented
+- Custom user-defined functions
+
+## Common Patterns
+
+### Conditional Pricing
+
+```
+IF({Quantity} > 100, {Price} * 0.9, {Price})
+```
+
+### Null-Safe Operations
+
+```
+IFBLANK({OptionalField}, 0)
+COALESCE({Field1}, {Field2}, "default")
+```
+
+### Multi-Select Handling
+
+```
+IF(CONTAINS({Options}, "Premium"), {Price} * 1.5, {Price})
+JOIN({SelectedItems}, ", ")
+COUNT({MultiSelectField})
+```
+
+### Text Formatting
+
+```
+CONCAT(UPPER(LEFT({Name}, 1)), LOWER(MID({Name}, 2, 100)))
+```
+
+## Debugging Tips
+
+1. **Check both implementations**: If a formula works client-side but not server-side (or vice versa), check both implementations match.
+
+2. **Use extractFieldIds()**: Verify field references are being extracted correctly.
+
+3. **Test with ValidationResult**: Check `result.errors` for detailed validation messages.
+
+4. **Console log AST**: Parse and log the AST to see how the formula is interpreted:
+
+    ```javascript
+    import { Parser } from "~/lib/formulas";
+    console.log(JSON.stringify(Parser.parse(formula), null, 2));
+    ```
+
+5. **Dependency issues**: Use `graph.detectCycles()` to debug circular reference problems.

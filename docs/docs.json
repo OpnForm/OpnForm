@@ -21,6 +21,12 @@
             ]
           },
           {
+            "group": "Features",
+            "pages": [
+              "features/computed-variables"
+            ]
+          },
+          {
             "group": "Deployment",
             "pages": [
               "deployment/docker",

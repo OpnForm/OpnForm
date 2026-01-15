@@ -74,6 +74,7 @@ export default {
         email: "TextInput",
         phone_number: "TextInput",
         matrix: "MatrixInput",
+        computed: "TextInput", // Computed variables use text input
       }
     }
   },

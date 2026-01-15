@@ -507,18 +507,13 @@
       </div>
 
       <!-- Placeholder -->
-      <text-area-input
-        v-if="hasPlaceholder && ((field.type === 'text' && field.multi_lines) || field.type === 'rich_text')"
+      <MentionInput
+        v-if="hasPlaceholder"
         name="placeholder"
         class="mt-3"
         :form="field"
-        label="Empty Input Text - Placeholder"
-      />
-      <text-input
-        v-else-if="hasPlaceholder"
-        name="placeholder"
-        class="mt-3"
-        :form="field"
+        :mentions="form.properties"
+        :computed-variables="form.computed_variables"
         label="Empty Input Text - Placeholder"
       />
 
@@ -549,6 +544,9 @@
         :allow-fullscreen="true"
         :form="field"
         label="Help Text"
+        enable-mentions
+        :mentions="form.properties"
+        :computed-variables="form.computed_variables"
         :editor-options="{
           formats: [
             'bold',
@@ -651,6 +649,7 @@ import SelectOptionEditor from './SelectOptionEditor.vue'
 import InputMaskOptions from './InputMaskOptions.vue'
 import EditorSectionHeader from '~/components/open/forms/components/form-components/EditorSectionHeader.vue'
 import ProTag from '~/components/app/ProTag.vue'
+import MentionInput from '~/components/forms/heavy/MentionInput.vue'
 import { format } from 'date-fns'
 import { default as _has } from 'lodash/has'
 import blocksTypes from '~/data/blocks_types.json'
@@ -658,7 +657,7 @@ import BlockMediaOptions from '~/components/open/forms/components/media/BlockMed
 
 export default {
   name: 'FieldOptions',
-  components: { CountryFlag, MatrixFieldOptions, HiddenRequiredDisabled, EditorSectionHeader, PaymentFieldOptions, ProTag, BlockMediaOptions, SelectOptionEditor, InputMaskOptions },
+  components: { CountryFlag, MatrixFieldOptions, HiddenRequiredDisabled, EditorSectionHeader, PaymentFieldOptions, ProTag, BlockMediaOptions, SelectOptionEditor, MentionInput, InputMaskOptions },
   props: {
     field: {
       type: Object,

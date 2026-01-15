@@ -1,0 +1,269 @@
+---
+title: "Computed Variables"
+description: "Create dynamic calculated fields using Excel-like formulas that can be used throughout your form and integrations."
+---
+
+<Info>
+Computed variables allow form owners to define calculated values using formulas. These variables can reference form fields, use functions, and even reference other computed variables. They work seamlessly with mentions throughout your form.
+</Info>
+
+## Overview
+
+Computed variables are powerful calculated fields that:
+
+- **Evaluate live** during form fill (client-side)
+- **Evaluate on submission** for integrations and notifications (server-side)
+- **Support Excel-like formulas** with math, text, and logic functions
+- **Chain together** to create complex calculations
+- **Work with mentions** anywhere you can use field references
+
+## Creating Computed Variables
+
+### Accessing the Variables Tab
+
+1. Open your form in the editor
+2. Click on **Settings** (gear icon)
+3. Navigate to the **Variables** tab
+4. Click **Add Variable** to create a new computed variable
+
+### Variable Configuration
+
+Each computed variable has:
+
+| Field | Description |
+|-------|-------------|
+| **Name** | A descriptive name for the variable (e.g., "Total Price") |
+| **Formula** | The calculation formula using fields, functions, and operators |
+
+### Formula Editor
+
+The formula editor provides:
+
+- **Field picker** - Insert form fields as references
+- **Function picker** - Browse and insert available functions
+- **Live validation** - Real-time syntax checking
+- **Preview** - See sample output as you type
+
+## Formula Syntax
+
+### Field References
+
+Reference form fields using curly braces:
+
+```
+{field_id}
+```
+
+In the editor, you can click the field button to insert fields as interactive pills.
+
+### Operators
+
+| Operator | Description | Example |
+|----------|-------------|---------|
+| `+` | Addition / Concatenation | `{price} + {tax}` |
+| `-` | Subtraction | `{total} - {discount}` |
+| `*` | Multiplication | `{price} * {quantity}` |
+| `/` | Division | `{total} / {count}` |
+| `=` | Equals | `{status} = "active"` |
+| `<>` | Not equals | `{status} <> "inactive"` |
+| `<` `>` | Less/Greater than | `{age} > 18` |
+| `<=` `>=` | Less/Greater or equal | `{score} >= 90` |
+
+### Text Concatenation
+
+Use `+` or `CONCAT()` to join text:
+
+```
+"Hello, " + {name} + "!"
+CONCAT({first_name}, " ", {last_name})
+```
+
+## Available Functions
+
+### Math Functions
+
+| Function | Description | Example |
+|----------|-------------|---------|
+| `SUM(...)` | Add multiple values | `SUM({item1}, {item2}, {item3})` |
+| `AVERAGE(...)` | Calculate mean | `AVERAGE({score1}, {score2})` |
+| `MIN(...)` | Find minimum | `MIN({price1}, {price2})` |
+| `MAX(...)` | Find maximum | `MAX({bid1}, {bid2})` |
+| `ROUND(value, decimals)` | Round number | `ROUND({total}, 2)` |
+| `FLOOR(value)` | Round down | `FLOOR({price})` |
+| `CEIL(value)` | Round up | `CEIL({quantity})` |
+| `ABS(value)` | Absolute value | `ABS({difference})` |
+| `MOD(value, divisor)` | Remainder | `MOD({number}, 2)` |
+| `POWER(base, exp)` | Exponentiation | `POWER({base}, 2)` |
+| `SQRT(value)` | Square root | `SQRT({area})` |
+
+### Text Functions
+
+| Function | Description | Example |
+|----------|-------------|---------|
+| `CONCAT(...)` | Join text | `CONCAT({first}, " ", {last})` |
+| `UPPER(text)` | Uppercase | `UPPER({name})` |
+| `LOWER(text)` | Lowercase | `LOWER({email})` |
+| `TRIM(text)` | Remove whitespace | `TRIM({input})` |
+| `LEFT(text, n)` | First n characters | `LEFT({code}, 3)` |
+| `RIGHT(text, n)` | Last n characters | `RIGHT({phone}, 4)` |
+| `MID(text, start, len)` | Substring | `MID({ssn}, 4, 2)` |
+| `LEN(text)` | Text length | `LEN({message})` |
+| `SUBSTITUTE(text, old, new)` | Replace text | `SUBSTITUTE({url}, "http", "https")` |
+| `REPT(text, n)` | Repeat text | `REPT("*", {rating})` |
+
+### Logic Functions
+
+| Function | Description | Example |
+|----------|-------------|---------|
+| `IF(condition, true_val, false_val)` | Conditional | `IF({score} >= 90, "A", "B")` |
+| `AND(...)` | All true | `AND({age} >= 18, {consent})` |
+| `OR(...)` | Any true | `OR({premium}, {trial})` |
+| `NOT(value)` | Negate | `NOT({disabled})` |
+| `ISBLANK(value)` | Check empty | `ISBLANK({optional})` |
+| `ISNUMBER(value)` | Check number | `ISNUMBER({input})` |
+| `ISTEXT(value)` | Check text | `ISTEXT({response})` |
+| `IFBLANK(value, fallback)` | Default if empty | `IFBLANK({nickname}, {name})` |
+| `COALESCE(...)` | First non-empty | `COALESCE({mobile}, {home}, {work})` |
+| `SWITCH(val, case1, res1, ...)` | Multiple conditions | `SWITCH({grade}, "A", 4, "B", 3, 0)` |
+| `CHOOSE(index, val1, val2, ...)` | Pick by index | `CHOOSE({option}, "One", "Two", "Three")` |
+
+## Common Use Cases
+
+### Calculate Total Price
+
+```
+{price} * {quantity}
+```
+
+### Apply Discount
+
+```
+{subtotal} * (1 - {discount_percent} / 100)
+```
+
+### Calculate Tax and Total
+
+```
+// Tax variable
+{subtotal} * 0.1
+
+// Total variable (referencing tax)
+{subtotal} + {cv_tax}
+```
+
+### Conditional Pricing
+
+```
+IF({membership} = "premium", {price} * 0.8, {price})
+```
+
+### Grade Calculator
+
+```
+IF({score} >= 90, "A", 
+  IF({score} >= 80, "B", 
+    IF({score} >= 70, "C", 
+      IF({score} >= 60, "D", "F"))))
+```
+
+### Full Name
+
+```
+CONCAT({first_name}, " ", {last_name})
+```
+
+### Email Domain
+
+```
+RIGHT({email}, LEN({email}) - FIND("@", {email}))
+```
+
+## Using Computed Variables
+
+### In Mentions
+
+Computed variables appear in the mention dropdown alongside form fields. Look for the 📊 icon:
+
+- In **Thank You Page** content
+- In **Email notifications** (subject, body, reply-to)
+- In **Redirect URLs**
+- In **Integration payloads**
+
+### In Conditional Logic
+
+Use computed variables in conditional logic rules:
+
+1. Open the Logic tab for a field
+2. Add a condition
+3. Select your computed variable from the dropdown
+4. Set the comparison operator and value
+
+Example: Show a field only when total is over $100:
+- **Field:** `cv_total`
+- **Condition:** `greater_than`
+- **Value:** `100`
+
+## Variable Dependencies
+
+Computed variables can reference other computed variables:
+
+```
+// cv_subtotal
+{price} * {quantity}
+
+// cv_tax (references cv_subtotal)
+{cv_subtotal} * {tax_rate}
+
+// cv_total (references both)
+{cv_subtotal} + {cv_tax}
+```
+
+<Warning>
+**Circular Dependencies:** The system automatically detects and prevents circular references. Variable A cannot reference Variable B if B already references A (directly or indirectly).
+</Warning>
+
+## Technical Details
+
+### Evaluation Timing
+
+| Context | When Evaluated |
+|---------|----------------|
+| Form fill | Live, as field values change |
+| Conditional logic | Before rendering each field |
+| Thank you page | After submission |
+| Email notifications | When email is sent |
+| Integrations | When integration runs |
+
+### Data Storage
+
+Computed variable values are **not stored** in submission records. They are calculated on-demand when needed. This ensures:
+
+- Always up-to-date calculations
+- Smaller database storage
+- Formula changes affect past submissions when viewed
+
+### Error Handling
+
+If a formula cannot be evaluated (e.g., division by zero, missing field), it returns `null`. Use `IFBLANK()` or `COALESCE()` to provide fallback values:
+
+```
+IFBLANK({cv_calculation}, "N/A")
+```
+
+## Best Practices
+
+<Tip>
+**Naming:** Use descriptive names like "Total Price" or "Shipping Cost" rather than generic names like "Calculation 1".
+</Tip>
+
+<Tip>
+**Validation:** Test your formulas with sample data using the preview feature before saving.
+</Tip>
+
+<Tip>
+**Modularity:** Break complex calculations into smaller variables that reference each other. This makes formulas easier to understand and debug.
+</Tip>
+
+<Warning>
+**Performance:** While computed variables are efficient, avoid extremely complex chains of 10+ interdependent variables for best performance.
+</Warning>

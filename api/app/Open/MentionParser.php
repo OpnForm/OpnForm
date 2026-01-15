@@ -10,12 +10,23 @@ class MentionParser
 {
     private $content;
     private $data;
+    private $computedValues;
     private $urlFriendly = false;
 
-    public function __construct($content, $data)
+    public function __construct($content, $data, array $computedValues = [])
     {
         $this->content = $content;
         $this->data = $data;
+        $this->computedValues = $computedValues;
+    }
+
+    /**
+     * Set computed variable values
+     */
+    public function setComputedValues(array $computedValues): self
+    {
+        $this->computedValues = $computedValues;
+        return $this;
     }
 
     public function urlFriendlyOutput(bool $enable = true): self
@@ -135,10 +146,21 @@ class MentionParser
 
     private function getData($fieldId)
     {
+        // First check regular field data
         $value = collect($this->data)->firstWhere('id', $fieldId)['value'] ?? null;
+
+        // If not found, check computed variables (cv_ prefix)
+        if ($value === null && isset($this->computedValues[$fieldId])) {
+            $value = $this->computedValues[$fieldId];
+        }
 
         if (is_object($value)) {
             $value = (array) $value;
+        }
+
+        // Convert booleans to user-friendly text
+        if (is_bool($value)) {
+            $value = $value ? 'Yes' : 'No';
         }
 
         if ($this->urlFriendly && $value !== null) {

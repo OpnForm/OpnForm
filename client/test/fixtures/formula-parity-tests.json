@@ -1,0 +1,353 @@
+{
+  "description": "Formula engine parity tests - these tests should pass identically in both PHP and JavaScript implementations",
+  "tests": [
+    {
+      "name": "basic addition",
+      "formula": "{a} + {b}",
+      "context": { "a": 5, "b": 3 },
+      "expected": 8
+    },
+    {
+      "name": "basic subtraction",
+      "formula": "{a} - {b}",
+      "context": { "a": 10, "b": 4 },
+      "expected": 6
+    },
+    {
+      "name": "basic multiplication",
+      "formula": "{a} * {b}",
+      "context": { "a": 6, "b": 7 },
+      "expected": 42
+    },
+    {
+      "name": "basic division",
+      "formula": "{a} / {b}",
+      "context": { "a": 20, "b": 4 },
+      "expected": 5
+    },
+    {
+      "name": "division by zero returns null",
+      "formula": "{a} / {b}",
+      "context": { "a": 10, "b": 0 },
+      "expected": null
+    },
+    {
+      "name": "string concatenation with +",
+      "formula": "{first} + {last}",
+      "context": { "first": "Hello", "last": "World" },
+      "expected": "HelloWorld"
+    },
+    {
+      "name": "CONCAT function",
+      "formula": "CONCAT({first}, \" \", {last})",
+      "context": { "first": "Hello", "last": "World" },
+      "expected": "Hello World"
+    },
+    {
+      "name": "nested arithmetic",
+      "formula": "({a} + {b}) * {c}",
+      "context": { "a": 2, "b": 3, "c": 4 },
+      "expected": 20
+    },
+    {
+      "name": "SUM function",
+      "formula": "SUM({a}, {b}, {c})",
+      "context": { "a": 1, "b": 2, "c": 3 },
+      "expected": 6
+    },
+    {
+      "name": "AVERAGE function",
+      "formula": "AVERAGE({a}, {b}, {c})",
+      "context": { "a": 10, "b": 20, "c": 30 },
+      "expected": 20
+    },
+    {
+      "name": "MIN function",
+      "formula": "MIN({a}, {b}, {c})",
+      "context": { "a": 5, "b": 2, "c": 8 },
+      "expected": 2
+    },
+    {
+      "name": "MAX function",
+      "formula": "MAX({a}, {b}, {c})",
+      "context": { "a": 5, "b": 2, "c": 8 },
+      "expected": 8
+    },
+    {
+      "name": "ROUND function",
+      "formula": "ROUND({num}, 2)",
+      "context": { "num": 3.14159 },
+      "expected": 3.14
+    },
+    {
+      "name": "FLOOR function",
+      "formula": "FLOOR({num})",
+      "context": { "num": 3.7 },
+      "expected": 3
+    },
+    {
+      "name": "CEIL function",
+      "formula": "CEIL({num})",
+      "context": { "num": 3.2 },
+      "expected": 4
+    },
+    {
+      "name": "ABS function with positive",
+      "formula": "ABS({num})",
+      "context": { "num": 5 },
+      "expected": 5
+    },
+    {
+      "name": "ABS function with negative",
+      "formula": "ABS({num})",
+      "context": { "num": -5 },
+      "expected": 5
+    },
+    {
+      "name": "MOD function",
+      "formula": "MOD({a}, {b})",
+      "context": { "a": 10, "b": 3 },
+      "expected": 1
+    },
+    {
+      "name": "POWER function",
+      "formula": "POWER({base}, {exp})",
+      "context": { "base": 2, "exp": 3 },
+      "expected": 8
+    },
+    {
+      "name": "SQRT function",
+      "formula": "SQRT({num})",
+      "context": { "num": 16 },
+      "expected": 4
+    },
+    {
+      "name": "UPPER function",
+      "formula": "UPPER({text})",
+      "context": { "text": "hello" },
+      "expected": "HELLO"
+    },
+    {
+      "name": "LOWER function",
+      "formula": "LOWER({text})",
+      "context": { "text": "HELLO" },
+      "expected": "hello"
+    },
+    {
+      "name": "TRIM function",
+      "formula": "TRIM({text})",
+      "context": { "text": "  hello  " },
+      "expected": "hello"
+    },
+    {
+      "name": "LEFT function",
+      "formula": "LEFT({text}, 3)",
+      "context": { "text": "hello" },
+      "expected": "hel"
+    },
+    {
+      "name": "RIGHT function",
+      "formula": "RIGHT({text}, 3)",
+      "context": { "text": "hello" },
+      "expected": "llo"
+    },
+    {
+      "name": "MID function",
+      "formula": "MID({text}, 2, 3)",
+      "context": { "text": "hello" },
+      "expected": "ell"
+    },
+    {
+      "name": "LEN function",
+      "formula": "LEN({text})",
+      "context": { "text": "hello" },
+      "expected": 5
+    },
+    {
+      "name": "REPT function",
+      "formula": "REPT({text}, 3)",
+      "context": { "text": "ab" },
+      "expected": "ababab"
+    },
+    {
+      "name": "REPT function limited to 100",
+      "formula": "LEN(REPT(\"x\", 150))",
+      "context": {},
+      "expected": 100
+    },
+    {
+      "name": "IF function true branch",
+      "formula": "IF({x} > 5, \"big\", \"small\")",
+      "context": { "x": 10 },
+      "expected": "big"
+    },
+    {
+      "name": "IF function false branch",
+      "formula": "IF({x} > 5, \"big\", \"small\")",
+      "context": { "x": 3 },
+      "expected": "small"
+    },
+    {
+      "name": "nested IF",
+      "formula": "IF({x} > 10, \"large\", IF({x} > 5, \"medium\", \"small\"))",
+      "context": { "x": 7 },
+      "expected": "medium"
+    },
+    {
+      "name": "AND function all true",
+      "formula": "AND({a}, {b})",
+      "context": { "a": true, "b": true },
+      "expected": true
+    },
+    {
+      "name": "AND function one false",
+      "formula": "AND({a}, {b})",
+      "context": { "a": true, "b": false },
+      "expected": false
+    },
+    {
+      "name": "OR function all false",
+      "formula": "OR({a}, {b})",
+      "context": { "a": false, "b": false },
+      "expected": false
+    },
+    {
+      "name": "OR function one true",
+      "formula": "OR({a}, {b})",
+      "context": { "a": false, "b": true },
+      "expected": true
+    },
+    {
+      "name": "NOT function",
+      "formula": "NOT({val})",
+      "context": { "val": true },
+      "expected": false
+    },
+    {
+      "name": "ISBLANK function with empty string",
+      "formula": "ISBLANK({val})",
+      "context": { "val": "" },
+      "expected": true
+    },
+    {
+      "name": "ISBLANK function with value",
+      "formula": "ISBLANK({val})",
+      "context": { "val": "hello" },
+      "expected": false
+    },
+    {
+      "name": "ISNUMBER function with number",
+      "formula": "ISNUMBER({val})",
+      "context": { "val": 42 },
+      "expected": true
+    },
+    {
+      "name": "ISNUMBER function with string",
+      "formula": "ISNUMBER({val})",
+      "context": { "val": "hello" },
+      "expected": false
+    },
+    {
+      "name": "ISTEXT function with string",
+      "formula": "ISTEXT({val})",
+      "context": { "val": "hello" },
+      "expected": true
+    },
+    {
+      "name": "ISTEXT function with number",
+      "formula": "ISTEXT({val})",
+      "context": { "val": 42 },
+      "expected": false
+    },
+    {
+      "name": "COALESCE returns first non-null",
+      "formula": "COALESCE({a}, {b}, {c})",
+      "context": { "a": null, "b": null, "c": "found" },
+      "expected": "found"
+    },
+    {
+      "name": "comparison equal",
+      "formula": "IF({a} = {b}, \"equal\", \"not equal\")",
+      "context": { "a": 5, "b": 5 },
+      "expected": "equal"
+    },
+    {
+      "name": "comparison not equal",
+      "formula": "IF({a} <> {b}, \"different\", \"same\")",
+      "context": { "a": 5, "b": 3 },
+      "expected": "different"
+    },
+    {
+      "name": "comparison less than",
+      "formula": "IF({a} < {b}, \"yes\", \"no\")",
+      "context": { "a": 3, "b": 5 },
+      "expected": "yes"
+    },
+    {
+      "name": "comparison greater than",
+      "formula": "IF({a} > {b}, \"yes\", \"no\")",
+      "context": { "a": 7, "b": 5 },
+      "expected": "yes"
+    },
+    {
+      "name": "comparison less than or equal",
+      "formula": "IF({a} <= {b}, \"yes\", \"no\")",
+      "context": { "a": 5, "b": 5 },
+      "expected": "yes"
+    },
+    {
+      "name": "comparison greater than or equal",
+      "formula": "IF({a} >= {b}, \"yes\", \"no\")",
+      "context": { "a": 5, "b": 5 },
+      "expected": "yes"
+    },
+    {
+      "name": "missing field returns null in arithmetic",
+      "formula": "{a} + {missing}",
+      "context": { "a": 5 },
+      "expected": null
+    },
+    {
+      "name": "unary minus",
+      "formula": "-{a}",
+      "context": { "a": 5 },
+      "expected": -5
+    },
+    {
+      "name": "complex calculation",
+      "formula": "ROUND(({price} * {qty}) * (1 + {tax_rate}), 2)",
+      "context": { "price": 19.99, "qty": 3, "tax_rate": 0.08 },
+      "expected": 64.77
+    },
+    {
+      "name": "SUBSTITUTE function",
+      "formula": "SUBSTITUTE({text}, \"world\", \"universe\")",
+      "context": { "text": "hello world" },
+      "expected": "hello universe"
+    },
+    {
+      "name": "COUNT function with array",
+      "formula": "COUNT({items})",
+      "context": { "items": ["a", "b", "c"] },
+      "expected": 3
+    },
+    {
+      "name": "JOIN function with array",
+      "formula": "JOIN({items}, \", \")",
+      "context": { "items": ["a", "b", "c"] },
+      "expected": "a, b, c"
+    },
+    {
+      "name": "CONTAINS function true",
+      "formula": "CONTAINS({items}, \"b\")",
+      "context": { "items": ["a", "b", "c"] },
+      "expected": true
+    },
+    {
+      "name": "CONTAINS function false",
+      "formula": "CONTAINS({items}, \"d\")",
+      "context": { "items": ["a", "b", "c"] },
+      "expected": false
+    }
+  ]
+}

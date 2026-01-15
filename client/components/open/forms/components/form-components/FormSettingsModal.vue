@@ -37,6 +37,14 @@
     </SettingsModalPage>
 
     <SettingsModalPage
+      id="analytics"
+      label="Analytics"
+      icon="i-heroicons-chart-bar"
+    >
+      <FormAnalyticsSettings />
+    </SettingsModalPage>
+
+    <SettingsModalPage
       id="custom-code"
       label="Custom Code"
       icon="i-heroicons-code-bracket"
@@ -45,11 +53,11 @@
     </SettingsModalPage>
 
     <SettingsModalPage
-      id="analytics"
-      label="Analytics"
-      icon="i-heroicons-chart-bar"
+      id="variables"
+      label="Variables"
+      icon="i-heroicons-variable"
     >
-      <FormAnalyticsSettings />
+      <ComputedVariablesTab />
     </SettingsModalPage>
 
   </SettingsModal>
@@ -63,6 +71,7 @@ import FormSubmissionSettings from '~/components/open/forms/components/form-comp
 import FormSecurityAccess from '~/components/open/forms/components/form-components/FormSecurityAccess.vue'
 import FormCustomSeo from '~/components/open/forms/components/form-components/FormCustomSeo.vue'
 import FormCustomCode from '~/components/open/forms/components/form-components/FormCustomCode.vue'
+import ComputedVariablesTab from '~/components/open/forms/components/computed-variables/ComputedVariablesTab.vue'
 import FormAnalyticsSettings from '~/components/open/forms/components/form-components/FormAnalyticsSettings.vue'
 
 const emit = defineEmits(['close', 'update:activeTab'])
