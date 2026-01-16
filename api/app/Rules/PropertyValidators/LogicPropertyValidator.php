@@ -51,12 +51,6 @@ class LogicPropertyValidator implements PropertyValidatorInterface
             return $errors;
         }
 
-        // Validate logic is an array (nullable)
-        if (!is_array($logic)) {
-            $errors['logic'] = 'The logic field must be an array.';
-            return $errors;
-        }
-
         // If no conditions, logic is valid (empty logic)
         if (!isset($logic['conditions'])) {
             return $errors;
