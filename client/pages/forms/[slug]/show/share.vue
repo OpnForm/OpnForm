@@ -70,9 +70,23 @@
       <!-- Secondary Section: Embed -->
       <UCard class="shadow-sm">        
         <div class="space-y-4">
-          <h2 class="text-xl font-semibold">Embed Form</h2>
-          <p class="text-neutral-600 text-sm">Embed your form on your website by copying the HTML code below.</p>
-          
+          <div class="flex flex-wrap items-center gap-2">
+            <h2 class="text-xl grow font-semibold">Embed Form</h2>
+            <div class="flex gap-2">
+              <UButton
+                label="SDK Docs"
+                icon="i-heroicons-code-bracket"
+                variant="outline"
+                color="neutral"
+                to="https://docs.opnform.com/embedding/javascript-sdk"
+                target="_blank"
+              />
+            </div>
+          </div>
+          <p class="text-neutral-600 text-sm">
+            Embed your form on your website by copying the HTML code below.
+          </p>
+
           <EmbedCode
             :form="props.form"
             :extra-query-param="shareUrlForQueryParams"

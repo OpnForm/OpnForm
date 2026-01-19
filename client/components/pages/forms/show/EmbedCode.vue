@@ -1,10 +1,10 @@
 <template>
-    <copy-content
-      :content="embedCode"
-      label="Copy Code"
-      tracking-event="embed_code_copy_click"
-      :tracking-properties="{form_id: form.id, form_slug: form.slug}"
-    />
+  <copy-content
+    :content="embedCode"
+    label="Copy Code"
+    tracking-event="embed_code_copy_click"
+    :tracking-properties="{form_id: form.id, form_slug: form.slug}"
+  />
 </template>
 
 <script>

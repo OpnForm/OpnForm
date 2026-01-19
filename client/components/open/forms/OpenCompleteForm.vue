@@ -129,6 +129,7 @@ import { useIsIframe } from '~/composables/useIsIframe'
 import Loader from '~/components/global/Loader.vue'
 import { tailwindcssPaletteGenerator } from '~/lib/colors.js'
 import { useRouter } from 'vue-router'
+import { useSdkBridge } from '~/lib/sdk/useSdkBridge'
 import { clearFormatterCache } from '~/components/forms/components/FormSubmissionFormatter.js'
 import { clearMentionCache } from '~/composables/components/useParseMention.js'
 
@@ -178,6 +179,7 @@ provide('formBorderRadius', computed(() => props.form.border_radius || 'small'))
 provide('formPresentationStyle', computed(() => props.form.presentation_style || 'classic'))
 
 let formManager = null
+let sdkBridge = null
 if (props.form) {
   formManager = useFormManager(props.form, props.mode, {
     darkMode: darkModeRef,
@@ -188,6 +190,18 @@ if (props.form) {
   await formManager.initialize({
     submissionId: submissionId.value,
     urlParams: new URLSearchParams(queryString),
+  })
+
+  // Initialize SDK bridge for parent window communication
+  const formDataRef = computed(() => formManager.form.data())
+  const formErrorsRef = computed(() => formManager.form.errors?.all?.() || {})
+  
+  sdkBridge = useSdkBridge({
+    formConfig: computed(() => props.form),
+    formData: formDataRef,
+    formErrors: formErrorsRef,
+    formManager: formManager,
+    darkMode: darkModeRef
   })
 }
 
@@ -323,6 +337,9 @@ const handleScrollToError = () => {
 const triggerSubmit = () => {
   if (!formManager || isProcessing.value) return
 
+  // Emit SDK submitStart event
+  sdkBridge?.onSubmitStart()
+
   formManager.submit({
     submissionId: submissionId.value
   }).then(result => {
@@ -332,6 +349,13 @@ const triggerSubmit = () => {
         if (result?.submission_id) {
           submissionId.value = result.submission_id
         }
+
+        // Emit SDK submit success event
+        sdkBridge?.onSubmitSuccess({
+          data: submittedData.value,
+          submissionId: result?.submission_id,
+          completionTime: result?.completion_time
+        })
 
         if (isFormOwner.value && !useIsIframe() && result?.is_first_submission) {
           showFirstSubmissionModal.value = true
@@ -350,6 +374,11 @@ const triggerSubmit = () => {
     })
     .catch(error => {
       console.error(error)
+      
+      // Emit SDK submit error event
+      const errors = error.data?.errors || error.data || { general: error.message }
+      sdkBridge?.onSubmitError(errors)
+      
       if (error.response && error.response.status === 422 && error.data) {
         alert.formValidationError(error.data)
       } else if (error.message) {
@@ -385,6 +414,9 @@ const restart = async () => {
     submissionId: null,
     skipUrlParams: shouldClearUrl
   })
+  
+  // Emit SDK reset event
+  sdkBridge?.onReset()
   
   emit('restarted', true)
 }

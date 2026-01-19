@@ -47,6 +47,12 @@
               "configuration/oidc-sso",
               "configuration/disable-2fa"
             ]
+          },
+          {
+            "group": "Embedding",
+            "pages": [
+              "embedding/javascript-sdk"
+            ]
           }
         ]
       },

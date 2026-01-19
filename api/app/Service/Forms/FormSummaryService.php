@@ -142,46 +142,6 @@ class FormSummaryService
         ];
     }
 
-    /**
-     * Process all fields in single iteration through submissions
-     * O(submissions × fields) but only ONE database query
-     */
-    private function processAllFields(Collection $properties, Collection $submissions, int $total, int $formId): array
-    {
-        // Initialize accumulators for each field
-        $accumulators = [];
-        foreach ($properties as $prop) {
-            $accumulators[$prop['id']] = $this->initializeAccumulator($prop);
-        }
-
-        // Single pass through all submissions
-        foreach ($submissions as $submission) {
-            $data = $submission->data ?? [];
-
-            // Ensure data is array (handle potential JSON parsing issues)
-            if (!is_array($data)) {
-                continue;
-            }
-
-            foreach ($properties as $prop) {
-                $fieldId = $prop['id'];
-                $value = $data[$fieldId] ?? null;
-
-                if ($this->hasValue($value)) {
-                    $this->accumulateValue($accumulators[$fieldId], $value, $prop, $submission->id);
-                }
-            }
-        }
-
-        // Finalize and format results
-        $results = [];
-        foreach ($properties as $prop) {
-            $results[] = $this->finalizeField($prop, $accumulators[$prop['id']], $total, $formId);
-        }
-
-        return $results;
-    }
-
     private function initializeAccumulator(array $property): array
     {
         $summaryType = $this->getSummaryType($property['type'] ?? '');
