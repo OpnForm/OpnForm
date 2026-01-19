@@ -56,7 +56,7 @@ class PaymentPropertyValidator implements PropertyValidatorInterface
 
         // Amount validation
         if (!isset($property['amount']) || !is_numeric($property['amount']) || $property['amount'] < 1) {
-            $errors['amount'] = 'Amount must be a number greater than 1';
+            $errors['amount'] = 'Amount must be a number of at least 1';
             return $errors;
         }
 

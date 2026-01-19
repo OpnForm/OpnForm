@@ -10,7 +10,7 @@ on:
       - "client/**"
       - "docker/**"
       - "docker-compose*.yml"
-      - ".github/workflows/ci-cd.yml"
+      - ".github/workflows/**"
   pull_request:
   workflow_dispatch:
 

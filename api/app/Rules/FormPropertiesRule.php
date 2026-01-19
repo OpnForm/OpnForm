@@ -10,7 +10,6 @@ use App\Rules\PropertyValidators\PropertyValidatorInterface;
 use App\Rules\PropertyValidators\SelectOptionsPropertyValidator;
 use App\Rules\PropertyValidators\TypePropertyValidator;
 use Closure;
-use Illuminate\Contracts\Validation\DataAwareRule;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Contracts\Validation\ValidatorAwareRule;
 use Illuminate\Validation\Validator;
@@ -23,7 +22,7 @@ use Illuminate\Validation\Validator;
  * This dramatically improves performance for forms with many properties
  * by avoiding Laravel's validation framework overhead per property.
  */
-class FormPropertiesRule implements ValidationRule, ValidatorAwareRule, DataAwareRule
+class FormPropertiesRule implements ValidationRule, ValidatorAwareRule
 {
     /**
      * @var PropertyValidatorInterface[]
@@ -33,8 +32,6 @@ class FormPropertiesRule implements ValidationRule, ValidatorAwareRule, DataAwar
     private ?Workspace $workspace;
 
     private ?Validator $validator = null;
-
-    private array $data = [];
 
     public function __construct(?Workspace $workspace = null)
     {
@@ -56,15 +53,6 @@ class FormPropertiesRule implements ValidationRule, ValidatorAwareRule, DataAwar
     public function setValidator(Validator $validator): static
     {
         $this->validator = $validator;
-        return $this;
-    }
-
-    /**
-     * Set the data under validation.
-     */
-    public function setData(array $data): static
-    {
-        $this->data = $data;
         return $this;
     }
 
