@@ -48,6 +48,21 @@ export function useSdkBridge(options) {
   let messageHandler = null
 
   /**
+   * Deep clone to convert reactive objects/proxies to plain objects
+   * This is necessary because postMessage uses structured clone which cannot handle Proxies
+   */
+  function toPlainObject(obj) {
+    if (obj === null || obj === undefined) return obj
+    try {
+      return JSON.parse(JSON.stringify(obj))
+    } catch (e) {
+      // If JSON serialization fails, return empty object
+      console.warn('[OpnForm SDK] Failed to serialize payload:', e)
+      return {}
+    }
+  }
+
+  /**
    * Send event to parent window
    */
   function emitEvent(event, payload = {}) {
@@ -58,7 +73,7 @@ export function useSdkBridge(options) {
       type: MSG_PREFIX + 'event',
       event: event,
       formSlug: config?.slug,
-      payload: payload
+      payload: toPlainObject(payload)
     }
 
     // Send to parent if in iframe
@@ -81,8 +96,8 @@ export function useSdkBridge(options) {
       formSlug: config?.slug,
       requestId: requestId,
       success: success,
-      data: data,
-      error: error
+      data: toPlainObject(data),
+      error: toPlainObject(error)
     }
 
     if (isIframe) {
@@ -365,7 +380,6 @@ export function useSdkBridge(options) {
    * Emit submit success event
    */
   function onSubmitSuccess(submissionData) {
-    const config = toValue(formConfig)
     emitEvent(EVENTS.SUBMIT, {
       data: submissionData.data || toValue(formData),
       submissionId: submissionData.submissionId,
@@ -416,4 +430,3 @@ export function useSdkBridge(options) {
     EVENTS
   }
 }
-
