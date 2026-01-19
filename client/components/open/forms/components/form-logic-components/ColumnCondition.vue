@@ -60,6 +60,7 @@ export default {
       hasInput: false,
       inputComponent: {
         text: "TextInput",
+        rich_text: "TextInput",
         number: "TextInput",
         rating: "TextInput",
         scale: "TextInput",
@@ -73,6 +74,7 @@ export default {
         email: "TextInput",
         phone_number: "TextInput",
         matrix: "MatrixInput",
+        computed: "TextInput", // Computed variables use text input
       }
     }
   },

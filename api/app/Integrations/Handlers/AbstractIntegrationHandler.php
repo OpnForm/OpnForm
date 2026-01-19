@@ -8,10 +8,11 @@ use App\Models\Forms\Form;
 use App\Models\Integration\FormIntegrationsEvent;
 use App\Service\Forms\FormSubmissionFormatter;
 use App\Service\Forms\FormLogicConditionChecker;
+use App\Service\Forms\SubmissionUrlService;
+use App\Service\Formulas\ComputedVariableEvaluator;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Vinkla\Hashids\Facades\Hashids;
 
 abstract class AbstractIntegrationHandler
 {
@@ -19,6 +20,7 @@ abstract class AbstractIntegrationHandler
     protected $submissionData = null;
     protected $integrationData = null;
     protected $provider = null;
+    protected ?array $computedValues = null;
 
     public function __construct(
         protected FormSubmitted $event,
@@ -29,6 +31,20 @@ abstract class AbstractIntegrationHandler
         $this->submissionData = $event->data;
         $this->integrationData = $formIntegration->data;
         $this->provider = $formIntegration->provider;
+    }
+
+    /**
+     * Get computed variable values for this submission
+     */
+    protected function getComputedValues(): array
+    {
+        if ($this->computedValues === null) {
+            $this->computedValues = ComputedVariableEvaluator::evaluateForSubmission(
+                $this->form,
+                $this->submissionData
+            );
+        }
+        return $this->computedValues;
     }
 
     protected function getProviderName(): string
@@ -142,7 +158,7 @@ abstract class AbstractIntegrationHandler
             'message' => 'Please do not use the `submission` field. It is deprecated and will be removed in the future.'
         ];
         if ($form->is_pro && $form->editable_submissions && isset($submissionData['submission_id'])) {
-            $data['edit_link'] = $form->share_url . '?submission_id=' . Hashids::encode($submissionData['submission_id']);
+            $data['edit_link'] = SubmissionUrlService::buildEditUrl($form, $submissionData['submission_id']);
         }
 
         return $data;

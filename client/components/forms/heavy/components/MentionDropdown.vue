@@ -20,6 +20,7 @@
           >
         </div>
         <div class="overflow-scroll pt-2">
+          <!-- Form Fields -->
           <div class="w-full max-w-xs mb-2">
             <div class="text-sm text-neutral-500 mb-1">
               Select a field
@@ -39,6 +40,31 @@
                 />
                 <p class="text-sm text-neutral-700 truncate">
                   {{ field.name }}
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Computed Variables -->
+          <div v-if="computedVariables && computedVariables.length > 0" class="w-full max-w-xs mb-2 border-t pt-2 mt-2">
+            <div class="text-sm text-neutral-500 mb-1">
+              Variables
+            </div>
+            <div class="space-y-1">
+              <div
+                v-for="variable in computedVariables"
+                :key="variable.id"
+                class="flex items-center p-2 rounded-md cursor-pointer hover:bg-neutral-100"
+                :class="{ 'bg-purple-50 border border-purple-100 inset-0': selectedField?.id === variable.id, 'border border-transparent': selectedField?.id !== variable.id }"
+                @click="selectField(variable)"
+                @dblclick="selectField(variable, true)"
+              >
+                <Icon
+                  name="i-heroicons-variable"
+                  class="h-4 w-4 text-purple-500 mr-2"
+                />
+                <p class="text-sm text-neutral-700 truncate">
+                  {{ variable.name }}
                 </p>
               </div>
             </div>
@@ -81,6 +107,10 @@ const props = defineProps({
   mentions: {
     type: Array,
     required: true
+  },
+  computedVariables: {
+    type: Array,
+    default: () => []
   },
   content: {
     type: Object,

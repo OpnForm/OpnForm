@@ -343,6 +343,92 @@
       }
     }
   },
+  "rich_text": {
+    "comparators": {
+      "equals": {
+        "expected_type": "string"
+      },
+      "does_not_equal": {
+        "expected_type": "string"
+      },
+      "contains": {
+        "expected_type": "string"
+      },
+      "does_not_contain": {
+        "expected_type": "string"
+      },
+      "starts_with": {
+        "expected_type": "string"
+      },
+      "ends_with": {
+        "expected_type": "string"
+      },
+      "is_empty": {
+        "expected_type": "boolean",
+        "format": {
+          "type": "enum",
+          "values": [
+            true
+          ]
+        }
+      },
+      "is_not_empty": {
+        "expected_type": "boolean",
+        "format": {
+          "type": "enum",
+          "values": [
+            true
+          ]
+        }
+      },
+      "content_length_equals": {
+        "expected_type": "number"
+      },
+      "content_length_does_not_equal": {
+        "expected_type": "number"
+      },
+      "content_length_greater_than": {
+        "expected_type": "number"
+      },
+      "content_length_greater_than_or_equal_to": {
+        "expected_type": "number"
+      },
+      "content_length_less_than": {
+        "expected_type": "number"
+      },
+      "content_length_less_than_or_equal_to": {
+        "expected_type": "number"
+      },
+      "matches_regex": {
+        "expected_type": "string",
+        "format": {
+          "type": "regex"
+        }
+      },
+      "does_not_match_regex": {
+        "expected_type": "string",
+        "format": {
+          "type": "regex"
+        }
+      },
+      "exists_in_submissions": {
+        "expected_type": "boolean",
+        "format": {
+          "type": "enum",
+          "values": [true]
+        },
+        "custom_validation_only": true
+      },
+      "does_not_exist_in_submissions": {
+        "expected_type": "boolean",
+        "format": {
+          "type": "enum",
+          "values": [true]
+        },
+        "custom_validation_only": true
+      }
+    }
+  },
   "matrix": {
     "comparators": {
       "equals": {
@@ -368,6 +454,22 @@
         "format": {
           "type":"object"
         }
+      },
+      "exists_in_submissions": {
+        "expected_type": "boolean",
+        "format": {
+          "type": "enum",
+          "values": [true]
+        },
+        "custom_validation_only": true
+      },
+      "does_not_exist_in_submissions": {
+        "expected_type": "boolean",
+        "format": {
+          "type": "enum",
+          "values": [true]
+        },
+        "custom_validation_only": true
       }
     }
   },
@@ -616,6 +718,22 @@
       },
       "content_length_less_than_or_equal_to": {
         "expected_type": "number"
+      },
+      "exists_in_submissions": {
+        "expected_type": "boolean",
+        "format": {
+          "type": "enum",
+          "values": [true]
+        },
+        "custom_validation_only": true
+      },
+      "does_not_exist_in_submissions": {
+        "expected_type": "boolean",
+        "format": {
+          "type": "enum",
+          "values": [true]
+        },
+        "custom_validation_only": true
       }
     }
   },
@@ -650,6 +768,22 @@
             true
           ]
         }
+      },
+      "exists_in_submissions": {
+        "expected_type": "boolean",
+        "format": {
+          "type": "enum",
+          "values": [true]
+        },
+        "custom_validation_only": true
+      },
+      "does_not_exist_in_submissions": {
+        "expected_type": "boolean",
+        "format": {
+          "type": "enum",
+          "values": [true]
+        },
+        "custom_validation_only": true
       }
     }
   },
@@ -684,6 +818,22 @@
             true
           ]
         }
+      },
+      "exists_in_submissions": {
+        "expected_type": "boolean",
+        "format": {
+          "type": "enum",
+          "values": [true]
+        },
+        "custom_validation_only": true
+      },
+      "does_not_exist_in_submissions": {
+        "expected_type": "boolean",
+        "format": {
+          "type": "enum",
+          "values": [true]
+        },
+        "custom_validation_only": true
       }
     }
   },
@@ -814,6 +964,22 @@
           "type": "empty",
           "values": "{}"
         }
+      },
+      "exists_in_submissions": {
+        "expected_type": "boolean",
+        "format": {
+          "type": "enum",
+          "values": [true]
+        },
+        "custom_validation_only": true
+      },
+      "does_not_exist_in_submissions": {
+        "expected_type": "boolean",
+        "format": {
+          "type": "enum",
+          "values": [true]
+        },
+        "custom_validation_only": true
       }
     }
   },
@@ -906,6 +1072,22 @@
       },
       "content_length_less_than_or_equal_to": {
         "expected_type": "number"
+      },
+      "exists_in_submissions": {
+        "expected_type": "boolean",
+        "format": {
+          "type": "enum",
+          "values": [true]
+        },
+        "custom_validation_only": true
+      },
+      "does_not_exist_in_submissions": {
+        "expected_type": "boolean",
+        "format": {
+          "type": "enum",
+          "values": [true]
+        },
+        "custom_validation_only": true
       }
     }
   },
@@ -919,6 +1101,48 @@
         }
       },
       "not_paid": {
+        "expected_type": "boolean",
+        "format": {
+          "type": "enum",
+          "values": [true]
+        }
+      }
+    }
+  },
+  "computed": {
+    "comparators": {
+      "equals": {
+        "expected_type": "string"
+      },
+      "does_not_equal": {
+        "expected_type": "string"
+      },
+      "contains": {
+        "expected_type": "string"
+      },
+      "does_not_contain": {
+        "expected_type": "string"
+      },
+      "greater_than": {
+        "expected_type": "number"
+      },
+      "less_than": {
+        "expected_type": "number"
+      },
+      "greater_than_or_equal_to": {
+        "expected_type": "number"
+      },
+      "less_than_or_equal_to": {
+        "expected_type": "number"
+      },
+      "is_empty": {
+        "expected_type": "boolean",
+        "format": {
+          "type": "enum",
+          "values": [true]
+        }
+      },
+      "is_not_empty": {
         "expected_type": "boolean",
         "format": {
           "type": "enum",

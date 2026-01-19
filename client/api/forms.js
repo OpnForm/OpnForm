@@ -24,6 +24,7 @@ export const formsApi = {
   // Form submissions
   submissions: {
     list: (formId, options) => apiService.get(`/open/forms/${formId}/submissions`, options),
+    fetch: (formId, submissionId, options) => apiService.get(`/open/forms/${formId}/submissions/${submissionId}`, options),
     get: (slug, submissionId, options) => apiService.get(`/forms/${slug}/submissions/${submissionId}`, options),
     update: (formId, submissionId, data) => apiService.put(`/open/forms/${formId}/submissions/${submissionId}`, data),
     delete: (formId, submissionId) => apiService.delete(`/open/forms/${formId}/submissions/${submissionId}`),
@@ -36,6 +37,10 @@ export const formsApi = {
   // Form stats
   stats: (workspaceId, formId, options) => apiService.get(`/open/workspaces/${workspaceId}/form-stats/${formId}`, options),
   statsDetails: (workspaceId, formId, options) => apiService.get(`/open/workspaces/${workspaceId}/form-stats-details/${formId}`, options),
+
+  // Form summary
+  summary: (workspaceId, formId, options) => apiService.get(`/open/workspaces/${workspaceId}/form-summary/${formId}`, options),
+  summaryFieldValues: (workspaceId, formId, fieldId, options) => apiService.get(`/open/workspaces/${workspaceId}/form-summary/${formId}/field/${fieldId}/values`, options),
 
   // File operations
   assets: {

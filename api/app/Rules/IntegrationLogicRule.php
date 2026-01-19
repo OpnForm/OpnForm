@@ -2,6 +2,7 @@
 
 namespace App\Rules;
 
+use App\Rules\PropertyValidators\LogicPropertyValidator;
 use Closure;
 use Illuminate\Contracts\Validation\DataAwareRule;
 use Illuminate\Contracts\Validation\ValidationRule;
@@ -51,7 +52,7 @@ class IntegrationLogicRule implements DataAwareRule, ValidationRule
         $operator = $condition['value']['operator'];
 
         // If operator has no format and no expected_type, it means it doesn't need input
-        if (!isset(FormPropertyLogicRule::getConditionMapping()[$typeField]['comparators'][$operator]['expected_type'])) {
+        if (!isset(LogicPropertyValidator::getConditionMapping()[$typeField]['comparators'][$operator]['expected_type'])) {
             return;
         }
 
@@ -64,21 +65,21 @@ class IntegrationLogicRule implements DataAwareRule, ValidationRule
 
         $value = $condition['value']['value'];
 
-        if (!isset(FormPropertyLogicRule::getConditionMapping()[$typeField])) {
+        if (!isset(LogicPropertyValidator::getConditionMapping()[$typeField])) {
             $this->isConditionCorrect = false;
             $this->conditionErrors[] = 'configuration not found for condition type';
 
             return;
         }
 
-        if (!isset(FormPropertyLogicRule::getConditionMapping()[$typeField]['comparators'][$operator])) {
+        if (!isset(LogicPropertyValidator::getConditionMapping()[$typeField]['comparators'][$operator])) {
             $this->isConditionCorrect = false;
             $this->conditionErrors[] = 'configuration not found for condition operator';
 
             return;
         }
 
-        $type = FormPropertyLogicRule::getConditionMapping()[$typeField]['comparators'][$operator]['expected_type'];
+        $type = LogicPropertyValidator::getConditionMapping()[$typeField]['comparators'][$operator]['expected_type'];
 
         if (is_array($type)) {
             $foundCorrectType = false;

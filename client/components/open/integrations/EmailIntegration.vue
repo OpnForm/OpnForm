@@ -16,6 +16,7 @@
     <MentionInput
       :form="integrationData"
       :mentions="form.properties"
+      :computed-variables="form.computed_variables"
       :disable-mention="!form.is_pro"
       :disabled="!form.is_pro"
       name="data.send_to"
@@ -41,6 +42,7 @@
       <MentionInput
         :form="integrationData"
         :mentions="form.properties"
+        :computed-variables="form.computed_variables"
         name="data.sender_name"
         label="Sender Name"
         class="flex-1"
@@ -57,6 +59,7 @@
     <MentionInput
       :form="integrationData"
       :mentions="form.properties"
+      :computed-variables="form.computed_variables"
       required
       name="data.subject"
       label="Subject"
@@ -65,6 +68,7 @@
       :form="integrationData"
       :enable-mentions="true"
       :mentions="form.properties"
+      :computed-variables="form.computed_variables"
       name="data.email_content"
       label="Email Content"
     />
@@ -93,6 +97,7 @@
     <MentionInput
       :form="integrationData"
       :mentions="form.properties"
+      :computed-variables="form.computed_variables"
       class="mt-4"
       name="data.reply_to"
       label="Reply To"

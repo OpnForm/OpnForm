@@ -130,6 +130,8 @@ import Loader from '~/components/global/Loader.vue'
 import { tailwindcssPaletteGenerator } from '~/lib/colors.js'
 import { useRouter } from 'vue-router'
 import { useSdkBridge } from '~/lib/sdk/useSdkBridge'
+import { clearFormatterCache } from '~/components/forms/components/FormSubmissionFormatter.js'
+import { clearMentionCache } from '~/composables/components/useParseMention.js'
 
 const props = defineProps({
   form: { type: Object, required: true },
@@ -154,6 +156,7 @@ const workingFormStore = useWorkingFormStore()
 const { data: user } = useAuth().user()
 const passwordForm = useForm({ password: null })
 // Removed unused hidePasswordDisabledMsg (was always false and unused)
+// submission_id can be UUID (new secure format) or Hashid (legacy format)
 const submissionId = ref(route.query.submission_id || null)
 const submittedData = ref(null)
 const showFirstSubmissionModal = ref(false)
@@ -308,6 +311,9 @@ watch(() => props.form?.language, (newLanguage) => {
 
 onBeforeUnmount(() => {
   setLocale('en')
+  // Clear caches for this form to prevent memory leaks
+  clearFormatterCache(props.form?.slug)
+  clearMentionCache()
 })
 
 const handleScrollToError = () => {

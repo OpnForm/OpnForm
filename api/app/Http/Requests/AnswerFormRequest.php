@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Models\Forms\Form;
 use App\Rules\CustomFieldValidationRule;
+use App\Rules\InputMaskRule;
 use App\Rules\MatrixValidationRule;
 use App\Rules\StorageFile;
 use App\Rules\ValidHCaptcha;
@@ -200,6 +201,11 @@ class AnswerFormRequest extends FormRequest
     {
         switch ($property['type']) {
             case 'text':
+                if (isset($property['input_mask']) && $property['input_mask']) {
+                    return ['string', new InputMaskRule($property['input_mask'])];
+                }
+
+                return ['string'];
             case 'rich_text':
             case 'signature':
                 return ['string'];
