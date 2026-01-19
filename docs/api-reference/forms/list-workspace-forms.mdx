@@ -4,6 +4,10 @@ openapi: get /open/workspaces/{workspaceId}/forms
 
 Retrieve all forms within a specific workspace.
 
+<Info>
+This endpoint returns **lightweight form summaries** optimized for listing. The `properties` array (form fields and blocks) is excluded to reduce response size. Use the [Get Form](./get-form) endpoint to retrieve the complete form with all fields.
+</Info>
+
 ## Authentication & Scope
 
 This request must be authenticated using a **Personal Access Token** that includes the `forms-read` ability.
@@ -34,7 +38,7 @@ Authorization: Bearer <token>
 
 ## Response
 
-`200 OK` – Returns a paginated JSON response containing Form objects.
+`200 OK` – Returns a paginated JSON response containing lightweight form summaries.
 
 ```json
 {
@@ -44,17 +48,32 @@ Authorization: Bearer <token>
       "slug": "customer-feedback",
       "title": "Customer Feedback",
       "visibility": "public",
+      "tags": ["feedback", "support"],
+      "views_count": 1250,
       "submissions_count": 15,
-      "properties": [
-        /* form fields & layout blocks */
-      ]
+      "created_at": "2024-11-15T10:30:00+00:00",
+      "updated_at": "2025-01-02T14:25:00+00:00",
+      "last_edited_human": "2 hours ago",
+      "closes_at": null,
+      "is_closed": false,
+      "max_submissions_count": null,
+      "max_number_of_submissions_reached": false,
+      "is_pro": true,
+      "workspace_id": 1,
+      "share_url": "https://opnform.com/forms/customer-feedback"
     }
   ],
-  "current_page": 1,
-  "per_page": 10,
-  "total": 1
+  "meta": {
+    "current_page": 1,
+    "per_page": 10,
+    "total": 1
+  }
 }
 ```
+
+<Tip>
+To get the full form including fields (`properties`), call the [Get Form](./get-form) endpoint with the form's `slug` or `id`.
+</Tip>
 
 `403 Forbidden` – The token does not include the required `forms-read` ability, or you do not have access to the workspace.
 

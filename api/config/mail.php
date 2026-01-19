@@ -46,12 +46,12 @@ return [
         ],
 
         // Use the custom_smtp mailer for the user's own SMTP server.
-        // This configuration will be set dynamically by the AbstractEmailIntegrationHandler class.
+        // This configuration will be set dynamically by FormEmailNotification.
         'custom_smtp' => [
             'transport' => 'smtp',
             'host' => null,
-            'port' => 587,
-            'encryption' => 'tls',
+            'port' => null,
+            'encryption' => null,
             'username' => null,
             'password' => null,
         ],

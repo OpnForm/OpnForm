@@ -5,7 +5,6 @@
 </template>
 
 <script setup>
-import { computed, onMounted } from "vue"
 import { useAppStore } from "~/stores/app"
 
 const appStore = useAppStore()
@@ -56,9 +55,4 @@ const tooltipConfig = {
   delayDuration: 100
 }
 
-// Lifecycle
-onMounted(() => {
-  useCrisp().onCrispInit()
-  useCrisp().showChat()
-})
 </script> 

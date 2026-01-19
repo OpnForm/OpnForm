@@ -9,7 +9,8 @@
         <NuxtPage />
       </NuxtLayout>
 
-      <ClientOnly>
+      <!-- Third-party services and modals - only load when not on public form pages -->
+      <ClientOnly v-if="!isPublicFormPage">
         <div
           class="fixed z-[9999] left-0 bottom-0 p-4" id="admin-actions"
         >
@@ -17,9 +18,7 @@
             <ToolsStopImpersonation />
           </UButtonGroup>
         </div>
-      </ClientOnly>
 
-      <ClientOnly>
         <Clarity />
         <FeatureBase />
         <SubscriptionModal />
@@ -34,6 +33,10 @@ import FeatureBase from "~/components/vendor/FeatureBase.vue"
 import Clarity from "~/components/vendor/Clarity.vue"
 
 const config = useRuntimeConfig()
+const route = useRoute()
+
+// Check if current page is a public form page (for performance optimization)
+const isPublicFormPage = computed(() => route.name === 'forms-slug')
 
 // SEO and head configuration
 useOpnSeoMeta({

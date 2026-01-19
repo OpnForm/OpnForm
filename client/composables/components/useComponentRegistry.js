@@ -41,6 +41,7 @@ const heavyFormComponentsRegistry = new Map([
   ['MatrixInput', () => import('~/components/forms/heavy/MatrixInput.vue')],
   ['PhoneInput', () => import('~/components/forms/heavy/PhoneInput.vue')],
   ['RatingInput', () => import('~/components/forms/heavy/RatingInput.vue')],
+  ['MaskInput', () => import('~/components/forms/heavy/MaskInput.vue')],
 ])
 
 const focusedFormComponentsRegistry = new Map([

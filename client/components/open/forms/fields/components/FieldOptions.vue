@@ -317,84 +317,11 @@
     </div>
 
     <!-- select/multiselect Options   -->
-    <div
+    <SelectOptionEditor
       v-if="['select', 'multi_select'].includes(field.type)"
-      class="px-4"
-    >
-      <EditorSectionHeader
-        icon="i-heroicons-chevron-up-down-20-solid"
-        title="Select Options"
-      />
-      <text-area-input
-        v-model="optionsText"
-        :name="field.id + '_options_text'"
-        class="mt-3"
-        label="Set selection options"
-        help="Add one option per line"
-        @update:model-value="onFieldOptionsChange"
-      />
-      <toggle-switch-input
-        v-if="isFocused"
-        :model-value="field.use_focused_selector === false"
-        label="Use dropdown instead"
-        help="Use classic dropdown instead of focused selector with keyboard shortcuts"
-        @update:model-value="onFieldUseDropdownInFocusedChange"
-      />
-      <toggle-switch-input
-        v-if="!isFocusedSelectorActive"
-        :form="field"
-        name="allow_creation"
-        label="Allow respondent to create new options"
-        @update:model-value="onFieldAllowCreationChange"
-      />
-      <toggle-switch-input
-        v-if="!isFocusedSelectorActive"
-        :form="field"
-        name="without_dropdown"
-        label="Use radio buttons"
-        @update:model-value="onFieldWithoutDropdownChange"
-      />
-      <toggle-switch-input
-        :form="field"
-        name="shuffle_options"
-        label="Randomize options order"
-      />
-      
-      <!-- Min/Max Selection Constraints for multi_select only -->
-      <template v-if="field.type === 'multi_select'">
-        <div class="flex gap-1">
-        <text-input
-          name="min_selection"
-          native-type="number"
-          :min="0"
-          class="flex-1"
-          :form="field"
-          label="Min. required"
-          placeholder="1"
-          @update:model-value="onFieldMinSelectionChange"
-        />
-        <text-input
-          name="max_selection"
-          native-type="number"
-          :min="1"
-          class="flex-1"
-          :form="field"
-          label="Max. allowed"
-          placeholder="2"
-          @update:model-value="onFieldMaxSelectionChange"
-        />
-        <UButton
-          icon="i-heroicons-backspace"
-          color="neutral"
-          variant="outline"
-          class="self-end mb-1"
-          title="Clear both values"
-          @click="clearMinMaxSelection"
-        />
-      </div>
-      <InputHelp help="Set min/max options allowed, or leave empty for unlimited. Save form to test changes." />
-      </template>
-    </div>
+      :field="field"
+      :form="form"
+    />
 
     <!-- Customization - Placeholder, Prefill, Relabel, Field Help    -->
     <div
@@ -580,18 +507,13 @@
       </div>
 
       <!-- Placeholder -->
-      <text-area-input
-        v-if="hasPlaceholder && ((field.type === 'text' && field.multi_lines) || field.type === 'rich_text')"
+      <MentionInput
+        v-if="hasPlaceholder"
         name="placeholder"
         class="mt-3"
         :form="field"
-        label="Empty Input Text - Placeholder"
-      />
-      <text-input
-        v-else-if="hasPlaceholder"
-        name="placeholder"
-        class="mt-3"
-        :form="field"
+        :mentions="form.properties"
+        :computed-variables="form.computed_variables"
         label="Empty Input Text - Placeholder"
       />
 
@@ -622,6 +544,9 @@
         :allow-fullscreen="true"
         :form="field"
         label="Help Text"
+        enable-mentions
+        :mentions="form.properties"
+        :computed-variables="form.computed_variables"
         :editor-options="{
           formats: [
             'bold',
@@ -705,6 +630,8 @@
         help="If you enable this, we will hide this field and fill it a unique incrementing number on each new form submission"
         @update:model-value="onFieldGenAutoIdChange"
       />
+
+      <InputMaskOptions :field="field" />
     </div>
 
   <!--  (moved above for focused mode)  -->
@@ -718,8 +645,11 @@ import CountryFlag from 'vue-country-flag-next'
 import MatrixFieldOptions from './MatrixFieldOptions.vue'
 import PaymentFieldOptions from './PaymentFieldOptions.vue'
 import HiddenRequiredDisabled from './HiddenRequiredDisabled.vue'
+import SelectOptionEditor from './SelectOptionEditor.vue'
+import InputMaskOptions from './InputMaskOptions.vue'
 import EditorSectionHeader from '~/components/open/forms/components/form-components/EditorSectionHeader.vue'
 import ProTag from '~/components/app/ProTag.vue'
+import MentionInput from '~/components/forms/heavy/MentionInput.vue'
 import { format } from 'date-fns'
 import { default as _has } from 'lodash/has'
 import blocksTypes from '~/data/blocks_types.json'
@@ -727,7 +657,7 @@ import BlockMediaOptions from '~/components/open/forms/components/media/BlockMed
 
 export default {
   name: 'FieldOptions',
-  components: { CountryFlag, MatrixFieldOptions, HiddenRequiredDisabled, EditorSectionHeader, PaymentFieldOptions, ProTag, BlockMediaOptions },
+  components: { CountryFlag, MatrixFieldOptions, HiddenRequiredDisabled, EditorSectionHeader, PaymentFieldOptions, ProTag, BlockMediaOptions, SelectOptionEditor, MentionInput, InputMaskOptions },
   props: {
     field: {
       type: Object,
@@ -762,10 +692,6 @@ export default {
     isFocused() {
       return this.form?.presentation_style === 'focused'
     },
-    isFocusedSelectorActive() {
-      // Focused selector is active when in focused mode AND not explicitly disabled
-      return this.isFocused && this.field.use_focused_selector !== false
-    },
     hasPlaceholder() {
       return !this.typesWithoutPlaceholder.includes(this.field.type)
     },
@@ -778,9 +704,6 @@ export default {
     },
     mbLimit() {
       return  (this.form?.workspace && this.form?.workspace.max_file_size) ? this.form?.workspace?.max_file_size : 10
-    },
-    optionsText() {
-      return this.field[this.field.type].options.map(option => option.name).join('\n')
     },
     prefillSelectsOptions() {
       if (!['select', 'multi_select'].includes(this.field.type)) return {}
@@ -861,16 +784,6 @@ export default {
         }
       },
       immediate: true
-    },
-    isFocusedSelectorActive: {
-      handler(val) {
-        // When focused selector becomes active, ensure conflicting options are disabled
-        if (val && ['select', 'multi_select'].includes(this.field.type)) {
-          this.field.without_dropdown = false
-          this.field.allow_creation = false
-        }
-      },
-      immediate: true
     }
   },
 
@@ -905,16 +818,6 @@ export default {
         this.field.hidden = true
       }
     },
-    onFieldOptionsChange(val) {
-      const vals = (val) ? val.trim().split('\n') : []
-      const tmpOpts = vals.map(name => {
-        return {
-          name: name,
-          id: name
-        }
-      })
-      this.field[this.field.type] = { options: tmpOpts }
-    },
     onFieldPrefillTodayChange(val) {
       this.field.prefill_today = val
       if (this.field.prefill_today) {
@@ -924,31 +827,6 @@ export default {
         this.field.disable_past_dates = false
       } else {
         this.field.prefill = this.field.prefill ?? null
-      }
-    },
-    onFieldAllowCreationChange(val) {
-      this.field.allow_creation = val
-      if (this.field.allow_creation) {
-        this.field.without_dropdown = false
-      }
-    },
-    onFieldWithoutDropdownChange(val) {
-      this.field.without_dropdown = val
-      if (this.field.without_dropdown) {
-        this.field.allow_creation = false
-        this.field.use_focused_selector = false
-      }
-    },
-    onFieldUseDropdownInFocusedChange(val) {
-      // Inverted logic: when "use dropdown instead" is ON, disable focused selector
-      this.field.use_focused_selector = !val
-      if (!this.field.use_focused_selector) {
-        // When disabling focused selector (using dropdown instead), no need to disable other options
-        // User can choose dropdown with creation or without_dropdown
-      } else {
-        // When enabling focused selector, force disable conflicting options
-        this.field.without_dropdown = false
-        this.field.allow_creation = false
       }
     },
     onFieldDisablePastDatesChange(val) {
@@ -1027,9 +905,19 @@ export default {
         this.field.slider_min_value = 0
         this.field.slider_max_value = 50
         this.field.slider_step_value = 1
-      } else if (["select", "multi_select"].includes(this.field.type) && !this.field[this.field.type]?.options) {
-        this.field[this.field.type] = { options: [] }
-      } else if (this.field.type === "checkbox" && this.isFocused && !this.field.focused_checkbox_style) {
+      } else if (["select", "multi_select"].includes(this.field.type)) {
+        if (!this.field[this.field.type]?.options) {
+          this.field[this.field.type] = { options: [] }
+        }
+        // Set default option display settings
+        if (!this.field.option_display_mode) {
+          this.field.option_display_mode = 'text_only'
+        }
+        if (!this.field.option_image_size) {
+          this.field.option_image_size = 'md'
+        }
+      }
+      if (this.field.type === "checkbox" && this.isFocused && !this.field.focused_checkbox_style) {
         // Default to focused toggle in focused mode
         this.field.focused_checkbox_style = 'focused_toggle'
         this.field.use_focused_toggle = true
@@ -1043,16 +931,6 @@ export default {
       if(!this.field.max_char_limit) {
         this.field.show_char_limit = false
       }
-    },
-    onFieldMinSelectionChange(val) {
-      this.field.min_selection = val ? parseInt(val) : null
-    },
-    onFieldMaxSelectionChange(val) {
-      this.field.max_selection = val ? parseInt(val) : null
-    },
-    clearMinMaxSelection() {
-      this.field.min_selection = null
-      this.field.max_selection = null
     },
     onFieldFocusedCheckboxStyleChange(val) {
       this.field.focused_checkbox_style = val

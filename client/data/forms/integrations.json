@@ -64,7 +64,7 @@
     "is_pro": false,
     "is_external": true,
     "is_editable": false,
-    "url": "https://n8n.io/"
+    "url": "https://n8n.io/integrations/opnform-trigger/"
   },
   "activepieces": {
     "name": "Activepieces",

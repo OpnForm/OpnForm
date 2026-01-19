@@ -177,6 +177,7 @@
                 name="redirect_url"
                 :form="form"
                 :mentions="form.properties"
+                :computed-variables="form.computed_variables"
                 class="w-full max-w-xs"
                 label="Redirect URL"
                 placeholder="https://www.google.com"
@@ -187,6 +188,7 @@
               <rich-text-area-input
                 enable-mentions
                 :mentions="form.properties"
+                :computed-variables="form.computed_variables"
                 :allow-fullscreen="true"
                 name="submitted_text"
                 class="w-full"

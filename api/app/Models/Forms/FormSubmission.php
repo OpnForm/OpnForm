@@ -5,10 +5,22 @@ namespace App\Models\Forms;
 use App\Events\Models\FormSubmissionDeleting;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Version;
+use Mpociot\Versionable\VersionableTrait;
+use App\Contracts\VersionableNestedDiff;
 
-class FormSubmission extends Model
+class FormSubmission extends Model implements VersionableNestedDiff
 {
     use HasFactory;
+    use VersionableTrait;
+
+    // Configure versioning
+    protected $versionClass = Version::class;
+    protected $keepOldVersions = 5;
+    protected $dontVersionFields = [
+        'created_at',
+        'updated_at',
+    ];
 
     public const STATUS_PARTIAL = 'partial';
     public const STATUS_COMPLETED = 'completed';
@@ -17,7 +29,8 @@ class FormSubmission extends Model
         'data',
         'completion_time',
         'status',
-        'meta'
+        'meta',
+        'public_id'
     ];
 
     protected function casts(): array
@@ -26,6 +39,7 @@ class FormSubmission extends Model
             'data' => 'array',
             'completion_time' => 'integer',
             'meta' => 'array',
+            'public_id' => 'string',
         ];
     }
 
@@ -44,5 +58,10 @@ class FormSubmission extends Model
     public function form()
     {
         return $this->belongsTo(Form::class);
+    }
+
+    public function getVersionNestedDiffFields(): array
+    {
+        return ['data'];
     }
 }

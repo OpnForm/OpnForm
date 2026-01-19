@@ -38,22 +38,31 @@ class CheckSpamEmailIntegrationPrompt extends Prompt
 
         {blockingHistory}
 
+        **IMPORTANT: MENTIONS/PLACEHOLDERS ARE LEGITIMATE FEATURES**
+        Email subjects and content may contain HTML mention tags like:
+        <span mention-field-id="xxx" mention-field-name="Name">Name</span>
+        These are LEGITIMATE form field placeholders that personalize emails with submitted data.
+        Using mentions/placeholders in subjects is a NORMAL and EXPECTED feature - NOT a spam indicator!
+
         **CRITICAL ABUSE PATTERN - HIGH PRIORITY:**
         🚨 Watch for: Default/dummy forms (e.g., "Contact Form" with no description) paired with phishing emails.
         This is a common abuse pattern: attacker creates dummy form, then sets up phishing email integration to mass-send to random people.
 
         **BLOCK IMMEDIATELY (is_spam: true):**
         - Phishing or brand impersonation content (login pages, credential harvesting, fake support)
-        - Clear mismatch: default/generic form with targeted phishing email
-        - Non-subscribed user with obvious phishing setup
+        - Clear mismatch: default/generic form with targeted phishing email containing malicious content
+        - Emails designed to trick recipients into providing credentials or sensitive information
 
-        **FLAG FOR ADMIN REVIEW (needs_admin_review: true):**
-        - Borderline contextual mismatch between form and email
-        - Unsubscribed user with suspicious (but not clearly malicious) email setup
+        **FLAG FOR ADMIN REVIEW (needs_admin_review: true) - RARE CASES ONLY:**
+        - Emails with suspicious brand impersonation but unclear intent
+        - Content that appears designed to deceive recipients about sender identity
 
-        **ALLOW (both false) - DEFAULT:**
+        **ALLOW (both false) - DEFAULT FOR MOST INTEGRATIONS:**
         - Email content matches form context (e.g., contact form with contact confirmation email)
-        - Subscribed users with legitimate integration setup
+        - Emails using mentions/placeholders to personalize subject or content (this is a feature!)
+        - New users or free users with normal email integrations
+        - Generic notification emails, thank you emails, confirmation emails
+        - Being unsubscribed or a new user is NOT a spam indicator by itself
 
         Respond with JSON: {"is_spam": boolean, "needs_admin_review": boolean, "reason": "brief explanation"}
     EOD;

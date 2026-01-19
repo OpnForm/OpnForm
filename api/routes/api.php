@@ -9,6 +9,7 @@ use App\Http\Controllers\Auth\UserController;
 use App\Http\Controllers\Auth\VerificationController;
 use App\Http\Controllers\Forms\FormController;
 use App\Http\Controllers\Forms\FormStatsController;
+use App\Http\Controllers\Forms\FormSummaryController;
 use App\Http\Controllers\Forms\FormSubmissionController;
 use App\Http\Controllers\Forms\Integration\FormIntegrationsController;
 use App\Http\Controllers\Forms\Integration\FormIntegrationsEventController;
@@ -24,6 +25,7 @@ use App\Http\Controllers\Auth\UserInviteController;
 use App\Http\Controllers\Forms\FormPaymentController;
 use App\Http\Controllers\WorkspaceController;
 use App\Http\Controllers\WorkspaceUserController;
+use App\Http\Controllers\VersionController;
 use Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -47,6 +49,12 @@ if (config('app.self_hosted')) {
 
 Route::group(['middleware' => 'auth.multi'], function () {
     Route::post('logout', [LoginController::class, 'logout'])->name('logout');
+
+    // Versions
+    Route::prefix('versions')->name('versions.')->group(function () {
+        Route::get('{model_type}/{id}', [VersionController::class, 'index'])->name('index');
+        Route::post('{versionId}/restore', [VersionController::class, 'restore'])->name('restore');
+    });
 
     // Unsplash
     Route::get('/unsplash', [\App\Http\Controllers\Content\UnsplashController::class, 'index'])->name('unsplash.index');
@@ -86,6 +94,7 @@ Route::group(['middleware' => 'auth.multi'], function () {
             ->where('plan', '(' . implode('|', SubscriptionController::SUBSCRIPTION_PLANS) . ')');
         Route::get('/billing-portal', [SubscriptionController::class, 'billingPortal'])->name('billing-portal');
         Route::get('/users-count', [SubscriptionController::class, 'getUsersCount'])->name('users-count');
+        Route::post('/upgrade-to-yearly', [SubscriptionController::class, 'upgradeToYearly'])->name('upgrade-to-yearly');
     });
 
     Route::prefix('open')->name('open.')->group(function () {
@@ -162,6 +171,12 @@ Route::group(['middleware' => 'auth.multi'], function () {
                     Route::get('form-stats/{form}', [FormStatsController::class, 'getFormStats'])->name('form.stats');
                     Route::get('form-stats-details/{form}', [FormStatsController::class, 'getFormStatsDetails'])->name('form.stats-details');
                 });
+
+                // Summary endpoints with rate limiting
+                Route::middleware('throttle:summary')->group(function () {
+                    Route::get('form-summary/{form}', [FormSummaryController::class, 'getSummary'])->name('form.summary');
+                    Route::get('form-summary/{form}/field/{fieldId}/values', [FormSummaryController::class, 'getFieldValues'])->name('form.summary.field-values');
+                });
             });
         });
 
@@ -174,6 +189,7 @@ Route::group(['middleware' => 'auth.multi'], function () {
 
             Route::prefix('/{form}/submissions')->name('submissions.')->group(function () {
                 Route::get('/', [FormSubmissionController::class, 'submissions'])->name('index');
+                Route::get('/{submission_id}', [FormSubmissionController::class, 'fetch'])->name('fetch');
                 Route::put('/{submission_id}', [FormSubmissionController::class, 'update'])->name('update');
                 Route::post('/export', [FormSubmissionController::class, 'export'])->name('export');
                 Route::get('/export/status/{jobId}', [FormSubmissionController::class, 'exportStatus'])->name('export.status');
@@ -289,8 +305,8 @@ Route::group(['middleware' => 'auth.multi'], function () {
         );
 
         Route::group(['prefix'  => 'billing'], function () {
-            Route::get('{user}/email', [\App\Http\Controllers\Admin\BillingController::class, 'getEmail']);
-            Route::patch('/email', [\App\Http\Controllers\Admin\BillingController::class, 'updateEmail']);
+            Route::get('{user}/customer', [\App\Http\Controllers\Admin\BillingController::class, 'getCustomer']);
+            Route::patch('/customer', [\App\Http\Controllers\Admin\BillingController::class, 'updateCustomer']);
             Route::get('{user}/subscriptions', [\App\Http\Controllers\Admin\BillingController::class, 'getSubscriptions']);
             Route::get('{user}/payments', [\App\Http\Controllers\Admin\BillingController::class, 'getPayments']);
         });

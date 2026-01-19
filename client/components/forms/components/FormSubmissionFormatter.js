@@ -1,9 +1,50 @@
 import { format, parseISO } from 'date-fns'
 
+// Singleton cache for formatter instances (keyed by form slug)
+const formatterCache = new Map()
+
+// Get or create a cached formatter instance for a form
+export function getCachedFormatter(form, formData) {
+  const cacheKey = form?.slug
+  if (!cacheKey) {
+    return new FormSubmissionFormatter(form, formData)
+  }
+  
+  let formatter = formatterCache.get(cacheKey)
+  if (!formatter) {
+    formatter = new FormSubmissionFormatter(form, formData)
+    formatterCache.set(cacheKey, formatter)
+  } else {
+    // Update form and formData for existing formatter
+    formatter.updateData(form, formData)
+  }
+  
+  return formatter
+}
+
+// Clear formatter cache (e.g., when navigating away from form)
+export function clearFormatterCache(formSlug = null) {
+  if (formSlug) {
+    formatterCache.delete(formSlug)
+  } else {
+    formatterCache.clear()
+  }
+}
+
 export class FormSubmissionFormatter {
   constructor(form, formData) {
     this.form = form
     this.formData = formData
+    this.createLinks = false
+    this.outputStringsOnly = false
+    this.showGeneratedIds = false
+    this.datesIsoFormat = false
+  }
+
+  updateData(form, formData) {
+    this.form = form
+    this.formData = formData
+    // Reset configuration flags to default state for clean reuse
     this.createLinks = false
     this.outputStringsOnly = false
     this.showGeneratedIds = false
@@ -58,7 +99,7 @@ export class FormSubmissionFormatter {
       case 'people':
         return this.formatPeopleValue(value)
       case 'multi_select':
-        return this.outputStringsOnly ? value.join(', ') : value
+        return this.outputStringsOnly && Array.isArray(value) ? value.join(', ') : value
       case 'relation':
         return this.formatRelationValue(value)
       default:

@@ -127,7 +127,7 @@
         <ExtendTrial
           :user="userInfo"
         />
-        <BillingEmail
+        <BillingCustomer
           :user="userInfo"
         />
         <UserWorkspaces

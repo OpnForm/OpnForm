@@ -367,7 +367,7 @@ paths:
             tags:
                 - Forms
             summary: List Workspace Forms
-            description: "Retrieve all forms within a specific workspace. Requires `forms-read` ability."
+            description: "Retrieve all forms within a specific workspace. Returns lightweight form summaries (excludes `properties`). Use the Get Form endpoint to retrieve the full form with all fields. Requires `forms-read` ability."
             security:
                 - bearerAuth: []
             parameters:
@@ -396,7 +396,7 @@ paths:
                                     data:
                                         type: array
                                         items:
-                                            $ref: "#/components/schemas/Form"
+                                            $ref: "#/components/schemas/FormListItem"
                                     links:
                                         type: object
                                         properties:
@@ -434,7 +434,7 @@ paths:
             tags:
                 - Forms
             summary: List Forms
-            description: "Retrieve all forms accessible to the token holder across all workspaces. **Deprecated**: Use `/open/workspaces/{workspaceId}/forms` instead."
+            description: "Retrieve all forms accessible to the token holder across all workspaces. Returns lightweight form summaries (excludes `properties`). **Deprecated**: Use `/open/workspaces/{workspaceId}/forms` instead."
             deprecated: true
             security:
                 - bearerAuth: []
@@ -446,7 +446,7 @@ paths:
                             schema:
                                 type: array
                                 items:
-                                    $ref: "#/components/schemas/Form"
+                                    $ref: "#/components/schemas/FormListItem"
                 "403":
                     description: Forbidden – token lacks forms-read ability
         post:
@@ -1362,6 +1362,73 @@ components:
                     description: An array of field and layout blocks that make up the form.
                     items:
                         $ref: "#/components/schemas/FormProperty"
+        FormListItem:
+            type: object
+            description: A lightweight form summary returned by list endpoints. Use the Get Form endpoint to retrieve full form details including properties.
+            properties:
+                id:
+                    type: number
+                    description: The unique identifier for the form.
+                    readOnly: true
+                slug:
+                    type: string
+                    description: The URL-friendly slug for the form.
+                    readOnly: true
+                title:
+                    type: string
+                    description: The title of the form.
+                visibility:
+                    type: string
+                    enum: [public, draft, closed]
+                    description: The current visibility state of the form.
+                tags:
+                    type: array
+                    items:
+                        type: string
+                    nullable: true
+                views_count:
+                    type: number
+                    description: Total number of form views.
+                submissions_count:
+                    type: number
+                    description: Total number of completed submissions.
+                created_at:
+                    type: string
+                    format: date-time
+                    description: ISO 8601 timestamp of when the form was created.
+                updated_at:
+                    type: string
+                    format: date-time
+                    description: ISO 8601 timestamp of when the form was last modified.
+                last_edited_human:
+                    type: string
+                    description: Human-readable time since last edit (e.g., "2 hours ago").
+                closes_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                    description: When the form will close for submissions.
+                is_closed:
+                    type: boolean
+                    description: Whether the form is currently closed.
+                max_submissions_count:
+                    type: integer
+                    minimum: 1
+                    nullable: true
+                    description: Maximum number of submissions allowed.
+                max_number_of_submissions_reached:
+                    type: boolean
+                    description: Whether the submission limit has been reached.
+                is_pro:
+                    type: boolean
+                    description: Whether the form's workspace has a Pro subscription.
+                workspace_id:
+                    type: number
+                    description: ID of the workspace that owns the form.
+                share_url:
+                    type: string
+                    format: uri
+                    description: Public URL to share the form.
         FormProperty:
             type: object
             description: A single field or layout block within a form.

@@ -34,6 +34,49 @@ it('can fetch forms', function () {
         ->assertJsonPath('data.0.title', $form->title);
 });
 
+it('returns lightweight form list without properties', function () {
+    $user = $this->actingAsUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace);
+
+    $response = $this->getJson(route('open.workspaces.forms.index', $workspace->id))
+        ->assertSuccessful();
+
+    // Verify expected FormListResource fields are present
+    $response->assertJsonStructure([
+        'data' => [
+            '*' => [
+                'id',
+                'slug',
+                'title',
+                'visibility',
+                'tags',
+                'views_count',
+                'submissions_count',
+                'created_at',
+                'updated_at',
+                'last_edited_human',
+                'closes_at',
+                'is_closed',
+                'max_submissions_count',
+                'max_number_of_submissions_reached',
+                'is_pro',
+                'workspace_id',
+                'share_url',
+            ],
+        ],
+    ]);
+
+    // Verify heavy 'properties' field is NOT included (key optimization)
+    $response->assertJsonMissingPath('data.0.properties');
+    $response->assertJsonMissingPath('data.0.removed_properties');
+
+    // Verify timestamps are ISO 8601 format
+    $formData = $response->json('data.0');
+    expect($formData['created_at'])->toMatch('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\+\d{2}:\d{2}$/');
+    expect($formData['updated_at'])->toMatch('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\+\d{2}:\d{2}$/');
+});
+
 it('can fetch a form', function () {
     $user = $this->actingAsProUser();
     $workspace = $this->createUserWorkspace($user);

@@ -15,27 +15,28 @@ class BillingController extends Controller
         $this->middleware('moderator');
     }
 
-    public function getEmail(User $user)
+    public function getCustomer(User $user)
     {
-
         if (!$user->hasStripeId()) {
             return $this->error([
                 "message" => "Stripe user not created",
             ]);
         }
 
-        $user = $user->asStripeCustomer();
+        $stripeCustomer = $user->asStripeCustomer();
 
         return $this->success([
-            'billing_email'  =>  $user->email
+            'billing_email' => $stripeCustomer->email,
+            'billing_name' => $stripeCustomer->name,
         ]);
     }
 
-    public function updateEmail(Request $request)
+    public function updateCustomer(Request $request)
     {
         $request->validate([
             'user_id' => 'required',
-            'billing_email' => 'required|email'
+            'billing_email' => 'required|email',
+            'billing_name' => 'required|string|max:255',
         ]);
 
         $user = User::findOrFail($request->get("user_id"));
@@ -45,13 +46,18 @@ class BillingController extends Controller
                 "message" => "Stripe user not created",
             ]);
         }
-        AdminController::log('Update billing email', [
+
+        AdminController::log('Update billing customer', [
             'user_id' => $user->id,
             'stripe_id' => $user->stripe_id,
         ]);
-        $user->updateStripeCustomer(['email' => $request->billing_email]);
 
-        return $this->success(['message' => 'Billing email updated successfully']);
+        $user->updateStripeCustomer([
+            'email' => $request->billing_email,
+            'name' => $request->billing_name,
+        ]);
+
+        return $this->success(['message' => 'Billing info updated successfully']);
     }
 
     public function getSubscriptions(User $user)

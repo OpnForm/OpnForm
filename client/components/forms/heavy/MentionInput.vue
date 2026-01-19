@@ -18,6 +18,7 @@
         v-if="!disabled"
         :mention-state="mentionState"
         :mentions="mentions"
+        :computed-variables="computedVariables"
         :disabled="disabled"
       >
         <UButton
@@ -66,6 +67,7 @@ import { mentionInputTheme } from '~/lib/forms/themes/mention-input.theme.js'
 const props = defineProps({
   ...inputProps,
   mentions: { type: Array, default: () => [] },
+  computedVariables: { type: Array, default: () => [] },
   disableMention: { type: Boolean, default: false },
 })
 

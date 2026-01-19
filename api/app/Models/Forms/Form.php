@@ -21,14 +21,32 @@ use Spatie\Sluggable\SlugOptions;
 use Stevebauman\Purify\Facades\Purify;
 use Carbon\Carbon;
 use App\Events\Forms\FormSaved;
+use App\Models\Version;
+use Mpociot\Versionable\VersionableTrait;
+use App\Contracts\VersionableNestedDiff;
 
-class Form extends Model implements CachableAttributes
+class Form extends Model implements CachableAttributes, VersionableNestedDiff
 {
     use CachesAttributes;
 
     use HasFactory;
     use HasSlug;
     use SoftDeletes;
+    use VersionableTrait;
+
+    // Configure versioning
+    protected $versionClass = Version::class;
+    protected $keepOldVersions = 5;
+    protected $dontVersionFields = [
+        'created_at',
+        'updated_at',
+        'deleted_at',
+        'workspace_id',
+        'creator_id',
+        'removed_properties',
+        'share_url'
+    ];
+
 
     public const DARK_MODE_VALUES = ['auto', 'light', 'dark'];
 
@@ -50,6 +68,7 @@ class Form extends Model implements CachableAttributes
         'workspace_id',
         'creator_id',
         'properties',
+        'computed_variables',
         'removed_properties',
 
         'title',
@@ -112,12 +131,16 @@ class Form extends Model implements CachableAttributes
 
         // Custom SEO
         'seo_meta',
+
+        // Analytics
+        'analytics',
     ];
 
     protected function casts(): array
     {
         return [
             'properties' => 'array',
+            'computed_variables' => 'array',
             'database_fields_update' => 'array',
             'closes_at' => 'datetime',
             'tags' => 'array',
@@ -131,6 +154,7 @@ class Form extends Model implements CachableAttributes
             'clear_empty_fields_on_update' => 'boolean',
             'presentation_style' => 'string',
             'settings' => 'array',
+            'analytics' => 'array',
         ];
     }
 
@@ -403,5 +427,15 @@ class Form extends Model implements CachableAttributes
                     $integration->delete();
                 });
         });
+    }
+
+    /**
+     * List of attribute names that should receive nested (deep) diffing for versions.
+     *
+     * @return array<int, string>
+     */
+    public function getVersionNestedDiffFields(): array
+    {
+        return ['properties'];
     }
 }

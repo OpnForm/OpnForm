@@ -74,6 +74,9 @@
         :form="field"
         label="Content"
         :required="false"
+        enable-mentions
+        :mentions="form.properties"
+        :computed-variables="form.computed_variables"
       />
     </div>
 

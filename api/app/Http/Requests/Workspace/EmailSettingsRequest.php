@@ -35,6 +35,10 @@ class EmailSettingsRequest extends FormRequest
                 'required_with:host,username,password,sender_address',
                 'integer',
             ],
+            'encryption' => [
+                'nullable',
+                'in:tls,ssl',
+            ],
             'username' => [
                 $allFieldsPresent ? 'required' : 'nullable',
                 'required_with:host,port,password,sender_address',

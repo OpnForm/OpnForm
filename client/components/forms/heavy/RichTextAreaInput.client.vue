@@ -19,6 +19,7 @@
         v-if="enableMentions && mentionState"
         :mention-state="mentionState"
         :mentions="mentions"
+        :computed-variables="computedVariables"
         :content="{ position: 'bottom', align: 'start' }"
       >
         <span class="absolute left-4 bottom-2" />
@@ -72,6 +73,7 @@
             v-if="enableMentions && mentionState"
             :mention-state="mentionState"
             :mentions="mentions"
+            :computed-variables="computedVariables"
             :content="{ position: 'bottom', align: 'start' }"
           >
             <span class="absolute right-4 top-24" />
@@ -153,6 +155,10 @@ const props = defineProps({
     type: Array,
     default: () => []
   },
+  computedVariables: {
+    type: Array,
+    default: () => []
+  },
   allowFullscreen: {
     type: Boolean,
     default: false
@@ -230,11 +236,6 @@ const buildQuillOptions = (includeFullscreen = false) => {
   // Build formats array dynamically based on enabled features
   const baseFormats = ['bold', 'color', 'italic', 'link', 'strike', 'underline', 'header', 'list']
   
-  // Add mention format when mentions are enabled
-  if (props.enableMentions) {
-    baseFormats.push('mention')
-  }
-  
   const baseOptions = {
     placeholder: props.placeholder || '',
     theme: 'snow',
@@ -265,6 +266,15 @@ const buildQuillOptions = (includeFullscreen = false) => {
       ...baseOptions.modules, 
       ...props.editorOptions.modules 
     } 
+  }
+  
+  // Ensure mention format is always included when mentions are enabled
+  // (must be done after merge to not be overwritten by editorOptions.formats)
+  if (props.enableMentions) {
+    const formats = mergedOptions.formats || baseFormats
+    if (!formats.includes('mention')) {
+      mergedOptions.formats = [...formats, 'mention']
+    }
   }
   
   // Add fullscreen button to toolbar if enabled and requested

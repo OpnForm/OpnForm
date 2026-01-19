@@ -108,7 +108,11 @@ class EmailIntegration extends AbstractIntegrationHandler
 
         if ($this->form->is_pro) {  // For Send to field Mentions are Pro feature
             $formatter = (new FormSubmissionFormatter($this->form, $this->submissionData))->outputStringsOnly()->showHiddenFields();
-            $parser = new MentionParser($this->integrationData?->send_to, $formatter->getFieldsWithValue());
+            $parser = new MentionParser(
+                $this->integrationData?->send_to,
+                $formatter->getFieldsWithValue(),
+                $this->getComputedValues()
+            );
             $sendTo = $parser->parseAsText();
         } else {
             $sendTo = $this->integrationData?->send_to;

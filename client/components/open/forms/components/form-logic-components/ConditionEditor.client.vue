@@ -49,14 +49,16 @@ export default {
 
   computed: {
     rules() {
-      return this.form.properties
+      const workspaceId = this.form.workspace_id
+      const formSlug = this.form.slug
+      const customValidation = this.customValidation
+      
+      // Form field rules
+      const fieldRules = this.form.properties
         .filter((property) => {
           return property.type && typeof property.type === 'string' && !property.type.startsWith("nf-")
         })
         .map((property) => {
-          const workspaceId = this.form.workspace_id
-          const formSlug = this.form.slug
-          const customValidation = this.customValidation
           return {
             identifier: property.id,
             name: property.name,
@@ -84,6 +86,48 @@ export default {
             })(),
           }
         })
+      
+      // Computed variable rules
+      const computedVariables = this.form.computed_variables || []
+      const variableRules = computedVariables.map((variable) => {
+        // Create a pseudo-property for computed variables
+        // We'll treat them as text by default, but number conditions will also work
+        const pseudoProperty = {
+          id: variable.id,
+          name: variable.name,
+          type: 'computed', // Special type for computed variables
+          result_type: variable.result_type || 'auto'
+        }
+        
+        return {
+          identifier: variable.id,
+          name: `📊 ${variable.name}`,
+          component: (function () {
+            return defineComponent({
+              extends: ColumnCondition,
+              props: {
+                customValidation: {
+                  type: Boolean,
+                  default: customValidation
+                }
+              },
+              computed: {
+                property() {
+                  return pseudoProperty
+                },
+                viewContext() {
+                  return {
+                    form_slug: formSlug,
+                    workspace_id: workspaceId,
+                  }
+                },
+              },
+            })
+          })(),
+        }
+      })
+      
+      return [...fieldRules, ...variableRules]
     },
 
     config() {

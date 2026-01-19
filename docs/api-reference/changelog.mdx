@@ -3,6 +3,52 @@ title: "Changelog"
 description: "Notable updates to the OpnForm API."
 ---
 
+## 2025-01-02 – Optimized form list endpoint
+
+The form list endpoint now returns **lightweight form summaries** for improved performance:
+
+* `GET /open/workspaces/{workspaceId}/forms`
+
+<Info>
+The deprecated `GET /open/forms` endpoint (which lists all forms across workspaces) has been removed from the documentation. It remains available for existing Zapier integrations but is not recommended for new implementations.
+</Info>
+
+### What changed
+
+This endpoint no longer includes the `properties` array (form fields and blocks) in the response. This significantly reduces response size and improves load times, especially for workspaces with many forms or complex form structures.
+
+### Response fields
+
+The list endpoint now returns these fields:
+
+| Field | Description |
+|-------|-------------|
+| `id`, `slug`, `title`, `visibility`, `tags` | Core form identification |
+| `views_count`, `submissions_count` | Form statistics |
+| `created_at`, `updated_at`, `last_edited_human` | Timestamps (ISO 8601 + human-readable) |
+| `closes_at`, `is_closed` | Form closure status |
+| `max_submissions_count`, `max_number_of_submissions_reached` | Submission limits |
+| `is_pro`, `workspace_id`, `share_url` | Workspace and sharing info |
+
+### Migration guide
+
+If your integration relies on `properties` from list endpoints, update your code to:
+
+1. Fetch the form list to get form IDs/slugs
+2. Call `GET /open/forms/{slug}` for each form where you need the full `properties` array
+
+```javascript
+// Before: properties were included in list response
+const forms = await fetch('/open/workspaces/1/forms');
+
+// After: fetch full form details when needed
+const formList = await fetch('/open/workspaces/1/forms');
+const fullForm = await fetch(`/open/forms/${formList.data[0].slug}`);
+// fullForm.properties is now available
+```
+
+---
+
 ## 2024-06-18 – API creation 🎉
 
 The first public version of the OpnForm REST API is live! You can now:

@@ -10,10 +10,10 @@ ignore:
 environments:
   api-production:
     warm: 5
-    memory: 2048
-    cli-memory: 2048
+    memory: 4096
+    cli-memory: 4096
     cli-timeout: 900
-    queue-memory: 2048
+    queue-memory: 4096
     queue-timeout: 900
     runtime: "php-8.2:al2-arm"
     storage: opnforms-prod

@@ -197,6 +197,11 @@ class StoreFormSubmissionJob implements ShouldQueue
             $submission->status = FormSubmission::STATUS_COMPLETED;
         }
 
+        // Generate a new UUID for new submissions
+        if (!$this->submissionId) {
+            $submission->public_id = \Illuminate\Support\Str::uuid()->toString();
+        }
+
         // Store IP address in meta if IP tracking is enabled
         if ($this->form->enable_ip_tracking && $this->form->is_pro && $this->submitterIp) {
             $existingMeta = $submission->meta ?? [];
