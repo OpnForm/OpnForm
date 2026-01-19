@@ -66,7 +66,7 @@ export function useFormPayment(formConfig, form) {
       }
       
       // Use formsApi for the payment intent creation
-      const response = await formsApi.stripe.createPaymentIntent(formSlug)
+      const response = await formsApi.stripe.createPaymentIntent(formSlug, { submission_data: form.data() ?? [] })
       
       // Handle response structure with type and intent fields
       if (response?.type === 'success' && response?.intent?.secret) {

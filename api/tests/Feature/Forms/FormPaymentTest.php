@@ -31,7 +31,7 @@ it('can get stripe account for form', function () {
         ->assertSuccessful()
         ->assertJson(function (AssertableJson $json) {
             return $json->has('stripeAccount')
-                ->where('stripeAccount', fn ($id) => str_starts_with($id, 'acct_'))
+                ->where('stripeAccount', fn($id) => str_starts_with($id, 'acct_'))
                 ->etc();
         });
 });
@@ -50,7 +50,7 @@ it('cannot create payment intent for non-public form', function () {
 it('cannot create payment intent for form without payment block', function () {
     // Remove payment block entirely
     $properties = collect($this->form->properties)
-        ->reject(fn ($block) => $block['type'] === 'payment')
+        ->reject(fn($block) => $block['type'] === 'payment')
         ->values()
         ->all();
 
@@ -80,4 +80,86 @@ it('cannot create payment intent with invalid stripe account', function () {
         ->assertJson([
             'message' => 'Failed to find Stripe account'
         ]);
+});
+
+describe('payment amount with mentions', function () {
+    it('can parse amount from mention field reference', function () {
+        // Get the number field ID from form properties
+        $numberField = collect($this->form->properties)->firstWhere('type', 'number');
+
+        // Update payment block with mention-based amount
+        $mentionHtml = '<span mention="true" mention-field-id="' . $numberField['id'] . '">Number</span>';
+        $properties = collect($this->form->properties)->map(function ($block) use ($mentionHtml) {
+            if ($block['type'] === 'payment') {
+                $block['amount'] = $mentionHtml;
+            }
+            return $block;
+        })->all();
+
+        $this->form->update(['properties' => $properties]);
+
+        // Submit with submission data containing the referenced field value
+        // Note: This will fail at Stripe API level (no real credentials), but validates parsing works
+        $response = $this->postJson(route('forms.stripe-connect.create-intent', $this->form->slug), [
+            'submission_data' => [
+                $numberField['id'] => 50.00
+            ]
+        ]);
+
+        // Should not get "Invalid payment amount" error - parsing worked
+        $response->assertStatus(400);
+        expect($response->json('message'))->not->toBe('Invalid payment amount. Please ensure the amount field has a valid value.');
+    });
+
+    it('returns error when mention resolves to invalid amount', function () {
+        // Get a text field ID from form properties
+        $textField = collect($this->form->properties)->firstWhere('type', 'text');
+
+        // Update payment block with mention-based amount
+        $mentionHtml = '<span mention="true" mention-field-id="' . $textField['id'] . '">Text</span>';
+        $properties = collect($this->form->properties)->map(function ($block) use ($mentionHtml) {
+            if ($block['type'] === 'payment') {
+                $block['amount'] = $mentionHtml;
+            }
+            return $block;
+        })->all();
+
+        $this->form->update(['properties' => $properties]);
+
+        // Submit with submission data containing non-numeric value
+        $this->postJson(route('forms.stripe-connect.create-intent', $this->form->slug), [
+            'submission_data' => [
+                $textField['id'] => 'not a number'
+            ]
+        ])
+            ->assertStatus(400)
+            ->assertJson([
+                'message' => 'Invalid payment amount. Please ensure the amount field has a valid value.'
+            ]);
+    });
+
+    it('returns error when mention field is empty', function () {
+        // Get the number field ID from form properties
+        $numberField = collect($this->form->properties)->firstWhere('type', 'number');
+
+        // Update payment block with mention-based amount
+        $mentionHtml = '<span mention="true" mention-field-id="' . $numberField['id'] . '">Number</span>';
+        $properties = collect($this->form->properties)->map(function ($block) use ($mentionHtml) {
+            if ($block['type'] === 'payment') {
+                $block['amount'] = $mentionHtml;
+            }
+            return $block;
+        })->all();
+
+        $this->form->update(['properties' => $properties]);
+
+        // Submit without the referenced field in submission data
+        $this->postJson(route('forms.stripe-connect.create-intent', $this->form->slug), [
+            'submission_data' => []
+        ])
+            ->assertStatus(400)
+            ->assertJson([
+                'message' => 'Invalid payment amount. Please ensure the amount field has a valid value.'
+            ]);
+    });
 });

@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Forms\Form;
 use App\Models\OAuthProvider;
 use App\Http\Requests\Forms\GetStripeAccountRequest;
+use App\Open\MentionParser;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Stripe\Stripe;
@@ -75,7 +77,7 @@ class FormPaymentController extends Controller
         return $this->success(['stripeAccount' => $provider->provider_user_id]);
     }
 
-    public function createIntent(Form $form)
+    public function createIntent(Request $request, Form $form)
     {
         // Disable payment features on self-hosted instances
         if (config('app.self_hosted')) {
@@ -108,10 +110,28 @@ class FormPaymentController extends Controller
             return $this->error(['message' => 'Failed to find Stripe account']);
         }
 
+        // Parse amount with mentions if it contains mention HTML
+        $submissionData = $request->input('submission_data', []);
+        $formattedData = collect($submissionData)->map(function ($value, $key) {
+            return ['id' => $key, 'value' => $value];
+        })->values()->all();
+        $parsedAmount = (new MentionParser($paymentBlock['amount'], $formattedData))->parseAsText();
+        $amount = (float) preg_replace('/[^0-9.]/', '', $parsedAmount);
+
+        // Validate amount
+        if (!is_numeric($amount) || $amount <= 0) {
+            Log::warning('Invalid payment amount', [
+                'form_id' => $form->id,
+                'amount' => $amount,
+                'original_amount' => $paymentBlock['amount']
+            ]);
+            return $this->error(['message' => 'Invalid payment amount. Please ensure the amount field has a valid value.']);
+        }
+
         try {
             Log::info('Creating payment intent', [
                 'form_id' => $form->id,
-                'amount' => $paymentBlock['amount'],
+                'amount' => $amount,
                 'currency' => $paymentBlock['currency']
             ]);
 
@@ -120,7 +140,7 @@ class FormPaymentController extends Controller
             $intent = PaymentIntent::create([
                 // Use description from payment block if available, fallback to form title
                 'description' => $paymentBlock['description'] ?? ('Form - ' . $form->title),
-                'amount' => (int) ($paymentBlock['amount'] * 100),  // Stripe requires amount in cents
+                'amount' => (int) ($amount * 100),  // Stripe requires amount in cents
                 'currency' => strtolower($paymentBlock['currency']),
                 'payment_method_types' => ['card'],
                 'metadata' => [

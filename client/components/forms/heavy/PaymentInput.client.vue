@@ -156,7 +156,9 @@ const props = defineProps({
   isAdminPreview: { type: Boolean, default: false },
   color: { type: String, default: '#000000' },
   isDark: { type: Boolean, default: false },
-  paymentData: { type: Object, default: null }
+  paymentData: { type: Object, default: null },
+  prefillName: { type: String, default: '' },
+  prefillEmail: { type: String, default: '' }
 })
 
 const emit = defineEmits([])
@@ -173,10 +175,22 @@ const publishableKey = computed(() => {
 
 const card = ref(null)
 const stripeElementsRef = ref(null)
-const cardHolderName = ref('')
-const cardHolderEmail = ref('')
+const cardHolderName = ref(props.prefillName || '')
+const cardHolderEmail = ref(props.prefillEmail || '')
 const isCardFocused = ref(false)
 const isStripeJsLoaded = ref(false)
+
+// Watch for prefill changes to update card holder details
+watch(() => props.prefillName, (newVal) => {
+  if (newVal && newVal !== cardHolderName.value) {
+    cardHolderName.value = newVal
+  }
+})
+watch(() => props.prefillEmail, (newVal) => {
+  if (newVal && newVal !== cardHolderEmail.value) {
+    cardHolderEmail.value = newVal
+  }
+})
 
 // Get Stripe elements from paymentData
 const stripeElements = computed(() => props.paymentData?.stripeElements)
