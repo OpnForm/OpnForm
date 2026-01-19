@@ -11,6 +11,7 @@ use App\Jobs\Form\StoreFormSubmissionJob;
 use App\Service\Forms\Analytics\UserAgentHelper;
 use App\Service\Forms\FormSubmissionProcessor;
 use App\Service\Forms\FormCleaner;
+use App\Service\Forms\SubmissionUrlService;
 use App\Service\WorkspaceHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -135,7 +136,7 @@ class PublicFormController extends Controller
 
         return $this->success([
             'message' => 'Partial submission saved',
-            'submission_hash' => Hashids::encode($job->getSubmissionId())
+            'submission_hash' => SubmissionUrlService::getSubmissionIdentifierById($form, $job->getSubmissionId())
         ]);
     }
 
@@ -156,7 +157,7 @@ class PublicFormController extends Controller
             : $request->validated();
 
         // Process submission hash and ID
-        $submissionData = $this->processSubmissionIdentifiers($request, $submissionData);
+        $submissionData = $this->processSubmissionIdentifiers($request, $submissionData, $form);
 
         // Add IP address for tracking if enabled
         unset($submissionData['submitter_ip']);
@@ -175,7 +176,9 @@ class PublicFormController extends Controller
         // Process the submission
         if ($formSubmissionProcessor->shouldProcessSynchronously($form)) {
             $job->handle();
-            $encodedSubmissionId = Hashids::encode($job->getSubmissionId());
+
+            $encodedSubmissionId = SubmissionUrlService::getSubmissionIdentifierById($form, $job->getSubmissionId());
+
             // Update submission data with generated values for redirect URL
             $submissionData = $job->getProcessedData();
         } else {
@@ -191,60 +194,89 @@ class PublicFormController extends Controller
     }
 
     /**
-     * Processes submission identifiers to ensure consistent numeric format
+     * Processes submission identifiers to ensure consistent format
      *
-     * Takes a submission hash or string ID and converts it to a numeric submission_id.
-     * This allows submissions to be identified by either a hashed value or direct ID
-     * while ensuring consistent internal storage format.
+     * Handles both UUID (new format) and Hashid (legacy format) in submission_id field.
+     * For UUID: Looks up submission and converts to numeric ID if found
+     * For Hashid: Decodes to numeric ID
      *
      * @param Request $request
      * @param array $submissionData
+     * @param Form $form
      * @return array
      */
-    private function processSubmissionIdentifiers(Request $request, array $submissionData): array
+    private function processSubmissionIdentifiers(Request $request, array $submissionData, Form $form): array
     {
-        // Handle submission hash if present (convert to numeric submission_id)
-        $submissionHash = $request->get('submission_hash');
-        if ($submissionHash) {
-            $decodedHash = Hashids::decode($submissionHash);
-            if (!empty($decodedHash)) {
-                $submissionData['submission_id'] = (int)($decodedHash[0] ?? null);
-            }
-            unset($submissionData['submission_hash']);
+        $submissionIdentifier = $request->get('submission_hash')
+            ?? $request->get('submission_id')
+            ?? ($submissionData['submission_id'] ?? null);
+
+        if (!$submissionIdentifier) {
+            return $submissionData;
         }
 
-        // Handle string submission_id if present (convert to numeric)
-        if (isset($submissionData['submission_id']) && is_string($submissionData['submission_id']) && !is_numeric($submissionData['submission_id'])) {
-            $decodedId = Hashids::decode($submissionData['submission_id']);
-            if (!empty($decodedId)) {
-                $submissionData['submission_id'] = (int)($decodedId[0] ?? null);
+        // Check if it's a UUID (new format)
+        if (Str::isUuid($submissionIdentifier)) {
+            $submission = $form->submissions()
+                ->where('public_id', $submissionIdentifier)
+                ->first();
+            if (!$submission) {
+                abort(404, 'Submission not found');
             }
+            $submissionData['submission_id'] = $submission->id;
+            unset($submissionData['submission_hash']);
+            return $submissionData;
         }
+
+        // Legacy Hashid support (backward compatibility)
+        $decodedId = Hashids::decode($submissionIdentifier);
+        if (!empty($decodedId)) {
+            $submissionData['submission_id'] = (int)($decodedId[0] ?? null);
+        }
+        unset($submissionData['submission_hash']);
 
         return $submissionData;
     }
 
     public function fetchSubmission(Request $request, Form $form, string $submission_id)
     {
-        // Decode the submission ID using the same approach as in processSubmissionIdentifiers
-        $decodedId = Hashids::decode($submission_id);
-        $submissionId = !empty($decodedId) ? (int)($decodedId[0]) : false;
-
         // Ensure form is public and allows editable submissions
         if ($form->visibility !== 'public') {
             abort(404);
         }
-        if ($form->workspace == null || !$form->editable_submissions || !$submissionId) {
-            return $this->error([
-                'message' => 'Not allowed.',
-            ]);
+        if ($form->workspace == null || !$form->editable_submissions) {
+            abort(403);
         }
 
-        $submission = $form->submissions()->find($submissionId);
+        $submission = null;
+
+        // Try UUID lookup first (new format)
+        if (Str::isUuid($submission_id)) {
+            $submission = $form->submissions()
+                ->where('public_id', $submission_id)
+                ->first();
+        }
+
+        // Fallback to Hashid decode (backward compatibility - strict migration)
+        if (!$submission) {
+            $decodedId = Hashids::decode($submission_id);
+            $numericId = !empty($decodedId) ? (int)($decodedId[0]) : false;
+            if ($numericId) {
+                $submission = $form->submissions()->find($numericId);
+
+                // CRITICAL: If submission has UUID, return 404 (force UUID usage)
+                if ($submission && $submission->public_id) {
+                    return $this->error([
+                        'message' => 'Submission not found.'
+                    ], 404);
+                }
+            }
+        }
+
         if (!$submission) {
             return $this->error([
                 'message' => 'Submission not found.',
-            ]);
+            ], 404);
         }
 
         $submission->setRelation('form', $form);

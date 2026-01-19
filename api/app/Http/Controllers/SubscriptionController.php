@@ -3,10 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\Subscriptions\UpdateStripeDetailsRequest;
+use App\Models\Workspace;
 use App\Service\BillingHelper;
 use App\Service\UserHelper;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Laravel\Cashier\Subscription;
 
 class SubscriptionController extends Controller
 {
@@ -102,5 +103,55 @@ class SubscriptionController extends Controller
         return $this->success([
             'portal_url' => Auth::user()->billingPortalUrl(front_url('/home')),
         ]);
+    }
+
+    public function upgradeToYearly(Request $request)
+    {
+        $request->validate([
+            'workspace_id' => 'required|exists:workspaces,id',
+        ]);
+
+        $user = Auth::user();
+        if (!$user->is_subscribed) {
+            return $this->error([
+                "message" => "Please subscribe before upgrading to yearly plan.",
+            ]);
+        }
+
+        $workspace = Workspace::findOrFail($request->get("workspace_id"));
+        if (!$workspace->isAdminUser($user)) {
+            return $this->error([
+                "message" => "Please ask an admin to upgrade the workspace to yearly plan.",
+            ]);
+        }
+
+        // Verify the user's subscription is actually tied to this workspace (user must be an owner)
+        if (!$workspace->owners()->where('users.id', $user->id)->exists()) {
+            return $this->error([
+                "message" => "You must be an owner of this workspace to upgrade its subscription.",
+            ]);
+        }
+
+        if ($workspace->is_yearly_plan) {
+            return $this->error([
+                "message" => "The workspace is already on yearly plan.",
+            ]);
+        }
+
+        // Upgrade the subscription to yearly plan
+        try {
+            $subscription = $user->subscription();
+            $yearlyPriceId = BillingHelper::getPricing('default')['yearly'];
+            $subscription->swap($yearlyPriceId);
+
+            // Invalidate cached is_yearly_plan attribute
+            $workspace->forgetCachedAttribute('is_yearly_plan');
+        } catch (\Exception $e) {
+            return $this->error([
+                "message" => $e?->getMessage() ?? "Failed to upgrade the subscription to yearly plan.",
+            ]);
+        }
+
+        return $this->success(['message' => 'Congratulations! Your plan has been upgraded to yearly.']);
     }
 }

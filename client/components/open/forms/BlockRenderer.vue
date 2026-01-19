@@ -24,8 +24,10 @@
     >
       <TextBlock
         :content="block.content"
+        :mentions-allowed="true"
         :form="form"
-        :form-data="dataForm"
+        :form-data="debouncedFormData"
+        :computed-values="computedValues"
         :media="shouldInjectBetweenMedia ? block.image : null"
       />
     </div>
@@ -96,10 +98,13 @@
 </template>
 
 <script setup>
+import { refDebounced } from '@vueuse/core'
 import ClientOnlyWrapper from '~/components/global/ClientOnlyWrapper.vue'
 import { useComponentRegistry } from '~/composables/components/useComponentRegistry'
 import TextBlock from '~/components/forms/core/TextBlock.vue'
 import { shuffleArray } from '~/lib/utils.js'
+import { useParseMention } from '@/composables/components/useParseMention'
+import { useComputedVariables } from '@/composables/forms/useComputedVariables'
 
 const props = defineProps({
   block: { type: Object, required: false, default: null },
@@ -114,6 +119,13 @@ const darkMode = computed(() => props.formManager?.darkMode?.value || false)
 const strategy = computed(() => props.formManager?.strategy?.value || {})
 const isAdminPreview = computed(() => strategy.value?.admin?.showAdminControls || false)
 
+// Debounce form data changes to avoid excessive re-renders when user types
+const formDataForMentions = computed(() => dataForm.value?.data?.() || {})
+const debouncedFormData = refDebounced(formDataForMentions, 300)
+
+// Initialize computed variables evaluation
+const { values: computedValues } = useComputedVariables(form, debouncedFormData)
+
 // Use centralized fieldState from manager
 const fieldState = computed(() => props.formManager?.fieldState)
 
@@ -124,6 +136,7 @@ const componentInfo = computed(() => {
   if (!field || !field.type) return null
   let componentName
   if (field.type === 'text' && field.multi_lines) componentName = 'TextAreaInput'
+  else if (field.type === 'text' && field.input_mask) componentName = 'MaskInput'
   else if (field.type === 'url' && field.file_upload) componentName = 'FileInput'
   // In focused mode, use FocusedSelectorInput by default unless explicitly disabled
   else if (['select','multi_select'].includes(field.type) && form.value.presentation_style === 'focused' && field.use_focused_selector !== false) componentName = 'FocusedSelectorInput'
@@ -203,12 +216,43 @@ const roundedClass = computed(() => {
 })
 
 // Map select options once at component creation (shuffle if enabled)
-const selectOptions = (() => {
+const selectOptions = computed(() => {
   const field = props.block
   if (!field || !['select', 'multi_select'].includes(field.type)) return null
-  const options = field[field.type]?.options?.map(option => ({ name: option.name, value: option.name })) ?? []
+  const options = field[field.type]?.options?.map(option => ({ 
+    name: option.name, 
+    value: option.name,
+    image: option.image || null  // Include image if present
+  })) ?? []
   return field.shuffle_options && options.length > 1 ? shuffleArray(options) : options
-})()
+})
+
+// Process mentions helper
+// Set asText=true to strip HTML (for plain text attributes like placeholder)
+const processMention = (content, { asText = false } = {}) => {
+  if (!content) return content
+  const processed = useParseMention(content, true, form.value, debouncedFormData.value, computedValues.value)
+  if (!processed) return content
+  if (!asText) return processed
+  // Strip HTML tags to get plain text
+  return processed.replace(/<[^>]*>/g, '')
+}
+
+// Process mentions in placeholder and help text
+const processedPlaceholder = ref('')
+const processedHelp = ref('')
+
+watch(() => [props.block?.placeholder, props.block?.help, form.value, debouncedFormData.value], () => {
+  const field = props.block
+  if (!field) {
+    processedPlaceholder.value = ''
+    processedHelp.value = ''
+    return
+  }
+
+  processedPlaceholder.value = processMention(field.placeholder, { asText: true }) || ''
+  processedHelp.value = processMention(field.help) || ''
+}, { immediate: true })
 
 const boundProps = computed(() => {
   const field = props.block
@@ -221,8 +265,8 @@ const boundProps = computed(() => {
     form: dataForm.value,
     label: (field.hide_field_name) ? null : field.name + (unified.hiddenIndicator ? ' (Hidden Field)' : ''),
     color: form.value.color,
-    placeholder: field.placeholder,
-    help: field.help,
+    placeholder: processedPlaceholder.value,
+    help: processedHelp.value,
     helpPosition: (field.help_position) ? field.help_position : 'below_input',
     uppercaseLabels: form.value.uppercase_labels == 1 || form.value.uppercase_labels == true,
     maxCharLimit: (field.max_char_limit) ? parseInt(field.max_char_limit) : null,
@@ -242,11 +286,14 @@ const boundProps = computed(() => {
   if (field.type === 'barcode') inputProperties.decoders = field.decoders
 
   if (['select', 'multi_select'].includes(field.type)) {
-    inputProperties.options = selectOptions ?? []
+    inputProperties.options = selectOptions.value ?? []
     inputProperties.multiple = (field.type === 'multi_select')
     inputProperties.allowCreation = (field.allow_creation === true)
     inputProperties.searchable = (inputProperties.options.length > 4)
     inputProperties.clearable = !unified.required
+    // Image display options
+    inputProperties.optionDisplayMode = field.option_display_mode || 'text_only'
+    inputProperties.optionImageSize = field.option_image_size || 'md'
     if (field.type === 'multi_select') {
       inputProperties.minSelection = field.min_selection || null
       inputProperties.maxSelection = field.max_selection || null
@@ -281,6 +328,9 @@ const boundProps = computed(() => {
     inputProperties.unavailableCountries = field.unavailable_countries ?? []
   } else if (field.type === 'text' && field.secret_input) {
     inputProperties.nativeType = 'password'
+  } else if(field.type === 'text' && field.input_mask) {
+    inputProperties.mask = field.input_mask
+    inputProperties.slotChar = field.slot_char
   } else if (field.type === 'payment') {
     inputProperties.direction = form.value.layout_rtl ? 'rtl' : 'ltr'
     inputProperties.currency = field.currency

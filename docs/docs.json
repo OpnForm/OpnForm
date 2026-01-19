@@ -21,6 +21,12 @@
             ]
           },
           {
+            "group": "Features",
+            "pages": [
+              "features/computed-variables"
+            ]
+          },
+          {
             "group": "Deployment",
             "pages": [
               "deployment/docker",
@@ -38,7 +44,8 @@
               "configuration/email-setup",
               "configuration/custom-domain",
               "configuration/subdomain-redirect",
-              "configuration/oidc-sso"
+              "configuration/oidc-sso",
+              "configuration/disable-2fa"
             ]
           }
         ]
@@ -67,7 +74,6 @@
             "group": "Forms",
             "pages": [
               "api-reference/forms/list-workspace-forms",
-              "api-reference/forms/list-forms",
               "api-reference/forms/create-form",
               "api-reference/forms/get-form",
               "api-reference/forms/update-form",

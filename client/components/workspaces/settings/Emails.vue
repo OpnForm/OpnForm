@@ -55,6 +55,15 @@
             label="Port"
             placeholder="587"
           />
+          <OptionSelectorInput
+            :form="emailSettingsForm"
+            name="encryption"
+            :disabled="!workspace.is_pro"
+            label="Encryption"
+            :options="encryptionOptions"
+            :columns="3"
+            seamless
+          />
           <TextInput
             :form="emailSettingsForm"
             name="username"
@@ -116,9 +125,16 @@ const openSubscriptionModal = () => {
   openModal({ modal_title: 'Upgrade to send emails using your own domain' })
 }
 
+const encryptionOptions = [
+  { name: 'tls', label: 'TLS' },
+  { name: 'ssl', label: 'SSL' },
+  { name: 'none', label: 'None' }
+]
+
 const emailSettingsForm = useForm({
   host: '',
   port: '',
+  encryption: 'tls',
   username: '',
   password: '',
   sender_address: ''
@@ -147,6 +163,7 @@ const saveChanges = () => {
       data: {
         host: emailSettingsForm?.host,
         port: emailSettingsForm?.port,
+        encryption: emailSettingsForm?.encryption === 'none' ? null : emailSettingsForm?.encryption,
         username: emailSettingsForm?.username,
         password: emailSettingsForm?.password,
         sender_address: emailSettingsForm?.sender_address,
@@ -166,6 +183,7 @@ const initEmailSettings = () => {
   const emailSettings = workspace.value?.settings?.email_settings
   emailSettingsForm.host = emailSettings?.host
   emailSettingsForm.port = emailSettings?.port
+  emailSettingsForm.encryption = emailSettings?.encryption === null ? 'none' : (emailSettings?.encryption || 'tls')
   emailSettingsForm.username = emailSettings?.username
   emailSettingsForm.password = emailSettings?.password
   emailSettingsForm.sender_address = emailSettings?.sender_address

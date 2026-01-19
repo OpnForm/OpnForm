@@ -69,6 +69,13 @@ class FormSubmissionController extends Controller
         return FormSubmissionResource::collection($query->paginate($perPage));
     }
 
+    public function fetch(Form $form, $submission_id)
+    {
+        $submission = $form->submissions()->where('id', $submission_id)->firstOrFail();
+        $this->authorize('view', $submission);
+        return new FormSubmissionResource($submission);
+    }
+
     public function update(AnswerFormRequest $request, Form $form, $submission_id)
     {
         $submission = $form->submissions()->where('id', $submission_id)->firstOrFail();
