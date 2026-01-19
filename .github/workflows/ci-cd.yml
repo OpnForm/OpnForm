@@ -416,33 +416,3 @@ jobs:
           tags: ${{ env.UI_TAGS }}
           cache-from: type=registry,ref=${{secrets.DOCKER_UI_REPO}}:dev
           cache-to: type=inline
-
-  discord-notification:
-    name: Discord Notification
-    needs: [code_lint, client_lint, sync_check, tests, build-nuxt-app]
-    if: always()
-    runs-on: ubuntu-latest
-    steps:
-      - name: Set notification status
-        id: status
-        run: |
-          if [[ "${{ needs.code_lint.result }}" == "failure" || \
-                "${{ needs.client_lint.result }}" == "failure" || \
-                "${{ needs.sync_check.result }}" == "failure" || \
-                "${{ needs.tests.result }}" == "failure" || \
-                "${{ needs.build-nuxt-app.result }}" == "failure" ]]; then
-            echo "status=failure" >> $GITHUB_OUTPUT
-            echo "color=16711680" >> $GITHUB_OUTPUT
-            echo "emoji=❌" >> $GITHUB_OUTPUT
-          else
-            echo "status=success" >> $GITHUB_OUTPUT
-            echo "color=65280" >> $GITHUB_OUTPUT
-            echo "emoji=✅" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Send Discord notification
-        uses: Ilshidur/action-discord@0.3.2
-        env:
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-        with:
-          args: "${{ steps.status.outputs.emoji }} **OpnForm CI/CD** - ${{ github.event_name }} on `${{ github.ref_name }}` by ${{ github.actor }}: **${{ steps.status.outputs.status }}** - [View Run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
