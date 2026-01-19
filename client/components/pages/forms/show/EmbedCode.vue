@@ -26,17 +26,9 @@ export default {
 
   computed: {
     embedCode() {
+      const autoResize = this.form?.presentation_style !== 'focused'
       // eslint-disable no-useless-escape
-      return `${this.iframeCode}<script src="${appUrl("/widgets/opnform-sdk.min.js")}"><\/script>
-<script>
-  // OpnForm SDK - Listen to form events
-  opnform.on('submit', function(data) {
-    console.log('Form submitted:', data);
-  });
-  
-  // More SDK methods: opnform.get('${this.form.slug}').setField(id, value)
-  // Docs: https://docs.opnform.com/front-end/javascript-sdk
-<\/script>`
+      return `${this.iframeCode}<script type="text/javascript" onload="initEmbed('${this.form.slug}', { autoResize: ${autoResize} })" src="${appUrl("/widgets/iframe.min.js")}"><\/script>`
     },
     iframeCode() {
       const share_url = this.extraQueryParam

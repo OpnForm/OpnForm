@@ -373,25 +373,73 @@ opnform.once("ready", function () {
 
 ---
 
-## Backward Compatibility
+## Security Considerations
 
 <Info>
-    Existing embeds using `initEmbed()` continue to work without changes. The
-    SDK provides full backward compatibility.
+The SDK is designed for cross-domain embedding, which requires specific security trade-offs that are standard for embeddable widget frameworks.
 </Info>
 
-```html
-<!-- Old embed code still works -->
-<iframe id="my-form" src="https://opnform.com/forms/my-form"></iframe>
-<script src="https://opnform.com/widgets/iframe.min.js"></script>
-<script>
-    initEmbed("my-form", { autoResize: true });
-</script>
+### Cross-Origin Communication
+
+The SDK uses `postMessage` with a wildcard (`*`) target origin to enable communication between your page and the embedded form iframe. This is necessary because:
+
+- Forms can be embedded on any domain
+- The parent page origin is not known in advance
+
+**What this means:**
+- Form data (field values, submission data) is transmitted via postMessage
+- Any script on your page can listen to these messages
+- This is the same approach used by other embeddable widgets (Stripe, YouTube, etc.)
+
+### Best Practices
+
+<AccordionGroup>
+<Accordion title="Secure your embedding page">
+- Only embed forms on pages you control
+- Use Content Security Policy (CSP) headers to restrict script execution
+- Avoid embedding forms on pages with untrusted third-party scripts
+</Accordion>
+
+<Accordion title="Sensitive data handling">
+- Avoid pre-filling sensitive data (passwords, SSNs) via `setField()`
+- For highly sensitive forms, consider using OpnForm's hosted pages instead of embedding
+- Form submissions are sent directly to OpnForm servers over HTTPS, not through postMessage
+</Accordion>
+</AccordionGroup>
+
+---
+
+## Debugging
+
+### Listen to All Events
+
+For debugging, you can listen to all SDK events at once using an array:
+
+```javascript
+// All available events
+const ALL_EVENTS = [
+    "ready",
+    "submit",
+    "submitStart",
+    "submitError",
+    "dataChange",
+    "error",
+    "pageChange",
+    "nextPage",
+    "previousPage",
+    "reset",
+    "show",
+    "hide",
+];
+
+// Log all events to console
+opnform.on(ALL_EVENTS, function (data) {
+    console.log("[OpnForm Event]", data);
+});
 ```
 
 <Tip>
-    We recommend upgrading to the new SDK to access event callbacks and
-    programmatic control features.
+This is useful during development to understand the event flow and payload structure. Remove or disable in production to avoid console noise.
 </Tip>
 
 ---
