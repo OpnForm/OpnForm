@@ -1,0 +1,50 @@
+name: Discord Notifications
+
+on:
+  issues:
+    types: [opened, closed, reopened]
+  release:
+    types: [published]
+
+jobs:
+  issue-notification:
+    if: github.event_name == 'issues'
+    runs-on: ubuntu-latest
+    name: Issue Notification
+    steps:
+      - name: Set issue status
+        id: issue
+        run: |
+          case "${{ github.event.action }}" in
+            opened)
+              echo "emoji=🆕" >> $GITHUB_OUTPUT
+              echo "action=opened" >> $GITHUB_OUTPUT
+              ;;
+            closed)
+              echo "emoji=✅" >> $GITHUB_OUTPUT
+              echo "action=closed" >> $GITHUB_OUTPUT
+              ;;
+            reopened)
+              echo "emoji=🔄" >> $GITHUB_OUTPUT
+              echo "action=reopened" >> $GITHUB_OUTPUT
+              ;;
+          esac
+
+      - name: Send Discord notification
+        uses: Ilshidur/action-discord@0.3.2
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        with:
+          args: "${{ steps.issue.outputs.emoji }} **Issue ${{ steps.issue.outputs.action }}** - #${{ github.event.issue.number }}: ${{ github.event.issue.title }} by ${{ github.event.issue.user.login }} - [View Issue](${{ github.event.issue.html_url }})"
+
+  release-notification:
+    if: github.event_name == 'release'
+    runs-on: ubuntu-latest
+    name: Release Notification
+    steps:
+      - name: Send Discord notification
+        uses: Ilshidur/action-discord@0.3.2
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        with:
+          args: "🚀 **New Release Published** - ${{ github.event.release.tag_name }}: ${{ github.event.release.name }} - [View Release](${{ github.event.release.html_url }})"
