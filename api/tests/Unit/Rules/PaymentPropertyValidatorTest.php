@@ -67,6 +67,22 @@ describe('amount validation', function () {
         expect($errors)->toBeEmpty();
     });
 
+    it('accepts amount with mention field containing currency symbol', function () {
+        $validator = new PaymentPropertyValidator($this->workspace);
+
+        $mentionHtml = '<span mention="true" mention-field-id="field-123">$50.00</span>';
+        $property = [
+            'type' => 'payment',
+            'amount' => $mentionHtml,
+            'currency' => 'USD',
+            'stripe_account_id' => $this->stripeAccount->id
+        ];
+
+        $errors = $validator->validate($property, 0, ['properties' => [$property]]);
+
+        expect($errors)->toBeEmpty();
+    });
+
     it('rejects string amount without mention', function () {
         $validator = new PaymentPropertyValidator($this->workspace);
 

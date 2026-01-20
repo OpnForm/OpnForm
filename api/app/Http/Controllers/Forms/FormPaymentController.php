@@ -5,9 +5,8 @@ namespace App\Http\Controllers\Forms;
 use App\Http\Controllers\Controller;
 use App\Models\Forms\Form;
 use App\Models\OAuthProvider;
+use App\Http\Requests\Forms\CreatePaymentIntentRequest;
 use App\Http\Requests\Forms\GetStripeAccountRequest;
-use App\Open\MentionParser;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Stripe\Stripe;
@@ -77,7 +76,7 @@ class FormPaymentController extends Controller
         return $this->success(['stripeAccount' => $provider->provider_user_id]);
     }
 
-    public function createIntent(Request $request, Form $form)
+    public function createIntent(CreatePaymentIntentRequest $request, Form $form)
     {
         // Disable payment features on self-hosted instances
         if (config('app.self_hosted')) {
@@ -110,13 +109,8 @@ class FormPaymentController extends Controller
             return $this->error(['message' => 'Failed to find Stripe account']);
         }
 
-        // Parse amount with mentions if it contains mention HTML
-        $submissionData = $request->input('submission_data', []);
-        $formattedData = collect($submissionData)->map(function ($value, $key) {
-            return ['id' => $key, 'value' => $value];
-        })->values()->all();
-        $parsedAmount = (new MentionParser($paymentBlock['amount'], $formattedData))->parseAsText();
-        $amount = (float) preg_replace('/[^0-9.]/', '', $parsedAmount);
+        // Resolve amount from submission data
+        $amount = $request->resolveAmount($paymentBlock['amount']);
 
         // Validate amount
         if (!is_numeric($amount) || $amount <= 0) {

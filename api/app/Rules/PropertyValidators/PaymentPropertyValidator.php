@@ -60,7 +60,7 @@ class PaymentPropertyValidator implements PropertyValidatorInterface
 
         if (is_numeric($amount) && $amount >= 1) {
             $isValidAmount = true;
-        } elseif (is_string($amount) && str_contains($amount, 'mention')) {
+        } elseif (is_string($amount) && preg_match('/mention[-\w]*=/', $amount)) {
             // Amount contains a mention reference - will be parsed at runtime
             $isValidAmount = true;
         }
