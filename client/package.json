@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "build": "NODE_OPTIONS='--max-old-space-size=8192' nuxt build",
-    "dev": "export NODE_TLS_REJECT_UNAUTHORIZED=0; nuxt dev",
+    "dev": "export NODE_TLS_REJECT_UNAUTHORIZED=0; nuxt dev --host opnform.dv",
     "docker-dev": "export NODE_TLS_REJECT_UNAUTHORIZED=0; nuxt dev --host 0.0.0.0",
     "generate": "export NODE_TLS_REJECT_UNAUTHORIZED=0; nuxt generate",
     "preview": "nuxt preview",
@@ -84,6 +84,7 @@
     "js-sha256": "^0.10.1",
     "libphonenumber-js": "^1.11.12",
     "object-to-formdata": "^4.5.1",
+    "pdfjs-dist": "^5.4.530",
     "pinia": "^3.0.2",
     "prismjs": "^1.29.0",
     "qrcode": "^1.5.4",

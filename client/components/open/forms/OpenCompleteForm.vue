@@ -82,22 +82,33 @@
             :form="form"
             :form-data="submittedData"
           />
-          <div class="flex w-full gap-2 items-center mt-4">
-            <open-form-button
-              v-if="form.re_fillable"
-              :form="form"
-              icon="i-lucide-rotate-ccw"
-              @click="restart"
-            >
-              {{ form.re_fill_button_text || t('forms.buttons.re_fill') }}
-            </open-form-button>
-            <open-form-button
-              v-if="form.editable_submissions && submissionId"
-              :form="form"
-              @click="editSubmission"
-            >
-              {{ form.editable_submissions_button_text }}
-            </open-form-button>
+          <div class="flex flex-col w-full gap-2 mt-4">
+            <div class="flex gap-2 items-center">
+              <open-form-button
+                v-if="pdfDownloadEnabled"
+                :form="form"
+                icon="i-heroicons-document-arrow-down"
+                :loading="pdfDownloading"
+                @click="downloadPdf"
+              >
+                {{ form.pdf_download_button_text || t('forms.buttons.download_pdf', 'Download PDF') }}
+              </open-form-button>
+              <open-form-button
+                v-if="form.re_fillable"
+                :form="form"
+                icon="i-lucide-rotate-ccw"
+                @click="restart"
+              >
+                {{ form.re_fill_button_text || t('forms.buttons.re_fill') }}
+              </open-form-button>
+              <open-form-button
+                v-if="form.editable_submissions && submissionId"
+                :form="form"
+                @click="editSubmission"
+              >
+                {{ form.editable_submissions_button_text }}
+              </open-form-button>
+            </div>
           </div>
         </template>
       </component>
@@ -132,6 +143,7 @@ import { useRouter } from 'vue-router'
 import { useSdkBridge } from '~/lib/sdk/useSdkBridge'
 import { clearFormatterCache } from '~/components/forms/components/FormSubmissionFormatter.js'
 import { clearMentionCache } from '~/composables/components/useParseMention.js'
+import { formsApi } from '~/api'
 
 const props = defineProps({
   form: { type: Object, required: true },
@@ -419,6 +431,41 @@ const restart = async () => {
   sdkBridge?.onReset()
   
   emit('restarted', true)
+}
+
+// PDF Download functionality
+const pdfDownloading = ref(false)
+const pdfDownloadEnabled = computed(() => {
+  // Check if PDF download is enabled and we have a submission ID
+  if (!props.form.pdf_download_enabled || !submissionId.value) return false
+  
+  // Check if we have a PDF integration ID
+  const integrationId = props.form.pdf_integration_id
+  return !!integrationId
+})
+
+const downloadPdf = async () => {
+  if (!pdfDownloadEnabled.value || pdfDownloading.value) return
+  
+  const integrationId = props.form.pdf_integration_id
+  if (!integrationId) return
+  
+  pdfDownloading.value = true
+  try {
+    // Get signed URL from backend
+    const response = await formsApi.pdfTemplates.getSignedUrl(
+      props.form.id,
+      submissionId.value,
+      integrationId
+    )
+    // Open signed URL in new tab to trigger download
+    window.open(response.url, '_blank')
+  } catch (error) {
+    console.error('PDF download failed:', error)
+    alert.error('Failed to download PDF. Please try again.')
+  } finally {
+    pdfDownloading.value = false
+  }
 }
 
 const editSubmission = () => {

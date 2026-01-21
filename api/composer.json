@@ -38,6 +38,8 @@
         "propaganistas/laravel-disposable-email": "*",
         "sabberworm/php-css-parser": "^9.1",
         "sentry/sentry-laravel": "*",
+        "setasign/fpdf": "^1.8",
+        "setasign/fpdi": "^2.6",
         "socialiteproviders/stripe": "^4.1",
         "spatie/laravel-data": "^4.6",
         "spatie/laravel-ray": "*",
