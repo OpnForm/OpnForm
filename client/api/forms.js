@@ -74,5 +74,15 @@ export const formsApi = {
   zapier: {
     store: (data) => apiService.post('/open/forms/webhooks/zapier', data),
     delete: (id) => apiService.delete(`/open/forms/webhooks/zapier/${id}`)
+  },
+
+  // PDF Templates
+  pdfTemplates: {
+    list: (formId, options) => apiService.get(`/open/forms/${formId}/pdf-templates`, options),
+    upload: (formId, data, options) => apiService.post(`/open/forms/${formId}/pdf-templates`, data, options),
+    get: (formId, templateId, options) => apiService.get(`/open/forms/${formId}/pdf-templates/${templateId}`, options),
+    delete: (formId, templateId) => apiService.delete(`/open/forms/${formId}/pdf-templates/${templateId}`),
+    download: (formId, templateId, options) => apiService.get(`/open/forms/${formId}/pdf-templates/${templateId}/download`, options),
+    getSignedUrl: (formId, submissionId, integrationId) => apiService.get(`/open/forms/${formId}/submissions/${submissionId}/pdf/${integrationId}/signed-url`)
   }
 }

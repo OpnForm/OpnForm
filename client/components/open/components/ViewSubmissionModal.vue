@@ -10,6 +10,12 @@
         </h2>
 
         <div class="flex items-center gap-2">
+          <DownloadPdf
+            v-if="form?.pdf_download_enabled && submission?.submission_id"
+            :form="form"
+            :submission-id="submission.submission_id"
+          />
+
           <SubmissionHistory 
             v-if="submission?.id"
             :form="form" 
@@ -60,6 +66,7 @@
 </template>
 
 <script setup>
+import DownloadPdf from "./DownloadPdf.vue"
 import SubmissionHistory from "./SubmissionHistory.vue"
 import OpenForm from "../forms/OpenForm.vue"
 import { FormMode } from "~/lib/forms/FormModeStrategy.js"

@@ -8,6 +8,7 @@ const integrationRegistry = new Map([
   ['google_sheets', () => import('~/components/open/integrations/GoogleSheetsIntegration.vue')],
   ['telegram', () => import('~/components/open/integrations/TelegramIntegration.vue')],
   ['zapier', () => import('~/components/open/integrations/ZapierIntegration.vue')],
+  ['pdf', () => import('~/components/open/integrations/PdfIntegration.vue')],
 ])
 
 const clientOnlyHeavyFormComponentsRegistry = new Map([

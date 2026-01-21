@@ -213,6 +213,37 @@
                   label="Text of re-start button"
                 />
               </div>
+
+              <!-- PDF Download on Success Page -->
+              <div
+                v-if="pdfIntegrations.length > 0"
+                class="flex items-center flex-wrap gap-x-4 mt-4"
+              >
+                <toggle-switch-input
+                  name="pdf_download_enabled"
+                  class="w-full max-w-xs"
+                  :form="form"
+                  label="Show PDF download button"
+                  help="Allow respondents to download a PDF on the success page"
+                />
+                <template v-if="form.pdf_download_enabled">
+                  <text-input
+                    name="pdf_download_button_text"
+                    :form="form"
+                    label="Text of download button"
+                    placeholder="Download PDF"
+                  />
+                  <select-input
+                    name="pdf_integration_id"
+                    class="w-full mt-4"
+                    :form="form"
+                    label="PDF template"
+                    :options="pdfIntegrationOptions"
+                    :required="true"
+                    help="Select the PDF template to use for the download button"
+                  />
+                </template>
+              </div>
             </template>
           </div>
         </div>
@@ -252,10 +283,36 @@
 
 <script setup>
 import ProTag from "~/components/app/ProTag.vue"
+import { useFormIntegrations } from "~/composables/query/forms/useFormIntegrations"
 
 const workingFormStore = useWorkingFormStore()
 const { content: form } = storeToRefs(workingFormStore)
 const crisp = useCrisp()
+
+// PDF Integrations for success page download
+const { list: listIntegrations } = useFormIntegrations()
+const { data: integrationsData } = listIntegrations(computed(() => form.value?.id), {
+  enabled: computed(() => !!form.value?.id)
+})
+
+const pdfIntegrations = computed(() => {
+  const integrations = integrationsData.value || []
+  return integrations.filter(i => i.integration_id === 'pdf' && i.status === 'active')
+})
+
+const pdfIntegrationOptions = computed(() => {
+  return pdfIntegrations.value.map(i => ({
+    name: i.data?.filename_pattern || `PDF Template ${i.id}`,
+    value: i.id
+  }))
+})
+
+// Auto-select first PDF integration if only one exists
+watch(pdfIntegrations, (integrations) => {
+  if (integrations.length === 1 && form.value?.pdf_download_enabled && !form.value?.pdf_integration_id) {
+    form.value.pdf_integration_id = integrations[0].id
+  }
+}, { immediate: true })
 
 const submissionOptions = ref({})
 
