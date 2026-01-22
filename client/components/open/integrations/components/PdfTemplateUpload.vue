@@ -113,7 +113,7 @@ const handleFile = async (file) => {
     emit('uploaded', response.data)
   } catch (err) {
     console.error('Failed to upload PDF template:', err)
-    error.value = err.response?.data?.message || 'Failed to upload PDF template. Please try again.'
+    error.value = err.response?._data?.message || 'Failed to upload PDF template. Please try again.'
   } finally {
     loading.value = false
   }
