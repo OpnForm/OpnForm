@@ -125,9 +125,8 @@ class PdfGeneratorService
         $width = ($zone['width'] / 100) * $pageSize['width'];
         $height = ($zone['height'] / 100) * $pageSize['height'];
 
-        $type = $zone['type'] ?? 'text';
-
-        if ($type === 'image' && $this->isImageUrl($value)) {
+        // Auto-detect: render as image if value is an image URL, otherwise as text
+        if ($this->isImageUrl($value)) {
             $this->addImageToZone($pdf, $value, $x, $y, $width, $height);
         } else {
             $this->addTextToZone($pdf, (string) $value, $x, $y, $width, $height, $zone);
