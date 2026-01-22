@@ -18,6 +18,8 @@ class PdfGeneratorService
     private const DEFAULT_FONT_SIZE = 12;
     private const DEFAULT_FONT_COLOR = [0, 0, 0]; // Black
 
+    private ?Form $form = null;
+
     /**
      * Generate a PDF for a submission based on integration configuration.
      */
@@ -26,6 +28,7 @@ class PdfGeneratorService
         FormSubmission $submission,
         FormIntegration $integration
     ): string {
+        $this->form = $form;
         $data = $integration->data;
         $template = PdfTemplate::findOrFail($data->template_id);
         // Convert zone_mappings from object to array (since data is cast as 'object')
@@ -158,6 +161,7 @@ class PdfGeneratorService
 
     /**
      * Add image to a zone.
+     * Handles both internal storage files and external URLs.
      */
     private function addImageToZone(
         Fpdi $pdf,
@@ -168,13 +172,15 @@ class PdfGeneratorService
         float $height
     ): void {
         try {
-            // Download image to temp file
-            $imageContent = @file_get_contents($imageUrl);
-            if ($imageContent === false) {
+            $imageContent = $this->getImageContent($imageUrl);
+
+            if ($imageContent === null) {
                 return;
             }
 
-            $tempImage = tempnam(sys_get_temp_dir(), 'pdf_image_');
+            // Create temp file with proper extension
+            $extension = pathinfo($imageUrl, PATHINFO_EXTENSION) ?: 'png';
+            $tempImage = tempnam(sys_get_temp_dir(), 'pdf_img_') . '.' . $extension;
             file_put_contents($tempImage, $imageContent);
 
             // Detect image type
@@ -184,13 +190,50 @@ class PdfGeneratorService
                 return;
             }
 
-            // Add image, maintaining aspect ratio within zone bounds
             $pdf->Image($tempImage, $x, $y, $width, $height);
 
             @unlink($tempImage);
         } catch (\Exception $e) {
             // Silently fail if image cannot be added
         }
+    }
+
+    /**
+     * Get image content from either storage or external URL.
+     */
+    private function getImageContent(string $imageValue): ?string
+    {
+        // Check if it's an external URL
+        if (filter_var($imageValue, FILTER_VALIDATE_URL)) {
+            $content = @file_get_contents($imageValue);
+            return $content !== false ? $content : null;
+        }
+
+        // It's a storage filename - read from storage using default disk
+        if ($this->form) {
+            try {
+                $diskName = config('filesystems.default');
+                $disk = Storage::disk($diskName);
+                $storagePath = "forms/{$this->form->id}/submissions/{$imageValue}";
+
+                // For S3/cloud storage, get a temporary URL and download
+                if (in_array($diskName, ['s3', 'do'])) {
+                    /** @var \Illuminate\Filesystem\AwsS3V3Adapter $disk */
+                    $tempUrl = $disk->temporaryUrl($storagePath, now()->addMinutes(5));
+                    $content = @file_get_contents($tempUrl);
+                    return $content !== false ? $content : null;
+                }
+
+                // For local storage, read directly
+                if ($disk->exists($storagePath)) {
+                    return $disk->get($storagePath);
+                }
+            } catch (\Exception $e) {
+                // Silently fail if storage access fails
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -238,7 +281,7 @@ class PdfGeneratorService
     }
 
     /**
-     * Check if value is an image URL.
+     * Check if value is an image (URL or storage filename).
      */
     private function isImageUrl(mixed $value): bool
     {
@@ -246,21 +289,35 @@ class PdfGeneratorService
             return false;
         }
 
-        return filter_var($value, FILTER_VALIDATE_URL) !== false
-            && preg_match('/\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i', $value);
+        // Check if it's an image URL
+        if (filter_var($value, FILTER_VALIDATE_URL) !== false) {
+            return preg_match('/\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i', $value);
+        }
+
+        // Check if it's a storage filename with image extension
+        return preg_match('/\.(jpg|jpeg|png|gif|webp)$/i', $value);
     }
 
     /**
      * Get formatted submission data.
+     * For file/signature fields, keeps raw filenames instead of URLs for direct storage access.
      */
     private function getFormattedSubmissionData(Form $form, FormSubmission $submission): array
     {
         $formatter = new FormSubmissionFormatter($form, $submission->data);
         $formatted = $formatter->outputStringsOnly()->getFieldsWithValue();
+        $rawData = $submission->data;
 
         $data = [];
         foreach ($formatted as $field) {
-            $data[$field['id']] = $field['value'];
+            // For file/signature fields, use the raw filename instead of signed URL
+            if (in_array($field['type'], ['files', 'signature']) && isset($rawData[$field['id']])) {
+                $files = $rawData[$field['id']];
+                // Get first file if it's an array (for single image in PDF zone)
+                $data[$field['id']] = is_array($files) && !empty($files) ? $files[0] : $files;
+            } else {
+                $data[$field['id']] = $field['value'];
+            }
         }
 
         // Add special fields
