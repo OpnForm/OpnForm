@@ -25,10 +25,10 @@
       <UBadge
           variant="subtle"
           size="sm"
-          :color="integration.status  ? 'success' : 'neutral'"
-          :icon="integration.status ? 'i-heroicons-play-solid' : 'i-heroicons-pause-solid'"
+          :color="integration.status === 'active'  ? 'success' : 'neutral'"
+          :icon="integration.status === 'active'? 'i-heroicons-play-solid' : 'i-heroicons-pause-solid'"
         >
-          {{ integration.status ? "Active" : "Paused" }}
+          {{ integration.status === 'active' ? "Active" : "Paused" }}
         </UBadge>
     </div>
 

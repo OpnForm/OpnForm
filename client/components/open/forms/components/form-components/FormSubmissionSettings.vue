@@ -309,7 +309,7 @@ const pdfIntegrationOptions = computed(() => {
 
 // Auto-select first PDF integration if only one exists
 watch(pdfIntegrations, (integrations) => {
-  if (integrations.length === 1 && form.value?.pdf_download_enabled && !form.value?.pdf_integration_id) {
+  if (integrations.length > 0 && form.value?.pdf_download_enabled && !form.value?.pdf_integration_id) {
     form.value.pdf_integration_id = integrations[0].id
   }
 }, { immediate: true })

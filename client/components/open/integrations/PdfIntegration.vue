@@ -81,7 +81,7 @@
         :form="integrationData"
         name="data.filename_pattern"
         label="PDF Filename"
-        help="Use {form_name}, {submission_id}, {date}, or {{field_id}} for dynamic values"
+        help="Use {form_name}, {submission_id}, {date}, {timestamp} for dynamic values"
         placeholder="{form_name}-{submission_id}.pdf"
         required
       />

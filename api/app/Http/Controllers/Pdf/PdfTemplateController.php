@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers\Pdf;
 
+use App\Exceptions\PdfNotSupportedException;
 use App\Http\Controllers\Controller;
 use App\Models\Forms\Form;
 use App\Models\PdfTemplate;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use setasign\Fpdi\PdfParser\CrossReference\CrossReferenceException;
 
 class PdfTemplateController extends Controller
 {
@@ -40,15 +42,25 @@ class PdfTemplateController extends Controller
         ]);
 
         $file = $request->file('file');
+
+        // Validate PDF compatibility before storing (catches unsupported compression early)
+        try {
+            $pageCount = $this->getPageCount($file->getRealPath());
+        } catch (PdfNotSupportedException $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
+                'errors' => [
+                    'file' => [$e->getMessage()],
+                ],
+            ], 422);
+        }
+
         $uuid = (string) Str::uuid();
         $filename = $uuid . '.pdf';
         $path = "pdf-templates/{$form->id}/{$filename}";
 
         // Store the file
         Storage::put($path, file_get_contents($file->getRealPath()));
-
-        // Get page count using FPDI (pure PHP, Vapor-compatible)
-        $pageCount = $this->getPageCount($file->getRealPath());
 
         $template = PdfTemplate::create([
             'form_id' => $form->id,
@@ -131,15 +143,21 @@ class PdfTemplateController extends Controller
 
     /**
      * Get page count from PDF using FPDI (pure PHP, Vapor-compatible).
+     *
+     * @throws PdfNotSupportedException
      */
     private function getPageCount(string $filePath): int
     {
         try {
             // Use setasign/fpdi to count pages (pure PHP)
             $pdf = new \setasign\Fpdi\Fpdi();
+
             return $pdf->setSourceFile($filePath);
+        } catch (CrossReferenceException $e) {
+            // This exception is thrown for PDFs with unsupported compression (PDF 1.5+)
+            throw new PdfNotSupportedException();
         } catch (\Exception $e) {
-            // Default to 1 if we can't read the page count
+            // Default to 1 if we can't read the page count for other reasons
             return 1;
         }
     }

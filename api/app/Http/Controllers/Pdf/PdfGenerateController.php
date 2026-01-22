@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Pdf;
 
+use App\Exceptions\PdfNotSupportedException;
 use App\Http\Controllers\Controller;
 use App\Models\Forms\Form;
 use App\Models\Forms\FormSubmission;
@@ -72,13 +73,13 @@ class PdfGenerateController extends Controller
         }
 
         // Signed URL validates access
-        return $this->generatePdf($form, $submission, $integration);
+        return $this->servePdf($form, $submission, $integration);
     }
 
     /**
-     * Common PDF generation logic.
+     * Validate and serve the PDF for download.
      */
-    private function generatePdf(
+    private function servePdf(
         Form $form,
         FormSubmission $submission,
         FormIntegration $integration
@@ -104,7 +105,11 @@ class PdfGenerateController extends Controller
         }
 
         // Get or generate the PDF
-        $pdfPath = $this->cache->getOrGenerate($form, $submission, $integration, $this->generator);
+        try {
+            $pdfPath = $this->cache->getOrGenerate($form, $submission, $integration, $this->generator);
+        } catch (PdfNotSupportedException $e) {
+            abort(422, $e->getMessage());
+        }
 
         if (!Storage::exists($pdfPath)) {
             abort(500, 'Failed to generate PDF.');

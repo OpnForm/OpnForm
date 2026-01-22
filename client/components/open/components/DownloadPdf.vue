@@ -35,7 +35,7 @@
     <template #body>
       <div class="flow-root">
         <select-input
-          v-model:value="pdfIntegrationId"
+          v-model="pdfIntegrationId"
           label="PDF template"
           :options="pdfIntegrationOptions"
           help="Select the PDF template to download"
@@ -92,7 +92,7 @@ const pdfIntegrationOptions = computed(() => {
 
 // Auto-select first PDF integration if only one exists
 watch(pdfIntegrations, (integrations) => {
-  if (integrations.length === 1 && !pdfIntegrationId.value) {
+  if (integrations.length > 0 && !pdfIntegrationId.value) {
     pdfIntegrationId.value = integrations[0].id
   }
 }, { immediate: true })
