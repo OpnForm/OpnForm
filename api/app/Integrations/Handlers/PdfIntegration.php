@@ -20,7 +20,6 @@ class PdfIntegration extends AbstractIntegrationHandler
             'zone_mappings.*.field_id' => 'required|string',
             'zone_mappings.*.font_size' => 'nullable|integer|min:6|max:72',
             'zone_mappings.*.font_color' => 'nullable|string',
-            'zone_mappings.*.type' => 'nullable|string|in:text,image',
             'filename_pattern' => 'required|string|max:255',
         ];
     }

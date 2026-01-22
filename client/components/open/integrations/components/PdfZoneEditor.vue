@@ -143,7 +143,7 @@
               </select>
             </div>
 
-            <div class="grid grid-cols-3 gap-2">
+            <div class="grid grid-cols-2 gap-2">
               <div>
                 <label class="block text-xs font-medium text-gray-600 mb-1">Font Size</label>
                 <select
@@ -152,17 +152,6 @@
                   @change="updateSelectedZoneField('font_size', parseInt($event.target.value))"
                 >
                   <option v-for="size in fontSizes" :key="size" :value="size">{{ size }}px</option>
-                </select>
-              </div>
-              <div>
-                <label class="block text-xs font-medium text-gray-600 mb-1">Type</label>
-                <select
-                  :value="selectedZone.type || 'text'"
-                  class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
-                  @change="updateSelectedZoneField('type', $event.target.value)"
-                >
-                  <option value="text">Text</option>
-                  <option value="image">Image/Signature</option>
                 </select>
               </div>
               <div>
@@ -405,8 +394,7 @@ const createZone = () => {
     height: (drawingRect.value.height / canvasHeight.value) * 100,
     field_id: '',
     font_size: 12,
-    font_color: '#000000',
-    type: 'text'
+    font_color: '#000000'
   }
   
   const newZones = [...props.modelValue, zone]
