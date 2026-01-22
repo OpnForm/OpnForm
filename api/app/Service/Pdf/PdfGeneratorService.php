@@ -2,6 +2,7 @@
 
 namespace App\Service\Pdf;
 
+use App\Exceptions\PdfNotSupportedException;
 use App\Models\Forms\Form;
 use App\Models\Forms\FormSubmission;
 use App\Models\Integration\FormIntegration;
@@ -10,6 +11,7 @@ use App\Service\Forms\FormSubmissionFormatter;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use setasign\Fpdi\Fpdi;
+use setasign\Fpdi\PdfParser\CrossReference\CrossReferenceException;
 
 class PdfGeneratorService
 {
@@ -28,16 +30,12 @@ class PdfGeneratorService
         $template = PdfTemplate::findOrFail($data->template_id);
         // Convert zone_mappings from object to array (since data is cast as 'object')
         $zoneMappings = json_decode(json_encode($data->zone_mappings ?? []), true);
-        $filenamePattern = $data->filename_pattern ?? '{form_name}-{submission_id}.pdf';
 
         // Get submission data formatted for display
         $submissionData = $this->getFormattedSubmissionData($form, $submission);
 
         // Generate the PDF
         $pdfContent = $this->generatePdfContent($template, $zoneMappings, $submissionData);
-
-        // Generate filename
-        $filename = $this->generateFilename($filenamePattern, $form, $submission, $submissionData);
 
         // Store temporarily and return path
         $tempPath = 'pdf-generated/' . Str::uuid() . '.pdf';
@@ -48,6 +46,8 @@ class PdfGeneratorService
 
     /**
      * Generate PDF content using FPDI/FPDF.
+     *
+     * @throws PdfNotSupportedException
      */
     private function generatePdfContent(
         PdfTemplate $template,
@@ -61,9 +61,14 @@ class PdfGeneratorService
         // Copy template to temp file
         file_put_contents($tempFile, Storage::get($templatePath));
 
-        // Create FPDI instance
-        $pdf = new Fpdi();
-        $pageCount = $pdf->setSourceFile($tempFile);
+        try {
+            // Create FPDI instance
+            $pdf = new Fpdi();
+            $pageCount = $pdf->setSourceFile($tempFile);
+        } catch (CrossReferenceException $e) {
+            @unlink($tempFile);
+            throw new PdfNotSupportedException();
+        }
 
         // Group zones by page
         $zonesByPage = [];
@@ -244,40 +249,6 @@ class PdfGeneratorService
 
         return filter_var($value, FILTER_VALIDATE_URL) !== false
             && preg_match('/\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i', $value);
-    }
-
-    /**
-     * Generate filename from pattern.
-     */
-    private function generateFilename(
-        string $pattern,
-        Form $form,
-        FormSubmission $submission,
-        array $submissionData
-    ): string {
-        $replacements = [
-            '{form_name}' => Str::slug($form->title),
-            '{submission_id}' => $submission->id,
-            '{date}' => now()->format('Y-m-d'),
-            '{timestamp}' => now()->timestamp,
-        ];
-
-        // Add field replacements
-        foreach ($submissionData as $key => $value) {
-            if (is_string($value) || is_numeric($value)) {
-                $replacements['{{' . $key . '}}'] = Str::slug((string) $value);
-            }
-        }
-
-        $filename = str_replace(array_keys($replacements), array_values($replacements), $pattern);
-
-        // Ensure .pdf extension
-        if (!str_ends_with(strtolower($filename), '.pdf')) {
-            $filename .= '.pdf';
-        }
-
-        // Sanitize filename
-        return preg_replace('/[^a-zA-Z0-9._-]/', '-', $filename);
     }
 
     /**
