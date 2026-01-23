@@ -274,6 +274,12 @@ class PdfGeneratorService
             return null;
         }
 
+        // Block private/internal IP addresses to prevent SSRF
+        if ($this->isPrivateIp($ip)) {
+            Log::debug('PDF image fetch blocked: private/internal IP', ['host' => $host, 'ip' => $ip]);
+            return null;
+        }
+
         // Fetch with timeout using stream context
         $context = stream_context_create([
             'http' => [
@@ -381,5 +387,20 @@ class PdfGeneratorService
         $data['form_name'] = $form->title;
 
         return $data;
+    }
+
+    /**
+     * Check if an IP address is private or reserved (internal network).
+     * Used to prevent SSRF attacks by blocking requests to internal resources.
+     */
+    private function isPrivateIp(string $ip): bool
+    {
+        // FILTER_FLAG_NO_PRIV_RANGE: Fails for private IPv4 ranges (10.x, 172.16-31.x, 192.168.x)
+        // FILTER_FLAG_NO_RES_RANGE: Fails for reserved ranges (0.0.0.0/8, 169.254.x, 127.x, etc.)
+        return filter_var(
+            $ip,
+            FILTER_VALIDATE_IP,
+            FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE
+        ) === false;
     }
 }
