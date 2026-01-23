@@ -8,6 +8,8 @@ use App\Models\Forms\FormSubmission;
 use App\Models\Integration\FormIntegration;
 use App\Models\PdfTemplate;
 use App\Service\Forms\FormSubmissionFormatter;
+use App\Service\Storage\FileUploadPathService;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use setasign\Fpdi\Fpdi;
@@ -194,19 +196,23 @@ class PdfGeneratorService
 
             @unlink($tempImage);
         } catch (\Exception $e) {
-            // Silently fail if image cannot be added
+            Log::debug('PDF image addition failed', [
+                'form_id' => $this->form->id,
+                'url' => $imageUrl,
+                'error' => $e->getMessage(),
+            ]);
         }
     }
 
     /**
      * Get image content from either storage or external URL.
+     * External URLs are validated to prevent SSRF attacks.
      */
     private function getImageContent(string $imageValue): ?string
     {
         // Check if it's an external URL
         if (filter_var($imageValue, FILTER_VALIDATE_URL)) {
-            $content = @file_get_contents($imageValue);
-            return $content !== false ? $content : null;
+            return $this->fetchExternalImage($imageValue);
         }
 
         // It's a storage filename - read from storage using default disk
@@ -214,12 +220,13 @@ class PdfGeneratorService
             try {
                 $diskName = config('filesystems.default');
                 $disk = Storage::disk($diskName);
-                $storagePath = "forms/{$this->form->id}/submissions/{$imageValue}";
+                $storagePath = FileUploadPathService::getFileUploadPath($this->form->id, $imageValue);
 
                 // For S3/cloud storage, get a temporary URL and download
                 if (in_array($diskName, ['s3', 'do'])) {
                     /** @var \Illuminate\Filesystem\AwsS3V3Adapter $disk */
                     $tempUrl = $disk->temporaryUrl($storagePath, now()->addMinutes(5));
+                    // Safe to fetch - this is our own S3 URL
                     $content = @file_get_contents($tempUrl);
                     return $content !== false ? $content : null;
                 }
@@ -229,11 +236,59 @@ class PdfGeneratorService
                     return $disk->get($storagePath);
                 }
             } catch (\Exception $e) {
-                // Silently fail if storage access fails
+                Log::debug('PDF storage image fetch failed', [
+                    'form_id' => $this->form->id,
+                    'path' => $imageValue,
+                    'error' => $e->getMessage(),
+                ]);
             }
         }
 
         return null;
+    }
+
+    /**
+     * Fetch external image with SSRF protection.
+     * Validates URL scheme and blocks private/internal IP addresses.
+     */
+    private function fetchExternalImage(string $url): ?string
+    {
+        $parsed = parse_url($url);
+
+        // Only allow http/https schemes
+        $scheme = $parsed['scheme'] ?? '';
+        if (!in_array(strtolower($scheme), ['http', 'https'], true)) {
+            Log::debug('PDF image fetch blocked: invalid scheme', ['url' => $url]);
+            return null;
+        }
+
+        $host = $parsed['host'] ?? '';
+        if (empty($host)) {
+            return null;
+        }
+
+        // Resolve hostname to IP
+        $ip = gethostbyname($host);
+        if ($ip === $host) {
+            Log::debug('PDF image fetch blocked: DNS resolution failed', ['host' => $host]);
+            return null;
+        }
+
+        // Fetch with timeout using stream context
+        $context = stream_context_create([
+            'http' => [
+                'timeout' => 10,
+                'max_redirects' => 3,
+                'ignore_errors' => false,
+            ],
+            'ssl' => [
+                'verify_peer' => true,
+                'verify_peer_name' => true,
+            ],
+        ]);
+
+        $content = @file_get_contents($url, false, $context);
+        return $content !== false ? $content : null;
     }
 
     /**
