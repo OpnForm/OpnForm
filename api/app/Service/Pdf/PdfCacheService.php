@@ -13,8 +13,11 @@ class PdfCacheService
 {
     private const CACHE_TTL = 3600; // 1 hour
 
+    private const LOCK_TTL = 30; // 30 seconds max lock time
+
     /**
      * Get cached PDF path or generate a new one.
+     * Uses locking to prevent duplicate generation from concurrent requests.
      */
     public function getOrGenerate(
         Form $form,
@@ -31,13 +34,24 @@ class PdfCacheService
             return $cachedPath;
         }
 
-        // Generate new PDF
-        $pdfPath = $generator->generate($form, $submission, $integration);
+        // Use atomic lock to prevent concurrent PDF generation
+        $lockKey = $cacheKey . ':lock';
 
-        // Cache the path
-        Cache::put($cacheKey, $pdfPath, self::CACHE_TTL);
+        return Cache::lock($lockKey, self::LOCK_TTL)->block(self::LOCK_TTL, function () use ($cacheKey, $form, $submission, $integration, $generator) {
+            // Check cache again after acquiring lock (another request may have generated it)
+            $cachedPath = Cache::get($cacheKey);
+            if ($cachedPath && Storage::exists($cachedPath)) {
+                return $cachedPath;
+            }
 
-        return $pdfPath;
+            // Generate new PDF
+            $pdfPath = $generator->generate($form, $submission, $integration);
+
+            // Cache the path
+            Cache::put($cacheKey, $pdfPath, self::CACHE_TTL);
+
+            return $pdfPath;
+        });
     }
 
     /**
