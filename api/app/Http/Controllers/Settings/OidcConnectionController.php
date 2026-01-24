@@ -41,6 +41,11 @@ class OidcConnectionController extends Controller
         $this->authorize('create', [IdentityConnection::class, $workspace]);
 
         $data = $request->validated();
+        if (isset($data['options']) && is_array($data['options'])) {
+            if (array_key_exists('require_state', $data['options'])) {
+                $data['options']['require_state'] = (bool) $data['options']['require_state'];
+            }
+        }
 
         // Enforce single OIDC connection per workspace
         $existing = IdentityConnection::where('workspace_id', $workspace->id)
@@ -83,6 +88,11 @@ class OidcConnectionController extends Controller
         $this->authorize('update', $connection);
 
         $data = $request->validated();
+        if (isset($data['options']) && is_array($data['options'])) {
+            if (array_key_exists('require_state', $data['options'])) {
+                $data['options']['require_state'] = (bool) $data['options']['require_state'];
+            }
+        }
 
         // Don't update client_secret if not provided
         if (!isset($data['client_secret'])) {
@@ -117,6 +127,14 @@ class OidcConnectionController extends Controller
      */
     protected function formatConnection(IdentityConnection $connection): array
     {
+        $options = $connection->options ?? [];
+        if (!is_array($options)) {
+            $options = [];
+        }
+        if (array_key_exists('require_state', $options)) {
+            $options['require_state'] = (bool) $options['require_state'];
+        }
+
         return [
             'id' => $connection->id,
             'workspace_id' => $connection->workspace_id,
@@ -128,7 +146,7 @@ class OidcConnectionController extends Controller
             'client_id' => $connection->client_id,
             // Never expose client_secret
             'scopes' => $connection->scopes,
-            'options' => $connection->options, // Includes group_role_mappings
+            'options' => $options, // Includes group_role_mappings
             'redirect_url' => $connection->redirect_url,
             'enabled' => $connection->enabled,
             'created_at' => $connection->created_at,

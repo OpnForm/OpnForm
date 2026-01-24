@@ -6,11 +6,13 @@ use App\Enterprise\Oidc\ConnectionManager;
 use App\Enterprise\Oidc\Exceptions\OidcAccountLinkRequiredException;
 use App\Enterprise\Oidc\IdTokenVerifier;
 use App\Enterprise\Oidc\OidcLinkService;
+use App\Enterprise\Oidc\ProvisioningService;
 use App\Http\Controllers\Auth\Traits\ManagesJWT;
 use App\Http\Controllers\Controller;
-use App\Enterprise\Oidc\ProvisioningService;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -59,9 +61,25 @@ class SsoController extends Controller
 
             $redirectUrl = $driver->getRedirectUrl();
 
-            return response()->json([
+            $response = response()->json([
                 'redirect_url' => $redirectUrl,
             ]);
+
+            if (!empty($state)) {
+                $response->cookie(Cookie::make(
+                    'oidc_state',
+                    $state,
+                    10,
+                    '/',
+                    null,
+                    request()->secure(),
+                    true,
+                    false,
+                    'lax'
+                ));
+            }
+
+            return $response;
         } catch (\Exception $e) {
             Log::error('OIDC redirect failed', [
                 'slug' => $slug,
@@ -94,6 +112,7 @@ class SsoController extends Controller
 
         try {
             $requireState = (bool) data_get($connection->options, 'require_state', false);
+            $shouldClearStateCookie = false;
             if ($requireState) {
                 $state = $request->input('state');
                 if (!$state) {
@@ -103,10 +122,19 @@ class SsoController extends Controller
                 }
 
                 $stateValid = Cache::pull("oidc_state_{$state}");
-                if (!$stateValid) {
+                $cookieState = $request->cookie('oidc_state');
+                if (!$stateValid && $cookieState !== $state) {
+                    Log::warning('OIDC callback invalid state', [
+                        'slug' => $slug,
+                        'state' => $state,
+                    ]);
                     return response()->json([
                         'message' => 'Invalid state. Please try again.',
                     ], 400);
+                }
+
+                if ($cookieState === $state) {
+                    $shouldClearStateCookie = true;
                 }
             }
 
@@ -197,7 +225,7 @@ class SsoController extends Controller
             // sendLoginResponse() automatically handles 2FA check and blocked user check
             // callback.vue always sends JSON, so we can directly return the response
             // HttpException (like 403 for blocked users) will be handled by the exception handler
-            return $this->sendLoginResponse($user, [
+            $response = $this->sendLoginResponse($user, [
                 'method' => 'oidc',
                 'slug' => $slug,
             ], [
@@ -205,6 +233,12 @@ class SsoController extends Controller
                 'new_user' => $isNewUser,
                 'redirect_url' => $request->cookie('intended_url') ?? '/home',
             ]);
+
+            if ($shouldClearStateCookie) {
+                $response->withoutCookie('oidc_state');
+            }
+
+            return $response;
         } catch (OidcAccountLinkRequiredException $e) {
             $linkToken = $this->oidcLinkService->createLinkToken(
                 connectionId: $e->getConnectionId(),
@@ -265,8 +299,15 @@ class SsoController extends Controller
 
         if (!$connection) {
             $forced = config('oidc.force_login', false);
+            if ($forced) {
+                $userExists = User::where('email', $email)->exists();
+                return response()->json([
+                    'action' => $userExists ? 'fallback' : 'blocked',
+                ]);
+            }
+
             return response()->json([
-                'action' => $forced ? 'blocked' : 'fallback',
+                'action' => 'fallback',
             ]);
         }
 

@@ -170,6 +170,21 @@ describe('SsoController - Get Options For Email', function () {
         ]);
     });
 
+    it('allows fallback when force login is enabled but user already exists', function () {
+        config(['oidc.force_login' => true]);
+
+        $this->createUser(['email' => 'user@company.com']);
+
+        $response = $this->postJson('/auth/oidc/options', [
+            'email' => 'user@company.com',
+        ]);
+
+        $response->assertSuccessful();
+        $response->assertJson([
+            'action' => 'fallback',
+        ]);
+    });
+
     it('returns fallback action for invalid email', function () {
         $response = $this->postJson('/auth/oidc/options', [
             'email' => 'invalid-email',
