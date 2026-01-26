@@ -182,13 +182,15 @@ const isStripeJsLoaded = ref(false)
 
 // Watch for prefill changes to update card holder details
 watch(() => props.prefillName, (newVal) => {
-  if (newVal && newVal !== cardHolderName.value) {
-    cardHolderName.value = newVal
+  const resolved = newVal ?? ''
+  if (resolved !== cardHolderName.value) {
+    cardHolderName.value = resolved
   }
 })
 watch(() => props.prefillEmail, (newVal) => {
-  if (newVal && newVal !== cardHolderEmail.value) {
-    cardHolderEmail.value = newVal
+  const resolved = newVal ?? ''
+  if (resolved !== cardHolderEmail.value) {
+    cardHolderEmail.value = resolved
   }
 })
 

@@ -162,4 +162,51 @@ describe('payment amount with mentions', function () {
                 'message' => 'Invalid payment amount. Please ensure the amount field has a valid value.'
             ]);
     });
+
+    it('can parse amount with currency symbols and commas', function () {
+        $numberField = collect($this->form->properties)->firstWhere('type', 'number');
+
+        $mentionHtml = '<span mention="true" mention-field-id="' . $numberField['id'] . '">Number</span>';
+        $properties = collect($this->form->properties)->map(function ($block) use ($mentionHtml) {
+            if ($block['type'] === 'payment') {
+                $block['amount'] = $mentionHtml;
+            }
+            return $block;
+        })->all();
+
+        $this->form->update(['properties' => $properties]);
+
+        $response = $this->postJson(route('forms.stripe-connect.create-intent', $this->form->slug), [
+            'submission_data' => [
+                $numberField['id'] => '$1,234.50'
+            ]
+        ]);
+
+        $response->assertStatus(400);
+        expect($response->json('message'))->not->toBe('Invalid payment amount. Please ensure the amount field has a valid value.');
+    });
+
+    it('returns error when mention resolves to negative amount', function () {
+        $numberField = collect($this->form->properties)->firstWhere('type', 'number');
+
+        $mentionHtml = '<span mention="true" mention-field-id="' . $numberField['id'] . '">Number</span>';
+        $properties = collect($this->form->properties)->map(function ($block) use ($mentionHtml) {
+            if ($block['type'] === 'payment') {
+                $block['amount'] = $mentionHtml;
+            }
+            return $block;
+        })->all();
+
+        $this->form->update(['properties' => $properties]);
+
+        $this->postJson(route('forms.stripe-connect.create-intent', $this->form->slug), [
+            'submission_data' => [
+                $numberField['id'] => -10
+            ]
+        ])
+            ->assertStatus(400)
+            ->assertJson([
+                'message' => 'Invalid payment amount. Please ensure the amount field has a valid value.'
+            ]);
+    });
 });

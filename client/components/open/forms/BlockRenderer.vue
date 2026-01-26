@@ -287,8 +287,13 @@ const boundProps = computed(() => {
     inputProperties.currency = field.currency
     // Parse amount with mentions - field.amount may contain mention HTML
     const parsedAmount = useParseMention(field.amount, true, form.value, dataForm.value)
-    const numericAmount = parseFloat(parsedAmount.replace(/<[^>]*>/g, '').trim())
-    inputProperties.amount = isNaN(numericAmount) ? 0 : numericAmount
+    const sanitizedAmount = parsedAmount
+      .replace(/<[^>]*>/g, '')
+      .replace(/,/g, '')
+      .trim()
+    const amountMatch = sanitizedAmount.match(/-?\d+(\.\d+)?/)
+    const numericAmount = amountMatch ? parseFloat(amountMatch[0]) : NaN
+    inputProperties.amount = (!isNaN(numericAmount) && numericAmount > 0) ? numericAmount : 0
     inputProperties.oauthProviderId = field.stripe_account_id
 
     // Parse prefill fields with mentions

@@ -39,7 +39,13 @@ class CreatePaymentIntentRequest extends FormRequest
         $parsedAmount = (new MentionParser($rawAmount, $this->getFormattedSubmissionData()))
             ->parseAsText();
 
-        $amount = (float) preg_replace('/[^0-9.]/', '', $parsedAmount);
+        $normalized = str_replace(',', '', $parsedAmount);
+        $matches = [];
+        $amount = null;
+
+        if (preg_match('/-?\d+(?:\.\d+)?/', $normalized, $matches)) {
+            $amount = (float) $matches[0];
+        }
 
         return ($amount > 0) ? $amount : null;
     }
