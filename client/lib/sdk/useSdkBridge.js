@@ -4,11 +4,12 @@
  * Handles communication between embedded form iframe and parent window SDK
  * Also provides local SDK for non-iframe usage (custom code support)
  */
-import { watch, toValue, onMounted, onUnmounted } from 'vue'
+import { watch, toValue, onMounted, onUnmounted, toRaw, isRef, unref } from 'vue'
 import { useIsIframe } from '~/composables/useIsIframe'
 import { handleDarkMode } from '~/lib/forms/public-page'
 
 const MSG_PREFIX = 'opnform:'
+const POST_MESSAGE_TARGET = '*'
 
 // Event types
 const EVENTS = {
@@ -535,7 +536,135 @@ function initLocalSDK() {
 // ============================================================================
 // SDK Bridge Composable (for form-parent communication)
 // ============================================================================
+function normalizeForPostMessage(value, seen = new WeakSet()) {
+  if (isRef(value)) {
+    return normalizeForPostMessage(unref(value), seen)
+  }
 
+  if (typeof window !== 'undefined' && value === window) {
+    return '[Window]'
+  }
+
+  if (typeof document !== 'undefined' && value === document) {
+    return '[Document]'
+  }
+
+  if (typeof Node !== 'undefined' && value instanceof Node) {
+    if (value.nodeType === Node.TEXT_NODE) {
+      return value.textContent || ''
+    }
+    return value.outerHTML || value.nodeName
+  }
+
+  if (value instanceof Error) {
+    return {
+      name: value.name,
+      message: value.message,
+      stack: value.stack
+    }
+  }
+
+  if (value instanceof Date) {
+    return value
+  }
+
+  if (value instanceof Map) {
+    return Array.from(value.entries(), ([key, val]) => ([
+      normalizeForPostMessage(key, seen),
+      normalizeForPostMessage(val, seen)
+    ]))
+  }
+
+  if (value instanceof Set) {
+    return Array.from(value.values(), (val) => normalizeForPostMessage(val, seen))
+  }
+
+  if (typeof FormData !== 'undefined' && value instanceof FormData) {
+    const entries = {}
+    value.forEach((val, key) => {
+      const normalized = normalizeForPostMessage(val, seen)
+      if (normalized !== undefined) {
+        entries[key] = normalized
+      }
+    })
+    return entries
+  }
+
+  if (typeof URLSearchParams !== 'undefined' && value instanceof URLSearchParams) {
+    return Object.fromEntries(value.entries())
+  }
+
+  if (typeof FileList !== 'undefined' && value instanceof FileList) {
+    return Array.from(value, (file) => normalizeForPostMessage(file, seen))
+  }
+
+  if (typeof File !== 'undefined' && value instanceof File) {
+    return value
+  }
+
+  if (typeof Blob !== 'undefined' && value instanceof Blob) {
+    return value
+  }
+
+  if (typeof ArrayBuffer !== 'undefined' && value instanceof ArrayBuffer) {
+    return value
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((item) => normalizeForPostMessage(item, seen))
+  }
+
+  if (value && typeof value === 'object') {
+    const raw = toRaw(value)
+    if (seen.has(raw)) return null
+    seen.add(raw)
+
+    const normalized = {}
+    Object.entries(raw).forEach(([key, val]) => {
+      const result = normalizeForPostMessage(val, seen)
+      if (result !== undefined) {
+        normalized[key] = result
+      }
+    })
+    return normalized
+  }
+
+  if (typeof value === 'function' || typeof value === 'symbol') {
+    return undefined
+  }
+
+  if (typeof value === 'bigint') {
+    return value.toString()
+  }
+
+  return value
+}
+
+function makeCloneableMessage(message) {
+  const normalized = normalizeForPostMessage(message)
+  if (!normalized) return null
+
+  if (typeof structuredClone === 'function') {
+    try {
+      return structuredClone(normalized)
+    } catch (error) {
+      if (error?.name !== 'DataCloneError') {
+        throw error
+      }
+    }
+  }
+
+  try {
+    return JSON.parse(JSON.stringify(normalized))
+  } catch (error) {
+    return {
+      type: normalized?.type,
+      event: normalized?.event,
+      formSlug: normalized?.formSlug,
+      payload: { error: 'Payload not cloneable' }
+    }
+  }
+}
 /**
  * Creates an SDK bridge for form-parent communication
  * @param {Object} options - Bridge options
@@ -556,6 +685,26 @@ export function useSdkBridge(options) {
 
   const isIframe = useIsIframe()
   let messageHandler = null
+
+  function postMessageSafe(target, message) {
+    try {
+      target.postMessage(message, POST_MESSAGE_TARGET)
+    } catch (error) {
+      if (error?.name !== 'DataCloneError') {
+        console.error('[OpnForm SDK Bridge] postMessage failed:', error)
+      }
+    }
+  }
+
+  function emitMessage(message) {
+    const cloneableMessage = makeCloneableMessage(message)
+    if (!cloneableMessage) return
+
+    if (isIframe) {
+      postMessageSafe(window.parent, cloneableMessage)
+    }
+    postMessageSafe(window, cloneableMessage)
+  }
 
   /**
    * Deep clone to convert reactive objects/proxies to plain objects
@@ -586,12 +735,7 @@ export function useSdkBridge(options) {
       payload: toPlainObject(payload)
     }
 
-    // Send to parent if in iframe
-    if (isIframe) {
-      window.parent.postMessage(message, '*')
-    }
-    // Also send to current window for local listeners
-    window.postMessage(message, '*')
+    emitMessage(message)
   }
 
   /**
@@ -610,10 +754,7 @@ export function useSdkBridge(options) {
       error: toPlainObject(error)
     }
 
-    if (isIframe) {
-      window.parent.postMessage(message, '*')
-    }
-    window.postMessage(message, '*')
+    emitMessage(message)
   }
 
   /**
