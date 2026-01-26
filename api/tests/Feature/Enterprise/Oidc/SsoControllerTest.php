@@ -271,6 +271,70 @@ describe('SsoController - Callback', function () {
         expect($response->json('new_user'))->toBeTrue();
     });
 
+    it('rejects callback when state is required but missing', function () {
+        $connection = IdentityConnection::factory()->create([
+            'slug' => 'state-required',
+            'enabled' => true,
+            'options' => [
+                'require_state' => true,
+            ],
+        ]);
+
+        $response = $this->getJson("/auth/{$connection->slug}/callback", [
+            'Accept' => 'application/json',
+        ]);
+
+        $response->assertStatus(400);
+        expect($response->json('message'))->toContain('Missing or invalid state');
+    });
+
+    it('accepts callback when state is valid and required', function () {
+        $connection = IdentityConnection::factory()->create([
+            'slug' => 'state-valid',
+            'enabled' => true,
+            'options' => [
+                'require_state' => true,
+            ],
+        ]);
+
+        $state = 'state-token-12345678';
+        \Illuminate\Support\Facades\Cache::put("oidc_state_{$state}", true, 600);
+
+        $socialiteUser = createMockSocialiteUser(
+            email: 'stateuser@example.com',
+            name: 'State User'
+        );
+        $idTokenClaims = createValidIdTokenClaims($connection, 'sub-state');
+        $idToken = createMockIdToken($idTokenClaims);
+
+        $mockDriver = Mockery::mock(\App\Enterprise\Oidc\Adapters\OAuthOidcDriver::class);
+        $mockDriver->shouldReceive('setRedirectUrl')->andReturnSelf();
+        $mockDriver->shouldReceive('getUser')->andReturn($socialiteUser);
+        $mockDriver->shouldReceive('getIdToken')->andReturn($idToken);
+
+        $mockConnectionManager = Mockery::mock(\App\Enterprise\Oidc\ConnectionManager::class);
+        $mockConnectionManager->shouldReceive('getConnectionBySlug')
+            ->with('state-valid')
+            ->andReturn($connection);
+        $mockConnectionManager->shouldReceive('buildDriver')
+            ->with($connection)
+            ->andReturn($mockDriver);
+
+        $mockIdTokenVerifier = Mockery::mock(\App\Enterprise\Oidc\IdTokenVerifier::class);
+        $mockIdTokenVerifier->shouldReceive('verifySignature')
+            ->with($connection, $idToken)
+            ->andReturnNull();
+
+        $this->app->instance(\App\Enterprise\Oidc\ConnectionManager::class, $mockConnectionManager);
+        $this->app->instance(\App\Enterprise\Oidc\IdTokenVerifier::class, $mockIdTokenVerifier);
+
+        $response = $this->getJson("/auth/{$connection->slug}/callback?state={$state}", [
+            'Accept' => 'application/json',
+        ]);
+
+        $response->assertSuccessful();
+    });
+
     it('returns 404 for non-existent connection', function () {
         $mockConnectionManager = Mockery::mock(\App\Enterprise\Oidc\ConnectionManager::class);
         $mockConnectionManager->shouldReceive('getConnectionBySlug')

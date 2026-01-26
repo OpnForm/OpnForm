@@ -2,6 +2,7 @@
 
 namespace App\Enterprise\Oidc;
 
+use App\Enterprise\Oidc\Exceptions\OidcAccountLinkRequiredException;
 use App\Enterprise\Oidc\Models\IdentityConnection;
 use App\Enterprise\Oidc\Models\UserIdentity;
 use App\Models\User;
@@ -76,8 +77,11 @@ class ProvisioningService
                         'email' => $email,
                     ]);
 
-                    throw new \Exception(
-                        'An account with this email already exists. Please contact your administrator to link your accounts.'
+                    throw new OidcAccountLinkRequiredException(
+                        email: $email,
+                        subject: $subject,
+                        connectionId: $connection->id,
+                        claims: $idTokenClaims,
                     );
                 }
 

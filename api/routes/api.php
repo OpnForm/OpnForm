@@ -3,6 +3,7 @@
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\OAuthController;
+use App\Http\Controllers\Auth\OidcLinkController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\Auth\UserController;
@@ -47,6 +48,7 @@ if (config('app.self_hosted')) {
 
 Route::group(['middleware' => 'auth.multi'], function () {
     Route::post('logout', [LoginController::class, 'logout'])->name('logout');
+    Route::post('auth/oidc/link', [OidcLinkController::class, 'link'])->name('oidc.link');
 
     // Unsplash
     Route::get('/unsplash', [\App\Http\Controllers\Content\UnsplashController::class, 'index'])->name('unsplash.index');

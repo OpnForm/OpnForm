@@ -26,6 +26,7 @@ export default defineConfig({
           include: ['test/nuxt/**/*.{test,spec}.ts'],
           environment: 'nuxt',
           testTimeout: 20000,
+          setupFiles: ['test/nuxt/setup.ts'],
           environmentOptions: {
             nuxt: {
               domEnvironment: 'jsdom',

@@ -171,5 +171,8 @@ const PiniaHistory = (context) => {
 }
 
 export default defineNuxtPlugin(nuxtApp => {
+  if (!nuxtApp?.$pinia) {
+    return
+  }
   nuxtApp.$pinia.use(PiniaHistory)
 })

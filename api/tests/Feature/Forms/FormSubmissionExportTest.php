@@ -48,6 +48,77 @@ it('can export form submissions with selected columns', function () {
         ->assertHeader('content-disposition', 'attachment; filename=' . $form->slug . '-submission-data.csv');
 });
 
+it('exports only the selected submission ids', function () {
+    $user = $this->actingAsProUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace);
+
+    $textField = collect($form->properties)->firstWhere('type', 'text');
+
+    $firstSubmissionData = $this->generateFormSubmissionData($form, [
+        $textField['id'] => 'John Selected',
+    ]);
+    $this->postJson(route('forms.answer', $form->slug), $firstSubmissionData)
+        ->assertSuccessful();
+
+    $firstSubmissionId = $form->refresh()->submissions()->orderByDesc('id')->first()->id;
+
+    $secondSubmissionData = $this->generateFormSubmissionData($form, [
+        $textField['id'] => 'Jane Not Selected',
+    ]);
+    $this->postJson(route('forms.answer', $form->slug), $secondSubmissionData)
+        ->assertSuccessful();
+
+    $secondSubmissionId = $form->refresh()->submissions()->orderByDesc('id')->first()->id;
+
+    $response = $this->postJson(route('open.forms.submissions.export', [
+        'form' => $form,
+    ]), [
+        'columns' => [
+            $textField['id'] => true,
+        ],
+        'submissionIds' => [$firstSubmissionId],
+    ]);
+
+    $response->assertSuccessful();
+
+    ob_start();
+    $response->sendContent();
+    $content = ob_get_clean();
+
+    expect(str_contains($content, 'John Selected'))->toBeTrue();
+    expect(str_contains($content, 'Jane Not Selected'))->toBeFalse();
+    expect(str_contains($content, (string) $secondSubmissionId))->toBeFalse();
+});
+
+it('rejects submission ids that do not belong to the form', function () {
+    $user = $this->actingAsProUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace);
+    $otherForm = $this->createForm($user, $workspace);
+
+    $textField = collect($otherForm->properties)->firstWhere('type', 'text');
+    $submissionData = $this->generateFormSubmissionData($otherForm, [
+        $textField['id'] => 'Other Form Submission',
+    ]);
+    $this->postJson(route('forms.answer', $otherForm->slug), $submissionData)
+        ->assertSuccessful();
+
+    $otherSubmissionId = $otherForm->refresh()->submissions()->orderByDesc('id')->first()->id;
+
+    $response = $this->postJson(route('open.forms.submissions.export', [
+        'form' => $form,
+    ]), [
+        'columns' => [
+            $textField['id'] => true,
+        ],
+        'submissionIds' => [$otherSubmissionId],
+    ]);
+
+    $response->assertStatus(422)
+        ->assertJsonValidationErrors(['submissionIds.0']);
+});
+
 it('cannot export form submissions with invalid columns', function () {
     $user = $this->actingAsProUser();
     $workspace = $this->createUserWorkspace($user);

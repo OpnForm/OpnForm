@@ -109,6 +109,10 @@ const props = defineProps({
   columns: {
     type: Object,
     required: true
+  },
+  selectedIds: {
+    type: Array,
+    default: () => []
   }
 })
 
@@ -140,9 +144,15 @@ const startExport = () => {
   lastApiCall.value = null
   progressStartTime.value = Date.now()
   
-  formsApi.submissions.export(props.form.id, {
+  const payload = {
     columns: props.columns
-  }).then(response => {
+  }
+
+  if (props.selectedIds.length > 0) {
+    payload.submissionIds = props.selectedIds
+  }
+
+  formsApi.submissions.export(props.form.id, payload).then(response => {
     // Check if this is an async export
     if (response.is_async) {
       // Start async export with polling

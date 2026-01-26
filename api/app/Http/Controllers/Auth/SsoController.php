@@ -3,12 +3,16 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Enterprise\Oidc\ConnectionManager;
+use App\Enterprise\Oidc\Exceptions\OidcAccountLinkRequiredException;
 use App\Enterprise\Oidc\IdTokenVerifier;
+use App\Enterprise\Oidc\OidcLinkService;
 use App\Http\Controllers\Auth\Traits\ManagesJWT;
 use App\Http\Controllers\Controller;
 use App\Enterprise\Oidc\ProvisioningService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class SsoController extends Controller
@@ -17,7 +21,8 @@ class SsoController extends Controller
     public function __construct(
         private ConnectionManager $connectionManager,
         private ProvisioningService $provisioningService,
-        private IdTokenVerifier $idTokenVerifier
+        private IdTokenVerifier $idTokenVerifier,
+        private OidcLinkService $oidcLinkService
     ) {
     }
 
@@ -44,6 +49,14 @@ class SsoController extends Controller
 
         try {
             $driver = $this->connectionManager->buildDriver($connection);
+
+            $requireState = (bool) data_get($connection->options, 'require_state', false);
+            if ($requireState) {
+                $state = Str::random(32);
+                Cache::put("oidc_state_{$state}", true, 600);
+                $driver->setState($state);
+            }
+
             $redirectUrl = $driver->getRedirectUrl();
 
             return response()->json([
@@ -80,6 +93,23 @@ class SsoController extends Controller
         }
 
         try {
+            $requireState = (bool) data_get($connection->options, 'require_state', false);
+            if ($requireState) {
+                $state = $request->input('state');
+                if (!$state) {
+                    return response()->json([
+                        'message' => 'Missing or invalid state. Please try again.',
+                    ], 400);
+                }
+
+                $stateValid = Cache::pull("oidc_state_{$state}");
+                if (!$stateValid) {
+                    return response()->json([
+                        'message' => 'Invalid state. Please try again.',
+                    ], 400);
+                }
+            }
+
             $driver = $this->connectionManager->buildDriver($connection);
             $driver->setRedirectUrl($connection->redirect_url);
 
@@ -175,6 +205,19 @@ class SsoController extends Controller
                 'new_user' => $isNewUser,
                 'redirect_url' => $request->cookie('intended_url') ?? '/home',
             ]);
+        } catch (OidcAccountLinkRequiredException $e) {
+            $linkToken = $this->oidcLinkService->createLinkToken(
+                connectionId: $e->getConnectionId(),
+                subject: $e->getSubject(),
+                email: $e->getEmail(),
+                claims: $e->getClaims(),
+            );
+
+            return response()->json([
+                'message' => $e->getMessage(),
+                'error' => 'oidc_account_link_required',
+                'link_token' => $linkToken,
+            ], 409);
         } catch (HttpException $e) {
             // Handle HTTP exceptions (like 403 for blocked users) - preserve status code
             return response()->json([

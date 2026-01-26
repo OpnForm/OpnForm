@@ -30,6 +30,12 @@
           :description="error"
         />
         <UButton
+          v-if="linkToken"
+          color="primary"
+          label="Link existing account"
+          @click="goToLinkLogin"
+        />
+        <UButton
           :to="{ name: 'login' }"
           label="Back to login"
         />
@@ -45,6 +51,8 @@ const router = useRouter()
 const route = useRoute()
 const loading = ref(true)
 const error = ref(null)
+const linkToken = ref(null)
+const { startLink } = useOidcLinking()
 const authFlow = useAuthFlow()
 const { showTwoFactorModal, pendingAuthToken, handleTwoFactorVerified, handleTwoFactorCancel: handleTwoFactorCancelFromFlow, handleTwoFactorError } = authFlow
 
@@ -102,11 +110,15 @@ const handleCallback = async () => {
   } catch (err) {
     console.error("[OIDC Callback] Authentication error:", err)
     
-    const errorMessage = err.response?._data?.message || err.message || "Authentication failed"
+    const errorResponse = err.response?._data || {}
+    const errorMessage = errorResponse.message || err.message || "Authentication failed"
     error.value = errorMessage
     
     // Handle specific error cases
-    if (errorMessage.includes('account with this email already exists')) {
+    if (errorResponse.error === 'oidc_account_link_required' && errorResponse.link_token) {
+      error.value = 'An account with this email already exists. Please link your existing account to continue.'
+      linkToken.value = errorResponse.link_token
+    } else if (errorMessage.includes('account with this email already exists')) {
       error.value = 'An account with this email already exists. Please contact your administrator to link your accounts.'
     } else if (errorMessage.includes('blocked')) {
       error.value = 'Your account has been blocked. Please contact support.'
@@ -119,6 +131,10 @@ const handleCallback = async () => {
 const handleTwoFactorCancel = () => {
   handleTwoFactorCancelFromFlow()
   router.push({ name: 'login' })
+}
+
+const goToLinkLogin = () => {
+  startLink(linkToken.value)
 }
 
 const handleTwoFactorVerifiedAndRedirect = async (tokenData) => {

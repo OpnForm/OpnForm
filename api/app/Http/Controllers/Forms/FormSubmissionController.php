@@ -95,14 +95,16 @@ class FormSubmissionController extends Controller
         $this->authorize('view', $form);
 
         $displayColumns = collect($request->columns)->filter(fn ($value, $key) => $value === true)->toArray();
+        $submissionIds = $request->input('submissionIds', []);
+        $submissionCount = !empty($submissionIds) ? count($submissionIds) : null;
 
         // Check if we should process asynchronously
-        if ($exportService->shouldExportAsync($form)) {
-            return $this->startAsyncExport($form, $displayColumns, $exportService);
+        if ($exportService->shouldExportAsync($form, $submissionCount)) {
+            return $this->startAsyncExport($form, $displayColumns, $submissionIds, $exportService);
         }
 
         // Process synchronously for small exports
-        return $this->processSyncExport($form, $displayColumns, $exportService);
+        return $this->processSyncExport($form, $displayColumns, $submissionIds, $exportService);
     }
 
     public function exportStatus(Form $form, string $jobId, FormExportService $exportService)
@@ -124,11 +126,11 @@ class FormSubmissionController extends Controller
         return new ExportJobStatusResource($jobData);
     }
 
-    private function startAsyncExport(Form $form, array $displayColumns, FormExportService $exportService)
+    private function startAsyncExport(Form $form, array $displayColumns, array $submissionIds, FormExportService $exportService)
     {
         $jobId = $exportService->initializeAsyncExport($form, Auth::id());
 
-        ExportFormSubmissionsJob::dispatch($form, $displayColumns, $jobId, Auth::id());
+        ExportFormSubmissionsJob::dispatch($form, $displayColumns, $submissionIds, $jobId, Auth::id());
 
         return $this->success([
             'message' => 'Export started. Large export will be processed in the background.',
@@ -137,11 +139,16 @@ class FormSubmissionController extends Controller
         ]);
     }
 
-    private function processSyncExport(Form $form, array $displayColumns, FormExportService $exportService)
+    private function processSyncExport(Form $form, array $displayColumns, array $submissionIds, FormExportService $exportService)
     {
         $allRows = [];
         // Use query builder with orderBy for consistency with async export
-        foreach ($form->submissions()->orderByDesc('created_at')->get() as $submission) {
+        $submissionQuery = $form->submissions()->orderByDesc('created_at');
+        if (!empty($submissionIds)) {
+            $submissionQuery->whereIn('id', $submissionIds);
+        }
+
+        foreach ($submissionQuery->get() as $submission) {
             $allRows[] = $exportService->formatSubmissionForExport($form, $submission, $displayColumns);
         }
 

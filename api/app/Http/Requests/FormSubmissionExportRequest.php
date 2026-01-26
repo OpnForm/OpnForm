@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use App\Models\Forms\Form;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class FormSubmissionExportRequest extends FormRequest
 {
@@ -33,6 +34,11 @@ class FormSubmissionExportRequest extends FormRequest
                     $fail('The columns contain invalid values: ' . implode(', ', $invalidColumns));
                 }
             }],
+            'submissionIds' => 'nullable|array',
+            'submissionIds.*' => [
+                'integer',
+                Rule::exists('form_submissions', 'id')->where('form_id', $this->form->id),
+            ],
         ];
     }
 }
