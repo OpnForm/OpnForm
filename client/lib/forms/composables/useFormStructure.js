@@ -246,21 +246,21 @@ export function useFormStructure(formConfig, managerState, formData, fieldState)
   }
 
   /**
-   * Checks if a given page contains a payment block.
+   * Checks if a given page contains a visible (non-hidden) payment block.
    * @param {Number} pageIndex - The page index.
-   * @returns {Boolean} True if a payment block exists on the page.
+   * @returns {Boolean} True if a visible payment block exists on the page.
    */
   const hasPaymentBlock = (pageIndex) => {
-    return getPageFields(pageIndex).some(field => field?.type === 'payment')
+    return getPageFields(pageIndex).some(field => field?.type === 'payment' && !isFieldHidden(field))
   }
 
   /**
-   * Gets the payment block field object from a given page.
+   * Gets the visible (non-hidden) payment block field object from a given page.
    * @param {Number} pageIndex - The page index.
-   * @returns {Object|undefined} The payment field object or undefined if not found.
+   * @returns {Object|undefined} The payment field object or undefined if not found or hidden.
    */
   const getPaymentBlock = (pageIndex) => {
-    return getPageFields(pageIndex).find(field => field?.type === 'payment')
+    return getPageFields(pageIndex).find(field => field?.type === 'payment' && !isFieldHidden(field))
   }
 
    /**
