@@ -10,7 +10,7 @@
         </p>
       </div>
 
-      <img src="/img/pages/welcome/trusted-teams.png" alt="Trusted Teams" class="w-full h-auto">
+      <img src="/img/pages/welcome/trusted-teams.png" alt="Trusted Teams" class="m-auto mt-8">
     </div>
   </section>
 </template>
