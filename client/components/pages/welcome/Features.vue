@@ -51,14 +51,12 @@
           </div>
 
           <div class="flex justify-center lg:justify-end">
-            <div :class="['w-full max-w-xl rounded-3xl p-6 sm:p-10 border', panel.mediaWrapClass]">
-              <img
-                :src="panel.imageSrc"
-                :alt="panel.imageAlt"
-                class="w-full h-auto rounded-2xl"
-                loading="lazy"
-              >
-            </div>
+            <img
+              :src="panel.imageSrc"
+              :alt="panel.imageAlt"
+              class="w-full h-auto rounded-2xl"
+              loading="lazy"
+            >
           </div>
         </div>
       </div>
@@ -115,14 +113,12 @@
           </div>
 
           <div class="flex justify-center lg:justify-end">
-            <div class="w-full max-w-xl rounded-3xl border border-neutral-200 bg-neutral-50 p-6 sm:p-10">
-              <img
-                :src="activeContent.imageSrc"
-                :alt="activeContent.imageAlt"
-                class="w-full h-auto rounded-2xl"
-                loading="lazy"
-              >
-            </div>
+            <img
+              :src="activeContent.imageSrc"
+              :alt="activeContent.imageAlt"
+              class="w-full h-auto rounded-2xl"
+              loading="lazy"
+            >
           </div>
         </div>
       </div>
@@ -186,7 +182,6 @@ const panels = [
         iconClass: 'text-blue-600',
       },
     ],
-    mediaWrapClass: 'bg-blue-50/70 border-blue-100',
     imageSrc: '/img/pages/welcome/feature-1.png',
     imageAlt: 'Modern form builder preview',
     link: null,
@@ -217,7 +212,6 @@ const panels = [
         iconClass: 'text-emerald-600',
       },
     ],
-    mediaWrapClass: 'bg-emerald-50/70 border-emerald-100',
     imageSrc: '/img/pages/welcome/feature-2.png',
     imageAlt: 'Unlimited submissions preview',
     link: null,
@@ -260,7 +254,6 @@ const panels = [
         iconClass: 'text-violet-600',
       },
     ],
-    mediaWrapClass: 'bg-violet-50/70 border-violet-100',
     imageSrc: '/img/pages/welcome/feature-3.png',
     imageAlt: 'Integrations & automation preview',
     link: {
