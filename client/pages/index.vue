@@ -141,17 +141,17 @@
                 <div class="text-sm font-semibold text-white/80">
                   Open-source, secure, and trusted by teams worldwide.
                 </div>
-                <img src="/img/pages/welcome/trusted-teams.png" alt="Trusted Teams" class="w-full h-auto mt-4">
+                <img src="/img/pages/welcome/trusted-teams.png" alt="Trusted Teams" class="m-auto mt-6">
               </div>
             </div>
 
-            <div class="relative bg-white/95">
-              <div class="p-6 sm:p-10">
-                <div class="rounded-3xl border border-neutral-200 bg-white overflow-hidden shadow-xl">
-                  <div class="aspect-[5/4] w-full flex items-center justify-center text-neutral-400 font-semibold">
-                    Image goes here
-                  </div>
-                </div>
+            <div class="relative flex items-end justify-end pt-12 pl-8 sm:pt-16 sm:pl-10">
+              <div class="w-[92%] sm:w-[90%] bg-white/95 border border-neutral-200 shadow-2xl rounded-tl-3xl overflow-hidden">
+                <img
+                  src="/img/pages/welcome/product-cover-half.png"
+                  alt="Product screenshot"
+                  class="w-full h-auto"
+                >
               </div>
             </div>
           </div>
@@ -196,7 +196,9 @@
       </div>
     </section>
 
-    <div class="flex flex-col bg-neutral-50 dark:bg-notion-dark">
+    <OpenFormFooter :is-dark="true" />
+
+    <div class="flex flex-col bg-neutral-50 dark:bg-notion-dark" style="display: none;">
       <pricing-table
         v-if="useFeatureFlag('billing.enabled')"
         class="pb-20"
