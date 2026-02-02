@@ -1,12 +1,344 @@
 <template>
   <div>
-    <section class="bg-white">
-      <div class="relative">
-        <div class="px-8 lg:px-12 py-14 sm:py-28 text-center relative z-2">
-          <h1 class="text-4xl sm:text-[56px] sm:leading-16 tracking-[-1%] font-semibold text-gray-950">
+    <section class="py-12 bg-white">
+      <div class="px-4 mx-auto sm:px-6 lg:px-8 max-w-7xl">
+        <div class="max-w-3xl mx-auto text-center">
+          <h1 class="text-4xl font-semibold tracking-tight text-neutral-950 sm:text-5xl lg:text-6xl">
             Simple pricing
-            <br class="hidden sm:block" />
+            <br class="hidden sm:block">
             based on your needs
+          </h1>
+          <p class="max-w-2xl mx-auto mt-4 text-base font-medium leading-7 text-neutral-600 sm:mt-6 sm:text-lg sm:leading-8">
+            No locked-in contracts. Upgrade or cancel anytime.
+          </p>
+
+          <div class="flex items-center justify-center gap-3 mt-10">
+            <span class="text-sm font-semibold text-neutral-700">
+              Monthly
+            </span>
+            <button
+              type="button"
+              class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
+              :class="pricingIsYearly ? 'bg-blue-600' : 'bg-neutral-200'"
+              @click="pricingIsYearly = !pricingIsYearly"
+              aria-label="Toggle yearly billing"
+            >
+              <span
+                class="inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform"
+                :class="pricingIsYearly ? 'translate-x-5' : 'translate-x-1'"
+              />
+            </button>
+            <span class="text-sm font-semibold text-neutral-700">
+              Annually
+            </span>
+            <span class="hidden sm:inline-flex items-center px-3 py-1 text-xs font-semibold text-blue-700 bg-blue-50 rounded-full">
+              Save 15% with yearly billing
+            </span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 gap-6 mt-12 lg:grid-cols-4">
+          <!-- Free -->
+          <div class="p-6 bg-white border shadow-sm rounded-3xl border-neutral-200">
+            <div class="flex items-center gap-3">
+              <span class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-blue-50">
+                <Icon class="w-5 h-5 text-blue-600" name="heroicons:bolt-20-solid" />
+              </span>
+              <h3 class="text-lg font-semibold text-neutral-950">Free</h3>
+            </div>
+
+            <p class="mt-3 text-sm font-medium leading-6 text-neutral-600">
+              Start collecting unlimited responses with no friction.
+            </p>
+
+            <div class="mt-6">
+              <p class="flex items-end gap-2">
+                <span class="text-4xl font-semibold tracking-tight text-neutral-950">$0</span>
+              </p>
+            </div>
+
+            <div class="mt-6">
+              <UButton
+                v-if="!authenticated"
+                class="w-full justify-center"
+                variant="soft"
+                :to="{ name: 'register' }"
+                label="Get started free"
+              />
+              <UButton
+                v-else
+                class="w-full justify-center"
+                :to="{ name: 'home' }"
+                label="Go to app"
+              />
+            </div>
+
+            <div class="pt-6 mt-8 border-t border-neutral-200">
+              <p class="text-sm font-semibold text-neutral-950">Includes</p>
+              <ul class="mt-4 space-y-3 text-sm font-medium text-neutral-700">
+                <li class="flex gap-3">
+                  <Icon class="w-5 h-5 text-emerald-600" name="heroicons:check-20-solid" />
+                  Unlimited forms & submissions
+                </li>
+                <li class="flex gap-3">
+                  <Icon class="w-5 h-5 text-emerald-600" name="heroicons:check-20-solid" />
+                  File uploads (basic quota)
+                </li>
+                <li class="flex gap-3">
+                  <Icon class="w-5 h-5 text-emerald-600" name="heroicons:check-20-solid" />
+                  Form logic & validation
+                </li>
+                <li class="flex gap-3">
+                  <Icon class="w-5 h-5 text-emerald-600" name="heroicons:check-20-solid" />
+                  Computed fields (calculations)
+                </li>
+                <li class="flex gap-3">
+                  <Icon class="w-5 h-5 text-emerald-600" name="heroicons:check-20-solid" />
+                  Pre-fills, URL parameters
+                </li>
+                <li class="flex gap-3">
+                  <Icon class="w-5 h-5 text-emerald-600" name="heroicons:check-20-solid" />
+                  Multi-user access (all admins, no roles)
+                </li>
+                <li class="flex gap-3">
+                  <Icon class="w-5 h-5 text-emerald-600" name="heroicons:check-20-solid" />
+                  1 workspace only
+                </li>
+                <li class="flex gap-3">
+                  <Icon class="w-5 h-5 text-emerald-600" name="heroicons:check-20-solid" />
+                  Branding required
+                </li>
+                <li class="flex gap-3">
+                  <Icon class="w-5 h-5 text-emerald-600" name="heroicons:check-20-solid" />
+                  Community support
+                </li>
+                <li class="flex gap-3">
+                  <Icon class="w-5 h-5 text-emerald-600" name="heroicons:check-20-solid" />
+                  API
+                </li>
+                <li class="flex gap-3">
+                  <Icon class="w-5 h-5 text-emerald-600" name="heroicons:check-20-solid" />
+                  Basic integrations
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Pro (Most popular) -->
+          <div class="relative p-6 bg-white border-2 shadow-sm rounded-3xl border-blue-600">
+            <div class="absolute top-6 right-6">
+              <span class="inline-flex items-center px-3 py-1 text-xs font-semibold text-blue-700 bg-blue-50 rounded-full ring-1 ring-blue-200">
+                Most popular
+              </span>
+            </div>
+
+            <div class="flex items-center gap-3">
+              <span class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-blue-50">
+                <Icon class="w-5 h-5 text-blue-600" name="heroicons:sparkles-20-solid" />
+              </span>
+              <h3 class="text-lg font-semibold text-neutral-950">Pro</h3>
+            </div>
+
+            <p class="mt-3 text-sm font-medium leading-6 text-neutral-600">
+              A polished, professional experience for serious work.
+            </p>
+
+            <div class="mt-6">
+              <p class="flex items-end gap-2">
+                <span class="text-4xl font-semibold tracking-tight text-neutral-950">
+                  {{ pricingIsYearly ? '$25' : '$29' }}
+                </span>
+                <span class="pb-1 text-sm font-semibold text-neutral-600">/mo</span>
+              </p>
+            </div>
+
+            <div class="mt-6">
+              <UButton
+                class="w-full justify-center"
+                label="Get started free"
+                @click.prevent="handleProCta"
+              />
+            </div>
+
+            <div class="pt-6 mt-8 border-t border-neutral-200">
+              <p class="text-sm font-semibold text-neutral-950">Everything in Free, plus</p>
+              <ul class="mt-4 space-y-3 text-sm font-medium text-neutral-700">
+                <li class="flex gap-3">
+                  <Icon class="w-5 h-5 text-emerald-600" name="heroicons:check-20-solid" />
+                  Remove branding
+                </li>
+                <li class="flex gap-3">
+                  <Icon class="w-5 h-5 text-emerald-600" name="heroicons:check-20-solid" />
+                  Custom domains
+                </li>
+                <li class="flex gap-3">
+                  <Icon class="w-5 h-5 text-emerald-600" name="heroicons:check-20-solid" />
+                  Custom SMTP
+                </li>
+                <li class="flex gap-3">
+                  <Icon class="w-5 h-5 text-emerald-600" name="heroicons:check-20-solid" />
+                  Discord, Slack, Telegram
+                </li>
+                <li class="flex gap-3">
+                  <Icon class="w-5 h-5 text-emerald-600" name="heroicons:check-20-solid" />
+                  Password-protected forms
+                </li>
+                <li class="flex gap-3">
+                  <Icon class="w-5 h-5 text-emerald-600" name="heroicons:check-20-solid" />
+                  Form expiration
+                </li>
+                <li class="flex gap-3">
+                  <Icon class="w-5 h-5 text-emerald-600" name="heroicons:check-20-solid" />
+                  Captcha
+                </li>
+                <li class="flex gap-3">
+                  <Icon class="w-5 h-5 text-emerald-600" name="heroicons:check-20-solid" />
+                  Multiple workspaces
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Business -->
+          <div class="p-6 bg-white border shadow-sm rounded-3xl border-neutral-200">
+            <div class="flex items-center gap-3">
+              <span class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-blue-50">
+                <Icon class="w-5 h-5 text-blue-600" name="heroicons:building-office-20-solid" />
+              </span>
+              <h3 class="text-lg font-semibold text-neutral-950">Business</h3>
+            </div>
+
+            <p class="mt-3 text-sm font-medium leading-6 text-neutral-600">
+              Built for teams and agencies managing forms at scale.
+            </p>
+
+            <div class="mt-6">
+              <p class="flex items-end gap-2">
+                <span class="text-4xl font-semibold tracking-tight text-neutral-950">
+                  {{ pricingIsYearly ? '$67' : '$79' }}
+                </span>
+                <span class="pb-1 text-sm font-semibold text-neutral-600">/mo</span>
+              </p>
+            </div>
+
+            <div class="mt-6">
+              <UButton
+                class="w-full justify-center"
+                variant="soft"
+                label="Get started free"
+                @click.prevent="contactUs"
+              />
+            </div>
+
+            <div class="pt-6 mt-8 border-t border-neutral-200">
+              <p class="text-sm font-semibold text-neutral-950">Everything in Pro, plus</p>
+              <ul class="mt-4 space-y-3 text-sm font-medium text-neutral-700">
+                <li class="flex gap-3">
+                  <Icon class="w-5 h-5 text-emerald-600" name="heroicons:check-20-solid" />
+                  Multi-user with roles & permissions
+                </li>
+                <li class="flex gap-3">
+                  <Icon class="w-5 h-5 text-emerald-600" name="heroicons:check-20-solid" />
+                  Advanced branding (CSS, fonts, favicons)
+                </li>
+                <li class="flex gap-3">
+                  <Icon class="w-5 h-5 text-emerald-600" name="heroicons:check-20-solid" />
+                  Higher file upload size limits
+                </li>
+                <li class="flex gap-3">
+                  <Icon class="w-5 h-5 text-emerald-600" name="heroicons:check-20-solid" />
+                  Priority support
+                </li>
+                <li class="flex gap-3">
+                  <Icon class="w-5 h-5 text-emerald-600" name="heroicons:check-20-solid" />
+                  Partial submissions
+                </li>
+                <li class="flex gap-3">
+                  <Icon class="w-5 h-5 text-emerald-600" name="heroicons:check-20-solid" />
+                  Versioning
+                </li>
+                <li class="flex gap-3">
+                  <Icon class="w-5 h-5 text-emerald-600" name="heroicons:check-20-solid" />
+                  Analytics dashboard
+                </li>
+                <li class="flex gap-3">
+                  <Icon class="w-5 h-5 text-emerald-600" name="heroicons:check-20-solid" />
+                  Advanced integrations
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Enterprise -->
+          <div class="p-6 bg-white border shadow-sm rounded-3xl border-neutral-200">
+            <div class="flex items-center gap-3">
+              <span class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-blue-50">
+                <Icon class="w-5 h-5 text-blue-600" name="heroicons:globe-alt-20-solid" />
+              </span>
+              <h3 class="text-lg font-semibold text-neutral-950">Enterprise</h3>
+            </div>
+
+            <p class="mt-3 text-sm font-medium leading-6 text-neutral-600">
+              Enterprise-grade security, compliance, and control.
+            </p>
+
+            <div class="mt-6">
+              <p class="flex items-end gap-2">
+                <span class="text-4xl font-semibold tracking-tight text-neutral-950">
+                  {{ pricingIsYearly ? '$213+' : '$250+' }}
+                </span>
+                <span class="pb-1 text-sm font-semibold text-neutral-600">/mo</span>
+              </p>
+            </div>
+
+            <div class="mt-6">
+              <UButton
+                class="w-full justify-center"
+                variant="soft"
+                label="Request a quote"
+                @click.prevent="contactUs"
+              />
+            </div>
+
+            <div class="pt-6 mt-8 border-t border-neutral-200">
+              <p class="text-sm font-semibold text-neutral-950">Everything in Business, plus</p>
+              <ul class="mt-4 space-y-3 text-sm font-medium text-neutral-700">
+                <li class="flex gap-3">
+                  <Icon class="w-5 h-5 text-emerald-600" name="heroicons:check-20-solid" />
+                  SSO (SAML, OIDC, LDAP)
+                </li>
+                <li class="flex gap-3">
+                  <Icon class="w-5 h-5 text-emerald-600" name="heroicons:check-20-solid" />
+                  Audit logs & compliance features
+                </li>
+                <li class="flex gap-3">
+                  <Icon class="w-5 h-5 text-emerald-600" name="heroicons:check-20-solid" />
+                  External storage support
+                </li>
+                <li class="flex gap-3">
+                  <Icon class="w-5 h-5 text-emerald-600" name="heroicons:check-20-solid" />
+                  White-label hosting option
+                </li>
+                <li class="flex gap-3">
+                  <Icon class="w-5 h-5 text-emerald-600" name="heroicons:check-20-solid" />
+                  SLA & onboarding support
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    
+    <section
+      class="relative py-12 bg-gradient-to-b from-white to-neutral-100 sm:py-16 lg:py-20 xl:py-24"
+    >
+      <div class="relative px-4 mx-auto sm:px-6 lg:px-8 max-w-7xl">
+        <div class="max-w-4xl mx-auto text-center">
+          <h1
+            class="text-4xl font-semibold tracking-tight text-neutral-900 sm:text-5xl lg:text-6xl"
+          >
+            Simple, transparent pricing. No surprises.
           </h1>
           <p class="text-lg sm:text-xl leading-7 tracking-[-1.5%] sm:leading-8 font-normal text-gray-600">
             No locked-in contracts. Upgrade or cancel anytime.
@@ -262,66 +594,66 @@
       </div>
     </section>
 
-    <section class="pt-16 bg-white">
-      <TrustedTeams />
-    </section>
-
-    <section class="py-14 sm:py-28 px-8 lg:px-12 bg-white">
+    <section class="py-12 bg-white">
       <FeatureComparison />
     </section>
 
-    <section class="py-14 sm:py-28 px-8 lg:px-12 bg-white">
+    <section class="py-12 bg-white">
       <Testimonials />
     </section>
 
-    <section class="py-14 sm:py-28 px-8 lg:px-12 bg-white">
-      <div class="mx-auto max-w-266">
-        <div class="text-center">
-          <h2 class="text-4xl sm:text-5xl sm:leading-14 tracking-[-1%] font-semibold text-gray-950">
+    <section class="py-12 bg-white">
+      <div class="px-4 mx-auto sm:px-6 lg:px-8 max-w-7xl">
+        <div class="max-w-3xl mx-auto text-center">
+          <h2 class="text-4xl font-semibold tracking-tight text-neutral-950 sm:text-5xl">
             Self-host OpnForm
           </h2>
-          <p class="mt-4 text-base font-normal tracking-[-1.1%] leading-7 text-gray-600">
+          <p class="max-w-2xl mx-auto mt-4 text-base font-medium leading-7 text-neutral-600 sm:text-lg sm:leading-8">
             The self-hosted commercial licenses are the same price as hosted plans.
           </p>
         </div>
 
-        <div class="mt-12 sm:mt-16 space-y-6">
-          <div class="p-6 sm:p-8 bg-white border shadow-sm rounded-3xl border-gray-200">
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div class="max-w-5xl mx-auto mt-12 space-y-8 sm:mt-16">
+          <div class="p-8 bg-white border shadow-sm rounded-3xl border-neutral-200">
+            <div class="grid grid-cols-1 gap-10 lg:grid-cols-2 lg:gap-12">
               <div>
-                <div class="flex items-center gap-4">
-                  <span class="inline-flex items-center justify-center w-5 h-5">
-                    <Icon
-                      class="w-5 h-5 text-blue-500"
-                      name="heroicons:users-20-solid"
-                    />
+                <div class="flex items-center gap-3">
+                  <span class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-blue-50">
+                    <Icon class="w-5 h-5 text-blue-600" name="heroicons:users-20-solid" />
                   </span>
-                  <h3 class="text-xl leading-7 font-medium text-gray-950">
+                  <h3 class="text-xl font-semibold text-neutral-950">
                     Community Edition
                   </h3>
                 </div>
 
-                <p class="mt-4 text-base font-medium tracking-[-1.1%] leading-7 text-gray-600">
+                <p class="mt-4 text-base font-medium leading-7 text-neutral-600">
                   Perfect for individuals and teams who want full control and community-driven software.
                 </p>
 
-                <div class="mt-6">
-                  <p class="text-3xl sm:text-[40px] sm:leading-12 font-medium tracking-[-1%] text-gray-950">
+                <div class="mt-8">
+                  <p class="text-5xl font-semibold tracking-tight text-neutral-950">
                     Free OSS
                   </p>
                 </div>
 
+                <div class="mt-8">
+                  <UButton
+                    variant="outline"
+                    label="Request a quote"
+                    @click.prevent="contactUs"
+                  />
+                </div>
               </div>
 
-              <div>
-                <ul class="space-y-4 text-base leading-7 tracking-[-1.1%] font-medium text-gray-700">
+              <div class="lg:pt-2">
+                <ul class="space-y-4 text-sm font-medium text-neutral-700">
                   <li
                     v-for="feature in communityEditionFeatures"
                     :key="feature"
-                    class="flex items-center gap-3"
+                    class="flex gap-3"
                   >
                     <Icon
-                      class="w-4 h-5 text-emerald-600"
+                      class="w-5 h-5 text-emerald-600"
                       name="heroicons:check-20-solid"
                     />
                     {{ feature }}
@@ -331,44 +663,48 @@
             </div>
           </div>
 
-          <div class="p-6 sm:p-8 bg-white border shadow-sm rounded-3xl border-gray-200">
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div class="p-8 bg-white border shadow-sm rounded-3xl border-neutral-200">
+            <div class="grid grid-cols-1 gap-10 lg:grid-cols-2 lg:gap-12">
               <div>
-                <div class="flex items-center gap-4">
-                  <span class="inline-flex items-center justify-center w-5 h-5">
-                    <Icon
-                      class="w-5 h-5 text-blue-600"
-                      name="heroicons:shield-check-20-solid"
-                    />
+                <div class="flex items-center gap-3">
+                  <span class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-blue-50">
+                    <Icon class="w-5 h-5 text-blue-600" name="heroicons:shield-check-20-solid" />
                   </span>
-                  <h3 class="text-xl leading-7 font-medium text-gray-950">
+                  <h3 class="text-xl font-semibold text-neutral-950">
                     Enterprise License
                   </h3>
                 </div>
 
-                <p class="mt-4 text-base font-medium tracking-[-1.1%] leading-7 text-gray-600">
+                <p class="mt-4 text-base font-medium leading-7 text-neutral-600">
                   Built for organizations that need governance, customization, and long-term reliability.
                 </p>
 
-                <div class="mt-6">
-                  <p class="flex items-center gap-3">
-                    <span class="text-3xl sm:text-[40px] sm:leading-12 font-medium tracking-[-1%] text-gray-950">
+                <div class="mt-8">
+                  <p class="flex items-end gap-3">
+                    <span class="text-5xl font-semibold tracking-tight text-neutral-950">
                       $1,990
                     </span>
-                    <span class="text-base leading-7 tracking-[-1.1%] font-medium text-gray-600">
+                    <span class="pb-2 text-sm font-semibold text-neutral-600">
                       /year per instance
                     </span>
                   </p>
                 </div>
 
+                <div class="mt-8">
+                  <UButton
+                    variant="outline"
+                    label="Request a quote"
+                    @click.prevent="contactUs"
+                  />
+                </div>
               </div>
 
-              <div>
-                <ul class="space-y-4 text-base leading-7 tracking-[-1.1%] font-medium text-gray-700">
+              <div class="lg:pt-2">
+                <ul class="space-y-4 text-sm font-medium text-neutral-700">
                   <li
                     v-for="feature in enterpriseLicenseFeatures"
                     :key="feature"
-                    class="flex items-center gap-3"
+                    class="flex gap-3"
                   >
                     <Icon
                       class="w-5 h-5 text-emerald-600"
@@ -384,60 +720,51 @@
       </div>
     </section>
 
-    <section class="py-14 sm:py-28 px-8 lg:px-12 bg-white">
-      <div class="mx-auto max-w-266">
-        <div class="text-center">
-          <p class="text-base leading-7 tracking-[-1.1%] font-semibold text-blue-600">
+    <section class="py-12 bg-white sm:py-16 lg:py-20 xl:py-24">
+      <div class="px-4 mx-auto sm:px-6 lg:px-8 max-w-7xl">
+        <div class="max-w-3xl mx-auto text-center">
+          <p class="text-sm font-semibold tracking-wide text-blue-600 uppercase">
             Frequently Asked Questions
           </p>
-          <h2 class="my-4 text-4xl sm:text-5xl sm:leading-14 tracking-[-1%] font-semibold text-gray-950">
+          <h2 class="mt-4 text-4xl font-semibold tracking-tight text-neutral-950 sm:text-5xl">
             Everything you need to
-            <br class="hidden sm:block" />
+            <br class="hidden sm:block">
             know
           </h2>
-          <p class="text-base leading-7 font-normal tracking-[-1.1%] text-gray-600">
+          <p class="max-w-2xl mx-auto mt-4 text-base font-medium leading-7 text-neutral-600 sm:text-lg sm:leading-8">
             Find answers about plans, onboarding, roles, and how teams use our tool every day.
           </p>
         </div>
 
-        <div class="mt-12 sm:mt-16">
-          <div class="space-y-4 sm:space-y-5">
+        <div class="max-w-4xl mx-auto mt-12 sm:mt-16">
+          <div class="space-y-4">
             <div
               v-for="(q, i) in faqs"
               :key="q.question"
-              class="bg-gray-50 rounded-3xl transition-colors duration-200"
+              class="bg-neutral-50 rounded-2xl"
             >
               <button
                 type="button"
-                class="w-full p-6 text-left rounded-3xl focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                class="w-full px-6 py-5 text-left rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                 @click="toggleFaq(i)"
               >
-                <div class="flex items-center gap-4 sm:gap-16">
-                  <span
-                    class="w-6 text-lg leading-8 tracking-[-1.5%] font-medium transition-colors duration-200"
-                    :class="openFaqIndex === i ? 'text-gray-700' : 'text-gray-400'"
-                  >
-                    {{ String(i + 1).padStart(2, "0") }}
+                <div class="flex items-center gap-4">
+                  <span class="w-10 text-sm font-semibold text-neutral-400">
+                    {{ String(i + 1).padStart(2, '0') }}
                   </span>
-                  <div class="flex items-center justify-between flex-1 gap-8 sm:gap-16">
-                    <p
-                      class="text-lg leading-8 tracking-[-1.5%] font-medium transition-colors duration-200"
-                      :class="openFaqIndex === i ? 'text-gray-900' : 'text-gray-600'"
-                    >
+                  <div class="flex items-center justify-between flex-1 gap-4">
+                    <p class="text-base font-semibold text-neutral-900">
                       {{ q.question }}
                     </p>
-                    <span
-                      class="inline-flex items-center justify-center w-6 h-6 rounded-full transition-colors duration-200"
-                      :class="openFaqIndex === i ? 'text-gray-700' : 'text-gray-400'"
-                    >
+                    <span class="inline-flex items-center justify-center w-9 h-9 rounded-full bg-white text-neutral-500">
                       <Icon
                         v-if="openFaqIndex !== i"
-                        class="w-6 h-6"
+                        class="w-5 h-5"
                         name="heroicons:plus-20-solid"
                       />
                       <Icon
                         v-else
-                        class="w-6 h-6"
+                        class="w-5 h-5"
                         name="heroicons:x-mark-20-solid"
                       />
                     </span>
@@ -446,12 +773,11 @@
               </button>
 
               <div
-                v-show="openFaqIndex === i"
-                class="faq-answer px-6"
-                :class="openFaqIndex === i ? 'faq-answer-open pb-6' : 'faq-answer-closed pb-0'"
+                v-if="openFaqIndex === i"
+                class="px-6 pb-6"
               >
-                <div class="pl-10 sm:pl-21 overflow-hidden">
-                  <p class="text-sm font-medium leading-6 text-gray-600 pt-0.5">
+                <div class="pl-14">
+                  <p class="text-sm font-medium leading-6 text-neutral-600">
                     {{ q.answer }}
                   </p>
                 </div>
@@ -459,15 +785,14 @@
             </div>
           </div>
 
-          <div class="mt-12 text-center sm:mt-16">
-            <p class="text-base leading-7 tracking-[-1.1%] font-medium text-gray-600">
+          <div class="mt-10 text-center sm:mt-12">
+            <p class="text-sm font-medium text-neutral-600">
               Didn't find the answer?
               <a
                 href="#"
-                class="text-blue-600 hover:underline"
+                class="font-semibold text-blue-600 hover:underline"
                 @click.prevent="contactUs"
-                >Contact Us</a
-              >
+              >Contact Us</a>
             </p>
           </div>
         </div>
@@ -480,6 +805,7 @@
 
 <script setup>
 import FeatureComparison from "~/components/pages/pricing/FeatureComparison.vue"
+import PricingTable from "../components/pages/pricing/PricingTable.vue"
 import { useIsAuthenticated } from "~/composables/useAuthFlow"
 
 definePageMeta({
@@ -493,67 +819,10 @@ useOpnSeoMeta({
     "All of our core features are free, and there is no quantity limit. You can also created more advanced and customized forms with OpnForms Pro.",
 })
 
+const { openSubscriptionModal } = useAppModals()
 const { isAuthenticated: authenticated } = useIsAuthenticated()
-const { getPlanPrice } = useBillingUpsell()
-const { startCheckout, isPlanLoading } = useStripeCheckout()
 
 const pricingIsYearly = ref(true)
-
-const formatPlanPrice = (plan) => {
-  const price = getPlanPrice(plan, pricingIsYearly.value)
-  if (price == null) return null
-  return `$${price}`
-}
-
-const planPriceDisplay = computed(() => ({
-  free: formatPlanPrice('free'),
-  pro: formatPlanPrice('pro'),
-  business: formatPlanPrice('business'),
-  enterprise: formatPlanPrice('enterprise'),
-}))
-
-const planFeatures = {
-  free: [
-    "Unlimited forms & submissions",
-    "File uploads (basic quota)",
-    "Form logic & validation",
-    "Computed fields (calculations)",
-    "Pre-fills, URL parameters",
-    "Multi-user access (all admins, no roles)",
-    "1 workspace only",
-    "Branding required",
-    "Community support",
-    "API",
-    "Basic integrations",
-  ],
-  pro: [
-    "Remove branding",
-    "Custom domains",
-    "Custom SMTP",
-    "Discord, Slack, Telegram",
-    "Password-protected forms",
-    "Form expiration",
-    "Captcha",
-    "Multiple workspaces",
-  ],
-  business: [
-    "Multi-user with roles & permissions",
-    "Advanced branding (CSS, fonts, favicons)",
-    "Higher file upload size limits",
-    "Priority support",
-    "Partial submissions",
-    "Versioning",
-    "Analytics dashboard",
-    "Advanced integrations",
-  ],
-  enterprise: [
-    "SSO (SAML, OIDC, LDAP)",
-    "Audit logs & compliance features",
-    "External storage support",
-    "White-label hosting option",
-    "SLA & onboarding support",
-  ],
-}
 
 const communityEditionFeatures = [
   "Unlimited forms & submissions",
@@ -644,26 +913,14 @@ const faqs = [
     answer:
       "Yes — multi-user collaboration is supported. Higher tiers add roles and permissions for larger teams.",
   },
-  {
-    question: "Can I get a Nonprofit or Student Discount?",
-    answer:
-      "Yes — we offer a 50% discount for registered nonprofits and students. Contact us to verify your eligibility and get set up.",
-  },
 ]
 
-const handlePlanCta = (plan) => {
+const handleProCta = () => {
   if (!authenticated.value) {
     return navigateTo({ name: "register" })
   }
-  return startCheckout(plan, { yearly: pricingIsYearly.value })
+  openSubscriptionModal({ plan: "default", yearly: pricingIsYearly.value })
 }
-
-function getPaidPlanCtaLabel() {
-  return authenticated.value ? "Upgrade now" : "Get started free"
-}
-
-const handleProCta = () => handlePlanCta("pro")
-const handleBusinessCta = () => handlePlanCta("business")
 
 const contactUs = () => {
   useCrisp().openAndShowChat()
