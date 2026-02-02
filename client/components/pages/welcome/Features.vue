@@ -124,19 +124,37 @@
       </div>
 
       <div class="mt-10 text-center">
-        <NuxtLink
-          :to="{ name: 'pricing' }"
-          class="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-semibold hover:no-underline"
-        >
-          See the Full Feature List
-          <UIcon name="i-heroicons-arrow-up-right-20-solid" class="h-4 w-4" />
-        </NuxtLink>
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
+          <UButton
+            v-if="!authenticated"
+            size="lg"
+            :to="{ name: 'forms-create-guest' }"
+            trailing-icon="i-heroicons-arrow-up-right-20-solid"
+            label="Get started. It's FREE!"
+          />
+          <UButton
+            v-else
+            size="lg"
+            :to="{ name: 'forms-create' }"
+            trailing-icon="i-heroicons-arrow-up-right-20-solid"
+            label="Get started. It's FREE!"
+          />
+
+          <UButton
+            :to="{ name: 'pricing' }"
+            label="See the Full Feature List"
+            variant="soft"
+            size="lg"
+          />
+        </div>
       </div>
     </div>
   </section>
 </template>
 
 <script setup>
+const { isAuthenticated: authenticated } = useIsAuthenticated()
+
 const panels = [
   {
     eyebrow: 'Modern Form Builder',
@@ -298,7 +316,7 @@ const tabContent = {
       'Payments & signatures',
       'Validation rules',
     ],
-    imageSrc: '/img/pages/welcome/feature-4.png',
+    imageSrc: '/img/pages/welcome/feature-5.png',
     imageAlt: 'Rich inputs preview',
   },
   security: {
@@ -311,7 +329,7 @@ const tabContent = {
       'Email notifications',
       'Data exports',
     ],
-    imageSrc: '/img/pages/welcome/feature-4.png',
+    imageSrc: '/img/pages/welcome/feature-6.png',
     imageAlt: 'Quality and security preview',
   },
   control: {
@@ -324,7 +342,7 @@ const tabContent = {
       'Thank-you pages',
       'Webhooks & integrations',
     ],
-    imageSrc: '/img/pages/welcome/feature-4.png',
+    imageSrc: '/img/pages/welcome/feature-7.png',
     imageAlt: 'Experience and control preview',
   },
 }
