@@ -10,136 +10,63 @@
           alt="Page abstract background"
         >
       </div>
-
-      <div
-        class="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto relative -mb-32 md:-mb-52 lg:-mb-72"
-      >
-        <div class="flex justify-center mb-5">
-          <div class="relative flex items-center shadow-xs bg-white gap-x-4 rounded-full px-4 py-1 text-sm leading-6 text-neutral-600 ring ring-neutral-900/10 hover:ring-neutral-900/20"
-          >
-            <span class="font-semibold text-neutral-500">We're Open-Source</span><span
-              class="h-4 w-px bg-neutral-900/10"
-              aria-hidden="true"
-            />
-            <TrackClick
-              name="welcome_github_click"
-            >
-              <a
-                target="_blank"
-                class="flex items-center gap-x-1 hover:no-underline"
-                href="https://github.com/OpnForm/OpnForm"
-              >
-              <span
-                class="absolute inset-0"
-                aria-hidden="true"
-              />
-              Star us on GitHub
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke-width="1.5"
-                stroke="currentColor"
-                aria-hidden="true"
-                class="-mr-2 h-5 w-5 text-neutral-400"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M8.25 4.5l7.5 7.5-7.5 7.5"
-                />
-              </svg>
-              </a>
-            </TrackClick>
-          </div>
-        </div>
+      
+      <div class="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto relative">
         <div class="max-w-4xl mx-auto text-center">
-          <h1
-            class="text-4xl sm:text-5xl lg:text-6xl font-semibold text-neutral-900 tracking-tight"
-          >
-            Build
-            <span
-              class="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-blue-400"
-            >beautiful forms</span>
-            <br>
-            in seconds
+          <h1 class="text-4xl sm:text-5xl lg:text-6xl font-semibold text-neutral-900 tracking-tight">
+            Build beautiful forms,
+            <span class="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-blue-400">fast.</span>
           </h1>
-          <p
-            class="mt-4 sm:mt-5 text-base leading-7 sm:text-xl sm:leading-9 font-medium text-neutral-500"
-          >
-            Create beautiful forms and share them anywhere. It's super fast, you
-            don't need to know how to code. Get started
-            <span class="font-semibold">for free</span>!
+
+          <p class="mt-4 sm:mt-6 text-base leading-7 sm:text-xl sm:leading-9 font-medium text-neutral-500">
+            Create powerful forms in minutes with a clean, modern builder that works the way you do.
+            Unlimited submissions, AI-powered creation, and full customization. All without complexity.
           </p>
 
-          <div class="mt-8 flex justify-center">
-            <UButton
-              v-if="!authenticated"
-              class="mr-1"
-              :to="{ name: 'forms-create-guest' }"
-              trailing-icon="i-heroicons-arrow-right-20-solid"
-              label="Create a form for FREE"
-            />
-            <UButton
-              v-else
-              class="mr-1"
-              :to="{ name: 'forms-create' }"
-              trailing-icon="i-heroicons-arrow-right-20-solid"
-              label="Create a form for FREE"
-            />
-          </div>
+          <div class="relative py-8">
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
+              <UButton
+                v-if="!authenticated"
+                class="rounded-full px-7 py-3 text-base font-semibold"
+                :to="{ name: 'forms-create-guest' }"
+                trailing-icon="i-heroicons-arrow-up-right-20-solid"
+                label="Get started. It's FREE!"
+              />
+              <UButton
+                v-else
+                class="rounded-full px-7 py-3 text-base font-semibold"
+                :to="{ name: 'forms-create' }"
+                trailing-icon="i-heroicons-arrow-up-right-20-solid"
+                label="Get started. It's FREE!"
+              />
+              <UButton
+                v-if="useFeatureFlag('billing.enabled')"
+                class="rounded-full px-7 py-3 text-base font-semibold"
+                variant="outline"
+                :to="{ name: 'pricing' }"
+                label="View Pricing"
+              />
+            </div>
 
-          <div class="justify-center flex gap-2 mt-10">
-            <div class="flex items-center text-neutral-400 text-sm">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke-width="2"
-                stroke="currentColor"
-                class="w-4 h-4 mr-1 ticks"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M4.5 12.75l6 6 9-13.5"
-                />
-              </svg>
-              <span>Unlimited forms</span>
-            </div>
-            <div class="flex items-center text-neutral-400 text-sm">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke-width="2"
-                stroke="currentColor"
-                class="w-4 h-4 mr-1 ticks"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M4.5 12.75l6 6 9-13.5"
-                />
-              </svg>
-              <span> Unlimited fields </span>
-            </div>
-            <div class="flex text-neutral-400 text-sm">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke-width="2"
-                stroke="currentColor"
-                class="w-4 h-4 mr-1 ticks"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M4.5 12.75l6 6 9-13.5"
-                />
-              </svg>
-              <span>Unlimited responses</span>
+            <div class="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-sm font-semibold text-neutral-600">
+              <div class="flex items-center gap-2">
+                <UIcon name="i-heroicons-building-office-2" class="h-5 w-5 text-blue-600" />
+                <span>10k+ Companies</span>
+              </div>
+
+              <span class="hidden sm:block h-4 w-px bg-neutral-300/70" aria-hidden="true" />
+
+              <div class="flex items-center gap-2">
+                <UIcon name="i-simple-icons-github" class="h-4 w-4 text-neutral-800" />
+                <NuxtLink to="https://github.com/OpnForm/OpnForm" target="_blank">3k+ GitHub Stars</NuxtLink>
+              </div>
+
+              <span class="hidden sm:block h-4 w-px bg-neutral-300/70" aria-hidden="true" />
+
+              <div class="flex items-center gap-2">
+                <UIcon name="i-heroicons-star-solid" class="h-5 w-5 text-green-500" />
+                <span>Trustpilot grade</span>
+              </div>
             </div>
           </div>
         </div>
@@ -148,33 +75,32 @@
           class="w-full mt-12 relative px-6 mx-auto max-w-4xl sm:px-10 lg:px-0 z-10 flex items-center justify-center"
         >
           <div
-                          class="-m-2 rounded-xl bg-blue-900/5 p-2 backdrop-blur-xs ring ring-inset ring-blue-900/10 lg:-m-4 lg:rounded-2xl lg:p-4 w-full"
+            class="-m-2 rounded-xl bg-blue-900/5 p-2 backdrop-blur-xs ring ring-inset ring-blue-900/10 lg:-m-4 lg:rounded-2xl lg:p-4 w-full"
           >
             <img
               src="/img/pages/welcome/product-cover.jpg"
               sizes="320px sm:650px lg:896px"
               alt="Product screenshot"
               loading="lazy"
-                                class="rounded-sm w-full shadow-2xl ring ring-neutral-900/10"
+              class="rounded-sm w-full shadow-2xl ring ring-neutral-900/10"
             >
           </div>
         </div>
       </div>
     </section>
 
-    <div class="flex flex-col bg-neutral-50 dark:bg-notion-dark">
-      <div
-        class="bg-white dark:bg-notion-dark-light pt-32 md:pt-52 lg:pt-72 pb-8"
-      >
-        <div class="md:max-w-5xl md:mx-auto w-full">
-          <features class="pb-8" />
-        </div>
-      </div>
+    <TrustedTeams />
 
-      <ai-feature class="bg-white -mb-56" />
+    <Features class="pb-8" />
 
-      <more-features class="pt-56" />
+    <MoreFeatures class="pb-8" />
 
+    <AiFeature class="pb-8" />
+    
+
+    <OpenFormFooter />
+
+    <div class="flex flex-col bg-neutral-50 dark:bg-notion-dark" style="display: none;">
       <pricing-table
         v-if="useFeatureFlag('billing.enabled')"
         class="pb-20"
