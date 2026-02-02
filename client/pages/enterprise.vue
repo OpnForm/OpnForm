@@ -148,7 +148,7 @@
               <UIcon :name="item.icon" class="h-8 w-8 text-blue-600" />
             </div>
 
-            <div class="mt-10 text-xl font-semibold text-neutral-900">
+            <div class="mt-6 text-xl font-semibold text-neutral-900">
               {{ item.title }}
             </div>
             <div class="mt-4 text-base font-medium leading-7 text-neutral-600">
@@ -186,8 +186,8 @@
             class="w-full sm:w-auto"
             :class="idx === 2 ? 'basis-full flex justify-center' : ''"
           >
-            <div class="inline-flex w-full sm:w-auto items-center justify-center gap-3 rounded-full border border-neutral-200 bg-white px-5 py-3 text-sm font-semibold text-neutral-800 shadow-sm">
-              <span class="h-8 w-8 rounded-full flex items-center justify-center flex-shrink-0" :class="badge.badgeBg">
+            <div class="inline-flex w-full sm:w-auto items-center justify-center gap-3 rounded-full border border-neutral-200 bg-white px-5 py-1 text-sm font-semibold text-neutral-800 shadow-sm">
+              <span class="h-9 w-9 rounded-full flex items-center justify-center flex-shrink-0" :class="badge.badgeBg">
                 <UIcon :name="badge.icon" class="h-4 w-4" :class="badge.iconColor" />
               </span>
               <span class="text-center">{{ badge.label }}</span>
