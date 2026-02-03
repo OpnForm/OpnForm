@@ -5,7 +5,6 @@ namespace App\Service\Pdf;
 use App\Exceptions\PdfNotSupportedException;
 use App\Models\Forms\Form;
 use App\Models\Forms\FormSubmission;
-use App\Models\Integration\FormIntegration;
 use App\Models\PdfTemplate;
 use App\Service\Forms\FormSubmissionFormatter;
 use App\Service\Storage\FileUploadPathService;
@@ -19,31 +18,37 @@ class PdfGeneratorService
 {
     private const DEFAULT_FONT_SIZE = 12;
     private const DEFAULT_FONT_COLOR = [0, 0, 0]; // Black
+    private const BRANDING_TEXT = 'PDF generated with OpnForm';
+
+    // Use a consistent temp folder for lifecycle management
+    private const TEMP_FOLDER = 'tmp/pdf-output';
 
     private ?Form $form = null;
 
     /**
-     * Generate a PDF for a submission based on integration configuration.
+     * Generate a PDF for a submission directly from a template.
      */
-    public function generate(
+    public function generateFromTemplate(
         Form $form,
         FormSubmission $submission,
-        FormIntegration $integration
+        PdfTemplate $template
     ): string {
         $this->form = $form;
-        $data = $integration->data;
-        $template = PdfTemplate::findOrFail($data->template_id);
-        // Convert zone_mappings from object to array (since data is cast as 'object')
-        $zoneMappings = json_decode(json_encode($data->zone_mappings ?? []), true);
+
+        // Zone mappings are now stored on the template
+        $zoneMappings = $template->zone_mappings ?? [];
 
         // Get submission data formatted for display
         $submissionData = $this->getFormattedSubmissionData($form, $submission);
 
-        // Generate the PDF
-        $pdfContent = $this->generatePdfContent($template, $zoneMappings, $submissionData);
+        // Check if branding should be added
+        $addBranding = !$template->remove_branding;
 
-        // Store temporarily and return path
-        $tempPath = 'pdf-generated/' . Str::uuid() . '.pdf';
+        // Generate the PDF
+        $pdfContent = $this->generatePdfContent($template, $zoneMappings, $submissionData, $addBranding);
+
+        // Store in consistent temp folder for lifecycle cleanup
+        $tempPath = self::TEMP_FOLDER . '/' . Str::uuid() . '.pdf';
         Storage::put($tempPath, $pdfContent);
 
         return $tempPath;
@@ -57,7 +62,8 @@ class PdfGeneratorService
     private function generatePdfContent(
         PdfTemplate $template,
         array $zoneMappings,
-        array $submissionData
+        array $submissionData,
+        bool $addBranding = false
     ): string {
         // Get template file content
         $templatePath = $template->file_path;
@@ -103,6 +109,11 @@ class PdfGeneratorService
                     $this->addZoneContent($pdf, $zone, $submissionData, $size);
                 }
             }
+
+            // Add branding footer on every page if required
+            if ($addBranding) {
+                $this->addBrandingFooter($pdf, $size);
+            }
         }
 
         // Clean up temp file
@@ -113,12 +124,37 @@ class PdfGeneratorService
     }
 
     /**
+     * Add OpnForm branding footer to the page.
+     */
+    private function addBrandingFooter(Fpdi $pdf, array $pageSize): void
+    {
+        $pdf->SetFont('Helvetica', '', 12);
+        $pdf->SetTextColor(128, 128, 128); // Gray color
+
+        // Position at bottom center of page
+        $text = self::BRANDING_TEXT;
+        $textWidth = $pdf->GetStringWidth($text);
+        $x = ($pageSize['width'] - $textWidth) / 2;
+        $y = $pageSize['height'] - 5; // 5mm from bottom
+
+        // Use Text() instead of Cell() - Text() doesn't trigger auto page breaks
+        $pdf->Text($x, $y, $text);
+    }
+
+    /**
      * Add content to a zone on the PDF.
+     * Supports both field mappings and static text.
      */
     private function addZoneContent(Fpdi $pdf, array $zone, array $submissionData, array $pageSize): void
     {
-        $fieldId = $zone['field_id'] ?? null;
-        $value = $this->getFieldValue($fieldId, $submissionData);
+        // Check for static text first (hardcoded content)
+        $staticText = $zone['static_text'] ?? null;
+        if (!empty($staticText)) {
+            $value = $staticText;
+        } else {
+            $fieldId = $zone['field_id'] ?? null;
+            $value = $this->getFieldValue($fieldId, $submissionData);
+        }
 
         if (empty($value)) {
             return;
@@ -382,8 +418,8 @@ class PdfGeneratorService
         }
 
         // Add special fields
-        $data['submission_id'] = $submission->id;
-        $data['submission_date'] = $submission->created_at->format('Y-m-d H:i:s');
+        $data['submission_id'] = $submission->id ?: 'preview';
+        $data['submission_date'] = $submission->created_at ? $submission->created_at->format('Y-m-d H:i:s') : now()->format('Y-m-d H:i:s');
         $data['form_name'] = $form->title;
 
         return $data;

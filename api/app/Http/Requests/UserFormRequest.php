@@ -145,7 +145,7 @@ abstract class UserFormRequest extends \Illuminate\Foundation\Http\FormRequest
             're_fill_button_text' => 'nullable|string|max:50',
             'pdf_download_enabled' => 'boolean',
             'pdf_download_button_text' => 'nullable|string|max:50',
-            'pdf_integration_id' => 'nullable|integer|exists:form_integrations,id',
+            'pdf_template_id' => 'nullable|integer|exists:pdf_templates,id',
             'submitted_text' => 'string|max:10000',
             'redirect_url' => 'nullable|string',
             'database_fields_update' => 'nullable|array',

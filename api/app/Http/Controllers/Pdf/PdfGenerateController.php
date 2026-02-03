@@ -6,7 +6,7 @@ use App\Exceptions\PdfNotSupportedException;
 use App\Http\Controllers\Controller;
 use App\Models\Forms\Form;
 use App\Models\Forms\FormSubmission;
-use App\Models\Integration\FormIntegration;
+use App\Models\PdfTemplate;
 use App\Service\Pdf\PdfCacheService;
 use App\Service\Pdf\PdfGeneratorService;
 use App\Service\Forms\SubmissionUrlService;
@@ -21,92 +21,104 @@ class PdfGenerateController extends Controller
         private PdfGeneratorService $generator,
         private PdfCacheService $cache
     ) {
-        $this->middleware('auth')->only(['generateAuthenticated', 'getSignedUrl']);
+        $this->middleware('auth')->only(['getTemplateSignedUrl', 'preview']);
     }
 
     /**
-     * Get a signed URL for PDF download (authenticated endpoint).
+     * Get a signed URL for PDF download by template (primary endpoint).
      * Returns a URL that can be used without auth (includes signature).
-     * Used by both results table and success page.
      */
-    public function getSignedUrl(
+    public function getTemplateSignedUrl(
         Request $request,
         Form $form,
-        string $submission_id,
-        FormIntegration $integration
+        PdfTemplate $pdfTemplate,
+        string $submission_id
     ) {
-        // Check user has access to the form
         $this->authorize('view', $form);
 
-        // Resolve submission (handles UUID and Hashid formats)
+        // Validate template belongs to form
+        if ($pdfTemplate->form_id !== $form->id) {
+            abort(404, 'Template not found.');
+        }
+
+        // Resolve submission
         $submission = SubmissionUrlService::resolveSubmission($form, $submission_id);
         if (!$submission) {
             abort(404, 'Submission not found.');
         }
 
-        // Validate relationships
-        if ($integration->form_id !== $form->id) {
-            abort(404, 'Integration not found.');
-        }
-        if ($integration->integration_id !== 'pdf') {
-            abort(400, 'Invalid integration type.');
-        }
-
-        $url = self::generateSignedUrl($form, $submission, $integration);
+        $url = self::generateTemplateSignedUrl($form, $pdfTemplate, $submission);
 
         return response()->json(['url' => $url]);
     }
 
     /**
-     * Generate and download PDF for a submission (signed URL).
+     * Generate and download PDF for a submission by template (signed URL).
      */
-    public function generateSigned(
+    public function downloadByTemplate(
         Request $request,
         Form $form,
-        string $submission_id,
-        FormIntegration $integration
+        PdfTemplate $pdfTemplate,
+        string $submission_id
     ) {
-        // Resolve submission (handles UUID and Hashid formats)
+        // Validate template belongs to form
+        if ($pdfTemplate->form_id !== $form->id) {
+            abort(404, 'Template not found.');
+        }
+
+        // Resolve submission
         $submission = SubmissionUrlService::resolveSubmission($form, $submission_id);
         if (!$submission) {
             abort(404, 'Submission not found.');
         }
 
-        // Signed URL validates access
-        return $this->servePdf($form, $submission, $integration);
+        return $this->servePdfFromTemplate($form, $submission, $pdfTemplate);
     }
 
     /**
-     * Validate and serve the PDF for download.
+     * Preview PDF using latest submission or empty data (admin only).
      */
-    private function servePdf(
+    public function preview(
+        Request $request,
+        Form $form,
+        PdfTemplate $pdfTemplate
+    ) {
+        $this->authorize('update', $form);
+
+        // Validate template belongs to form
+        if ($pdfTemplate->form_id !== $form->id) {
+            abort(404, 'Template not found.');
+        }
+
+        // Get latest submission or create a fake one with empty data for preview
+        $submission = $form->submissions()->latest()->first();
+        if (!$submission) {
+            $submission = new FormSubmission([
+                'form_id' => $form->id,
+                'data' => [],
+            ]);
+            $submission->id = 0; // Fake ID for preview
+        }
+
+        return $this->servePdfFromTemplate($form, $submission, $pdfTemplate);
+    }
+
+    /**
+     * Serve PDF from template.
+     */
+    private function servePdfFromTemplate(
         Form $form,
         FormSubmission $submission,
-        FormIntegration $integration
+        PdfTemplate $template
     ) {
-        // Validate that the integration belongs to the form
-        if ($integration->form_id !== $form->id) {
-            abort(404, 'Integration not found.');
-        }
-
-        // Validate that the submission belongs to the form
-        if ($submission->form_id !== $form->id) {
+        // Validate submission belongs to form
+        if ($submission->form_id !== $form->id && $submission->id !== 0) {
             abort(404, 'Submission not found.');
-        }
-
-        // Validate that this is a PDF integration
-        if ($integration->integration_id !== 'pdf') {
-            abort(400, 'Invalid integration type.');
-        }
-
-        // Check if integration is active
-        if ($integration->status !== 'active') {
-            abort(400, 'PDF integration is not active.');
         }
 
         // Get or generate the PDF
         try {
-            $pdfPath = $this->cache->getOrGenerate($form, $submission, $integration, $this->generator);
+            $pdfPath = $this->cache->getOrGenerateFromTemplate($form, $submission, $template, $this->generator);
         } catch (PdfNotSupportedException $e) {
             abort(422, $e->getMessage());
         }
@@ -115,12 +127,10 @@ class PdfGenerateController extends Controller
             abort(500, 'Failed to generate PDF.');
         }
 
-        // Get filename from integration data
-        $data = $integration->data;
-        $filenamePattern = $data->filename_pattern ?? '{form_name}-{submission_id}.pdf';
+        // Get filename from template
+        $filenamePattern = $template->filename_pattern ?? '{form_name}-{submission_id}.pdf';
         $filename = $this->generateFilename($filenamePattern, $form, $submission);
 
-        // Stream the PDF to the browser
         return Storage::download($pdfPath, $filename, [
             'Content-Type' => 'application/pdf',
             'Content-Disposition' => 'attachment; filename="' . $filename . '"',
@@ -128,23 +138,22 @@ class PdfGenerateController extends Controller
     }
 
     /**
-     * Generate a signed URL for PDF download (for success page).
+     * Generate a signed URL for template-based PDF download.
      */
-    public static function generateSignedUrl(
+    public static function generateTemplateSignedUrl(
         Form $form,
-        FormSubmission $submission,
-        FormIntegration $integration
+        PdfTemplate $template,
+        FormSubmission $submission
     ): string {
-        // Use encoded submission ID (UUID or Hashid) for public access
         $submissionId = SubmissionUrlService::getSubmissionIdentifier($submission);
 
         return URL::temporarySignedRoute(
-            'forms.submissions.pdf.signed',
+            'open.forms.pdf-templates.download-submission',
             now()->addHours(24),
             [
                 'form' => $form->id,
+                'pdfTemplate' => $template->id,
                 'submission_id' => $submissionId,
-                'integration' => $integration->id,
             ]
         );
     }
@@ -156,7 +165,7 @@ class PdfGenerateController extends Controller
     {
         $replacements = [
             '{form_name}' => Str::slug($form->title),
-            '{submission_id}' => $submission->id,
+            '{submission_id}' => $submission->id ?: 'preview',
             '{date}' => now()->format('Y-m-d'),
             '{timestamp}' => now()->timestamp,
         ];

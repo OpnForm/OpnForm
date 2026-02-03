@@ -121,7 +121,7 @@ class Form extends Model implements CachableAttributes, VersionableNestedDiff
         'editable_submissions_button_text',
         'pdf_download_enabled',
         'pdf_download_button_text',
-        'pdf_integration_id',
+        'pdf_template_id',
         'confetti_on_submission',
         'show_progress_bar',
         'auto_save',
@@ -410,9 +410,9 @@ class Form extends Model implements CachableAttributes, VersionableNestedDiff
         return $this->hasMany(PdfTemplate::class);
     }
 
-    public function pdfIntegration()
+    public function pdfDownloadTemplate()
     {
-        return $this->belongsTo(FormIntegration::class, 'pdf_integration_id');
+        return $this->belongsTo(PdfTemplate::class, 'pdf_template_id');
     }
 
     /**

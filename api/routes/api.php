@@ -203,12 +203,6 @@ Route::group(['middleware' => 'auth.multi'], function () {
                 Route::post('/multi', [FormSubmissionController::class, 'destroyMulti'])->name('destroy-multi');
             });
 
-            // Get signed URL for PDF download (authenticated)
-            Route::get(
-                '/{form}/submissions/{submission_id}/pdf/{integration}/signed-url',
-                [PdfGenerateController::class, 'getSignedUrl']
-            )->name('submissions.pdf.signed-url');
-
             // Form Admin tool
             Route::put(
                 '/{form}/regenerate-link/{option}',
@@ -266,9 +260,31 @@ Route::group(['middleware' => 'auth.multi'], function () {
                 Route::get('/', [PdfTemplateController::class, 'index'])->name('index');
                 Route::post('/', [PdfTemplateController::class, 'store'])->name('store');
                 Route::get('/{pdfTemplate}', [PdfTemplateController::class, 'show'])->name('show');
+                Route::put('/{pdfTemplate}', [PdfTemplateController::class, 'update'])->name('update');
                 Route::delete('/{pdfTemplate}', [PdfTemplateController::class, 'destroy'])->name('destroy');
                 Route::get('/{pdfTemplate}/download', [PdfTemplateController::class, 'download'])->name('download');
+
+                // Get signed URL for submission PDF download
+                Route::get(
+                    '/{pdfTemplate}/submissions/{submission_id}/signed-url',
+                    [PdfGenerateController::class, 'getTemplateSignedUrl']
+                )->name('submission.signed-url');
+
+                // Preview PDF using latest submission (admin)
+                Route::get(
+                    '/{pdfTemplate}/preview',
+                    [PdfGenerateController::class, 'preview']
+                )->name('preview');
             });
+
+            // Template-based PDF download (signed, no auth required)
+            Route::get(
+                '/{form}/pdf-templates/{pdfTemplate}/submissions/{submission_id}/download',
+                [PdfGenerateController::class, 'downloadByTemplate']
+            )
+                ->middleware('signed')
+                ->withoutMiddleware(['auth.multi'])
+                ->name('pdf-templates.download-submission');
         });
     });
 
@@ -394,14 +410,6 @@ Route::prefix('forms')->name('forms.')->group(function () {
     // Get form and submit
     Route::get('{form}', [PublicFormController::class, 'show'])->name('show');
     Route::get('{form}/submissions/{submission_id}', [PublicFormController::class, 'fetchSubmission'])->name('fetchSubmission');
-
-    // PDF Generation (signed URL - for success page)
-    Route::get(
-        '{form}/submissions/{submission_id}/pdf/{integration}',
-        [PdfGenerateController::class, 'generateSigned']
-    )
-        ->middleware('signed')
-        ->name('submissions.pdf.signed');
 
     // File uploads
     Route::get('assets/{assetFileName}', [PublicFormController::class, 'showAsset'])->name('assets.show');

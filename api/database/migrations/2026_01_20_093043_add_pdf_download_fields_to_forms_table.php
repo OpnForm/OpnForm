@@ -13,7 +13,7 @@ return new class () extends Migration {
         Schema::table('forms', function (Blueprint $table) {
             $table->boolean('pdf_download_enabled')->default(false)->after('editable_submissions_button_text');
             $table->string('pdf_download_button_text')->nullable()->after('pdf_download_enabled');
-            $table->foreignId('pdf_integration_id')->nullable()->after('pdf_download_button_text');
+            $table->foreignId('pdf_template_id')->nullable()->after('pdf_download_button_text');
         });
     }
 
@@ -23,7 +23,7 @@ return new class () extends Migration {
     public function down(): void
     {
         Schema::table('forms', function (Blueprint $table) {
-            $table->dropColumn(['pdf_download_enabled', 'pdf_download_button_text', 'pdf_integration_id']);
+            $table->dropColumn(['pdf_download_enabled', 'pdf_download_button_text', 'pdf_template_id']);
         });
     }
 };

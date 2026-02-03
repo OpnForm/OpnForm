@@ -1,230 +1,102 @@
 <template>
-  <div class="pdf-zone-editor space-y-4">
-    <div class="lg:grid lg:grid-cols-[minmax(0,1fr)_24rem] gap-6">
-      <div class="space-y-4">
-        <!-- Page Navigation -->
-        <div
-          v-if="template.page_count > 1"
-          class="flex items-center justify-center gap-4"
+  <div class="pdf-zone-editor">
+    <!-- PDF Canvas with Zones -->
+    <div
+      ref="editorContainer"
+      class="relative border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800"
+      :style="{ minHeight: '520px' }"
+      @click="handleBackgroundClick"
+    >
+      <!-- PDF Canvas -->
+      <canvas
+        ref="pdfCanvas"
+        class="block mx-auto cursor-crosshair"
+        @click="handleBackgroundClick"
+      />
+
+      <!-- Existing Zones -->
+      <div
+        v-for="zone in currentPageZones"
+        :key="zone.id"
+        class="absolute border-2 cursor-move transition-colors"
+        :class="[
+          selectedZoneId === zone.id 
+            ? 'border-blue-500 bg-blue-500/20' 
+            : 'border-blue-400/60 bg-blue-400/10 hover:border-blue-500 hover:bg-blue-500/15'
+        ]"
+        :style="getZoneStyle(zone)"
+        @mousedown.stop="startDragging($event, zone)"
+        @click.stop="selectZone(zone.id)"
+      >
+        <div 
+          class="absolute -top-5 left-0 text-xs bg-blue-500 text-white px-1.5 py-0.5 rounded whitespace-nowrap"
+          :class="{ 'opacity-60': selectedZoneId !== zone.id }"
         >
-          <UButton
-            icon="i-heroicons-chevron-left"
-            variant="ghost"
-            :disabled="currentPage === 1"
-            @click="currentPage--"
-          />
-          <span class="text-sm text-gray-600">
-            Page {{ currentPage }} of {{ template.page_count }}
-          </span>
-          <UButton
-            icon="i-heroicons-chevron-right"
-            variant="ghost"
-            :disabled="currentPage === template.page_count"
-            @click="currentPage++"
-          />
+          {{ getZoneLabel(zone) }}
         </div>
-
-        <!-- PDF Canvas with Zones -->
         <div
-          ref="editorContainer"
-          class="relative border border-gray-200 rounded-lg overflow-hidden bg-gray-100"
-          :style="{ minHeight: '520px' }"
-        >
-          <!-- PDF Canvas (rendered by pdf.js) -->
-          <canvas
-            ref="pdfCanvas"
-            class="block mx-auto"
-            @mousedown="onMouseDown"
-            @mousemove="onMouseMove"
-            @mouseup="onMouseUp"
-          />
-
-          <!-- Existing Zones -->
-          <PdfZoneItem
-            v-for="zone in currentPageZones"
-            :key="zone.id"
-            :zone="zone"
-            :form="form"
-            :scale="scale"
-            :selected="selectedZoneId === zone.id"
-            @select="selectZone(zone.id)"
-            @update="updateZone"
-            @delete="deleteZone(zone.id)"
-          />
-
-          <!-- Drawing Zone (while creating) -->
-          <div
-            v-if="isDrawing && drawingRect"
-            class="absolute border-2 border-blue-500 bg-blue-100/30 pointer-events-none"
-            :style="drawingRectStyle"
-          />
-
-          <!-- Loading overlay -->
-          <div
-            v-if="pdfLoading"
-            class="absolute inset-0 flex items-center justify-center bg-white/80"
-          >
-            <Loader class="h-8 w-8 text-blue-600" />
-          </div>
-        </div>
+          class="absolute bottom-0 right-0 w-3 h-3 bg-blue-500 cursor-se-resize"
+          @mousedown.stop="startResizing($event, zone)"
+        />
       </div>
 
-      <div class="space-y-4">
-        <!-- Add Zone Panel -->
-        <div class="sticky top-6 space-y-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-sm font-semibold text-gray-800">Add Zone</p>
-              <p class="text-xs text-gray-500">Draw areas on the PDF preview.</p>
-            </div>
-          </div>
-          <UButton
-            :color="isDrawingMode ? 'neutral' : 'primary'"
-            :variant="isDrawingMode ? 'outline' : 'solid'"
-            :icon="isDrawingMode ? 'i-heroicons-x-mark' : 'i-heroicons-plus'"
-             
-            @click="toggleDrawingMode"
-          >
-            {{ isDrawingMode ? 'Stop Drawing' : 'Start Drawing' }}
-          </UButton>
-          <p v-if="isDrawingMode" class="text-xs text-gray-500">
-            Click and drag on the PDF to create a zone.
-          </p>
-        </div>
-
-        <!-- Zone Properties Panel -->
-        <div
-          :class="[
-            'rounded-xl border border-dashed bg-gray-50/70 p-4 shadow-sm',
-            selectedZone ? 'border-blue-400 bg-white' : 'border-gray-200'
-          ]"
-        >
-          <div class="flex items-center justify-between">
-            <h4 class="text-sm font-semibold">
-              {{ selectedZone ? 'Zone Properties' : 'Select a zone' }}
-            </h4>
-            <UButton
-              v-if="selectedZone"
-              icon="i-heroicons-trash"
-              color="error"
-              variant="ghost"
-              size="sm"
-              @click="deleteZone(selectedZone.id)"
-            />
-          </div>
-
-          <p class="text-xs text-gray-500 mb-3">
-            {{ selectedZone ? 'Adjust the visual settings for the selected zone.' : 'Select a zone on the PDF preview to edit its settings.' }}
-          </p>
-
-          <div v-if="selectedZone" class="space-y-3">
-            <div>
-              <label class="block text-xs font-medium text-gray-600 mb-1">Form Field</label>
-              <select
-                :value="selectedZone.field_id"
-                class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
-                @change="updateSelectedZoneField('field_id', $event.target.value)"
-              >
-                <option value="">Select a field...</option>
-                <optgroup label="Form Fields">
-                  <option
-                    v-for="field in formFields"
-                    :key="field.id"
-                    :value="field.id"
-                  >
-                    {{ field.name }}
-                  </option>
-                </optgroup>
-                <optgroup label="Special Fields">
-                  <option value="submission_id">Submission ID</option>
-                  <option value="submission_date">Submission Date</option>
-                  <option value="form_name">Form Name</option>
-                </optgroup>
-              </select>
-            </div>
-
-            <div class="grid grid-cols-2 gap-2">
-              <div>
-                <label class="block text-xs font-medium text-gray-600 mb-1">Font Size</label>
-                <select
-                  :value="selectedZone.font_size || 12"
-                  class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
-                  @change="updateSelectedZoneField('font_size', parseInt($event.target.value))"
-                >
-                  <option v-for="size in fontSizes" :key="size" :value="size">{{ size }}px</option>
-                </select>
-              </div>
-              <div>
-                <label class="block text-xs font-medium text-gray-600 mb-1">Font Color</label>
-                <input
-                  type="color"
-                  :value="selectedZone.font_color || '#000000'"
-                  class="w-full h-10 border border-gray-300 rounded-md cursor-pointer p-0"
-                  @change="updateSelectedZoneField('font_color', $event.target.value)"
-                />
-              </div>
-            </div>
-
-            <div class="grid grid-cols-1">
-              <div class="text-xs text-gray-500">
-                Position:
-                <strong class="text-sm text-gray-700">
-                  x={{ selectedZone.x?.toFixed(1) }}%, y={{ selectedZone.y?.toFixed(1) }}%
-                </strong>
-                <br />
-                Size:
-                <strong class="text-sm text-gray-700">
-                  {{ selectedZone.width?.toFixed(1) }}% × {{ selectedZone.height?.toFixed(1) }}%
-                </strong>
-              </div>
-            </div>
-          </div>
-        </div>
+      <!-- Loading overlay -->
+      <div
+        v-if="pdfLoading"
+        class="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-gray-900/80"
+      >
+        <Loader class="h-8 w-8 text-blue-600" />
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import PdfZoneItem from './PdfZoneItem.vue'
-
 const props = defineProps({
   modelValue: { type: Array, default: () => [] },
   template: { type: Object, required: true },
-  form: { type: Object, required: true }
+  form: { type: Object, required: true },
+  selectedZoneId: { type: String, default: null },
+  currentPage: { type: Number, default: 1 }
 })
 
-const emit = defineEmits(['update:modelValue'])
+const emit = defineEmits(['update:modelValue', 'update:currentPage', 'zone-select'])
 
 // PDF rendering state
 const pdfCanvas = ref(null)
 const editorContainer = ref(null)
 const pdfLoading = ref(true)
-// Use shallowRef to prevent Vue from deeply proxying PDF.js objects (breaks private members)
 const pdfDoc = shallowRef(null)
 const pdfjsLibRef = shallowRef(null)
 const scale = ref(1)
 const canvasWidth = ref(0)
 const canvasHeight = ref(0)
+const canvasRect = ref(null)
 
-// Page navigation
-const currentPage = ref(1)
+// Page navigation (v-model:currentPage)
+const currentPage = computed({
+  get: () => props.currentPage,
+  set: (val) => emit('update:currentPage', val)
+})
 
-// Drawing state
-const isDrawingMode = ref(false)
-const isDrawing = ref(false)
-const drawingStart = ref({ x: 0, y: 0 })
-const drawingRect = ref(null)
+// Drag/resize state
+const isDragging = ref(false)
+const isResizing = ref(false)
+const activeZone = ref(null)
+const dragStart = ref({ x: 0, y: 0 })
+const zoneStart = ref({ x: 0, y: 0, width: 0, height: 0 })
 
-// Zone selection
-const selectedZoneId = ref(null)
-
-// Font sizes
-const fontSizes = [8, 10, 12, 14, 16, 18, 20, 24, 28, 32, 36, 48, 72]
-
-// Form fields
-const formFields = computed(() => {
-  return props.form?.properties?.filter(p => !p.hidden) || []
+// Form fields map for labels
+const fieldMap = computed(() => {
+  const map = {}
+  props.form?.properties?.forEach(p => {
+    map[p.id] = p.name
+  })
+  // Add special fields
+  map['submission_id'] = 'Submission ID'
+  map['submission_date'] = 'Submission Date'
+  map['form_name'] = 'Form Name'
+  return map
 })
 
 // Current page zones
@@ -232,21 +104,23 @@ const currentPageZones = computed(() => {
   return props.modelValue.filter(z => z.page === currentPage.value)
 })
 
-// Selected zone
-const selectedZone = computed(() => {
-  return props.modelValue.find(z => z.id === selectedZoneId.value)
-})
-
-// Drawing rect style
-const drawingRectStyle = computed(() => {
-  if (!drawingRect.value) return {}
-  return {
-    left: `${drawingRect.value.x}px`,
-    top: `${drawingRect.value.y}px`,
-    width: `${drawingRect.value.width}px`,
-    height: `${drawingRect.value.height}px`
+// Get zone label
+const getZoneLabel = (zone) => {
+  if (zone.static_text !== undefined) {
+    return 'Static: ' + (zone.static_text?.substring(0, 15) || 'Text') + (zone.static_text?.length > 15 ? '...' : '')
   }
-})
+  return fieldMap.value[zone.field_id] || zone.field_id || 'Unmapped'
+}
+
+// Get zone style (convert percentage to pixels)
+const getZoneStyle = (zone) => {
+  return {
+    left: `${(zone.x / 100) * canvasWidth.value}px`,
+    top: `${(zone.y / 100) * canvasHeight.value}px`,
+    width: `${(zone.width / 100) * canvasWidth.value}px`,
+    height: `${(zone.height / 100) * canvasHeight.value}px`,
+  }
+}
 
 // Initialize PDF.js library
 const initPdfJs = async () => {
@@ -255,14 +129,13 @@ const initPdfJs = async () => {
   const pdfjsLib = await import('pdfjs-dist')
   const pdfjsWorker = await import('pdfjs-dist/build/pdf.worker.min.mjs?url')
   
-  // Set worker from the bundled package
   pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker.default
   pdfjsLibRef.value = pdfjsLib
   
   return pdfjsLib
 }
 
-// Load PDF using pdf.js
+// Load PDF
 const loadPdf = async () => {
   if (!props.template?.id) return
   
@@ -272,13 +145,11 @@ const loadPdf = async () => {
   try {
     const pdfjsLib = await initPdfJs()
     
-    // Fetch PDF from template download URL (need full URL for pdf.js)
     const config = useRuntimeConfig()
     const authStore = useAuthStore()
     const apiBase = config.public.apiBase
     const url = `${apiBase}open/forms/${props.form.id}/pdf-templates/${props.template.id}/download`
     
-    // Load PDF with auth headers
     const loadingTask = pdfjsLib.getDocument({
       url,
       httpHeaders: {
@@ -316,124 +187,133 @@ const renderPage = async () => {
       canvasContext: context,
       viewport
     }).promise
+    
+    // Update canvas rect for drag calculations
+    canvasRect.value = canvas.getBoundingClientRect()
   } catch (err) {
     console.error('Failed to render page:', err)
   }
 }
 
+// Watch for template changes
+watch(() => props.template, loadPdf, { immediate: true })
 
-// Load PDF when template changes
-watch(() => props.template, () => {
-  loadPdf()
-}, { immediate: true })
+// Watch for page changes
+watch(currentPage, renderPage)
 
-// Render page when current page changes
-watch(currentPage, () => {
-  renderPage()
-})
-
-// Toggle drawing mode
-const toggleDrawingMode = () => {
-  isDrawingMode.value = !isDrawingMode.value
-  if (!isDrawingMode.value) {
-    isDrawing.value = false
-    drawingRect.value = null
-  }
-}
-
-// Mouse events for drawing zones
-const onMouseDown = (event) => {
-  if (!isDrawingMode.value) return
-  
-  const rect = pdfCanvas.value.getBoundingClientRect()
-  const x = event.clientX - rect.left
-  const y = event.clientY - rect.top
-  
-  isDrawing.value = true
-  drawingStart.value = { x, y }
-  drawingRect.value = { x, y, width: 0, height: 0 }
-}
-
-const onMouseMove = (event) => {
-  if (!isDrawing.value || !drawingRect.value) return
-  
-  const rect = pdfCanvas.value.getBoundingClientRect()
-  const x = event.clientX - rect.left
-  const y = event.clientY - rect.top
-  
-  drawingRect.value = {
-    x: Math.min(drawingStart.value.x, x),
-    y: Math.min(drawingStart.value.y, y),
-    width: Math.abs(x - drawingStart.value.x),
-    height: Math.abs(y - drawingStart.value.y)
-  }
-}
-
-const onMouseUp = () => {
-  if (!isDrawing.value || !drawingRect.value) return
-  
-  // Only create zone if it has reasonable size
-  if (drawingRect.value.width > 10 && drawingRect.value.height > 10) {
-    createZone()
-  }
-  
-  isDrawing.value = false
-  drawingRect.value = null
-}
-
-// Create a new zone
-const createZone = () => {
-  if (!drawingRect.value) return
-  
-  const zone = {
-    id: `zone_${Date.now()}`,
-    page: currentPage.value,
-    x: (drawingRect.value.x / canvasWidth.value) * 100,
-    y: (drawingRect.value.y / canvasHeight.value) * 100,
-    width: (drawingRect.value.width / canvasWidth.value) * 100,
-    height: (drawingRect.value.height / canvasHeight.value) * 100,
-    field_id: '',
-    font_size: 12,
-    font_color: '#000000'
-  }
-  
-  const newZones = [...props.modelValue, zone]
-  emit('update:modelValue', newZones)
-  
-  // Select the new zone and exit drawing mode
-  selectedZoneId.value = zone.id
-  isDrawingMode.value = false
-}
-
-// Select a zone
+// Select zone
 const selectZone = (zoneId) => {
-  selectedZoneId.value = zoneId
+  emit('zone-select', zoneId)
 }
 
-// Update a zone
-const updateZone = (updatedZone) => {
-  const newZones = props.modelValue.map(z => 
-    z.id === updatedZone.id ? updatedZone : z
-  )
-  emit('update:modelValue', newZones)
+// Handle click on background (deselect zone)
+const handleBackgroundClick = () => {
+  emit('zone-select', null)
 }
 
-// Delete a zone
-const deleteZone = (zoneId) => {
-  const newZones = props.modelValue.filter(z => z.id !== zoneId)
-  emit('update:modelValue', newZones)
-  if (selectedZoneId.value === zoneId) {
-    selectedZoneId.value = null
-  }
-}
-
-// Update selected zone field
-const updateSelectedZoneField = (field, value) => {
-  if (!selectedZone.value) return
+// Start dragging
+const startDragging = (event, zone) => {
+  if (isResizing.value) return
   
-  const updatedZone = { ...selectedZone.value, [field]: value }
-  updateZone(updatedZone)
+  isDragging.value = true
+  activeZone.value = zone
+  dragStart.value = { x: event.clientX, y: event.clientY }
+  zoneStart.value = { x: zone.x, y: zone.y, width: zone.width, height: zone.height }
+  
+  selectZone(zone.id)
+  
+  document.addEventListener('mousemove', onDrag)
+  document.addEventListener('mouseup', stopDragging)
 }
+
+// Dragging
+const onDrag = (event) => {
+  if (!isDragging.value || !activeZone.value) return
+  
+  const dx = event.clientX - dragStart.value.x
+  const dy = event.clientY - dragStart.value.y
+  
+  // Convert pixel delta to percentage
+  const dxPercent = (dx / canvasWidth.value) * 100
+  const dyPercent = (dy / canvasHeight.value) * 100
+  
+  // Calculate new position with bounds
+  let newX = Math.max(0, Math.min(100 - zoneStart.value.width, zoneStart.value.x + dxPercent))
+  let newY = Math.max(0, Math.min(100 - zoneStart.value.height, zoneStart.value.y + dyPercent))
+  
+  // Update zone
+  const newZones = props.modelValue.map(z => {
+    if (z.id === activeZone.value.id) {
+      return { ...z, x: newX, y: newY }
+    }
+    return z
+  })
+  emit('update:modelValue', newZones)
+}
+
+// Stop dragging
+const stopDragging = () => {
+  isDragging.value = false
+  activeZone.value = null
+  document.removeEventListener('mousemove', onDrag)
+  document.removeEventListener('mouseup', stopDragging)
+}
+
+// Start resizing
+const startResizing = (event, zone) => {
+  event.preventDefault()
+  
+  isResizing.value = true
+  activeZone.value = zone
+  dragStart.value = { x: event.clientX, y: event.clientY }
+  zoneStart.value = { x: zone.x, y: zone.y, width: zone.width, height: zone.height }
+  
+  selectZone(zone.id)
+  
+  document.addEventListener('mousemove', onResize)
+  document.addEventListener('mouseup', stopResizing)
+}
+
+// Resizing
+const onResize = (event) => {
+  if (!isResizing.value || !activeZone.value) return
+  
+  const dx = event.clientX - dragStart.value.x
+  const dy = event.clientY - dragStart.value.y
+  
+  // Convert pixel delta to percentage
+  const dxPercent = (dx / canvasWidth.value) * 100
+  const dyPercent = (dy / canvasHeight.value) * 100
+  
+  // Calculate new size with minimum
+  let newWidth = Math.max(5, Math.min(100 - zoneStart.value.x, zoneStart.value.width + dxPercent))
+  let newHeight = Math.max(2, Math.min(100 - zoneStart.value.y, zoneStart.value.height + dyPercent))
+  
+  // Update zone
+  const newZones = props.modelValue.map(z => {
+    if (z.id === activeZone.value.id) {
+      return { ...z, width: newWidth, height: newHeight }
+    }
+    return z
+  })
+  emit('update:modelValue', newZones)
+}
+
+// Stop resizing
+const stopResizing = () => {
+  isResizing.value = false
+  activeZone.value = null
+  document.removeEventListener('mousemove', onResize)
+  document.removeEventListener('mouseup', stopResizing)
+}
+
+// Cleanup
+onUnmounted(() => {
+  document.removeEventListener('mousemove', onDrag)
+  document.removeEventListener('mouseup', stopDragging)
+  document.removeEventListener('mousemove', onResize)
+  document.removeEventListener('mouseup', stopResizing)
+})
 </script>
 
 <style scoped>
