@@ -216,7 +216,7 @@
 
               <!-- PDF Download on Success Page -->
               <div
-                v-if="pdfIntegrations.length > 0"
+                v-if="pdfTemplates.length > 0"
                 class="flex items-center flex-wrap gap-x-4 mt-4"
               >
                 <toggle-switch-input
@@ -234,11 +234,11 @@
                     placeholder="Download PDF"
                   />
                   <select-input
-                    name="pdf_integration_id"
+                    name="pdf_template_id"
                     class="w-full mt-4"
                     :form="form"
                     label="PDF template"
-                    :options="pdfIntegrationOptions"
+                    :options="pdfTemplateOptions"
                     :required="true"
                     help="Select the PDF template to use for the download button"
                   />
@@ -283,34 +283,33 @@
 
 <script setup>
 import ProTag from "~/components/app/ProTag.vue"
-import { useFormIntegrations } from "~/composables/query/forms/useFormIntegrations"
+import { formsApi } from "~/api/forms"
+import { useQuery } from "@tanstack/vue-query"
 
 const workingFormStore = useWorkingFormStore()
 const { content: form } = storeToRefs(workingFormStore)
 const crisp = useCrisp()
 
-// PDF Integrations for success page download
-const { list: listIntegrations } = useFormIntegrations()
-const { data: integrationsData } = listIntegrations(computed(() => form.value?.id), {
+// PDF Templates for success page download
+const { data: templatesData } = useQuery({
+  queryKey: ['pdf-templates', computed(() => form.value?.id)],
+  queryFn: () => formsApi.pdfTemplates.list(form.value.id),
   enabled: computed(() => !!form.value?.id)
 })
 
-const pdfIntegrations = computed(() => {
-  const integrations = integrationsData.value || []
-  return integrations.filter(i => i.integration_id === 'pdf' && i.status === 'active')
-})
+const pdfTemplates = computed(() => templatesData.value?.data || [])
 
-const pdfIntegrationOptions = computed(() => {
-  return pdfIntegrations.value.map(i => ({
-    name: i.data?.filename_pattern || `PDF Template ${i.id}`,
-    value: i.id
+const pdfTemplateOptions = computed(() => {
+  return pdfTemplates.value.map(t => ({
+    name: t.name || t.original_filename,
+    value: t.id
   }))
 })
 
-// Auto-select first PDF integration if only one exists
-watch(pdfIntegrations, (integrations) => {
-  if (integrations.length > 0 && form.value?.pdf_download_enabled && !form.value?.pdf_integration_id) {
-    form.value.pdf_integration_id = integrations[0].id
+// Auto-select first PDF template if only one exists
+watch(pdfTemplates, (templates) => {
+  if (templates.length > 0 && form.value?.pdf_download_enabled && !form.value?.pdf_template_id) {
+    form.value.pdf_template_id = templates[0].id
   }
 }, { immediate: true })
 

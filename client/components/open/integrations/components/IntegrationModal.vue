@@ -113,9 +113,6 @@ const isOpen = computed({
 
 // Modal size based on integration type
 const modalUi = computed(() => {
-  if (props.integrationKey === 'pdf') {
-    return { content: 'sm:max-w-[95vw]' }
-  }
   return { content: 'sm:max-w-2xl' }
 })
 

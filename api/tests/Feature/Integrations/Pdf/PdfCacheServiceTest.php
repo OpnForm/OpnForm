@@ -1,7 +1,6 @@
 <?php
 
 use App\Models\Forms\Form;
-use App\Models\Integration\FormIntegration;
 use App\Models\PdfTemplate;
 use App\Models\User;
 use App\Models\Workspace;
@@ -41,31 +40,23 @@ describe('PdfCacheService', function () {
 
         $template = PdfTemplate::create([
             'form_id' => $form->id,
+            'name' => 'Test Template',
             'filename' => 'template.pdf',
             'original_filename' => 'Template.pdf',
             'file_path' => $templatePath,
             'file_size' => strlen($pdfContent),
             'page_count' => 1,
+            'zone_mappings' => [],
         ]);
 
         $submission = $form->submissions()->create([
             'data' => ['name' => 'Test'],
         ]);
 
-        $integration = FormIntegration::create([
-            'form_id' => $form->id,
-            'integration_id' => 'pdf',
-            'status' => 'active',
-            'data' => [
-                'template_id' => $template->id,
-                'zone_mappings' => [],
-            ],
-        ]);
-
         $cacheService = new PdfCacheService();
         $generator = new PdfGeneratorService();
 
-        $path = $cacheService->getOrGenerate($form, $submission, $integration, $generator);
+        $path = $cacheService->getOrGenerateFromTemplate($form, $submission, $template, $generator);
 
         expect($path)->not->toBeNull();
         expect(Storage::exists($path))->toBeTrue();
@@ -80,35 +71,27 @@ describe('PdfCacheService', function () {
 
         $template = PdfTemplate::create([
             'form_id' => $form->id,
+            'name' => 'Test Template',
             'filename' => 'template.pdf',
             'original_filename' => 'Template.pdf',
             'file_path' => $templatePath,
             'file_size' => strlen($pdfContent),
             'page_count' => 1,
+            'zone_mappings' => [],
         ]);
 
         $submission = $form->submissions()->create([
             'data' => ['name' => 'Test'],
         ]);
 
-        $integration = FormIntegration::create([
-            'form_id' => $form->id,
-            'integration_id' => 'pdf',
-            'status' => 'active',
-            'data' => [
-                'template_id' => $template->id,
-                'zone_mappings' => [],
-            ],
-        ]);
-
         $cacheService = new PdfCacheService();
         $generator = new PdfGeneratorService();
 
         // First call - generates
-        $path1 = $cacheService->getOrGenerate($form, $submission, $integration, $generator);
+        $path1 = $cacheService->getOrGenerateFromTemplate($form, $submission, $template, $generator);
 
         // Second call - should return same cached path
-        $path2 = $cacheService->getOrGenerate($form, $submission, $integration, $generator);
+        $path2 = $cacheService->getOrGenerateFromTemplate($form, $submission, $template, $generator);
 
         expect($path1)->toBe($path2);
     });
@@ -122,11 +105,13 @@ describe('PdfCacheService', function () {
 
         $template = PdfTemplate::create([
             'form_id' => $form->id,
+            'name' => 'Test Template',
             'filename' => 'template.pdf',
             'original_filename' => 'Template.pdf',
             'file_path' => $templatePath,
             'file_size' => strlen($pdfContent),
             'page_count' => 1,
+            'zone_mappings' => [],
         ]);
 
         $submission1 = $form->submissions()->create([
@@ -137,21 +122,11 @@ describe('PdfCacheService', function () {
             'data' => ['name' => 'User 2'],
         ]);
 
-        $integration = FormIntegration::create([
-            'form_id' => $form->id,
-            'integration_id' => 'pdf',
-            'status' => 'active',
-            'data' => [
-                'template_id' => $template->id,
-                'zone_mappings' => [],
-            ],
-        ]);
-
         $cacheService = new PdfCacheService();
         $generator = new PdfGeneratorService();
 
-        $path1 = $cacheService->getOrGenerate($form, $submission1, $integration, $generator);
-        $path2 = $cacheService->getOrGenerate($form, $submission2, $integration, $generator);
+        $path1 = $cacheService->getOrGenerateFromTemplate($form, $submission1, $template, $generator);
+        $path2 = $cacheService->getOrGenerateFromTemplate($form, $submission2, $template, $generator);
 
         // Different submissions should have different cache paths
         expect($path1)->not->toBe($path2);
@@ -181,38 +156,30 @@ describe('PdfCacheService', function () {
 
         $template = PdfTemplate::create([
             'form_id' => $form->id,
+            'name' => 'Test Template',
             'filename' => 'template.pdf',
             'original_filename' => 'Template.pdf',
             'file_path' => $templatePath,
             'file_size' => strlen($pdfContent),
             'page_count' => 1,
+            'zone_mappings' => [],
         ]);
 
         $submission = $form->submissions()->create([
             'data' => ['name' => 'Test'],
         ]);
 
-        $integration = FormIntegration::create([
-            'form_id' => $form->id,
-            'integration_id' => 'pdf',
-            'status' => 'active',
-            'data' => [
-                'template_id' => $template->id,
-                'zone_mappings' => [],
-            ],
-        ]);
-
         $cacheService = new PdfCacheService();
         $generator = new PdfGeneratorService();
 
         // Generate first
-        $path1 = $cacheService->getOrGenerate($form, $submission, $integration, $generator);
+        $path1 = $cacheService->getOrGenerateFromTemplate($form, $submission, $template, $generator);
 
         // Clear the Laravel cache so the next generation creates a new file
         \Illuminate\Support\Facades\Cache::flush();
 
         // Generate again - should create new file since cache was cleared
-        $path2 = $cacheService->getOrGenerate($form, $submission, $integration, $generator);
+        $path2 = $cacheService->getOrGenerateFromTemplate($form, $submission, $template, $generator);
 
         // Both paths should exist (different files generated)
         expect(Storage::exists($path1))->toBeTrue();

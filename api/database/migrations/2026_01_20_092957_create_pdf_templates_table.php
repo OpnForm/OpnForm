@@ -13,11 +13,15 @@ return new class () extends Migration {
         Schema::create('pdf_templates', function (Blueprint $table) {
             $table->id();
             $table->foreignId('form_id')->constrained('forms')->onDelete('cascade');
+            $table->string('name')->nullable();
             $table->string('filename');
             $table->string('original_filename');
             $table->string('file_path', 500);
             $table->unsignedInteger('file_size');
             $table->unsignedInteger('page_count')->default(1);
+            $table->json('zone_mappings')->nullable();
+            $table->string('filename_pattern')->default('{form_name}-{submission_id}.pdf');
+            $table->boolean('remove_branding')->default(false);
             $table->timestamps();
             $table->softDeletes();
 

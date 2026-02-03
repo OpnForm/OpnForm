@@ -1,6 +1,5 @@
 <?php
 
-use App\Models\Integration\FormIntegration;
 use App\Models\PdfTemplate;
 use App\Service\Forms\SubmissionUrlService;
 use Illuminate\Support\Facades\Storage;
@@ -18,8 +17,8 @@ function getEncodedSubmissionId($submission): string
     return SubmissionUrlService::getSubmissionIdentifier($submission);
 }
 
-describe('PDF Generation - Signed URL', function () {
-    it('can get a signed url for pdf download', function () {
+describe('PDF Template - Signed URL', function () {
+    it('can get a signed url for pdf download via template', function () {
         $user = $this->actingAsProUser();
         $workspace = $this->createUserWorkspace($user);
         $form = $this->createForm($user, $workspace);
@@ -31,23 +30,14 @@ describe('PDF Generation - Signed URL', function () {
 
         $template = PdfTemplate::create([
             'form_id' => $form->id,
+            'name' => 'Test Template',
             'filename' => 'template.pdf',
             'original_filename' => 'Template.pdf',
             'file_path' => $templatePath,
             'file_size' => strlen($pdfContent),
             'page_count' => 1,
-        ]);
-
-        // Create PDF integration
-        $integration = FormIntegration::create([
-            'form_id' => $form->id,
-            'integration_id' => 'pdf',
-            'status' => 'active',
-            'data' => [
-                'template_id' => $template->id,
-                'zone_mappings' => [],
-                'filename_pattern' => '{form_name}-{submission_id}.pdf',
-            ],
+            'zone_mappings' => [],
+            'filename_pattern' => '{form_name}-{submission_id}.pdf',
         ]);
 
         // Create submission
@@ -56,10 +46,10 @@ describe('PDF Generation - Signed URL', function () {
         ]);
 
         $response = $this->getJson(
-            route('open.forms.submissions.pdf.signed-url', [
+            route('open.forms.pdf-templates.submission.signed-url', [
                 'form' => $form,
+                'pdfTemplate' => $template->id,
                 'submission_id' => getEncodedSubmissionId($submission),
-                'integration' => $integration->id,
             ])
         );
 
@@ -75,23 +65,18 @@ describe('PDF Generation - Signed URL', function () {
         $workspace = $this->createUserWorkspace($user);
         $form = $this->createForm($user, $workspace);
 
+        $pdfContent = createValidPdfForGeneration();
+        $templatePath = "pdf-templates/{$form->id}/template.pdf";
+        Storage::put($templatePath, $pdfContent);
+
         $template = PdfTemplate::create([
             'form_id' => $form->id,
+            'name' => 'Test Template',
             'filename' => 'template.pdf',
             'original_filename' => 'Template.pdf',
-            'file_path' => 'pdf-templates/1/template.pdf',
-            'file_size' => 1000,
+            'file_path' => $templatePath,
+            'file_size' => strlen($pdfContent),
             'page_count' => 1,
-        ]);
-
-        $integration = FormIntegration::create([
-            'form_id' => $form->id,
-            'integration_id' => 'pdf',
-            'status' => 'active',
-            'data' => [
-                'template_id' => $template->id,
-                'zone_mappings' => [],
-            ],
         ]);
 
         $submission = $form->submissions()->create([
@@ -99,10 +84,10 @@ describe('PDF Generation - Signed URL', function () {
         ]);
 
         $response = $this->getJson(
-            route('open.forms.submissions.pdf.signed-url', [
+            route('open.forms.pdf-templates.submission.signed-url', [
                 'form' => $form,
+                'pdfTemplate' => $template->id,
                 'submission_id' => getEncodedSubmissionId($submission),
-                'integration' => $integration->id,
             ])
         );
 
@@ -114,49 +99,50 @@ describe('PDF Generation - Signed URL', function () {
         $workspace = $this->createUserWorkspace($user);
         $form = $this->createForm($user, $workspace);
 
+        $pdfContent = createValidPdfForGeneration();
+        $templatePath = "pdf-templates/{$form->id}/template.pdf";
+        Storage::put($templatePath, $pdfContent);
+
         $template = PdfTemplate::create([
             'form_id' => $form->id,
+            'name' => 'Test Template',
             'filename' => 'template.pdf',
             'original_filename' => 'Template.pdf',
-            'file_path' => 'pdf-templates/1/template.pdf',
-            'file_size' => 1000,
+            'file_path' => $templatePath,
+            'file_size' => strlen($pdfContent),
             'page_count' => 1,
         ]);
 
-        $integration = FormIntegration::create([
-            'form_id' => $form->id,
-            'integration_id' => 'pdf',
-            'status' => 'active',
-            'data' => [
-                'template_id' => $template->id,
-                'zone_mappings' => [],
-            ],
-        ]);
-
         $response = $this->getJson(
-            route('open.forms.submissions.pdf.signed-url', [
+            route('open.forms.pdf-templates.submission.signed-url', [
                 'form' => $form,
+                'pdfTemplate' => $template->id,
                 'submission_id' => 99999,
-                'integration' => $integration->id,
             ])
         );
 
         $response->assertStatus(404);
     });
 
-    it('returns 400 for non-pdf integration', function () {
+    it('returns 404 for template belonging to different form', function () {
         $user = $this->actingAsProUser();
         $workspace = $this->createUserWorkspace($user);
         $form = $this->createForm($user, $workspace);
+        $otherForm = $this->createForm($user, $workspace);
 
-        // Create email integration instead of PDF
-        $integration = FormIntegration::create([
-            'form_id' => $form->id,
-            'integration_id' => 'email',
-            'status' => 'active',
-            'data' => [
-                'send_to' => $user->email,
-            ],
+        $pdfContent = createValidPdfForGeneration();
+        $templatePath = "pdf-templates/{$otherForm->id}/template.pdf";
+        Storage::put($templatePath, $pdfContent);
+
+        // Template belongs to otherForm
+        $template = PdfTemplate::create([
+            'form_id' => $otherForm->id,
+            'name' => 'Test Template',
+            'filename' => 'template.pdf',
+            'original_filename' => 'Template.pdf',
+            'file_path' => $templatePath,
+            'file_size' => strlen($pdfContent),
+            'page_count' => 1,
         ]);
 
         $submission = $form->submissions()->create([
@@ -164,18 +150,18 @@ describe('PDF Generation - Signed URL', function () {
         ]);
 
         $response = $this->getJson(
-            route('open.forms.submissions.pdf.signed-url', [
+            route('open.forms.pdf-templates.submission.signed-url', [
                 'form' => $form,
+                'pdfTemplate' => $template->id,
                 'submission_id' => getEncodedSubmissionId($submission),
-                'integration' => $integration->id,
             ])
         );
 
-        $response->assertStatus(400);
+        $response->assertStatus(404);
     });
 });
 
-describe('PDF Generation - Serve PDF', function () {
+describe('PDF Template - Download', function () {
     it('can generate and download pdf with valid signed url', function () {
         $user = $this->actingAsProUser();
         $workspace = $this->createUserWorkspace($user);
@@ -188,22 +174,14 @@ describe('PDF Generation - Serve PDF', function () {
 
         $template = PdfTemplate::create([
             'form_id' => $form->id,
+            'name' => 'Test Template',
             'filename' => 'template.pdf',
             'original_filename' => 'Template.pdf',
             'file_path' => $templatePath,
             'file_size' => strlen($pdfContent),
             'page_count' => 1,
-        ]);
-
-        $integration = FormIntegration::create([
-            'form_id' => $form->id,
-            'integration_id' => 'pdf',
-            'status' => 'active',
-            'data' => [
-                'template_id' => $template->id,
-                'zone_mappings' => [],
-                'filename_pattern' => '{form_name}-{submission_id}.pdf',
-            ],
+            'zone_mappings' => [],
+            'filename_pattern' => '{form_name}-{submission_id}.pdf',
         ]);
 
         $submission = $form->submissions()->create([
@@ -212,12 +190,12 @@ describe('PDF Generation - Serve PDF', function () {
 
         // Generate signed URL
         $signedUrl = URL::temporarySignedRoute(
-            'forms.submissions.pdf.signed',
+            'open.forms.pdf-templates.download-submission',
             now()->addHours(1),
             [
                 'form' => $form->id,
+                'pdfTemplate' => $template->id,
                 'submission_id' => getEncodedSubmissionId($submission),
-                'integration' => $integration->id,
             ]
         );
 
@@ -233,23 +211,18 @@ describe('PDF Generation - Serve PDF', function () {
         $workspace = $this->createUserWorkspace($user);
         $form = $this->createForm($user, $workspace);
 
+        $pdfContent = createValidPdfForGeneration();
+        $templatePath = "pdf-templates/{$form->id}/template.pdf";
+        Storage::put($templatePath, $pdfContent);
+
         $template = PdfTemplate::create([
             'form_id' => $form->id,
+            'name' => 'Test Template',
             'filename' => 'template.pdf',
             'original_filename' => 'Template.pdf',
-            'file_path' => 'pdf-templates/1/template.pdf',
-            'file_size' => 1000,
+            'file_path' => $templatePath,
+            'file_size' => strlen($pdfContent),
             'page_count' => 1,
-        ]);
-
-        $integration = FormIntegration::create([
-            'form_id' => $form->id,
-            'integration_id' => 'pdf',
-            'status' => 'active',
-            'data' => [
-                'template_id' => $template->id,
-                'zone_mappings' => [],
-            ],
         ]);
 
         $submission = $form->submissions()->create([
@@ -258,42 +231,35 @@ describe('PDF Generation - Serve PDF', function () {
 
         // Request without signature
         $response = $this->get(
-            route('forms.submissions.pdf.signed', [
+            route('open.forms.pdf-templates.download-submission', [
                 'form' => $form,
+                'pdfTemplate' => $template->id,
                 'submission_id' => getEncodedSubmissionId($submission),
-                'integration' => $integration->id,
             ])
         );
 
         $response->assertStatus(403);
     });
 
-    it('rejects inactive pdf integration', function () {
+    it('returns 404 for template belonging to different form', function () {
         $user = $this->actingAsProUser();
         $workspace = $this->createUserWorkspace($user);
         $form = $this->createForm($user, $workspace);
+        $otherForm = $this->createForm($user, $workspace);
 
         $pdfContent = createValidPdfForGeneration();
-        $templatePath = "pdf-templates/{$form->id}/template.pdf";
+        $templatePath = "pdf-templates/{$otherForm->id}/template.pdf";
         Storage::put($templatePath, $pdfContent);
 
+        // Template belongs to otherForm
         $template = PdfTemplate::create([
-            'form_id' => $form->id,
+            'form_id' => $otherForm->id,
+            'name' => 'Test Template',
             'filename' => 'template.pdf',
             'original_filename' => 'Template.pdf',
             'file_path' => $templatePath,
             'file_size' => strlen($pdfContent),
             'page_count' => 1,
-        ]);
-
-        $integration = FormIntegration::create([
-            'form_id' => $form->id,
-            'integration_id' => 'pdf',
-            'status' => 'inactive', // Inactive!
-            'data' => [
-                'template_id' => $template->id,
-                'zone_mappings' => [],
-            ],
         ]);
 
         $submission = $form->submissions()->create([
@@ -301,23 +267,23 @@ describe('PDF Generation - Serve PDF', function () {
         ]);
 
         $signedUrl = URL::temporarySignedRoute(
-            'forms.submissions.pdf.signed',
+            'open.forms.pdf-templates.download-submission',
             now()->addHours(1),
             [
                 'form' => $form->id,
+                'pdfTemplate' => $template->id,
                 'submission_id' => getEncodedSubmissionId($submission),
-                'integration' => $integration->id,
             ]
         );
 
         $response = $this->get($signedUrl);
 
-        $response->assertStatus(400);
+        $response->assertStatus(404);
     });
 });
 
-describe('PDF Integration Creation', function () {
-    it('can create a pdf integration', function () {
+describe('PDF Template - Preview', function () {
+    it('can preview pdf using latest submission', function () {
         $user = $this->actingAsProUser();
         $workspace = $this->createUserWorkspace($user);
         $form = $this->createForm($user, $workspace);
@@ -328,6 +294,43 @@ describe('PDF Integration Creation', function () {
 
         $template = PdfTemplate::create([
             'form_id' => $form->id,
+            'name' => 'Test Template',
+            'filename' => 'template.pdf',
+            'original_filename' => 'Template.pdf',
+            'file_path' => $templatePath,
+            'file_size' => strlen($pdfContent),
+            'page_count' => 1,
+            'zone_mappings' => [],
+        ]);
+
+        // Create a submission
+        $form->submissions()->create([
+            'data' => ['name' => 'Preview Test User'],
+        ]);
+
+        $response = $this->getJson(
+            route('open.forms.pdf-templates.preview', [
+                'form' => $form,
+                'pdfTemplate' => $template->id,
+            ])
+        );
+
+        $response->assertSuccessful()
+            ->assertHeader('content-type', 'application/pdf');
+    });
+
+    it('can preview pdf with empty data when no submissions exist', function () {
+        $user = $this->actingAsProUser();
+        $workspace = $this->createUserWorkspace($user);
+        $form = $this->createForm($user, $workspace);
+
+        $pdfContent = createValidPdfForGeneration();
+        $templatePath = "pdf-templates/{$form->id}/template.pdf";
+        Storage::put($templatePath, $pdfContent);
+
+        $template = PdfTemplate::create([
+            'form_id' => $form->id,
+            'name' => 'Test Template',
             'filename' => 'template.pdf',
             'original_filename' => 'Template.pdf',
             'file_path' => $templatePath,
@@ -335,53 +338,46 @@ describe('PDF Integration Creation', function () {
             'page_count' => 1,
         ]);
 
-        $response = $this->postJson(route('open.forms.integrations.create', $form), [
-            'integration_id' => 'pdf',
-            'status' => 'active',
-            'data' => [
-                'template_id' => $template->id,
-                'zone_mappings' => [
-                    [
-                        'id' => 'zone_1',
-                        'page' => 1,
-                        'x' => 10,
-                        'y' => 10,
-                        'width' => 50,
-                        'height' => 10,
-                        'field_id' => 'name',
-                        'font_size' => 12,
-                        'font_color' => '#000000',
-                    ],
-                ],
-                'filename_pattern' => '{form_name}-{submission_id}.pdf',
-            ],
-        ]);
+        // No submissions created - preview should still work with empty values
 
-        $response->assertSuccessful();
+        $response = $this->getJson(
+            route('open.forms.pdf-templates.preview', [
+                'form' => $form,
+                'pdfTemplate' => $template->id,
+            ])
+        );
 
-        $integration = FormIntegration::where('form_id', $form->id)
-            ->where('integration_id', 'pdf')
-            ->first();
-
-        expect($integration)->not->toBeNull();
-        expect($integration->data->template_id)->toBe($template->id);
+        $response->assertSuccessful()
+            ->assertHeader('content-type', 'application/pdf');
     });
 
-    it('validates template_id is required', function () {
-        $user = $this->actingAsProUser();
+    it('requires authentication for preview', function () {
+        $user = $this->createProUser();
         $workspace = $this->createUserWorkspace($user);
         $form = $this->createForm($user, $workspace);
 
-        $response = $this->postJson(route('open.forms.integrations.create', $form), [
-            'integration_id' => 'pdf',
-            'status' => 'active',
-            'data' => [
-                'zone_mappings' => [],
-            ],
+        $pdfContent = createValidPdfForGeneration();
+        $templatePath = "pdf-templates/{$form->id}/template.pdf";
+        Storage::put($templatePath, $pdfContent);
+
+        $template = PdfTemplate::create([
+            'form_id' => $form->id,
+            'name' => 'Test Template',
+            'filename' => 'template.pdf',
+            'original_filename' => 'Template.pdf',
+            'file_path' => $templatePath,
+            'file_size' => strlen($pdfContent),
+            'page_count' => 1,
         ]);
 
-        $response->assertStatus(422)
-            ->assertJsonValidationErrors(['data.template_id']);
+        $response = $this->getJson(
+            route('open.forms.pdf-templates.preview', [
+                'form' => $form,
+                'pdfTemplate' => $template->id,
+            ])
+        );
+
+        $response->assertStatus(401);
     });
 });
 
@@ -395,39 +391,32 @@ describe('PDF with Zone Mappings', function () {
         $templatePath = "pdf-templates/{$form->id}/template.pdf";
         Storage::put($templatePath, $pdfContent);
 
+        // Get the first text field from the form
+        $textField = collect($form->properties)->firstWhere('type', 'text');
+
+        // Zone mappings are stored on the template
         $template = PdfTemplate::create([
             'form_id' => $form->id,
+            'name' => 'Test Template',
             'filename' => 'template.pdf',
             'original_filename' => 'Template.pdf',
             'file_path' => $templatePath,
             'file_size' => strlen($pdfContent),
             'page_count' => 1,
-        ]);
-
-        // Get the first text field from the form
-        $textField = collect($form->properties)->firstWhere('type', 'text');
-
-        $integration = FormIntegration::create([
-            'form_id' => $form->id,
-            'integration_id' => 'pdf',
-            'status' => 'active',
-            'data' => [
-                'template_id' => $template->id,
-                'zone_mappings' => [
-                    [
-                        'id' => 'zone_name',
-                        'page' => 1,
-                        'x' => 10,
-                        'y' => 20,
-                        'width' => 80,
-                        'height' => 10,
-                        'field_id' => $textField['id'],
-                        'font_size' => 14,
-                        'font_color' => '#000000',
-                    ],
+            'zone_mappings' => [
+                [
+                    'id' => 'zone_name',
+                    'page' => 1,
+                    'x' => 10,
+                    'y' => 20,
+                    'width' => 80,
+                    'height' => 10,
+                    'field_id' => $textField['id'],
+                    'font_size' => 14,
+                    'font_color' => '#000000',
                 ],
-                'filename_pattern' => 'submission-{submission_id}.pdf',
             ],
+            'filename_pattern' => 'submission-{submission_id}.pdf',
         ]);
 
         $submission = $form->submissions()->create([
@@ -435,12 +424,12 @@ describe('PDF with Zone Mappings', function () {
         ]);
 
         $signedUrl = URL::temporarySignedRoute(
-            'forms.submissions.pdf.signed',
+            'open.forms.pdf-templates.download-submission',
             now()->addHours(1),
             [
                 'form' => $form->id,
+                'pdfTemplate' => $template->id,
                 'submission_id' => getEncodedSubmissionId($submission),
-                'integration' => $integration->id,
             ]
         );
 
@@ -450,7 +439,143 @@ describe('PDF with Zone Mappings', function () {
             ->assertHeader('content-type', 'application/pdf');
 
         // Check that generated PDF exists in cache
-        expect(Storage::allFiles('pdf-generated'))->not->toBeEmpty();
+        expect(Storage::allFiles('tmp/pdf-output'))->not->toBeEmpty();
+    });
+
+    it('generates pdf with static text zones', function () {
+        $user = $this->actingAsProUser();
+        $workspace = $this->createUserWorkspace($user);
+        $form = $this->createForm($user, $workspace);
+
+        $pdfContent = createValidPdfForGeneration();
+        $templatePath = "pdf-templates/{$form->id}/template.pdf";
+        Storage::put($templatePath, $pdfContent);
+
+        // Zone with static text instead of field_id
+        $template = PdfTemplate::create([
+            'form_id' => $form->id,
+            'name' => 'Test Template',
+            'filename' => 'template.pdf',
+            'original_filename' => 'Template.pdf',
+            'file_path' => $templatePath,
+            'file_size' => strlen($pdfContent),
+            'page_count' => 1,
+            'zone_mappings' => [
+                [
+                    'id' => 'zone_static',
+                    'page' => 1,
+                    'x' => 10,
+                    'y' => 50,
+                    'width' => 80,
+                    'height' => 10,
+                    'static_text' => 'This is hardcoded text',
+                    'font_size' => 12,
+                    'font_color' => '#333333',
+                ],
+            ],
+            'filename_pattern' => 'submission-{submission_id}.pdf',
+        ]);
+
+        $submission = $form->submissions()->create([
+            'data' => ['name' => 'Test User'],
+        ]);
+
+        $signedUrl = URL::temporarySignedRoute(
+            'open.forms.pdf-templates.download-submission',
+            now()->addHours(1),
+            [
+                'form' => $form->id,
+                'pdfTemplate' => $template->id,
+                'submission_id' => getEncodedSubmissionId($submission),
+            ]
+        );
+
+        $response = $this->get($signedUrl);
+
+        $response->assertSuccessful()
+            ->assertHeader('content-type', 'application/pdf');
+    });
+});
+
+describe('PDF Branding', function () {
+    it('adds branding footer when remove_branding is false', function () {
+        $user = $this->actingAsProUser();
+        $workspace = $this->createUserWorkspace($user);
+        $form = $this->createForm($user, $workspace);
+
+        $pdfContent = createValidPdfForGeneration();
+        $templatePath = "pdf-templates/{$form->id}/template.pdf";
+        Storage::put($templatePath, $pdfContent);
+
+        $template = PdfTemplate::create([
+            'form_id' => $form->id,
+            'name' => 'Test Template',
+            'filename' => 'template.pdf',
+            'original_filename' => 'Template.pdf',
+            'file_path' => $templatePath,
+            'file_size' => strlen($pdfContent),
+            'page_count' => 1,
+            'remove_branding' => false, // Default: include branding
+        ]);
+
+        $submission = $form->submissions()->create([
+            'data' => ['name' => 'Test User'],
+        ]);
+
+        $signedUrl = URL::temporarySignedRoute(
+            'open.forms.pdf-templates.download-submission',
+            now()->addHours(1),
+            [
+                'form' => $form->id,
+                'pdfTemplate' => $template->id,
+                'submission_id' => getEncodedSubmissionId($submission),
+            ]
+        );
+
+        $response = $this->get($signedUrl);
+
+        $response->assertSuccessful()
+            ->assertHeader('content-type', 'application/pdf');
+    });
+
+    it('removes branding footer when remove_branding is true', function () {
+        $user = $this->actingAsProUser();
+        $workspace = $this->createUserWorkspace($user);
+        $form = $this->createForm($user, $workspace);
+
+        $pdfContent = createValidPdfForGeneration();
+        $templatePath = "pdf-templates/{$form->id}/template.pdf";
+        Storage::put($templatePath, $pdfContent);
+
+        $template = PdfTemplate::create([
+            'form_id' => $form->id,
+            'name' => 'Test Template',
+            'filename' => 'template.pdf',
+            'original_filename' => 'Template.pdf',
+            'file_path' => $templatePath,
+            'file_size' => strlen($pdfContent),
+            'page_count' => 1,
+            'remove_branding' => true, // Pro feature: no branding
+        ]);
+
+        $submission = $form->submissions()->create([
+            'data' => ['name' => 'Test User'],
+        ]);
+
+        $signedUrl = URL::temporarySignedRoute(
+            'open.forms.pdf-templates.download-submission',
+            now()->addHours(1),
+            [
+                'form' => $form->id,
+                'pdfTemplate' => $template->id,
+                'submission_id' => getEncodedSubmissionId($submission),
+            ]
+        );
+
+        $response = $this->get($signedUrl);
+
+        $response->assertSuccessful()
+            ->assertHeader('content-type', 'application/pdf');
     });
 });
 

@@ -2,7 +2,6 @@
 
 use App\Exceptions\PdfNotSupportedException;
 use App\Models\Forms\Form;
-use App\Models\Integration\FormIntegration;
 use App\Models\PdfTemplate;
 use App\Models\User;
 use App\Models\Workspace;
@@ -39,34 +38,27 @@ describe('PdfGeneratorService', function () {
         Storage::put($templatePath, $pdfContent);
 
         $form = createTestForm();
+        // Zone mappings and filename_pattern are stored on the template
         $template = PdfTemplate::create([
             'form_id' => $form->id,
+            'name' => 'Test Template',
             'filename' => 'template.pdf',
             'original_filename' => 'Template.pdf',
             'file_path' => $templatePath,
             'file_size' => strlen($pdfContent),
             'page_count' => 1,
+            'zone_mappings' => [],
+            'filename_pattern' => '{form_name}-{submission_id}.pdf',
         ]);
 
         $submission = $form->submissions()->create([
             'data' => ['name' => 'Test User'],
         ]);
 
-        $integration = FormIntegration::create([
-            'form_id' => $form->id,
-            'integration_id' => 'pdf',
-            'status' => 'active',
-            'data' => [
-                'template_id' => $template->id,
-                'zone_mappings' => [],
-                'filename_pattern' => '{form_name}-{submission_id}.pdf',
-            ],
-        ]);
-
         $service = new PdfGeneratorService();
-        $resultPath = $service->generate($form, $submission, $integration);
+        $resultPath = $service->generateFromTemplate($form, $submission, $template);
 
-        expect($resultPath)->toStartWith('pdf-generated/');
+        expect($resultPath)->toStartWith('tmp/pdf-output/');
         expect($resultPath)->toEndWith('.pdf');
         expect(Storage::exists($resultPath))->toBeTrue();
 
@@ -90,44 +82,37 @@ describe('PdfGeneratorService', function () {
             ],
         ]);
 
+        // Zone mappings are now stored on the template
         $template = PdfTemplate::create([
             'form_id' => $form->id,
+            'name' => 'Test Template',
             'filename' => 'template.pdf',
             'original_filename' => 'Template.pdf',
             'file_path' => $templatePath,
             'file_size' => strlen($pdfContent),
             'page_count' => 1,
+            'zone_mappings' => [
+                [
+                    'id' => 'zone_1',
+                    'page' => 1,
+                    'x' => 10,
+                    'y' => 20,
+                    'width' => 50,
+                    'height' => 10,
+                    'field_id' => 'field_name',
+                    'font_size' => 12,
+                    'font_color' => '#FF0000',
+                ],
+            ],
+            'filename_pattern' => 'output.pdf',
         ]);
 
         $submission = $form->submissions()->create([
             'data' => ['field_name' => 'John Doe'],
         ]);
 
-        $integration = FormIntegration::create([
-            'form_id' => $form->id,
-            'integration_id' => 'pdf',
-            'status' => 'active',
-            'data' => [
-                'template_id' => $template->id,
-                'zone_mappings' => [
-                    [
-                        'id' => 'zone_1',
-                        'page' => 1,
-                        'x' => 10,
-                        'y' => 20,
-                        'width' => 50,
-                        'height' => 10,
-                        'field_id' => 'field_name',
-                        'font_size' => 12,
-                        'font_color' => '#FF0000',
-                    ],
-                ],
-                'filename_pattern' => 'output.pdf',
-            ],
-        ]);
-
         $service = new PdfGeneratorService();
-        $resultPath = $service->generate($form, $submission, $integration);
+        $resultPath = $service->generateFromTemplate($form, $submission, $template);
 
         expect(Storage::exists($resultPath))->toBeTrue();
 
@@ -142,66 +127,59 @@ describe('PdfGeneratorService', function () {
 
         $form = createTestForm(['title' => 'Contact Form']);
 
+        // Zone mappings with special fields are stored on the template
         $template = PdfTemplate::create([
             'form_id' => $form->id,
+            'name' => 'Test Template',
             'filename' => 'template.pdf',
             'original_filename' => 'Template.pdf',
             'file_path' => $templatePath,
             'file_size' => strlen($pdfContent),
             'page_count' => 1,
+            'zone_mappings' => [
+                [
+                    'id' => 'zone_form_name',
+                    'page' => 1,
+                    'x' => 10,
+                    'y' => 10,
+                    'width' => 50,
+                    'height' => 10,
+                    'field_id' => 'form_name',
+                    'font_size' => 12,
+                    'font_color' => '#000000',
+                ],
+                [
+                    'id' => 'zone_submission_id',
+                    'page' => 1,
+                    'x' => 10,
+                    'y' => 20,
+                    'width' => 50,
+                    'height' => 10,
+                    'field_id' => 'submission_id',
+                    'font_size' => 12,
+                    'font_color' => '#000000',
+                ],
+                [
+                    'id' => 'zone_submission_date',
+                    'page' => 1,
+                    'x' => 10,
+                    'y' => 30,
+                    'width' => 50,
+                    'height' => 10,
+                    'field_id' => 'submission_date',
+                    'font_size' => 12,
+                    'font_color' => '#000000',
+                ],
+            ],
+            'filename_pattern' => 'output.pdf',
         ]);
 
         $submission = $form->submissions()->create([
             'data' => [],
         ]);
 
-        $integration = FormIntegration::create([
-            'form_id' => $form->id,
-            'integration_id' => 'pdf',
-            'status' => 'active',
-            'data' => [
-                'template_id' => $template->id,
-                'zone_mappings' => [
-                    [
-                        'id' => 'zone_form_name',
-                        'page' => 1,
-                        'x' => 10,
-                        'y' => 10,
-                        'width' => 50,
-                        'height' => 10,
-                        'field_id' => 'form_name',
-                        'font_size' => 12,
-                        'font_color' => '#000000',
-                    ],
-                    [
-                        'id' => 'zone_submission_id',
-                        'page' => 1,
-                        'x' => 10,
-                        'y' => 20,
-                        'width' => 50,
-                        'height' => 10,
-                        'field_id' => 'submission_id',
-                        'font_size' => 12,
-                        'font_color' => '#000000',
-                    ],
-                    [
-                        'id' => 'zone_submission_date',
-                        'page' => 1,
-                        'x' => 10,
-                        'y' => 30,
-                        'width' => 50,
-                        'height' => 10,
-                        'field_id' => 'submission_date',
-                        'font_size' => 12,
-                        'font_color' => '#000000',
-                    ],
-                ],
-                'filename_pattern' => 'output.pdf',
-            ],
-        ]);
-
         $service = new PdfGeneratorService();
-        $resultPath = $service->generate($form, $submission, $integration);
+        $resultPath = $service->generateFromTemplate($form, $submission, $template);
 
         expect(Storage::exists($resultPath))->toBeTrue();
     });
@@ -213,32 +191,25 @@ describe('PdfGeneratorService', function () {
 
         $form = createTestForm(['title' => 'My Form']);
 
+        // Template without explicit filename_pattern
         $template = PdfTemplate::create([
             'form_id' => $form->id,
+            'name' => 'Test Template',
             'filename' => 'template.pdf',
             'original_filename' => 'Template.pdf',
             'file_path' => $templatePath,
             'file_size' => strlen($pdfContent),
             'page_count' => 1,
+            'zone_mappings' => [],
+            // No filename_pattern - should use default
         ]);
 
         $submission = $form->submissions()->create([
             'data' => [],
         ]);
 
-        $integration = FormIntegration::create([
-            'form_id' => $form->id,
-            'integration_id' => 'pdf',
-            'status' => 'active',
-            'data' => [
-                'template_id' => $template->id,
-                'zone_mappings' => [],
-                // No filename_pattern - should use default
-            ],
-        ]);
-
         $service = new PdfGeneratorService();
-        $resultPath = $service->generate($form, $submission, $integration);
+        $resultPath = $service->generateFromTemplate($form, $submission, $template);
 
         expect(Storage::exists($resultPath))->toBeTrue();
     });
