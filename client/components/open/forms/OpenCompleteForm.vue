@@ -439,24 +439,24 @@ const pdfDownloadEnabled = computed(() => {
   // Check if PDF download is enabled and we have a submission ID
   if (!props.form.pdf_download_enabled || !submissionId.value) return false
   
-  // Check if we have a PDF integration ID
-  const integrationId = props.form.pdf_integration_id
-  return !!integrationId
+  // Check if we have a PDF template ID
+  const templateId = props.form.pdf_template_id
+  return !!templateId
 })
 
 const downloadPdf = async () => {
   if (!pdfDownloadEnabled.value || pdfDownloading.value) return
   
-  const integrationId = props.form.pdf_integration_id
-  if (!integrationId) return
+  const templateId = props.form.pdf_template_id
+  if (!templateId) return
   
   pdfDownloading.value = true
   try {
     // Get signed URL from backend
-    const response = await formsApi.pdfTemplates.getSignedUrl(
+    const response = await formsApi.pdfTemplates.getSubmissionSignedUrl(
       props.form.id,
-      submissionId.value,
-      integrationId
+      templateId,
+      submissionId.value
     )
     // Open signed URL in new tab to trigger download
     window.open(response.url, '_blank')

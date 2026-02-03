@@ -81,8 +81,14 @@ export const formsApi = {
     list: (formId, options) => apiService.get(`/open/forms/${formId}/pdf-templates`, options),
     upload: (formId, data, options) => apiService.post(`/open/forms/${formId}/pdf-templates`, data, options),
     get: (formId, templateId, options) => apiService.get(`/open/forms/${formId}/pdf-templates/${templateId}`, options),
+    update: (formId, templateId, data) => apiService.put(`/open/forms/${formId}/pdf-templates/${templateId}`, data),
     delete: (formId, templateId) => apiService.delete(`/open/forms/${formId}/pdf-templates/${templateId}`),
     download: (formId, templateId, options) => apiService.get(`/open/forms/${formId}/pdf-templates/${templateId}/download`, options),
-    getSignedUrl: (formId, submissionId, integrationId) => apiService.get(`/open/forms/${formId}/submissions/${submissionId}/pdf/${integrationId}/signed-url`)
+    getSubmissionSignedUrl: (formId, templateId, submissionId) => apiService.get(`/open/forms/${formId}/pdf-templates/${templateId}/submissions/${submissionId}/signed-url`),
+    getPreviewUrl: (formId, templateId) => {
+      const config = useRuntimeConfig()
+      const authStore = useAuthStore()
+      return `${config.public.apiBase}open/forms/${formId}/pdf-templates/${templateId}/preview?token=${authStore.token}`
+    }
   }
 }

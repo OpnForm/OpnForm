@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Pdf;
 
 use App\Exceptions\PdfNotSupportedException;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Pdf\UpdatePdfTemplateRequest;
 use App\Models\Forms\Form;
 use App\Models\PdfTemplate;
 use Illuminate\Http\Request;
@@ -38,7 +39,8 @@ class PdfTemplateController extends Controller
         $this->authorize('update', $form);
 
         $request->validate([
-            'file' => 'required|file|mimes:pdf|max:10240', // 10MB max
+            'file' => 'required|file|mimes:pdf|max:5120', // 5MB max
+            'name' => 'nullable|string|max:255',
         ]);
 
         $file = $request->file('file');
@@ -62,17 +64,25 @@ class PdfTemplateController extends Controller
         // Store the file
         Storage::put($path, file_get_contents($file->getRealPath()));
 
+        // Use provided name or generate from original filename
+        $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+        $templateName = $request->input('name') ?: $originalName;
+
         $template = PdfTemplate::create([
             'form_id' => $form->id,
+            'name' => $templateName,
             'filename' => $filename,
             'original_filename' => $file->getClientOriginalName(),
             'file_path' => $path,
             'file_size' => $file->getSize(),
             'page_count' => $pageCount,
+            'zone_mappings' => [],
+            'filename_pattern' => '{form_name}-{submission_id}.pdf',
+            'remove_branding' => false,
         ]);
 
         return response()->json([
-            'message' => 'PDF template uploaded successfully.',
+            'message' => 'PDF template uploaded successfully. Let\'s customize as per your needs.',
             'data' => $template,
         ], 201);
     }
@@ -95,6 +105,26 @@ class PdfTemplateController extends Controller
     }
 
     /**
+     * Update a PDF template (zone mappings, name, filename pattern, branding).
+     */
+    public function update(UpdatePdfTemplateRequest $request, Form $form, PdfTemplate $pdfTemplate)
+    {
+        $this->authorize('update', $form);
+
+        // Ensure template belongs to form
+        if ($pdfTemplate->form_id !== $form->id) {
+            abort(404);
+        }
+
+        $pdfTemplate->update($request->validated());
+
+        return response()->json([
+            'message' => 'PDF template updated successfully.',
+            'data' => $pdfTemplate->fresh(),
+        ]);
+    }
+
+    /**
      * Delete a PDF template.
      */
     public function destroy(Form $form, PdfTemplate $pdfTemplate)
@@ -104,6 +134,13 @@ class PdfTemplateController extends Controller
         // Ensure template belongs to form
         if ($pdfTemplate->form_id !== $form->id) {
             abort(404);
+        }
+
+        // Check if template is in use by any integration
+        if ($pdfTemplate->isInUse()) {
+            return response()->json([
+                'message' => 'Template already in use, cannot be deleted.'
+            ], 422);
         }
 
         // Delete file from storage

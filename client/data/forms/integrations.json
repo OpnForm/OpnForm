@@ -85,14 +85,5 @@
     "actions_file_name": "GoogleSheetsIntegrationActions",
     "is_pro": false,
     "crisp_help_page_slug": "how-do-i-integrate-google-sheets-for-my-database-goefny"
-  },
-  "pdf": {
-    "name": "Generate PDF",
-    "icon": "material-symbols:picture-as-pdf-rounded",
-    "section_name": "Documents",
-    "file_name": "PdfIntegration",
-    "actions_file_name": "PdfIntegrationActions",
-    "is_pro": true,
-    "crisp_help_page_slug": "generate-pdf-a5md41"
   }
 }
