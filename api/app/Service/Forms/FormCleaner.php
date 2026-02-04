@@ -37,8 +37,7 @@ class FormCleaner
         'seo_meta' => [],
         'redirect_url' => null,
         'enable_partial_submissions' => false,
-        'enable_ip_tracking' => false,
-        'pdf_download_enabled' => false,
+        'enable_ip_tracking' => false
     ];
 
     private array $formNonTrialingDefaults = [
@@ -67,7 +66,6 @@ class FormCleaner
         'redirect_url' => 'Redirect Url was disabled',
         'enable_partial_submissions' => 'Partial submissions were disabled',
         'enable_ip_tracking' => 'IP tracking was disabled',
-        'pdf_download_enabled' => 'PDF Download was disabled',
 
         // For fields
         'file_upload' => 'Link field is not a file upload.',
