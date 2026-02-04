@@ -344,11 +344,7 @@
 
 <script setup>
 import { formsApi } from '~/api/forms'
-import PdfZoneEditor from '~/components/open/integrations/components/PdfZoneEditor.vue'
-import TextInput from '~/components/forms/core/TextInput.vue'
-import TextAreaInput from '~/components/forms/core/TextAreaInput.vue'
-import SelectInput from '~/components/forms/core/SelectInput.vue'
-import ToggleSwitchInput from '~/components/forms/core/ToggleSwitchInput.vue'
+import PdfZoneEditor from '~/components/open/pdf-editor/PdfZoneEditor.vue'
 import { useQuery } from '@tanstack/vue-query'
 import { generateUUID } from '~/lib/utils.js'
 
