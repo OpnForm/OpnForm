@@ -532,7 +532,7 @@ const saveTemplate = async () => {
     alert.success(response.message)
     goBack()
   } catch (error) {
-    const message = error?.response?._data?.message || 'Failed to save template.'
+    const message = error?.data?.message || error?.message || 'Failed to save template.'
     alert.error(message)
   } finally {
     saving.value = false

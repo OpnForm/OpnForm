@@ -63,7 +63,7 @@
               <div class="h-10 w-10 bg-neutral-100 dark:bg-neutral-900/30 rounded flex items-center justify-center">
                 <UIcon
                   name="material-symbols:picture-as-pdf-rounded"
-                  class="h-5 w-5 text-neutral-600 dark:text-neutral-400"
+                  class="h-5 w-5 text-primary-600 dark:text-primary-400"
                 />
               </div>
               <div>
@@ -76,33 +76,19 @@
                 </p>
               </div>
             </div>
-            <div class="flex items-center gap-2">
-              <UButton
-                color="gray"
-                variant="ghost"
-                icon="i-heroicons-eye"
-                size="sm"
-                @click="previewTemplate(template)"
+            <div class="relative z-20">
+              <UDropdownMenu
+                :items="getTemplateMenuItems(template)"
+                :content="{ side: 'bottom', align: 'end' }"
               >
-                Preview
-              </UButton>
-              <UButton
-                color="primary"
-                variant="soft"
-                icon="i-heroicons-pencil"
-                size="sm"
-                @click="editTemplate(template)"
-              >
-                Edit
-              </UButton>
-              <UButton
-                color="error"
-                variant="ghost"
-                icon="i-heroicons-trash"
-                size="sm"
-                :loading="deletingId === template.id"
-                @click="confirmDelete(template)"
-              />
+                <UButton
+                  color="neutral"
+                  variant="ghost"
+                  icon="i-heroicons-ellipsis-horizontal"
+                  size="md"
+                  :loading="deletingId === template.id"
+                />
+              </UDropdownMenu>
             </div>
           </div>
         </div>
@@ -133,7 +119,10 @@
         </UButton>
       </div>
 
-      <div class="mt-8 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+      <div 
+        v-if="!workspace?.is_pro"
+        class="mt-8 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800"
+      >
         <div class="flex items-start gap-3">
           <UIcon
             name="i-heroicons-information-circle"
@@ -144,18 +133,14 @@
               PDF Branding
             </h4>
             <p class="text-sm text-blue-700 dark:text-blue-300 mt-1">
-              Free accounts include "PDF generated with OpnForm" footer on all pages.
-              <span v-if="!workspace?.is_pro">
-                <NuxtLink
-                  to="/pricing"
-                  class="underline font-medium"
-                >
-                  Upgrade to Pro
-                </NuxtLink> to remove branding.
-              </span>
-              <span v-else>
-                You can disable branding in each template's settings.
-              </span>
+              Free accounts include <b>"PDF generated with OpnForm"</b> footer on all pages.
+              <UButton
+                color="primary"
+                variant="soft"
+                @click="onUpgradeClick"
+              >
+                Upgrade to Pro
+              </UButton> for removing this branding.
             </p>
           </div>
         </div>
@@ -186,6 +171,7 @@ useOpnSeoMeta({
 const alert = useAlert()
 const router = useRouter()
 const { current: workspace } = useCurrentWorkspace()
+const { openSubscriptionModal } = useAppModals()
 
 // Refs
 const fileInput = ref(null)
@@ -220,7 +206,7 @@ const handleFileUpload = async (event) => {
     alert.success(response.message)
     refetch()
   } catch (error) {
-    alert.error(error?.response?._data?.message || 'Failed to upload PDF template.')
+    alert.error(error?.data?.message || error?.message || 'Failed to upload PDF template.')
   } finally {
     uploading.value = false
     // Reset input
@@ -228,6 +214,33 @@ const handleFileUpload = async (event) => {
       fileInput.value.value = ''
     }
   }
+}
+
+// Get menu items for template dropdown
+const getTemplateMenuItems = (template) => {
+  return [
+    [
+      {
+        label: 'Preview',
+        icon: 'i-heroicons-eye',
+        onClick: () => previewTemplate(template)
+      },
+      {
+        label: 'Edit',
+        icon: 'i-heroicons-pencil-square-20-solid',
+        onClick: () => editTemplate(template)
+      }
+    ],
+    [
+      {
+        label: 'Delete template',
+        icon: 'i-heroicons-trash',
+        onClick: () => confirmDelete(template),
+        class: 'text-red-800 hover:bg-red-50 hover:text-red-600 group',
+        iconClass: 'text-red-900 group-hover:text-red-800'
+      }
+    ]
+  ]
 }
 
 // Edit template
@@ -254,11 +267,17 @@ const confirmDelete = (template) => {
         alert.success(response.message)
         refetch()
       } catch (error) {
-        alert.error(error?.response?._data?.message || 'Failed to delete template.')
+        alert.error(error?.data?.message || error?.message || 'Failed to delete template.')
       } finally {
         deletingId.value = null
       }
     }
   )
+}
+
+const onUpgradeClick = () => {
+  openSubscriptionModal({
+    modal_title: 'Upgrade to remove PDF branding'
+  })
 }
 </script>

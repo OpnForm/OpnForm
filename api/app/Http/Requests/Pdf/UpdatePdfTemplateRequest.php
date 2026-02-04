@@ -19,7 +19,7 @@ class UpdatePdfTemplateRequest extends FormRequest
         $form = $this->route('form');
 
         return [
-            'name' => 'sometimes|string|max:255',
+            'name' => 'required|string|max:255',
             'zone_mappings' => ['sometimes', 'array', new PdfZoneMappingsRule($form)],
             'filename_pattern' => 'sometimes|string|max:255',
             'remove_branding' => 'sometimes|boolean',
