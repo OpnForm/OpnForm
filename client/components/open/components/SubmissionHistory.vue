@@ -11,7 +11,7 @@
       color="neutral"
       variant="outline"
       class="disabled:text-neutral-500 shadow-none"
-      icon="i-material-symbols-history"
+      icon="i-heroicons-clock"
       @click="isHistoryModalOpen=true"
     />
   </UTooltip>
