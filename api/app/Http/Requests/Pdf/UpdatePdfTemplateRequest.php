@@ -25,21 +25,4 @@ class UpdatePdfTemplateRequest extends FormRequest
             'remove_branding' => 'sometimes|boolean',
         ];
     }
-
-    /**
-     * Configure the validator instance.
-     */
-    public function withValidator($validator): void
-    {
-        $validator->after(function ($validator) {
-            // Check if user can remove branding (Pro feature)
-            if ($this->has('remove_branding') && $this->boolean('remove_branding')) {
-                /** @var Form $form */
-                $form = $this->route('form');
-                if (!$form->workspace->is_pro) {
-                    $validator->errors()->add('remove_branding', 'Removing branding requires a Pro subscription.');
-                }
-            }
-        });
-    }
 }

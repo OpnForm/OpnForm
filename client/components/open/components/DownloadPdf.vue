@@ -1,20 +1,4 @@
 <template>
-  <UTooltip
-    v-if="pdfIntegrations.length > 0"
-    text="Download PDF"
-    :content="{ side: 'left' }" 
-    arrow
-  >
-    <UButton
-      size="sm"
-      color="neutral"
-      variant="outline"
-      icon="material-symbols:picture-as-pdf-rounded"
-      :loading="pdfDownloading"
-      @click="isDownloadPDFModalOpen = true"
-    />
-  </UTooltip>
-
   <UModal
     v-model:open="isDownloadPDFModalOpen"
   >
@@ -35,9 +19,9 @@
     <template #body>
       <div class="flow-root">
         <select-input
-          v-model="pdfIntegrationId"
+          v-model="pdfTemplateId"
           label="PDF template"
-          :options="pdfIntegrationOptions"
+          :options="pdfTemplateOptions"
           help="Select the PDF template to download"
         />
         <UButton 
@@ -45,9 +29,9 @@
           variant="solid" 
           class="mt-4" 
           icon="i-material-symbols-picture-as-pdf-rounded"
-          :disabled="!pdfIntegrationId"
+          :disabled="!pdfTemplateId"
           :loading="pdfDownloading"
-          @click="downloadPdf"
+          @click="downloadPdf(pdfTemplateId)"
         >
           Download PDF
         </UButton>
@@ -57,60 +41,53 @@
 </template>
 
 <script setup>
-import { useFormIntegrations } from "~/composables/query/forms/useFormIntegrations"
 import { formsApi } from "~/api/forms"
+import { useQuery } from "@tanstack/vue-query"
 
 const props = defineProps({
   form: { type: Object, required: true },
   submissionId: {
-    type: Number,
+    type: [Number, String],
     required: true,
   }
 })
 
 const isDownloadPDFModalOpen = ref(false)
-const pdfIntegrationId = ref(null)
+const pdfTemplateId = ref(null)
 const pdfDownloading = ref(false)
 const alert = useAlert()
 
-const { list: listIntegrations } = useFormIntegrations()
-const { data: integrationsData } = listIntegrations(computed(() => props.form?.id), {
+// Fetch PDF templates for this form
+const { data: templatesData } = useQuery({
+  queryKey: ['pdf-templates', computed(() => props.form?.id)],
+  queryFn: () => formsApi.pdfTemplates.list(props.form.id),
   enabled: computed(() => !!props.form?.id)
 })
 
-const pdfIntegrations = computed(() => {
-  const integrations = integrationsData.value || []
-  return integrations.filter(i => i.integration_id === 'pdf' && i.status === 'active')
-})
+const pdfTemplates = computed(() => templatesData.value?.data || [])
 
-const pdfIntegrationOptions = computed(() => {
-  return pdfIntegrations.value.map(i => ({
-    name: i.data?.filename_pattern || `PDF Template ${i.id}`,
-    value: i.id
+const pdfTemplateOptions = computed(() => {
+  return pdfTemplates.value.map(t => ({
+    name: t.name || t.original_filename,
+    value: t.id
   }))
 })
 
-// Auto-select first PDF integration if only one exists
-watch(pdfIntegrations, (integrations) => {
-  if (integrations.length > 0 && !pdfIntegrationId.value) {
-    pdfIntegrationId.value = integrations[0].id
-  }
-}, { immediate: true })
-
-const downloadPdf = async () => {
-  if (!pdfIntegrationId.value || pdfDownloading.value) return
+const downloadPdf = async (templateId = null) => {
+  if (!templateId || pdfDownloading.value) return
   
   pdfDownloading.value = true
   try {
-    // Get signed URL from backend (includes token for auth)
-    const response = await formsApi.pdfTemplates.getSignedUrl(
+    // Get signed URL from backend
+    const response = await formsApi.pdfTemplates.getSubmissionSignedUrl(
       props.form.id,
-      props.submissionId,
-      pdfIntegrationId.value
+      templateId,
+      props.submissionId
     )
     
     // Open signed URL in new tab to trigger download
     window.open(response.url, '_blank')
+    isDownloadPDFModalOpen.value = false
   } catch (error) {
     console.error('PDF download failed:', error)
     alert.error('Failed to download PDF. Please try again.')
@@ -118,4 +95,46 @@ const downloadPdf = async () => {
     pdfDownloading.value = false
   }
 }
+
+// Public function to handle download logic
+const handleDownload = async () => {
+  // Wait for templates to load if needed (with timeout)
+  if (templatesData.value === undefined) {
+    try {
+      await Promise.race([
+        new Promise(resolve => {
+          const unwatch = watch(templatesData, (data) => {
+            if (data !== undefined) {
+              unwatch()
+              resolve()
+            }
+          }, { immediate: true })
+        }),
+        new Promise(resolve => setTimeout(resolve, 2000)) // 2 second timeout
+      ])
+    } catch {
+      // Timeout or error - continue anyway
+    }
+  }
+
+  // No templates - show message
+  if (pdfTemplates.value.length === 0) {
+    alert.warning('Please create a PDF template first.')
+    return
+  }
+
+  // Single template - download directly
+  if (pdfTemplates.value.length === 1) {
+    await downloadPdf(pdfTemplates.value[0].id)
+    return
+  }
+
+  // Multiple templates - show modal
+  isDownloadPDFModalOpen.value = true
+}
+
+// Expose function for parent components
+defineExpose({
+  handleDownload
+})
 </script>
