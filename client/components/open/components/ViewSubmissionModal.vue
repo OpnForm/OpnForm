@@ -10,11 +10,19 @@
         </h2>
 
         <div class="flex items-center gap-2">
-          <DownloadPdf
-            v-if="form?.pdf_download_enabled && submission?.submission_id"
-            :form="form"
-            :submission-id="submission.submission_id"
-          />
+          <div class="relative z-20">
+            <UDropdownMenu
+              :items="getMenuItems"
+              :content="{ side: 'bottom', align: 'end' }"
+            >
+              <UButton
+                color="neutral"
+                variant="ghost"
+                icon="i-heroicons-ellipsis-horizontal"
+                size="md"
+              />
+            </UDropdownMenu>
+          </div>
 
           <SubmissionHistory 
             v-if="submission?.id"
@@ -63,11 +71,25 @@
       </OpenForm>
     </template>
   </UModal>
+  
+  <DownloadPdf
+    ref="downloadPdfRef"
+    :form="form"
+    :submission-id="submission.submission_id"
+  />
+
+  <EditSubmissionModal
+    :show="showEditSubmissionModal"
+    :form="form"
+    :submission="submission"
+    @close="showEditSubmissionModal = false"
+  />
 </template>
 
 <script setup>
 import DownloadPdf from "./DownloadPdf.vue"
 import SubmissionHistory from "./SubmissionHistory.vue"
+import EditSubmissionModal from "./EditSubmissionModal.vue"
 import OpenForm from "../forms/OpenForm.vue"
 import { FormMode } from "~/lib/forms/FormModeStrategy.js"
 import { useFormManager } from '~/lib/forms/composables/useFormManager'
@@ -91,6 +113,49 @@ const props = defineProps({
 const emit = defineEmits(["close", "restored"])
 const route = useRoute()
 const router = useRouter()
+const alert = useAlert()
+const { copy } = useClipboard()
+const downloadPdfRef = ref(null)
+
+// Use form submissions composable for delete
+const { deleteSubmission } = useFormSubmissions()
+const deleteSubmissionMutation = deleteSubmission()
+
+// Get menu items for submission dropdown
+const getMenuItems = computed(() => {
+  return [
+    [
+      {
+        label: 'Copy link',
+        icon: 'i-heroicons-clipboard-document-check-20-solid',
+        onClick: copyLink
+      },
+      {
+        label: 'Download PDF',
+        icon: 'i-heroicons-arrow-down-tray-20-solid',
+        onClick: downloadPdf
+      },
+    ],
+    [
+      {
+        label: 'Edit',
+        icon: 'i-heroicons-pencil-square-20-solid',
+        onClick: () => {
+          showEditSubmissionModal.value = true
+        }
+      }
+    ],
+    [
+      {
+        label: 'Delete submission',
+        icon: 'i-heroicons-trash',
+        onClick: () => onDeleteClick(),
+        class: 'text-red-800 hover:bg-red-50 hover:text-red-600 group',
+        iconClass: 'text-red-900 group-hover:text-red-800'
+      }
+    ]
+  ]
+})
 
 // Modal state
 const isModalOpen = computed({
@@ -105,6 +170,7 @@ const isModalOpen = computed({
   }
 })
 
+const showEditSubmissionModal = ref(false)
 const currentPage = ref(props.data.findIndex(s => s.id === props.submissionId) + 1)
 const totalSubmissions = ref(props.data.length)
 const submission = computed(() => props.data[currentPage.value - 1])
@@ -162,5 +228,38 @@ const onSubmissionRestored = (restoredData) => {
   })
   // Emit to parent so it can update its data array
   emit('restored', restoredData)
+}
+
+const copyLink = () => {
+  copy(window.location.href)
+  alert.success("Copied!")
+}
+
+const downloadPdf = () => {
+  if (downloadPdfRef.value) {
+    downloadPdfRef.value.handleDownload()
+  } else {
+    alert.error("Something went wrong!")
+  }
+}
+
+const onDeleteClick = () => {
+  alert.confirm("Do you really want to delete this submission?", deleteRecord)
+}
+
+const deleteRecord = () => {
+  deleteSubmissionMutation.mutateAsync({ 
+    formId: props.form.id, 
+    submissionId: props.submissionId 
+  }).then((data) => {
+    if (data.type === "success") {
+      alert.success(data.message)
+      isModalOpen.value = false
+    } else {
+      alert.error("Something went wrong!")
+    }
+  }).catch((error) => {
+    alert.error(error.data?.message || "Something went wrong!")
+  })
 }
 </script>
