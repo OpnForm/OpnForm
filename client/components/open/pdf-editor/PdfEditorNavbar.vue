@@ -76,7 +76,7 @@
           <UButton
             color="primary"
             class="px-8 md:px-4 py-2"
-            :loading="updatePdfTemplateLoading"
+            :loading="saving"
             icon="i-ic-outline-save"
             @click="emit('save-pdf-template')"
             label="Save Changes"
@@ -140,18 +140,11 @@ import EditableTag from '~/components/app/EditableTag.vue'
 import TrackClick from '~/components/global/TrackClick.vue'
 import ProTag from '~/components/app/ProTag.vue'
 
-const props = defineProps({
-  updatePdfTemplateLoading: {
-    type: Boolean,
-    required: true
-  }
-})
-
 const emit = defineEmits(['go-back', 'save-pdf-template'])
 
 const alert = useAlert()
 const pdfStore = useWorkingPdfStore()
-const { content: pdfTemplate, form } = storeToRefs(pdfStore)
+const { content: pdfTemplate, form, saving } = storeToRefs(pdfStore)
 
 defineShortcuts({
   meta_s: {
