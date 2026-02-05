@@ -52,15 +52,16 @@
 </template>
 
 <script setup>
-const props = defineProps({
-  modelValue: { type: Array, default: () => [] },
-  template: { type: Object, required: true },
-  form: { type: Object, required: true },
-  selectedZoneId: { type: String, default: null },
-  currentPage: { type: Number, default: 1 }
-})
+const pdfStore = useWorkingPdfStore()
+const { 
+  content: pdfTemplate,
+  form,
+  currentPage,
+  selectedZoneId,
+  currentPageZones,
+} = storeToRefs(pdfStore)
 
-const emit = defineEmits(['update:modelValue', 'update:currentPage', 'zone-select'])
+const { getZoneLabel } = pdfStore
 
 // PDF rendering state
 const pdfCanvas = ref(null)
@@ -73,44 +74,12 @@ const canvasWidth = ref(0)
 const canvasHeight = ref(0)
 const canvasRect = ref(null)
 
-// Page navigation (v-model:currentPage)
-const currentPage = computed({
-  get: () => props.currentPage,
-  set: (val) => emit('update:currentPage', val)
-})
-
 // Drag/resize state
 const isDragging = ref(false)
 const isResizing = ref(false)
 const activeZone = ref(null)
 const dragStart = ref({ x: 0, y: 0 })
 const zoneStart = ref({ x: 0, y: 0, width: 0, height: 0 })
-
-// Form fields map for labels
-const fieldMap = computed(() => {
-  const map = {}
-  props.form?.properties?.forEach(p => {
-    map[p.id] = p.name
-  })
-  // Add special fields
-  map['submission_id'] = 'Submission ID'
-  map['submission_date'] = 'Submission Date'
-  map['form_name'] = 'Form Name'
-  return map
-})
-
-// Current page zones
-const currentPageZones = computed(() => {
-  return props.modelValue.filter(z => z.page === currentPage.value)
-})
-
-// Get zone label
-const getZoneLabel = (zone) => {
-  if (zone.static_text !== undefined) {
-    return 'Static: ' + (zone.static_text?.substring(0, 15) || 'Text') + (zone.static_text?.length > 15 ? '...' : '')
-  }
-  return fieldMap.value[zone.field_id] || zone.field_id || 'Unmapped'
-}
 
 // Get zone style (convert percentage to pixels)
 const getZoneStyle = (zone) => {
@@ -137,7 +106,7 @@ const initPdfJs = async () => {
 
 // Load PDF
 const loadPdf = async () => {
-  if (!props.template?.id) return
+  if (!pdfTemplate.value?.id) return
   
   pdfLoading.value = true
   pdfDoc.value = null
@@ -148,7 +117,7 @@ const loadPdf = async () => {
     const config = useRuntimeConfig()
     const authStore = useAuthStore()
     const apiBase = config.public.apiBase
-    const url = `${apiBase}open/forms/${props.form.id}/pdf-templates/${props.template.id}/download`
+    const url = `${apiBase}open/forms/${form.value.id}/pdf-templates/${pdfTemplate.value.id}/download`
     
     const loadingTask = pdfjsLib.getDocument({
       url,
@@ -196,19 +165,19 @@ const renderPage = async () => {
 }
 
 // Watch for template changes
-watch(() => props.template, loadPdf, { immediate: true })
+watch(pdfTemplate, loadPdf, { immediate: true })
 
 // Watch for page changes
 watch(currentPage, renderPage)
 
 // Select zone
 const selectZone = (zoneId) => {
-  emit('zone-select', zoneId)
+  pdfStore.setSelectedZone(zoneId)
 }
 
 // Handle click on background (deselect zone)
 const handleBackgroundClick = () => {
-  emit('zone-select', null)
+  pdfStore.setSelectedZone(null)
 }
 
 // Start dragging
@@ -228,7 +197,7 @@ const startDragging = (event, zone) => {
 
 // Dragging
 const onDrag = (event) => {
-  if (!isDragging.value || !activeZone.value) return
+  if (!isDragging.value || !activeZone.value || !pdfTemplate.value?.zone_mappings) return
   
   const dx = event.clientX - dragStart.value.x
   const dy = event.clientY - dragStart.value.y
@@ -241,14 +210,12 @@ const onDrag = (event) => {
   let newX = Math.max(0, Math.min(100 - zoneStart.value.width, zoneStart.value.x + dxPercent))
   let newY = Math.max(0, Math.min(100 - zoneStart.value.height, zoneStart.value.y + dyPercent))
   
-  // Update zone
-  const newZones = props.modelValue.map(z => {
-    if (z.id === activeZone.value.id) {
-      return { ...z, x: newX, y: newY }
-    }
-    return z
-  })
-  emit('update:modelValue', newZones)
+  // Update zone directly in store
+  const zone = pdfTemplate.value.zone_mappings.find(z => z.id === activeZone.value.id)
+  if (zone) {
+    zone.x = newX
+    zone.y = newY
+  }
 }
 
 // Stop dragging
@@ -276,7 +243,7 @@ const startResizing = (event, zone) => {
 
 // Resizing
 const onResize = (event) => {
-  if (!isResizing.value || !activeZone.value) return
+  if (!isResizing.value || !activeZone.value || !pdfTemplate.value?.zone_mappings) return
   
   const dx = event.clientX - dragStart.value.x
   const dy = event.clientY - dragStart.value.y
@@ -289,14 +256,12 @@ const onResize = (event) => {
   let newWidth = Math.max(5, Math.min(100 - zoneStart.value.x, zoneStart.value.width + dxPercent))
   let newHeight = Math.max(2, Math.min(100 - zoneStart.value.y, zoneStart.value.height + dyPercent))
   
-  // Update zone
-  const newZones = props.modelValue.map(z => {
-    if (z.id === activeZone.value.id) {
-      return { ...z, width: newWidth, height: newHeight }
-    }
-    return z
-  })
-  emit('update:modelValue', newZones)
+  // Update zone directly in store
+  const zone = pdfTemplate.value.zone_mappings.find(z => z.id === activeZone.value.id)
+  if (zone) {
+    zone.width = newWidth
+    zone.height = newHeight
+  }
 }
 
 // Stop resizing

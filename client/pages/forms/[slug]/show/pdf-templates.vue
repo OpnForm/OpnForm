@@ -68,9 +68,10 @@
               </div>
               <div>
                 <h3 class="font-medium text-gray-900 dark:text-white">
-                  {{ template.name || template.original_filename }}
+                  {{ template.name }}
                 </h3>
                 <p class="text-sm text-gray-500 dark:text-gray-400">
+                  {{ template.original_filename }} •
                   {{ template.page_count }} page{{ template.page_count > 1 ? 's' : '' }} •
                   {{ template.zone_mappings?.length || 0 }} zone{{ template.zone_mappings?.length >= 1 ? 's' : '' }}
                 </p>

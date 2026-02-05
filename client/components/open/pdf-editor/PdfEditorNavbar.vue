@@ -19,35 +19,6 @@
       @click="settingsModal = true"
     />
 
-    <div
-      v-if="pdfTemplate?.page_count > 1"
-      class="flex items-center gap-2"
-    >
-      <UButton
-        icon="i-heroicons-chevron-left"
-        variant="ghost"
-        size="sm"
-        :disabled="currentPage === 1"
-        @click="pdfStore.setCurrentPage(currentPage - 1)"
-      />
-      <span class="text-sm text-gray-600 dark:text-gray-400 min-w-[80px] text-center">
-        Page {{ currentPage }} of {{ pdfTemplate.page_count }}
-      </span>
-      <UButton
-        icon="i-heroicons-chevron-right"
-        variant="ghost"
-        size="sm"
-        :disabled="currentPage === pdfTemplate.page_count"
-        @click="pdfStore.setCurrentPage(currentPage + 1)"
-      />
-    </div>
-
-    <p class="text-sm text-gray-500 dark:text-gray-400">
-      {{ pdfTemplate?.original_filename }} •
-      {{ pdfTemplate?.page_count }} page{{ pdfTemplate?.page_count > 1 ? 's' : '' }} •
-      {{ (pdfTemplate?.zone_mappings?.length || 0) }} zone{{ (pdfTemplate?.zone_mappings?.length || 0) > 1 ? 's' : '' }}
-    </p>
-
     <div class="flex-grow flex justify-center gap-2">
       <EditableTag
         v-if="pdfTemplate"
@@ -170,10 +141,6 @@ import TrackClick from '~/components/global/TrackClick.vue'
 import ProTag from '~/components/app/ProTag.vue'
 
 const props = defineProps({
-  form: {
-    type: Object,
-    required: true
-  },
   updatePdfTemplateLoading: {
     type: Boolean,
     required: true
@@ -184,8 +151,7 @@ const emit = defineEmits(['go-back', 'save-pdf-template'])
 
 const alert = useAlert()
 const pdfStore = useWorkingPdfStore()
-const pdfTemplate = storeToRefs(pdfStore).content
-const { currentPage } = storeToRefs(pdfStore)
+const { content: pdfTemplate, form } = storeToRefs(pdfStore)
 
 defineShortcuts({
   meta_s: {
@@ -205,6 +171,6 @@ const previewPdf = () => {
   }
 
   // Open preview in new tab
-  window.open(formsApi.pdfTemplates.getPreviewUrl(props.form.id, pdfTemplate.value.id), '_blank')
+  window.open(formsApi.pdfTemplates.getPreviewUrl(form.value.id, pdfTemplate.value.id), '_blank')
 }
 </script>
