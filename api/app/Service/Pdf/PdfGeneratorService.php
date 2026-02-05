@@ -18,7 +18,6 @@ class PdfGeneratorService
 {
     private const DEFAULT_FONT_SIZE = 12;
     private const DEFAULT_FONT_COLOR = [0, 0, 0]; // Black
-    private const BRANDING_TEXT = 'PDF generated with OpnForm';
 
     // Use a consistent temp folder for lifecycle management
     private const TEMP_FOLDER = 'tmp/pdf-output';
@@ -124,21 +123,47 @@ class PdfGeneratorService
     }
 
     /**
-     * Add OpnForm branding footer to the page.
+     * Add OpnForm branding footer: "PDF generated with [LOGO] OpnForm".
      */
     private function addBrandingFooter(Fpdi $pdf, array $pageSize): void
     {
+        $width = $pageSize['width'];
+        $height = $pageSize['height'];
+        $marginBottom = 5;
+        $logoHeight = 5;
+        $logoWidth = 5;
+
         $pdf->SetFont('Helvetica', '', 12);
-        $pdf->SetTextColor(128, 128, 128); // Gray color
+        $pdf->SetTextColor(128, 128, 128);
 
-        // Position at bottom center of page
-        $text = self::BRANDING_TEXT;
-        $textWidth = $pdf->GetStringWidth($text);
-        $x = ($pageSize['width'] - $textWidth) / 2;
-        $y = $pageSize['height'] - 5; // 5mm from bottom
+        $textBefore = 'PDF generated with ';
+        $textAfter = ' OpnForm';
+        $wBefore = $pdf->GetStringWidth($textBefore);
+        $wAfter = $pdf->GetStringWidth($textAfter);
 
-        // Use Text() instead of Cell() - Text() doesn't trigger auto page breaks
-        $pdf->Text($x, $y, $text);
+        $logoPath = resource_path('images/logo.png');
+        $hasLogo = is_file($logoPath);
+
+        $totalWidth = $wBefore + ($hasLogo ? $logoWidth : 0) + $wAfter;
+        $startX = ($width - $totalWidth) / 2;
+        $x = $startX;
+        $y = $height - $marginBottom;
+
+        $pdf->Text($x, $y, $textBefore);
+        $x += $wBefore;
+
+        if ($hasLogo) {
+            $logoY = $y - $logoHeight;
+            $pdf->Image($logoPath, $x, $logoY, $logoWidth, $logoHeight);
+            $x += $logoWidth;
+        }
+
+        $pdf->Text($x, $y, $textAfter);
+
+        // Make the whole branding line clickable
+        $linkY = $y - $logoHeight;
+        $linkH = $logoHeight;
+        $pdf->Link($startX, $linkY, $totalWidth, $linkH, front_url());
     }
 
     /**
