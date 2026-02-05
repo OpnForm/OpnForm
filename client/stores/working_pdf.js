@@ -185,6 +185,13 @@ export const useWorkingPdfStore = defineStore("working_pdf", {
       }
     },
 
+    // Call after a successful save so hasUnsavedChanges becomes false
+    markSaved() {
+      if (this.content) {
+        this.originalTemplate = clonedeep(this.content)
+      }
+    },
+
     // Reset store
     reset() {
       this.content = null
