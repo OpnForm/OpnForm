@@ -7,37 +7,43 @@
       :style="{ minHeight: '520px' }"
       @click="handleBackgroundClick"
     >
-      <!-- PDF Canvas -->
-      <canvas
-        ref="pdfCanvas"
-        class="block mx-auto cursor-crosshair"
-        @click="handleBackgroundClick"
-      />
-
-      <!-- Existing Zones -->
+      <!-- Wrapper sized to PDF page so zones are constrained and aligned with canvas -->
       <div
-        v-for="zone in currentPageZones"
-        :key="zone.id"
-        class="absolute border-2 cursor-move transition-colors"
-        :class="[
-          selectedZoneId === zone.id 
-            ? 'border-blue-500 bg-blue-500/20' 
-            : 'border-blue-400/60 bg-blue-400/10 hover:border-blue-500 hover:bg-blue-500/15'
-        ]"
-        :style="getZoneStyle(zone)"
-        @mousedown.stop="startDragging($event, zone)"
-        @click.stop="selectZone(zone.id)"
+        class="relative mx-auto overflow-hidden"
+        :style="pageWrapperStyle"
       >
-        <div 
-          class="absolute -top-5 left-0 text-xs bg-blue-500 text-white px-1.5 py-0.5 rounded whitespace-nowrap"
-          :class="{ 'opacity-60': selectedZoneId !== zone.id }"
-        >
-          {{ getZoneLabel(zone) }}
-        </div>
-        <div
-          class="absolute bottom-0 right-0 w-3 h-3 bg-blue-500 cursor-se-resize"
-          @mousedown.stop="startResizing($event, zone)"
+        <!-- PDF Canvas -->
+        <canvas
+          ref="pdfCanvas"
+          class="block cursor-crosshair"
+          @click="handleBackgroundClick"
         />
+
+        <!-- Existing Zones (positioned inside page bounds, clipped by overflow-hidden) -->
+        <div
+          v-for="zone in currentPageZones"
+          :key="zone.id"
+          class="absolute border-2 cursor-move transition-colors"
+          :class="[
+            selectedZoneId === zone.id
+              ? 'border-blue-500 bg-blue-500/20'
+              : 'border-blue-400/60 bg-blue-400/10 hover:border-blue-500 hover:bg-blue-500/15'
+          ]"
+          :style="getZoneStyle(zone)"
+          @mousedown.stop="startDragging($event, zone)"
+          @click.stop="selectZone(zone.id)"
+        >
+          <div
+            class="absolute -top-5 left-0 text-xs bg-blue-500 text-white px-1.5 py-0.5 rounded whitespace-nowrap"
+            :class="{ 'opacity-60': selectedZoneId !== zone.id }"
+          >
+            {{ getZoneLabel(zone) }}
+          </div>
+          <div
+            class="absolute bottom-0 right-0 w-3 h-3 bg-blue-500 cursor-se-resize"
+            @mousedown.stop="startResizing($event, zone)"
+          />
+        </div>
       </div>
 
       <!-- Loading overlay -->
@@ -80,6 +86,19 @@ const isResizing = ref(false)
 const activeZone = ref(null)
 const dragStart = ref({ x: 0, y: 0 })
 const zoneStart = ref({ x: 0, y: 0, width: 0, height: 0 })
+
+// Wrapper style: same size as PDF page so zones are constrained within the page
+const pageWrapperStyle = computed(() => {
+  const w = canvasWidth.value
+  const h = canvasHeight.value
+  if (!w || !h) {
+    return { minHeight: '520px' }
+  }
+  return {
+    width: `${w}px`,
+    height: `${h}px`,
+  }
+})
 
 // Get zone style (convert percentage to pixels)
 const getZoneStyle = (zone) => {
