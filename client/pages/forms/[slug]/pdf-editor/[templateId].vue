@@ -121,6 +121,7 @@ const saveTemplate = async () => {
   pdfStore.setSaving(true)
   try {
     const response = await formsApi.pdfTemplates.update(form.value.id, templateId, pdfStore.getSaveData())
+    pdfStore.markSaved()
     alert.success(response.message)
     goBack()
   } catch (err) {
