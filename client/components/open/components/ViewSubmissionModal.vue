@@ -22,14 +22,7 @@
                 size="md"
               />
             </UDropdownMenu>
-          </div>
-
-          <SubmissionHistory 
-            v-if="submission?.id"
-            :form="form" 
-            :submission-id="submission.id"
-            @restored="onSubmissionRestored"
-          />
+          </div>         
           
           <UPagination
             v-model:page="currentPage"
@@ -76,6 +69,14 @@
     ref="downloadPdfRef"
     :form="form"
     :submission-id="submission.submission_id"
+  />
+
+  <SubmissionHistory 
+    :show="showSubmissionHistoryModal"
+    :form="form" 
+    :submission-id="submission.id"
+    @restored="onSubmissionRestored"
+    @close="showSubmissionHistoryModal = false"
   />
 
   <EditSubmissionModal
@@ -138,6 +139,13 @@ const getMenuItems = computed(() => {
     ],
     [
       {
+        label: 'Submission History',
+        icon: 'i-heroicons-clock',
+        onClick: () => {
+          showSubmissionHistoryModal.value = true
+        }
+      },
+      {
         label: 'Edit',
         icon: 'i-heroicons-pencil-square-20-solid',
         onClick: () => {
@@ -171,6 +179,7 @@ const isModalOpen = computed({
 })
 
 const showEditSubmissionModal = ref(false)
+const showSubmissionHistoryModal = ref(false)
 const currentPage = ref(props.data.findIndex(s => s.id === props.submissionId) + 1)
 const totalSubmissions = ref(props.data.length)
 const submission = computed(() => props.data[currentPage.value - 1])
