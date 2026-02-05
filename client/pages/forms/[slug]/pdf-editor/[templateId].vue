@@ -25,7 +25,6 @@
     <!-- Editor Layout (only when loaded) -->
     <template v-else>
       <PdfEditorNavbar
-        :update-pdf-template-loading="saving"
         @go-back="goBack"
         @save-pdf-template="saveTemplate"
       >
@@ -113,7 +112,6 @@ onUnmounted(() => {
 const { 
   content: pdfTemplate,
   showAddZonePopover,
-  saving,
 } = storeToRefs(pdfStore)
 
 // Save template
