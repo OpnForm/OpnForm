@@ -3,6 +3,7 @@
 namespace App\Service\Forms;
 
 use App\Models\Forms\Form;
+use App\Service\Storage\FilenameUrlEncoder;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\URL;
@@ -294,10 +295,14 @@ class FormSubmissionFormatter
     private function getFileUrl($formId, $file)
     {
         try {
+            // Use base64url encoding to avoid URL encoding issues with special characters
+            // See: https://github.com/OpnForm/OpnForm/issues/1024
+            $encodedFilename = FilenameUrlEncoder::encode($file);
+
             return $this->useSignedUrlForFiles ? URL::signedRoute(
                 'open.forms.submissions.file',
-                [$formId, $file]
-            ) : route('open.forms.submissions.file', [$formId, $file]);
+                [$formId, $encodedFilename]
+            ) : route('open.forms.submissions.file', [$formId, $encodedFilename]);
         } catch (\Exception $e) {
             throw $e;
             return null;
