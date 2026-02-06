@@ -37,7 +37,7 @@ class PdfTemplate extends Model
     }
 
     /**
-     * Check if this template is in use 
+     * Check if this template is in use
      * - by any form (e.g., selected as success page download template)
      * - by any integration (e.g., selected as PDF template for email notification).
      */

@@ -154,12 +154,18 @@ const loadPdf = async () => {
   }
 }
 
-// Render current page
+// Render current page (supports new/blank pages)
 const renderPage = async () => {
   if (!pdfDoc.value || !pdfCanvas.value) return
   
+  const logicalPage = currentPage.value
+  const isNew = pdfStore.isNewPage(logicalPage)
+  
   try {
-    const page = await pdfDoc.value.getPage(currentPage.value)
+    // Use page 1 for dimensions when current page is blank
+    const physicalPage = pdfStore.getPhysicalPageNumber(logicalPage)
+    const sourcePageNum = isNew ? 1 : (physicalPage ?? 1)
+    const page = await pdfDoc.value.getPage(sourcePageNum)
     const viewport = page.getViewport({ scale: 1.5 })
     
     const canvas = pdfCanvas.value
@@ -171,10 +177,15 @@ const renderPage = async () => {
     canvasHeight.value = viewport.height
     scale.value = 1.5
     
-    await page.render({
-      canvasContext: context,
-      viewport
-    }).promise
+    if (isNew) {
+      context.fillStyle = '#ffffff'
+      context.fillRect(0, 0, viewport.width, viewport.height)
+    } else {
+      await page.render({
+        canvasContext: context,
+        viewport
+      }).promise
+    }
     
     // Update canvas rect for drag calculations
     canvasRect.value = canvas.getBoundingClientRect()
