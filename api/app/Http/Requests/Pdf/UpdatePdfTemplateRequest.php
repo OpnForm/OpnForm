@@ -23,6 +23,11 @@ class UpdatePdfTemplateRequest extends FormRequest
             'zone_mappings' => ['sometimes', 'array', new PdfZoneMappingsRule($form)],
             'filename_pattern' => 'sometimes|string|max:255',
             'remove_branding' => 'sometimes|boolean',
+            'page_count' => 'sometimes|integer|min:1',
+            'new_pages' => 'sometimes|array',
+            'new_pages.*' => 'integer|min:1',
+            'removed_pages' => 'sometimes|array',
+            'removed_pages.*' => 'integer|min:1',
         ];
     }
 }

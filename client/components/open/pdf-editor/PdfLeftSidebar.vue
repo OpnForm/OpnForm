@@ -11,9 +11,9 @@
     <!-- Pages List -->
     <div class="flex-1 overflow-y-auto p-3 space-y-3">
       <div
-        v-for="pageNum in pdfTemplate.page_count"
+        v-for="pageNum in pageList"
         :key="pageNum"
-        class="cursor-pointer group"
+        class="cursor-pointer group relative"
         @click="selectPage(pageNum)"
       >
         <!-- Thumbnail Container -->
@@ -26,15 +26,50 @@
           ]"
         >
           <canvas
+            v-if="!isNewPage(pageNum)"
             :ref="el => setCanvasRef(el, pageNum)"
             class="w-full h-auto bg-white"
           />
+          <!-- Blank page placeholder -->
+          <div
+            v-else
+            class="w-full aspect-[8.5/11] bg-gray-200 dark:bg-gray-600 flex items-center justify-center"
+          >
+            <span class="text-xs text-gray-500 dark:text-gray-400">New Page</span>
+          </div>
           <!-- Loading overlay -->
           <div
-            v-if="!thumbnailsLoaded[pageNum]"
+            v-if="!isNewPage(pageNum) && !thumbnailsLoaded[pageNum]"
             class="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-gray-900/80"
           >
             <Loader class="h-4 w-4 text-blue-600" />
+          </div>
+          <!-- Top-right: Add page / Remove page (hover only) -->
+          <div
+            class="absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+            @click.stop
+          >
+            <button
+              type="button"
+              class="p-1 rounded bg-blue-600 hover:bg-blue-700 text-white shadow"
+              title="Add page after this"
+              @click.stop="addPageAfter(Number(pageNum))"
+            >
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              </svg>
+            </button>
+            <button
+              v-if="pageList.length > 1"
+              type="button"
+              class="p-1 rounded bg-red-600 hover:bg-red-700 text-white shadow"
+              title="Remove this page"
+              @click.stop="removePage(Number(pageNum))"
+            >
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </button>
           </div>
         </div>
         <!-- Page Number -->
@@ -54,12 +89,29 @@
 </template>
 
 <script setup>
+const alert = useAlert()
 const pdfStore = useWorkingPdfStore()
 const { 
   content: pdfTemplate,
   form,
   currentPage,
+  pageList,
 } = storeToRefs(pdfStore)
+
+function isNewPage(pageNum) {
+  return pdfStore.isNewPage(pageNum)
+}
+
+function addPageAfter(pageNum) {
+  pdfStore.addPageAfter(pageNum)
+}
+
+function removePage(pageNum) {
+  alert.confirm(
+    'All zones on this page will be permanently deleted. Are you sure you want to remove this page?',
+    () => pdfStore.removePage(pageNum)
+  )
+}
 
 // PDF state
 const pdfDoc = shallowRef(null)
@@ -77,6 +129,7 @@ const setCanvasRef = (el, pageNum) => {
 // Select page
 const selectPage = (pageNum) => {
   pdfStore.setCurrentPage(pageNum)
+  pdfStore.setSelectedZone(null)
 }
 
 // Initialize PDF.js library
@@ -119,22 +172,21 @@ const loadPdf = async () => {
   }
 }
 
-// Render all page thumbnails
+// Render all page thumbnails (skip new/blank pages)
 const renderAllThumbnails = async () => {
   if (!pdfDoc.value) return
-  
-  for (let pageNum = 1; pageNum <= pdfTemplate.value.page_count; pageNum++) {
+  for (const pageNum of pageList.value) {
+    if (pdfStore.isNewPage(pageNum)) continue
     await renderThumbnail(pageNum)
   }
 }
 
-// Render single thumbnail
+// Render single thumbnail (pageNum is logical)
 const renderThumbnail = async (pageNum) => {
   if (!pdfDoc.value) return
   
   const canvas = canvasRefs.value[pageNum]
   if (!canvas) {
-    // Canvas not ready yet, retry after a short delay
     await new Promise(resolve => setTimeout(resolve, 50))
     if (canvasRefs.value[pageNum]) {
       await renderThumbnail(pageNum)
@@ -142,8 +194,10 @@ const renderThumbnail = async (pageNum) => {
     return
   }
   
+  const physicalPage = pdfStore.getPhysicalPageNumber(pageNum)
+  if (physicalPage == null) return
   try {
-    const page = await pdfDoc.value.getPage(pageNum)
+    const page = await pdfDoc.value.getPage(physicalPage)
     // Use a smaller scale for thumbnails
     const viewport = page.getViewport({ scale: 0.3 })
     
@@ -162,16 +216,31 @@ const renderThumbnail = async (pageNum) => {
   }
 }
 
-// Watch for template changes
-watch(() => pdfTemplate.value, loadPdf, { immediate: true })
+// When template id is set/changed: load PDF from server
+watch(() => pdfTemplate.value?.id, loadPdf, { immediate: true })
+
+// When page_count or new_pages change (add/remove page): refresh thumbnail state and re-render list
+watch(
+  () => ({
+    page_count: pdfTemplate.value?.page_count,
+    new_pages: pdfTemplate.value?.new_pages,
+  }),
+  () => {
+    thumbnailsLoaded.value = {}
+    if (pdfDoc.value) {
+      nextTick(() => renderAllThumbnails())
+    }
+  },
+  { deep: true }
+)
 
 // Re-render thumbnails when canvasRefs become available
 watch(canvasRefs, async () => {
-  if (pdfDoc.value && Object.keys(canvasRefs.value).length > 0) {
-    for (let pageNum = 1; pageNum <= pdfTemplate.value.page_count; pageNum++) {
-      if (!thumbnailsLoaded.value[pageNum] && canvasRefs.value[pageNum]) {
-        await renderThumbnail(pageNum)
-      }
+  if (!pdfDoc.value) return
+  for (const pageNum of pageList.value) {
+    if (pdfStore.isNewPage(pageNum)) continue
+    if (!thumbnailsLoaded.value[pageNum] && canvasRefs.value[pageNum]) {
+      await renderThumbnail(pageNum)
     }
   }
 }, { deep: true })

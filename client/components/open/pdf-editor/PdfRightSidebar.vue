@@ -143,14 +143,14 @@
       <!-- No Zone Selected / Zones List -->
       <div v-else class="p-4">
         <div
-          v-if="!pdfTemplate?.zone_mappings?.length"
+          v-if="currentPageZones?.length === 0"
           class="text-center py-8"
         >
           <div class="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center mx-auto mb-3">
             <UIcon name="i-heroicons-cursor-arrow-ripple" class="w-6 h-6 text-gray-400" />
           </div>
           <p class="text-sm text-gray-500 dark:text-gray-400">
-            No zones yet
+            No zones yet on this page
           </p>
           <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
             Click "Add Zone" to map form fields to PDF locations
@@ -198,7 +198,6 @@
 const pdfStore = useWorkingPdfStore()
 
 const { 
-  content: pdfTemplate,
   showAddZonePopover,
   currentPageZones,
   selectedZone,
