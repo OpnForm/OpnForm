@@ -133,12 +133,7 @@ const saveTemplate = async () => {
 }
 
 // Go back
-const goBack = () => {
-  if (pdfStore.hasUnsavedChanges) {
-    alert.warning('You have unsaved changes. Please save changes before going back.')
-    return
-  }
-  
+const goBack = () => {  
   router.push({
     name: 'forms-slug-show-pdf-templates',
     params: { slug }
@@ -151,5 +146,17 @@ useOpnSeoMeta({
     ? `Edit PDF Template - ${pdfTemplate.value.name}`
     : 'Edit PDF Template'
   ),
+})
+
+onBeforeRouteLeave((to, from, next) => {
+  if (pdfStore.hasUnsavedChanges) {
+      if (window.confirm('Changes you made may not be saved. Are you sure want to leave?')) {
+        window.onbeforeunload = null
+        next()
+      } else {
+        next(false)
+      }
+    }
+  next()
 })
 </script>

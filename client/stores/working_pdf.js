@@ -22,9 +22,21 @@ export const useWorkingPdfStore = defineStore("working_pdf", {
     
     // Save state
     saving: false,
+
+    // Logical page numbers removed this session (sent on save so server can rebuild PDF)
+    removedPagesForSave: [],
+
+    // Page count from PDF file when template was loaded (never changed by add/remove until next load)
+    originalPageCount: null,
   }),
 
   getters: {
+    // Explicit list of logical page numbers 1..page_count for stable v-for
+    pageList() {
+      const n = this.content?.page_count || 0
+      if (n <= 0) return []
+      return Array.from({ length: n }, (_, i) => i + 1)
+    },
     // Check for unsaved changes
     hasUnsavedChanges() {
       if (!this.content || !this.originalTemplate) return false
@@ -88,11 +100,14 @@ export const useWorkingPdfStore = defineStore("working_pdf", {
           zone_mappings: template.zone_mappings || [],
           filename_pattern: template.filename_pattern || DEFAULT_FILENAME_PATTERN,
           remove_branding: template.remove_branding || false,
+          new_pages: template.new_pages || [],
         }
         this.content = clonedeep(normalizedTemplate)
         this.originalTemplate = clonedeep(normalizedTemplate)
         this.currentPage = 1
         this.selectedZoneId = null
+        this.removedPagesForSave = []
+        this.originalPageCount = template.page_count ?? (normalizedTemplate.zone_mappings?.length ? 1 : 1)
       }
     },
 
@@ -174,7 +189,79 @@ export const useWorkingPdfStore = defineStore("working_pdf", {
       return field?.name || zone.field_id || 'Unmapped'
     },
 
-    // Get data for saving
+    // Add a blank page after the given page number (1-based). Client-side only; persisted on save.
+    addPageAfter(afterPageNum) {
+      if (!this.content) return
+      const after = Number(afterPageNum)
+      if (!Number.isInteger(after) || after < 0) return
+      const insertAt = after + 1
+      this.content.page_count = (this.content.page_count || 1) + 1
+      this.content.new_pages = this.content.new_pages || []
+      this.content.new_pages.push(insertAt)
+      this.content.new_pages.sort((a, b) => a - b)
+      // Renumber zones: any zone on page >= insertAt moves to page+1
+      this.content.zone_mappings = (this.content.zone_mappings || []).map((z) => {
+        if (z.page >= insertAt) return { ...z, page: z.page + 1 }
+        return z
+      })
+      if (this.currentPage >= insertAt) {
+        this.currentPage = this.currentPage + 1
+      }
+      this.setCurrentPage(insertAt)
+    },
+
+    // Remove a page (and all zones on it). Client-side only; server rebuilds PDF on save. Call after confirm.
+    removePage(pageNum) {
+      if (!this.content) return
+      const num = Number(pageNum)
+      if (!Number.isInteger(num) || num < 1) return
+      const total = this.content.page_count || 1
+      if (total <= 1) return
+      this.removedPagesForSave = [...(this.removedPagesForSave || []), num]
+      this.content.page_count = total - 1
+      this.content.new_pages = (this.content.new_pages || []).filter((p) => p !== num).map((p) => (p > num ? p - 1 : p))
+      this.content.zone_mappings = (this.content.zone_mappings || [])
+        .filter((z) => z.page !== num)
+        .map((z) => (z.page > num ? { ...z, page: z.page - 1 } : z))
+      if (this.selectedZoneId) {
+        const zone = this.content.zone_mappings.find((z) => z.id === this.selectedZoneId)
+        if (!zone) this.selectedZoneId = null
+      }
+      if (this.currentPage === num) {
+        this.currentPage = Math.max(1, num - 1)
+      } else if (this.currentPage > num) {
+        this.currentPage = this.currentPage - 1
+      }
+    },
+
+    // Whether a logical page number is a new (inserted) page
+    isNewPage(logicalPageNum) {
+      const n = Number(logicalPageNum)
+      return (this.content?.new_pages || []).includes(n)
+    },
+
+    // Map logical page (1-based) to physical page in the PDF file. Returns null if logical is a new (blank) page.
+    getPhysicalPageNumber(logicalPageNum) {
+      if (!this.content) return null
+      const logical = Number(logicalPageNum)
+      const newPages = this.content.new_pages || []
+      if (newPages.includes(logical)) return null
+      const orig = this.originalPageCount ?? this.content.page_count ?? 1
+      let pagesToKeep = Array.from({ length: orig }, (_, i) => i + 1)
+      for (const r of this.removedPagesForSave || []) {
+        const idx = Number(r) - 1
+        if (idx >= 0 && idx < pagesToKeep.length) {
+          pagesToKeep = pagesToKeep.slice(0, idx).concat(pagesToKeep.slice(idx + 1))
+        }
+      }
+      let physicalIndex = 0
+      for (let L = 1; L < logical; L++) {
+        if (!newPages.includes(L)) physicalIndex++
+      }
+      return pagesToKeep[physicalIndex] ?? null
+    },
+
+    // Get data for saving (new_pages/removed_pages used by server to rebuild PDF file only; not stored in DB)
     getSaveData() {
       if (!this.content) return null
       return {
@@ -182,14 +269,18 @@ export const useWorkingPdfStore = defineStore("working_pdf", {
         zone_mappings: this.content.zone_mappings,
         filename_pattern: this.content.filename_pattern,
         remove_branding: this.content.remove_branding,
+        page_count: this.content.page_count,
+        new_pages: this.content.new_pages || [],
+        removed_pages: this.removedPagesForSave || [],
       }
     },
 
-    // Call after a successful save so hasUnsavedChanges becomes false
+    // Call after a successful save so hasUnsavedChanges becomes false; clear removedPagesForSave
     markSaved() {
       if (this.content) {
         this.originalTemplate = clonedeep(this.content)
       }
+      this.removedPagesForSave = []
     },
 
     // Reset store
@@ -201,6 +292,8 @@ export const useWorkingPdfStore = defineStore("working_pdf", {
       this.currentPage = 1
       this.showAddZonePopover = false
       this.saving = false
+      this.removedPagesForSave = []
+      this.originalPageCount = null
     }
   }
 })

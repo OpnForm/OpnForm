@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Pdf\UpdatePdfTemplateRequest;
 use App\Models\Forms\Form;
 use App\Models\PdfTemplate;
+use App\Service\Pdf\PdfTemplateRebuildService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -106,17 +107,41 @@ class PdfTemplateController extends Controller
 
     /**
      * Update a PDF template (zone mappings, name, filename pattern, branding).
+     * If new_pages or removed_pages are sent, the stored PDF file is rebuilt (add/remove pages) then not stored in DB.
      */
     public function update(UpdatePdfTemplateRequest $request, Form $form, PdfTemplate $pdfTemplate)
     {
         $this->authorize('update', $form);
 
-        // Ensure template belongs to form
         if ($pdfTemplate->form_id !== $form->id) {
             abort(404);
         }
 
-        $pdfTemplate->update($request->validated());
+        $validated = $request->validated();
+        $newPages = $validated['new_pages'] ?? [];
+        $removedPages = $validated['removed_pages'] ?? [];
+        $targetPageCount = (int) ($validated['page_count'] ?? $pdfTemplate->page_count);
+
+        // Rebuild PDF file when add/remove pages (apply to file only; do not store in DB)
+        if (! empty($newPages) || ! empty($removedPages)) {
+            try {
+                $service = app(PdfTemplateRebuildService::class);
+                $newContent = $service->rebuild(
+                    $pdfTemplate->file_path,
+                    $removedPages,
+                    $newPages,
+                    $targetPageCount
+                );
+                Storage::put($pdfTemplate->file_path, $newContent);
+            } catch (PdfNotSupportedException $e) {
+                return response()->json([
+                    'message' => $e->getMessage(),
+                    'errors' => ['file' => [$e->getMessage()]],
+                ], 422);
+            }
+        }
+        unset($validated['new_pages'], $validated['removed_pages']);
+        $pdfTemplate->update($validated);
 
         return response()->json([
             'message' => 'PDF template updated successfully.',
