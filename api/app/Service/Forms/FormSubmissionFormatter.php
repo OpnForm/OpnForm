@@ -250,9 +250,10 @@ class FormSubmissionFormatter
                     }
                     $field['email_data'] = collect($data[$field['id']])->map(function ($file) use ($formId) {
                         $splitText = explode('.', $file);
+                        $encodedFilename = FilenameUrlEncoder::encode($file);
 
                         return [
-                            'unsigned_url' => route('open.forms.submissions.file', [$formId, $file]),
+                            'unsigned_url' => route('open.forms.submissions.file', [$formId, $encodedFilename]),
                             'signed_url' => $this->getFileUrl($formId, $file),
                             'label' => Str::limit($file, 20, '[...].' . end($splitText)),
                         ];

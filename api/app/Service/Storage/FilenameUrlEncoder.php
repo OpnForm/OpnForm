@@ -50,33 +50,4 @@ class FilenameUrlEncoder
 
         return $decoded;
     }
-
-    /**
-     * Check if a string appears to be base64url encoded.
-     *
-     * This helps with backward compatibility - if a filename doesn't look
-     * like it's encoded, we can handle it as a raw filename.
-     *
-     * @param string $value The value to check
-     * @return bool True if the value appears to be base64url encoded
-     */
-    public static function isEncoded(string $value): bool
-    {
-        // Base64url only contains alphanumeric, dash, and underscore
-        // Real filenames typically have dots and other characters
-        if (!preg_match('/^[A-Za-z0-9_-]+$/', $value)) {
-            return false;
-        }
-
-        // Try to decode and check if result is valid UTF-8
-        $decoded = self::decode($value);
-
-        // If decoded equals input, it wasn't really encoded
-        if ($decoded === $value) {
-            return false;
-        }
-
-        // Check if the decoded value is valid UTF-8
-        return mb_check_encoding($decoded, 'UTF-8');
-    }
 }

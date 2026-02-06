@@ -96,37 +96,6 @@ describe('FilenameUrlEncoder', function () {
         });
     });
 
-    describe('isEncoded', function () {
-        it('returns true for encoded filenames', function () {
-            $original = 'image-(1)_abc.jpg';
-            $encoded = FilenameUrlEncoder::encode($original);
-
-            expect(FilenameUrlEncoder::isEncoded($encoded))->toBeTrue();
-        });
-
-        it('returns false for raw filenames with special characters', function () {
-            $filename = 'image-(1)_abc.jpg';
-
-            expect(FilenameUrlEncoder::isEncoded($filename))->toBeFalse();
-        });
-
-        it('returns false for filenames with dots', function () {
-            $filename = 'document.pdf';
-
-            expect(FilenameUrlEncoder::isEncoded($filename))->toBeFalse();
-        });
-
-        it('returns false for simple alphanumeric that matches itself when decoded', function () {
-            // A string that is valid base64url but decodes to gibberish
-            $simple = 'abc123';
-
-            // This might or might not be considered encoded depending on decode result
-            // The key is it should be safe to use
-            $result = FilenameUrlEncoder::isEncoded($simple);
-            expect($result)->toBeBool();
-        });
-    });
-
     describe('roundtrip', function () {
         it('handles various S3-safe filenames correctly', function () {
             $testCases = [
