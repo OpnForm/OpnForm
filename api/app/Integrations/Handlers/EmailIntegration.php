@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use App\Open\MentionParser;
 use App\Service\Forms\FormSubmissionFormatter;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Auth;
 
@@ -27,7 +28,9 @@ class EmailIntegration extends AbstractIntegrationHandler
             'include_submission_data' => 'boolean',
             'include_hidden_fields_submission_data' => ['nullable', 'boolean'],
             'reply_to' => 'nullable',
-            'link_edit_submission' => ['nullable', 'boolean']
+            'link_edit_submission' => ['nullable', 'boolean'],
+            'pdf_template_ids' => ['nullable', 'array'],
+            'pdf_template_ids.*' => ['integer', Rule::exists('pdf_templates', 'id')->where('form_id', $form->id)],
         ];
 
         if ($form->is_pro || config('app.self_hosted')) {

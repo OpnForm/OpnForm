@@ -94,6 +94,18 @@
       class="mt-4"
       label="Edit Submission Link"
     />
+     
+    <SelectInput
+      :form="integrationData"
+      name="data.pdf_template_ids"
+      :options="pdfTemplateOptions"
+      multiple
+      clearable
+      class="mt-4"
+      label="Attach PDF templates"
+      help="Generate PDFs from selected templates and attach them to the email. Leave empty to not attach any PDF."
+    />
+
     <MentionInput
       :form="integrationData"
       :mentions="form.properties"
@@ -107,6 +119,8 @@
 </template>
 
 <script setup>
+import { useQuery } from '@tanstack/vue-query'
+import { formsApi } from '~/api/forms'
 import IntegrationWrapper from "./components/IntegrationWrapper.vue"
 
 const props = defineProps({
@@ -119,6 +133,17 @@ const props = defineProps({
 const selfHosted = computed(() => useFeatureFlag('self_hosted'))
 const { openWorkspaceSettings } = useAppModals()
 const { data: user } = useAuth().user()
+
+const { data: pdfTemplates } = useQuery({
+  queryKey: ['pdf-templates', computed(() => props.form?.id)],
+  queryFn: () => formsApi.pdfTemplates.list(props.form.id),
+  enabled: computed(() => !!props.form?.id),
+})
+
+const pdfTemplateOptions = computed(() => {
+  const list = pdfTemplates.value?.data ?? []
+  return list.map((t) => ({ name: t.name, value: t.id }))
+})
 
 function openEmailsModal () {
   openWorkspaceSettings('emails')
@@ -139,6 +164,7 @@ onBeforeMount(() => {
     email_content: "Hello there 👋 <br>This is a confirmation that your submission was successfully saved.",
     include_submission_data: true,
     include_hidden_fields_submission_data: false,
+    pdf_template_ids: null,
   })) {
     if (props.integrationData.data[keyname] === undefined) {
       props.integrationData.data[keyname] = defaultValue

@@ -1,23 +1,6 @@
 <template>
-  <UTooltip 
-    text="Submission History" 
-    :content="{ side: 'left' }" 
-    arrow
-  >
-    <UButton
-      :disabled="isLoading || !versions.length"
-      :loading="isLoading"
-      size="sm"
-      color="neutral"
-      variant="outline"
-      class="disabled:text-neutral-500 shadow-none"
-      icon="i-material-symbols-history"
-      @click="isHistoryModalOpen=true"
-    />
-  </UTooltip>
-
   <UModal
-    v-model:open="isHistoryModalOpen"
+    v-model:open="isModalOpen"
     :ui="{ content: 'sm:max-w-xl' }"
   >
     <template #header>
@@ -30,13 +13,16 @@
             View and restore previous versions of this submission
           </p>
         </div>
-        <UButton color="neutral" variant="ghost" icon="i-heroicons-x-mark-20-solid" class="-my-1" @click="isHistoryModalOpen = false" />
+        <UButton color="neutral" variant="ghost" icon="i-heroicons-x-mark-20-solid" class="-my-1" @click="isModalOpen = false" />
       </div>
     </template>
 
     <template #body>
       <div class="flow-root">
-        <ul role="list" class="-mb-8">
+        <p v-if="versions.length === 0" class="text-center">
+          No history found for this submission.
+        </p>
+        <ul v-else role="list" class="-mb-8">
           <li v-for="(version, index) in versions" :key="version.id">
             <div class="relative pb-8">
               <span v-if="index !== versions.length - 1" class="absolute left-4 top-4 -ml-px h-full w-0.5 bg-neutral-200 dark:bg-neutral-700" aria-hidden="true" />
@@ -110,6 +96,7 @@ import { formsApi } from '~/api/forms'
 import { format, formatDistanceToNow } from 'date-fns'
 
 const props = defineProps({
+  show: { type: Boolean, required: true },
   form: { type: Object, required: true },
   submissionId: {
     type: Number,
@@ -117,10 +104,21 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['restored'])
+// Modal state
+const isModalOpen = computed({
+  get() {
+    return props.show
+  },
+  set(value) {
+    if (!value) {
+      emit("close")
+    }
+  }
+})
+
+const emit = defineEmits(['restored', 'close'])
 
 const { openSubscriptionModal } = useAppModals()
-const isHistoryModalOpen = ref(false)
 const versions = ref([])
 const isLoading = ref(false)
 const { invalidateSubmissions } = useFormSubmissions()
@@ -199,7 +197,7 @@ const restoreVersion = async (version) => {
     emit('restored', restoredSubmission.data)
     useAlert().success('Submission restored successfully')
     await fetchVersions()
-    isHistoryModalOpen.value = false
+    isModalOpen.value = false
   } catch {
     useAlert().error('Failed to restore version')
   }

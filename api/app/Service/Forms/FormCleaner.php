@@ -37,7 +37,7 @@ class FormCleaner
         'seo_meta' => [],
         'redirect_url' => null,
         'enable_partial_submissions' => false,
-        'enable_ip_tracking' => false,
+        'enable_ip_tracking' => false
     ];
 
     private array $formNonTrialingDefaults = [
