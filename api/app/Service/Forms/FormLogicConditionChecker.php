@@ -116,11 +116,16 @@ class FormLogicConditionChecker
         if (!isset($condition['value'])) {
             return false;
         }
+        if (!is_array($fieldValue)) {
+            return false;
+        }
 
         foreach ($condition['value'] as $key => $value) {
-            if (!(array_key_exists($key, $condition['value']) && array_key_exists($key, $fieldValue))) {
-                return false;
+            // Skip rows that don't exist in the field value
+            if (!array_key_exists($key, $fieldValue)) {
+                continue;
             }
+            // If any row matches, return true (contains semantics)
             if ($condition['value'][$key] == $fieldValue[$key]) {
                 return true;
             }
@@ -133,7 +138,14 @@ class FormLogicConditionChecker
         if (!isset($condition['value'])) {
             return false;
         }
+        if (!is_array($fieldValue)) {
+            return false;
+        }
         foreach ($condition['value'] as $key => $value) {
+            // Check if the key exists in the field value before comparing
+            if (!array_key_exists($key, $fieldValue)) {
+                return false;
+            }
             if ($condition['value'][$key] !== $fieldValue[$key]) {
                 return false;
             }
