@@ -1,5 +1,21 @@
 <template>
-  <div class="w-40 bg-white dark:bg-gray-800 border-r border-gray-300 dark:border-gray-700 flex flex-col overflow-hidden">
+  <div
+    ref="elementRef"
+    class="relative bg-white dark:bg-gray-800 border-r border-gray-300 dark:border-gray-700 flex flex-col overflow-hidden flex-shrink-0"
+    :class="isResizable ? '' : 'w-40'"
+    :style="isResizable ? dynamicStyles : {}"
+  >
+    <!-- Resize handle on right edge (wider hit area for easier drag) -->
+    <div
+      class="absolute top-0 right-0 bottom-0 w-2 z-10 cursor-col-resize flex justify-end"
+      @mousedown="startResize($event)"
+    >
+      <ResizeHandle
+        :show="isResizable"
+        direction="left"
+        @start-resize="startResize($event)"
+      />
+    </div>
     <!-- Header -->
     <div class="p-3 border-b border-gray-300 dark:border-gray-600">
       <p class="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">
@@ -89,8 +105,25 @@
 </template>
 
 <script setup>
+import ResizeHandle from '@/components/global/ResizeHandle.vue'
+import { useResizable } from '~/composables/components/useResizable'
+
 const alert = useAlert()
 const pdfStore = useWorkingPdfStore()
+
+// Resizable left sidebar (persisted width)
+const {
+  elementRef,
+  isResizable,
+  dynamicStyles,
+  startResize,
+} = useResizable({
+  storageKey: 'pdfEditorLeftSidebarWidth',
+  defaultWidth: 160,
+  minWidth: 120,
+  maxWidth: 360,
+  direction: 'left',
+})
 const { 
   content: pdfTemplate,
   form,
