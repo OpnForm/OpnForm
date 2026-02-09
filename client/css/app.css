@@ -173,7 +173,7 @@
     }
 
     #app {
-        font-family: Inter, sans-serif !important;
+        font-family: var(--opnform-font-family, Inter, sans-serif);
         min-height: 100vh;
         color: var(--color-neutral-800);
     }
