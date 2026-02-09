@@ -163,6 +163,7 @@
                 role="option"
                 :aria-selected="filteredOptions[virtualItem.index] ? isSelected(filteredOptions[virtualItem.index]) : false"
                 :data-index="virtualItem.index"
+                :ref="virtualizer ? virtualizer.measureElement : null"
                 :style="[
                   optionStyle,
                   {
