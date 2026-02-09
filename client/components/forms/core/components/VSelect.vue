@@ -163,7 +163,6 @@
                 role="option"
                 :aria-selected="filteredOptions[virtualItem.index] ? isSelected(filteredOptions[virtualItem.index]) : false"
                 :data-index="virtualItem.index"
-                :ref="virtualizer ? virtualizer.measureElement : null"
                 :style="[
                   optionStyle,
                   {
@@ -568,8 +567,7 @@ export default {
         count: this.filteredOptions.length,
         getScrollElement: () => this.$refs.scrollRef,
         estimateSize: () => this.estimatedItemSizePx,
-        overscan: 5,
-        measureElement: (el) => el?.getBoundingClientRect().height ?? 0
+        overscan: 5
       })
 
       restoreScroll()

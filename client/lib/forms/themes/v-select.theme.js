@@ -117,7 +117,7 @@ export const vSelectTheme = {
         placeholder: 'text-xs',
         clearButton: 'py-1.5',
         dropdown: 'text-xs',
-        option: 'px-2.5 min-h-[28px]'
+        option: 'px-2.5'
       },
       sm: {
         button: 'px-2 py-1.5',
@@ -125,7 +125,7 @@ export const vSelectTheme = {
         placeholder: 'text-sm',
         clearButton: 'py-1.5',
         dropdown: 'text-sm',
-        option: 'px-2 py-0.5 min-h-[32px]'
+        option: 'px-2 py-0.5'
       },
       md: {
         button: 'px-4 py-2',
@@ -133,7 +133,7 @@ export const vSelectTheme = {
         placeholder: 'text-base',
         clearButton: 'py-2',
         dropdown: 'text-base',
-        option: 'px-4 py-1.5 min-h-[40px]'
+        option: 'px-4 py-1.5'
       },
       lg: {
         button: 'px-5 py-3',
@@ -141,7 +141,7 @@ export const vSelectTheme = {
         placeholder: 'text-lg',
         clearButton: 'py-3',
         dropdown: 'text-lg',
-        option: 'px-5 py-2 min-h-[52px]'
+        option: 'px-5 py-2'
       }
     },
     borderRadius: {
