@@ -226,7 +226,7 @@
                 class="w-full justify-center"
                 variant="soft"
                 label="Get started free"
-                @click.prevent="contactUs"
+                @click.prevent="handleProCta"
               />
             </div>
 
@@ -330,266 +330,35 @@
       </div>
     </section>
     
-    <section
-      class="relative py-12 bg-gradient-to-b from-white to-neutral-100 sm:py-16 lg:py-20 xl:py-24"
-    >
-      <div class="relative px-4 mx-auto sm:px-6 lg:px-8 max-w-7xl">
-        <div class="max-w-4xl mx-auto text-center">
-          <h1
-            class="text-4xl font-semibold tracking-tight text-neutral-900 sm:text-5xl lg:text-6xl"
-          >
-            Simple, transparent pricing. No surprises.
-          </h1>
-          <p class="text-lg sm:text-xl leading-7 tracking-[-1.5%] sm:leading-8 font-normal text-gray-600">
-            No locked-in contracts. Upgrade or cancel anytime.
+    <TrustedTeams />
+
+    <PricingTable class="pt-10">
+      <template #pricing-table="{isYearly}">
+        <div class="flex gap-x-2 items-center">
+          <Icon
+            class="inline w-5 h-5 text-blue-500"
+            name="heroicons:user-plus-16-solid"
+          />
+          <p>
+            Extra users for {{ isYearly?'$5/month':'$6/month' }}
           </p>
         </div>
-        <div class="w-full h-full bg-linear-to-b from-white from-20% via-blue-50 via-50% to-white to-80% absolute inset-0"></div>
-      </div>
-      <div class="px-8 lg:px-12">
-        <div class="flex justify-center">
-          <div class="w-full max-w-[240px]">
-            <MonthlyYearlySelector v-model="pricingIsYearly" />
-          </div>
-        </div>
+      </template>
+    </PricingTable>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6 max-w-266 mx-auto">
-          <!-- Free -->
-          <div class="p-6 sm:p-8 bg-white border shadow-sm rounded-3xl border-gray-200">
-            <div class="flex items-center gap-4">
-              <span class="inline-flex items-center justify-center w-5 h-5">
-                <Icon
-                  class="w-3.75 h-[17.76px] text-blue-500"
-                  name="heroicons:bolt-20-solid"
-                />
-              </span>
-              <h3 class="text-xl leading-7 font-medium text-gray-950">Free</h3>
-            </div>
-
-            <p class="mt-4 text-sm font-medium leading-5 tracking-[-0.6%] text-gray-600">
-              Start collecting unlimited responses with no friction.
-            </p>
-
-            <div class="mt-6">
-              <p class="flex items-center gap-2">
-                <span class="text-3xl sm:text-[40px] sm:leading-12 font-medium tracking-[-1%] text-gray-950">{{ planPriceDisplay.free }}</span>
-              </p>
-            </div>
-
-            <div class="mt-6 flex justify-center sm:block sm:justify-normal">
-              <UButton
-                v-if="!authenticated"
-                class="w-fit sm:w-full justify-center px-4 py-2.5 rounded-[12px] text-base leading-7 tracking-[-1.1%] font-medium"
-                variant="outline"
-                :to="{ name: 'register' }"
-                label="Get started free"
-                color="neutral"
-              />
-              <UButton
-                v-else
-                color="neutral"
-                class="w-fit sm:w-full justify-center px-4 py-2.5 rounded-[12px] text-base leading-7 tracking-[-1.1%] font-medium"
-                :to="{ name: 'home' }"
-                label="Go to app"
-              />
-            </div>
-
-            <div class="mt-6">
-              <p class="text-sm leading-5 tracking-[-0.6%] font-medium text-gray-950">
-                Includes
-              </p>
-              <ul class="mt-4 space-y-4 text-sm leading-5 tracking-[-0.6%] font-medium text-gray-700">
-                <li
-                  v-for="feature in planFeatures.free"
-                  :key="feature"
-                  class="flex items-center gap-2.5"
-                >
-                  <Icon
-                    class="w-4 h-5 text-emerald-600"
-                    name="heroicons:check-20-solid"
-                  />
-                  {{ feature }}
-                </li>
-              </ul>
-            </div>
-          </div>
-
-          <!-- Pro -->
-          <div class="relative p-6 sm:p-8 bg-white border-2 shadow-sm rounded-3xl border-blue-500">
-            <div class="absolute top-6 right-6">
-              <span class="inline-flex items-center px-3 py-1 text-xs font-semibold text-blue-700 bg-blue-50 rounded-full ring-1 ring-blue-200">
-                Most popular
-              </span>
-            </div>
-
-            <div class="flex items-center gap-4">
-              <span class="inline-flex items-center justify-center w-5 h-5">
-                <Icon
-                  class="w-3.75 h-[17.76px] text-blue-500"
-                  name="heroicons:sparkles-20-solid"
-                />
-              </span>
-              <h3 class="text-xl leading-7 font-medium text-gray-950">Pro</h3>
-            </div>
-
-            <p class="mt-4 text-sm font-medium leading-5 tracking-[-0.6%] text-gray-600">
-              A polished, professional experience for serious work.
-            </p>
-
-            <div class="mt-6">
-              <p class="flex items-center gap-2">
-                <span class="text-3xl sm:text-[40px] sm:leading-12 font-medium tracking-[-1%] text-gray-950">
-                  {{ planPriceDisplay.pro }}
-                </span>
-                <span class="text-base leading-7 tracking-[-1.1%] font-medium text-gray-600">/mo</span>
-              </p>
-            </div>
-
-            <div class="mt-6 flex justify-center sm:block sm:justify-normal">
-              <UButton
-                class="w-fit sm:w-full justify-center px-4 py-2.5 rounded-[12px] text-base leading-7 tracking-[-1.1%] font-medium"
-                :label="getPaidPlanCtaLabel()"
-                :loading="isPlanLoading('pro')"
-                @click.prevent="handleProCta"
-              />
-            </div>
-
-            <div class="mt-6">
-              <p class="text-sm leading-5 tracking-[-0.6%] font-medium text-gray-950">
-                Everything in Free, plus
-              </p>
-              <ul class="mt-4 space-y-4 text-sm leading-5 tracking-[-0.6%] font-medium text-gray-700">
-                <li
-                  v-for="feature in planFeatures.pro"
-                  :key="feature"
-                  class="flex items-center gap-2.5"
-                >
-                  <Icon
-                    class="w-4 h-5 text-emerald-600"
-                    name="heroicons:check-20-solid"
-                  />
-                  {{ feature }}
-                </li>
-              </ul>
-            </div>
-          </div>
-
-          <!-- Business -->
-          <div class="p-6 sm:p-8 bg-white border shadow-sm rounded-3xl border-gray-200">
-            <div class="flex items-center gap-4">
-              <span class="inline-flex items-center justify-center w-5 h-5">
-                <Icon
-                  class="w-3.75 h-[17.76px] text-blue-500"
-                  name="heroicons:building-office-20-solid"
-                />
-              </span>
-              <h3 class="text-xl leading-7 font-medium text-gray-950">
-                Business
-              </h3>
-            </div>
-
-            <p class="mt-4 text-sm font-medium leading-5 tracking-[-0.6%] text-gray-600">
-              Built for teams and agencies managing forms at scale.
-            </p>
-
-            <div class="mt-6">
-              <p class="flex items-center gap-2">
-                <span
-                  class="text-3xl sm:text-[40px] sm:leading-12 font-medium tracking-[-1%] text-gray-950"
-                >
-                  {{ planPriceDisplay.business }}
-                </span>
-                <span class="text-base leading-7 tracking-[-1.1%] font-medium text-gray-600">/mo</span>
-              </p>
-            </div>
-
-            <div class="mt-6 flex justify-center sm:block sm:justify-normal">
-              <UButton
-                class="w-fit sm:w-full justify-center px-4 py-2.5 rounded-[12px] text-base leading-7 tracking-[-1.1%] font-medium"
-                variant="outline"
-                :label="getPaidPlanCtaLabel()"
-                color="neutral"
-                :loading="isPlanLoading('business')"
-                @click.prevent="handleBusinessCta"
-              />
-            </div>
-
-            <div class="mt-6">
-              <p class="text-sm leading-5 tracking-[-0.6%] font-medium text-gray-950">
-                Everything in Pro, plus
-              </p>
-              <ul class="mt-4 space-y-4 text-sm leading-5 tracking-[-0.6%] font-medium text-gray-700">
-                <li
-                  v-for="feature in planFeatures.business"
-                  :key="feature"
-                  class="flex items-center gap-2.5"
-                >
-                  <Icon
-                    class="w-4 h-5 text-emerald-600"
-                    name="heroicons:check-20-solid"
-                  />
-                  {{ feature }}
-                </li>
-              </ul>
-            </div>
-          </div>
-
-          <!-- Enterprise -->
-          <div class="p-6 sm:p-8 bg-white border shadow-sm rounded-3xl border-gray-200">
-            <div class="flex items-center gap-4">
-              <span class="inline-flex items-center justify-center w-5 h-5">
-                <Icon
-                  class="w-3.75 h-[17.76px] text-blue-500"
-                  name="heroicons:globe-alt-20-solid"
-                />
-              </span>
-              <h3 class="text-xl leading-7 font-medium text-gray-950">
-                Enterprise
-              </h3>
-            </div>
-
-            <p class="mt-4 text-sm font-medium leading-5 tracking-[-0.6%] text-gray-600">
-              Enterprise-grade security, compliance, and control.
-            </p>
-
-            <div class="mt-6">
-              <p class="flex items-center gap-2">
-                <span class="text-3xl sm:text-[40px] sm:leading-12 font-medium tracking-[-1%] text-gray-950">
-                  {{ planPriceDisplay.enterprise }}
-                </span>
-                <span class="text-base leading-7 tracking-[-1.1%] font-medium text-gray-600">/mo</span>
-              </p>
-            </div>
-
-            <div class="mt-6 flex justify-center sm:block sm:justify-normal">
-              <UButton
-                class="w-fit sm:w-full justify-center px-4 py-2.5 rounded-[12px] text-base leading-7 tracking-[-1.1%] font-medium"
-                variant="outline"
-                label="Upgrade now"
-                color="neutral"
-                @click.prevent="contactUs"
-              />
-            </div>
-
-            <div class="mt-6">
-              <p class="text-sm leading-5 tracking-[-0.6%] font-medium text-gray-950">
-                Everything in Business, plus
-              </p>
-              <ul class="mt-4 space-y-4 text-sm leading-5 tracking-[-0.6%] font-medium text-gray-700">
-                <li
-                  v-for="feature in planFeatures.enterprise"
-                  :key="feature"
-                  class="flex items-center gap-2.5"
-                >
-                  <Icon
-                    class="w-4 h-5 text-emerald-600"
-                    name="heroicons:check-20-solid"
-                  />
-                  {{ feature }}
-                </li>
-              </ul>
-            </div>
-          </div>
+    <section class="py-12 bg-white">
+      <div class="flex items-start gap-4 max-w-3xl p-6 mx-auto bg-yellow-50 ring ring-inset ring-yellow-200 rounded-3xl">
+        <UIcon name="i-heroicons-shield-check" class="h-8 w-8 shrink-0 text-yellow-500" />
+        <div>
+          <p class="text-lg font-semibold text-yellow-600">
+            Nonprofit & Student Discount — 50%
+          </p>
+          <p class="mt-1 text-base font-medium leading-7 text-yellow-600">
+            Whether your nonprofit is large or small, OpnForm's online Form
+            Builder helps your organization help others. It takes just a few
+            minutes to create and publish your forms online. As an exclusive
+            benefit, we offer nonprofits & students a 50-percent discount!
+          </p>
         </div>
       </div>
     </section>
