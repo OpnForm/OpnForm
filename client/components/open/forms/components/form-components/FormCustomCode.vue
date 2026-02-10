@@ -20,7 +20,7 @@
             icon="i-heroicons-code-bracket"
             variant="outline"
             color="neutral"
-            to="https://docs.opnform.com/front-end/javascript-sdk#custom-code-integration"
+            to="https://docs.opnform.com/embedding/javascript-sdk#custom-code-integration"
             target="_blank"
           />
           <UButton
