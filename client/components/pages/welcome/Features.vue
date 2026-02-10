@@ -135,7 +135,8 @@
           <UButton
             :to="{ name: 'pricing' }"
             label="See the Full Feature List"
-            variant="soft"
+            variant="outline"
+            color="neutral"
             size="lg"
           />
         </div>
