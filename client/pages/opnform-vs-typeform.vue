@@ -29,13 +29,13 @@
 
           <div class="mt-10 flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3">
             <UButton
-              class="rounded-full px-7 py-3 text-base font-semibold justify-center"
+              size="lg"
               :to="{ name: authenticated ? 'forms-create' : 'forms-create-guest' }"
               trailing-icon="i-heroicons-arrow-up-right-20-solid"
               label="Create Free Account"
             />
             <UButton
-              class="rounded-full px-7 py-3 text-base font-semibold justify-center"
+              size="lg"
               variant="outline"
               :to="authenticated ? { name: 'forms-create', query: { source: 'typeform-import' } } : { name: 'forms-create-guest', query: { source: 'typeform-import' } }"
               label="Have a Typeform URL? Import it now"
@@ -55,16 +55,7 @@
             </p>
           </div>
 
-          <div class="mt-8 max-w-5xl mx-auto">
-            <div class="rounded-3xl border border-blue-200 bg-white shadow-xl overflow-hidden ring-1 ring-blue-100">
-              <iframe
-                class="mt-4"
-                style="border: none; width: 100%"
-                height="480px"
-                src="https://opnform.com/forms/opnform-contact"
-              />
-            </div>
-          </div>
+          <LiveDemo class="mt-12"/>
         </div>
       </div>
     </section>
@@ -413,6 +404,7 @@
 </template>
 
 <script setup>
+import LiveDemo from '~/components/pages/welcome/LiveDemo.vue'
 import Testimonials from '~/components/pages/welcome/Testimonials.vue'
 import { useIsAuthenticated } from '~/composables/useAuthFlow'
 
