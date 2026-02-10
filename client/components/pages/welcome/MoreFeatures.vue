@@ -54,6 +54,16 @@
       <div class="mt-10 text-center text-base font-medium text-neutral-500">
         Your forms are accessible wherever your audience is.
       </div>
+      <div class="mt-10 text-center">
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
+          <UButton
+            size="lg"
+            :to="{ name: authenticated ? 'forms-create' : 'forms-create-guest' }"
+            trailing-icon="i-heroicons-arrow-up-right-20-solid"
+            label="Get started. It's FREE!"
+          />
+        </div>
+      </div>
     </div>
   </section>
 
@@ -182,14 +192,21 @@
         </div>
       </div>
 
-      <div class="mt-10 flex justify-center">
-        <UButton
-          size="md"
-          :to="{ name: 'pricing' }"
-          label="Learn about Enterprise"
-          trailing-icon="i-heroicons-arrow-up-right-20-solid"
-          class="rounded-xl px-7 py-3 text-base font-semibold"
-        />
+      <div class="mt-10 text-center">
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
+          <UButton
+            size="lg"
+            :to="{ name: 'enterprise' }"
+            trailing-icon="i-heroicons-arrow-up-right-20-solid"
+            label="Learn about Enterprise"
+          />
+          <UButton
+            :to="{ name: 'pricing' }"
+            label="View Pricing"
+            variant="soft"
+            size="lg"
+          />
+        </div>
       </div>
     </div>
   </section>
@@ -197,6 +214,8 @@
 
 <script setup>
 import opnformConfig from '~/opnform.config.js'
+
+const { isAuthenticated: authenticated } = useIsAuthenticated()
 
 const shareCards = [
   {
