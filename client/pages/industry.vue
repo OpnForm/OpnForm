@@ -88,7 +88,7 @@
           <div
             v-for="item in financialImprovements"
             :key="item.title"
-            class="rounded-3xl bg-neutral-50 border border-neutral-200/70 p-7 sm:p-8"
+            class="rounded-3xl bg-neutral-50 border border-neutral-200/70 p-3"
           >
             <div class="flex items-start gap-6">
               <div class="h-14 w-14 rounded-2xl ring-1 flex items-center justify-center bg-white shadow-xs ring-neutral-200/70 shrink-0">

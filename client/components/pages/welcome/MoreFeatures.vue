@@ -41,7 +41,7 @@
               <div :class="card.size === 'large' ? 'lg:col-span-9' : 'sm:col-span-7'">
                 <img
                   :src="card.imageSrc"
-                  :alt="card.imageAlt"
+                  :alt="card.title"
                   class="w-full -mb-4"
                   loading="lazy"
                 >
@@ -223,40 +223,35 @@ const shareCards = [
     size: 'large',
     title: 'Share with a simple link',
     icon: 'i-heroicons-link',
-    imageSrc: '/img/pages/welcome/share-1.png',
-    imageAlt: 'Share link preview',
+    imageSrc: '/img/pages/welcome/share-1.png'
   },
   {
     key: 'embed',
     size: 'small',
     title: 'Embed on your website or app',
     icon: 'i-heroicons-code-bracket-square',
-    imageSrc: '/img/pages/welcome/share-2.png',
-    imageAlt: 'Embed preview',
+    imageSrc: '/img/pages/welcome/share-2.png'
   },
   {
     key: 'notion',
     size: 'small',
     title: 'Add forms directly into Notion',
     icon: 'i-simple-icons-notion',
-    imageSrc: '/img/pages/welcome/share-3.png',
-    imageAlt: 'Notion embed preview',
+    imageSrc: '/img/pages/welcome/share-3.png'
   },
   {
     key: 'domain',
     size: 'small',
     title: 'Use your own custom domain',
     icon: 'i-heroicons-globe-alt',
-    imageSrc: '/img/pages/welcome/share-4.png',
-    imageAlt: 'Custom domain preview',
+    imageSrc: '/img/pages/welcome/share-4.png'
   },
   {
     key: 'qr',
     size: 'small',
     title: 'Generate QR codes for offline collection',
     icon: 'i-heroicons-qr-code',
-    imageSrc: '/img/pages/welcome/share-5.png',
-    imageAlt: 'QR code preview',
+    imageSrc: '/img/pages/welcome/share-5.png'
   },
 ]
 
