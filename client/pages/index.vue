@@ -13,6 +13,14 @@
       
       <div class="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto relative">
         <div class="max-w-4xl mx-auto text-center">
+          <div class="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-gray-100 px-3 py-1.5 text-sm mb-6">
+            <span class="rounded-full bg-white px-3 py-1 font-semibold text-blue-600 text-xs">
+              NEW
+            </span>
+            <span class="font-normal text-gray-700">
+              Built for Teams & Enterprises
+            </span>
+          </div>
           <h1 class="text-4xl sm:text-5xl lg:text-6xl font-semibold text-neutral-900 tracking-tight">
             Build beautiful forms,
             <span class="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-blue-400">fast.</span>
@@ -63,21 +71,7 @@
           </div>
         </div>
 
-        <div
-          class="w-full mt-12 relative px-6 mx-auto max-w-4xl sm:px-10 lg:px-0 z-10 flex items-center justify-center"
-        >
-          <div
-            class="-m-2 rounded-xl bg-blue-900/5 p-2 backdrop-blur-xs ring ring-inset ring-blue-900/10 lg:-m-4 lg:rounded-2xl lg:p-4 w-full"
-          >
-            <img
-              src="/img/pages/welcome/product-cover.jpg"
-              sizes="320px sm:650px lg:896px"
-              alt="Product screenshot"
-              loading="lazy"
-              class="rounded-sm w-full shadow-2xl ring ring-neutral-900/10"
-            >
-          </div>
-        </div>
+        <LiveDemo />
       </div>
     </section>
 
@@ -94,6 +88,7 @@
 </template>
 
 <script setup>
+import LiveDemo from '~/components/pages/welcome/LiveDemo.vue'
 import Features from "~/components/pages/welcome/Features.vue"
 import MoreFeatures from "../components/pages/welcome/MoreFeatures.vue"
 import AiFeature from "../components/pages/welcome/AiFeature.vue"
