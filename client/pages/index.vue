@@ -13,6 +13,14 @@
       
       <div class="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto relative">
         <div class="max-w-4xl mx-auto text-center">
+          <div class="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-gray-100 px-3 py-1.5 text-sm mb-6">
+            <span class="rounded-full bg-white px-3 py-1 font-semibold text-blue-600 text-xs">
+              NEW
+            </span>
+            <span class="font-normal text-gray-700">
+              Built for Teams & Enterprises
+            </span>
+          </div>
           <h1 class="text-4xl sm:text-5xl lg:text-6xl font-semibold text-neutral-900 tracking-tight">
             Build beautiful forms,
             <span class="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-blue-400">fast.</span>
@@ -63,120 +71,7 @@
           </div>
         </div>
 
-        <div
-          class="w-full mt-12 relative px-6 mx-auto max-w-4xl sm:px-10 lg:px-0 z-10 flex items-center justify-center"
-        >
-          <div
-            class="-m-2 rounded-xl bg-blue-900/5 p-2 backdrop-blur-xs ring ring-inset ring-blue-900/10 lg:-m-4 lg:rounded-2xl lg:p-4 w-full"
-          >
-            <img
-              src="/img/pages/welcome/product-cover.jpg"
-              sizes="320px sm:650px lg:896px"
-              alt="Product screenshot"
-              loading="lazy"
-              class="rounded-sm w-full shadow-2xl ring ring-neutral-900/10"
-            >
-              <UButton
-                size="lg"
-                :to="{
-                  name: authenticated ? 'forms-create' : 'forms-create-guest',
-                }"
-                trailing-icon="i-heroicons-arrow-up-right-20-solid"
-                label="Get started. It's FREE!"
-                class="pl-4 pr-3.5 py-2.5 rounded-[12px] text-base leading-7 tracking-[-1.1%] font-medium"
-              />
-              <!-- <UButton
-                v-if="useFeatureFlag('billing.enabled')"
-                size="lg"
-                variant="outline"
-                :to="{ name: 'pricing' }"
-                label="View Pricing"
-              /> -->
-              <UButton
-                size="lg"
-                variant="outline"
-                :to="{ name: 'pricing' }"
-                label="View Pricing"
-                class="px-4 py-2.5 rounded-[12px] text-base leading-7 tracking-[-1.1%] font-medium"
-              />
-            </div>
-
-            <div
-              class="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-sm font-semibold text-neutral-600"
-            >
-              <div class="flex items-center gap-2">
-                <UIcon
-                  name="i-heroicons-building-office-2"
-                  class="h-5 w-5 text-blue-600"
-                />
-                <span
-                  class="text-base leading-7 tracking-[-1.1%] font-medium text-gray-600"
-                  >10k+ Companies</span
-                >
-              </div>
-
-              <span
-                class="hidden sm:block h-4 w-px bg-neutral-300/70"
-                aria-hidden="true"
-              ></span>
-
-              <div class="flex items-center gap-2">
-                <UIcon
-                  name="i-simple-icons-github"
-                  class="h-4 w-4 text-neutral-800"
-                />
-                <NuxtLink
-                  to="https://github.com/OpnForm/OpnForm"
-                  target="_blank"
-                  class="text-base leading-7 tracking-[-1.1%] font-medium text-gray-600"
-                  >3k+ GitHub Stars</NuxtLink
-                >
-              </div>
-
-              <span
-                class="hidden sm:block h-4 w-px bg-neutral-300/70"
-                aria-hidden="true"
-              ></span>
-
-              <NuxtLink
-                to="https://www.trustpilot.com/review/opnform.com"
-                target="_blank"
-                class="flex items-center gap-2"
-              >
-                <div class="flex items-center gap-1">
-                  <UIcon
-                    name="i-heroicons-star-solid"
-                    class="h-5 w-5 text-green-500"
-                  />
-                  <UIcon
-                    name="i-heroicons-star-solid"
-                    class="h-5 w-5 text-green-500"
-                  />
-                  <UIcon
-                    name="i-heroicons-star-solid"
-                    class="h-5 w-5 text-green-500"
-                  />
-                  <UIcon
-                    name="i-heroicons-star-solid"
-                    class="h-5 w-5 text-green-500"
-                  />
-                  <div class="relative h-5 w-5">
-                    <UIcon
-                      name="i-heroicons-star"
-                      class="absolute inset-0 h-5 w-5 text-green-500"
-                    />
-                    <div class="absolute inset-y-0 left-0 w-1/2 overflow-hidden">
-                      <UIcon
-                        name="i-heroicons-star-solid"
-                        class="h-5 w-5 text-green-500"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </NuxtLink>
-            </div>
-          </div>
-        </div>
+        <LiveDemo />
       </div>
       <div class="relative pt-12 pb-12 sm:pb-24 px-8 lg:px-12">
         <div class="absolute inset-0">
@@ -215,7 +110,7 @@
 </template>
 
 <script setup>
-import LiveDemo from "~/components/pages/welcome/LiveDemo.vue"
+import LiveDemo from '~/components/pages/welcome/LiveDemo.vue'
 import Features from "~/components/pages/welcome/Features.vue"
 import MoreFeatures from "../components/pages/welcome/MoreFeatures.vue"
 import AiFeature from "../components/pages/welcome/AiFeature.vue"

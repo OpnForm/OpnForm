@@ -53,7 +53,7 @@
           <div class="flex justify-center lg:justify-end">
             <img
               :src="panel.imageSrc"
-              :alt="panel.imageAlt"
+              :alt="panel.eyebrow"
               class="w-full h-auto rounded-2xl"
               loading="lazy"
             >
@@ -115,7 +115,7 @@
           <div class="flex justify-center lg:justify-end">
             <img
               :src="activeContent.imageSrc"
-              :alt="activeContent.imageAlt"
+              :alt="activeContent.title"
               class="w-full h-auto rounded-2xl"
               loading="lazy"
             >
@@ -193,7 +193,6 @@ const panels = [
       },
     ],
     imageSrc: '/img/pages/welcome/feature-1.png',
-    imageAlt: 'Modern form builder preview',
     link: null,
   },
   {
@@ -223,7 +222,6 @@ const panels = [
       },
     ],
     imageSrc: '/img/pages/welcome/feature-2.png',
-    imageAlt: 'Unlimited submissions preview',
     link: null,
   },
   {
@@ -265,7 +263,6 @@ const panels = [
       },
     ],
     imageSrc: '/img/pages/welcome/feature-3.png',
-    imageAlt: 'Integrations & automation preview',
     link: {
       to: { name: 'pricing' },
       label: 'Explore All Features',
@@ -295,8 +292,7 @@ const tabContent = {
       'Answer piping & hidden fields',
       'Redirect on submit',
     ],
-    imageSrc: '/img/pages/welcome/feature-4.png',
-    imageAlt: 'Smart forms preview',
+    imageSrc: '/img/pages/welcome/feature-4.png'
   },
   inputs: {
     title: 'Rich Inputs',
@@ -308,8 +304,7 @@ const tabContent = {
       'Payments & signatures',
       'Validation rules',
     ],
-    imageSrc: '/img/pages/welcome/feature-5.png',
-    imageAlt: 'Rich inputs preview',
+    imageSrc: '/img/pages/welcome/feature-5.png'
   },
   security: {
     title: 'Quality & Security',
@@ -321,8 +316,7 @@ const tabContent = {
       'Email notifications',
       'Data exports',
     ],
-    imageSrc: '/img/pages/welcome/feature-6.png',
-    imageAlt: 'Quality and security preview',
+    imageSrc: '/img/pages/welcome/feature-6.png'
   },
   control: {
     title: 'Experience & Control',
@@ -334,8 +328,7 @@ const tabContent = {
       'Thank-you pages',
       'Webhooks & integrations',
     ],
-    imageSrc: '/img/pages/welcome/feature-7.png',
-    imageAlt: 'Experience and control preview',
+    imageSrc: '/img/pages/welcome/feature-7.png'
   },
 }
 
