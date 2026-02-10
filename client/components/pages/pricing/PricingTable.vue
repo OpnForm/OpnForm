@@ -1,15 +1,6 @@
 <template>
   <div class="w-full">
     <section class="relative">
-      <div
-        v-if="!homePage"
-        class="absolute inset-0 grid"
-        aria-hidden="true"
-      >
-        <div class="bg-neutral-100" />
-        <div class="bg-white" />
-      </div>
-
       <div class="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
         <div
           class="max-w-5xl mx-auto bg-white shadow-xl rounded-3xl ring-1 ring-neutral-200 lg:flex isolate"
