@@ -150,43 +150,48 @@
         </p>
       </div>
 
-      <div class="mt-12 grid gap-12 lg:grid-cols-2 max-w-6xl mx-auto">
-        <div>
-          <h4 class="text-2xl font-semibold text-neutral-900">
-            Collaboration &amp; Management
-          </h4>
-          <p class="mt-4 text-base font-medium text-neutral-500 leading-7 max-w-xl">
-            Coordinate work across teams with shared workspaces, clear roles, and full audit visibility.
-          </p>
-
-          <div class="mt-8 space-y-6">
-            <div v-for="item in collaborationItems" :key="item.label" class="flex items-start gap-4">
-              <div class="h-9 w-9 rounded-xl bg-blue-50 ring-1 ring-blue-100 flex items-center justify-center">
-                <UIcon :name="item.icon" class="h-5 w-5 text-blue-600" />
-              </div>
-              <div class="text-base font-semibold text-neutral-700">
-                {{ item.label }}
-              </div>
+      <div class="mt-12 max-w-6xl mx-auto space-y-8">
+        <div class="grid gap-8 grid-cols-1 sm:grid-cols-2">
+          <div
+            v-for="block in teamFeatureBlocks.slice(0, 2)"
+            :key="block.title"
+            class="overflow-hidden rounded-3xl bg-neutral-50 p-8 shadow-sm ring-1 ring-neutral-200"
+          >
+            <h4 class="text-xl font-semibold text-neutral-900">
+              {{ block.title }}
+            </h4>
+            <p class="mt-4 text-base font-medium text-neutral-500 leading-7">
+              {{ block.description }}
+            </p>
+            <div class="mt-6 -mx-8 -mb-8">
+              <img
+                :src="block.image"
+                :alt="block.title"
+                class="w-full rounded-t-xl object-cover"
+                loading="lazy"
+              >
             </div>
           </div>
         </div>
-
-        <div>
-          <h4 class="text-2xl font-semibold text-neutral-900">
-            Security &amp; Compliance
-          </h4>
-          <p class="mt-4 text-base font-medium text-neutral-500 leading-7 max-w-xl">
-            Stay aligned with internal requirements through SSO access, domain control, and elevated support.
-          </p>
-
-          <div class="mt-10 space-y-6">
-            <div v-for="item in securityItems" :key="item.label" class="flex items-start gap-4">
-              <div class="h-9 w-9 rounded-xl bg-blue-50 ring-1 ring-blue-100 flex items-center justify-center">
-                <UIcon :name="item.icon" class="h-5 w-5 text-blue-600" />
-              </div>
-              <div class="text-base font-semibold text-neutral-700">
-                {{ item.label }}
-              </div>
+        <div class="grid gap-8 sm:grid-cols-1 lg:grid-cols-3">
+          <div
+            v-for="block in teamFeatureBlocks.slice(2)"
+            :key="block.title"
+            class="overflow-hidden rounded-3xl bg-neutral-50 p-8 shadow-sm ring-1 ring-neutral-200"
+          >
+            <h4 class="text-xl font-semibold text-neutral-900">
+              {{ block.title }}
+            </h4>
+            <p class="mt-4 text-base font-medium text-neutral-500 leading-7">
+              {{ block.description }}
+            </p>
+            <div class="mt-6 -mx-8 -mb-8">
+              <img
+                :src="block.image"
+                :alt="block.title"
+                class="w-full rounded-t-xl object-cover"
+                loading="lazy"
+              >
             </div>
           </div>
         </div>
@@ -203,7 +208,8 @@
           <UButton
             :to="{ name: 'pricing' }"
             label="View Pricing"
-            variant="soft"
+            variant="outline"
+            color="neutral"
             size="lg"
           />
         </div>
@@ -306,16 +312,31 @@ const securityPills = [
   },
 ]
 
-const collaborationItems = [
-  { label: 'Team workspaces & user roles', icon: 'i-heroicons-users' },
-  { label: 'Advanced permissions', icon: 'i-heroicons-adjustments-horizontal' },
-  { label: 'Audit history for forms & submissions', icon: 'i-heroicons-clock' },
-  { label: 'Branding and theme control', icon: 'i-heroicons-paint-brush' },
-]
-
-const securityItems = [
-  { label: 'Custom domains & full white-labeling', icon: 'i-heroicons-globe-alt' },
-  { label: 'Priority support', icon: 'i-heroicons-lifebuoy' },
-  { label: 'SSO / SAML authentication', icon: 'i-heroicons-lock-closed' },
+const teamFeatureBlocks = [
+  {
+    title: 'Collaboration & Management',
+    description: 'Coordinate work across teams with shared workspaces, clear roles, and full audit visibility.',
+    image: '/img/pages/welcome/team-1.png',
+  },
+  {
+    title: 'Security & Compliance',
+    description: 'Stay aligned with internal requirements through SSO access, domain control, and elevated support.',
+    image: '/img/pages/welcome/team-2.png',
+  },
+  {
+    title: 'Branding Control',
+    description: 'Fully brand your forms or white-label them for clients.',
+    image: '/img/pages/welcome/team-3.png',
+  },
+  {
+    title: 'Audit History',
+    description: 'Full visibility into form and submission activity.',
+    image: '/img/pages/welcome/team-4.png',
+  },
+  {
+    title: 'Priority Support',
+    description: 'Get help fast with dedicated enterprise support.',
+    image: '/img/pages/welcome/team-5.png',
+  }
 ]
 </script>
