@@ -75,17 +75,8 @@
               variant="outline"
               class="rounded-xl px-6 py-3 text-base font-semibold border-neutral-300 text-neutral-900 hover:bg-neutral-50"
             />
-
             <UButton
-              v-if="!authenticated"
-              :to="{ name: 'forms-create-guest' }"
-              label="Get started. It's FREE!"
-              trailing-icon="i-heroicons-arrow-up-right-20-solid"
-              class="rounded-xl px-6 py-3 text-base font-semibold"
-            />
-            <UButton
-              v-else
-              :to="{ name: 'forms-create' }"
+              :to="{ name: authenticated ? 'forms-create' : 'forms-create-guest' }"
               label="Get started. It's FREE!"
               trailing-icon="i-heroicons-arrow-up-right-20-solid"
               class="rounded-xl px-6 py-3 text-base font-semibold"

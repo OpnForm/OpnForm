@@ -29,20 +29,11 @@
 
           <div class="mt-10 flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3">
             <UButton
-              v-if="!authenticated"
               class="rounded-full px-7 py-3 text-base font-semibold justify-center"
-              :to="{ name: 'forms-create-guest' }"
+              :to="{ name: authenticated ? 'forms-create' : 'forms-create-guest' }"
               trailing-icon="i-heroicons-arrow-up-right-20-solid"
               label="Create Free Account"
             />
-            <UButton
-              v-else
-              class="rounded-full px-7 py-3 text-base font-semibold justify-center"
-              :to="{ name: 'forms-create' }"
-              trailing-icon="i-heroicons-arrow-up-right-20-solid"
-              label="Create Free Account"
-            />
-
             <UButton
               class="rounded-full px-7 py-3 text-base font-semibold justify-center"
               variant="outline"
