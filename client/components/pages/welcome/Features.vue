@@ -126,16 +126,8 @@
       <div class="mt-10 text-center">
         <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
           <UButton
-            v-if="!authenticated"
             size="lg"
-            :to="{ name: 'forms-create-guest' }"
-            trailing-icon="i-heroicons-arrow-up-right-20-solid"
-            label="Get started. It's FREE!"
-          />
-          <UButton
-            v-else
-            size="lg"
-            :to="{ name: 'forms-create' }"
+            :to="{ name: authenticated ? 'forms-create' : 'forms-create-guest' }"
             trailing-icon="i-heroicons-arrow-up-right-20-solid"
             label="Get started. It's FREE!"
           />

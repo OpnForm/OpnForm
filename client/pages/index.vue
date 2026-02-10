@@ -26,22 +26,14 @@
           <div class="relative py-8">
             <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
               <UButton
-                v-if="!authenticated"
-                class="rounded-full px-7 py-3 text-base font-semibold"
-                :to="{ name: 'forms-create-guest' }"
-                trailing-icon="i-heroicons-arrow-up-right-20-solid"
-                label="Get started. It's FREE!"
-              />
-              <UButton
-                v-else
-                class="rounded-full px-7 py-3 text-base font-semibold"
-                :to="{ name: 'forms-create' }"
+                size="lg"
+                :to="{ name: authenticated ? 'forms-create' : 'forms-create-guest' }"
                 trailing-icon="i-heroicons-arrow-up-right-20-solid"
                 label="Get started. It's FREE!"
               />
               <UButton
                 v-if="useFeatureFlag('billing.enabled')"
-                class="rounded-full px-7 py-3 text-base font-semibold"
+                size="lg"
                 variant="outline"
                 :to="{ name: 'pricing' }"
                 label="View Pricing"
@@ -218,29 +210,7 @@
 
     <AiFeature class="pb-8" />
     
-
     <OpenFormFooter />
-
-    <div class="flex flex-col bg-neutral-50 dark:bg-notion-dark" style="display: none;">
-      <pricing-table
-        v-if="useFeatureFlag('billing.enabled')"
-        class="pb-20"
-        :home-page="true"
-      >
-        <template #pricing-table>
-          <li class="flex gap-x-3">
-            <NuxtLink
-              :to="{ name: 'pricing' }"
-              class="flex gap-3"
-            >
-              <div class="w-5" />
-              Read more about our pricing
-            </NuxtLink>
-          </li>
-        </template>
-      </pricing-table>
-
-    <div class="pt-12 sm:pt-16"><OpenFormFooter /></div>
   </div>
 </template>
 
@@ -248,7 +218,8 @@
 import LiveDemo from "~/components/pages/welcome/LiveDemo.vue"
 import Features from "~/components/pages/welcome/Features.vue"
 import MoreFeatures from "../components/pages/welcome/MoreFeatures.vue"
-import { useIsAuthenticated } from "~/composables/useAuthFlow"
+import AiFeature from "../components/pages/welcome/AiFeature.vue"
+import { useIsAuthenticated } from '~/composables/useAuthFlow'
 
 definePageMeta({
   layout: "default",
@@ -256,6 +227,7 @@ definePageMeta({
 })
 
 const { isAuthenticated: authenticated } = useIsAuthenticated()
+
 </script>
 
 <style lang="scss" scoped>
