@@ -179,8 +179,8 @@ const clientOnlyVal = computed(() => {
 const hasComponent = computed(() => !!componentVal.value)
 
 function getFieldAlignClasses(field) {
-  if (!field.align || field.align === 'left') return 'text-left'
-  else if (field.align === 'right') return 'text-right'
+  if (!field.align || field.align === 'left') return 'text-start'
+  else if (field.align === 'right') return 'text-end'
   else if (field.align === 'center') return 'text-center'
   else if (field.align === 'justify') return 'text-justify'
 }
