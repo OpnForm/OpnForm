@@ -66,7 +66,7 @@
                   </template>
 
                   <template v-else-if="row.values?.[planIndex] === 'soon'">
-                    <Icon class="w-5 h-5 text-amber-500" name="heroicons:clock-20-solid" />
+                    <Icon title="Coming soon..." class="w-5 h-5 text-amber-500" name="heroicons:clock-20-solid" />
                   </template>
 
                   <template v-else>

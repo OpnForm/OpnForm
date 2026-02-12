@@ -1,11 +1,9 @@
 <template>
   <div>
-    <section
-      class="bg-gradient-to-b relative from-white to-neutral-100 py-8 sm:py-16"
-    >
+    <section class="bg-gradient-to-b relative from-white to-neutral-100 py-8 sm:py-16">
       <div class="absolute inset-0">
         <img
-          class="w-full h-full object-cover object-top"
+          class="w-full h-full object-cover object-top opacity-[0.10]"
           src="/img/pages/ai_form_builder/background-pattern.svg"
           alt="Page abstract background"
         >
@@ -21,12 +19,12 @@
               Built for Teams & Enterprises
             </span>
           </div>
-          <h1 class="text-4xl sm:text-5xl lg:text-6xl font-semibold text-neutral-900 tracking-tight">
+          <h1 class="text-5xl font-semibold text-neutral-900 tracking-tight">
             Build beautiful forms,
             <span class="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-blue-400">fast.</span>
           </h1>
 
-          <p class="mt-4 sm:mt-6 text-base leading-7 sm:text-xl sm:leading-9 font-medium text-neutral-500">
+          <p class="mt-4 sm:mt-6 leading-7 text-lg sm:leading-9 font-medium text-neutral-500">
             Create powerful forms in minutes with a clean, modern builder that works the way you do.
             Unlimited submissions, AI-powered creation, and full customization. All without complexity.
           </p>

@@ -43,23 +43,23 @@
 
 <script setup>
 const integrationApps = [
-  { icon: 'i-simple-icons-zendesk', iconClass: 'text-white' },
-  { icon: 'i-simple-icons-dropbox', iconClass: 'text-[#0061FF]' },
-  { icon: 'i-simple-icons-mailchimp', iconClass: 'text-[#FFE01B]' },
+  { icon: 'heroicons:envelope-20-solid', iconClass: 'text-[#3B82F6]' },
+  { icon: 'ic:baseline-discord', iconClass: 'text-[#5865F2]' },
+  { icon: 'mdi:telegram', iconClass: 'text-[#27A7E7]' },
+  { icon: 'material-symbols:webhook', iconClass: 'text-[#0061FF]' },
   { icon: 'i-simple-icons-zapier', iconClass: 'text-[#FF4A00]' },
-  { icon: 'i-simple-icons-freshdesk', iconClass: 'text-[#25C16F]' },
 
-  { icon: 'i-simple-icons-clickup', iconClass: 'text-white' },
-  { icon: 'i-simple-icons-slack', iconClass: 'text-white' },
-  { icon: 'i-simple-icons-asana', iconClass: 'text-white' },
+  { icon: 'simple-icons:n8n', iconClass: 'text-[#EA4B71]' },
+  { icon: 'opnform:activepieces', iconClass: 'text-[#6366F1]' },
+  { icon: 'mdi:google-spreadsheet', iconClass: 'text-[#34A853]' },
   { icon: 'i-simple-icons-zoom', iconClass: 'text-[#2D8CFF]' },
-  { icon: 'i-simple-icons-linear', iconClass: 'text-white' },
+  { icon: 'i-simple-icons-linear', iconClass: 'text-[#5E6AD2]' },
 
   { icon: 'i-simple-icons-evernote', iconClass: 'text-[#00A82D]' },
   { icon: 'i-simple-icons-notion', iconClass: 'text-white' },
-  { icon: 'i-simple-icons-airtable', iconClass: 'text-[#FFBF00]' },
-  { icon: 'i-simple-icons-meta', iconClass: 'text-[#0A66FF]' },
-  { icon: 'i-simple-icons-mondaydotcom', iconClass: 'text-white' },
+  { icon: 'i-simple-icons-airtable', iconClass: 'text-[#18BFFF]' },
+  { icon: 'i-simple-icons-meta', iconClass: 'text-[#0668E1]' },
+  { icon: 'i-simple-icons-zendesk', iconClass: 'text-[#2694D6]' },
 ]
 
 </script>
