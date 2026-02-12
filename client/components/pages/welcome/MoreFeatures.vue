@@ -15,7 +15,7 @@
       </div>
 
       <div class="mt-8 grid gap-6">
-        <div class="grid gap-6 lg:grid-cols-2">
+        <div class="grid gap-6 lg:grid-cols-2 max-w-5xl mx-auto">
           <div
             v-for="card in shareCards"
             :key="card.key"
@@ -54,7 +54,7 @@
       <div class="mt-10 text-center text-base font-medium text-neutral-500">
         Your forms are accessible wherever your audience is.
       </div>
-      <div class="mt-10 text-center">
+      <div class="mt-6 text-center">
         <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
           <UButton
             size="lg"

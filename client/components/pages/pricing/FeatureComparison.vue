@@ -1,11 +1,11 @@
 <template>
   <div class="px-4 mx-auto sm:px-6 lg:px-8 max-w-7xl">
     <div class="max-w-3xl mx-auto text-center">
-      <h2 class="text-3xl font-semibold tracking-tight text-neutral-950 sm:text-4xl">
+      <h2 class="text-4xl font-semibold tracking-tight text-neutral-950">
         Feature Comparison
       </h2>
-      <p class="max-w-2xl mx-auto mt-3 text-sm font-medium leading-6 text-neutral-500 sm:text-base sm:leading-7">
-        Some description text goes here...
+      <p class="max-w-2xl mx-auto mt-3 text-lg font-medium leading-7 text-neutral-500">
+        Compare the features of the different plans and choose the one that best suits your needs.
       </p>
     </div>
 
