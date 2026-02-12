@@ -3,12 +3,12 @@
     <section class="py-12 bg-white">
       <div class="px-4 mx-auto sm:px-6 lg:px-8 max-w-7xl">
         <div class="max-w-3xl mx-auto text-center">
-          <h1 class="text-4xl font-semibold tracking-tight text-neutral-950 sm:text-5xl lg:text-6xl">
+          <h1 class="text-5xl font-semibold tracking-tight text-neutral-950">
             Simple pricing
             <br class="hidden sm:block">
             based on your needs
           </h1>
-          <p class="max-w-2xl mx-auto mt-4 text-base font-medium leading-7 text-neutral-600 sm:mt-6 sm:text-lg sm:leading-8">
+          <p class="max-w-2xl mx-auto mt-4 text-lg font-medium leading-7 text-neutral-600">
             No locked-in contracts. Upgrade or cancel anytime.
           </p>
 
@@ -400,7 +400,7 @@
                 </p>
 
                 <div class="mt-8">
-                  <p class="text-5xl font-semibold tracking-tight text-neutral-950">
+                  <p class="text-4xl font-semibold tracking-tight text-neutral-950">
                     Free OSS
                   </p>
                 </div>
@@ -450,7 +450,7 @@
 
                 <div class="mt-8">
                   <p class="flex items-end gap-3">
-                    <span class="text-5xl font-semibold tracking-tight text-neutral-950">
+                    <span class="text-4xl font-semibold tracking-tight text-neutral-950">
                       $1,990
                     </span>
                     <span class="pb-2 text-sm font-semibold text-neutral-600">

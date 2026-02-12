@@ -3,12 +3,12 @@
     <section class="py-12 bg-white">
       <div class="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         <div class="max-w-4xl mx-auto text-center">
-          <h1 class="text-4xl sm:text-5xl lg:text-6xl font-semibold tracking-tight text-neutral-900">
+          <h1 class="text-5xl font-semibold tracking-tight text-neutral-900">
             Powerful and secure form
             <br>
             builder for all your teams
           </h1>
-          <p class="mt-5 text-base sm:text-lg font-medium leading-8 text-neutral-500">
+          <p class="mt-5 text-lg font-medium leading-7 text-neutral-500">
             OpnForm Enterprise gives your organization full control over your data and
             infrastructure — whether you self-host or use our managed cloud.
           </p>
@@ -52,7 +52,7 @@
             Security &amp; Compliance
           </div>
 
-          <h2 class="mt-4 text-4xl sm:text-5xl lg:text-6xl font-semibold tracking-tight text-neutral-900">
+          <h2 class="mt-4 text-5xl font-semibold tracking-tight text-neutral-900">
             Your Data,
             <br>
             Your Infrastructure,
@@ -60,7 +60,7 @@
             Your Rules
           </h2>
 
-          <p class="mt-6 text-base sm:text-lg font-medium leading-8 text-neutral-500">
+          <p class="mt-6 text-lg font-medium leading-7 text-neutral-500">
             Choose how and where you host your forms — without compromising on enterprise-grade security.
           </p>
         </div>
@@ -88,7 +88,7 @@
           </div>
         </div>
 
-        <div class="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <div class="mt-12 max-w-5xl mx-auto grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
           <div
             v-for="item in securityFeatures"
             :key="item.title"

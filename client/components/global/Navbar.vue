@@ -70,7 +70,6 @@
             v-if="$route.name !== 'enterprise'"
             :to="{ name: 'enterprise' }"
             :class="navLinkClasses"
-            class="hidden xl:block"
           >
             Enterprise
           </NuxtLink>
@@ -78,30 +77,12 @@
             v-if="$route.name !== 'integrations'"
             :to="{ name: 'integrations' }"
             :class="navLinkClasses"
-            class="hidden lg:block xl:block"
           >
             Integrations
           </NuxtLink>
           <NuxtLink
-            v-if="
-              $route.name !== 'ai-form-builder' &&
-              user === null &&
-              !useFeatureFlag('self_hosted') &&
-              useFeatureFlag('ai_features')
-            "
-            :to="{ name: 'ai-form-builder' }"
-            :class="navLinkClasses"
-            class="hidden lg:inline"
-          >
-            AI Form Builder
-          </NuxtLink>
-          <NuxtLink
-            v-if="
-              useFeatureFlag('billing.enabled') &&
-              $route.name !== 'pricing' &&
-              !isSelfHosted
-            "
-            :to="{ name: 'pricing' }"
+            v-if="$route.name !== 'templates'"
+            :to="{ name: 'templates' }"
             :class="navLinkClasses"
           >
             <span
@@ -111,16 +92,33 @@
             >
             <span v-else>Pricing</span>
           </NuxtLink>
+          <NuxtLink
+            v-if="($route.name !== 'ai-form-builder' && user === null) && (!useFeatureFlag('self_hosted') && useFeatureFlag('ai_features'))"
+            :to="{ name: 'ai-form-builder' }"
+            :class="navLinkClasses"
+            class="hidden lg:inline"
+          >
+            AI Form Builder
+          </NuxtLink>
+          <NuxtLink
+            v-if="(useFeatureFlag('billing.enabled') && $route.name !== 'pricing') && !isSelfHosted"
+            :to="{ name: 'pricing' }"
+            :class="navLinkClasses"
+          >
+            <span
+              v-if="user && workspace && !workspace.is_pro"
+              class="text-primary"
+            >Upgrade</span>
+            <span v-else>Pricing</span>
+          </NuxtLink>
 
           <NuxtLink
             :href="opnformConfig.links.tech_docs"
             :class="navLinkClasses"
             target="_blank"
-            class="hidden 2xl:block"
           >
             Documentation
           </NuxtLink>
-
 
           <template v-if="appStore.featureBaseEnabled">
             <button
@@ -147,7 +145,7 @@
             </a>
           </template>
         </div>
-
+         
         <div class="block">
           <div class="flex items-center">
             <div class="ml-4 lg:ml-8 xl:ml-12 relative">
@@ -168,11 +166,15 @@
                     </button>
                   </template>
                 </UserDropdown>
-                <div v-else class="flex gap-4">
+                <div
+                  v-else
+                  class="flex gap-4"
+                >
                   <UButton
                     v-if="$route.name !== 'login'"
                     :to="{ name: 'login' }"
-                    class="bg-gray-100 text-gray-600 text-sm leading-5 tracking-[-0.6%] font-medium border border-transparent hover:border-gray-200 hover:text-gray-950 dark:hover:text-white hover:bg-gray-50"
+                    variant="outline"
+                    color="neutral"
                     label="Login"
                   />
 
@@ -248,7 +250,8 @@ const { data: form } = useForms().detail(formSlug.value, {
 
 // Constants / classes
 const navLinkClasses =
-  "border border-transparent hover:border-gray-200 text-gray-600 hover:text-gray-950 hover:no-underline dark:hover:text-white py-2.5 px-3 hover:bg-gray-50 rounded-md text-sm leading-5 tracking-[-0.6%] font-medium transition-colors w-full md:w-auto text-center md:text-left"
+  'border border-transparent hover:border-neutral-200 text-neutral-500 hover:text-neutral-800 hover:no-underline dark:hover:text-white py-1.5 px-3 hover:bg-neutral-50 rounded-md text-sm font-medium transition-colors w-full md:w-auto text-center md:text-left'
+
 
 const hasNavbar = computed(() => {
   if (isIframe.value) return false
