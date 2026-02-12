@@ -2,7 +2,7 @@
   <div>
     <section class="py-12 bg-white">
       <div class="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-        <div class="max-w-4xl mx-auto text-center">
+        <div class="max-w-3xl mx-auto text-center">
           <div class="flex items-center justify-center gap-4 text-sm sm:text-base font-semibold text-neutral-600">
             <div class="flex items-center gap-1 text-amber-500">
               <UIcon name="i-heroicons-star-solid" class="h-5 w-5" />
@@ -16,7 +16,7 @@
             </div>
           </div>
 
-          <h1 class="mt-10 text-4xl sm:text-5xl lg:text-6xl font-semibold tracking-tight text-neutral-900">
+          <h1 class="mt-10 text-5xl font-semibold tracking-tight text-neutral-900">
             Transform financial
             <br>
             operations with powerful
@@ -24,31 +24,51 @@
             and secure forms
           </h1>
 
-          <p class="mt-6 text-base sm:text-lg font-medium leading-8 text-neutral-500">
+          <p class="mt-6 text-lg font-medium leading-7 text-neutral-500 mx-auto">
             Streamline client onboarding, compliance checks, and data collection with
             OpnForm — the open-source form builder built for financial institutions that need
             flexibility, security, and control.
           </p>
         </div>
+
+        <div class="mt-14 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+          <h2 class="text-center text-xl font-semibold text-neutral-900 tracking-tight">
+            Key Features for financial institutions
+          </h2>
+          <div class="mt-6 flex flex-wrap justify-center gap-5">
+            <div
+              v-for="feature in keyFeatures"
+              :key="feature.label"
+              class="flex items-center gap-2 w-fit rounded-full bg-white border border-neutral-200/80 py-1.5 pl-2 pr-4 text-sm font-semibold text-neutral-900 shadow-sm"
+            >
+              <div class="h-8 w-8 shrink-0 rounded-full flex items-center justify-center" :class="feature.iconWrapClass">
+                <UIcon :name="feature.icon" class="h-5 w-5" :class="feature.iconClass" />
+              </div>
+              <span class="whitespace-nowrap">
+                {{ feature.label }}
+              </span>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
 
-    <section class="py-12 bg-white">
+    <section class="py-16 bg-white">
       <div class="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         <div class="max-w-3xl mx-auto text-center">
-          <h2 class="text-4xl sm:text-5xl font-semibold text-neutral-900 tracking-tight">
+          <h2 class="text-5xl font-semibold text-neutral-900 tracking-tight">
             How financial teams
             <br>
             use OpnForm
           </h2>
-          <p class="mt-4 text-base sm:text-lg font-medium text-neutral-500 leading-8">
+          <p class="mt-4 text-lg font-medium text-neutral-500 leading-7">
             Choose how and where you host your forms – without compromising
             <br>
             on enterprise-grade security.
           </p>
         </div>
 
-        <div class="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div class="mt-12 max-w-5xl mx-auto grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           <div
             v-for="useCase in financialUseCases"
             :key="useCase.title"
@@ -70,6 +90,14 @@
     </section>
 
     <section class="py-12 bg-white">
+      <TemplatesSlider class="max-w-full mb-12" />
+    </section>
+
+    <section class="py-12 bg-white">
+      <Integrations />
+    </section>
+
+    <section class="py-12 bg-white">
       <div class="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         <div class="max-w-3xl mx-auto text-center">
           <h2 class="text-4xl sm:text-5xl font-semibold text-neutral-900 tracking-tight">
@@ -84,7 +112,7 @@
           </p>
         </div>
 
-        <div class="mt-12 grid gap-6 sm:grid-cols-2 max-w-6xl mx-auto">
+        <div class="mt-12 max-w-5xl mx-auto grid gap-6 sm:grid-cols-2">
           <div
             v-for="item in financialImprovements"
             :key="item.title"
@@ -107,41 +135,6 @@
           </div>
         </div>
       </div>
-    </section>
-
-    <section class="py-12 bg-white">
-      <div class="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-        <div class="max-w-3xl mx-auto text-center">
-          <h2 class="text-4xl sm:text-5xl font-semibold text-neutral-900 tracking-tight">
-            Key Features for
-            <br>
-            financial institutions
-          </h2>
-        </div>
-
-        <div class="mt-12 flex flex-wrap justify-center gap-4 sm:gap-5">
-          <div
-            v-for="feature in keyFeatures"
-            :key="feature.label"
-            class="inline-flex items-center gap-4 rounded-full bg-white border border-neutral-200/80 px-5 py-1 text-sm sm:text-base font-semibold text-neutral-900 shadow-sm"
-          >
-            <div class="h-9 w-9 rounded-full flex items-center justify-center" :class="feature.iconWrapClass">
-              <UIcon :name="feature.icon" class="h-5 w-5" :class="feature.iconClass" />
-            </div>
-            <span class="whitespace-nowrap">
-              {{ feature.label }}
-            </span>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="py-12 bg-white">
-      <Integrations />
-    </section>
-
-    <section class="py-12 bg-white">
-      <TemplatesSlider class="max-w-full mb-12" />
     </section>
     
     <OpenFormFooter />

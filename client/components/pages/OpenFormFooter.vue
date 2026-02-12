@@ -186,8 +186,9 @@ const linkGroups = computed(() => [
     title: 'Comparisons',
     links: [
       { label: 'Typeform Alternative', to: { name: 'opnform-vs-typeform' } },
-      { label: 'Jotform Alternative', href: opnformConfig.links.help_url },
-      { label: 'Tally Alternative', href: opnformConfig.links.help_url },
+      { label: 'Jotform Alternative', to: { name: 'index' } },
+      { label: 'Tally Alternative', to: { name: 'index' } },
+      { label: 'Formbricks Alternative', to: { name: 'index' } },
     ],
   },
   {
