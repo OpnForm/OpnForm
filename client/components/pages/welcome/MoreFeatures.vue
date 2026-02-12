@@ -71,66 +71,70 @@
     <div class="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
       <div class="rounded-[2.5rem] bg-neutral-50 border border-neutral-200/60 overflow-hidden">
         <div class="relative px-6 py-12 sm:px-12 sm:py-16">
-          <div
-            class="pointer-events-none absolute inset-x-0 bottom-0 h-[60%] opacity-60 bg-[radial-gradient(circle,rgba(148,163,184,0.55)_1px,transparent_1px)] [background-size:14px_14px]"
-          />
-          <div class="pointer-events-none absolute inset-x-0 bottom-0 h-[60%] bg-gradient-to-t from-neutral-50 to-transparent" />
+          <div class="grid lg:grid-cols-2 gap-12">
+            <div class="flex flex-col items-start gap-2">
+              <h3 class="text-3xl sm:text-4xl font-semibold text-neutral-900 tracking-tight">
+                Open-source. Secure.
+                <br>
+                Yours to host anywhere.
+              </h3>
+              <p class="mt-2 text-base font-medium text-neutral-600">
+                OpnForm is fully open-source and built for privacy-first organizations.
+              </p>
+              <p class="mt-1 text-base font-medium text-neutral-600">
+                Use our EU-based cloud or deploy on-premise to keep full control of your data.
+              </p>
 
-          <div class="relative max-w-3xl mx-auto text-center">
-            <h3 class="text-4xl sm:text-5xl font-semibold text-neutral-900 tracking-tight">
-              Open-source. Secure.
-              <br>
-              Yours to host anywhere.
-            </h3>
-            <p class="mt-6 text-base sm:text-lg font-medium text-neutral-600">
-              OpnForm is fully open-source and built for privacy-first organizations.
-            </p>
-            <p class="mt-4 text-base sm:text-lg font-medium text-neutral-600">
-              Use our EU-based cloud or deploy on-premise to keep full control of your data.
-            </p>
-          </div>
+              <UButton
+                :to="{ name: authenticated ? 'forms-create' : 'forms-create-guest' }"
+                size="lg"
+                class="mt-8"
+                trailing-icon="i-heroicons-arrow-up-right-20-solid"
+                label="Create a Form"
+              />
 
-          <div class="relative mt-12 flex flex-wrap items-center md:justify-center gap-4">
-            <div
-              v-for="pill in securityPills"
-              :key="pill.label"
-              class="flex items-center gap-3 rounded-full bg-white border border-neutral-200/80 px-5 py-1 text-sm font-semibold text-neutral-900 shadow-sm"
-            >
-              <div class="h-9 w-9 rounded-full flex items-center justify-center" :class="pill.iconWrapClass">
-                <UIcon :name="pill.icon" class="h-5 w-5" :class="pill.iconClass" />
+              <div class="mt-8 flex flex-wrap gap-x-10 gap-y-4 text-sm font-semibold text-blue-600">
+                <a
+                  class="inline-flex items-center gap-2 hover:no-underline hover:text-blue-700"
+                  :href="opnformConfig.links.github_url"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  View GitHub
+                  <UIcon name="i-heroicons-arrow-up-right-20-solid" class="h-4 w-4" />
+                </a>
+                <a
+                  class="inline-flex items-center gap-2 hover:no-underline hover:text-blue-700"
+                  :href="opnformConfig.links.self_hosting"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Self-host OpnForm
+                  <UIcon name="i-heroicons-arrow-up-right-20-solid" class="h-4 w-4" />
+                </a>
+                <a
+                  class="inline-flex items-center gap-2 hover:no-underline hover:text-blue-700"
+                  :href="opnformConfig.links.tech_docs"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Open-source Benefits
+                  <UIcon name="i-heroicons-arrow-up-right-20-solid" class="h-4 w-4" />
+                </a>
               </div>
-              <span>{{ pill.label }}</span>
             </div>
-          </div>
-
-          <div class="relative mt-12 flex flex-wrap justify-center gap-x-10 gap-y-4 text-sm font-semibold text-blue-600">
-            <a
-              class="inline-flex items-center gap-2 hover:no-underline hover:text-blue-700"
-              href="https://github.com/OpnForm/OpnForm"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              View GitHub
-              <UIcon name="i-heroicons-arrow-up-right-20-solid" class="h-4 w-4" />
-            </a>
-            <a
-              class="inline-flex items-center gap-2 hover:no-underline hover:text-blue-700"
-              :href="opnformConfig.links.self_hosting"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Self-host OpnForm
-              <UIcon name="i-heroicons-arrow-up-right-20-solid" class="h-4 w-4" />
-            </a>
-            <a
-              class="inline-flex items-center gap-2 hover:no-underline hover:text-blue-700"
-              href="https://docs.opnform.com/contributing/getting-started"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Open-source Benefits
-              <UIcon name="i-heroicons-arrow-up-right-20-solid" class="h-4 w-4" />
-            </a>
+            <div class="flex flex-col gap-3">
+              <div
+                v-for="pill in securityPills"
+                :key="pill.label"
+                class="flex items-center gap-2 w-fit rounded-full bg-white border border-neutral-200/80 py-1.5 pl-2 pr-4 text-sm font-semibold text-neutral-900 shadow-sm"
+              >
+                <div class="h-8 w-8 shrink-0 rounded-full flex items-center justify-center" :class="pill.iconWrapClass">
+                  <UIcon :name="pill.icon" class="h-5 w-5" :class="pill.iconClass" />
+                </div>
+                <span>{{ pill.label }}</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>

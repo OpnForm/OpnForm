@@ -205,7 +205,7 @@ const panels = [
     items: [
       {
         title: 'Unlimited submissions',
-        icon: 'i-heroicons-infinity',
+        icon: 'i-ph-infinity-bold',
         iconWrapClass: 'bg-emerald-50 ring-emerald-100',
         iconClass: 'text-emerald-600',
       },
@@ -275,9 +275,9 @@ const panels = [
 
 const tabs = [
   { key: 'smart', label: 'Smart Forms', icon: 'i-heroicons-sparkles' },
-  { key: 'inputs', label: 'Rich Inputs', icon: 'i-heroicons-adjustments-horizontal' },
+  { key: 'inputs', label: 'Rich Inputs', icon: 'i-heroicons-bars-3-20-solid' },
   { key: 'security', label: 'Quality & Security', icon: 'i-heroicons-shield-check' },
-  { key: 'control', label: 'Experience & Control', icon: 'i-heroicons-sliders' },
+  { key: 'control', label: 'Experience & Control', icon: 'i-heroicons-adjustments-horizontal' },
 ]
 
 const activeTab = ref('smart')
