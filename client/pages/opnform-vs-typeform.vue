@@ -34,12 +34,6 @@
               trailing-icon="i-heroicons-arrow-up-right-20-solid"
               label="Create Free Account"
             />
-            <UButton
-              size="lg"
-              variant="outline"
-              :to="authenticated ? { name: 'forms-create', query: { source: 'typeform-import' } } : { name: 'forms-create-guest', query: { source: 'typeform-import' } }"
-              label="Have a Typeform URL? Import it now"
-            />
           </div>
         </div>
 
@@ -338,21 +332,21 @@
             Connect OpnForm to your favorite tools in seconds.
           </p>
           <p class="mt-6 text-base sm:text-lg font-medium leading-7 text-neutral-500">
-            Sync form data automatically with Notion, Airtable, Google Sheets, Slack, Zapier, and X
+            Sync form data automatically with Email, Google Sheets, Slack, Zapier, Telegram, and more
             <br class="hidden sm:block">
-            more via webhooks and automation platforms.
+            via webhooks and automation platforms.
           </p>
         </div>
 
-        <div class="mt-14 max-w-3xl mx-auto">
+        <div class="mt-14 max-w-md mx-auto">
           <div class="grid grid-cols-4 gap-4">
             <div
               v-for="item in integrationLogos"
               :key="item.name"
               :title="item.name"
-              class="h-24 rounded-3xl border border-neutral-200 bg-white flex items-center justify-center shadow-sm hover:shadow-md transition-shadow"
+              class="border flex items-center justify-center rounded-2xl h-20 w-20"
             >
-              <Icon :name="item.icon" class="h-10 w-10" />
+              <UIcon :name="item.icon" class="h-8 w-8" :class="item.iconClass" />
             </div>
           </div>
         </div>
@@ -460,7 +454,7 @@ const freePlanComparison = [
 
 const switchReasons = [
   {
-    icon: 'i-heroicons-infinity',
+    icon: 'i-ph-infinity-bold',
     title: 'No limits, no hidden costs',
     description: 'Unlimited forms and responses on every plan.',
   },
@@ -583,14 +577,14 @@ const monthlySavings = computed(() => Math.max(0, typeformPrice.value - opnformP
 
 
 const integrationLogos = [
-  { name: 'Google Sheets', icon: 'simple-icons:googlesheets' },
-  { name: 'Notion', icon: 'simple-icons:notion' },
-  { name: 'Airtable', icon: 'simple-icons:airtable' },
-  { name: 'Slack', icon: 'simple-icons:slack' },
-  { name: 'Zapier', icon: 'simple-icons:zapier' },
-  { name: 'n8n', icon: 'simple-icons:n8n' },
-  { name: 'Make', icon: 'simple-icons:make' },
-  { name: 'Discord', icon: 'simple-icons:discord' },
+  { name: 'Email', icon: 'heroicons:envelope-20-solid', iconClass: 'text-[#2563EB]' },
+  { name: 'Slack', icon: 'simple-icons:slack', iconClass: 'text-[#4A154B]' },
+  { name: 'Discord', icon: 'ic:baseline-discord', iconClass: 'text-[#5865F2]' },
+  { name: 'Webhook', icon: 'material-symbols:webhook', iconClass: 'text-[#0061FF]' },
+  { name: 'Telegram', icon: 'mdi:telegram', iconClass: 'text-[#27A7E7]' },
+  { name: 'Zapier', icon: 'simple-icons:zapier', iconClass: 'text-[#FF4A00]' },
+  { name: 'Google Sheets', icon: 'mdi:google-spreadsheet', iconClass: 'text-[#34A853]' },
+  { name: 'n8n', icon: 'simple-icons:n8n', iconClass: 'text-[#EA4B71]' },
 ]
 
 const privacyFeatures = [

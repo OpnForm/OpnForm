@@ -157,6 +157,7 @@
 <script setup>
 import opnformConfig from "~/opnform.config.js"
 
+const { isAuthenticated: authenticated } = useIsAuthenticated()
 const { data: user } = useAuth().user()
 const currYear = ref(new Date().getFullYear())
 
