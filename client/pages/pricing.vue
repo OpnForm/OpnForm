@@ -226,7 +226,7 @@
                 class="w-full justify-center"
                 variant="soft"
                 label="Get started free"
-                @click.prevent="handleProCta"
+                @click.prevent="handleBusinessCta"
               />
             </div>
 
@@ -329,22 +329,6 @@
         </div>
       </div>
     </section>
-    
-    <TrustedTeams />
-
-    <PricingTable class="pt-10">
-      <template #pricing-table="{isYearly}">
-        <div class="flex gap-x-2 items-center">
-          <Icon
-            class="inline w-5 h-5 text-blue-500"
-            name="heroicons:user-plus-16-solid"
-          />
-          <p>
-            Extra users for {{ isYearly?'$5/month':'$6/month' }}
-          </p>
-        </div>
-      </template>
-    </PricingTable>
 
     <section class="py-12 bg-white">
       <div class="flex items-start gap-4 max-w-3xl p-6 mx-auto bg-yellow-50 ring ring-inset ring-yellow-200 rounded-3xl">
@@ -361,6 +345,10 @@
           </p>
         </div>
       </div>
+    </section>
+
+    <section class="py-12 bg-white">
+      <TrustedTeams />
     </section>
 
     <section class="py-12 bg-white">
@@ -574,7 +562,6 @@
 
 <script setup>
 import FeatureComparison from "~/components/pages/pricing/FeatureComparison.vue"
-import PricingTable from "../components/pages/pricing/PricingTable.vue"
 import { useIsAuthenticated } from "~/composables/useAuthFlow"
 
 definePageMeta({
@@ -684,12 +671,15 @@ const faqs = [
   },
 ]
 
-const handleProCta = () => {
+const handlePlanCta = (plan) => {
   if (!authenticated.value) {
     return navigateTo({ name: "register" })
   }
-  openSubscriptionModal({ plan: "default", yearly: pricingIsYearly.value })
+  openSubscriptionModal({ plan, yearly: pricingIsYearly.value })
 }
+
+const handleProCta = () => handlePlanCta("pro")
+const handleBusinessCta = () => handlePlanCta("business")
 
 const contactUs = () => {
   useCrisp().openAndShowChat()
