@@ -18,5 +18,6 @@ export default {
     roadmap: "https://feedback.opnform.com/roadmap",
     tech_docs: "https://docs.opnform.com",
     api_docs: "https://docs.opnform.com/api-reference/introduction",
+    self_hosting: "https://docs.opnform.com/deployment/docker",
   },
 }
