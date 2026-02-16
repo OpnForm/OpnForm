@@ -125,7 +125,11 @@ const activeTabRef = ref(props.activeTab)
 
 // --- Responsive Nav Scrolling ---
 const navContainer = ref(null)
-const { x: scrollX } = useScroll(navContainer)
+
+// Get the actual DOM element from the NavigationList component
+const navElement = computed(() => navContainer.value?.$el)
+
+const { x: scrollX } = useScroll(navElement)
 const contentWidth = ref(0)
 const containerWidth = ref(0)
 
@@ -135,19 +139,30 @@ const showRightArrow = computed(() => {
   return scrollX.value < contentWidth.value - containerWidth.value - 1 // -1 for subpixel precision
 })
 
-useResizeObserver(navContainer, (entries) => {
+// Update dimensions from the element
+function updateNavDimensions() {
+  const el = navElement.value
+  if (el) {
+    containerWidth.value = el.clientWidth
+    contentWidth.value = el.scrollWidth
+  }
+}
+
+useResizeObserver(navElement, (entries) => {
   const entry = entries[0]
   containerWidth.value = entry.contentRect.width
-  if (navContainer.value) {
-    contentWidth.value = navContainer.value.scrollWidth
+  const el = navElement.value
+  if (el) {
+    contentWidth.value = el.scrollWidth
   }
 })
 
 function scrollNav(direction) {
-  if (navContainer.value) {
+  const el = navElement.value
+  if (el) {
     // Scroll by 80% of the container's width for a better user experience
     const scrollAmount = containerWidth.value * 0.8 * direction
-    navContainer.value.scrollBy({ left: scrollAmount, behavior: 'smooth' })
+    el.scrollBy({ left: scrollAmount, behavior: 'smooth' })
   }
 }
 
@@ -219,6 +234,10 @@ watch(isOpen, (newValue) => {
           activeTabRef.value = getFirstItemId()
         }
       }
+      
+      // Initialize nav dimensions after modal content is rendered
+      // This ensures the right arrow is visible on mobile when there are more items
+      nextTick(() => updateNavDimensions())
     })
   }
 })
@@ -235,6 +254,10 @@ watch(registeredPages, () => {
   if (!registeredPages.value.some(p => p.id === activeTabRef.value)) {
     activeTabRef.value = getFirstItemId()
   }
+  
+  // Update nav dimensions when pages are registered/unregistered
+  // This ensures scroll indicators are accurate
+  nextTick(() => updateNavDimensions())
 }, { deep: true })
 
 // Registration functions for modal pages
