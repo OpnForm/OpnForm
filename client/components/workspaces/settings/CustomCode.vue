@@ -3,7 +3,7 @@
     <div class="flex flex-col flex-wrap items-start justify-between gap-4 sm:flex-row sm:items-center">
       <div class="flex-1">
         <h3 class="text-lg font-medium text-neutral-900">
-          Custom Code <ProTag
+          Custom Code <PlanTag
             class="mb-2 block"
             upgrade-modal-title="Upgrade to Unlock Custom Code Capabilities"
             upgrade-modal-description="On the Free plan, you can explore custom code features within the workspace settings. Upgrade your plan to implement custom scripts, styles, and advanced tracking in all your workspace forms. Elevate your forms' functionality and design with unlimited customization options."
@@ -60,7 +60,7 @@
             <div class="flex flex-col flex-wrap items-start justify-between gap-4 sm:flex-row sm:items-center">
               <div>
                 <h3 class="text-lg font-medium text-neutral-900">
-                  Custom CSS <ProTag
+                  Custom CSS <PlanTag
                     class="mb-2 block"
                     upgrade-modal-title="Upgrade to Unlock Custom CSS"
                     upgrade-modal-description="On the Free plan, you can explore custom CSS within the workspace settings. Upgrade to apply custom styles to all your workspace forms."
@@ -108,7 +108,7 @@
 </template>
 
 <script setup>
-import ProTag from "~/components/app/ProTag.vue"
+import PlanTag from "~/components/app/PlanTag.vue"
 
 const alert = useAlert()
 const crisp = useCrisp()

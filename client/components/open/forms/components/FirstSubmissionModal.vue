@@ -115,10 +115,9 @@
             <p class="text-xs text-neutral-600 dark:text-neutral-400 mt-1.5 text-center font-medium truncate w-full">
               {{ integration.name }}
             </p>
-            <pro-tag
+            <PlanTag
               v-if="integration.is_pro"
               class="absolute top-1 right-1"
-              size="xs"
             />
           </div>
         </div>
@@ -129,7 +128,7 @@
 
 <script setup>
 import ShareFormUrl from '~/components/open/forms/components/ShareFormUrl.vue'
-import ProTag from '~/components/app/ProTag.vue'
+import PlanTag from '~/components/app/PlanTag.vue'
 
 const props = defineProps({
   show: { type: Boolean, required: true },

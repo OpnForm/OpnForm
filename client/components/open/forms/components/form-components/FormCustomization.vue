@@ -180,7 +180,7 @@
           :native-for="'no_branding'"
           class="text-sm font-medium!"
         />
-        <pro-tag
+        <PlanTag
           upgrade-modal-title="Upgrade today to remove OpnForm branding"
           class="-mt-1"
         />
@@ -233,7 +233,7 @@
 import EditorSectionHeader from "./EditorSectionHeader.vue"
 import { useWorkingFormStore } from "../../../../../stores/working_form"
 import GoogleFontPicker from "../../../editors/GoogleFontPicker.vue"
-import ProTag from "~/components/app/ProTag.vue"
+import PlanTag from "~/components/app/PlanTag.vue"
 import { DEFAULT_COLOR, ensureSettingsObject } from "@/composables/forms/initForm"
 import PresentationStyleSwitch from "./PresentationStyleSwitch.vue"
 import ImageWithSettings from "../media/ImageWithSettings.vue"

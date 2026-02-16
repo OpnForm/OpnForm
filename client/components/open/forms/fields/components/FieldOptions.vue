@@ -242,7 +242,7 @@
           <span class="text-sm">
             Secret input
           </span>
-          <pro-tag
+          <PlanTag
             upgrade-modal-title="Upgrade today to enable secret input"
             class="-mt-1"
           />
@@ -648,7 +648,7 @@ import HiddenRequiredDisabled from './HiddenRequiredDisabled.vue'
 import SelectOptionEditor from './SelectOptionEditor.vue'
 import InputMaskOptions from './InputMaskOptions.vue'
 import EditorSectionHeader from '~/components/open/forms/components/form-components/EditorSectionHeader.vue'
-import ProTag from '~/components/app/ProTag.vue'
+import PlanTag from '~/components/app/PlanTag.vue'
 import MentionInput from '~/components/forms/heavy/MentionInput.vue'
 import { format } from 'date-fns'
 import { default as _has } from 'lodash/has'
@@ -657,7 +657,7 @@ import BlockMediaOptions from '~/components/open/forms/components/media/BlockMed
 
 export default {
   name: 'FieldOptions',
-  components: { CountryFlag, MatrixFieldOptions, HiddenRequiredDisabled, EditorSectionHeader, PaymentFieldOptions, ProTag, BlockMediaOptions, SelectOptionEditor, MentionInput, InputMaskOptions },
+  components: { CountryFlag, MatrixFieldOptions, HiddenRequiredDisabled, EditorSectionHeader, PaymentFieldOptions, PlanTag, BlockMediaOptions, SelectOptionEditor, MentionInput, InputMaskOptions },
   props: {
     field: {
       type: Object,

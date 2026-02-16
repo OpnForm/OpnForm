@@ -31,10 +31,10 @@
                 >
                 <section class="flex flex-col mt-2 max-md:max-w-full">
                   <h1 class="text-2xl font-bold tracking-tight leading-9 text-slate-800 max-md:max-w-full">
-                    {{ modal_title }}
+                    {{ modalTitle }}
                   </h1>
                   <p class="mt-4 text-base leading-6 text-slate-500 max-md:max-w-full">
-                    {{ modal_description }}
+                    {{ modalDescription }}
                   </p>
                 </section>
               </main>
@@ -50,49 +50,41 @@
                       v-if="!isSubscribed"
                       class="flex flex-col w-6/12 max-md:ml-0 max-md:w-full m-auto"
                     >
-                      <div class="flex flex-col grow justify-between p-6 w-full bg-blue-50 rounded-2xl max-md:px-5 max-md:mt-2">
+                      <div
+                        class="flex flex-col grow justify-between p-6 w-full rounded-2xl max-md:px-5 max-md:mt-2"
+                        :class="planCardClass"
+                      >
                         <div class="flex flex-col items-center">
                           <div class="flex gap-2 py-px">
                             <h2 class="my-auto text-xl font-semibold tracking-tighter leading-5 text-slate-900">
-                              Pro
+                              {{ selectedPlanName }}
                             </h2>
                             <span
                               v-if="isYearly"
                               class="justify-center px-2 py-1 text-xs font-semibold tracking-wide text-center text-emerald-600 uppercase bg-emerald-50 rounded-md"
                             >
-                              Save 20%
+                              Save 15%
                             </span>
                           </div>
                           <div class="flex flex-col justify-end mt-4 leading-[100%]">
                             <p class="text-2xl font-semibold tracking-tight text-slate-900 text-center">
-                              <template v-if="isYearly">
-                                $16
-                              </template>
-                              <template v-else>
-                                $19
-                              </template>
+                              ${{ selectedPlanPrice }}
                             </p>
                             <p class="text-xs text-slate-500">
-                              per month, billed
-                              <template v-if="isYearly">
-                                yearly
-                              </template>
-                              <template v-else>
-                                monthly
-                              </template>
+                              per month, billed {{ isYearly ? 'yearly' : 'monthly' }}
                             </p>
                           </div>
                         </div>
                         <TrackClick
                           v-if="!user?.is_subscribed"
                           name="upgrade_modal_start_trial"
-                          :properties="{plan: 'default', period: isYearly?'yearly':'monthly'}"
+                          :properties="{ plan: currentPlan, period: isYearly ? 'yearly' : 'monthly' }"
                           class="w-full"
                         >
                           <UButton
                             class="relative border border-white border-opacity-20 h-10 inline-flex px-4 items-center rounded-lg text-sm font-semibold w-full justify-center mt-4"
-                            @click.prevent="onSelectPlan('default')"
-                            label="Get Pro"
+                            @click.prevent="onSelectPlan(currentPlan)"
+                            :label="`Get ${selectedPlanName}`"
                           />
                         </TrackClick>
                         <UButton
@@ -111,79 +103,19 @@
               <section class="flex flex-col self-stretch mt-12 max-md:mt-10 max-md:max-w-full">
                 <div class="justify-center max-md:pr-5 max-md:max-w-full">
                   <div class="flex gap-5 max-md:flex-col max-md:gap-0">
-                    <article class="flex flex-col w-[33%] max-md:ml-0 max-md:w-full">
+                    <article
+                      v-for="feature in planFeatures"
+                      :key="feature.icon"
+                      class="flex flex-col w-[33%] max-md:ml-0 max-md:w-full"
+                    >
                       <div class="flex flex-col grow text-base leading-6 text-slate-500 max-md:mt-10">
                         <Icon
-                          name="mdi:star-outline"
-                          class="w-5 h-5 text-blue-500"
+                          :name="feature.icon"
+                          :class="['w-5 h-5', planAccentColor]"
                         />
                         <p class="mt-2">
-                          <strong class="font-semibold text-slate-800">Remove OpnForm branding.</strong>
-                          <span class="text-slate-500"> Remove our watermark, create forms that match your brand.</span>
-                        </p>
-                      </div>
-                    </article>
-                    <article class="flex flex-col ml-5 w-[33%] max-md:ml-0 max-md:w-full">
-                      <div class="flex flex-col grow text-base leading-6 text-slate-500 max-md:mt-10">
-                        <Icon
-                          name="ion:brush-outline"
-                          class="w-5 h-5 text-blue-500"
-                        />
-                        <p class="mt-2">
-                          <strong class="font-semibold text-slate-800">Full form customization.</strong>
-                          <span class="text-slate-500"> Customize the colors, themes, images etc of your forms. Inject custom CSS and JS code.</span>
-                        </p>
-                      </div>
-                    </article>
-                    <article class="flex flex-col  w-[33%] max-md:ml-0 max-md:w-full">
-                      <div class="flex flex-col grow text-base leading-6 text-slate-500 max-md:mt-10">
-                        <Icon
-                          name="icons8:upload-2"
-                          class="w-5 h-5 text-blue-500"
-                        />
-                        <p class="mt-2">
-                          <strong class="font-semibold text-slate-800">Larger File uploads.</strong>
-                          <span class="text-slate-500"> Larger files upload in your forms (up to 50 mb). This allows you to collect bigger attachments.</span>
-                        </p>
-                      </div>
-                    </article>
-                  </div>
-                </div>
-                <div class="justify-center mt-12 max-md:pr-5 max-md:mt-10 max-md:max-w-full">
-                  <div class="flex gap-5 max-md:flex-col max-md:gap-0">
-                    <article class="flex flex-col w-[33%] max-md:ml-0 max-md:w-full">
-                      <div class="flex flex-col grow text-base leading-6 text-slate-500 max-md:mt-10">
-                        <Icon
-                          name="heroicons:bell"
-                          class="w-5 h-5 text-blue-500"
-                        />
-                        <p class="mt-2">
-                          <strong class="font-semibold text-slate-800">All integrations & API access.</strong>
-                          <span class="text-slate-500"> Setup email, Slack, Discord notifications or GSheet, Zapier or webhooks integrations.</span>
-                        </p>
-                      </div>
-                    </article>
-                    <article class="flex flex-col ml-5 w-[33%] max-md:ml-0 max-md:w-full">
-                      <div class="flex flex-col grow text-base leading-6 text-slate-500 max-md:mt-10">
-                        <Icon
-                          name="heroicons:globe-alt"
-                          class="w-5 h-5 text-blue-500"
-                        />
-                        <p class="mt-2">
-                          <strong class="font-semibold text-slate-800">1 custom domain.</strong>
-                          <span class="text-slate-500"> Host your form on your own domain for a professional look and improved branding.</span>
-                        </p>
-                      </div>
-                    </article>
-                    <article class="flex flex-col ml-5 w-[33%] max-md:ml-0 max-md:w-full">
-                      <div class="flex flex-col grow text-base leading-6 text-slate-500 max-md:mt-10">
-                        <Icon
-                          name="mdi:pencil-outline"
-                          class="w-5 h-5 text-blue-500"
-                        />
-                        <p class="mt-2">
-                          <strong class="font-semibold text-slate-800">Editable submissions.</strong>
-                          <span class="text-slate-500"> Form respondents can go back and edit their form submissions, allowing for updates and corrections.</span>
+                          <strong class="font-semibold text-slate-800">{{ feature.title }}</strong>
+                          <span class="text-slate-500"> {{ feature.description }}</span>
                         </p>
                       </div>
                     </article>
@@ -229,14 +161,18 @@
               <div class="flex-grow w-full max-w-sm">
                 <div
                   v-if="!isSubscribed"
-                  class="bg-blue-50 rounded-md p-4 border border-blue-200 flex flex-col my-4 gap-1"
+                  class="rounded-md p-4 border flex flex-col my-4 gap-1"
+                  :class="confirmationBoxClass"
                 >
                   <div class="flex w-full">
-                    <p class="text-blue-500 capitalize font-medium flex-grow">
-                      OpnForm - {{ currentPlan == 'default' ? 'Pro' : 'Team' }} plan
+                    <p
+                      class="capitalize font-medium flex-grow"
+                      :class="confirmationTextClass"
+                    >
+                      OpnForm - {{ selectedPlanName }} plan
                     </p>
                     <UBadge
-                      :color="isYearly?'success':'warning'"
+                      :color="isYearly ? 'success' : 'warning'"
                       variant="subtle"
                     >
                       {{ !isYearly ? 'No Discount' : 'Discount Applied' }}
@@ -245,26 +181,18 @@
 
                   <p class="text-sm leading-5 text-slate-500">
                     <span
-                      v-if="isYearly"
+                      v-if="isYearly && PLAN_PRICING[currentPlan]"
                       class="font-medium line-through mr-2"
-                      v-text="'$19'"
-                    />
+                    >${{ PLAN_PRICING[currentPlan].monthly }}</span>
                     <span
                       class="font-medium"
-                      :class="{'text-green-700':isYearly}"
-                      v-text="isYearly ? '$16' : '$19'"
-                    />
+                      :class="{ 'text-green-700': isYearly }"
+                    >${{ selectedPlanPrice }}</span>
                     <span
                       class="text-xs"
-                      :class="{'text-green-700':isYearly}"
+                      :class="{ 'text-green-700': isYearly }"
                     >
-                      per month, billed
-                      <template v-if="isYearly">
-                        yearly
-                      </template>
-                      <template v-else>
-                        monthly
-                      </template>
+                      per month, billed {{ isYearly ? 'yearly' : 'monthly' }}
                     </span>
                   </p>
                   <div v-if="shouldShowUpsell">
@@ -272,7 +200,7 @@
                       <toggle-switch-input
                         name=""
                         v-model="isYearly"
-                        label="20% off with the yearly plan"
+                        label="15% off with the yearly plan"
                         size="sm"
                         wrapper-class="mb-0"
                       />
@@ -298,13 +226,13 @@
                 <div
                   class="flex gap-2 mt-6 w-full"
                 >
-                <TrackClick
-                  name="upgrade_modal_confirm_submit"
-                  class="grow flex"
-                  :properties="{plan: currentPlan.value, period: isYearly?'yearly':'monthly'}"
-                >
+                  <TrackClick
+                    name="upgrade_modal_confirm_submit"
+                    class="grow flex"
+                    :properties="{ plan: currentPlan, period: isYearly ? 'yearly' : 'monthly' }"
+                  >
                     <UButton
-                        block
+                      block
                       size="md"
                       class="w-auto flex-grow"
                       :loading="form.busy || loading"
@@ -313,14 +241,14 @@
                       target="_blank"
                     >
                       <template v-if="isSubscribed">
-                        Upgrade
+                        Upgrade to {{ selectedPlanName }}
                       </template>
                       <template v-else>
-                        Subscribe
+                        Subscribe to {{ selectedPlanName }}
                       </template>
                     </UButton>
                   </TrackClick>
-                <UButton
+                  <UButton
                     size="md"
                     color="neutral"
                     variant="outline"
@@ -347,6 +275,13 @@ import { authApi } from '~/api'
 import { computed, watchEffect } from 'vue'
 import { useElementSize } from '@vueuse/core'
 
+// Plan pricing configuration
+const PLAN_PRICING = {
+  pro: { monthly: 29, yearly: 25 },
+  business: { monthly: 79, yearly: 67 },
+  enterprise: { monthly: null, yearly: null }
+}
+
 const props = defineProps({
   modelValue: {
     type: Boolean,
@@ -354,7 +289,7 @@ const props = defineProps({
   },
   modal_title: {
     type: String,
-    default: 'Upgrade to Pro'
+    default: 'Choose your plan'
   },
   modal_description: {
     type: String,
@@ -362,11 +297,11 @@ const props = defineProps({
   },
   plan: {
     type: String,
-    default: 'default'
+    default: 'pro'
   },
   yearly: {
     type: Boolean,
-    default: false
+    default: true
   }
 })
 
@@ -374,7 +309,13 @@ const emit = defineEmits(['close'])
 
 const router = useRouter()
 
-const currentPlan = ref(props.plan)
+// Normalize plan - map legacy 'default' to 'pro'
+const normalizedPlan = computed(() => {
+  if (!props.plan || props.plan === 'default') return 'pro'
+  return props.plan
+})
+
+const currentPlan = ref(normalizedPlan.value)
 const currentStep = ref(1)
 const isYearly = ref(props.yearly)
 const loading = ref(false)
@@ -402,6 +343,107 @@ const { data: user } = useAuth().user()
 const isSubscribed = computed(() => user.value.is_pro)
 const currency = 'usd'
 
+// Get price for selected plan
+const selectedPlanPrice = computed(() => {
+  const pricing = PLAN_PRICING[currentPlan.value]
+  if (!pricing) return null
+  return isYearly.value ? pricing.yearly : pricing.monthly
+})
+
+const selectedPlanName = computed(() => {
+  const names = { pro: 'Pro', business: 'Business', enterprise: 'Enterprise' }
+  return names[currentPlan.value] || 'Pro'
+})
+
+// Dynamic modal title based on plan
+const modalTitle = computed(() => {
+  if (props.modal_title && props.modal_title !== 'Choose your plan') {
+    return props.modal_title
+  }
+  return `Upgrade to ${selectedPlanName.value}`
+})
+
+// Dynamic modal description based on plan
+const modalDescription = computed(() => {
+  if (props.modal_description && props.modal_description !== 'Unlock all features and get the most out of OpnForm.') {
+    return props.modal_description
+  }
+  const descriptions = {
+    pro: 'Remove branding, use custom domains, and unlock all Pro features.',
+    business: 'Get team roles, advanced analytics, and Business-tier integrations.',
+    enterprise: 'Enterprise-grade security with SSO, audit logs, and compliance features.'
+  }
+  return descriptions[currentPlan.value] || descriptions.pro
+})
+
+// Plan card background class
+const planCardClass = computed(() => {
+  const classes = {
+    pro: 'bg-blue-50',
+    business: 'bg-orange-50',
+    enterprise: 'bg-purple-50'
+  }
+  return classes[currentPlan.value] || 'bg-blue-50'
+})
+
+// Confirmation box styling
+const confirmationBoxClass = computed(() => {
+  const classes = {
+    pro: 'bg-blue-50 border-blue-200',
+    business: 'bg-orange-50 border-orange-200',
+    enterprise: 'bg-purple-50 border-purple-200'
+  }
+  return classes[currentPlan.value] || 'bg-blue-50 border-blue-200'
+})
+
+const confirmationTextClass = computed(() => {
+  const classes = {
+    pro: 'text-blue-500',
+    business: 'text-orange-600',
+    enterprise: 'text-purple-600'
+  }
+  return classes[currentPlan.value] || 'text-blue-500'
+})
+
+// Plan accent color for icons
+const planAccentColor = computed(() => {
+  const colors = {
+    pro: 'text-blue-500',
+    business: 'text-orange-500',
+    enterprise: 'text-purple-500'
+  }
+  return colors[currentPlan.value] || 'text-blue-500'
+})
+
+// Features to display based on plan
+const planFeatures = computed(() => {
+  const proFeatures = [
+    { icon: 'mdi:star-outline', title: 'Remove OpnForm branding.', description: 'Remove our watermark, create forms that match your brand.' },
+    { icon: 'heroicons:globe-alt', title: '1 custom domain.', description: 'Host your form on your own domain for a professional look.' },
+    { icon: 'heroicons:bell', title: 'Pro integrations.', description: 'Setup Slack, Discord, Telegram notifications and more.' }
+  ]
+  
+  const businessFeatures = [
+    { icon: 'heroicons:users', title: 'Multi-user with roles.', description: 'Collaborate with your team with granular permissions.' },
+    { icon: 'ion:brush-outline', title: 'Advanced branding.', description: 'Custom CSS, fonts, and full design control.' },
+    { icon: 'heroicons:chart-bar', title: 'Analytics dashboard.', description: 'Track form performance with detailed insights.' }
+  ]
+  
+  const enterpriseFeatures = [
+    { icon: 'heroicons:shield-check', title: 'SSO (SAML, OIDC, LDAP).', description: 'Enterprise authentication for your organization.' },
+    { icon: 'heroicons:document-text', title: 'Audit logs & compliance.', description: 'Track all actions for security and compliance.' },
+    { icon: 'heroicons:server', title: 'External storage.', description: 'Store files in your own S3 or GCS buckets.' }
+  ]
+  
+  const features = {
+    pro: proFeatures,
+    business: businessFeatures,
+    enterprise: enterpriseFeatures
+  }
+  
+  return features[currentPlan.value] || proFeatures
+})
+
 const transitionDurationMs = 300
 // Measure Step 1 height and apply as fixed height to the container
 const step1Ref = ref(null)
@@ -425,21 +467,23 @@ const checkoutUrl = useCheckoutUrl(
   currency
 )
 
-// When opening modal with a plan already (and user not subscribed yet) - skip first step
+// When opening modal - set plan and billing period from props
 watch(() => props.modelValue, () => {
-  currentStep.value = 1
-  
-  // Update user data when modal opens
   if (props.modelValue) {
+    // Reset to step 1
+    currentStep.value = 1
+    
+    // Set plan from props (normalized)
+    currentPlan.value = normalizedPlan.value
+    isYearly.value = props.yearly
+    
+    // Update user form data
     updateUser()
     
-    if (props.plan) {
-      if (user.value.is_subscribed) {
-        return
-      }
-      isYearly.value = props.yearly
+    // If user is already subscribed, stay on step 1
+    // Otherwise, if plan is provided, can skip to step 2 for direct checkout
+    if (!user.value?.is_subscribed && props.plan) {
       shouldShowUpsell.value = !isYearly.value
-      currentPlan.value = props.plan
       currentStep.value = 2
     }
   }
@@ -452,12 +496,12 @@ watch(broadcastData, () => {
 
   if (broadcastData.value.type === 'success') {
     // Now we need to reload workspace and user
-          authApi.user.get().then((_userData) => {
-       useAuth().invalidateUser()
+    authApi.user.get().then((_userData) => {
+      useAuth().invalidateUser()
 
       try {
         const eventData = {
-          plan: user.value.has_enterprise_subscription ? 'enterprise' : 'pro'
+          plan: currentPlan.value
         }
         useAmplitude().logEvent('subscribed', eventData)
         useCrisp().pushEvent('subscribed', eventData)
@@ -467,23 +511,22 @@ watch(broadcastData, () => {
         }
         console.log('Subscription registered 🎊')
       } catch (error) {
-        console.error('Failed to register subscription event 😔',error)
+        console.error('Failed to register subscription event 😔', error)
       }
     })
     const { invalidateAll } = useWorkspaces()
     invalidateAll() // Refresh all workspace data
 
-    if (user.value.has_enterprise_subscription) {
-      useAlert().success(
-        'Awesome! Your subscription to OpnForm is now confirmed! You now have access to all Team '
-        + 'features. No need to invite your teammates, just ask them to create a OpnForm account and to connect the same Notion workspace. Feel free to contact us if you have any question 🙌'
-      )
-    } else {
-      useAlert().success(
-        'Awesome! Your subscription to OpnForm is now confirmed! You now have access to all Pro '
-        + 'features. Feel free to contact us if you have any question 🙌'
-      )
+    const planMessages = {
+      enterprise: 'You now have access to all Enterprise features including SSO, audit logs, and compliance features.',
+      business: 'You now have access to all Business features including team roles, analytics, and advanced integrations.',
+      pro: 'You now have access to all Pro features including branding removal, custom domains, and more.'
     }
+
+    const message = planMessages[currentPlan.value] || planMessages.pro
+    useAlert().success(
+      `Awesome! Your subscription to OpnForm ${selectedPlanName.value} is now confirmed! ${message} Feel free to contact us if you have any question 🙌`
+    )
     confetti.play()
     closeModal()
   } else {

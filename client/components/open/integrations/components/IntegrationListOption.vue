@@ -31,7 +31,7 @@
           >(soon)</span>
         </div>
       </div>
-      <pro-tag
+      <PlanTag
         v-if="integration?.is_pro === true"
         class="absolute top-2 right-2"
       />
@@ -47,7 +47,7 @@
 
 <script setup>
 import { computed } from 'vue'
-import ProTag from "~/components/app/ProTag.vue"
+import PlanTag from "~/components/app/PlanTag.vue"
 import TrackClick from "~/components/global/TrackClick.vue"
 const emit = defineEmits(["select"])
 const { openSubscriptionModal } = useAppModals()

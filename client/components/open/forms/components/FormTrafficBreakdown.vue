@@ -6,7 +6,7 @@
       <div class="absolute inset-0 z-10">
         <div class="p-5 max-w-md mx-auto flex flex-col items-center justify-center h-full">
           <p class="text-center">
-            You need a <pro-tag
+            You need a <PlanTag
               upgrade-modal-title="Upgrade today to access detailed analytics"
               class="mx-1"
             /> subscription to access detailed traffic breakdown.
@@ -105,7 +105,7 @@
 </template>
 
 <script setup>
-import ProTag from "~/components/app/ProTag.vue"
+import PlanTag from "~/components/app/PlanTag.vue"
 
 const props = defineProps({
   form: { 
