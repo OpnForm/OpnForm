@@ -14,7 +14,7 @@
         <!-- Left Sidebar -->
         <aside class="flex flex-col border-b border-neutral-200 bg-neutral-50 sm:w-56 sm:shrink-0 sm:border-r sm:border-b-0">
           <!-- Navigation Menu -->
-          <nav class="relative p-2 pt-2 sm:flex-1 sm:overflow-y-auto sm:pt-4">
+          <nav class="relative p-2 pb-1 sm:flex-1 sm:overflow-y-auto sm:pb-2 sm:pt-4">
             <slot name="nav-top" />
             <div class="relative">
               <!-- Left Arrow -->
@@ -85,7 +85,7 @@
 </template>
 
 <script setup>
-import { useScroll, useResizeObserver } from '@vueuse/core'
+import { useScroll, useResizeObserver, useMutationObserver } from '@vueuse/core'
 import { nextTick, ref, computed, watch, provide } from 'vue'
 import VTransition from '@/components/global/transitions/VTransition.vue'
 import NavigationList from '~/components/global/NavigationList.vue'
@@ -125,29 +125,65 @@ const activeTabRef = ref(props.activeTab)
 
 // --- Responsive Nav Scrolling ---
 const navContainer = ref(null)
-const { x: scrollX } = useScroll(navContainer)
+const navListElement = ref(null)
+const { x: scrollX } = useScroll(navListElement)
 const contentWidth = ref(0)
 const containerWidth = ref(0)
 
+// Update navListElement when navContainer is available
+watch(navContainer, (newVal) => {
+  if (newVal?.listElement) {
+    navListElement.value = newVal.listElement
+    // Force update dimensions after getting the actual element
+    nextTick(() => updateNavDimensions())
+  }
+}, { immediate: true })
+
 const showLeftArrow = computed(() => scrollX.value > 0)
 const showRightArrow = computed(() => {
+  // Force reactivity on scroll and dimension changes
+  void scrollX.value
+  void contentWidth.value
+  void containerWidth.value
+  
   if (containerWidth.value === 0 || contentWidth.value === 0) return false
   return scrollX.value < contentWidth.value - containerWidth.value - 1 // -1 for subpixel precision
 })
 
-useResizeObserver(navContainer, (entries) => {
+function updateNavDimensions() {
+  const el = navListElement.value
+  if (el) {
+    containerWidth.value = el.clientWidth
+    contentWidth.value = el.scrollWidth
+  }
+}
+
+useResizeObserver(navListElement, (entries) => {
   const entry = entries[0]
   containerWidth.value = entry.contentRect.width
-  if (navContainer.value) {
-    contentWidth.value = navContainer.value.scrollWidth
+  if (navListElement.value) {
+    contentWidth.value = navListElement.value.scrollWidth
   }
 })
 
+// Watch for content changes in the nav list (e.g., when pages are registered)
+useMutationObserver(navListElement, () => {
+  nextTick(() => updateNavDimensions())
+}, {
+  childList: true,
+  subtree: true
+})
+
+// Update dimensions when registered pages change
+watch(registeredPages, () => {
+  nextTick(() => updateNavDimensions())
+}, { deep: true })
+
 function scrollNav(direction) {
-  if (navContainer.value) {
+  if (navListElement.value) {
     // Scroll by 80% of the container's width for a better user experience
     const scrollAmount = containerWidth.value * 0.8 * direction
-    navContainer.value.scrollBy({ left: scrollAmount, behavior: 'smooth' })
+    navListElement.value.scrollBy({ left: scrollAmount, behavior: 'smooth' })
   }
 }
 
@@ -219,6 +255,9 @@ watch(isOpen, (newValue) => {
           activeTabRef.value = getFirstItemId()
         }
       }
+      
+      // Update nav dimensions when modal opens to ensure arrows show correctly
+      updateNavDimensions()
     })
   }
 })

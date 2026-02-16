@@ -28,6 +28,7 @@
 -->
 <template>
   <ul 
+    ref="listElement"
     :class="[
       'space-y-1',
       listClass
@@ -166,6 +167,12 @@ function handleClick(item) {
   // Emit the click event for parent components
   emit('item-click', item)
 }
+
+// Expose the list element for parent components that need direct DOM access
+const listElement = ref(null)
+defineExpose({
+  listElement
+})
 </script>
 
 <style scoped>
