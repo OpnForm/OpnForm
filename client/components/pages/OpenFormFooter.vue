@@ -1,5 +1,5 @@
 <template>
-  <section class="relative py-14 sm:py-20">
+  <section v-if="$route.name !== 'pricing'" class="relative py-14 sm:py-20">
     <div class="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto relative z-10">
       <div class="rounded-[2.5rem] overflow-hidden bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800 shadow-2xl">
         <div class="grid lg:grid-cols-2">

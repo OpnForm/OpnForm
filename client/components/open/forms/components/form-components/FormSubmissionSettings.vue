@@ -92,7 +92,7 @@
       <!-- Advanced Submission Settings -->
       <div class="mb-8">
         <h4 class="font-semibold mt-4 border-t pt-4">
-          Advanced Submission Options
+          Advanced Submission Options <PlanTag class="ml-1"/>
         </h4>
         <p class="text-gray-500 text-sm mb-4">
           Configure advanced options for form submissions and data collection.
@@ -108,7 +108,6 @@
               Collect partial submissions
             </span>
             <PlanTag
-              required-tier="business"
               class="ml-1"
               upgrade-modal-title="Upgrade to collect partial submissions"
               upgrade-modal-description="Capture valuable data from incomplete form submissions. Analyze where users drop off and collect partial information even when they don't complete the entire form."
@@ -285,7 +284,6 @@
 
 <script setup>
 import PlanTag from "~/components/app/PlanTag.vue"
-import { usePdfTemplates } from '~/composables/query/forms/usePdfTemplates'
 
 const workingFormStore = useWorkingFormStore()
 const { content: form } = storeToRefs(workingFormStore)

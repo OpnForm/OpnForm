@@ -33,7 +33,7 @@ const props = defineProps({
   },
   requiredTier: {
     type: String,
-    default: null
+    default: 'pro'
   },
   upgradeModalTitle: {
     type: String,
@@ -48,8 +48,12 @@ const props = defineProps({
 const { openSubscriptionModal } = useAppModals()
 const { data: user } = useAuth().user()
 const { current: workspace } = useCurrentWorkspace()
-const { getRequiredTier } = usePlanFeatures()
-const { currentWorkspaceTier, getTierDisplayName, tierMeetsRequirement } = useBillingUpsell()
+const {
+  currentWorkspaceTier,
+  getRequiredTier,
+  getTierDisplayName,
+  tierMeetsRequirement
+} = usePlanFeatures()
 
 // Determine the display tier (either explicit or from feature)
 const displayTier = computed(() => {
@@ -61,7 +65,6 @@ const displayTier = computed(() => {
 // Check if we should display the tag
 const shouldDisplayTag = computed(() => {
   if (!useFeatureFlag('billing.enabled')) return false
-  if (!displayTier.value) return false
   if (!user.value || !workspace.value) return true
 
   // Show tag if current tier doesn't meet requirement

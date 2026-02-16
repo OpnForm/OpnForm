@@ -10,20 +10,127 @@
         <section
           class="relative overflow-hidden rounded-[2rem] bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.10),_transparent_32%),linear-gradient(180deg,_#ffffff_0%,_#f8fbff_50%,_#ffffff_100%)] px-5 py-6 sm:px-8 sm:py-8"
         >
-          <div class="pointer-events-none absolute inset-x-0 top-0 h-36 bg-[linear-gradient(180deg,rgba(59,130,246,0.08),transparent)]" />
-
-          <div class="relative mx-auto max-w-5xl">
-            <div class="mx-auto max-w-3xl text-center">
-              <div class="mt-6 inline-flex items-center gap-2 rounded-full border border-blue-100 bg-white/90 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.24em] text-blue-700 shadow-sm">
-                <span class="h-2 w-2 rounded-full bg-emerald-500" />
-                Upgrade options
+          <div
+            :key="currentStep"
+            class="w-full"
+          >
+            <div
+              v-if="currentStep === 1"
+              key="step1"
+              class="flex flex-col items-center px-4 rounded-2xl relative"
+              ref="step1Ref"
+            >
+              <main class="flex flex-col mt-4 max-w-full text-center w-[591px] max-md:mt-10">
+                <img
+                  src="/img/subscription-modal-icon.svg"
+                  alt="Subscription Icon"
+                  class="self-center max-w-full aspect-[0.98] w-[107px]"
+                >
+                <section class="flex flex-col mt-2 max-md:max-w-full">
+                  <h1 class="text-2xl font-bold tracking-tight leading-9 text-slate-800 max-md:max-w-full">
+                    {{ modalTitle }}
+                  </h1>
+                  <p class="mt-4 text-base leading-6 text-slate-500 max-md:max-w-full">
+                    {{ modalDescription }}
+                  </p>
+                </section>
+              </main>
+              <div class="mt-8 mb-4 flex items-center justify-center">
+                <MonthlyYearlySelector
+                  v-model="isYearly"
+                />
               </div>
-              <h1 class="mt-5 text-3xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
-                {{ modalTitle }}
-              </h1>
-              <p class="mx-auto mt-4 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
-                {{ modalDescription }}
-              </p>
+              <section class="flex flex-col w-full max-w-[800px] max-md:max-w-full">
+                <div class="bg-white max-md:max-w-full">
+                  <div class="flex gap-2 max-md:flex-col max-md:gap-0">
+                    <article
+                      v-if="!isSubscribed"
+                      class="flex flex-col w-6/12 max-md:ml-0 max-md:w-full m-auto"
+                    >
+                      <div
+                        class="flex flex-col grow justify-between p-6 w-full rounded-2xl max-md:px-5 max-md:mt-2"
+                        :class="planCardClass"
+                      >
+                        <div class="flex flex-col items-center">
+                          <div class="flex gap-2 py-px">
+                            <h2 class="my-auto text-xl font-semibold tracking-tighter leading-5 text-slate-900">
+                              {{ selectedPlanName }}
+                            </h2>
+                            <span
+                              v-if="isYearly"
+                              class="justify-center px-2 py-1 text-xs font-semibold tracking-wide text-center text-emerald-600 uppercase bg-emerald-50 rounded-md"
+                            >
+                              Save 15%
+                            </span>
+                          </div>
+                          <div class="flex flex-col justify-end mt-4 leading-[100%]">
+                            <p class="text-2xl font-semibold tracking-tight text-slate-900 text-center">
+                              ${{ selectedPlanPrice }}
+                            </p>
+                            <p class="text-xs text-slate-500">
+                              per month, billed {{ isYearly ? 'yearly' : 'monthly' }}
+                            </p>
+                          </div>
+                        </div>
+                        <TrackClick
+                          v-if="!user?.is_subscribed"
+                          name="upgrade_modal_start_trial"
+                          :properties="{ plan: currentPlan, period: isYearly ? 'yearly' : 'monthly' }"
+                          class="w-full"
+                        >
+                          <UButton
+                            class="relative border border-white border-opacity-20 h-10 inline-flex px-4 items-center rounded-lg text-sm font-semibold w-full justify-center mt-4"
+                            @click.prevent="onSelectPlan(currentPlan)"
+                            :label="`Get ${selectedPlanName}`"
+                          />
+                        </TrackClick>
+                        <UButton
+                          v-else
+                          :loading="billingLoading"
+                          :to="{ name: 'redirect-billing-portal' }"
+                          target="_blank"
+                          class="relative border border-white border-opacity-20 h-10 inline-flex px-4 items-center rounded-lg text-sm font-semibold w-full justify-center mt-4"
+                          label="Manage Plan"
+                        />
+                      </div>
+                    </article>
+                  </div>
+                </div>
+              </section>
+              <section class="flex flex-col self-stretch mt-12 max-md:mt-10 max-md:max-w-full">
+                <div class="justify-center max-md:pr-5 max-md:max-w-full">
+                  <div class="flex gap-5 max-md:flex-col max-md:gap-0">
+                    <article
+                      v-for="feature in planFeatures"
+                      :key="feature.icon"
+                      class="flex flex-col w-[33%] max-md:ml-0 max-md:w-full"
+                    >
+                      <div class="flex flex-col grow text-base leading-6 text-slate-500 max-md:mt-10">
+                        <Icon
+                          :name="feature.icon"
+                          :class="['w-5 h-5', planAccentColor]"
+                        />
+                        <p class="mt-2">
+                          <strong class="font-semibold text-slate-800">{{ feature.title }}</strong>
+                          <span class="text-slate-500"> {{ feature.description }}</span>
+                        </p>
+                      </div>
+                    </article>
+                  </div>
+                </div>
+              </section>
+              <footer
+                class="justify-center py-1.5 mt-12 text-base font-medium leading-6 text-center text-blue-500 max-md:mt-10"
+              >
+                <UButton
+                  class="font-bold"
+                  :to="{ name: 'pricing' }"
+                  target="_blank"
+                  trailing-icon="heroicons:arrow-small-right"
+                  variant="link"
+                  label="And much more. See full plans comparison"
+                />
+              </footer>
             </div>
 
             <div class="mt-8 flex flex-col items-center gap-3 sm:mt-10">
@@ -38,47 +145,20 @@
                 :class="getPlanCardClasses(planOption)"
               >
                 <div
-                  class="pointer-events-none absolute inset-x-4 top-0 h-40 opacity-90 blur-2xl"
-                  :class="planOption.isRequired ? PLAN_VISUALS.pro.glowClass : planOption.glowClass"
-                />
-                <div
-                  v-if="planOption.isRequired"
-                  class="absolute inset-x-6 top-0 h-1 rounded-b-full bg-gradient-to-r from-blue-400 via-sky-500 to-cyan-400"
-                />
-
-                <div class="relative flex h-full flex-col">
-                  <div class="flex items-start justify-between gap-4">
-                    <div class="min-w-0">
-                      <h2 class="text-2xl font-semibold tracking-tight text-slate-950">
-                        {{ planOption.label }}
-                      </h2>
-                      <div
-                        v-if="showRequirementHints"
-                        class="mt-3 flex flex-wrap items-center gap-2"
-                      >
-                        <span
-                          v-if="planOption.isRequired"
-                          class="rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-blue-700"
-                        >
-                          Best fit
-                        </span>
-                        <span
-                          v-else-if="planOption.meetsRequirement"
-                          class="whitespace-nowrap rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-700"
-                        >
-                          Also unlocks this
-                        </span>
-                        <span
-                          v-else
-                          class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500"
-                        >
-                          Missing this feature
-                        </span>
-                      </div>
-                    </div>
-
-                    <div
-                      class="flex w-28 shrink-0 flex-col items-end bg-transparent px-1 py-1 text-right sm:w-30"
+                  v-if="!isSubscribed"
+                  class="rounded-md p-4 border flex flex-col my-4 gap-1"
+                  :class="confirmationBoxClass"
+                >
+                  <div class="flex w-full">
+                    <p
+                      class="capitalize font-medium flex-grow"
+                      :class="confirmationTextClass"
+                    >
+                      OpnForm - {{ selectedPlanName }} plan
+                    </p>
+                    <UBadge
+                      :color="isYearly ? 'success' : 'warning'"
+                      variant="subtle"
                     >
                       <div class="text-[1.9rem] font-semibold leading-none tracking-tight text-slate-950">
                         ${{ planOption.price }}
@@ -92,103 +172,80 @@
                     </div>
                   </div>
 
-                  <p class="mt-4 text-sm leading-6 text-slate-500">
-                    {{ planOption.subtitle }}
+                  <p class="text-sm leading-5 text-slate-500">
+                    <span
+                      v-if="isYearly && PLAN_PRICING[currentPlan]"
+                      class="font-medium line-through mr-2"
+                    >${{ PLAN_PRICING[currentPlan].monthly }}</span>
+                    <span
+                      class="font-medium"
+                      :class="{ 'text-green-700': isYearly }"
+                    >${{ selectedPlanPrice }}</span>
+                    <span
+                      class="text-xs"
+                      :class="{ 'text-green-700': isYearly }"
+                    >
+                      per month, billed {{ isYearly ? 'yearly' : 'monthly' }}
+                    </span>
                   </p>
-
-                  <ul class="mt-6 space-y-3.5 text-sm font-semibold leading-6 text-slate-800">
-                    <li
-                      v-for="benefit in planOption.highlights"
-                      :key="benefit"
-                      class="flex items-start gap-3"
-                    >
-                      <span class="mt-1 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-white text-blue-600 shadow-sm ring-1 ring-slate-200">
-                        <UIcon name="heroicons:check-20-solid" class="h-3.5 w-3.5" />
-                      </span>
-                      <span>{{ benefit }}</span>
-                    </li>
-                  </ul>
-
-                  <div class="mt-auto pt-6 text-sm leading-6 text-slate-500">
-                    And more on the
-                    <ULink
-                      to="/pricing"
-                      target="_blank"
-                      class="font-semibold text-slate-700 underline decoration-slate-300 underline-offset-4 transition hover:text-slate-950 hover:decoration-slate-500"
-                    >
-                      full pricing page
-                    </ULink>
+                  <div v-if="shouldShowUpsell">
+                    <v-form size="sm">
+                      <toggle-switch-input
+                        name=""
+                        v-model="isYearly"
+                        label="15% off with the yearly plan"
+                        size="sm"
+                        wrapper-class="mb-0"
+                      />
+                    </v-form>
                   </div>
-
+                </div>
+                <text-input
+                  ref="companyName"
+                  label="Company Name"
+                  name="name"
+                  :required="true"
+                  :form="form"
+                  help="Name that will appear on invoices"
+                />
+                <text-input
+                  label="Invoicing Email"
+                  name="email"
+                  native-type="email"
+                  :required="true"
+                  :form="form"
+                  help="Where invoices will be sent"
+                />
+                <div
+                  class="flex gap-2 mt-6 w-full"
+                >
                   <TrackClick
-                    v-if="canSelectPlan(planOption.key)"
-                    name="upgrade_modal_select_plan"
-                    :properties="{ plan: planOption.key, period: isYearly ? 'yearly' : 'monthly', required_plan: normalizedPlan }"
-                    class="block pt-4"
+                    name="upgrade_modal_confirm_submit"
+                    class="grow flex"
+                    :properties="{ plan: currentPlan, period: isYearly ? 'yearly' : 'monthly' }"
                   >
-                      <UButton
-                        block
-                        size="lg"
-                        :color="planOption.isRequired ? 'primary' : 'neutral'"
-                        :variant="planOption.isRequired ? 'solid' : 'outline'"
-                        class="h-12 rounded-2xl font-semibold"
-                        :loading="isPlanLoading(planOption.key)"
-                        :disabled="checkoutLoading"
-                        @click.prevent="startCheckout(planOption.key)"
-                      >
-                      {{ planOption.buttonLabel }}
-                    </UButton>
-                  </TrackClick>
-
-                  <div v-else class="pt-4">
                     <UButton
                       block
-                      size="lg"
-                      :loading="billingLoading"
-                      :to="{ name: 'redirect-billing-portal' }"
+                      size="md"
+                      class="w-auto flex-grow"
+                      :loading="form.busy || loading"
+                      :disabled="form.busy || loading"
+                      :to="checkoutUrl"
                       target="_blank"
-                      class="h-12 rounded-2xl font-semibold"
                     >
-                      Manage plan
+                      <template v-if="isSubscribed">
+                        Upgrade to {{ selectedPlanName }}
+                      </template>
+                      <template v-else>
+                        Subscribe to {{ selectedPlanName }}
+                      </template>
                     </UButton>
-                  </div>
-                </div>
-              </article>
-            </div>
-
-            <div class="mt-7 flex justify-center">
-              <UButton
-                class="font-semibold"
-                :to="{ name: 'pricing' }"
-                target="_blank"
-                trailing-icon="heroicons:arrow-small-right"
-                variant="link"
-                color="neutral"
-                label="See the full plan comparison"
-              />
-            </div>
-
-            <div class="mt-8">
-              <div class="rounded-[1.75rem] border border-slate-200 bg-white/90 p-5 shadow-sm sm:p-6">
-                <div class="flex items-center gap-3">
-                  <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-950 text-white shadow-sm">
-                    <UIcon name="heroicons:sparkles" class="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p class="text-sm font-semibold uppercase tracking-[0.18em] text-slate-400">
-                      What you unlock
-                    </p>
-                    <h3 class="mt-1 text-2xl font-semibold tracking-tight text-slate-950">
-                      {{ selectedPlanName }} highlights
-                    </h3>
-                  </div>
-                </div>
-
-                <div class="mt-6 grid gap-3 sm:grid-cols-3">
-                  <div
-                    v-for="item in planFeatures"
-                    :key="item.title"
-                    class="rounded-[1.5rem] border border-slate-200 bg-[linear-gradient(180deg,_#ffffff_0%,_#f8fbff_100%)] p-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_14px_32px_rgba(15,23,42,0.08)]"
+                  </TrackClick>
+                  <UButton
+                    size="md"
+                    color="neutral"
+                    variant="outline"
+                    @click="goBackToStep1"
                   >
                     <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
                       <UIcon :name="item.icon" class="h-5 w-5 text-sky-600" />
@@ -287,6 +344,13 @@ const PLAN_DETAILS = {
   },
 }
 
+// Plan pricing configuration
+const PLAN_PRICING = {
+  pro: { monthly: 29, yearly: 25 },
+  business: { monthly: 79, yearly: 67 },
+  enterprise: { monthly: null, yearly: null }
+}
+
 const props = defineProps({
   modelValue: {
     type: Boolean,
@@ -307,16 +371,30 @@ const props = defineProps({
   yearly: {
     type: Boolean,
     default: true
-  },
-  show_requirement_hints: {
-    type: Boolean,
-    default: true
   }
 })
 
 const emit = defineEmits(['close'])
 
 const router = useRouter()
+
+// Normalize plan - map legacy 'default' to 'pro'
+const normalizedPlan = computed(() => {
+  if (!props.plan || props.plan === 'default') return 'pro'
+  return props.plan
+})
+
+const currentPlan = ref(normalizedPlan.value)
+const currentStep = ref(1)
+const isYearly = ref(props.yearly)
+const loading = ref(false)
+const billingLoading = ref(false)
+const shouldShowUpsell = ref(false)
+const form = useForm({
+  name: '',
+  email: ''
+})
+
 const isOpen = computed({
   get: () => props.modelValue,
   set: (value) => emit('close', value)
@@ -410,8 +488,227 @@ const closeModal = () => {
   isOpen.value = false
 }
 
-const canSelectPlan = () => {
-  return !isSubscribed.value || currentUserTier.value === 'pro'
+const subscribeBroadcast = useBroadcastChannel('subscribe')
+const broadcastData = subscribeBroadcast.data
+const confetti = useConfetti()
+const { isAuthenticated: authenticated } = useIsAuthenticated()
+const { data: user } = useAuth().user()
+const isSubscribed = computed(() => user.value.is_pro)
+const currency = 'usd'
+
+// Get price for selected plan
+const selectedPlanPrice = computed(() => {
+  const pricing = PLAN_PRICING[currentPlan.value]
+  if (!pricing) return null
+  return isYearly.value ? pricing.yearly : pricing.monthly
+})
+
+const selectedPlanName = computed(() => {
+  const names = { pro: 'Pro', business: 'Business', enterprise: 'Enterprise' }
+  return names[currentPlan.value] || 'Pro'
+})
+
+// Dynamic modal title based on plan
+const modalTitle = computed(() => {
+  if (props.modal_title && props.modal_title !== 'Choose your plan') {
+    return props.modal_title
+  }
+  return `Upgrade to ${selectedPlanName.value}`
+})
+
+// Dynamic modal description based on plan
+const modalDescription = computed(() => {
+  if (props.modal_description && props.modal_description !== 'Unlock all features and get the most out of OpnForm.') {
+    return props.modal_description
+  }
+  const descriptions = {
+    pro: 'Remove branding, use custom domains, and unlock all Pro features.',
+    business: 'Get team roles, advanced analytics, and Business-tier integrations.',
+    enterprise: 'Enterprise-grade security with SSO, audit logs, and compliance features.'
+  }
+  return descriptions[currentPlan.value] || descriptions.pro
+})
+
+// Plan card background class
+const planCardClass = computed(() => {
+  const classes = {
+    pro: 'bg-blue-50',
+    business: 'bg-orange-50',
+    enterprise: 'bg-purple-50'
+  }
+  return classes[currentPlan.value] || 'bg-blue-50'
+})
+
+// Confirmation box styling
+const confirmationBoxClass = computed(() => {
+  const classes = {
+    pro: 'bg-blue-50 border-blue-200',
+    business: 'bg-orange-50 border-orange-200',
+    enterprise: 'bg-purple-50 border-purple-200'
+  }
+  return classes[currentPlan.value] || 'bg-blue-50 border-blue-200'
+})
+
+const confirmationTextClass = computed(() => {
+  const classes = {
+    pro: 'text-blue-500',
+    business: 'text-orange-600',
+    enterprise: 'text-purple-600'
+  }
+  return classes[currentPlan.value] || 'text-blue-500'
+})
+
+// Plan accent color for icons
+const planAccentColor = computed(() => {
+  const colors = {
+    pro: 'text-blue-500',
+    business: 'text-orange-500',
+    enterprise: 'text-purple-500'
+  }
+  return colors[currentPlan.value] || 'text-blue-500'
+})
+
+// Features to display based on plan
+const planFeatures = computed(() => {
+  const proFeatures = [
+    { icon: 'mdi:star-outline', title: 'Remove OpnForm branding.', description: 'Remove our watermark, create forms that match your brand.' },
+    { icon: 'heroicons:globe-alt', title: '1 custom domain.', description: 'Host your form on your own domain for a professional look.' },
+    { icon: 'heroicons:bell', title: 'Pro integrations.', description: 'Setup Slack, Discord, Telegram notifications and more.' }
+  ]
+  
+  const businessFeatures = [
+    { icon: 'heroicons:users', title: 'Multi-user with roles.', description: 'Collaborate with your team with granular permissions.' },
+    { icon: 'ion:brush-outline', title: 'Advanced branding.', description: 'Custom CSS, fonts, and full design control.' },
+    { icon: 'heroicons:chart-bar', title: 'Analytics dashboard.', description: 'Track form performance with detailed insights.' }
+  ]
+  
+  const enterpriseFeatures = [
+    { icon: 'heroicons:shield-check', title: 'SSO (SAML, OIDC, LDAP).', description: 'Enterprise authentication for your organization.' },
+    { icon: 'heroicons:document-text', title: 'Audit logs & compliance.', description: 'Track all actions for security and compliance.' },
+    { icon: 'heroicons:server', title: 'External storage.', description: 'Store files in your own S3 or GCS buckets.' }
+  ]
+  
+  const features = {
+    pro: proFeatures,
+    business: businessFeatures,
+    enterprise: enterpriseFeatures
+  }
+  
+  return features[currentPlan.value] || proFeatures
+})
+
+const transitionDurationMs = 300
+// Measure Step 1 height and apply as fixed height to the container
+const step1Ref = ref(null)
+const { height: step1Height } = useElementSize(step1Ref)
+const cachedStep1Height = ref(0)
+watchEffect(() => {
+  if (step1Height?.value) {
+    cachedStep1Height.value = step1Height.value
+  }
+})
+const transitionContainerStyle = computed(() => {
+  const h = cachedStep1Height.value
+  return h ? { height: h + 'px' } : {}
+})
+
+const checkoutUrl = useCheckoutUrl(
+  computed(() => form.name),
+  computed(() => form.email),
+  currentPlan,
+  isYearly,
+  currency
+)
+
+// When opening modal - set plan and billing period from props
+watch(() => props.modelValue, () => {
+  if (props.modelValue) {
+    // Reset to step 1
+    currentStep.value = 1
+    
+    // Set plan from props (normalized)
+    currentPlan.value = normalizedPlan.value
+    isYearly.value = props.yearly
+    
+    // Update user form data
+    updateUser()
+    
+    // If user is already subscribed, stay on step 1
+    // Otherwise, if plan is provided, can skip to step 2 for direct checkout
+    if (!user.value?.is_subscribed && props.plan) {
+      shouldShowUpsell.value = !isYearly.value
+      currentStep.value = 2
+    }
+  }
+})
+
+watch(broadcastData, () => {
+  if (import.meta.server || !props.modelValue || !broadcastData.value || !broadcastData.value.type) {
+    return
+  }
+
+  if (broadcastData.value.type === 'success') {
+    // Now we need to reload workspace and user
+    authApi.user.get().then((_userData) => {
+      useAuth().invalidateUser()
+
+      try {
+        const eventData = {
+          plan: currentPlan.value
+        }
+        useAmplitude().logEvent('subscribed', eventData)
+        useCrisp().pushEvent('subscribed', eventData)
+        useGtm().trackEvent({ event: 'subscribed', ...eventData })
+        if (import.meta.client && window.rewardful) {
+          window.rewardful('convert', { email: user.value.email })
+        }
+        console.log('Subscription registered 🎊')
+      } catch (error) {
+        console.error('Failed to register subscription event 😔', error)
+      }
+    })
+    const { invalidateAll } = useWorkspaces()
+    invalidateAll() // Refresh all workspace data
+
+    const planMessages = {
+      enterprise: 'You now have access to all Enterprise features including SSO, audit logs, and compliance features.',
+      business: 'You now have access to all Business features including team roles, analytics, and advanced integrations.',
+      pro: 'You now have access to all Pro features including branding removal, custom domains, and more.'
+    }
+
+    const message = planMessages[currentPlan.value] || planMessages.pro
+    useAlert().success(
+      `Awesome! Your subscription to OpnForm ${selectedPlanName.value} is now confirmed! ${message} Feel free to contact us if you have any question 🙌`
+    )
+    confetti.play()
+    closeModal()
+  } else {
+    useAlert().error(
+      'Unfortunately we could not confirm your subscription. Please try again and contact us if the issue persists.'
+    )
+    currentStep.value = 1
+    shouldShowUpsell.value = true
+  }
+  subscribeBroadcast.close()
+})
+
+onMounted(() => {
+  updateUser()
+})
+
+// Update form with user data - sets company name to user name by default
+const updateUser = () => {
+  if (user.value) {
+    // Set company name to user name by default
+    if (user.value.name && !form.name) {
+      form.name = user.value.name
+    }
+    
+    // Set email if available
+    if (user.value.email && !form.email) {
+      form.email = user.value.email
+    }
+  }
 }
 
 const getPlanCardClasses = (planOption) => {

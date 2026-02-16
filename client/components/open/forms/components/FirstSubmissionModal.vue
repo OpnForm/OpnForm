@@ -116,8 +116,7 @@
               {{ integration.name }}
             </p>
             <PlanTag
-              v-if="integration.required_tier && integration.required_tier !== 'free'"
-              :required-tier="integration.required_tier"
+              v-if="integration.is_pro"
               class="absolute top-1 right-1"
             />
           </div>
@@ -130,7 +129,6 @@
 <script setup>
 import ShareFormUrl from '~/components/open/forms/components/ShareFormUrl.vue'
 import PlanTag from '~/components/app/PlanTag.vue'
-import { useConfetti } from '~/composables/useConfetti'
 
 const props = defineProps({
   show: { type: Boolean, required: true },

@@ -32,8 +32,7 @@
         </div>
       </div>
       <PlanTag
-        v-if="integration.required_tier && integration.required_tier !== 'free'"
-        :required-tier="integration.required_tier"
+        v-if="integration?.is_pro === true"
         class="absolute top-2 right-2"
       />
       <Icon

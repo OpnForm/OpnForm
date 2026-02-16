@@ -127,7 +127,7 @@ const sections = [
       },
       {
         label: "Workspaces",
-        values: ["1", "1", "Multiple", "Multiple"],
+        values: ["1", "Unlimited", "Unlimited", "Unlimited"],
       },
     ],
   },
@@ -178,12 +178,16 @@ const sections = [
     title: "Integrations",
     rows: [
       {
-        label: "Basic integrations (Zapier, etc.)",
+        label: "Basic integrations (Email, Webhook, Zapier, Google Sheets)",
+        values: [true, true, true, true],
+      },
+      {
+        label: "Slack, Discord, Telegram notifications",
         values: [false, true, true, true],
       },
       {
         label: "Advanced integrations (HubSpot, Salesforce, Airtable)",
-        values: [false, false, "soon", true],
+        values: [false, false, "soon", "soon"],
       },
     ],
   },
@@ -192,11 +196,11 @@ const sections = [
     rows: [
       {
         label: "Analytics dashboard",
-        values: [false, false, "soon", true],
+        values: [false, false, "soon", "soon"],
       },
       {
         label: "Partial submissions / draft saving",
-        values: [false, false, "soon", true],
+        values: [false, true, true, true],
       },
     ],
   },
@@ -205,11 +209,11 @@ const sections = [
     rows: [
       {
         label: "Audit logs & compliance",
-        values: [false, false, false, true],
+        values: [false, false, false, "soon"],
       },
       {
         label: "External storage (S3, GCS)",
-        values: [false, false, false, true],
+        values: [false, false, false, "soon"],
       },
     ],
   },
