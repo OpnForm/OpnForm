@@ -111,6 +111,13 @@ class TemplateController extends Controller
     public function show(string $slug)
     {
         $template = Template::whereSlug($slug)->first();
-        return ($template) ? new FormTemplateResource($template) : $this->getProdTemplates($slug);
+        if ($template) {
+            return new FormTemplateResource($template);
+        }
+
+        // Get prod template by slug and return first match (or null if not found)
+        $prodTemplates = $this->getProdTemplates($slug);
+        // Use array_values to reindex since filter() preserves original keys
+        return !empty($prodTemplates) ? array_values($prodTemplates)[0] : null;
     }
 }
