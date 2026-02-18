@@ -297,7 +297,7 @@ trait TestHelpers
         return $this->actingAsUser($user);
     }
 
-    public function actingAsTrialingUser(?User $user = null)
+    public function actingAsTrialingUser(User $user = null)
     {
         if ($user == null) {
             $user = $this->createTrialingUser();

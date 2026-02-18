@@ -167,9 +167,9 @@ describe('Submission Version Restore', function () {
     });
 
     it('cannot restore submission version as non-business user', function () {
-        $proUser = $this->actingAsProUser();
-        $workspace = $this->createUserWorkspace($proUser);
-        $form = $this->createForm($proUser, $workspace);
+        $businessUser = $this->actingAsBusinessUser();
+        $workspace = $this->createUserWorkspace($businessUser);
+        $form = $this->createForm($businessUser, $workspace);
 
         // Create a submission
         $formData = $this->generateFormSubmissionData($form);
