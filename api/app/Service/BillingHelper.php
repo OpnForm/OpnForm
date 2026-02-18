@@ -35,7 +35,7 @@ class BillingHelper
 
             // Check all possible product IDs (pro, business, enterprise, and legacy default)
             $productNames = ['pro', 'business', 'enterprise', 'default'];
-            $productIds = array_filter(array_map(fn($name) => self::getProductId($name), $productNames));
+            $productIds = array_filter(array_map(fn ($name) => self::getProductId($name), $productNames));
 
             if (empty($productIds)) {
                 return null;

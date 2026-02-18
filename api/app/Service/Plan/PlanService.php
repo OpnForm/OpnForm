@@ -120,7 +120,8 @@ class PlanService
      */
     public function tierHasFeature(string $tier, string $feature): bool
     {
-        $requiredTier = config("plans.features.{$feature}");
+        $features = config('plans.features', []);
+        $requiredTier = $features[$feature] ?? null;
 
         if ($requiredTier === null) {
             return true; // Feature not defined = available to all
@@ -134,7 +135,9 @@ class PlanService
      */
     public function getTierLimit(string $tier, string $limitKey): mixed
     {
-        return config("plans.limits.{$limitKey}.{$tier}");
+        $limits = config('plans.limits', []);
+
+        return $limits[$limitKey][$tier] ?? null;
     }
 
     /**
@@ -153,7 +156,9 @@ class PlanService
      */
     public function getRequiredTier(string $feature): ?string
     {
-        return config("plans.features.{$feature}");
+        $features = config('plans.features', []);
+
+        return $features[$feature] ?? null;
     }
 
     /**

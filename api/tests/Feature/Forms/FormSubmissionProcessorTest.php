@@ -150,7 +150,7 @@ it('returns no redirect for non-pro users', function () {
 
 describe('Clear Empty Fields On Update', function () {
     it('sends empty values when editing submission via unique URL', function () {
-        $user = $this->actingAsProUser();
+        $user = $this->actingAsBusinessUser();
         $workspace = $this->createUserWorkspace($user);
         $form = $this->createForm($user, $workspace, [
             'editable_submissions' => true,
@@ -180,7 +180,7 @@ describe('Clear Empty Fields On Update', function () {
     });
 
     it('respects clear_empty_fields_on_update=false for field-matching updates', function () {
-        $user = $this->actingAsProUser();
+        $user = $this->actingAsBusinessUser();
         $workspace = $this->createUserWorkspace($user);
         $form = $this->createForm($user, $workspace, [
             'database_fields_update' => ['field_id_for_email'], // Match by email
@@ -204,7 +204,7 @@ describe('Clear Empty Fields On Update', function () {
     });
 
     it('clears empty fields when clear_empty_fields_on_update=true for field-matching updates', function () {
-        $user = $this->actingAsProUser();
+        $user = $this->actingAsBusinessUser();
         $workspace = $this->createUserWorkspace($user);
         $form = $this->createForm($user, $workspace, [
             'database_fields_update' => ['field_id_for_email'], // Match by email

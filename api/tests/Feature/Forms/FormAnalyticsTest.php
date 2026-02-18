@@ -7,7 +7,7 @@ use App\Http\Resources\FormResource;
  */
 describe('Form Analytics Validation', function () {
     it('can create form with valid meta pixel analytics', function () {
-        $user = $this->actingAsProUser();
+        $user = $this->actingAsBusinessUser();
         $workspace = $this->createUserWorkspace($user);
         $form = $this->makeForm($user, $workspace, [
             'analytics' => [
@@ -31,7 +31,7 @@ describe('Form Analytics Validation', function () {
     });
 
     it('can create form with valid google analytics', function () {
-        $user = $this->actingAsProUser();
+        $user = $this->actingAsBusinessUser();
         $workspace = $this->createUserWorkspace($user);
         $form = $this->makeForm($user, $workspace, [
             'analytics' => [
@@ -54,7 +54,7 @@ describe('Form Analytics Validation', function () {
     });
 
     it('can create form with valid gtm analytics', function () {
-        $user = $this->actingAsProUser();
+        $user = $this->actingAsBusinessUser();
         $workspace = $this->createUserWorkspace($user);
         $form = $this->makeForm($user, $workspace, [
             'analytics' => [
@@ -77,7 +77,7 @@ describe('Form Analytics Validation', function () {
     });
 
     it('rejects tracking id with special characters', function () {
-        $user = $this->actingAsProUser();
+        $user = $this->actingAsBusinessUser();
         $workspace = $this->createUserWorkspace($user);
         $form = $this->makeForm($user, $workspace, [
             'analytics' => [
@@ -93,7 +93,7 @@ describe('Form Analytics Validation', function () {
     });
 
     it('rejects tracking id with quotes', function () {
-        $user = $this->actingAsProUser();
+        $user = $this->actingAsBusinessUser();
         $workspace = $this->createUserWorkspace($user);
         $form = $this->makeForm($user, $workspace, [
             'analytics' => [
@@ -109,7 +109,7 @@ describe('Form Analytics Validation', function () {
     });
 
     it('rejects tracking id with spaces', function () {
-        $user = $this->actingAsProUser();
+        $user = $this->actingAsBusinessUser();
         $workspace = $this->createUserWorkspace($user);
         $form = $this->makeForm($user, $workspace, [
             'analytics' => [
@@ -125,7 +125,7 @@ describe('Form Analytics Validation', function () {
     });
 
     it('rejects tracking id exceeding max length', function () {
-        $user = $this->actingAsProUser();
+        $user = $this->actingAsBusinessUser();
         $workspace = $this->createUserWorkspace($user);
         $form = $this->makeForm($user, $workspace, [
             'analytics' => [
@@ -141,7 +141,7 @@ describe('Form Analytics Validation', function () {
     });
 
     it('rejects invalid analytics provider', function () {
-        $user = $this->actingAsProUser();
+        $user = $this->actingAsBusinessUser();
         $workspace = $this->createUserWorkspace($user);
         $form = $this->makeForm($user, $workspace, [
             'analytics' => [
@@ -157,7 +157,7 @@ describe('Form Analytics Validation', function () {
     });
 
     it('requires tracking id when provider is set', function () {
-        $user = $this->actingAsProUser();
+        $user = $this->actingAsBusinessUser();
         $workspace = $this->createUserWorkspace($user);
         $form = $this->makeForm($user, $workspace, [
             'analytics' => [
@@ -173,7 +173,7 @@ describe('Form Analytics Validation', function () {
     });
 
     it('allows empty analytics configuration', function () {
-        $user = $this->actingAsProUser();
+        $user = $this->actingAsBusinessUser();
         $workspace = $this->createUserWorkspace($user);
         $form = $this->makeForm($user, $workspace, [
             'analytics' => [],
@@ -189,7 +189,7 @@ describe('Form Analytics Validation', function () {
     });
 
     it('allows null analytics configuration', function () {
-        $user = $this->actingAsProUser();
+        $user = $this->actingAsBusinessUser();
         $workspace = $this->createUserWorkspace($user);
         $form = $this->makeForm($user, $workspace, [
             'analytics' => null,
@@ -205,7 +205,7 @@ describe('Form Analytics Validation', function () {
     });
 
     it('allows tracking id with dots and dashes', function () {
-        $user = $this->actingAsProUser();
+        $user = $this->actingAsBusinessUser();
         $workspace = $this->createUserWorkspace($user);
         $form = $this->makeForm($user, $workspace, [
             'analytics' => [
@@ -223,7 +223,7 @@ describe('Form Analytics Validation', function () {
     });
 
     it('can update form analytics', function () {
-        $user = $this->actingAsProUser();
+        $user = $this->actingAsBusinessUser();
         $workspace = $this->createUserWorkspace($user);
         $form = $this->createForm($user, $workspace, [
             'analytics' => [
@@ -251,9 +251,9 @@ describe('Form Analytics Validation', function () {
     });
 });
 
-describe('Form Analytics Pro Feature Gating', function () {
-    it('warns about analytics cleaning for non-pro users on form create', function () {
-        $user = $this->actingAsUser(); // Non-pro user
+describe('Form Analytics Business Feature Gating', function () {
+    it('warns about analytics cleaning for non-business users on form create', function () {
+        $user = $this->actingAsUser(); // Free tier user
         $workspace = $this->createUserWorkspace($user);
         $form = $this->makeForm($user, $workspace, [
             'analytics' => [
@@ -271,8 +271,8 @@ describe('Form Analytics Pro Feature Gating', function () {
         expect($response->json('message'))->toContain('Pro features you used will be disabled');
     });
 
-    it('cleans analytics when public form is fetched for non-pro user', function () {
-        $user = $this->actingAsUser(); // Non-pro user
+    it('cleans analytics when public form is fetched for non-business user', function () {
+        $user = $this->actingAsUser(); // Free tier user
         $workspace = $this->createUserWorkspace($user);
         $form = $this->createForm($user, $workspace, [
             'analytics' => [
@@ -293,8 +293,8 @@ describe('Form Analytics Pro Feature Gating', function () {
         expect($response->json('analytics'))->toBeEmpty();
     });
 
-    it('preserves analytics when public form is fetched for pro user', function () {
-        $user = $this->actingAsProUser();
+    it('preserves analytics when public form is fetched for business user', function () {
+        $user = $this->actingAsBusinessUser();
         $workspace = $this->createUserWorkspace($user);
         $form = $this->createForm($user, $workspace, [
             'analytics' => [
@@ -307,7 +307,7 @@ describe('Form Analytics Pro Feature Gating', function () {
         // Logout to access as guest (public form endpoint)
         $this->actingAsGuest();
 
-        // Public endpoint should preserve analytics for pro workspace
+        // Public endpoint should preserve analytics for business workspace
         $response = $this->getJson(route('forms.show', $form->slug))
             ->assertSuccessful();
 
@@ -316,8 +316,8 @@ describe('Form Analytics Pro Feature Gating', function () {
         expect($response->json('analytics.tracking_id'))->toBe('GTM-PROACC01');
     });
 
-    it('preserves analytics in database for non-pro users', function () {
-        $user = $this->actingAsUser(); // Non-pro user
+    it('preserves analytics in database for non-business users', function () {
+        $user = $this->actingAsUser(); // Free tier user
         $workspace = $this->createUserWorkspace($user);
         $form = $this->createForm($user, $workspace, [
             'analytics' => [

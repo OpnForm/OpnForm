@@ -76,49 +76,13 @@
             <div class="pt-6 mt-8 border-t border-neutral-200">
               <p class="text-sm font-semibold text-neutral-950">Includes</p>
               <ul class="mt-4 space-y-3 text-sm font-medium text-neutral-700">
-                <li class="flex gap-3">
+                <li
+                  v-for="feature in freePlanFeatures"
+                  :key="feature"
+                  class="flex gap-3"
+                >
                   <Icon class="w-5 h-5 text-emerald-600" name="heroicons:check-20-solid" />
-                  Unlimited forms & submissions
-                </li>
-                <li class="flex gap-3">
-                  <Icon class="w-5 h-5 text-emerald-600" name="heroicons:check-20-solid" />
-                  File uploads (basic quota)
-                </li>
-                <li class="flex gap-3">
-                  <Icon class="w-5 h-5 text-emerald-600" name="heroicons:check-20-solid" />
-                  Form logic & validation
-                </li>
-                <li class="flex gap-3">
-                  <Icon class="w-5 h-5 text-emerald-600" name="heroicons:check-20-solid" />
-                  Computed fields (calculations)
-                </li>
-                <li class="flex gap-3">
-                  <Icon class="w-5 h-5 text-emerald-600" name="heroicons:check-20-solid" />
-                  Pre-fills, URL parameters
-                </li>
-                <li class="flex gap-3">
-                  <Icon class="w-5 h-5 text-emerald-600" name="heroicons:check-20-solid" />
-                  Multi-user access (all admins, no roles)
-                </li>
-                <li class="flex gap-3">
-                  <Icon class="w-5 h-5 text-emerald-600" name="heroicons:check-20-solid" />
-                  1 workspace only
-                </li>
-                <li class="flex gap-3">
-                  <Icon class="w-5 h-5 text-emerald-600" name="heroicons:check-20-solid" />
-                  Branding required
-                </li>
-                <li class="flex gap-3">
-                  <Icon class="w-5 h-5 text-emerald-600" name="heroicons:check-20-solid" />
-                  Community support
-                </li>
-                <li class="flex gap-3">
-                  <Icon class="w-5 h-5 text-emerald-600" name="heroicons:check-20-solid" />
-                  API
-                </li>
-                <li class="flex gap-3">
-                  <Icon class="w-5 h-5 text-emerald-600" name="heroicons:check-20-solid" />
-                  Basic integrations
+                  {{ feature }}
                 </li>
               </ul>
             </div>
@@ -155,7 +119,7 @@
             <div class="mt-6">
               <UButton
                 class="w-full justify-center"
-                label="Get started free"
+                :label="authenticated ? 'Upgrade to Pro' : 'Get started free'"
                 @click.prevent="handleProCta"
               />
             </div>
@@ -163,37 +127,13 @@
             <div class="pt-6 mt-8 border-t border-neutral-200">
               <p class="text-sm font-semibold text-neutral-950">Everything in Free, plus</p>
               <ul class="mt-4 space-y-3 text-sm font-medium text-neutral-700">
-                <li class="flex gap-3">
+                <li
+                  v-for="feature in proPlanFeatures"
+                  :key="feature"
+                  class="flex gap-3"
+                >
                   <Icon class="w-5 h-5 text-emerald-600" name="heroicons:check-20-solid" />
-                  Remove branding
-                </li>
-                <li class="flex gap-3">
-                  <Icon class="w-5 h-5 text-emerald-600" name="heroicons:check-20-solid" />
-                  Custom domains
-                </li>
-                <li class="flex gap-3">
-                  <Icon class="w-5 h-5 text-emerald-600" name="heroicons:check-20-solid" />
-                  Custom SMTP
-                </li>
-                <li class="flex gap-3">
-                  <Icon class="w-5 h-5 text-emerald-600" name="heroicons:check-20-solid" />
-                  Discord, Slack, Telegram
-                </li>
-                <li class="flex gap-3">
-                  <Icon class="w-5 h-5 text-emerald-600" name="heroicons:check-20-solid" />
-                  Password-protected forms
-                </li>
-                <li class="flex gap-3">
-                  <Icon class="w-5 h-5 text-emerald-600" name="heroicons:check-20-solid" />
-                  Form expiration
-                </li>
-                <li class="flex gap-3">
-                  <Icon class="w-5 h-5 text-emerald-600" name="heroicons:check-20-solid" />
-                  Captcha
-                </li>
-                <li class="flex gap-3">
-                  <Icon class="w-5 h-5 text-emerald-600" name="heroicons:check-20-solid" />
-                  Multiple workspaces
+                  {{ feature }}
                 </li>
               </ul>
             </div>
@@ -225,7 +165,7 @@
               <UButton
                 class="w-full justify-center"
                 variant="soft"
-                label="Get started free"
+                :label="authenticated ? 'Upgrade to Business' : 'Get started free'"
                 @click.prevent="handleBusinessCta"
               />
             </div>
@@ -233,37 +173,13 @@
             <div class="pt-6 mt-8 border-t border-neutral-200">
               <p class="text-sm font-semibold text-neutral-950">Everything in Pro, plus</p>
               <ul class="mt-4 space-y-3 text-sm font-medium text-neutral-700">
-                <li class="flex gap-3">
+                <li
+                  v-for="feature in businessPlanFeatures"
+                  :key="feature"
+                  class="flex gap-3"
+                >
                   <Icon class="w-5 h-5 text-emerald-600" name="heroicons:check-20-solid" />
-                  Multi-user with roles & permissions
-                </li>
-                <li class="flex gap-3">
-                  <Icon class="w-5 h-5 text-emerald-600" name="heroicons:check-20-solid" />
-                  Advanced branding (CSS, fonts, favicons)
-                </li>
-                <li class="flex gap-3">
-                  <Icon class="w-5 h-5 text-emerald-600" name="heroicons:check-20-solid" />
-                  Higher file upload size limits
-                </li>
-                <li class="flex gap-3">
-                  <Icon class="w-5 h-5 text-emerald-600" name="heroicons:check-20-solid" />
-                  Priority support
-                </li>
-                <li class="flex gap-3">
-                  <Icon class="w-5 h-5 text-emerald-600" name="heroicons:check-20-solid" />
-                  Partial submissions
-                </li>
-                <li class="flex gap-3">
-                  <Icon class="w-5 h-5 text-emerald-600" name="heroicons:check-20-solid" />
-                  Versioning
-                </li>
-                <li class="flex gap-3">
-                  <Icon class="w-5 h-5 text-emerald-600" name="heroicons:check-20-solid" />
-                  Analytics dashboard
-                </li>
-                <li class="flex gap-3">
-                  <Icon class="w-5 h-5 text-emerald-600" name="heroicons:check-20-solid" />
-                  Advanced integrations
+                  {{ feature }}
                 </li>
               </ul>
             </div>
@@ -303,25 +219,13 @@
             <div class="pt-6 mt-8 border-t border-neutral-200">
               <p class="text-sm font-semibold text-neutral-950">Everything in Business, plus</p>
               <ul class="mt-4 space-y-3 text-sm font-medium text-neutral-700">
-                <li class="flex gap-3">
+                <li
+                  v-for="feature in enterprisePlanFeatures"
+                  :key="feature"
+                  class="flex gap-3"
+                >
                   <Icon class="w-5 h-5 text-emerald-600" name="heroicons:check-20-solid" />
-                  SSO (SAML, OIDC, LDAP)
-                </li>
-                <li class="flex gap-3">
-                  <Icon class="w-5 h-5 text-emerald-600" name="heroicons:check-20-solid" />
-                  Audit logs & compliance features
-                </li>
-                <li class="flex gap-3">
-                  <Icon class="w-5 h-5 text-emerald-600" name="heroicons:check-20-solid" />
-                  External storage support
-                </li>
-                <li class="flex gap-3">
-                  <Icon class="w-5 h-5 text-emerald-600" name="heroicons:check-20-solid" />
-                  White-label hosting option
-                </li>
-                <li class="flex gap-3">
-                  <Icon class="w-5 h-5 text-emerald-600" name="heroicons:check-20-solid" />
-                  SLA & onboarding support
+                  {{ feature }}
                 </li>
               </ul>
             </div>
@@ -580,6 +484,50 @@ const { openSubscriptionModal } = useAppModals()
 const { isAuthenticated: authenticated } = useIsAuthenticated()
 
 const pricingIsYearly = ref(true)
+
+const freePlanFeatures = [
+  "Unlimited forms & submissions",
+  "File uploads (basic quota)",
+  "Form logic & validation",
+  "Computed fields (calculations)",
+  "Pre-fills, URL parameters",
+  "Multi-user access (all admins, no roles)",
+  "1 workspace only",
+  "Branding required",
+  "Community support",
+  "API",
+  "Basic integrations",
+]
+
+const proPlanFeatures = [
+  "Remove branding",
+  "Custom domains",
+  "Custom SMTP",
+  "Discord, Slack, Telegram",
+  "Password-protected forms",
+  "Form expiration",
+  "Captcha",
+  "Multiple workspaces",
+]
+
+const businessPlanFeatures = [
+  "Multi-user with roles & permissions",
+  "Advanced branding (CSS, fonts, favicons)",
+  "Higher file upload size limits",
+  "Priority support",
+  "Partial submissions",
+  "Versioning",
+  "Analytics dashboard",
+  "Advanced integrations",
+]
+
+const enterprisePlanFeatures = [
+  "SSO (SAML, OIDC, LDAP)",
+  "Audit logs & compliance features",
+  "External storage support",
+  "White-label hosting option",
+  "SLA & onboarding support",
+]
 
 const communityEditionFeatures = [
   "Unlimited forms & submissions",

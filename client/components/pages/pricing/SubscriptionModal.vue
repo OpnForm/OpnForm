@@ -103,28 +103,29 @@
               <section class="flex flex-col self-stretch mt-12 max-md:mt-10 max-md:max-w-full">
                 <div class="justify-center max-md:pr-5 max-md:max-w-full">
                   <div class="flex gap-5 max-md:flex-col max-md:gap-0">
-                    <article
-                      v-for="feature in planFeatures"
-                      :key="feature.icon"
-                      class="flex flex-col w-[33%] max-md:ml-0 max-md:w-full"
-                    >
-                      <div class="flex flex-col grow text-base leading-6 text-slate-500 max-md:mt-10">
-                        <Icon
-                          :name="feature.icon"
-                          :class="['w-5 h-5', planAccentColor]"
-                        />
-                        <p class="mt-2">
-                          <strong class="font-semibold text-slate-800">{{ feature.title }}</strong>
-                          <span class="text-slate-500"> {{ feature.description }}</span>
-                        </p>
+                    <div class="grid gap-2 grid-cols-3">
+                      <div
+                        v-for="item in planFeatures"
+                        :key="item.title"
+                        class="rounded-3xl bg-neutral-50 p-4 flex gap-4 items-start"
+                      >
+                        <div class="h-12 w-12 rounded-2xl bg-white shadow-sm ring-1 ring-neutral-200 flex items-center justify-center flex-shrink-0">
+                          <UIcon :name="item.icon" class="h-6 w-6 text-blue-600" />
+                        </div>
+                        <div>
+                          <div class="text-lg font-semibold text-neutral-900">
+                            {{ item.title }}
+                          </div>
+                          <div class="mt-3 text-base font-medium leading-7 text-neutral-600">
+                            {{ item.description }}
+                          </div>
+                        </div>
                       </div>
-                    </article>
+                    </div>
                   </div>
                 </div>
               </section>
-              <footer
-                class="justify-center py-1.5 mt-12 text-base font-medium leading-6 text-center text-blue-500 max-md:mt-10"
-              >
+              <footer class="justify-center py-1.5 mt-8 text-base font-medium leading-6 text-center text-blue-500 max-md:mt-10">
                 <UButton
                   class="font-bold"
                   :to="{ name: 'pricing' }"
@@ -399,34 +400,24 @@ const confirmationTextClass = computed(() => {
   return classes[currentPlan.value] || 'text-blue-500'
 })
 
-// Plan accent color for icons
-const planAccentColor = computed(() => {
-  const colors = {
-    pro: 'text-blue-500',
-    business: 'text-orange-500',
-    enterprise: 'text-purple-500'
-  }
-  return colors[currentPlan.value] || 'text-blue-500'
-})
-
 // Features to display based on plan
 const planFeatures = computed(() => {
   const proFeatures = [
-    { icon: 'mdi:star-outline', title: 'Remove OpnForm branding.', description: 'Remove our watermark, create forms that match your brand.' },
-    { icon: 'heroicons:globe-alt', title: '1 custom domain.', description: 'Host your form on your own domain for a professional look.' },
-    { icon: 'heroicons:bell', title: 'Pro integrations.', description: 'Setup Slack, Discord, Telegram notifications and more.' }
+    { icon: 'mdi:star-outline', title: 'Remove OpnForm branding', description: 'Remove our watermark, create forms that match your brand.' },
+    { icon: 'heroicons:globe-alt', title: '1 custom domain', description: 'Host your form on your own domain for a professional look.' },
+    { icon: 'heroicons:bell', title: 'Pro integrations', description: 'Setup Slack, Discord, Telegram notifications and more.' }
   ]
   
   const businessFeatures = [
-    { icon: 'heroicons:users', title: 'Multi-user with roles.', description: 'Collaborate with your team with granular permissions.' },
-    { icon: 'ion:brush-outline', title: 'Advanced branding.', description: 'Custom CSS, fonts, and full design control.' },
-    { icon: 'heroicons:chart-bar', title: 'Analytics dashboard.', description: 'Track form performance with detailed insights.' }
+    { icon: 'heroicons:users', title: 'Multi-user with roles', description: 'Collaborate with your team with granular permissions.' },
+    { icon: 'ion:brush-outline', title: 'Advanced branding', description: 'Custom CSS, fonts, and full design control.' },
+    { icon: 'heroicons:chart-bar', title: 'Analytics dashboard', description: 'Track form performance with detailed insights.' }
   ]
   
   const enterpriseFeatures = [
-    { icon: 'heroicons:shield-check', title: 'SSO (SAML, OIDC, LDAP).', description: 'Enterprise authentication for your organization.' },
-    { icon: 'heroicons:document-text', title: 'Audit logs & compliance.', description: 'Track all actions for security and compliance.' },
-    { icon: 'heroicons:server', title: 'External storage.', description: 'Store files in your own S3 or GCS buckets.' }
+    { icon: 'heroicons:shield-check', title: 'SSO (SAML, OIDC, LDAP)', description: 'Enterprise authentication for your organization.' },
+    { icon: 'heroicons:document-text', title: 'Audit logs & compliance', description: 'Track all actions for security and compliance.' },
+    { icon: 'heroicons:server', title: 'External storage', description: 'Store files in your own S3 or GCS buckets.' }
   ]
   
   const features = {

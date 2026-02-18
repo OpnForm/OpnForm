@@ -4,7 +4,7 @@ use App\Models\Forms\Form;
 use App\Models\Version;
 
 it('can list form versions', function () {
-    $user = $this->actingAsProUser();
+    $user = $this->actingAsBusinessUser();
     $workspace = $this->createUserWorkspace($user);
     $form = $this->createForm($user, $workspace);
 
@@ -21,7 +21,7 @@ it('can list form versions', function () {
 });
 
 it('can list submission versions', function () {
-    $user = $this->actingAsProUser();
+    $user = $this->actingAsBusinessUser();
     $workspace = $this->createUserWorkspace($user);
     $form = $this->createForm($user, $workspace);
 
@@ -80,8 +80,7 @@ it('cannot restore version as non-pro user', function () {
 });
 
 it('cannot restore version for unauthorized form', function () {
-    $user = $this->actingAsProUser();
-    // Pro user needs a workspace to be considered "pro" (is_pro checks workspace owners)
+    $user = $this->actingAsBusinessUser();
     $this->createUserWorkspace($user);
 
     $otherUser = $this->createUser();
@@ -100,7 +99,7 @@ it('cannot restore version for unauthorized form', function () {
 });
 
 it('cannot restore non-existent version', function () {
-    $user = $this->actingAsProUser();
+    $user = $this->actingAsBusinessUser();
 
     $this->postJson(route('versions.restore', ['versionId' => 99999]))
         ->assertStatus(404);
@@ -114,7 +113,7 @@ it('returns 404 for non-existent form versions', function () {
 });
 
 it('version resource includes user data when available', function () {
-    $user = $this->actingAsProUser();
+    $user = $this->actingAsBusinessUser();
     $workspace = $this->createUserWorkspace($user);
     $form = $this->createForm($user, $workspace);
 
@@ -134,7 +133,7 @@ it('version resource includes user data when available', function () {
 });
 
 it('limits versions returned to prevent performance issues', function () {
-    $user = $this->actingAsProUser();
+    $user = $this->actingAsBusinessUser();
     $workspace = $this->createUserWorkspace($user);
     $form = $this->createForm($user, $workspace);
 
