@@ -116,7 +116,8 @@
               {{ integration.name }}
             </p>
             <PlanTag
-              v-if="integration.is_pro"
+              v-if="integration.required_tier && integration.required_tier !== 'free'"
+              :required-tier="integration.required_tier"
               class="absolute top-1 right-1"
             />
           </div>

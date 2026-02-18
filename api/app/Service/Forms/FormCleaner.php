@@ -6,7 +6,7 @@ use App\Http\Requests\UserFormRequest;
 use App\Http\Resources\FormResource;
 use App\Models\Forms\Form;
 use App\Models\Workspace;
-use App\Service\Billing\PlanAccessService;
+use App\Service\Plan\PlanService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Stevebauman\Purify\Facades\Purify;
@@ -47,7 +47,7 @@ class FormCleaner
         'secret_input' => 'Secret input was disabled.',
     ];
 
-    protected PlanAccessService $planAccessService;
+    protected PlanService $planService;
 
     // Policy toggles for current cleaning run
     private bool $allowCustomCode = true;
@@ -128,13 +128,13 @@ class FormCleaner
         return $this;
     }
 
-    private function getPlanAccessService(): PlanAccessService
+    private function getPlanService(): PlanService
     {
-        if (!isset($this->planAccessService)) {
-            $this->planAccessService = app(PlanAccessService::class);
+        if (!isset($this->planService)) {
+            $this->planService = app(PlanService::class);
         }
 
-        return $this->planAccessService;
+        return $this->planService;
     }
 
     /**
@@ -148,7 +148,7 @@ class FormCleaner
     }
 
     /**
-     * Perform cleanings based on workspace feature access
+     * Perform cleanings based on workspace plan tier
      */
     public function performCleaning(Workspace $workspace): FormCleaner
     {
@@ -158,18 +158,20 @@ class FormCleaner
     }
 
     /**
-     * Clean form data based on the workspace's effective feature access.
+     * Clean form data based on workspace's plan tier.
+     * Removes features that require a higher tier than the workspace has.
      */
     private function cleanForTier(Workspace $workspace, array $data, bool $simulation = false): array
     {
-        $planAccessService = $this->getPlanAccessService();
+        $tier = $workspace->plan_tier;
+        $planService = $this->getPlanService();
 
         $formFeatures = config('plans.form_features', []);
         $formDefaults = config('plans.form_feature_defaults', []);
 
         // Clean form-level features
-        foreach (array_keys($formFeatures) as $feature) {
-            if (!$planAccessService->hasFormFeature($workspace, $feature)) {
+        foreach ($formFeatures as $feature => $requiredTier) {
+            if (!$planService->tierMeetsRequirement($tier, $requiredTier)) {
                 $defaultValue = $formDefaults[$feature] ?? null;
                 $this->cleanFeature($data, $feature, $defaultValue, $simulation);
             }
@@ -178,7 +180,7 @@ class FormCleaner
         // Clean field-level features
         if (isset($data['properties']) && is_array($data['properties'])) {
             foreach ($data['properties'] as &$property) {
-                $this->cleanFieldForTier($workspace, $property, $planAccessService, $simulation);
+                $this->cleanFieldForTier($property, $tier, $planService, $simulation);
             }
             unset($property);
         }
@@ -215,22 +217,15 @@ class FormCleaner
     /**
      * Clean field-level features based on tier.
      */
-    private function cleanFieldForTier(Workspace $workspace, array &$property, PlanAccessService $planAccessService, bool $simulation = false): void
+    private function cleanFieldForTier(array &$property, string $tier, PlanService $planService, bool $simulation = false): void
     {
         // secret_input requires pro
         if (isset($property['secret_input']) && $property['secret_input'] === true) {
-            if (!$planAccessService->hasFormFeature($workspace, 'secret_input')) {
+            if (!$planService->tierMeetsRequirement($tier, 'pro')) {
                 $this->cleanings[$property['name']][] = 'secret_input';
                 if (!$simulation) {
                     $property['secret_input'] = false;
                 }
-            }
-        }
-
-        if (!empty($property['allowed_file_types']) && !$planAccessService->hasFeature($workspace, 'file_upload.allowed_types')) {
-            $this->cleanings[$property['name']][] = 'allowed_file_types';
-            if (!$simulation) {
-                $property['allowed_file_types'] = null;
             }
         }
     }

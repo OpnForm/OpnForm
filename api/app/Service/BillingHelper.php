@@ -108,7 +108,20 @@ class BillingHelper
     {
         try {
             $stripeSub = $subscription->asStripeSubscription();
-            $mainItem = self::getMainPlanLineItem($stripeSub->items);
+            $lineItems = collect($stripeSub->items);
+
+            // Check all possible product IDs (pro, business, enterprise, and legacy default)
+            $productNames = ['pro', 'business', 'enterprise', 'default'];
+            $productIds = array_filter(array_map(fn($name) => self::getProductId($name), $productNames));
+
+            if (empty($productIds)) {
+                return null;
+            }
+
+            // Find the main subscription line item for any known product
+            $mainItem = $lineItems->first(function ($lineItem) use ($productIds) {
+                return in_array($lineItem->price->product, $productIds);
+            });
 
             if (!$mainItem) {
                 return null;

@@ -13,7 +13,10 @@
         />
         <h2 class="text-lg font-semibold">
           {{ integration?.name }}
-          <PlanTag v-if="integration?.is_pro === true" />
+          <PlanTag
+            v-if="integration?.required_tier && integration.required_tier !== 'free'"
+            :required-tier="integration.required_tier"
+          />
         </h2>
       </div>
       <UButton

@@ -146,7 +146,7 @@
             <div class="mt-6">
               <p class="flex items-end gap-2">
                 <span class="text-4xl font-semibold tracking-tight text-neutral-950">
-                  {{ pricingIsYearly ? '$25' : '$29' }}
+                  ${{ pricingIsYearly ? PLAN_PRICING.pro.yearly : PLAN_PRICING.pro.monthly }}
                 </span>
                 <span class="pb-1 text-sm font-semibold text-neutral-600">/mo</span>
               </p>
@@ -215,7 +215,7 @@
             <div class="mt-6">
               <p class="flex items-end gap-2">
                 <span class="text-4xl font-semibold tracking-tight text-neutral-950">
-                  {{ pricingIsYearly ? '$67' : '$79' }}
+                  ${{ pricingIsYearly ? PLAN_PRICING.business.yearly : PLAN_PRICING.business.monthly }}
                 </span>
                 <span class="pb-1 text-sm font-semibold text-neutral-600">/mo</span>
               </p>
@@ -285,7 +285,7 @@
             <div class="mt-6">
               <p class="flex items-end gap-2">
                 <span class="text-4xl font-semibold tracking-tight text-neutral-950">
-                  {{ pricingIsYearly ? '$213+' : '$250+' }}
+                  ${{ pricingIsYearly ? PLAN_PRICING.enterprise.yearly : PLAN_PRICING.enterprise.monthly }}+
                 </span>
                 <span class="pb-1 text-sm font-semibold text-neutral-600">/mo</span>
               </p>
@@ -562,6 +562,7 @@
 
 <script setup>
 import FeatureComparison from "~/components/pages/pricing/FeatureComparison.vue"
+import { PLAN_PRICING } from "~/composables/usePlanFeatures"
 import { useIsAuthenticated } from "~/composables/useAuthFlow"
 
 definePageMeta({

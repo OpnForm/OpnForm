@@ -270,86 +270,11 @@
 <script setup>
 import TrackClick from '~/components/global/TrackClick.vue'
 
-import { computed } from 'vue'
-
-const PLAN_VISUALS = {
-  pro: {
-    accentClass: 'text-blue-700',
-    glowClass: 'bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.18),_transparent_72%)]',
-    cardClass: 'border-blue-200 bg-[linear-gradient(180deg,_rgba(239,246,255,0.96)_0%,_rgba(255,255,255,0.96)_100%)]',
-    selectedCardClass: 'border-blue-400 shadow-[0_18px_50px_rgba(59,130,246,0.18)] ring-1 ring-blue-200',
-    confirmationClass: 'bg-blue-50 border-blue-200',
-    confirmationTextClass: 'text-blue-700',
-  },
-  business: {
-    accentClass: 'text-amber-700',
-    glowClass: 'bg-[radial-gradient(circle_at_top,_rgba(245,158,11,0.18),_transparent_72%)]',
-    cardClass: 'border-amber-200 bg-[linear-gradient(180deg,_rgba(255,247,237,0.96)_0%,_rgba(255,255,255,0.96)_100%)]',
-    selectedCardClass: 'border-amber-400 shadow-[0_18px_50px_rgba(245,158,11,0.18)] ring-1 ring-amber-200',
-    confirmationClass: 'bg-amber-50 border-amber-200',
-    confirmationTextClass: 'text-amber-700',
-  },
-  enterprise: {
-    accentClass: 'text-fuchsia-700',
-    glowClass: 'bg-[radial-gradient(circle_at_top,_rgba(168,85,247,0.18),_transparent_72%)]',
-    cardClass: 'border-fuchsia-200 bg-[linear-gradient(180deg,_rgba(250,245,255,0.96)_0%,_rgba(255,255,255,0.96)_100%)]',
-    selectedCardClass: 'border-fuchsia-400 shadow-[0_18px_50px_rgba(168,85,247,0.18)] ring-1 ring-fuchsia-200',
-    confirmationClass: 'bg-fuchsia-50 border-fuchsia-200',
-    confirmationTextClass: 'text-fuchsia-700',
-  },
-}
-
-const PLAN_DETAILS = {
-  pro: {
-    subtitle: 'Branding control, custom domains, analytics, notifications, and core premium form tools.',
-    highlights: [
-      'Remove OpnForm branding',
-      'Use one custom domain',
-      'Unlock analytics, summaries, and premium integrations',
-    ],
-    summaryLine: 'Best when you need premium publishing and conversion features.',
-    features: [
-      { icon: 'mdi:star-outline', title: 'Remove OpnForm branding', description: 'Publish forms without the OpnForm watermark and make the experience feel truly yours.' },
-      { icon: 'heroicons:globe-alt', title: '1 custom domain', description: 'Put forms on your own domain for a polished, trustworthy handoff.' },
-      { icon: 'heroicons:bell', title: 'Pro integrations', description: 'Send alerts to Slack, Discord, Telegram, and unlock the rest of the Pro workflow tools.' },
-    ],
-  },
-  business: {
-    subtitle: 'Collaboration, advanced branding, richer analytics, and operational controls for a real team.',
-    highlights: [
-      'Multiple users, multiple workspaces',
-      'Advanced branding with custom CSS and fonts',
-      'Business-only analytics and submission flows',
-    ],
-    summaryLine: 'Best when multiple teammates need to operate forms together.',
-    features: [
-      { icon: 'heroicons:users', title: 'Roles for your team', description: 'Invite teammates with the right level of access instead of giving everyone the same permissions.' },
-      { icon: 'heroicons:paint-brush', title: 'Advanced branding', description: 'Use custom CSS, fonts, and richer styling controls to match your product or campaign.' },
-      { icon: 'heroicons:chart-bar-square', title: 'Deeper form insights', description: 'Unlock business-tier analytics and advanced submission workflows to optimize conversion.' },
-    ],
-  },
-  enterprise: {
-    subtitle: 'Security, compliance, and identity controls for teams that need centralized governance.',
-    highlights: [
-      'SSO and enterprise identity controls',
-      'Audit logs and compliance-oriented visibility',
-      'Infrastructure and storage flexibility',
-    ],
-    summaryLine: 'Best when security, compliance, and centralized access control are non-negotiable.',
-    features: [
-      { icon: 'heroicons:shield-check', title: 'Enterprise SSO', description: 'Connect OIDC, SAML, or LDAP so access is controlled from your identity provider.' },
-      { icon: 'heroicons:document-text', title: 'Audit logs & compliance', description: 'Track important activity and support teams that need stronger internal controls.' },
-      { icon: 'heroicons:server-stack', title: 'External storage', description: 'Route storage to your own infrastructure when you need tighter operational ownership.' },
-    ],
-  },
-}
-
-// Plan pricing configuration
-const PLAN_PRICING = {
-  pro: { monthly: 29, yearly: 25 },
-  business: { monthly: 79, yearly: 67 },
-  enterprise: { monthly: null, yearly: null }
-}
+import { useCheckoutUrl } from '@/composables/components/stripe/useCheckoutUrl'
+import { PLAN_PRICING } from '~/composables/usePlanFeatures'
+import { authApi } from '~/api'
+import { computed, watchEffect } from 'vue'
+import { useElementSize } from '@vueuse/core'
 
 const props = defineProps({
   modelValue: {

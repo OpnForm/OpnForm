@@ -40,6 +40,7 @@ class Workspace extends Model implements CachableAttributes
 
     protected $appends = [
         'plan_tier',
+        'is_pro',
         'is_trialing',
         'users_count',
         'is_yearly_plan',
@@ -56,6 +57,7 @@ class Workspace extends Model implements CachableAttributes
 
     protected $cachableAttributes = [
         'plan_tier',
+        'is_pro',
         'is_trialing',
         'is_risky',
         'is_yearly_plan',
@@ -86,7 +88,7 @@ class Workspace extends Model implements CachableAttributes
             return self::MAX_FILE_SIZE_PRO;
         }
 
-        return $this->remember('max_file_size', self::CACHE_TTL, function (): int {
+        return $this->remember('max_file_size', 15 * 60, function (): int {
             // 1. Check workspace-level override
             $overrideLimit = $this->plan_overrides['limits']['file_upload_size'] ?? null;
             if ($overrideLimit !== null) {
@@ -113,7 +115,7 @@ class Workspace extends Model implements CachableAttributes
             return null;
         }
 
-        return $this->remember('custom_domain_count', self::CACHE_TTL, function (): ?int {
+        return $this->remember('custom_domain_count', 15 * 60, function (): ?int {
             // 1. Check workspace-level override
             $overrideLimit = $this->plan_overrides['limits']['custom_domain_count'] ?? null;
             if ($overrideLimit !== null) {
@@ -142,7 +144,24 @@ class Workspace extends Model implements CachableAttributes
      */
     public function getPlanTierAttribute(): string
     {
-        return app(PlanAccessService::class)->getTier($this);
+        return app(\App\Service\Plan\PlanService::class)->getWorkspaceTier($this);
+    }
+
+    /**
+     * Check if workspace has Pro-level access or higher.
+     * Kept for backward compatibility - use plan_tier for new code.
+     */
+    public function getIsProAttribute()
+    {
+        if (!pricing_enabled()) {
+            return true;    // If no paid plan so TRUE for ALL
+        }
+
+        return $this->remember('is_pro', 15 * 60, function (): bool {
+            $tier = app(\App\Service\Plan\PlanService::class)->computeWorkspaceTier($this);
+
+            return in_array($tier, ['pro', 'business', 'enterprise']);
+        });
     }
 
     public function getIsTrialingAttribute()
@@ -164,6 +183,23 @@ class Workspace extends Model implements CachableAttributes
             }
 
             return false;
+        });
+    }
+
+    /**
+     * Check if workspace has Enterprise-level access.
+     * Kept for backward compatibility - use plan_tier for new code.
+     */
+    public function getIsEnterpriseAttribute()
+    {
+        if (!pricing_enabled()) {
+            return true;    // If no paid plan so TRUE for ALL
+        }
+
+        return $this->remember('is_enterprise', 15 * 60, function (): bool {
+            $tier = app(\App\Service\Plan\PlanService::class)->computeWorkspaceTier($this);
+
+            return $tier === 'enterprise';
         });
     }
 
@@ -323,13 +359,8 @@ class Workspace extends Model implements CachableAttributes
      */
     public function hasFeature(string $feature): bool
     {
-        return $this->remember('has_feature_' . $feature, self::CACHE_TTL, function () use ($feature): bool {
-            return app(PlanAccessService::class)->hasFeature($this, $feature);
+        return $this->remember('has_feature_' . $feature, 15 * 60, function () use ($feature): bool {
+            return app(\App\Service\Plan\PlanService::class)->workspaceHasFeature($this, $feature);
         });
-    }
-
-    public function requireFeature(string $feature): void
-    {
-        app(PlanAccessService::class)->requireFeature($this, $feature);
     }
 }
