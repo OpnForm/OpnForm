@@ -97,6 +97,7 @@ class User extends Authenticatable implements JWTSubject, CachableAttributes, Tw
         'is_subscribed',
         'is_pro',
         'active_license',
+        'plan_tier',
     ];
 
     public function ownsForm(Form $form)
@@ -158,7 +159,9 @@ class User extends Authenticatable implements JWTSubject, CachableAttributes, Tw
         }
 
         return $this->remember('is_subscribed', 5 * 60, function (): bool {
-            return $this->subscribed()
+            $hasActiveSubscription = $this->subscriptions->contains(fn ($sub) => $sub->valid());
+
+            return $hasActiveSubscription
                 || in_array($this->email, config('opnform.extra_pro_users_emails'))
                 || !is_null($this->activeLicense());
         });
@@ -198,6 +201,17 @@ class User extends Authenticatable implements JWTSubject, CachableAttributes, Tw
                 return $workspace->is_pro;
             });
         });
+    }
+
+    /**
+     * Get the user's current plan tier.
+     * This is the SINGLE source of truth for plan status.
+     *
+     * @return string One of: 'free', 'pro', 'business', 'enterprise'
+     */
+    public function getPlanTierAttribute(): string
+    {
+        return app(\App\Service\Plan\PlanService::class)->getUserTier($this);
     }
 
     public function getIsBlockedAttribute()

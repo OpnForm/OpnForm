@@ -116,7 +116,8 @@
               {{ integration.name }}
             </p>
             <PlanTag
-              v-if="integration.is_pro"
+              v-if="integration.required_tier && integration.required_tier !== 'free'"
+              :required-tier="integration.required_tier"
               class="absolute top-1 right-1"
             />
           </div>
@@ -170,25 +171,25 @@ const popularIntegrations = computed(() => [
     id: 'slack',
     name: 'Slack',
     icon: 'mdi:slack',
-    is_pro: true
+    required_tier: 'pro'
   },
   {
     id: 'google_sheets',
     name: 'Sheets',
     icon: 'mdi:google-spreadsheet',
-    is_pro: false
+    required_tier: 'free'
   },
   {
     id: 'zapier',
     name: 'Zapier',
     icon: 'cib:zapier',
-    is_pro: false
+    required_tier: 'free'
   },
   {
     id: 'webhook',
     name: 'Webhook',
     icon: 'material-symbols:webhook',
-    is_pro: false
+    required_tier: 'free'
   }
 ])
 

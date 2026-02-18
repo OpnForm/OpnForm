@@ -53,7 +53,7 @@ class FormSubmissionResource extends JsonResource
             'id' => $this->id,
             'submission_id' => SubmissionUrlService::getSubmissionIdentifier($this->resource)
         ];
-        if ($this->form->enable_ip_tracking && $this->form->is_pro && !empty($this->meta)) {
+        if ($this->form->enable_ip_tracking && $this->form->workspace->hasFeature('enable_ip_tracking') && !empty($this->meta)) {
             $extraData['ip_address'] = $this->meta['ip_address'] ?? null;
         }
 

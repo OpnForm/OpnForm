@@ -27,6 +27,7 @@ class Workspace extends Model implements CachableAttributes
         'user_id',
         'custom_domain',
         'settings',
+        'plan_overrides',
     ];
 
     protected $dispatchesEvents = [
@@ -34,6 +35,7 @@ class Workspace extends Model implements CachableAttributes
     ];
 
     protected $appends = [
+        'plan_tier',
         'is_pro',
         'is_trialing',
         'is_enterprise',
@@ -45,11 +47,13 @@ class Workspace extends Model implements CachableAttributes
     {
         return [
             'custom_domains' => 'array',
-            'settings' => 'array'
+            'settings' => 'array',
+            'plan_overrides' => 'array',
         ];
     }
 
     protected $cachableAttributes = [
+        'plan_tier',
         'is_pro',
         'is_trialing',
         'is_enterprise',
@@ -68,19 +72,23 @@ class Workspace extends Model implements CachableAttributes
         }
 
         return $this->remember('max_file_size', 15 * 60, function (): int {
-            // Return max file size depending on subscription
-            foreach ($this->owners as $owner) {
-                if ($owner->is_subscribed) {
-                    if ($license = $owner->activeLicense()) {
-                        // In case of special License
-                        return $license->max_file_size;
-                    }
-                }
-
-                return self::MAX_FILE_SIZE_PRO;
+            // 1. Check workspace-level override
+            $overrideLimit = $this->plan_overrides['limits']['file_upload_size'] ?? null;
+            if ($overrideLimit !== null) {
+                return (int) $overrideLimit;
             }
 
-            return self::MAX_FILE_SIZE_FREE;
+            // 2. Check for AppSumo/License limits (take precedence over tier)
+            foreach ($this->owners as $owner) {
+                if ($license = $owner->activeLicense()) {
+                    return $license->max_file_size;
+                }
+            }
+
+            // 3. Use tier-based limit from config
+            $tier = $this->plan_tier;
+
+            return config("plans.limits.file_upload_size.{$tier}") ?? self::MAX_FILE_SIZE_FREE;
         });
     }
 
@@ -91,21 +99,41 @@ class Workspace extends Model implements CachableAttributes
         }
 
         return $this->remember('custom_domain_count', 15 * 60, function (): ?int {
-            foreach ($this->owners as $owner) {
-                if ($owner->is_subscribed) {
-                    if ($license = $owner->activeLicense()) {
-                        // In case of special License
-                        return $license->custom_domain_limit_count;
-                    }
+            // 1. Check workspace-level override
+            $overrideLimit = $this->plan_overrides['limits']['custom_domain_count'] ?? null;
+            if ($overrideLimit !== null) {
+                return (int) $overrideLimit;
+            }
 
-                    return self::MAX_DOMAIN_PRO;
+            // 2. Check for AppSumo/License limits (take precedence over tier)
+            foreach ($this->owners as $owner) {
+                if ($license = $owner->activeLicense()) {
+                    return $license->custom_domain_limit_count;
                 }
             }
 
-            return 0;
+            // 3. Use tier-based limit from config
+            $tier = $this->plan_tier;
+
+            return config("plans.limits.custom_domain_count.{$tier}") ?? 0;
         });
     }
 
+    /**
+     * Get the workspace's effective plan tier.
+     * Checks overrides first, then highest owner tier.
+     *
+     * @return string One of: 'free', 'pro', 'business', 'enterprise'
+     */
+    public function getPlanTierAttribute(): string
+    {
+        return app(\App\Service\Plan\PlanService::class)->getWorkspaceTier($this);
+    }
+
+    /**
+     * Check if workspace has Pro-level access or higher.
+     * Kept for backward compatibility - use plan_tier for new code.
+     */
     public function getIsProAttribute()
     {
         if (!pricing_enabled()) {
@@ -113,18 +141,9 @@ class Workspace extends Model implements CachableAttributes
         }
 
         return $this->remember('is_pro', 15 * 60, function (): bool {
-            // Make sure at least one owner is pro
-            $owners = $this->relationLoaded('users')
-                ? $this->users->where('pivot.role', 'admin')
-                : $this->owners()->get();
+            $tier = app(\App\Service\Plan\PlanService::class)->computeWorkspaceTier($this);
 
-            foreach ($owners as $owner) {
-                if ($owner->is_subscribed) {
-                    return true;
-                }
-            }
-
-            return false;
+            return in_array($tier, ['pro', 'business', 'enterprise']);
         });
     }
 
@@ -150,6 +169,10 @@ class Workspace extends Model implements CachableAttributes
         });
     }
 
+    /**
+     * Check if workspace has Enterprise-level access.
+     * Kept for backward compatibility - use plan_tier for new code.
+     */
     public function getIsEnterpriseAttribute()
     {
         if (!pricing_enabled()) {
@@ -157,18 +180,9 @@ class Workspace extends Model implements CachableAttributes
         }
 
         return $this->remember('is_enterprise', 15 * 60, function (): bool {
-            // Make sure at least one owner has enterprise subscription
-            $owners = $this->relationLoaded('users')
-                ? $this->users->where('pivot.role', 'admin')
-                : $this->owners()->get();
+            $tier = app(\App\Service\Plan\PlanService::class)->computeWorkspaceTier($this);
 
-            foreach ($owners as $owner) {
-                if ($owner->has_enterprise_subscription) {
-                    return true;
-                }
-            }
-
-            return false;
+            return $tier === 'enterprise';
         });
     }
 
@@ -327,5 +341,16 @@ class Workspace extends Model implements CachableAttributes
             ->wherePivot('user_id', $user->id)
             ->wherePivot('role', User::ROLE_READONLY)
             ->exists();
+    }
+
+    /**
+     * Check if workspace has access to a specific feature.
+     * Considers workspace overrides and tier-based access.
+     */
+    public function hasFeature(string $feature): bool
+    {
+        return $this->remember('has_feature_' . $feature, 15 * 60, function () use ($feature): bool {
+            return app(\App\Service\Plan\PlanService::class)->workspaceHasFeature($this, $feature);
+        });
     }
 }

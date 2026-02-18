@@ -51,9 +51,17 @@ class WorkspacePolicy
      */
     public function create(User $user)
     {
-        // Check if user already has a workspace
-        if (!$user->is_subscribed && $user->workspaces()->count() > 0) {
-            return Response::deny('You have reached the limit for free workspaces. Upgrade to Pro to create additional workspaces.');
+        // Use tier-based workspace limits
+        $userTier = $user->plan_tier;
+        $workspaceLimit = config("plans.limits.workspace_count.{$userTier}");
+        $currentCount = $user->workspaces()->count();
+
+        // null limit = unlimited
+        if ($workspaceLimit !== null && $currentCount >= $workspaceLimit) {
+            $planService = app(\App\Service\Plan\PlanService::class);
+            $tierName = $planService->getTierDisplayName($userTier);
+
+            return Response::deny("You have reached the workspace limit for {$tierName} plan. Upgrade to create additional workspaces.");
         }
 
         if ($token = $user->currentAccessToken()) {

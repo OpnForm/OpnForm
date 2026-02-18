@@ -2,13 +2,12 @@ import { useQueryClient, useQuery, useMutation } from '@tanstack/vue-query'
 import { formsApi } from '~/api/forms'
 import integrationsList from '~/data/forms/integrations.json'
 import { unref } from 'vue'
-import { useAuth } from '~/composables/query/useAuth.js'
+import { usePlanFeatures } from '~/composables/usePlanFeatures.js'
 import { useFeatureFlag } from '~/composables/useFeatureFlag.js'
 
 export function useFormIntegrations() {
   const queryClient = useQueryClient()
-  const { user } = useAuth()
-  const { data: userData } = user()
+  const { currentWorkspaceTier, tierMeetsRequirement } = usePlanFeatures()
 
   // Static integrations data
   const integrations = ref(new Map())
@@ -20,17 +19,16 @@ export function useFormIntegrations() {
     }
   }
 
-  // Computed property for available integrations based on user subscription and feature flags
+  // Computed property for available integrations based on workspace tier and feature flags
   const availableIntegrations = computed(() => {
-    if (!userData.value) return integrations.value
-
     const enrichedIntegrations = new Map()
     for (const [key, integration] of integrations.value.entries()) {
       if (useFeatureFlag(`integrations.${key}`, true)) {
+        const requiredTier = integration.required_tier || 'free'
         enrichedIntegrations.set(key, {
           ...integration,
           id: key,
-          requires_subscription: !userData.value.is_subscribed && integration.is_pro,
+          requires_upgrade: !tierMeetsRequirement(currentWorkspaceTier.value, requiredTier),
         })
       }
     }

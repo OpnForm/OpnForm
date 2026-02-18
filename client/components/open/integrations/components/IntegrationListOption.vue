@@ -32,7 +32,8 @@
         </div>
       </div>
       <PlanTag
-        v-if="integration?.is_pro === true"
+        v-if="integration.required_tier && integration.required_tier !== 'free'"
+        :required-tier="integration.required_tier"
         class="absolute top-2 right-2"
       />
       <Icon
@@ -59,28 +60,24 @@ const props = defineProps({
   },
 })
 
-const { current: currentWorkspace } = useCurrentWorkspace()
-
 const unavailable = computed(() => {
-  return (
-    props.integration.coming_soon || 
-    (props.integration.requires_subscription && !currentWorkspace.value.is_pro)
-  )
+  return props.integration.coming_soon || props.integration.requires_upgrade
 })
 
 const tooltipText = computed(() => {
   if (props.integration.coming_soon) return "This integration is coming soon"
-  if (props.integration.requires_subscription && !currentWorkspace.value.is_pro )
-    return "You need a subscription to use this integration."
+  if (props.integration.requires_upgrade)
+    return "You need to upgrade your plan to use this integration."
   return null
 })
 
 const onClick = () => {
   if (props.integration.coming_soon) return
-  if (props.integration.requires_subscription && !currentWorkspace.value.is_pro ) {
+  if (props.integration.requires_upgrade) {
     openSubscriptionModal({
-      modal_title: 'Upgrade today to use this integration',
-      modal_description: `Upgrade your account to use our ${props.integration.name} and unlock all of our Pro features.`
+      plan: props.integration.required_tier || 'pro',
+      modal_title: 'Upgrade to use this integration',
+      modal_description: `Upgrade your account to use our ${props.integration.name} and unlock more features.`
     })
     return
   }

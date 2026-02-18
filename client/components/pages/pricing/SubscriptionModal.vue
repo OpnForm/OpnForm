@@ -271,16 +271,10 @@ import SlidingTransition from '~/components/global/transitions/SlidingTransition
 import TrackClick from '~/components/global/TrackClick.vue'
 
 import { useCheckoutUrl } from '@/composables/components/stripe/useCheckoutUrl'
+import { PLAN_PRICING } from '~/composables/usePlanFeatures'
 import { authApi } from '~/api'
 import { computed, watchEffect } from 'vue'
 import { useElementSize } from '@vueuse/core'
-
-// Plan pricing configuration
-const PLAN_PRICING = {
-  pro: { monthly: 29, yearly: 25 },
-  business: { monthly: 79, yearly: 67 },
-  enterprise: { monthly: null, yearly: null }
-}
 
 const props = defineProps({
   modelValue: {

@@ -85,11 +85,13 @@
 </template>
 
 <script setup>
+import { PLAN_PRICING } from "~/composables/usePlanFeatures"
+
 const plans = [
-  { key: "free", label: "Free", priceLabel: "$0" },
-  { key: "pro", label: "Pro", priceLabel: "$29" },
-  { key: "business", label: "Business", priceLabel: "$79" },
-  { key: "enterprise", label: "Enterprise", priceLabel: "$250+" },
+  { key: "free", label: "Free", priceLabel: `$${PLAN_PRICING.free.monthly}` },
+  { key: "pro", label: "Pro", priceLabel: `$${PLAN_PRICING.pro.monthly}` },
+  { key: "business", label: "Business", priceLabel: `$${PLAN_PRICING.business.monthly}` },
+  { key: "enterprise", label: "Enterprise", priceLabel: `$${PLAN_PRICING.enterprise.monthly}+` },
 ]
 
 const sections = [
@@ -102,7 +104,7 @@ const sections = [
       },
       {
         label: "File uploads",
-        values: ["10MB", true, "1GB", "configurable"],
+        values: ["10MB", "50MB", "1GB", "configurable"],
       },
       {
         label: "Form logic & validation",

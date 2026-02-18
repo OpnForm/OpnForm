@@ -202,8 +202,8 @@ class StoreFormSubmissionJob implements ShouldQueue
             $submission->public_id = \Illuminate\Support\Str::uuid()->toString();
         }
 
-        // Store IP address in meta if IP tracking is enabled
-        if ($this->form->enable_ip_tracking && $this->form->is_pro && $this->submitterIp) {
+        // Store IP address in meta if IP tracking is enabled (enterprise feature)
+        if ($this->form->enable_ip_tracking && $this->form->workspace->hasFeature('enable_ip_tracking') && $this->submitterIp) {
             $existingMeta = $submission->meta ?? [];
             $existingMeta['ip_address'] = $this->submitterIp;
             $submission->meta = $existingMeta;
