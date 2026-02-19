@@ -21,6 +21,8 @@ class Workspace extends Model implements CachableAttributes
 
     public const MAX_DOMAIN_PRO = 1;
 
+    private const CACHE_TTL = 15 * 60;
+
     protected $fillable = [
         'name',
         'icon',
@@ -37,6 +39,7 @@ class Workspace extends Model implements CachableAttributes
     protected $appends = [
         'plan_tier',
         'is_pro',
+        'is_business',
         'is_trialing',
         'is_enterprise',
         'users_count',
@@ -55,6 +58,7 @@ class Workspace extends Model implements CachableAttributes
     protected $cachableAttributes = [
         'plan_tier',
         'is_pro',
+        'is_business',
         'is_trialing',
         'is_enterprise',
         'is_risky',
@@ -65,13 +69,27 @@ class Workspace extends Model implements CachableAttributes
         'users_count',
     ];
 
+    /**
+     * Flush workspace cache and also flush owners' cache (is_pro depends on workspace tier).
+     */
+    public function flush(): bool
+    {
+        $result = parent::flush();
+
+        foreach ($this->owners as $owner) {
+            $owner->flush();
+        }
+
+        return $result;
+    }
+
     public function getMaxFileSizeAttribute()
     {
         if (!pricing_enabled()) {
             return self::MAX_FILE_SIZE_PRO;
         }
 
-        return $this->remember('max_file_size', 15 * 60, function (): int {
+        return $this->remember('max_file_size', self::CACHE_TTL, function (): int {
             // 1. Check workspace-level override
             $overrideLimit = $this->plan_overrides['limits']['file_upload_size'] ?? null;
             if ($overrideLimit !== null) {
@@ -98,7 +116,7 @@ class Workspace extends Model implements CachableAttributes
             return null;
         }
 
-        return $this->remember('custom_domain_count', 15 * 60, function (): ?int {
+        return $this->remember('custom_domain_count', self::CACHE_TTL, function (): ?int {
             // 1. Check workspace-level override
             $overrideLimit = $this->plan_overrides['limits']['custom_domain_count'] ?? null;
             if ($overrideLimit !== null) {
@@ -140,10 +158,23 @@ class Workspace extends Model implements CachableAttributes
             return true;    // If no paid plan so TRUE for ALL
         }
 
-        return $this->remember('is_pro', 15 * 60, function (): bool {
+        return $this->remember('is_pro', self::CACHE_TTL, function (): bool {
             $tier = app(\App\Service\Plan\PlanService::class)->computeWorkspaceTier($this);
 
             return in_array($tier, ['pro', 'business', 'enterprise']);
+        });
+    }
+
+    public function getIsBusinessAttribute()
+    {
+        if (!pricing_enabled()) {
+            return true;    // If no paid plan so TRUE for ALL
+        }
+
+        return $this->remember('is_business', self::CACHE_TTL, function (): bool {
+            $tier = app(\App\Service\Plan\PlanService::class)->computeWorkspaceTier($this);
+
+            return in_array($tier, ['business', 'enterprise']);
         });
     }
 
@@ -153,7 +184,7 @@ class Workspace extends Model implements CachableAttributes
             return false;    // If no paid plan so FALSE for ALL
         }
 
-        return $this->remember('is_trialing', 15 * 60, function (): bool {
+        return $this->remember('is_trialing', self::CACHE_TTL, function (): bool {
             // Make sure at least one owner is trialing
             $owners = $this->relationLoaded('users')
                 ? $this->users->where('pivot.role', 'admin')
@@ -179,7 +210,7 @@ class Workspace extends Model implements CachableAttributes
             return true;    // If no paid plan so TRUE for ALL
         }
 
-        return $this->remember('is_enterprise', 15 * 60, function (): bool {
+        return $this->remember('is_enterprise', self::CACHE_TTL, function (): bool {
             $tier = app(\App\Service\Plan\PlanService::class)->computeWorkspaceTier($this);
 
             return $tier === 'enterprise';
@@ -188,7 +219,7 @@ class Workspace extends Model implements CachableAttributes
 
     public function getIsRiskyAttribute()
     {
-        return $this->remember('is_risky', 15 * 60, function (): bool {
+        return $this->remember('is_risky', self::CACHE_TTL, function (): bool {
             foreach ($this->owners as $owner) {
                 if (!$owner->is_risky) {
                     return false;
@@ -205,7 +236,7 @@ class Workspace extends Model implements CachableAttributes
             return false;
         }
 
-        return $this->remember('is_yearly_plan', 15 * 60, function (): bool {
+        return $this->remember('is_yearly_plan', self::CACHE_TTL, function (): bool {
             $owners = $this->relationLoaded('users')
                 ? $this->users->where('pivot.role', 'admin')
                 : $this->owners()->get();
@@ -225,7 +256,7 @@ class Workspace extends Model implements CachableAttributes
 
     public function getSubmissionsCountAttribute()
     {
-        return $this->remember('submissions_count', 15 * 60, function (): int {
+        return $this->remember('submissions_count', self::CACHE_TTL, function (): int {
             $total = 0;
             // Use loaded relationship if available to avoid queries
             $forms = $this->relationLoaded('forms')
@@ -242,7 +273,7 @@ class Workspace extends Model implements CachableAttributes
 
     public function getUsersCountAttribute()
     {
-        return $this->remember('users_count', 15 * 60, function (): int {
+        return $this->remember('users_count', self::CACHE_TTL, function (): int {
             // Use loaded relationship if available to avoid queries
             if ($this->relationLoaded('users')) {
                 return $this->users->count();
@@ -349,7 +380,7 @@ class Workspace extends Model implements CachableAttributes
      */
     public function hasFeature(string $feature): bool
     {
-        return $this->remember('has_feature_' . $feature, 15 * 60, function () use ($feature): bool {
+        return $this->remember('has_feature_' . $feature, self::CACHE_TTL, function () use ($feature): bool {
             return app(\App\Service\Plan\PlanService::class)->workspaceHasFeature($this, $feature);
         });
     }

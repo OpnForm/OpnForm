@@ -306,7 +306,7 @@ export function useTableState(form, withActions = false) {
       const cols = orderedColumns.value && Array.isArray(orderedColumns.value) ? [...orderedColumns.value] : []
 
       // Add status column if needed
-      if (form.value?.is_pro && (form.value.enable_partial_submissions ?? false)) {
+      if (form.value?.is_business && (form.value.enable_partial_submissions ?? false)) {
         cols.push({
           id: 'status',
           accessorKey: 'status',

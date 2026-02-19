@@ -21,6 +21,7 @@ class UserResource extends JsonResource
 
             // Legacy - kept for backward compatibility (derive from plan_tier in frontend)
             'is_pro' => $this->is_pro,
+            'is_business' => $this->is_business,
             'is_subscribed' => $this->is_subscribed,
 
             'admin' => $this->admin,

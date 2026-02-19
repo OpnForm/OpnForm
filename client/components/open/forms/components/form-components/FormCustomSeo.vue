@@ -6,6 +6,7 @@
           <h3 class="text-lg font-medium text-neutral-900">
             SEO & Social Sharing - Meta <PlanTag
             class="ml-2"
+            required-tier="business"
             upgrade-modal-title="Upgrade to Enhance Your Form's SEO"
             upgrade-modal-description="Explore advanced SEO features in the editor on our Free plan. Upgrade to fully implement custom meta tags, Open Graph data, and improved search visibility. Boost your form's online presence and attract more respondents with our premium SEO toolkit."
           />

@@ -195,6 +195,13 @@ class Form extends Model implements CachableAttributes, VersionableNestedDiff
         });
     }
 
+    public function getIsBusinessAttribute()
+    {
+        return $this->remember('is_business', 15 * 60, function (): ?bool {
+            return $this->workspace?->is_business === true;
+        });
+    }
+
     public function getShareUrlAttribute()
     {
         if ($this->custom_domain) {

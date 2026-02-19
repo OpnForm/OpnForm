@@ -96,6 +96,7 @@ class User extends Authenticatable implements JWTSubject, CachableAttributes, Tw
         'has_forms',
         'is_subscribed',
         'is_pro',
+        'is_business',
         'active_license',
         'plan_tier',
     ];
@@ -199,6 +200,22 @@ class User extends Authenticatable implements JWTSubject, CachableAttributes, Tw
 
             return $this->workspaces()->get()->some(function ($workspace) {
                 return $workspace->is_pro;
+            });
+        });
+    }
+
+    public function getIsBusinessAttribute()
+    {
+        return $this->remember('is_business', 5 * 60, function (): bool {
+            // Use loaded relationship if available to avoid queries
+            if ($this->relationLoaded('workspaces')) {
+                return $this->workspaces->some(function ($workspace) {
+                    return $workspace->is_business;
+                });
+            }
+
+            return $this->workspaces()->get()->some(function ($workspace) {
+                return $workspace->is_business;
             });
         });
     }

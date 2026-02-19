@@ -46,10 +46,7 @@
               <section class="flex flex-col w-full max-w-[800px] max-md:max-w-full">
                 <div class="bg-white max-md:max-w-full">
                   <div class="flex gap-2 max-md:flex-col max-md:gap-0">
-                    <article
-                      v-if="!isSubscribed"
-                      class="flex flex-col w-6/12 max-md:ml-0 max-md:w-full m-auto"
-                    >
+                    <article class="flex flex-col w-6/12 max-md:ml-0 max-md:w-full m-auto">
                       <div
                         class="flex flex-col grow justify-between p-6 w-full rounded-2xl max-md:px-5 max-md:mt-2"
                         :class="planCardClass"
@@ -76,7 +73,7 @@
                           </div>
                         </div>
                         <TrackClick
-                          v-if="!user?.is_subscribed"
+                          v-if="['free', 'pro'].includes(user?.plan_tier)"
                           name="upgrade_modal_start_trial"
                           :properties="{ plan: currentPlan, period: isYearly ? 'yearly' : 'monthly' }"
                           class="w-full"
@@ -161,7 +158,7 @@
               </div>
               <div class="flex-grow w-full max-w-sm">
                 <div
-                  v-if="!isSubscribed"
+                  v-if="['free', 'pro'].includes(user?.plan_tier)"
                   class="rounded-md p-4 border flex flex-col my-4 gap-1"
                   :class="confirmationBoxClass"
                 >
