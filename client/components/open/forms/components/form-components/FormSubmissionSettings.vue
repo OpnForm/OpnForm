@@ -283,19 +283,15 @@
 
 <script setup>
 import ProTag from "~/components/app/ProTag.vue"
-import { formsApi } from "~/api/forms"
-import { useQuery } from "@tanstack/vue-query"
+import { usePdfTemplates } from '~/composables/query/forms/usePdfTemplates'
 
 const workingFormStore = useWorkingFormStore()
 const { content: form } = storeToRefs(workingFormStore)
 const crisp = useCrisp()
 
 // PDF Templates for success page download
-const { data: templatesData } = useQuery({
-  queryKey: ['pdf-templates', computed(() => form.value?.id)],
-  queryFn: () => formsApi.pdfTemplates.list(form.value.id),
-  enabled: computed(() => !!form.value?.id)
-})
+const { list } = usePdfTemplates()
+const { data: templatesData } = list(() => form.value?.id)
 
 const pdfTemplates = computed(() => templatesData.value?.data || [])
 

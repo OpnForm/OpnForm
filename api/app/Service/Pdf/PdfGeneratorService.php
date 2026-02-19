@@ -18,6 +18,7 @@ class PdfGeneratorService
 {
     private const DEFAULT_FONT_SIZE = 12;
     private const DEFAULT_FONT_COLOR = [0, 0, 0]; // Black
+    private const MAX_REMOTE_IMAGE_BYTES = 10 * 1024 * 1024; // 10MB
 
     // Use a consistent temp folder for lifecycle management
     private const TEMP_FOLDER = 'tmp/pdf-output';
@@ -345,7 +346,9 @@ class PdfGeneratorService
         $context = stream_context_create([
             'http' => [
                 'timeout' => 10,
-                'max_redirects' => 3,
+                // Do not follow redirects to avoid SSRF bypasses.
+                'follow_location' => 0,
+                'max_redirects' => 0,
                 'ignore_errors' => false,
             ],
             'ssl' => [
@@ -354,8 +357,62 @@ class PdfGeneratorService
             ],
         ]);
 
-        $content = @file_get_contents($url, false, $context);
-        return $content !== false ? $content : null;
+        $stream = @fopen($url, 'rb', false, $context);
+        if ($stream === false) {
+            return null;
+        }
+
+        $meta = stream_get_meta_data($stream);
+        if (!$this->isAllowedRemoteImageContentType($meta['wrapper_data'] ?? [])) {
+            fclose($stream);
+            Log::debug('PDF image fetch blocked: invalid content type', ['url' => $url]);
+            return null;
+        }
+
+        $content = '';
+        $bytesRead = 0;
+        while (!feof($stream)) {
+            $chunk = fread($stream, 8192);
+            if ($chunk === false) {
+                fclose($stream);
+                return null;
+            }
+
+            $bytesRead += strlen($chunk);
+            if ($bytesRead > self::MAX_REMOTE_IMAGE_BYTES) {
+                fclose($stream);
+                Log::debug('PDF image fetch blocked: content too large', ['url' => $url, 'bytes' => $bytesRead]);
+                return null;
+            }
+
+            $content .= $chunk;
+        }
+
+        fclose($stream);
+        return $content !== '' ? $content : null;
+    }
+
+    /**
+     * Allow only image-like response content types for remote image fetching.
+     */
+    private function isAllowedRemoteImageContentType(array $headers): bool
+    {
+        foreach ($headers as $header) {
+            if (!is_string($header)) {
+                continue;
+            }
+
+            if (!str_starts_with(strtolower($header), 'content-type:')) {
+                continue;
+            }
+
+            $contentType = trim(strtolower(substr($header, strlen('content-type:'))));
+            return str_starts_with($contentType, 'image/')
+                || str_starts_with($contentType, 'application/octet-stream');
+        }
+
+        // If the upstream does not provide content-type, keep behavior permissive.
+        return true;
     }
 
     /**

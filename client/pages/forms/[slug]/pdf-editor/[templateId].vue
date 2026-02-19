@@ -57,12 +57,11 @@
 </template>
 
 <script setup>
-import { formsApi } from '~/api/forms'
+import { usePdfTemplates } from '~/composables/query/forms/usePdfTemplates'
 import PdfEditorNavbar from '~/components/open/pdf-editor/PdfEditorNavbar.vue'
 import PdfLeftSidebar from '~/components/open/pdf-editor/PdfLeftSidebar.vue'
 import PdfRightSidebar from '~/components/open/pdf-editor/PdfRightSidebar.vue'
 import PdfZoneEditor from '~/components/open/pdf-editor/PdfZoneEditor.vue'
-import { useQuery } from '@tanstack/vue-query'
 
 definePageMeta({
   layout: false,
@@ -85,11 +84,15 @@ const { data: form, isLoading: formLoading } = formDetail(slug, {
 })
 
 // Fetch template
-const { data: templateData, isLoading: templateLoading, error } = useQuery({
-  queryKey: ['pdf-template', computed(() => form.value?.id), templateId],
-  queryFn: () => formsApi.pdfTemplates.get(form.value.id, templateId),
-  enabled: computed(() => !!form.value?.id),
-})
+const { detail, update } = usePdfTemplates()
+const { data: templateData, isLoading: templateLoading, error } = detail(
+  () => form.value?.id,
+  () => templateId
+)
+const updateTemplate = update(
+  () => form.value?.id,
+  () => templateId
+)
 
 const isLoading = computed(() => formLoading.value || templateLoading.value)
 
@@ -120,7 +123,7 @@ const saveTemplate = async () => {
   
   pdfStore.setSaving(true)
   try {
-    const response = await formsApi.pdfTemplates.update(form.value.id, templateId, pdfStore.getSaveData())
+    const response = await updateTemplate.mutateAsync(pdfStore.getSaveData())
     pdfStore.markSaved()
     alert.success(response.message)
     goBack()
@@ -150,13 +153,13 @@ useOpnSeoMeta({
 
 onBeforeRouteLeave((to, from, next) => {
   if (pdfStore.hasUnsavedChanges) {
-      if (window.confirm('Changes you made may not be saved. Are you sure want to leave?')) {
-        window.onbeforeunload = null
-        next()
-      } else {
-        next(false)
-      }
+    if (window.confirm('Changes you made may not be saved. Are you sure want to leave?')) {
+      window.onbeforeunload = null
+      return next()
     }
-  next()
+    return next(false)
+  }
+
+  return next()
 })
 </script>
