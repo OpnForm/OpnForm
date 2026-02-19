@@ -1,4 +1,5 @@
 import { apiService } from './base'
+import { getOpnRequestsOptions } from '~/composables/useOpnApi'
 
 export const formsApi = {
   // Form views
@@ -84,11 +85,21 @@ export const formsApi = {
     update: (formId, templateId, data) => apiService.put(`/open/forms/${formId}/pdf-templates/${templateId}`, data),
     delete: (formId, templateId) => apiService.delete(`/open/forms/${formId}/pdf-templates/${templateId}`),
     download: (formId, templateId, options) => apiService.get(`/open/forms/${formId}/pdf-templates/${templateId}/download`, options),
+    getDownloadRequest: (formId, templateId) => {
+      const endpoint = `/open/forms/${formId}/pdf-templates/${templateId}/download`
+      const requestOptions = getOpnRequestsOptions(endpoint, {})
+      return {
+        url: new URL(endpoint, requestOptions.baseURL).toString(),
+        httpHeaders: requestOptions.headers,
+      }
+    },
     getSubmissionSignedUrl: (formId, templateId, submissionId) => apiService.get(`/open/forms/${formId}/pdf-templates/${templateId}/submissions/${submissionId}/signed-url`),
     getPreviewUrl: (formId, templateId) => {
-      const config = useRuntimeConfig()
       const authStore = useAuthStore()
-      return `${config.public.apiBase}open/forms/${formId}/pdf-templates/${templateId}/preview?token=${authStore.token}`
+      const config = useRuntimeConfig()
+      const previewUrl = new URL(`/open/forms/${formId}/pdf-templates/${templateId}/preview`, config.public.apiBase)
+      previewUrl.searchParams.set('token', authStore.token)
+      return previewUrl.toString()
     }
   }
 }

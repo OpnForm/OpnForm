@@ -42,7 +42,7 @@
 
 <script setup>
 import { formsApi } from "~/api/forms"
-import { useQuery } from "@tanstack/vue-query"
+import { usePdfTemplates } from '~/composables/query/forms/usePdfTemplates'
 
 const props = defineProps({
   form: { type: Object, required: true },
@@ -58,11 +58,8 @@ const pdfDownloading = ref(false)
 const alert = useAlert()
 
 // Fetch PDF templates for this form
-const { data: templatesData } = useQuery({
-  queryKey: ['pdf-templates', computed(() => props.form?.id)],
-  queryFn: () => formsApi.pdfTemplates.list(props.form.id),
-  enabled: computed(() => !!props.form?.id)
-})
+const { list } = usePdfTemplates()
+const { data: templatesData } = list(() => props.form?.id)
 
 const pdfTemplates = computed(() => templatesData.value?.data || [])
 
