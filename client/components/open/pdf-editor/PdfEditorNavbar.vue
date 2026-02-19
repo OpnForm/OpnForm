@@ -157,13 +157,17 @@ const crisp = useCrisp()
 const settingsModal = ref(false)
 
 // Preview PDF
-const previewPdf = () => {
+const previewPdf = async () => {
   if (pdfStore.hasUnsavedChanges) {
     alert.warning('You have unsaved changes. Please save changes before previewing.')
     return
   }
 
-  // Open preview in new tab
-  window.open(formsApi.pdfTemplates.getPreviewUrl(form.value.id, pdfTemplate.value.id), '_blank')
+  try {
+    const response = await formsApi.pdfTemplates.getPreviewSignedUrl(form.value.id, pdfTemplate.value.id)
+    window.open(response.url, '_blank')
+  } catch (error) {
+    alert.error(error?.data?.message || error?.message || 'Failed to open PDF preview.')
+  }
 }
 </script>

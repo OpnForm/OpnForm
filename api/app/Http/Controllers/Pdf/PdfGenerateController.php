@@ -21,7 +21,7 @@ class PdfGenerateController extends Controller
         private PdfGeneratorService $generator,
         private PdfCacheService $cache
     ) {
-        $this->middleware('auth')->only(['getTemplateSignedUrl', 'preview']);
+        $this->middleware('auth')->only(['getTemplateSignedUrl', 'getPreviewSignedUrl', 'preview']);
     }
 
     /**
@@ -53,6 +53,32 @@ class PdfGenerateController extends Controller
     }
 
     /**
+     * Get a signed URL for PDF preview by template.
+     */
+    public function getPreviewSignedUrl(
+        Request $request,
+        Form $form,
+        PdfTemplate $pdfTemplate
+    ) {
+        $this->authorize('update', $form);
+
+        if ($pdfTemplate->form_id !== $form->id) {
+            abort(404, 'Template not found.');
+        }
+
+        $url = URL::temporarySignedRoute(
+            'open.forms.pdf-templates.preview-signed',
+            now()->addMinutes(15),
+            [
+                'form' => $form->id,
+                'pdfTemplate' => $pdfTemplate->id,
+            ]
+        );
+
+        return response()->json(['url' => $url]);
+    }
+
+    /**
      * Generate and download PDF for a submission by template (signed URL).
      */
     public function downloadByTemplate(
@@ -72,7 +98,7 @@ class PdfGenerateController extends Controller
             abort(404, 'Submission not found.');
         }
 
-        return $this->servePdfFromTemplate($form, $submission, $pdfTemplate);
+        return $this->servePdfFromTemplate($form, $submission, $pdfTemplate, true);
     }
 
     /**
@@ -100,7 +126,31 @@ class PdfGenerateController extends Controller
             $submission->id = 0; // Fake ID for preview
         }
 
-        return $this->servePdfFromTemplate($form, $submission, $pdfTemplate);
+        return $this->servePdfFromTemplate($form, $submission, $pdfTemplate, false);
+    }
+
+    /**
+     * Preview PDF using latest submission or empty data (signed URL, no auth).
+     */
+    public function previewBySignature(
+        Request $request,
+        Form $form,
+        PdfTemplate $pdfTemplate
+    ) {
+        if ($pdfTemplate->form_id !== $form->id) {
+            abort(404, 'Template not found.');
+        }
+
+        $submission = $form->submissions()->latest()->first();
+        if (!$submission) {
+            $submission = new FormSubmission([
+                'form_id' => $form->id,
+                'data' => [],
+            ]);
+            $submission->id = 0;
+        }
+
+        return $this->servePdfFromTemplate($form, $submission, $pdfTemplate, false);
     }
 
     /**
@@ -109,7 +159,8 @@ class PdfGenerateController extends Controller
     private function servePdfFromTemplate(
         Form $form,
         FormSubmission $submission,
-        PdfTemplate $template
+        PdfTemplate $template,
+        bool $forceDownload = true
     ) {
         // Validate submission belongs to form
         if ($submission->form_id !== $form->id && $submission->id !== 0) {
@@ -131,9 +182,16 @@ class PdfGenerateController extends Controller
         $filenamePattern = $template->filename_pattern ?? '{form_name}-{submission_id}.pdf';
         $filename = $this->generateFilename($filenamePattern, $form, $submission);
 
-        return Storage::download($pdfPath, $filename, [
+        if ($forceDownload) {
+            return Storage::download($pdfPath, $filename, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            ]);
+        }
+
+        return Storage::response($pdfPath, $filename, [
             'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            'Content-Disposition' => 'inline; filename="' . $filename . '"',
         ]);
     }
 
