@@ -94,12 +94,6 @@ export const formsApi = {
       }
     },
     getSubmissionSignedUrl: (formId, templateId, submissionId) => apiService.get(`/open/forms/${formId}/pdf-templates/${templateId}/submissions/${submissionId}/signed-url`),
-    getPreviewUrl: (formId, templateId) => {
-      const authStore = useAuthStore()
-      const config = useRuntimeConfig()
-      const previewUrl = new URL(`/open/forms/${formId}/pdf-templates/${templateId}/preview`, config.public.apiBase)
-      previewUrl.searchParams.set('token', authStore.token)
-      return previewUrl.toString()
-    }
+    getPreviewSignedUrl: (formId, templateId) => apiService.get(`/open/forms/${formId}/pdf-templates/${templateId}/preview/signed-url`)
   }
 }
