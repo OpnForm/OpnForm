@@ -130,6 +130,7 @@
 <script setup>
 import ShareFormUrl from '~/components/open/forms/components/ShareFormUrl.vue'
 import ProTag from '~/components/app/ProTag.vue'
+import { useConfetti } from '~/composables/useConfetti'
 
 const props = defineProps({
   show: { type: Boolean, required: true },
