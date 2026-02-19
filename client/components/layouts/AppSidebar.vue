@@ -134,9 +134,9 @@ const navigationSections = computed(() => [
             modal_title: 'Upgrade to Pro plan',
           })
         },
-        color: 'primary'
+        color: 'primary' // Override default color
       })] : []),
-      ...(workspace.value && can('workspaces.multiple') && !can('multi_user.roles') && !isSelfHosted.value ? [createNavItem({
+      ...(workspace.value && workspace.value.is_pro && !workspace.value.is_business && !isSelfHosted.value ? [createNavItem({
         label: 'Upgrade to Business',
         icon: 'i-heroicons-sparkles-solid',
         onClick: () => {
@@ -146,7 +146,7 @@ const navigationSections = computed(() => [
             modal_title: 'Upgrade to Business plan',
           })
         },
-        color: 'primary'
+        color: 'primary' // Override default color
       })] : [])
     ]
   },

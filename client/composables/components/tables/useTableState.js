@@ -308,7 +308,7 @@ export function useTableState(form, withActions = false) {
       const { hasFeature } = usePlanFeatures()
 
       // Add status column if needed
-      if (hasFeature('enable_partial_submissions') && (form.value?.enable_partial_submissions ?? false)) {
+      if (form.value?.is_business && (form.value.enable_partial_submissions ?? false)) {
         cols.push({
           id: 'status',
           accessorKey: 'status',
