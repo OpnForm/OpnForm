@@ -270,11 +270,11 @@ Route::group(['middleware' => 'auth.multi'], function () {
                     [PdfGenerateController::class, 'getTemplateSignedUrl']
                 )->name('submission.signed-url');
 
-                // Preview PDF using latest submission (admin)
+                // Get signed URL for preview PDF (admin)
                 Route::get(
-                    '/{pdfTemplate}/preview',
-                    [PdfGenerateController::class, 'preview']
-                )->name('preview');
+                    '/{pdfTemplate}/preview/signed-url',
+                    [PdfGenerateController::class, 'getPreviewSignedUrl']
+                )->name('preview.signed-url');
             });
 
             // Template-based PDF download (signed, no auth required)
@@ -285,6 +285,15 @@ Route::group(['middleware' => 'auth.multi'], function () {
                 ->middleware('signed')
                 ->withoutMiddleware(['auth.multi'])
                 ->name('pdf-templates.download-submission');
+
+            // Template-based PDF preview (signed, no auth required)
+            Route::get(
+                '/{form}/pdf-templates/{pdfTemplate}/preview',
+                [PdfGenerateController::class, 'previewBySignature']
+            )
+                ->middleware('signed')
+                ->withoutMiddleware(['auth.multi'])
+                ->name('pdf-templates.preview-signed');
         });
     });
 

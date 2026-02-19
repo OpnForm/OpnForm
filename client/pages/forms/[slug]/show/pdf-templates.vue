@@ -251,8 +251,13 @@ const editTemplate = (template) => {
 }
 
 // Preview template (opens PDF in new tab - works even without submissions)
-const previewTemplate = (template) => {
-  window.open(formsApi.pdfTemplates.getPreviewUrl(props.form.id, template.id), '_blank')
+const previewTemplate = async (template) => {
+  try {
+    const response = await formsApi.pdfTemplates.getPreviewSignedUrl(props.form.id, template.id)
+    window.open(response.url, '_blank')
+  } catch (error) {
+    alert.error(error?.data?.message || error?.message || 'Failed to open PDF preview.')
+  }
 }
 
 // Delete template
