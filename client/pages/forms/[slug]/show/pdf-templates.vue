@@ -152,7 +152,7 @@
 
 <script setup>
 import { formsApi } from '~/api/forms'
-import { useQuery } from '@tanstack/vue-query'
+import { usePdfTemplates } from '~/composables/query/forms/usePdfTemplates'
 
 const props = defineProps({
   form: { type: Object, required: true },
@@ -180,11 +180,10 @@ const uploading = ref(false)
 const deletingId = ref(null)
 
 // Fetch templates
-const { data: templatesData, isLoading, refetch } = useQuery({
-  queryKey: ['pdf-templates', computed(() => props.form?.id)],
-  queryFn: () => formsApi.pdfTemplates.list(props.form.id),
-  enabled: computed(() => !!props.form?.id),
-})
+const { list, upload, remove } = usePdfTemplates()
+const { data: templatesData, isLoading } = list(() => props.form?.id)
+const uploadTemplate = upload(() => props.form?.id)
+const deleteTemplate = remove(() => props.form?.id)
 
 const templates = computed(() => templatesData.value?.data || [])
 
@@ -202,10 +201,9 @@ const handleFileUpload = async (event) => {
     const formData = new FormData()
     formData.append('file', file)
 
-    const response = await formsApi.pdfTemplates.upload(props.form.id, formData)
+    const response = await uploadTemplate.mutateAsync(formData)
     editTemplate(response.data)
     alert.success(response.message)
-    refetch()
   } catch (error) {
     alert.error(error?.data?.message || error?.message || 'Failed to upload PDF template.')
   } finally {
@@ -264,9 +262,8 @@ const confirmDelete = (template) => {
     async () => {
       deletingId.value = template.id
       try {
-        const response = await formsApi.pdfTemplates.delete(props.form.id, template.id)
+        const response = await deleteTemplate.mutateAsync(template.id)
         alert.success(response.message)
-        refetch()
       } catch (error) {
         alert.error(error?.data?.message || error?.message || 'Failed to delete template.')
       } finally {

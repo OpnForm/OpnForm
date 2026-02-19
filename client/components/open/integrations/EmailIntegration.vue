@@ -119,8 +119,7 @@
 </template>
 
 <script setup>
-import { useQuery } from '@tanstack/vue-query'
-import { formsApi } from '~/api/forms'
+import { usePdfTemplates } from '~/composables/query/forms/usePdfTemplates'
 import IntegrationWrapper from "./components/IntegrationWrapper.vue"
 
 const props = defineProps({
@@ -134,11 +133,8 @@ const selfHosted = computed(() => useFeatureFlag('self_hosted'))
 const { openWorkspaceSettings } = useAppModals()
 const { data: user } = useAuth().user()
 
-const { data: pdfTemplates } = useQuery({
-  queryKey: ['pdf-templates', computed(() => props.form?.id)],
-  queryFn: () => formsApi.pdfTemplates.list(props.form.id),
-  enabled: computed(() => !!props.form?.id),
-})
+const { list } = usePdfTemplates()
+const { data: pdfTemplates } = list(() => props.form?.id)
 
 const pdfTemplateOptions = computed(() => {
   const list = pdfTemplates.value?.data ?? []

@@ -106,6 +106,7 @@
 
 <script setup>
 import ResizeHandle from '@/components/global/ResizeHandle.vue'
+import { formsApi } from '~/api/forms'
 import { useResizable } from '~/composables/components/useResizable'
 
 const alert = useAlert()
@@ -184,18 +185,10 @@ const loadPdf = async () => {
   
   try {
     const pdfjsLib = await initPdfJs()
-    
-    const config = useRuntimeConfig()
-    const authStore = useAuthStore()
-    const apiBase = config.public.apiBase
-    const url = `${apiBase}open/forms/${form.value.id}/pdf-templates/${pdfTemplate.value.id}/download`
-    
-    const loadingTask = pdfjsLib.getDocument({
-      url,
-      httpHeaders: {
-        'Authorization': `Bearer ${authStore.token}`,
-      },
-    })
+
+    const loadingTask = pdfjsLib.getDocument(
+      formsApi.pdfTemplates.getDownloadRequest(form.value.id, pdfTemplate.value.id)
+    )
     pdfDoc.value = await loadingTask.promise
     
     // Render all thumbnails
