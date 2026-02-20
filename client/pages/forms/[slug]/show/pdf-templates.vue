@@ -144,8 +144,6 @@ useOpnSeoMeta({
 
 const alert = useAlert()
 const router = useRouter()
-const { current: workspace } = useCurrentWorkspace()
-const { openSubscriptionModal } = useAppModals()
 
 // Refs
 const fileInput = ref(null)
@@ -251,9 +249,4 @@ const confirmDelete = (template) => {
   )
 }
 
-const onUpgradeClick = () => {
-  openSubscriptionModal({
-    modal_title: 'Upgrade to remove PDF branding'
-  })
-}
 </script>

@@ -309,14 +309,15 @@ describe('PDF Template - Preview', function () {
         ]);
 
         $response = $this->getJson(
-            route('open.forms.pdf-templates.preview', [
+            route('open.forms.pdf-templates.preview.signed-url', [
                 'form' => $form,
                 'pdfTemplate' => $template->id,
             ])
         );
 
         $response->assertSuccessful()
-            ->assertHeader('content-type', 'application/pdf');
+            ->assertJsonStructure(['url']);
+        expect(str_contains($response->json('url'), 'pdf-templates'))->toBeTrue();
     });
 
     it('can preview pdf with empty data when no submissions exist', function () {
@@ -341,14 +342,15 @@ describe('PDF Template - Preview', function () {
         // No submissions created - preview should still work with empty values
 
         $response = $this->getJson(
-            route('open.forms.pdf-templates.preview', [
+            route('open.forms.pdf-templates.preview.signed-url', [
                 'form' => $form,
                 'pdfTemplate' => $template->id,
             ])
         );
 
         $response->assertSuccessful()
-            ->assertHeader('content-type', 'application/pdf');
+            ->assertJsonStructure(['url']);
+        expect(str_contains($response->json('url'), 'pdf-templates'))->toBeTrue();
     });
 
     it('requires authentication for preview', function () {
@@ -371,7 +373,7 @@ describe('PDF Template - Preview', function () {
         ]);
 
         $response = $this->getJson(
-            route('open.forms.pdf-templates.preview', [
+            route('open.forms.pdf-templates.preview.signed-url', [
                 'form' => $form,
                 'pdfTemplate' => $template->id,
             ])
