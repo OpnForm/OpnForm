@@ -16,9 +16,14 @@ class UserResource extends JsonResource
     public function toArray($request)
     {
         $personalData = Auth::id() === $this->id ? [
+            // Primary plan tier indicator (single source of truth)
+            'plan_tier' => $this->plan_tier,
+
+            // Legacy - kept for backward compatibility (derive from plan_tier in frontend)
             'is_pro' => $this->is_pro,
+            'is_business' => $this->is_business,
             'is_subscribed' => $this->is_subscribed,
-            'has_enterprise_subscription' => $this->has_enterprise_subscription,
+
             'admin' => $this->admin,
             'moderator' => $this->moderator,
             'template_editor' => $this->template_editor,

@@ -191,7 +191,7 @@ onBeforeRouteLeave(() => {
 })
 
 const pageMeta = computed(() => {
-  if (form.value && form.value.is_pro && form.value.seo_meta) {
+  if (form.value && form.value.is_business && form.value.seo_meta) {
     return form.value.seo_meta
   }
   return {}

@@ -323,7 +323,7 @@ const sortedData = computed(() => {
 const filteredTableData = computed(() => props.data || [])
 
 const hasStatus = computed(() => {
-  return props.form?.is_pro && (props.form.enable_partial_submissions ?? false)
+  return props.form?.is_business && (props.form.enable_partial_submissions ?? false)
 })
 
 // Since UTable only renders when form exists, no need for safe wrappers

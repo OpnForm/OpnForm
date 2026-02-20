@@ -81,13 +81,13 @@ export function useCrisp () {
       'user_id': user.id,
       'pro-subscription': user?.is_subscribed ?? false,
       'stripe-id': user?.stripe_id ?? '',
-      'subscription': user?.has_enterprise_subscription ? 'enterprise' : 'pro'
+      'subscription': user?.plan_tier ?? 'free'
     })
 
     if (user?.is_subscribed ?? false) {
       setSegments([
         'subscribed',
-        user?.has_enterprise_subscription ? 'enterprise' : 'pro'
+        user?.plan_tier ?? 'free'
       ])
     }
   }

@@ -17,7 +17,7 @@
         >
           {{ name }}
         </h3>
-        <pro-tag v-if="hasProTag" />
+        <PlanTag v-if="hasProTag" />
       </div>
     </template>
 
@@ -27,11 +27,11 @@
 
 <script>
 import Collapse from "~/components/app/Collapse.vue"
-import ProTag from "~/components/app/ProTag.vue"
+import PlanTag from "~/components/app/PlanTag.vue"
 
 export default {
   name: "EditorOptionsPanel",
-  components: { Collapse, ProTag },
+  components: { Collapse, PlanTag },
   props: {
     name: {
       type: String,

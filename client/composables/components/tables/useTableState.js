@@ -306,7 +306,7 @@ export function useTableState(form, withActions = false) {
       const cols = orderedColumns.value && Array.isArray(orderedColumns.value) ? [...orderedColumns.value] : []
 
       // Add status column if needed
-      if (form.value?.is_pro && (form.value.enable_partial_submissions ?? false)) {
+      if (form.value?.is_business && (form.value.enable_partial_submissions ?? false)) {
         cols.push({
           id: 'status',
           accessorKey: 'status',
@@ -321,7 +321,7 @@ export function useTableState(form, withActions = false) {
       }
 
       // Add IP address column if needed
-      if (form.value?.is_pro && (form.value.enable_ip_tracking ?? false)) {
+      if (form.value?.is_business && (form.value.enable_ip_tracking ?? false)) {
         cols.push({
           id: 'ip_address',
           accessorKey: 'ip_address',

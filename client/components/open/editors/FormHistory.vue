@@ -169,8 +169,8 @@ const humanizeKey = (key, change) => {
 }
 
 const onRestore = async (version) => {
-  if(!form.value.is_pro) {
-    openSubscriptionModal({ modal_title: 'Upgrade to restore form history' })
+  if(!form.value.is_business) {
+    openSubscriptionModal({plan: 'business', modal_title: 'Upgrade to restore form history' })
     return
   }
 

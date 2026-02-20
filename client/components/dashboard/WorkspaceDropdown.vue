@@ -137,7 +137,7 @@ const isDropdownOpen = ref(false)
 // Computed text for workspace plan
 const workspacePlanText = computed(() => {
   if (!workspace.value) return ''
-  return workspace.value.is_pro ? 'Pro Plan' : 'Free Plan'
+  return workspace.value.is_business ? 'Business Plan' : workspace.value.is_pro ? 'Pro Plan' : 'Free Plan'
 })
 
 // Computed text for member count

@@ -3,7 +3,7 @@
 use Illuminate\Support\Str;
 
 it('can update form with existing record', function () {
-    $user = $this->actingAsProUser();
+    $user = $this->actingAsBusinessUser();
     $workspace = $this->createUserWorkspace($user);
     $form = $this->createForm($user, $workspace, [
         'editable_submissions' => true,
@@ -41,7 +41,7 @@ it('can update form with existing record', function () {
 });
 
 it('can update form with existing record but generates_uuid field is not update', function () {
-    $user = $this->actingAsProUser();
+    $user = $this->actingAsBusinessUser();
     $workspace = $this->createUserWorkspace($user);
     $form = $this->createForm($user, $workspace, [
         'clear_empty_fields_on_update' => true,

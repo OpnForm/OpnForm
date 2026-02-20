@@ -127,7 +127,20 @@ const navigationSections = computed(() => [
         onClick: () => {
           useAmplitude().logEvent('app_sidebar_upgrade_click')
           openSubscriptionModal({
+            plan: 'pro',
             modal_title: 'Upgrade to Pro plan',
+          })
+        },
+        color: 'primary' // Override default color
+      })] : []),
+      ...(workspace.value && workspace.value.is_pro && !workspace.value.is_business && !isSelfHosted.value ? [createNavItem({
+        label: 'Upgrade to Business',
+        icon: 'i-heroicons-sparkles-solid',
+        onClick: () => {
+          useAmplitude().logEvent('app_sidebar_upgrade_click')
+          openSubscriptionModal({
+            plan: 'business',
+            modal_title: 'Upgrade to Business plan',
           })
         },
         color: 'primary' // Override default color

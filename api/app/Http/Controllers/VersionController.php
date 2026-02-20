@@ -52,11 +52,11 @@ class VersionController extends Controller
     {
         $version = Version::findOrFail($versionId);
 
-        // Check the current authenticated user's pro status
-        if (!$request->user()->is_pro) {
+        // Check the current authenticated user's business status
+        if (!$request->user()->is_business) {
             return $this->error([
-                'message' => 'You need to be a Pro user to restore this version',
-            ]);
+                'message' => 'You need to be a Business user to restore this version',
+            ], 402);
         }
 
         // Get the actual model from the database to verify ownership (prevents IDOR)

@@ -22,7 +22,7 @@ it('can not create more than 1 workspace for free user', function () {
     ])
         ->assertStatus(403)
         ->assertJson([
-            'message' => 'You have reached the limit for free workspaces. Upgrade to Pro to create additional workspaces.',
+            'message' => 'You have reached the workspace limit for Free plan. Upgrade to create additional workspaces.',
         ]);
 });
 
