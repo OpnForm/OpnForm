@@ -72,9 +72,9 @@ class Workspace extends Model implements CachableAttributes
     /**
      * Flush workspace cache and also flush owners' cache (is_pro depends on workspace tier).
      */
-    public function flush(): bool
+    public function flushWithOwners(): bool
     {
-        $result = parent::flush();
+        $result = $this->flush();
 
         foreach ($this->owners as $owner) {
             $owner->flush();

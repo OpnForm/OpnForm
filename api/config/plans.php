@@ -67,13 +67,12 @@ return [
         'partial_submissions' => 'business',
         'enable_partial_submissions' => 'business',
         'form_versioning' => 'business',
-        'analytics_dashboard' => 'business',
         'google_address_autocomplete' => 'business',
         'editable_submissions' => 'business',
         'database_fields_update' => 'business',
+        'enable_ip_tracking' => 'business',
 
         // Enterprise
-        'enable_ip_tracking' => 'enterprise',
         'sso.oidc' => 'enterprise',
         'sso.saml' => 'enterprise',
         'sso.ldap' => 'enterprise',
@@ -115,17 +114,18 @@ return [
         'no_branding' => 'pro',
         'redirect_url' => 'pro',
         'secret_input' => 'pro',
+        'analytics' => 'pro',
 
         // Business tier features
         'custom_css' => 'business',
         'seo_meta' => 'business',
-        'analytics' => 'business',
         'enable_partial_submissions' => 'business',
         'editable_submissions' => 'business',
         'database_fields_update' => 'business',
+        'enable_ip_tracking' => 'business',
 
-        // Enterprise tier features
-        'enable_ip_tracking' => 'enterprise',
+        // Business tier features
+
     ],
 
     /**

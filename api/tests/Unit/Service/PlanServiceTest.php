@@ -153,10 +153,10 @@ describe('Feature Access', function () {
         expect($this->planService->tierHasFeature('enterprise', 'enable_partial_submissions'))->toBeTrue();
     });
 
-    it('gates enterprise features correctly', function () {
+    it('gates business features correctly for ip tracking', function () {
         expect($this->planService->tierHasFeature('free', 'enable_ip_tracking'))->toBeFalse();
         expect($this->planService->tierHasFeature('pro', 'enable_ip_tracking'))->toBeFalse();
-        expect($this->planService->tierHasFeature('business', 'enable_ip_tracking'))->toBeFalse();
+        expect($this->planService->tierHasFeature('business', 'enable_ip_tracking'))->toBeTrue();
         expect($this->planService->tierHasFeature('enterprise', 'enable_ip_tracking'))->toBeTrue();
     });
 });

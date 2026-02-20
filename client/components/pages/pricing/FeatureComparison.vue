@@ -204,6 +204,10 @@ const sections = [
         label: "Partial submissions / draft saving",
         values: [false, true, true, true],
       },
+      {
+        label: "IP tracking",
+        values: [false, false, true, true],
+      },
     ],
   },
   {

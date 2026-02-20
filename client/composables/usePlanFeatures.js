@@ -67,7 +67,6 @@ const FEATURE_TIERS = {
   // Form Features
   partial_submissions: 'business',
   form_versioning: 'business',
-  analytics_dashboard: 'business',
   google_address_autocomplete: 'business',
   editable_submissions: 'business',
 
@@ -86,13 +85,13 @@ const FORM_FEATURE_TIERS = {
   no_branding: 'pro',
   redirect_url: 'pro',
   secret_input: 'pro',
+  analytics: 'pro',
   custom_css: 'business',
   seo_meta: 'business',
-  analytics: 'business',
   enable_partial_submissions: 'business',
   editable_submissions: 'business',
   database_fields_update: 'business',
-  enable_ip_tracking: 'enterprise',
+  enable_ip_tracking: 'business',
 }
 
 /**

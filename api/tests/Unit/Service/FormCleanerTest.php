@@ -71,7 +71,7 @@ describe('FormCleaner custom code policy', function () {
             'custom_domain' => 'example.com',
             'custom_code' => '<script>ok()</script>',
             'properties' => [
-                [ 'id' => 'c1', 'name' => 'Code', 'type' => 'nf-code', 'content' => '<script>a()</script>' ],
+                ['id' => 'c1', 'name' => 'Code', 'type' => 'nf-code', 'content' => '<script>a()</script>'],
             ],
         ]);
 
@@ -95,7 +95,7 @@ describe('FormCleaner custom code policy', function () {
             'custom_domain' => null,
             'custom_code' => '<script>ok()</script>',
             'properties' => [
-                [ 'id' => 'c1', 'name' => 'Code', 'type' => 'nf-code', 'content' => '<script>a()</script>' ],
+                ['id' => 'c1', 'name' => 'Code', 'type' => 'nf-code', 'content' => '<script>a()</script>'],
             ],
         ]);
 
@@ -197,7 +197,7 @@ describe('FormCleaner tier-based cleaning', function () {
         expect($data['no_branding'])->toBeTrue();
     });
 
-    it('cleans enterprise features from business tier workspace', function () {
+    it('keeps ip tracking for business tier workspace', function () {
         $user = $this->actingAsBusinessUser();
         $workspace = $this->createUserWorkspace($user);
 
@@ -212,10 +212,8 @@ describe('FormCleaner tier-based cleaning', function () {
         $cleaner->performCleaning($workspace);
         $data = $cleaner->getData();
 
-        // Enterprise features should be cleaned for business tier
-        expect($data['enable_ip_tracking'])->toBeFalse();
-
-        // Business and pro features should remain
+        // Business features should remain
+        expect($data['enable_ip_tracking'])->toBeTrue();
         expect($data['enable_partial_submissions'])->toBeTrue();
         expect($data['no_branding'])->toBeTrue();
     });

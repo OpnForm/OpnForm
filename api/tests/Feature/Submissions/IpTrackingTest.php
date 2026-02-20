@@ -2,8 +2,8 @@
 
 use App\Models\Forms\FormSubmission;
 
-it('tracks IP address when ip tracking is enabled on enterprise form', function () {
-    $user = $this->actingAsEnterpriseUser();
+it('tracks IP address when ip tracking is enabled on business form', function () {
+    $user = $this->actingAsBusinessUser();
     $workspace = $this->createUserWorkspace($user);
     $form = $this->createForm($user, $workspace, [
         'enable_ip_tracking' => true
@@ -25,8 +25,30 @@ it('tracks IP address when ip tracking is enabled on enterprise form', function 
     expect($submission->meta['ip_address'])->toContain('127.0.0.1');
 });
 
-it('does not track IP when ip tracking is disabled', function () {
+it('tracks IP address when ip tracking is enabled on enterprise form', function () {
     $user = $this->actingAsEnterpriseUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace, [
+        'enable_ip_tracking' => true
+    ]);
+
+    $formData = $this->generateFormSubmissionData($form, ['text' => 'Test submission']);
+
+    $this->postJson(route('forms.answer', $form->slug), $formData)
+        ->assertSuccessful()
+        ->assertJson([
+            'type' => 'success',
+            'message' => 'Form submission saved.',
+        ]);
+
+    $submission = FormSubmission::first();
+    expect($submission->meta)->not->toBeNull();
+    expect($submission->meta)->toHaveKey('ip_address');
+    expect($submission->meta['ip_address'])->toContain('127.0.0.1');
+});
+
+it('does not track IP when ip tracking is disabled', function () {
+    $user = $this->actingAsBusinessUser();
     $workspace = $this->createUserWorkspace($user);
     $form = $this->createForm($user, $workspace, [
         'enable_ip_tracking' => false
@@ -59,7 +81,7 @@ it('does not track IP on free tier forms even when enabled', function () {
     expect($submission->meta)->toBeNull();
 });
 
-it('does not track IP on pro tier forms - requires enterprise', function () {
+it('does not track IP on pro tier forms - requires business', function () {
     $user = $this->actingAsProUser();
     $workspace = $this->createUserWorkspace($user);
     $form = $this->createForm($user, $workspace, [
@@ -76,25 +98,8 @@ it('does not track IP on pro tier forms - requires enterprise', function () {
     expect($submission->meta)->toBeNull();
 });
 
-it('does not track IP on business tier forms - requires enterprise', function () {
+it('tracks IP in partial submissions when enabled on business form', function () {
     $user = $this->actingAsBusinessUser();
-    $workspace = $this->createUserWorkspace($user);
-    $form = $this->createForm($user, $workspace, [
-        'enable_ip_tracking' => true
-    ]);
-
-    $formData = $this->generateFormSubmissionData($form, ['text' => 'Test submission']);
-
-    $this->postJson(route('forms.answer', $form->slug), $formData)
-        ->assertSuccessful();
-
-    // Verify IP was not tracked - business doesn't have ip tracking
-    $submission = FormSubmission::first();
-    expect($submission->meta)->toBeNull();
-});
-
-it('tracks IP in partial submissions when enabled on enterprise form', function () {
-    $user = $this->actingAsEnterpriseUser();
     $workspace = $this->createUserWorkspace($user);
     $form = $this->createForm($user, $workspace, [
         'enable_ip_tracking' => true,
@@ -131,7 +136,7 @@ it('tracks IP in partial submissions when enabled on enterprise form', function 
 });
 
 it('preserves existing meta data when adding IP tracking', function () {
-    $user = $this->actingAsEnterpriseUser();
+    $user = $this->actingAsBusinessUser();
     $workspace = $this->createUserWorkspace($user);
     $form = $this->createForm($user, $workspace, [
         'enable_ip_tracking' => true
