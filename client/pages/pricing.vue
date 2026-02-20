@@ -519,6 +519,7 @@ const businessPlanFeatures = [
   "Versioning",
   "Analytics dashboard",
   "Advanced integrations",
+  "IP tracking",
 ]
 
 const enterprisePlanFeatures = [

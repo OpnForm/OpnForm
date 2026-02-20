@@ -129,7 +129,7 @@
           </span>
           <PlanTag
             class="ml-1"
-            required-tier="enterprise"
+            required-tier="business"
             upgrade-modal-title="Upgrade to collect IP addresses"
             upgrade-modal-description="Automatically capture submitter IP addresses to gain valuable insights into your form traffic. Analyze geographic patterns, detect suspicious activity, and enhance your form security with detailed submission analytics."
           />

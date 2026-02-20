@@ -12,7 +12,7 @@ return new class () extends Migration {
      * Example usage:
      * - Override tier: {"tier": "business"}
      * - Override limits: {"limits": {"file_upload_size": 100000000}}
-     * - Grant features: {"features": ["sso.oidc", "analytics_dashboard"]}
+     * - Grant features: {"features": ["sso.oidc"]}
      */
     public function up(): void
     {
