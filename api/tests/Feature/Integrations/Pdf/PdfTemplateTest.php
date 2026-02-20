@@ -114,6 +114,74 @@ describe('PDF Template Upload', function () {
     });
 });
 
+describe('PDF Template Create from Scratch', function () {
+    it('can create a template with 1 blank page', function () {
+        $user = $this->actingAsProUser();
+        $workspace = $this->createUserWorkspace($user);
+        $form = $this->createForm($user, $workspace);
+
+        $response = $this->postJson(route('open.forms.pdf-templates.store-from-scratch', $form));
+
+        $response->assertStatus(201)
+            ->assertJsonStructure([
+                'message',
+                'data' => [
+                    'id',
+                    'form_id',
+                    'name',
+                    'filename',
+                    'original_filename',
+                    'file_path',
+                    'file_size',
+                    'page_count',
+                ],
+            ]);
+
+        expect(PdfTemplate::where('form_id', $form->id)->count())->toBe(1);
+
+        $template = PdfTemplate::where('form_id', $form->id)->first();
+        expect($template->name)->toBe('Untitled Template');
+        expect($template->page_count)->toBe(1);
+        expect($template->zone_mappings)->toBe([]);
+        expect(Storage::exists($template->file_path))->toBeTrue();
+    });
+
+    it('accepts optional name when creating from scratch', function () {
+        $user = $this->actingAsProUser();
+        $workspace = $this->createUserWorkspace($user);
+        $form = $this->createForm($user, $workspace);
+
+        $response = $this->postJson(route('open.forms.pdf-templates.store-from-scratch', $form));
+
+        $response->assertStatus(201);
+
+        $template = PdfTemplate::where('form_id', $form->id)->first();
+        expect($template->name)->toBe('Untitled Template');
+    });
+
+    it('requires authentication to create from scratch', function () {
+        $user = $this->createUser();
+        $workspace = $this->createUserWorkspace($user);
+        $form = $this->createForm($user, $workspace);
+
+        $response = $this->postJson(route('open.forms.pdf-templates.store-from-scratch', $form));
+
+        $response->assertStatus(401);
+    });
+
+    it('requires authorization to create from scratch', function () {
+        $owner = $this->createUser();
+        $workspace = $this->createUserWorkspace($owner);
+        $form = $this->createForm($owner, $workspace);
+
+        $this->actingAsUser();
+
+        $response = $this->postJson(route('open.forms.pdf-templates.store-from-scratch', $form));
+
+        $response->assertStatus(403);
+    });
+});
+
 describe('PDF Template List', function () {
     it('can list pdf templates for a form', function () {
         $user = $this->actingAsProUser();
