@@ -194,7 +194,9 @@ describe('Submission Version Restore', function () {
 
         $this->postJson("/versions/{$version->version_id}/restore")
             ->assertStatus(402)
-            ->assertJson(['required_tier' => 'business']);
+            ->assertJsonFragment([
+                'message' => 'You need to be a Business user to restore this version',
+            ]);
     });
 
     it('returns 404 for non-existent version', function () {
