@@ -1,4 +1,5 @@
 import { apiService } from './base'
+import { getOpnRequestsOptions } from '~/composables/useOpnApi'
 
 export const formsApi = {
   // Form views
@@ -74,5 +75,26 @@ export const formsApi = {
   zapier: {
     store: (data) => apiService.post('/open/forms/webhooks/zapier', data),
     delete: (id) => apiService.delete(`/open/forms/webhooks/zapier/${id}`)
+  },
+
+  // PDF Templates
+  pdfTemplates: {
+    list: (formId, options) => apiService.get(`/open/forms/${formId}/pdf-templates`, options),
+    upload: (formId, data, options) => apiService.post(`/open/forms/${formId}/pdf-templates`, data, options),
+    createFromScratch: (formId, data = {}, options) => apiService.post(`/open/forms/${formId}/pdf-templates/from-scratch`, data, options),
+    get: (formId, templateId, options) => apiService.get(`/open/forms/${formId}/pdf-templates/${templateId}`, options),
+    update: (formId, templateId, data) => apiService.put(`/open/forms/${formId}/pdf-templates/${templateId}`, data),
+    delete: (formId, templateId) => apiService.delete(`/open/forms/${formId}/pdf-templates/${templateId}`),
+    download: (formId, templateId, options) => apiService.get(`/open/forms/${formId}/pdf-templates/${templateId}/download`, options),
+    getDownloadRequest: (formId, templateId) => {
+      const endpoint = `/open/forms/${formId}/pdf-templates/${templateId}/download`
+      const requestOptions = getOpnRequestsOptions(endpoint, {})
+      return {
+        url: new URL(endpoint, requestOptions.baseURL).toString(),
+        httpHeaders: requestOptions.headers,
+      }
+    },
+    getSubmissionSignedUrl: (formId, templateId, submissionId) => apiService.get(`/open/forms/${formId}/pdf-templates/${templateId}/submissions/${submissionId}/signed-url`),
+    getPreviewSignedUrl: (formId, templateId) => apiService.get(`/open/forms/${formId}/pdf-templates/${templateId}/preview/signed-url`)
   }
 }

@@ -103,6 +103,7 @@ import ClientOnlyWrapper from '~/components/global/ClientOnlyWrapper.vue'
 import { useComponentRegistry } from '~/composables/components/useComponentRegistry'
 import TextBlock from '~/components/forms/core/TextBlock.vue'
 import { shuffleArray } from '~/lib/utils.js'
+import { useWorkingFormStore } from '~/stores/working_form'
 import { useParseMention } from '@/composables/components/useParseMention'
 import { useComputedVariables } from '@/composables/forms/useComputedVariables'
 
