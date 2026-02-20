@@ -193,9 +193,9 @@ describe('Submission Version Restore', function () {
         $this->actingAsUser($nonProUser);
 
         $this->postJson("/versions/{$version->version_id}/restore")
-            ->assertStatus(400)
+            ->assertStatus(402)
             ->assertJsonFragment([
-                'message' => 'You need to be a Pro user to restore this version',
+                'message' => 'You need to be a Business user to restore this version',
             ]);
     });
 
