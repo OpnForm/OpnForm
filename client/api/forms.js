@@ -81,6 +81,7 @@ export const formsApi = {
   pdfTemplates: {
     list: (formId, options) => apiService.get(`/open/forms/${formId}/pdf-templates`, options),
     upload: (formId, data, options) => apiService.post(`/open/forms/${formId}/pdf-templates`, data, options),
+    createFromScratch: (formId, data = {}, options) => apiService.post(`/open/forms/${formId}/pdf-templates/from-scratch`, data, options),
     get: (formId, templateId, options) => apiService.get(`/open/forms/${formId}/pdf-templates/${templateId}`, options),
     update: (formId, templateId, data) => apiService.put(`/open/forms/${formId}/pdf-templates/${templateId}`, data),
     delete: (formId, templateId) => apiService.delete(`/open/forms/${formId}/pdf-templates/${templateId}`),
