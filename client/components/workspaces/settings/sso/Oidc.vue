@@ -103,7 +103,7 @@ const workspaceId = computed(() => workspace.value?.id)
 
 const canManageConnections = computed(() => !!workspace.value && workspace.value.is_admin)
 
-// Check if feature is accessible (Pro required for cloud, free for self-hosted)
+// Check if feature is accessible (Enterprise required for cloud, free for self-hosted)
 const isSelfHosted = computed(() => useFeatureFlag('self_hosted'))
 const billingEnabled = computed(() => useFeatureFlag('billing.enabled'))
 const canAccessFeature = computed(() => {
@@ -111,57 +111,54 @@ const canAccessFeature = computed(() => {
   if (isSelfHosted.value) {
     return true
   }
-  // Cloud: requires Pro subscription
-  return billingEnabled.value && workspace.value?.is_pro
+  return billingEnabled.value && workspace.value?.is_enterprise
 })
 
 const { connections, create, update, remove } = useOidcConnections(workspaceId)
 
-// Allow viewing connections even without Pro (Pro only required for create/update/delete)
+// Allow viewing connections without Enterprise (Enterprise only required for create/update/delete)
 const { data: connectionsData, isLoading: isConnectionsLoading } = connections()
 
 const alertConfig = computed(() => {
-  // Cloud + Free: Beta alert with upgrade button
   if (!isSelfHosted.value && !canAccessFeature.value) {
     return {
       icon: 'i-heroicons-information-circle',
       color: 'info',
-      title: 'Beta Feature - Pro Plan Required',
-      description: 'OIDC SSO is currently in beta and requires a Pro plan. This feature will soon be part of our Enterprise plan. Upgrade now to start using it.',
+      title: 'Enterprise Plan Required',
+      description: 'OIDC SSO requires an Enterprise plan. Upgrade your plan to configure single sign-on for your workspace.',
       actions: [
         {
-          label: 'Upgrade to Pro',
+          label: 'Upgrade to Enterprise',
           onClick: openUpgradeModal
         }
       ]
     }
   }
 
-  // Cloud + Paid: Warning about upcoming Enterprise plan
   if (!isSelfHosted.value && canAccessFeature.value) {
     return {
-      icon: 'i-heroicons-exclamation-triangle',
-      color: 'warning',
-      title: 'Beta Feature - Pricing Change Coming',
-      description: 'OIDC SSO is currently in beta and available on Pro plans. In the coming weeks, when we release our new pricing, this feature will move to our Enterprise plan.',
+      icon: 'i-heroicons-check-circle',
+      color: 'success',
+      title: 'OIDC SSO Enabled',
+      description: 'Configure OpenID Connect single sign-on connections for your workspace.',
       actions: []
     }
   }
 
-  // Self-hosted: Warning about future enterprise license requirement
   return {
-    icon: 'i-heroicons-exclamation-triangle',
-    color: 'warning',
-    title: 'Beta Feature - Future Changes',
-    description: 'OIDC SSO is currently in beta and free for self-hosted installations. Future updates of OpnForm will require an enterprise license to use this feature.',
+    icon: 'i-heroicons-information-circle',
+    color: 'info',
+    title: 'OIDC SSO',
+    description: 'Configure OpenID Connect single sign-on for your self-hosted installation.',
     actions: []
   }
 })
 
 const openUpgradeModal = () => {
   openSubscriptionModal({
-    modal_title: 'Upgrade to Pro to use OIDC SSO',
-    modal_description: 'OIDC SSO is a Pro feature. Upgrade your plan to configure single sign-on for your workspace.'
+    plan: 'enterprise',
+    modal_title: 'Upgrade to Enterprise to use OIDC SSO',
+    modal_description: 'OIDC SSO is an Enterprise feature. Upgrade your plan to configure single sign-on for your workspace.'
   })
 }
 
