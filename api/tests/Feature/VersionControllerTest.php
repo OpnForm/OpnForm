@@ -61,22 +61,49 @@ it('returns error for invalid model type', function () {
         ->assertStatus(400);
 });
 
-it('cannot restore version as non-pro user', function () {
+it('cannot restore version as free user - requires business', function () {
     $user = $this->actingAsUser();
     $workspace = $this->createUserWorkspace($user);
     $form = $this->createForm($user, $workspace, ['title' => 'Original Title']);
 
-    // Update to create version
     $form->title = 'Updated Title';
     $form->save();
 
     $version = $form->versions()->latest()->first();
 
-    // Non-pro user should get error response
-    $response = $this->postJson(route('versions.restore', ['versionId' => $version->version_id]));
+    $this->postJson(route('versions.restore', ['versionId' => $version->version_id]))
+        ->assertStatus(402)
+        ->assertJson(['required_tier' => 'business']);
+});
 
-    // Should fail with pro user requirement error
-    expect($response->json('message'))->toBe('You need to be a Pro user to restore this version');
+it('cannot restore version as pro user - requires business', function () {
+    $user = $this->actingAsProUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace, ['title' => 'Original Title']);
+
+    $form->title = 'Updated Title';
+    $form->save();
+
+    $version = $form->versions()->latest()->first();
+
+    $this->postJson(route('versions.restore', ['versionId' => $version->version_id]))
+        ->assertStatus(402)
+        ->assertJson(['required_tier' => 'business']);
+});
+
+it('can restore version as business user', function () {
+    $user = $this->actingAsBusinessUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace, ['title' => 'Original Title']);
+
+    $form->title = 'Updated Title';
+    $form->save();
+
+    $version = $form->versions()->latest()->first();
+
+    $this->postJson(route('versions.restore', ['versionId' => $version->version_id]))
+        ->assertSuccessful()
+        ->assertJson(['message' => 'Version restored successfully.']);
 });
 
 it('cannot restore version for unauthorized form', function () {
