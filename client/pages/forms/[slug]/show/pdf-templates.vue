@@ -10,14 +10,20 @@
             Create PDF documents from your form submissions.
           </p>
         </div>
-        <UButton
-          color="primary"
-          icon="i-heroicons-plus"
-          :loading="uploading"
-          @click="triggerUpload"
+        <UDropdownMenu
+          :items="createMenuItems"
+          :content="{ side: 'bottom', align: 'end' }"
+          arrow 
         >
-          Upload Template
-        </UButton>
+          <UButton
+            color="primary"
+            icon="i-heroicons-plus"
+            trailing-icon="i-heroicons-chevron-down"
+            :loading="uploading || creatingFromScratch"
+          >
+            Add template
+          </UButton>
+        </UDropdownMenu>
         <input
           ref="fileInput"
           type="file"
@@ -81,6 +87,7 @@
               <UDropdownMenu
                 :items="getTemplateMenuItems(template)"
                 :content="{ side: 'bottom', align: 'end' }"
+                arrow
               >
                 <UButton
                   color="neutral"
@@ -107,17 +114,23 @@
           No PDF templates yet
         </h3>
         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400 max-w-sm mx-auto">
-          Upload a PDF template and map form fields to create customized documents from submissions.
+          Upload a PDF template or create one from scratch, then map form fields to create customized documents from submissions.
         </p>
-        <UButton
+        <UDropdownMenu
           class="mt-4"
-          color="primary"
-          icon="i-heroicons-plus"
-          :loading="uploading"
-          @click="triggerUpload"
+          :items="createMenuItems"
+          :content="{ side: 'bottom', align: 'center' }"
+          arrow
         >
-          Upload PDF Template
-        </UButton>
+          <UButton
+            color="primary"
+            icon="i-heroicons-plus"
+            trailing-icon="i-heroicons-chevron-down"
+            :loading="uploading || creatingFromScratch"
+          >
+            Add template
+          </UButton>
+        </UDropdownMenu>
       </div>
     </div>
   </div>
@@ -148,15 +161,33 @@ const router = useRouter()
 // Refs
 const fileInput = ref(null)
 const uploading = ref(false)
+const creatingFromScratch = ref(false)
 const deletingId = ref(null)
 
 // Fetch templates
-const { list, upload, remove } = usePdfTemplates()
+const { list, upload, createFromScratch, remove } = usePdfTemplates()
 const { data: templatesData, isLoading } = list(() => props.form?.id)
 const uploadTemplate = upload(() => props.form?.id)
+const createFromScratchTemplate = createFromScratch(() => props.form?.id)
 const deleteTemplate = remove(() => props.form?.id)
 
 const templates = computed(() => templatesData.value?.data || [])
+
+// Create menu items (Upload PDF, Create from scratch)
+const createMenuItems = [
+  [
+    {
+      label: 'Upload PDF',
+      icon: 'i-heroicons-document-arrow-up',
+      onClick: () => triggerUpload()
+    },
+    {
+      label: 'Create from scratch',
+      icon: 'i-heroicons-document-plus',
+      onClick: () => handleCreateFromScratch()
+    }
+  ]
+]
 
 // Upload handling
 const triggerUpload = () => {
@@ -183,6 +214,19 @@ const handleFileUpload = async (event) => {
     if (fileInput.value) {
       fileInput.value.value = ''
     }
+  }
+}
+
+const handleCreateFromScratch = async () => {
+  creatingFromScratch.value = true
+  try {
+    const response = await createFromScratchTemplate.mutateAsync({})
+    editTemplate(response.data)
+    alert.success(response.message)
+  } catch (error) {
+    alert.error(error?.data?.message || error?.message || 'Failed to create PDF template.')
+  } finally {
+    creatingFromScratch.value = false
   }
 }
 

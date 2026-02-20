@@ -259,6 +259,7 @@ Route::group(['middleware' => 'auth.multi'], function () {
             Route::prefix('/{form}/pdf-templates')->name('pdf-templates.')->group(function () {
                 Route::get('/', [PdfTemplateController::class, 'index'])->name('index');
                 Route::post('/', [PdfTemplateController::class, 'store'])->name('store');
+                Route::post('/from-scratch', [PdfTemplateController::class, 'storeFromScratch'])->name('store-from-scratch');
                 Route::get('/{pdfTemplate}', [PdfTemplateController::class, 'show'])->name('show');
                 Route::put('/{pdfTemplate}', [PdfTemplateController::class, 'update'])->name('update');
                 Route::delete('/{pdfTemplate}', [PdfTemplateController::class, 'destroy'])->name('destroy');

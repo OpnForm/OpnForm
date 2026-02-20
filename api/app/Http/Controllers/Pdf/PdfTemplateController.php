@@ -11,6 +11,7 @@ use App\Service\Pdf\PdfTemplateRebuildService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use setasign\Fpdi\Fpdi;
 use setasign\Fpdi\PdfParser\CrossReference\CrossReferenceException;
 
 class PdfTemplateController extends Controller
@@ -84,6 +85,41 @@ class PdfTemplateController extends Controller
 
         return response()->json([
             'message' => 'PDF template uploaded successfully. Let\'s customize as per your needs.',
+            'data' => $template,
+        ], 201);
+    }
+
+    /**
+     * Create a new PDF template from scratch (1 blank page).
+     */
+    public function storeFromScratch(Request $request, Form $form)
+    {
+        $this->authorize('update', $form);
+
+        $pdf = new Fpdi();
+        $pdf->AddPage();
+        $pdfContent = $pdf->Output('S');
+
+        $filename = time() . '.pdf';
+        $path = "pdf-templates/{$form->id}/{$filename}";
+
+        Storage::put($path, $pdfContent);
+
+        $template = PdfTemplate::create([
+            'form_id' => $form->id,
+            'name' => 'Untitled Template',
+            'filename' => $filename,
+            'original_filename' => $filename,
+            'file_path' => $path,
+            'file_size' => strlen($pdfContent),
+            'page_count' => 1,
+            'zone_mappings' => [],
+            'filename_pattern' => '{form_name}-{submission_id}.pdf',
+            'remove_branding' => false,
+        ]);
+
+        return response()->json([
+            'message' => 'PDF template created. Let\'s customize as per your needs.',
             'data' => $template,
         ], 201);
     }

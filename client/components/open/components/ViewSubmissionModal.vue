@@ -14,6 +14,7 @@
             <UDropdownMenu
               :items="getMenuItems"
               :content="{ side: 'bottom', align: 'end' }"
+              arrow
             >
               <UButton
                 color="neutral"
