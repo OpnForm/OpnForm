@@ -4,7 +4,7 @@ use App\Models\Forms\FormSubmission;
 
 describe('Form Summary', function () {
     beforeEach(function () {
-        $this->user = $this->actingAsBusinessUser();
+        $this->user = $this->actingAsProUser();
         $this->workspace = $this->createUserWorkspace($this->user);
         $this->form = $this->createForm($this->user, $this->workspace);
     });
@@ -284,7 +284,7 @@ describe('Form Summary', function () {
 
 describe('Form Summary Field Values (Load More)', function () {
     beforeEach(function () {
-        $this->user = $this->actingAsBusinessUser();
+        $this->user = $this->actingAsProUser();
         $this->workspace = $this->createUserWorkspace($this->user);
         $this->form = $this->createForm($this->user, $this->workspace);
     });
@@ -370,7 +370,7 @@ describe('Form Summary Field Values (Load More)', function () {
 
 describe('Form Summary Request Validation', function () {
     beforeEach(function () {
-        $this->user = $this->actingAsBusinessUser();
+        $this->user = $this->actingAsProUser();
         $this->workspace = $this->createUserWorkspace($this->user);
         $this->form = $this->createForm($this->user, $this->workspace);
     });

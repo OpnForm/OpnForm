@@ -12,32 +12,29 @@
             No locked-in contracts. Upgrade or cancel anytime.
           </p>
 
-          <div class="flex items-center justify-center gap-3 mt-10">
-            <span class="text-sm font-semibold text-neutral-700">
-              Monthly
-            </span>
+          <div class="mt-12 flex items-center justify-center gap-2">
             <button
               type="button"
-              class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
-              :class="pricingIsYearly ? 'bg-blue-600' : 'bg-neutral-200'"
+              class="relative inline-flex h-4 w-7 items-center rounded-full transition-colors duration-200"
+              :class="pricingIsYearly ? 'bg-indigo-600' : 'bg-slate-300'"
               @click="pricingIsYearly = !pricingIsYearly"
               aria-label="Toggle yearly billing"
             >
               <span
-                class="inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform"
-                :class="pricingIsYearly ? 'translate-x-5' : 'translate-x-1'"
+                class="inline-block h-3 w-3 transform rounded-full bg-white shadow-sm transition-transform duration-200"
+                :class="pricingIsYearly ? 'translate-x-3.5' : 'translate-x-0.5'"
               />
             </button>
-            <span class="text-sm font-semibold text-neutral-700">
+            <span class="text-[12px] font-semibold leading-none text-slate-700">
               Annually
             </span>
-            <span class="hidden sm:inline-flex items-center px-3 py-1 text-xs font-semibold text-blue-700 bg-blue-50 rounded-full">
+            <span class="hidden sm:inline-flex items-center rounded-xl bg-violet-100 px-2.5 py-1 text-[10px] font-semibold leading-none text-violet-600">
               Save 15% with yearly billing
             </span>
           </div>
         </div>
 
-        <div class="grid grid-cols-1 gap-6 mt-12 lg:grid-cols-4">
+        <div class="grid grid-cols-1 gap-6 mt-10 lg:grid-cols-4">
           <!-- Free -->
           <div class="p-6 bg-white border shadow-sm rounded-3xl border-neutral-200">
             <div class="flex items-center gap-3">

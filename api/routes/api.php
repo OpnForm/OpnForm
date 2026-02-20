@@ -177,7 +177,7 @@ Route::group(['middleware' => 'auth.multi'], function () {
                 });
 
                 // Summary endpoints - Pro plan required, with rate limiting
-                Route::middleware(['feature:form_summary', 'throttle:summary'])->group(function () {
+                Route::middleware(['plan:pro', 'throttle:summary'])->group(function () {
                     Route::get('form-summary/{form}', [FormSummaryController::class, 'getSummary'])->name('form.summary');
                     Route::get('form-summary/{form}/field/{fieldId}/values', [FormSummaryController::class, 'getFieldValues'])->name('form.summary.field-values');
                 });

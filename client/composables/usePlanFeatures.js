@@ -48,6 +48,9 @@ const FEATURE_TIERS = {
   custom_domain: 'pro',
   'custom_domain.wildcard': 'business',
 
+  // Analytics & Summary
+  form_summary: 'pro',
+
   // Email/SMTP
   custom_smtp: 'pro',
 
