@@ -179,8 +179,8 @@ const getFieldName = (key) => {
 }
 
 const onRestore = async (version) => {
-  if (!props.form.is_pro) {
-    openSubscriptionModal({ modal_title: 'Upgrade to restore submission history' })
+  if (!props.form.is_business) {
+    openSubscriptionModal({ plan: 'business', modal_title: 'Upgrade to restore submission history' })
     return
   }
 
