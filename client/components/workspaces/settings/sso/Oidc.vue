@@ -108,8 +108,11 @@ const canManageConnections = computed(() => !!workspace.value && workspace.value
 const isSelfHosted = computed(() => useFeatureFlag('self_hosted'))
 const billingEnabled = computed(() => useFeatureFlag('billing.enabled'))
 const canAccessFeature = computed(() => {
-  if (isSelfHosted.value) return true
-  return billingEnabled.value && hasFeature('sso.oidc')
+  // Self-hosted: always accessible
+  if (isSelfHosted.value) {
+    return true
+  }
+  return billingEnabled.value && workspace.value?.is_enterprise
 })
 
 const { connections, create, update, remove } = useOidcConnections(workspaceId)

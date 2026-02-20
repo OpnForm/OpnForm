@@ -57,7 +57,7 @@ class IdentityConnectionPolicy
         }
 
         // For cloud (non-self-hosted), require Enterprise subscription for creation
-        return $this->hasOidcAccess($workspace);
+        return $this->hasEnterpriseAccess($workspace);
     }
 
     /**
@@ -92,18 +92,18 @@ class IdentityConnectionPolicy
         }
 
         // For cloud (non-self-hosted), require Enterprise subscription for modifications
-        return $this->hasOidcAccess($identityConnection->workspace);
+        return $this->hasEnterpriseAccess($identityConnection->workspace);
     }
 
     /**
-     * Check if workspace has OIDC access (always true for self-hosted).
+     * Check if workspace has Enterprise access (always true for self-hosted).
      */
-    protected function hasOidcAccess(Workspace $workspace): bool
+    protected function hasEnterpriseAccess(Workspace $workspace): bool
     {
         if (!pricing_enabled()) {
             return true;
         }
 
-        return $workspace->hasFeature(Feature::SSO_OIDC);
+        return $workspace->is_enterprise;
     }
 }
