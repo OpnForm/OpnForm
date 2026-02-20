@@ -172,8 +172,8 @@ Route::group(['middleware' => 'auth.multi'], function () {
                     Route::get('form-stats-details/{form}', [FormStatsController::class, 'getFormStatsDetails'])->name('form.stats-details');
                 });
 
-                // Summary endpoints with rate limiting
-                Route::middleware('throttle:summary')->group(function () {
+                // Summary endpoints - Pro plan required, with rate limiting
+                Route::middleware(['plan:pro', 'throttle:summary'])->group(function () {
                     Route::get('form-summary/{form}', [FormSummaryController::class, 'getSummary'])->name('form.summary');
                     Route::get('form-summary/{form}/field/{fieldId}/values', [FormSummaryController::class, 'getFieldValues'])->name('form.summary.field-values');
                 });

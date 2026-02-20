@@ -19,7 +19,7 @@
         </div>
       </div>
       <img
-        src="/img/pages/forms/blurred_graph.png"
+        src="/img/pages/forms/blurred_traffic.png"
         alt="Sample Graph"
         class="mx-auto w-full filter blur-md z-0 pointer-events-none"
       >
