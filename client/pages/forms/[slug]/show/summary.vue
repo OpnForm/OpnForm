@@ -9,7 +9,7 @@
             You need a <PlanTag
               upgrade-modal-title="Upgrade today to access form summaries"
               class="mx-1"
-            /> subscription to access form summaries.
+            /> subscription to access form summaries. 
           </p>
           <UButton
             class="mt-5 flex justify-center"
