@@ -175,7 +175,11 @@ const humanizeKey = (key, change) => {
 }
 
 const onRestore = async (version) => {
-  if(!requireFeature('form_versioning', 'Upgrade to restore form history')) return
+  if(!form.value.is_business) {
+    openSubscriptionModal({plan: 'business', modal_title: 'Upgrade to restore form history' })
+    return
+  }
+
   useAlert().confirm('Are you sure you want to restore this version?', () => restoreVersion(version))
 }
 

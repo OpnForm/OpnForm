@@ -91,6 +91,21 @@ it('cannot restore version as pro user - requires business', function () {
         ->assertJson(['required_tier' => 'business']);
 });
 
+it('can restore version as business user', function () {
+    $user = $this->actingAsBusinessUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace, ['title' => 'Original Title']);
+
+    $form->title = 'Updated Title';
+    $form->save();
+
+    $version = $form->versions()->latest()->first();
+
+    $this->postJson(route('versions.restore', ['versionId' => $version->version_id]))
+        ->assertSuccessful()
+        ->assertJson(['message' => 'Version restored successfully.']);
+});
+
 it('cannot restore version for unauthorized form', function () {
     $user = $this->actingAsBusinessUser();
     $this->createUserWorkspace($user);

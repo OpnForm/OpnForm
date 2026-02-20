@@ -52,6 +52,13 @@ class VersionController extends Controller
     {
         $version = Version::findOrFail($versionId);
 
+        // Check the current authenticated user's business status
+        if (!$request->user()->is_business) {
+            return $this->error([
+                'message' => 'You need to be a Business user to restore this version',
+            ]);
+        }
+
         // Get the actual model from the database to verify ownership (prevents IDOR)
         $modelClass = $version->versionable_type;
         if (!class_exists($modelClass)) {

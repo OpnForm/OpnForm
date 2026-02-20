@@ -68,7 +68,8 @@ class FormController extends Controller
     {
         $this->authorize('view', $form);
 
-        if (request()->has('version_id') && $form->workspace->hasFeature('form_versioning')) {
+        // Use for restore form version
+        if (request()->has('version_id') && $form->is_business) {
             // Verify that the version belongs to this form to prevent unauthorized access
             $version = Version::where('versionable_id', $form->id)
                 ->where('versionable_type', Form::class)
