@@ -56,7 +56,7 @@ class VersionController extends Controller
         if (!$request->user()->is_business) {
             return $this->error([
                 'message' => 'You need to be a Business user to restore this version',
-            ]);
+            ], 402);
         }
 
         // Get the actual model from the database to verify ownership (prevents IDOR)
