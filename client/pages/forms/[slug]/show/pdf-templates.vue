@@ -119,33 +119,6 @@
           Upload PDF Template
         </UButton>
       </div>
-
-      <div 
-        v-if="!workspace?.is_pro"
-        class="mt-8 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800"
-      >
-        <div class="flex items-start gap-3">
-          <UIcon
-            name="i-heroicons-information-circle"
-            class="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0"
-          />
-          <div>
-            <h4 class="font-medium text-blue-900 dark:text-blue-100">
-              PDF Branding
-            </h4>
-            <p class="text-sm text-blue-700 dark:text-blue-300 mt-1">
-              Free accounts include <b>"PDF generated with OpnForm"</b> footer on all pages.
-              <UButton
-                color="primary"
-                variant="soft"
-                @click="onUpgradeClick"
-              >
-                Upgrade to Pro
-              </UButton> for removing this branding.
-            </p>
-          </div>
-        </div>
-      </div>
     </div>
   </div>
 </template>
