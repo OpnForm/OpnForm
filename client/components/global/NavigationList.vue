@@ -28,10 +28,8 @@
 -->
 <template>
   <ul 
-    :class="[
-      'space-y-1',
-      listClass
-    ]"
+    ref="listRef"
+    :class="listClass"
     :style="listClass.includes('overflow-x-auto') ? 'scrollbar-width: none; -ms-overflow-style: none;' : ''"
   >
     <li v-for="item in items" :key="item.label || item.id">
@@ -67,6 +65,12 @@
 <script setup>
 import TrackClick from '~/components/global/TrackClick.vue'
 
+// Expose the root element for parent components to use with scroll/resize observers
+const listRef = ref(null)
+defineExpose({
+  $el: listRef
+})
+
 const props = defineProps({
   items: {
     type: Array,
@@ -98,7 +102,7 @@ const props = defineProps({
   },
   listClass: {
     type: String,
-    default: ''
+    default: 'space-y-1'
   }
 })
 
