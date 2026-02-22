@@ -7,6 +7,7 @@ Run all required quality checks before creating a commit:
 - back-end tests
 - front-end tests
 - back-end linters
+- back-end static analysis (Larastan)
 - front-end linters
 - fix issues found during those checks
 - generate a commit message proposal based on the git diff
@@ -17,6 +18,7 @@ Run all required quality checks before creating a commit:
     - `cd api && ./vendor/bin/pest -p`
     - `cd client && npm run test --if-present`
     - `cd api && ./vendor/bin/pint --test`
+    - `cd api && ./vendor/bin/phpstan analyse --memory-limit=1G`
     - `cd client && npm run lint`
 
 2. If a command fails:

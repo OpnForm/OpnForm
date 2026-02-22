@@ -150,13 +150,17 @@ it('cannot export form submissions from another user form', function () {
     $workspace = createUserWorkspace($user);
 
     $form = createForm($user, $workspace);
+    $textField = collect($form->properties)->firstWhere('type', 'text');
 
     $this->actingAsProUser();
 
     $response = $this->postJson(route('open.forms.submissions.export', [
         'form' => $form,
-        'columns' => []
-    ]));
+    ]), [
+        'columns' => [
+            $textField['id'] => true,
+        ],
+    ]);
 
     $response->assertJson([
         'message' => 'This action is unauthorized.'

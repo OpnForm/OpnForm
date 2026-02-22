@@ -12,6 +12,7 @@ namespace App\Service\OpenAi\Utils;
  */
 
 use Aws\Exception\InvalidJsonException;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Attempts to fix truncated JSON by padding contextual counterparts at the end.
@@ -263,12 +264,12 @@ class JsonFixer
             return $json;
         }
 
-        \Log::debug('Broken json received: ', [
+        Log::debug('Broken json received: ', [
             'json' => $json,
         ]);
 
         throw new InvalidJsonException(
-            \sprintf('Could not fix JSON (tried padding `%s`)', \substr($tmpJson, $length), $json)
+            \sprintf('Could not fix JSON (tried padding `%s`): %s', \substr($tmpJson, $length), $json)
         );
     }
 }

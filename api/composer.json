@@ -48,6 +48,7 @@
     },
     "require-dev": {
         "barryvdh/laravel-ide-helper": "^3.0.0",
+        "larastan/larastan": "^3.0",
         "laravel/dusk": "^8.2.0",
         "laravel/pint": "^1.13",
         "laravel/sail": "^1.26",

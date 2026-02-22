@@ -19,6 +19,8 @@ class TypePropertyValidator implements PropertyValidatorInterface
             'max_char_limit' => ['type' => 'integer', 'min' => 1],
             'show_char_limit' => ['type' => 'boolean'],
             'secret_input' => ['type' => 'boolean'],
+            'generates_uuid' => ['type' => 'boolean'],
+            'generates_auto_increment_id' => ['type' => 'boolean'],
         ],
 
         // Date field rules
@@ -53,16 +55,6 @@ class TypePropertyValidator implements PropertyValidatorInterface
         // Checkbox rules
         'checkbox' => [
             'use_toggle_switch' => ['type' => 'boolean'],
-        ],
-
-        // Advanced options (can apply to multiple types)
-        'text' => [
-            'multi_lines' => ['type' => 'boolean'],
-            'max_char_limit' => ['type' => 'integer', 'min' => 1],
-            'show_char_limit' => ['type' => 'boolean'],
-            'secret_input' => ['type' => 'boolean'],
-            'generates_uuid' => ['type' => 'boolean'],
-            'generates_auto_increment_id' => ['type' => 'boolean'],
         ],
     ];
 

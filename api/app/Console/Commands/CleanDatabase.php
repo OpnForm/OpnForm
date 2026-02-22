@@ -33,6 +33,8 @@ class CleanDatabase extends Command
         $this->cleanFormStatistics();
 
         $this->line('Database Cleanup Success.');
+
+        return Command::SUCCESS;
     }
 
     /**

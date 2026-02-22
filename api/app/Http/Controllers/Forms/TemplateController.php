@@ -7,6 +7,7 @@ use App\Http\Resources\FormTemplateResource;
 use App\Models\Template;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use App\Http\Controllers\Controller;
 
@@ -18,7 +19,7 @@ class TemplateController extends Controller
             return [];
         }
 
-        $prodTemplates = \Cache::remember('prod_templates', 3600, function () {
+        $prodTemplates = Cache::remember('prod_templates', 3600, function () {
             $response = Http::get('https://api.opnform.com/templates');
             if ($response->successful()) {
                 return collect($response->json())->map(function ($item) {

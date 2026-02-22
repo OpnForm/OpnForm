@@ -4,7 +4,9 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Tymon\JWTAuth\Exceptions\JWTException;
+use Tymon\JWTAuth\Facades\JWTAuth;
 
 class AuthenticateJWT
 {
@@ -23,7 +25,7 @@ class AuthenticateJWT
 
         // Parse JWT Payload
         try {
-            $payload = \JWTAuth::parseToken()->getPayload();
+            $payload = JWTAuth::parseToken()->getPayload();
         } catch (JWTException $e) {
             return $next($request);
         }
@@ -43,7 +45,7 @@ class AuthenticateJWT
             }
 
             $error = null;
-            if (! \Hash::check($request->userAgent(), $payload->get('ua'))) {
+            if (! Hash::check($request->userAgent(), $payload->get('ua'))) {
                 $error = 'Origin User Agent is invalid';
             }
 
