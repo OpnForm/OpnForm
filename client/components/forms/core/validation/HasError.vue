@@ -9,6 +9,8 @@
 </template>
 
 <script>
+import { escapeHtml } from '~/lib/utils'
+
 export default {
   name: 'HasError',
   props: {
@@ -51,7 +53,8 @@ export default {
         baseError = baseError.replace(`The ${this.fieldName} field`, 'This field')
       }
 
-      const coreError = `<p class='text-red-500'>${baseError}</p>`
+      const escapedBaseError = escapeHtml(baseError)
+      const coreError = `<p class='text-red-500'>${escapedBaseError}</p>`
       if (subErrorsKeys.length) {
         return coreError + `<ul class='list-disc list-inside'>${subErrorsKeys.map(
           (key) => {
@@ -65,7 +68,7 @@ export default {
   },
   methods: {
     getSubError(subErrorKey) {
-      return this.form.errors.get(subErrorKey).replace(subErrorKey, 'item')
+      return escapeHtml(this.form.errors.get(subErrorKey).replace(subErrorKey, 'item'))
     },
   },
 }

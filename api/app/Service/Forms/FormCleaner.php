@@ -108,6 +108,9 @@ class FormCleaner
     public function processRequest(UserFormRequest $request): FormCleaner
     {
         $data = $request->validated();
+        $customDomain = $data['custom_domain'] ?? $request->form?->custom_domain ?? null;
+        $allowOnSelfHosted = config('app.self_hosted', true) && (bool) config('opnform.custom_code.enable_self_hosted', false);
+        $this->allowCustomCode = !empty($customDomain) || $allowOnSelfHosted;
         $this->data = $this->commonCleaning($data);
 
         return $this;

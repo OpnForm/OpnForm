@@ -61,6 +61,35 @@ class Template extends Model
         $this->attributes['description'] = Purify::clean($value);
     }
 
+    public function setQuestionsAttribute($value)
+    {
+        if (!is_array($value)) {
+            $this->attributes['questions'] = json_encode([]);
+            return;
+        }
+
+        $sanitizedQuestions = array_map(function ($item) {
+            $question = is_array($item) ? $item : [];
+
+            $questionText = '';
+            if (isset($question['question']) && is_string($question['question'])) {
+                $questionText = trim(strip_tags($question['question']));
+            }
+
+            $answerHtml = '';
+            if (isset($question['answer']) && is_string($question['answer'])) {
+                $answerHtml = Purify::clean($question['answer']);
+            }
+
+            return [
+                'question' => $questionText,
+                'answer' => $answerHtml,
+            ];
+        }, $value);
+
+        $this->attributes['questions'] = json_encode($sanitizedQuestions);
+    }
+
     public function scopePubliclyListed($query)
     {
         return $this->where('publicly_listed', true);

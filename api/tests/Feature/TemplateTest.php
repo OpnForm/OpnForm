@@ -92,3 +92,39 @@ it('returns empty response when template slug does not exist', function () {
     // Laravel returns empty string for null responses
     expect($response->getContent())->toBeEmpty();
 });
+
+it('sanitizes FAQ answers and strips tags from FAQ questions', function () {
+    $user = $this->createUser([
+        'email' => 'admin@opnform.com',
+    ]);
+    $this->actingAsUser($user);
+
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->makeForm($user, $workspace);
+
+    $templateData = [
+        'name' => 'Sanitized FAQ Template',
+        'slug' => 'sanitized-faq-template',
+        'short_description' => 'Template with sanitized FAQ data',
+        'description' => '<p>Safe description</p>',
+        'image_url' => 'https://example.com/image.jpg',
+        'publicly_listed' => true,
+        'form' => $form->getAttributes(),
+        'questions' => [[
+            'question' => '<img src=x onerror=alert(1)>What is this?',
+            'answer' => '<p onclick=alert(1)><script>alert(1)</script><strong>Safe</strong></p>',
+        ]],
+    ];
+
+    $response = $this->postJson(route('templates.create'), $templateData)
+        ->assertSuccessful();
+
+    $templateId = $response->json('template_id');
+    $template = Template::findOrFail($templateId);
+    $faq = $template->questions[0] ?? [];
+
+    expect($faq['question'] ?? '')->toBe('What is this?')
+        ->and($faq['answer'] ?? '')->toContain('<strong>Safe</strong>')
+        ->and($faq['answer'] ?? '')->not->toContain('<script')
+        ->and($faq['answer'] ?? '')->not->toContain('onclick=');
+});

@@ -151,6 +151,19 @@ export function cleanQuotes(str) {
 }
 
 /**
+ * Escape user-provided text before string interpolation into HTML.
+ */
+export function escapeHtml(value) {
+  if (value === null || value === undefined) return ''
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
+/**
  * Shuffles an array
  * @param {Array} array - The array to shuffle
  * @returns {Array} - A new shuffled array
