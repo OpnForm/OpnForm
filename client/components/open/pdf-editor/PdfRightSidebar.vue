@@ -74,17 +74,30 @@
         v-if="selectedZone"
         class="p-4 space-y-4"
       >
-        <div class="flex items-center justify-between">
-          <h3 class="font-medium text-gray-900 dark:text-white text-sm">
-            Zone Properties
-          </h3>
-          <UButton
-            color="error"
-            variant="ghost"
-            icon="i-heroicons-trash"
-            size="xs"
-            @click="deleteSelectedZone"
-          />
+        <div class="flex items-center justify-between gap-2">
+          <div class="min-w-0">
+            <div class="flex items-center gap-1 text-xs">
+              <button
+                class="font-medium text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200 transition-colors"
+                @click="goBackToZones"
+              >
+                Zones
+              </button>
+              <UIcon name="i-heroicons-chevron-right" class="w-3 h-3 text-neutral-400" />
+              <span class="font-medium text-neutral-900 dark:text-white truncate">
+                {{ selectedZoneLabel }}
+              </span>
+            </div>
+          </div>
+          <div class="flex items-center gap-1">
+            <UButton
+              color="error"
+              variant="ghost"
+              icon="i-heroicons-trash"
+              size="xs"
+              @click="deleteSelectedZone"
+            />
+          </div>
         </div>
 
         <!-- Field/Static Text -->
@@ -211,4 +224,13 @@ const {
   deleteSelectedZone,
   getZoneLabel,
 } = pdfStore
+
+const selectedZoneLabel = computed(() => {
+  if (!selectedZone.value) return ''
+  return getZoneLabel(selectedZone.value)
+})
+
+const goBackToZones = () => {
+  pdfStore.setSelectedZone(null)
+}
 </script>
