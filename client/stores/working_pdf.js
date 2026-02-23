@@ -3,6 +3,10 @@ import clonedeep from "clone-deep"
 import { generateUUID } from "~/lib/utils.js"
 
 const DEFAULT_FILENAME_PATTERN = '{form_name}-{submission_id}.pdf'
+const DEFAULT_ZOOM_SCALE = 1.5
+const MIN_ZOOM_SCALE = 0.5
+const MAX_ZOOM_SCALE = 3
+const ZOOM_STEP = 0.25
 
 export const useWorkingPdfStore = defineStore("working_pdf", {
   state: () => ({
@@ -19,6 +23,7 @@ export const useWorkingPdfStore = defineStore("working_pdf", {
     selectedZoneId: null,
     currentPage: 1,
     showAddZonePopover: false,
+    zoomScale: DEFAULT_ZOOM_SCALE,
     
     // Save state
     saving: false,
@@ -108,6 +113,7 @@ export const useWorkingPdfStore = defineStore("working_pdf", {
         this.selectedZoneId = null
         this.removedPagesForSave = []
         this.originalPageCount = template.page_count ?? (normalizedTemplate.zone_mappings?.length ? 1 : 1)
+        this.zoomScale = DEFAULT_ZOOM_SCALE
       }
     },
 
@@ -134,6 +140,24 @@ export const useWorkingPdfStore = defineStore("working_pdf", {
     // Set saving state
     setSaving(saving) {
       this.saving = saving
+    },
+
+    setZoomScale(scale) {
+      const nextScale = Number(scale)
+      if (!Number.isFinite(nextScale)) return
+      this.zoomScale = Math.min(MAX_ZOOM_SCALE, Math.max(MIN_ZOOM_SCALE, nextScale))
+    },
+
+    zoomIn() {
+      this.setZoomScale(this.zoomScale + ZOOM_STEP)
+    },
+
+    zoomOut() {
+      this.setZoomScale(this.zoomScale - ZOOM_STEP)
+    },
+
+    resetZoom() {
+      this.zoomScale = DEFAULT_ZOOM_SCALE
     },
 
     // Add a new zone
@@ -291,6 +315,7 @@ export const useWorkingPdfStore = defineStore("working_pdf", {
       this.selectedZoneId = null
       this.currentPage = 1
       this.showAddZonePopover = false
+      this.zoomScale = DEFAULT_ZOOM_SCALE
       this.saving = false
       this.removedPagesForSave = []
       this.originalPageCount = null
