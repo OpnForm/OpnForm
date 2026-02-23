@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full border-b p-2 flex gap-x-2 items-center bg-white">
+  <div class="w-full border-b border-neutral-200 dark:border-neutral-700 px-3 py-2 min-h-14 flex gap-x-2 items-center bg-white dark:bg-neutral-900">
     <a
       href="#"
       class="ml-2 flex text-blue font-semibold text-sm -m-1 hover:bg-blue-500/10 rounded-md p-1 group"
@@ -14,6 +14,7 @@
     <UButton
       color="neutral"
       variant="subtle"
+      size="md"
       icon="i-heroicons-cog-6-tooth"
       label="Settings"
       @click="settingsModal = true"
@@ -50,10 +51,48 @@
 
       <slot name="before-save" />
 
+      <div class="flex items-center gap-1 rounded-md border border-neutral-200 dark:border-neutral-700 px-1.5 py-1">
+        <UTooltip text="Zoom out" :content="{ side: 'bottom' }" arrow>
+          <UButton
+            color="neutral"
+            variant="ghost"
+            icon="i-heroicons-magnifying-glass-minus"
+            size="xs"
+            @click="pdfStore.zoomOut()"
+          />
+        </UTooltip>
+        <button
+          class="min-w-12 text-xs font-medium text-neutral-600 dark:text-neutral-300 hover:text-neutral-800 dark:hover:text-neutral-100 transition-colors"
+          type="button"
+          @click="pdfStore.resetZoom()"
+        >
+          {{ zoomPercent }}%
+        </button>
+        <UTooltip text="Zoom in" :content="{ side: 'bottom' }" arrow>
+          <UButton
+            color="neutral"
+            variant="ghost"
+            icon="i-heroicons-magnifying-glass-plus"
+            size="xs"
+            @click="pdfStore.zoomIn()"
+          />
+        </UTooltip>
+        <UTooltip text="Reset zoom" :content="{ side: 'bottom' }" arrow>
+          <UButton
+            color="neutral"
+            variant="ghost"
+            icon="i-heroicons-arrow-path"
+            size="xs"
+            @click="pdfStore.resetZoom()"
+          />
+        </UTooltip>
+      </div>
+
       <UButton
         color="neutral"
-        variant="soft"
+        variant="outline"
         icon="i-heroicons-eye"
+        size="md"
         @click="previewPdf"
       >
         Preview
@@ -75,7 +114,7 @@
         >
           <UButton
             color="primary"
-            class="px-8 md:px-4 py-2"
+            size="md"
             :loading="saving"
             icon="i-ic-outline-save"
             @click="emit('save-pdf-template')"
@@ -144,7 +183,8 @@ const emit = defineEmits(['go-back', 'save-pdf-template'])
 
 const alert = useAlert()
 const pdfStore = useWorkingPdfStore()
-const { content: pdfTemplate, form, saving } = storeToRefs(pdfStore)
+const { content: pdfTemplate, form, saving, zoomScale } = storeToRefs(pdfStore)
+const zoomPercent = computed(() => Math.round((zoomScale.value || 1) * 100))
 
 defineShortcuts({
   meta_s: {

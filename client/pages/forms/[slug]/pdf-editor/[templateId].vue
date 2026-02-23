@@ -37,7 +37,7 @@
         <PdfLeftSidebar />
 
         <div
-          class="flex-1 overflow-auto"
+          class="flex-1 overflow-x-auto overflow-y-auto"
           @click.self="pdfStore.setSelectedZone(null)"
         >
           <PdfZoneEditor />

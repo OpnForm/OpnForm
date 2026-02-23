@@ -3,7 +3,7 @@
     <!-- PDF Canvas with Zones -->
     <div
       ref="editorContainer"
-      class="relative border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800"
+      class="relative min-w-full w-max"
       :style="{ minHeight: '520px' }"
       @click="handleBackgroundClick"
     >
@@ -67,6 +67,7 @@ const {
   currentPage,
   selectedZoneId,
   currentPageZones,
+  zoomScale,
 } = storeToRefs(pdfStore)
 
 const { getZoneLabel } = pdfStore
@@ -77,7 +78,6 @@ const editorContainer = ref(null)
 const pdfLoading = ref(true)
 const pdfDoc = shallowRef(null)
 const pdfjsLibRef = shallowRef(null)
-const scale = ref(1)
 const canvasWidth = ref(0)
 const canvasHeight = ref(0)
 const canvasRect = ref(null)
@@ -160,7 +160,7 @@ const renderPage = async () => {
     const physicalPage = pdfStore.getPhysicalPageNumber(logicalPage)
     const sourcePageNum = isNew ? 1 : (physicalPage ?? 1)
     const page = await pdfDoc.value.getPage(sourcePageNum)
-    const viewport = page.getViewport({ scale: 1.5 })
+    const viewport = page.getViewport({ scale: zoomScale.value })
     
     const canvas = pdfCanvas.value
     const context = canvas.getContext('2d')
@@ -169,7 +169,6 @@ const renderPage = async () => {
     canvas.width = viewport.width
     canvasWidth.value = viewport.width
     canvasHeight.value = viewport.height
-    scale.value = 1.5
     
     if (isNew) {
       context.fillStyle = '#ffffff'
@@ -193,6 +192,9 @@ watch(pdfTemplate, loadPdf, { immediate: true })
 
 // Watch for page changes
 watch(currentPage, renderPage)
+
+// Watch for zoom changes
+watch(zoomScale, renderPage)
 
 // Select zone
 const selectZone = (zoneId) => {
