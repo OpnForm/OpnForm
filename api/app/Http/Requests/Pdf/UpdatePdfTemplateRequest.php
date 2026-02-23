@@ -21,7 +21,7 @@ class UpdatePdfTemplateRequest extends FormRequest
         return [
             'name' => 'required|string|max:255',
             'zone_mappings' => ['sometimes', 'array', new PdfZoneMappingsRule($form)],
-            'filename_pattern' => 'sometimes|string|max:255',
+            'filename_pattern' => 'sometimes|string',
             'remove_branding' => 'sometimes|boolean',
             'page_count' => 'sometimes|integer|min:1',
             'new_pages' => 'sometimes|array',

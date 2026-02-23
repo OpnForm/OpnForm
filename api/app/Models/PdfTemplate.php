@@ -3,15 +3,20 @@
 namespace App\Models;
 
 use App\Models\Forms\Form;
+use App\Models\Forms\FormSubmission;
 use App\Models\Integration\FormIntegration;
+use App\Open\MentionParser;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Str;
 
 class PdfTemplate extends Model
 {
     use HasFactory;
     use SoftDeletes;
+
+    public const DEFAULT_FILENAME_PATTERN = '<span mention="true" mention-field-id="form_name" mention-field-name="Form Name" mention-fallback="" contenteditable="false" class="mention-item">Form Name</span>-<span mention="true" mention-field-id="submission_id" mention-field-name="Submission ID" mention-fallback="" contenteditable="false" class="mention-item">Submission ID</span>';
 
     protected $fillable = [
         'form_id',
@@ -54,6 +59,28 @@ class PdfTemplate extends Model
             ->whereJsonContains('data->pdf_template_ids', (int) $this->id)
             ->exists();
         return $isInUse;
+    }
+
+    /**
+     * Resolve the download filename for a given form and submission.
+     */
+    public function resolveFilename(Form $form, FormSubmission $submission): string
+    {
+        $pattern = $this->filename_pattern ?: self::DEFAULT_FILENAME_PATTERN;
+
+        $variables = [
+            ['id' => 'form_name', 'value' => Str::slug($form->title)],
+            ['id' => 'submission_id', 'value' => $submission->id ?: 'preview'],
+            ['id' => 'date', 'value' => now()->format('Y-m-d')],
+        ];
+
+        $parser = new MentionParser($pattern, $variables);
+        $filename = $parser->parseAsText();
+
+        $filename = preg_replace('/\.pdf$/i', '', $filename);
+        $filename .= '.pdf';
+
+        return preg_replace('/[^a-zA-Z0-9._-]/', '-', $filename);
     }
 
     /**

@@ -146,7 +146,7 @@ class FormEmailNotification extends Notification
                 $pdfPath = $cacheService->getOrGenerateFromTemplate($form, $submission, $template, $generator);
                 $content = Storage::get($pdfPath);
                 if ($content !== false) {
-                    $filename = Str::slug($template->name ?: 'document') . '.pdf';
+                    $filename = $template->resolveFilename($form, $submission);
                     $mail->attachData($content, $filename, ['mime' => 'application/pdf']);
                 }
             } catch (\Throwable $e) {

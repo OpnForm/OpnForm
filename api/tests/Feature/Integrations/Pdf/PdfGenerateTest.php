@@ -37,7 +37,7 @@ describe('PDF Template - Signed URL', function () {
             'file_size' => strlen($pdfContent),
             'page_count' => 1,
             'zone_mappings' => [],
-            'filename_pattern' => '{form_name}-{submission_id}.pdf',
+            'filename_pattern' => PdfTemplate::DEFAULT_FILENAME_PATTERN,
         ]);
 
         // Create submission
@@ -181,7 +181,7 @@ describe('PDF Template - Download', function () {
             'file_size' => strlen($pdfContent),
             'page_count' => 1,
             'zone_mappings' => [],
-            'filename_pattern' => '{form_name}-{submission_id}.pdf',
+            'filename_pattern' => PdfTemplate::DEFAULT_FILENAME_PATTERN,
         ]);
 
         $submission = $form->submissions()->create([
@@ -418,7 +418,7 @@ describe('PDF with Zone Mappings', function () {
                     'font_color' => '#000000',
                 ],
             ],
-            'filename_pattern' => 'submission-{submission_id}.pdf',
+            'filename_pattern' => 'output',
         ]);
 
         $submission = $form->submissions()->create([
@@ -475,7 +475,7 @@ describe('PDF with Zone Mappings', function () {
                     'font_color' => '#333333',
                 ],
             ],
-            'filename_pattern' => 'submission-{submission_id}.pdf',
+            'filename_pattern' => 'output',
         ]);
 
         $submission = $form->submissions()->create([
