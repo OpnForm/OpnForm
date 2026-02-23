@@ -6,6 +6,7 @@ use App\Models\PdfTemplate;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Service\Pdf\PdfGeneratorService;
+use App\Service\Pdf\PdfZoneRenderer;
 use Illuminate\Support\Facades\Storage;
 
 beforeEach(function () {
@@ -232,75 +233,75 @@ describe('PdfNotSupportedException', function () {
 
 describe('SSRF Protection', function () {
     it('blocks private IP addresses (10.x.x.x)', function () {
-        $service = new PdfGeneratorService();
-        $method = new \ReflectionMethod($service, 'isPrivateIp');
+        $renderer = new PdfZoneRenderer();
+        $method = new \ReflectionMethod($renderer, 'isPrivateIp');
         $method->setAccessible(true);
 
-        expect($method->invoke($service, '10.0.0.1'))->toBeTrue();
-        expect($method->invoke($service, '10.255.255.255'))->toBeTrue();
+        expect($method->invoke($renderer, '10.0.0.1'))->toBeTrue();
+        expect($method->invoke($renderer, '10.255.255.255'))->toBeTrue();
     });
 
     it('blocks private IP addresses (172.16-31.x.x)', function () {
-        $service = new PdfGeneratorService();
-        $method = new \ReflectionMethod($service, 'isPrivateIp');
+        $renderer = new PdfZoneRenderer();
+        $method = new \ReflectionMethod($renderer, 'isPrivateIp');
         $method->setAccessible(true);
 
-        expect($method->invoke($service, '172.16.0.1'))->toBeTrue();
-        expect($method->invoke($service, '172.31.255.255'))->toBeTrue();
+        expect($method->invoke($renderer, '172.16.0.1'))->toBeTrue();
+        expect($method->invoke($renderer, '172.31.255.255'))->toBeTrue();
         // 172.32.x.x is not private
-        expect($method->invoke($service, '172.32.0.1'))->toBeFalse();
+        expect($method->invoke($renderer, '172.32.0.1'))->toBeFalse();
     });
 
     it('blocks private IP addresses (192.168.x.x)', function () {
-        $service = new PdfGeneratorService();
-        $method = new \ReflectionMethod($service, 'isPrivateIp');
+        $renderer = new PdfZoneRenderer();
+        $method = new \ReflectionMethod($renderer, 'isPrivateIp');
         $method->setAccessible(true);
 
-        expect($method->invoke($service, '192.168.0.1'))->toBeTrue();
-        expect($method->invoke($service, '192.168.255.255'))->toBeTrue();
+        expect($method->invoke($renderer, '192.168.0.1'))->toBeTrue();
+        expect($method->invoke($renderer, '192.168.255.255'))->toBeTrue();
     });
 
     it('blocks localhost (127.x.x.x)', function () {
-        $service = new PdfGeneratorService();
-        $method = new \ReflectionMethod($service, 'isPrivateIp');
+        $renderer = new PdfZoneRenderer();
+        $method = new \ReflectionMethod($renderer, 'isPrivateIp');
         $method->setAccessible(true);
 
-        expect($method->invoke($service, '127.0.0.1'))->toBeTrue();
-        expect($method->invoke($service, '127.255.255.255'))->toBeTrue();
+        expect($method->invoke($renderer, '127.0.0.1'))->toBeTrue();
+        expect($method->invoke($renderer, '127.255.255.255'))->toBeTrue();
     });
 
     it('blocks link-local addresses (169.254.x.x)', function () {
-        $service = new PdfGeneratorService();
-        $method = new \ReflectionMethod($service, 'isPrivateIp');
+        $renderer = new PdfZoneRenderer();
+        $method = new \ReflectionMethod($renderer, 'isPrivateIp');
         $method->setAccessible(true);
 
-        expect($method->invoke($service, '169.254.0.1'))->toBeTrue();
-        expect($method->invoke($service, '169.254.169.254'))->toBeTrue(); // AWS metadata
+        expect($method->invoke($renderer, '169.254.0.1'))->toBeTrue();
+        expect($method->invoke($renderer, '169.254.169.254'))->toBeTrue(); // AWS metadata
     });
 
     it('allows public IP addresses', function () {
-        $service = new PdfGeneratorService();
-        $method = new \ReflectionMethod($service, 'isPrivateIp');
+        $renderer = new PdfZoneRenderer();
+        $method = new \ReflectionMethod($renderer, 'isPrivateIp');
         $method->setAccessible(true);
 
-        expect($method->invoke($service, '8.8.8.8'))->toBeFalse();
-        expect($method->invoke($service, '1.1.1.1'))->toBeFalse();
-        expect($method->invoke($service, '203.0.113.1'))->toBeFalse();
+        expect($method->invoke($renderer, '8.8.8.8'))->toBeFalse();
+        expect($method->invoke($renderer, '1.1.1.1'))->toBeFalse();
+        expect($method->invoke($renderer, '203.0.113.1'))->toBeFalse();
     });
 
     it('blocks external image fetch for invalid URL schemes', function () {
-        $service = new PdfGeneratorService();
-        $method = new \ReflectionMethod($service, 'fetchExternalImage');
+        $renderer = new PdfZoneRenderer();
+        $method = new \ReflectionMethod($renderer, 'fetchExternalImage');
         $method->setAccessible(true);
 
         // file:// scheme should be blocked
-        expect($method->invoke($service, 'file:///etc/passwd'))->toBeNull();
+        expect($method->invoke($renderer, 'file:///etc/passwd'))->toBeNull();
 
         // ftp:// scheme should be blocked
-        expect($method->invoke($service, 'ftp://example.com/image.png'))->toBeNull();
+        expect($method->invoke($renderer, 'ftp://example.com/image.png'))->toBeNull();
 
         // javascript: scheme should be blocked
-        expect($method->invoke($service, 'javascript:alert(1)'))->toBeNull();
+        expect($method->invoke($renderer, 'javascript:alert(1)'))->toBeNull();
     });
 });
 

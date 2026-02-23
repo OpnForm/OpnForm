@@ -39,6 +39,12 @@
           >
             {{ getZoneLabel(zone) }}
           </div>
+          <!-- In-canvas text preview (static text zones only) -->
+          <div
+            v-if="zone.static_text !== undefined && zone.static_text"
+            class="w-full h-full overflow-hidden leading-tight pointer-events-none select-none"
+            v-html="zone.static_text"
+          />
           <div
             class="absolute bottom-0 right-0 w-3 h-3 bg-blue-500 cursor-se-resize"
             @mousedown.stop="startResizing($event, zone)"

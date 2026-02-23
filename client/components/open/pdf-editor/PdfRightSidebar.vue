@@ -101,13 +101,14 @@
         </div>
 
         <!-- Field/Static Text -->
-        <TextAreaInput
+        <RichTextAreaInput
           v-if="selectedZone.static_text !== undefined"
           v-model="selectedZone.static_text"
           name="static_text"
           label="Static Text"
           placeholder="Enter text..."
           size="sm"
+          :editor-options="richTextOptions"
         />
         <SelectInput
           v-else
@@ -232,5 +233,16 @@ const selectedZoneLabel = computed(() => {
 
 const goBackToZones = () => {
   pdfStore.setSelectedZone(null)
+}
+
+const richTextOptions = {
+  formats: ['bold', 'italic', 'underline', 'header', 'color'],
+  modules: {
+    toolbar: [
+      [{ header: 1 }, { header: 2 }],
+      ['bold', 'italic', 'underline'],
+      [{ color: [] }],
+    ],
+  },
 }
 </script>
