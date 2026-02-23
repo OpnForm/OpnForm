@@ -48,7 +48,7 @@ describe('PdfGeneratorService', function () {
             'file_size' => strlen($pdfContent),
             'page_count' => 1,
             'zone_mappings' => [],
-            'filename_pattern' => '{form_name}-{submission_id}.pdf',
+            'filename_pattern' => PdfTemplate::DEFAULT_FILENAME_PATTERN,
         ]);
 
         $submission = $form->submissions()->create([
@@ -104,7 +104,7 @@ describe('PdfGeneratorService', function () {
                     'font_color' => '#FF0000',
                 ],
             ],
-            'filename_pattern' => 'output.pdf',
+            'filename_pattern' => 'output',
         ]);
 
         $submission = $form->submissions()->create([
@@ -171,7 +171,7 @@ describe('PdfGeneratorService', function () {
                     'font_color' => '#000000',
                 ],
             ],
-            'filename_pattern' => 'output.pdf',
+            'filename_pattern' => 'output',
         ]);
 
         $submission = $form->submissions()->create([

@@ -394,6 +394,272 @@ describe('PDF Template Download', function () {
     });
 });
 
+describe('PDF Template Filename Resolution', function () {
+    function mentionSpan(string $id, string $name): string
+    {
+        return '<span mention="true" mention-field-id="' . $id . '" mention-field-name="' . $name . '" mention-fallback="" contenteditable="false" class="mention-item">' . $name . '</span>';
+    }
+
+    function createTemplateWithPattern(int $formId, ?string $pattern): \App\Models\PdfTemplate
+    {
+        return PdfTemplate::create([
+            'form_id' => $formId,
+            'filename' => 'template.pdf',
+            'original_filename' => 'Template.pdf',
+            'file_path' => "pdf-templates/{$formId}/template.pdf",
+            'file_size' => 100,
+            'page_count' => 1,
+            'filename_pattern' => $pattern,
+        ]);
+    }
+
+    it('resolves form_name variable from mention HTML', function () {
+        $user = $this->actingAsProUser();
+        $workspace = $this->createUserWorkspace($user);
+        $form = $this->createForm($user, $workspace, ['title' => 'Contact Form']);
+
+        $template = createTemplateWithPattern($form->id, mentionSpan('form_name', 'Form Name'));
+        $submission = $form->submissions()->create(['data' => []]);
+
+        $filename = $template->resolveFilename($form, $submission);
+
+        expect($filename)->toBe('contact-form.pdf');
+    });
+
+    it('resolves submission_id variable from mention HTML', function () {
+        $user = $this->actingAsProUser();
+        $workspace = $this->createUserWorkspace($user);
+        $form = $this->createForm($user, $workspace);
+
+        $template = createTemplateWithPattern($form->id, mentionSpan('submission_id', 'Submission ID'));
+        $submission = $form->submissions()->create(['data' => []]);
+
+        $filename = $template->resolveFilename($form, $submission);
+
+        expect($filename)->toBe("{$submission->id}.pdf");
+    });
+
+    it('resolves date variable from mention HTML', function () {
+        $user = $this->actingAsProUser();
+        $workspace = $this->createUserWorkspace($user);
+        $form = $this->createForm($user, $workspace);
+
+        $template = createTemplateWithPattern($form->id, mentionSpan('date', 'Date'));
+        $submission = $form->submissions()->create(['data' => []]);
+
+        $filename = $template->resolveFilename($form, $submission);
+
+        expect($filename)->toBe(now()->format('Y-m-d') . '.pdf');
+    });
+
+    it('resolves multiple variables in a single pattern', function () {
+        $user = $this->actingAsProUser();
+        $workspace = $this->createUserWorkspace($user);
+        $form = $this->createForm($user, $workspace, ['title' => 'Invoice Form']);
+
+        $pattern = mentionSpan('form_name', 'Form Name') . '-' . mentionSpan('submission_id', 'Submission ID');
+        $template = createTemplateWithPattern($form->id, $pattern);
+        $submission = $form->submissions()->create(['data' => []]);
+
+        $filename = $template->resolveFilename($form, $submission);
+
+        expect($filename)->toBe("invoice-form-{$submission->id}.pdf");
+    });
+
+    it('appends .pdf extension automatically', function () {
+        $user = $this->actingAsProUser();
+        $workspace = $this->createUserWorkspace($user);
+        $form = $this->createForm($user, $workspace, ['title' => 'My Form']);
+
+        $template = createTemplateWithPattern($form->id, mentionSpan('form_name', 'Form Name'));
+        $submission = $form->submissions()->create(['data' => []]);
+
+        $filename = $template->resolveFilename($form, $submission);
+
+        expect($filename)->toEndWith('.pdf');
+    });
+
+    it('never produces double .pdf extension', function () {
+        $user = $this->actingAsProUser();
+        $workspace = $this->createUserWorkspace($user);
+        $form = $this->createForm($user, $workspace, ['title' => 'My Form']);
+
+        $pattern = mentionSpan('form_name', 'Form Name') . '.pdf';
+        $template = createTemplateWithPattern($form->id, $pattern);
+        $submission = $form->submissions()->create(['data' => []]);
+
+        $filename = $template->resolveFilename($form, $submission);
+
+        expect($filename)->toBe('my-form.pdf');
+        expect($filename)->not->toContain('.pdf.pdf');
+    });
+
+    it('handles case-insensitive .PDF suffix', function () {
+        $user = $this->actingAsProUser();
+        $workspace = $this->createUserWorkspace($user);
+        $form = $this->createForm($user, $workspace, ['title' => 'My Form']);
+
+        $pattern = mentionSpan('form_name', 'Form Name') . '.PDF';
+        $template = createTemplateWithPattern($form->id, $pattern);
+        $submission = $form->submissions()->create(['data' => []]);
+
+        $filename = $template->resolveFilename($form, $submission);
+
+        expect($filename)->toBe('my-form.pdf');
+    });
+
+    it('falls back to default pattern when filename_pattern is null', function () {
+        $user = $this->actingAsProUser();
+        $workspace = $this->createUserWorkspace($user);
+        $form = $this->createForm($user, $workspace, ['title' => 'Feedback']);
+
+        $template = createTemplateWithPattern($form->id, null);
+        $submission = $form->submissions()->create(['data' => []]);
+
+        $filename = $template->resolveFilename($form, $submission);
+
+        expect($filename)->toBe("feedback-{$submission->id}.pdf");
+    });
+
+    it('falls back to default pattern when filename_pattern is empty string', function () {
+        $user = $this->actingAsProUser();
+        $workspace = $this->createUserWorkspace($user);
+        $form = $this->createForm($user, $workspace, ['title' => 'Feedback']);
+
+        $template = createTemplateWithPattern($form->id, '');
+        $submission = $form->submissions()->create(['data' => []]);
+
+        $filename = $template->resolveFilename($form, $submission);
+
+        expect($filename)->toBe("feedback-{$submission->id}.pdf");
+    });
+
+    it('uses "preview" when submission has no id', function () {
+        $user = $this->actingAsProUser();
+        $workspace = $this->createUserWorkspace($user);
+        $form = $this->createForm($user, $workspace);
+
+        $template = createTemplateWithPattern($form->id, mentionSpan('submission_id', 'Submission ID'));
+
+        $submission = new \App\Models\Forms\FormSubmission();
+        $submission->form_id = $form->id;
+        $submission->data = [];
+
+        $filename = $template->resolveFilename($form, $submission);
+
+        expect($filename)->toBe('preview.pdf');
+    });
+
+    it('sanitizes special characters in filename', function () {
+        $user = $this->actingAsProUser();
+        $workspace = $this->createUserWorkspace($user);
+        $form = $this->createForm($user, $workspace, ['title' => 'Form With Spaces & Symbols!']);
+
+        $template = createTemplateWithPattern($form->id, mentionSpan('form_name', 'Form Name'));
+        $submission = $form->submissions()->create(['data' => []]);
+
+        $filename = $template->resolveFilename($form, $submission);
+
+        expect($filename)->toMatch('/^[a-zA-Z0-9._-]+$/');
+        expect($filename)->toEndWith('.pdf');
+    });
+});
+
+describe('PDF Email Attachment Filename Consistency', function () {
+    it('produces identical filename from resolveFilename regardless of caller', function () {
+        $user = $this->actingAsProUser();
+        $workspace = $this->createUserWorkspace($user);
+        $form = $this->createForm($user, $workspace, ['title' => 'Registration Form']);
+
+        $customPattern = '<span mention="true" mention-field-id="form_name" mention-field-name="Form Name" mention-fallback="" contenteditable="false" class="mention-item">Form Name</span>-<span mention="true" mention-field-id="date" mention-field-name="Date" mention-fallback="" contenteditable="false" class="mention-item">Date</span>';
+
+        $template = PdfTemplate::create([
+            'form_id' => $form->id,
+            'filename' => 'template.pdf',
+            'original_filename' => 'Template.pdf',
+            'file_path' => "pdf-templates/{$form->id}/template.pdf",
+            'file_size' => 100,
+            'page_count' => 1,
+            'filename_pattern' => $customPattern,
+        ]);
+
+        $submission = $form->submissions()->create(['data' => ['name' => 'Alice']]);
+
+        $call1 = $template->resolveFilename($form, $submission);
+        $call2 = $template->resolveFilename($form, $submission);
+
+        expect($call1)->toBe($call2);
+        expect($call1)->toBe('registration-form-' . now()->format('Y-m-d') . '.pdf');
+    });
+
+    it('would have failed with old ad-hoc email naming (regression)', function () {
+        $user = $this->actingAsProUser();
+        $workspace = $this->createUserWorkspace($user);
+        $form = $this->createForm($user, $workspace, ['title' => 'Invoice Form']);
+
+        $customPattern = '<span mention="true" mention-field-id="form_name" mention-field-name="Form Name" mention-fallback="" contenteditable="false" class="mention-item">Form Name</span>-<span mention="true" mention-field-id="submission_id" mention-field-name="Submission ID" mention-fallback="" contenteditable="false" class="mention-item">Submission ID</span>';
+
+        $template = PdfTemplate::create([
+            'form_id' => $form->id,
+            'name' => 'My Invoice Template',
+            'filename' => 'template.pdf',
+            'original_filename' => 'Template.pdf',
+            'file_path' => "pdf-templates/{$form->id}/template.pdf",
+            'file_size' => 100,
+            'page_count' => 1,
+            'filename_pattern' => $customPattern,
+        ]);
+
+        $submission = $form->submissions()->create(['data' => []]);
+
+        $resolvedFilename = $template->resolveFilename($form, $submission);
+
+        // Old email code: Str::slug($template->name ?: 'document') . '.pdf'
+        $oldEmailFilename = \Illuminate\Support\Str::slug($template->name ?: 'document') . '.pdf';
+
+        // The old email filename ignores the user-configured pattern entirely
+        expect($oldEmailFilename)->toBe('my-invoice-template.pdf');
+        // The resolved filename uses the user-configured pattern
+        expect($resolvedFilename)->toBe("invoice-form-{$submission->id}.pdf");
+        // They differ — proving the old bug
+        expect($resolvedFilename)->not->toBe($oldEmailFilename);
+    });
+});
+
+describe('PDF From-Scratch Default Filename Pattern', function () {
+    it('sets DEFAULT_FILENAME_PATTERN on from-scratch templates', function () {
+        $user = $this->actingAsProUser();
+        $workspace = $this->createUserWorkspace($user);
+        $form = $this->createForm($user, $workspace, ['title' => 'Test Form']);
+
+        $this->postJson(route('open.forms.pdf-templates.store-from-scratch', $form));
+
+        $template = PdfTemplate::where('form_id', $form->id)->first();
+
+        expect($template->filename_pattern)->toBe(PdfTemplate::DEFAULT_FILENAME_PATTERN);
+
+        $submission = $form->submissions()->create(['data' => []]);
+        $filename = $template->resolveFilename($form, $submission);
+
+        expect($filename)->toBe("test-form-{$submission->id}.pdf");
+    });
+
+    it('sets DEFAULT_FILENAME_PATTERN on uploaded templates', function () {
+        $user = $this->actingAsProUser();
+        $workspace = $this->createUserWorkspace($user);
+        $form = $this->createForm($user, $workspace);
+
+        $pdfContent = createValidPdf();
+        $file = \Illuminate\Http\UploadedFile::fake()->createWithContent('invoice.pdf', $pdfContent);
+
+        $this->postJson(route('open.forms.pdf-templates.store', $form), ['file' => $file]);
+
+        $template = PdfTemplate::where('form_id', $form->id)->first();
+
+        expect($template->filename_pattern)->toBe(PdfTemplate::DEFAULT_FILENAME_PATTERN);
+    });
+});
+
 /**
  * Helper function to create a valid PDF using FPDF.
  */
