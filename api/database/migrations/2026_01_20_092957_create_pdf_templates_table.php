@@ -20,7 +20,7 @@ return new class () extends Migration {
             $table->unsignedInteger('file_size');
             $table->unsignedInteger('page_count')->default(1);
             $table->json('zone_mappings')->nullable();
-            $table->string('filename_pattern')->default('{form_name}-{submission_id}.pdf');
+            $table->text('filename_pattern')->nullable();
             $table->boolean('remove_branding')->default(false);
             $table->timestamps();
             $table->softDeletes();

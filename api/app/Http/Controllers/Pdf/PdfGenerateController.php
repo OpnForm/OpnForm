@@ -13,7 +13,6 @@ use App\Service\Forms\SubmissionUrlService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
-use Illuminate\Support\Str;
 
 class PdfGenerateController extends Controller
 {
@@ -178,9 +177,7 @@ class PdfGenerateController extends Controller
             abort(500, 'Failed to generate PDF.');
         }
 
-        // Get filename from template
-        $filenamePattern = $template->filename_pattern ?? '{form_name}-{submission_id}.pdf';
-        $filename = $this->generateFilename($filenamePattern, $form, $submission);
+        $filename = $template->resolveFilename($form, $submission);
 
         if ($forceDownload) {
             return Storage::download($pdfPath, $filename, [
@@ -216,26 +213,4 @@ class PdfGenerateController extends Controller
         );
     }
 
-    /**
-     * Generate filename from pattern.
-     */
-    private function generateFilename(string $pattern, Form $form, FormSubmission $submission): string
-    {
-        $replacements = [
-            '{form_name}' => Str::slug($form->title),
-            '{submission_id}' => $submission->id ?: 'preview',
-            '{date}' => now()->format('Y-m-d'),
-            '{timestamp}' => now()->timestamp,
-        ];
-
-        $filename = str_replace(array_keys($replacements), array_values($replacements), $pattern);
-
-        // Ensure .pdf extension
-        if (!str_ends_with(strtolower($filename), '.pdf')) {
-            $filename .= '.pdf';
-        }
-
-        // Sanitize filename
-        return preg_replace('/[^a-zA-Z0-9._-]/', '-', $filename);
-    }
 }

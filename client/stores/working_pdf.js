@@ -2,7 +2,7 @@ import { defineStore } from "pinia"
 import clonedeep from "clone-deep"
 import { generateUUID } from "~/lib/utils.js"
 
-const DEFAULT_FILENAME_PATTERN = '{form_name}-{submission_id}.pdf'
+const DEFAULT_FILENAME_PATTERN = '<span mention="true" mention-field-id="form_name" mention-field-name="Form Name" mention-fallback="" contenteditable="false" class="mention-item">Form Name</span>-<span mention="true" mention-field-id="submission_id" mention-field-name="Submission ID" mention-fallback="" contenteditable="false" class="mention-item">Submission ID</span>'
 const DEFAULT_ZOOM_SCALE = 1.5
 const MIN_ZOOM_SCALE = 0.5
 const MAX_ZOOM_SCALE = 3

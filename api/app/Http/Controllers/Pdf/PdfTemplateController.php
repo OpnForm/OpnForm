@@ -79,7 +79,7 @@ class PdfTemplateController extends Controller
             'file_size' => $file->getSize(),
             'page_count' => $pageCount,
             'zone_mappings' => [],
-            'filename_pattern' => '{form_name}-{submission_id}.pdf',
+            'filename_pattern' => PdfTemplate::DEFAULT_FILENAME_PATTERN,
             'remove_branding' => false,
         ]);
 
@@ -114,7 +114,7 @@ class PdfTemplateController extends Controller
             'file_size' => strlen($pdfContent),
             'page_count' => 1,
             'zone_mappings' => [],
-            'filename_pattern' => '{form_name}-{submission_id}.pdf',
+            'filename_pattern' => PdfTemplate::DEFAULT_FILENAME_PATTERN,
             'remove_branding' => false,
         ]);
 

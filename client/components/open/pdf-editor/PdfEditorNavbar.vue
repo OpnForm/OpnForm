@@ -144,14 +144,23 @@
     <template #body>
       <div class="space-y-4">
         <!-- Filename Pattern -->
-        <TextInput
-          v-model="pdfTemplate.filename_pattern"
-          name="filename_pattern"
-          label="Filename Pattern"
-          :placeholder="pdfStore.defaultFilenamePattern"
-          size="sm"
-          help="Variables: {form_name}, {submission_id}, {date}"
-        />
+        <div>
+          <div class="flex items-end gap-2">
+            <MentionInput
+              v-model="pdfTemplate.filename_pattern"
+              class="flex-1"
+              :mentions="filenameVariables"
+              name="filename_pattern"
+              label="Filename"
+              size="sm"
+              placeholder="e.g. Form Name - Submission ID"
+            />
+            <span class="pb-2 text-sm font-mono text-neutral-400 dark:text-neutral-500 select-none">.pdf</span>
+          </div>
+          <p class="mt-1 text-xs text-neutral-400 dark:text-neutral-500">
+            Use <span class="font-mono">@</span> to insert variables
+          </p>
+        </div>
 
         <!-- Remove Branding -->
         <ToggleSwitchInput
@@ -178,6 +187,7 @@ import { formsApi } from '~/api/forms'
 import EditableTag from '~/components/app/EditableTag.vue'
 import TrackClick from '~/components/global/TrackClick.vue'
 import ProTag from '~/components/app/ProTag.vue'
+import MentionInput from '~/components/forms/heavy/MentionInput.vue'
 
 const emit = defineEmits(['go-back', 'save-pdf-template'])
 
@@ -195,6 +205,12 @@ defineShortcuts({
 const crisp = useCrisp()
 
 const settingsModal = ref(false)
+
+const filenameVariables = [
+  { id: 'form_name', name: 'Form Name', type: 'text' },
+  { id: 'submission_id', name: 'Submission ID', type: 'text' },
+  { id: 'date', name: 'Date', type: 'text' },
+]
 
 // Preview PDF
 const previewPdf = async () => {
