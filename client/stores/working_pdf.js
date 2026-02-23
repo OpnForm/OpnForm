@@ -64,7 +64,7 @@ export const useWorkingPdfStore = defineStore("working_pdf", {
     formFields() {
       if (!this.form?.properties) return []
       return this.form.properties
-        .filter(p => !p.hidden)
+        .filter(p => !p.hidden && !p.type.startsWith('nf-'))
         .map(p => ({
           id: p.id,
           name: p.name,
@@ -205,8 +205,7 @@ export const useWorkingPdfStore = defineStore("working_pdf", {
     // Get zone label for display
     getZoneLabel(zone) {
       if (zone.static_text !== undefined) {
-        const text = zone.static_text || 'Empty text'
-        return text.length > 20 ? text.substring(0, 20) + '...' : text
+        return 'Static Text'
       }
       const allFields = [...this.formFields, ...this.specialFields]
       const field = allFields.find(f => f.id === zone.field_id)
