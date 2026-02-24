@@ -37,7 +37,8 @@
         <PdfLeftSidebar />
 
         <div
-          class="flex-1 overflow-x-auto overflow-y-auto"
+          ref="centerScrollContainer"
+          class="flex-1 overflow-x-auto overflow-y-auto pdf-editor-scroll-container"
           @click.self="pdfStore.setSelectedZone(null)"
         >
           <PdfZoneEditor />
