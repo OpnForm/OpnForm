@@ -2,69 +2,53 @@
   <div class="w-72 bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden">
     <!-- Add Zone -->
     <div class="p-4 border-b border-gray-200 dark:border-gray-700">
-      <div class="relative">
+      <UDropdownMenu
+        autofocus
+        :items="addZoneMenuItems"
+        :ui="{ content: 'w-(--reka-dropdown-menu-trigger-width) min-w-56 max-h-80' }"
+        arrow
+      >
+        <template #content-top>
+          <div
+            v-if="formFields.length"
+            class="p-2 border-b border-gray-100 dark:border-gray-700"
+          >
+            <UInput
+              ref="searchInput"
+              v-model="formFieldsSearch"
+              variant="outline"
+              class="w-full"
+              placeholder="Search form fields..."
+              icon="i-heroicons-magnifying-glass-solid"
+              :ui="{ trailing: 'pe-1' }"
+              @click.stop
+              @keydown.stop
+            >
+              <template v-if="formFieldsSearch?.length" #trailing>
+                <UButton
+                  color="neutral"
+                  variant="link"
+                  size="sm"
+                  icon="i-lucide-circle-x"
+                  aria-label="Clear"
+                  title="Clear"
+                  @click="formFieldsSearch = ''"
+                />
+              </template>
+            </UInput>
+          </div>
+        </template>
         <UButton
           color="primary"
           variant="soft"
+          size="lg"
           icon="i-heroicons-plus"
           block
-          @click="pdfStore.setShowAddZonePopover(!showAddZonePopover)"
+          trailing-icon="i-heroicons-chevron-down"
         >
           Add Zone
         </UButton>
-        
-        <!-- Field Selection Popover -->
-        <div
-          v-if="showAddZonePopover"
-          class="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-10"
-        >
-          <div class="p-2 border-b border-gray-100 dark:border-gray-700">
-            <p class="text-xs text-gray-500 dark:text-gray-400 font-medium">
-              Select field to map
-            </p>
-          </div>
-          <div class="max-h-64 overflow-y-auto p-1">
-            <!-- Form fields -->
-            <template v-if="formFields.length">
-              <p class="text-xs text-gray-400 dark:text-gray-500 px-2 py-1.5 font-medium">
-                Form Fields
-              </p>
-              <button
-                v-for="field in formFields"
-                :key="field.id"
-                class="w-full text-left px-3 py-2 text-sm rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                @click="addZoneWithField(field)"
-              >
-                {{ field.name }}
-              </button>
-            </template>
-            
-            <!-- Special fields -->
-            <p class="text-xs text-gray-400 dark:text-gray-500 px-2 py-1.5 font-medium mt-1">
-              Special Fields
-            </p>
-            <button
-              v-for="field in specialFields"
-              :key="field.id"
-              class="w-full text-left px-3 py-2 text-sm rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-400"
-              @click="addZoneWithField(field)"
-            >
-              {{ field.name }}
-            </button>
-            
-            <!-- Static text -->
-            <div class="border-t border-gray-100 dark:border-gray-700 mt-1 pt-1">
-              <button
-                class="w-full text-left px-3 py-2 text-sm rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors text-blue-600 dark:text-blue-400 flex items-center gap-2"
-                @click="addZoneWithField()"
-              >
-                <UIcon name="i-heroicons-pencil" class="w-4 h-4" />
-                Static Text
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+      </UDropdownMenu>
     </div>
 
     <!-- Zones List -->
@@ -212,7 +196,6 @@
 const pdfStore = useWorkingPdfStore()
 
 const { 
-  showAddZonePopover,
   currentPageZones,
   selectedZone,
   formFields,
@@ -225,6 +208,52 @@ const {
   deleteSelectedZone,
   getZoneLabel,
 } = pdfStore
+
+const formFieldsSearch = ref('')
+
+const filteredFormFields = computed(() => {
+  const q = formFieldsSearch.value.trim().toLowerCase()
+  if (!q) return formFields.value
+  return formFields.value.filter((f) => f.name.toLowerCase().includes(q))
+})
+
+const addZoneMenuItems = computed(() => {
+  const items = []
+
+  if (formFields.value.length) {
+    const formFieldItems = [
+      { type: 'label', label: 'Form Fields' },
+      ...filteredFormFields.value.map((field) => ({
+        label: field.name,
+        onSelect: () => addZoneWithField(field),
+      })),
+    ]
+    if (filteredFormFields.value.length) {
+      items.push(formFieldItems)
+    } else {
+      items.push([
+        { type: 'label', label: 'Form Fields' },
+        { type: 'label', label: `No fields match "${formFieldsSearch.value}"` },
+      ])
+    }
+  }
+
+  items.push([
+    { type: 'label', label: 'Special Fields' },
+    ...specialFields.value.map((field) => ({
+      label: field.name,
+      onSelect: () => addZoneWithField(field),
+    })),
+  ])
+
+  items.push([{
+    label: 'Static Text',
+    icon: 'i-heroicons-pencil',
+    onSelect: () => addZoneWithField(),
+  }])
+
+  return items
+})
 
 const selectedZoneLabel = computed(() => {
   if (!selectedZone.value) return ''
