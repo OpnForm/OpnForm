@@ -14,8 +14,6 @@ use setasign\Fpdi\PdfParser\CrossReference\CrossReferenceException;
 
 class PdfGeneratorService
 {
-    private const MAX_REMOTE_IMAGE_BYTES = 10 * 1024 * 1024; // 10MB
-
     // Use a consistent temp folder for lifecycle management
     private const TEMP_FOLDER = 'tmp/pdf-output';
 
@@ -38,7 +36,7 @@ class PdfGeneratorService
         $submissionData = $this->getFormattedSubmissionData($form, $submission);
 
         // Check if branding should be added
-        $addBranding = !$template->remove_branding;
+        $addBranding = !($template->remove_branding && $form->is_pro);
 
         // Generate the PDF
         $pdfContent = $this->generatePdfContent($template, $zoneMappings, $submissionData, $addBranding);

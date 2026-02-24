@@ -22,7 +22,8 @@ class PdfZoneRenderer
 
     public function __construct(
         private ?Form $form = null
-    ) {}
+    ) {
+    }
 
     /**
      * Render zone content (text or image) into the PDF.
