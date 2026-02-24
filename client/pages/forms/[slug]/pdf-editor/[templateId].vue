@@ -46,13 +46,6 @@
 
         <PdfRightSidebar />
       </div>
-
-      <!-- Click outside to close popover -->
-      <div
-        v-if="showAddZonePopover"
-        class="fixed inset-0 z-0"
-        @click="pdfStore.setShowAddZonePopover(false)"
-      />
     </template>
   </div>
 </template>
@@ -114,8 +107,7 @@ onUnmounted(() => {
 
 // Store state bindings using storeToRefs for reactivity
 const { 
-  content: pdfTemplate,
-  showAddZonePopover,
+  content: pdfTemplate
 } = storeToRefs(pdfStore)
 
 // Save template

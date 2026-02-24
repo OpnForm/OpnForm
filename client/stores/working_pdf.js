@@ -22,7 +22,6 @@ export const useWorkingPdfStore = defineStore("working_pdf", {
     // Editor state
     selectedZoneId: null,
     currentPage: 1,
-    showAddZonePopover: false,
     zoomScale: DEFAULT_ZOOM_SCALE,
     
     // Save state
@@ -140,11 +139,6 @@ export const useWorkingPdfStore = defineStore("working_pdf", {
       this.selectedZoneId = zoneId
     },
 
-    // Toggle add zone popover
-    setShowAddZonePopover(show) {
-      this.showAddZonePopover = show
-    },
-
     // Set saving state
     setSaving(saving) {
       this.saving = saving
@@ -200,7 +194,6 @@ export const useWorkingPdfStore = defineStore("working_pdf", {
         : { ...baseZone, static_text: '' }
       this.addZone(newZone)
       this.selectedZoneId = newZone.id
-      this.showAddZonePopover = false
     },
 
     // Delete selected zone
@@ -321,7 +314,6 @@ export const useWorkingPdfStore = defineStore("working_pdf", {
       this.form = null
       this.selectedZoneId = null
       this.currentPage = 1
-      this.showAddZonePopover = false
       this.zoomScale = DEFAULT_ZOOM_SCALE
       this.saving = false
       this.removedPagesForSave = []
