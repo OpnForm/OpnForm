@@ -54,6 +54,14 @@ export const useWorkingPdfStore = defineStore("working_pdf", {
       return this.content.zone_mappings.filter(z => z.page === this.currentPage)
     },
 
+    // Get zones for a specific page
+    zonesForPage() {
+      return (pageNum) => {
+        if (!this.content?.zone_mappings) return []
+        return this.content.zone_mappings.filter(z => z.page === pageNum)
+      }
+    },
+
     // Get selected zone object
     selectedZone() {
       if (!this.selectedZoneId || !this.content?.zone_mappings) return null
