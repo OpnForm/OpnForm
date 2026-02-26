@@ -1,54 +1,58 @@
 <template>
   <div class="max-w-5xl mx-auto space-y-6">
-    <!-- Header & Actions -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-      <div>
-        <h2 class="text-2xl font-bold text-neutral-900">
-          Summary
-        </h2>
-        <p class="text-neutral-500 mt-1">
-          Overview of your form submissions and statistics
-        </p>
-      </div>
+    <PageSection
+      title="Summary"
+      description="Overview of your form submissions and statistics"
+    >
+      <template #actions>
+        <div class="flex items-center gap-2">
+          <UButton
+            color="neutral"
+            variant="outline"
+            icon="i-heroicons-arrow-path"
+            :loading="isFetching"
+            @click="refetch"
+          />
+          <DateInput
+            :form="filterForm"
+            size="sm"
+            name="date_range"
+            wrapper-class="mb-0"
+            :date-range="true"
+            :disable-future-dates="true"
+            class="!mb-0 w-full sm:w-auto"
+          />
+        </div>
+      </template>
 
-      <div class="flex items-center align-middle gap-2">
-        <UButton
-          color="neutral"
-          variant="outline"
-          icon="i-heroicons-arrow-path" 
-          :loading="isFetching"
-          @click="refetch"
-        />
-        <!-- Date Range Picker -->
-        <DateInput
-          :form="filterForm"
-          size="sm"
-          name="date_range"
-          wrapper-class="mb-0"
-          :date-range="true"
-          :disable-future-dates="true"
-          class="!mb-0 w-full sm:w-auto"
-        />
-      </div>
-    </div>
-
-    <!-- Stats Overview -->
-    <div v-if="summaryData" class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-      <div class="bg-white p-4 rounded-xl border border-neutral-200 shadow-sm">
-        <div class="text-sm font-medium text-neutral-500 mb-1">Total Submissions</div>
-        <div class="text-3xl font-bold text-neutral-900">{{ summaryData.total_submissions }}</div>
-      </div>
-      
-      <!-- Placeholder for future stats like Completion Rate, Avg Time -->
-      <div class="bg-white p-4 rounded-xl border border-neutral-200 shadow-sm opacity-50">
-        <div class="text-sm font-medium text-neutral-500 mb-1">Completion Rate</div>
-        <div class="text-3xl font-bold text-neutral-900">-</div>
-      </div>
-      <div class="bg-white p-4 rounded-xl border border-neutral-200 shadow-sm opacity-50">
-        <div class="text-sm font-medium text-neutral-500 mb-1">Avg. Completion Time</div>
-        <div class="text-3xl font-bold text-neutral-900">-</div>
-      </div>
-    </div>
+      <div class="space-y-6">
+        <!-- Stats Overview -->
+        <div v-if="summaryData" class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <DashboardPanel padding="sm">
+            <div class="text-sm font-medium text-neutral-500 mb-1">
+              Total Submissions
+            </div>
+            <div class="text-3xl font-bold text-neutral-900">
+              {{ summaryData.total_submissions }}
+            </div>
+          </DashboardPanel>
+          <DashboardPanel padding="sm" class="opacity-50">
+            <div class="text-sm font-medium text-neutral-500 mb-1">
+              Completion Rate
+            </div>
+            <div class="text-3xl font-bold text-neutral-900">
+              -
+            </div>
+          </DashboardPanel>
+          <DashboardPanel padding="sm" class="opacity-50">
+            <div class="text-sm font-medium text-neutral-500 mb-1">
+              Avg. Completion Time
+            </div>
+            <div class="text-3xl font-bold text-neutral-900">
+              -
+            </div>
+          </DashboardPanel>
+        </div>
 
     <!-- Filters Bar -->
     <div class="flex items-center justify-between py-3 border-b border-neutral-200">
@@ -73,9 +77,17 @@
 
     <!-- Loading State -->
     <div v-if="isLoading" class="space-y-6">
-      <USkeleton class="h-32 w-full rounded-xl" />
+      <DashboardPanel padding="sm">
+        <USkeleton class="h-32 w-full" />
+      </DashboardPanel>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <USkeleton v-for="i in 4" :key="i" class="h-64 w-full rounded-xl" />
+        <DashboardPanel
+          v-for="i in 4"
+          :key="i"
+          padding="sm"
+        >
+          <USkeleton class="h-64 w-full" />
+        </DashboardPanel>
       </div>
     </div>
 
@@ -90,18 +102,12 @@
     />
 
     <!-- Empty State -->
-    <div
+    <DashboardEmptyState
       v-else-if="!summaryData?.fields?.length"
-      class="flex flex-col items-center justify-center py-16 bg-neutral-50 rounded-xl border-2 border-dashed border-neutral-200"
-    >
-      <div class="w-16 h-16 bg-neutral-100 rounded-full flex items-center justify-center mb-4">
-        <UIcon name="i-heroicons-document-chart-bar" class="w-8 h-8 text-neutral-400" />
-      </div>
-      <h3 class="text-lg font-medium text-neutral-900 mb-1">No data available</h3>
-      <p class="text-neutral-500 max-w-sm text-center">
-        There are no submissions to display for the selected period.
-      </p>
-    </div>
+      icon="i-heroicons-document-chart-bar"
+      title="No data available"
+      description="There are no submissions to display for the selected period."
+    />
 
     <!-- Summary Content -->
     <div v-else class="space-y-6">
@@ -131,10 +137,15 @@
         />
       </div>
     </div>
+      </div>
+    </PageSection>
   </div>
 </template>
 
 <script setup>
+import DashboardEmptyState from "~/components/dashboard/states/DashboardEmptyState.vue"
+import DashboardPanel from "~/components/dashboard/DashboardPanel.vue"
+import PageSection from "~/components/dashboard/PageSection.vue"
 import SummaryFieldCard from "~/components/open/forms/components/summary/SummaryFieldCard.vue"
 import { useFormSummary } from "~/composables/query/forms/useFormSummary"
 
