@@ -1,18 +1,21 @@
 <template>
-  <div class="p-4">
-    <div class="w-full max-w-4xl mx-auto">
-      <VTransition name="fade">
+  <PageContainer spacing="lg">
+    <PageSection
+      title="Integrations"
+      description="Connect your form to third-party apps and services."
+    >
+      <DashboardLoadingBlock :loading="isIntegrationsLoading || !isSuccess">
+        <template #skeleton>
+          <div class="space-y-4">
+            <IntegrationCardSkeleton />
+            <IntegrationCardSkeleton />
+            <IntegrationCardSkeleton />
+          </div>
+        </template>
+
         <div
-          v-if="isIntegrationsLoading || !isSuccess"
-          class="my-6 space-y-2"
-        >
-          <IntegrationCardSkeleton />
-          <IntegrationCardSkeleton />
-          <IntegrationCardSkeleton />
-        </div>
-        <div
-          v-else-if="formIntegrationsList.length"
-          class="my-6 space-y-2"
+          v-if="formIntegrationsList.length"
+          class="space-y-4"
         >
           <IntegrationCard
             v-for="row in formIntegrationsList"
@@ -21,29 +24,19 @@
             :form="form"
           />
         </div>
-        <div
+        <DashboardEmptyState
           v-else
-          class="text-center py-12 px-6 bg-neutral-50 dark:bg-neutral-900/50 rounded-lg border-2 border-dashed border-neutral-300 dark:border-neutral-700 mt-6"
-        >
-          <UIcon
-            name="i-heroicons-puzzle-piece-20-solid"
-            class="mx-auto h-12 w-12 text-neutral-400"
-          />
-          <h3 class="mt-2 text-lg font-semibold text-neutral-900 dark:text-white">
-            No integrations yet
-          </h3>
-          <p class="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-            Get started by connecting your form to a third-party app below.
-          </p>
-        </div>
-      </VTransition>
+          icon="i-heroicons-puzzle-piece-20-solid"
+          title="No integrations yet"
+          description="Get started by connecting your form to a third-party app below."
+        />
+      </DashboardLoadingBlock>
+    </PageSection>
 
-      <h1
-        id="add-integration-title"
-        class="font-semibold mt-8 text-xl"
-      >
-        Add a new integration
-      </h1>
+    <PageSection
+      title="Add a new integration"
+      description="Choose from the available integrations below to connect your form."
+    >
       <div
         v-for="(section, sectionName) in sectionsList"
         :key="sectionName"
@@ -61,20 +54,25 @@
           />
         </div>
       </div>
-      <IntegrationModal
-        v-if="form && selectedIntegrationKey && selectedIntegration"
-        :form="form"
-        :integration="selectedIntegration"
-        :integration-key="selectedIntegrationKey"
-        :show="showIntegrationModal"
-        @close="closeIntegrationModal"
-      />
-    </div>
-  </div>
+    </PageSection>
+
+    <IntegrationModal
+      v-if="form && selectedIntegrationKey && selectedIntegration"
+      :form="form"
+      :integration="selectedIntegration"
+      :integration-key="selectedIntegrationKey"
+      :show="showIntegrationModal"
+      @close="closeIntegrationModal"
+    />
+  </PageContainer>
 </template>
 
 <script setup>
 import { computed } from "vue"
+import PageContainer from "~/components/dashboard/PageContainer.vue"
+import PageSection from "~/components/dashboard/PageSection.vue"
+import DashboardLoadingBlock from "~/components/dashboard/states/DashboardLoadingBlock.vue"
+import DashboardEmptyState from "~/components/dashboard/states/DashboardEmptyState.vue"
 import IntegrationModal from "~/components/open/integrations/components/IntegrationModal.vue"
 import IntegrationCard from "~/components/open/integrations/components/IntegrationCard"
 import IntegrationCardSkeleton from '~/components/open/integrations/components/IntegrationCardSkeleton.vue'

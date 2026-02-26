@@ -15,6 +15,8 @@ use App\Http\Controllers\Forms\Integration\FormIntegrationsController;
 use App\Http\Controllers\Forms\Integration\FormIntegrationsEventController;
 use App\Http\Controllers\Forms\Integration\FormZapierWebhookController;
 use App\Http\Controllers\Forms\PublicFormController;
+use App\Http\Controllers\Pdf\PdfTemplateController;
+use App\Http\Controllers\Pdf\PdfGenerateController;
 use App\Http\Controllers\Settings\OAuthProviderController;
 use App\Http\Controllers\Settings\PasswordController;
 use App\Http\Controllers\Settings\ProfileController;
@@ -252,6 +254,47 @@ Route::group(['middleware' => 'auth.multi'], function () {
                 '/{form}/integrations/{integrationid}/events',
                 [FormIntegrationsEventController::class, 'index']
             )->name('integrations.events');
+
+            // PDF Templates
+            Route::prefix('/{form}/pdf-templates')->name('pdf-templates.')->group(function () {
+                Route::get('/', [PdfTemplateController::class, 'index'])->name('index');
+                Route::post('/', [PdfTemplateController::class, 'store'])->name('store');
+                Route::post('/from-scratch', [PdfTemplateController::class, 'storeFromScratch'])->name('store-from-scratch');
+                Route::get('/{pdfTemplate}', [PdfTemplateController::class, 'show'])->name('show');
+                Route::put('/{pdfTemplate}', [PdfTemplateController::class, 'update'])->name('update');
+                Route::delete('/{pdfTemplate}', [PdfTemplateController::class, 'destroy'])->name('destroy');
+                Route::get('/{pdfTemplate}/download', [PdfTemplateController::class, 'download'])->name('download');
+
+                // Get signed URL for submission PDF download
+                Route::get(
+                    '/{pdfTemplate}/submissions/{submission_id}/signed-url',
+                    [PdfGenerateController::class, 'getTemplateSignedUrl']
+                )->name('submission.signed-url');
+
+                // Get signed URL for preview PDF (admin)
+                Route::get(
+                    '/{pdfTemplate}/preview/signed-url',
+                    [PdfGenerateController::class, 'getPreviewSignedUrl']
+                )->name('preview.signed-url');
+            });
+
+            // Template-based PDF download (signed, no auth required)
+            Route::get(
+                '/{form}/pdf-templates/{pdfTemplate}/submissions/{submission_id}/download',
+                [PdfGenerateController::class, 'downloadByTemplate']
+            )
+                ->middleware('signed')
+                ->withoutMiddleware(['auth.multi'])
+                ->name('pdf-templates.download-submission');
+
+            // Template-based PDF preview (signed, no auth required)
+            Route::get(
+                '/{form}/pdf-templates/{pdfTemplate}/preview',
+                [PdfGenerateController::class, 'previewBySignature']
+            )
+                ->middleware('signed')
+                ->withoutMiddleware(['auth.multi'])
+                ->name('pdf-templates.preview-signed');
         });
     });
 

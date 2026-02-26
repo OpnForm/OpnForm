@@ -1,8 +1,33 @@
 <template>
-    <div class="w-full">
-      <VTransition name="fade">
+  <div class="w-full">
+    <DashboardLoadingBlock :loading="!form">
+      <template #skeleton>
+        <div class="overflow-hidden mt-4">
+          <div class="bg-neutral-50 border-y border-neutral-200 px-4 py-3">
+            <div class="flex gap-4">
+              <USkeleton class="h-4 w-32" />
+              <USkeleton class="h-4 w-24" />
+              <USkeleton class="h-4 w-28" />
+              <USkeleton class="h-4 w-20" />
+            </div>
+          </div>
+          <div
+            v-for="opacity in rowOpacities"
+            :key="opacity"
+            class="border-b border-neutral-200 px-4 py-3"
+            :class="opacity"
+          >
+            <div class="flex gap-4 items-center">
+              <USkeleton class="h-4 w-32" />
+              <USkeleton class="h-4 w-24" />
+              <USkeleton class="h-4 w-28" />
+              <USkeleton class="h-4 w-20" />
+            </div>
+          </div>
+        </div>
+      </template>
+
       <OpenTable
-        v-if="form"
         ref="table"
         class="border-b"
         :data="submissions"
@@ -14,34 +39,12 @@
         @page-change="handlePageChange"
         @refresh="handleRefresh"
       />
-
-      <!-- Submissions Table Skeleton -->
-      <div v-else class="overflow-hidden mt-4">
-        <!-- Table Header Skeleton -->
-        <div class="bg-neutral-50 border-y border-neutral-200 px-4 py-3">
-          <div class="flex gap-4">
-            <USkeleton class="h-4 w-32" />
-            <USkeleton class="h-4 w-24" />
-            <USkeleton class="h-4 w-28" />
-            <USkeleton class="h-4 w-20" />
-          </div>
-        </div>
-        
-        <!-- Table Rows Skeleton -->
-        <div v-for="i in ['opacity-100', 'opacity-90', 'opacity-80', 'opacity-70', 'opacity-60', 'opacity-50', 'opacity-40', 'opacity-30', 'opacity-20', 'opacity-10']" :key="i" class="border-b border-neutral-200 px-4 py-3" :class="i">
-          <div class="flex gap-4 items-center">
-            <USkeleton class="h-4 w-32" />
-            <USkeleton class="h-4 w-24" />
-            <USkeleton class="h-4 w-28" />
-            <USkeleton class="h-4 w-20" />
-          </div>
-        </div>
-      </div>
-      </VTransition>
-    </div>
+    </DashboardLoadingBlock>
+  </div>
 </template>
 
 <script setup>
+import DashboardLoadingBlock from '~/components/dashboard/states/DashboardLoadingBlock.vue'
 import OpenTable from '~/components/open/tables/OpenTable.vue'
 import { useFormSubmissions } from '~/composables/query/forms/useFormSubmissions'
 
@@ -50,6 +53,11 @@ const props = defineProps({
 })
 
 const table = ref(null)
+
+const rowOpacities = [
+  'opacity-100', 'opacity-90', 'opacity-80', 'opacity-70', 'opacity-60',
+  'opacity-50', 'opacity-40', 'opacity-30', 'opacity-20', 'opacity-10',
+]
 
 // Replace all the recordStore logic with this:
 const { paginatedList } = useFormSubmissions()
