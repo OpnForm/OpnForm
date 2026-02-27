@@ -100,12 +100,11 @@ class FormExportService
 
         // Write header row (clean column names)
         $headers = $this->cleanColumnNames(array_keys($rows[0]));
-        fputcsv($output, $headers, ',', '"', '');
+        fputcsv($output, $headers);
 
-        // Write data rows (sanitize values to prevent newlines breaking Excel/parsers)
+        // Write data rows
         foreach ($rows as $row) {
-            $sanitizedRow = $this->sanitizeRowForCsv($row);
-            fputcsv($output, array_values($sanitizedRow), ',', '"', '');
+            fputcsv($output, array_values($row));
         }
 
         rewind($output);
@@ -113,22 +112,6 @@ class FormExportService
         fclose($output);
 
         return $csvContent;
-    }
-
-    /**
-     * Sanitize row values for CSV export.
-     * Replaces newlines with spaces to prevent multi-line fields that break
-     * Excel, Google Sheets, and other parsers that don't handle RFC 4180 multi-line fields.
-     */
-    private function sanitizeRowForCsv(array $row): array
-    {
-        return collect($row)->map(function ($value) {
-            if (! is_string($value)) {
-                return $value;
-            }
-
-            return preg_replace('/\r\n|\r|\n/', ' ', $value);
-        })->toArray();
     }
 
     /**
