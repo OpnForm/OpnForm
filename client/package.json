@@ -84,6 +84,7 @@
     "js-sha256": "^0.10.1",
     "libphonenumber-js": "^1.11.12",
     "object-to-formdata": "^4.5.1",
+    "pdfjs-dist": "^5.4.530",
     "pinia": "^3.0.2",
     "prismjs": "^1.29.0",
     "qrcode": "^1.5.4",
