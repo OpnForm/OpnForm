@@ -74,7 +74,7 @@
               <img
                 :src="zone.static_image"
                 alt=""
-                class="max-w-full max-h-full object-contain"
+                class="w-full h-full"
               >
             </div>
             <div
