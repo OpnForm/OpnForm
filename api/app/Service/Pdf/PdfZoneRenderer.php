@@ -63,8 +63,8 @@ class PdfZoneRenderer
                 return;
             }
 
-            $extension = pathinfo($imageUrl, PATHINFO_EXTENSION) ?: 'png';
-            $tempImage = tempnam(sys_get_temp_dir(), 'pdf_img_') . '.' . $extension;
+            // Write content to a temp file without extension first, then detect type
+            $tempImage = tempnam(sys_get_temp_dir(), 'pdf_img_');
             file_put_contents($tempImage, $imageContent);
 
             $imageInfo = @getimagesize($tempImage);
@@ -72,6 +72,23 @@ class PdfZoneRenderer
                 @unlink($tempImage);
                 return;
             }
+
+            // Map MIME type to extension FPDF understands
+            $mimeToExt = [
+                'image/jpeg' => 'jpg',
+                'image/png' => 'png',
+                'image/gif' => 'gif',
+                'image/webp' => 'png', // convert webp below
+            ];
+            $ext = $mimeToExt[$imageInfo['mime'] ?? ''] ?? null;
+            if (!$ext) {
+                @unlink($tempImage);
+                return;
+            }
+
+            $typedTemp = $tempImage . '.' . $ext;
+            rename($tempImage, $typedTemp);
+            $tempImage = $typedTemp;
 
             $pdf->Image($tempImage, $x, $y, $width, $height);
 
@@ -211,9 +228,29 @@ class PdfZoneRenderer
         if (!is_string($value)) {
             return false;
         }
+
         if (filter_var($value, FILTER_VALIDATE_URL) !== false) {
-            return preg_match('/\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i', $value);
+            $parts = parse_url($value);
+            $path = $parts['path'] ?? '';
+
+            if (preg_match('/\.(jpg|jpeg|png|gif|webp)$/i', $path)) {
+                return true;
+            }
+
+            if (str_contains($path, '/assets/')) {
+                return true;
+            }
+
+            $query = $parts['query'] ?? '';
+            parse_str($query, $queryParams);
+            $format = strtolower((string) ($queryParams['fm'] ?? $queryParams['format'] ?? ''));
+            if (in_array($format, ['jpg', 'jpeg', 'png', 'gif', 'webp'], true)) {
+                return true;
+            }
+
+            return false;
         }
+
         return preg_match('/\.(jpg|jpeg|png|gif|webp)$/i', $value);
     }
 
