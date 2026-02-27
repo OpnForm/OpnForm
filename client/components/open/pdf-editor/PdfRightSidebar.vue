@@ -84,7 +84,7 @@
           </div>
         </div>
 
-        <!-- Field/Static Text -->
+        <!-- Field/Static Text/Image -->
         <RichTextAreaInput
           v-if="selectedZone.static_text !== undefined"
           v-model="selectedZone.static_text"
@@ -93,6 +93,13 @@
           placeholder="Enter text..."
           size="sm"
           :editor-options="richTextOptions"
+        />
+        <ImageInput
+          v-else-if="selectedZone.static_image !== undefined"
+          v-model="selectedZone.static_image"
+          name="static_image"
+          label="Image"
+          size="sm"
         />
         <SelectInput
           v-else
@@ -103,39 +110,41 @@
           size="sm"
         />
 
-        <!-- Font Size -->
-        <TextInput
-          v-model="selectedZone.font_size"
-          name="font_size"
-          label="Font Size (px)"
-          native-type="number"
-          :min="6"
-          :max="72"
-          size="sm"
-          class="mt-4"
-        />
+        <!-- Font Size (hidden for text and image zones) -->
+        <template v-if="selectedZone.static_text === undefined && selectedZone.static_image === undefined">
+          <TextInput
+            v-model="selectedZone.font_size"
+            name="font_size"
+            label="Font Size (px)"
+            native-type="number"
+            :min="6"
+            :max="72"
+            size="sm"
+            class="mt-4"
+          />
 
-        <!-- Font Color -->
-        <div class="mt-4">
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Font Color
-          </label>
-          <div class="flex items-center gap-2">
-            <input
-              v-model="selectedZone.font_color"
-              type="color"
-              class="h-9 w-9 rounded-lg border border-gray-300 dark:border-gray-600 cursor-pointer p-0.5"
-            >
-            <TextInput
-              v-model="selectedZone.font_color"
-              name="font_color"
-              placeholder="#000000"
-              size="sm"
-              :hide-field-name="true"
-              wrapper-class="flex-1"
-            />
+          <!-- Font Color -->
+          <div class="mt-4">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Font Color
+            </label>
+            <div class="flex items-center gap-2">
+              <input
+                v-model="selectedZone.font_color"
+                type="color"
+                class="h-9 w-9 rounded-lg border border-gray-300 dark:border-gray-600 cursor-pointer p-0.5"
+              >
+              <TextInput
+                v-model="selectedZone.font_color"
+                name="font_color"
+                placeholder="#000000"
+                size="sm"
+                :hide-field-name="true"
+                wrapper-class="flex-1"
+              />
+            </div>
           </div>
-        </div>
+        </template>
       </div>
 
       <!-- No Zone Selected / Zones List -->
@@ -193,6 +202,8 @@
 </template>
 
 <script setup>
+import ImageInput from '~/components/forms/heavy/ImageInput.vue'
+
 const pdfStore = useWorkingPdfStore()
 
 const { 
@@ -249,7 +260,11 @@ const addZoneMenuItems = computed(() => {
   items.push([{
     label: 'Static Text',
     icon: 'i-heroicons-pencil',
-    onSelect: () => addZoneWithField(),
+    onSelect: () => addZoneWithField(null, 'static_text'),
+  }, {
+    label: 'Image',
+    icon: 'i-heroicons-photo',
+    onSelect: () => addZoneWithField(null, 'static_image'),
   }])
 
   return items

@@ -66,6 +66,17 @@
               class="w-full h-full overflow-hidden leading-tight pointer-events-none select-none"
               v-html="zone.static_text"
             />
+            <!-- In-canvas image preview (static image zones only) -->
+            <div
+              v-else-if="zone.static_image !== undefined && zone.static_image"
+              class="w-full h-full overflow-hidden pointer-events-none select-none flex items-center justify-center bg-gray-100 dark:bg-gray-700"
+            >
+              <img
+                :src="zone.static_image"
+                alt=""
+                class="max-w-full max-h-full object-contain"
+              >
+            </div>
             <div
               class="absolute bottom-0 right-0 w-3 h-3 bg-blue-500 cursor-se-resize"
               @mousedown.stop="startResizing($event, zone)"
