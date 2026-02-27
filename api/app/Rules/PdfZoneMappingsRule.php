@@ -79,12 +79,24 @@ class PdfZoneMappingsRule implements ValidationRule
             }
         }
 
-        // Either field_id or static_text must be present
+        // Either field_id, static_text, or static_image must be present (key existence defines zone type)
         $hasFieldId = isset($zone['field_id']) && $zone['field_id'] !== '';
-        $hasStaticText = isset($zone['static_text']) && $zone['static_text'] !== '';
+        $hasStaticText = array_key_exists('static_text', $zone);
+        $hasStaticImage = array_key_exists('static_image', $zone);
 
-        if (!$hasFieldId && !$hasStaticText) {
-            $this->errors[] = "Zone {$index}: must have either 'field_id' or 'static_text'";
+        if (!$hasFieldId && !$hasStaticText && !$hasStaticImage) {
+            $this->errors[] = "Zone {$index}: must have 'field_id', 'static_text', or 'static_image'";
+        }
+
+        // static_text and static_image must not be empty when present
+        if ($hasStaticText) {
+            $text = trim(strip_tags((string) ($zone['static_text'] ?? '')));
+            if ($text === '') {
+                $this->errors[] = "Static text should not be empty";
+            }
+        }
+        if ($hasStaticImage && (string) ($zone['static_image'] ?? '') === '') {
+            $this->errors[] = "Static image should not be empty";
         }
 
         // If field_id is set and we have valid IDs, validate it exists

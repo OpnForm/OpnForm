@@ -167,10 +167,13 @@ class PdfGeneratorService
      */
     private function addZoneContent(Fpdi $pdf, array $zone, array $submissionData, array $pageSize): void
     {
-        // Check for static text first (hardcoded content)
+        // Check for static content first (text or image)
         $staticText = $zone['static_text'] ?? null;
+        $staticImage = $zone['static_image'] ?? null;
         if (!empty($staticText)) {
             $value = $staticText;
+        } elseif (!empty($staticImage)) {
+            $value = $staticImage;
         } else {
             $fieldId = $zone['field_id'] ?? null;
             $value = $this->getFieldValue($fieldId, $submissionData);

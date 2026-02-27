@@ -177,8 +177,8 @@ export const useWorkingPdfStore = defineStore("working_pdf", {
       }
     },
 
-    // Add a new zone. Pass a field to map to that field, or omit/null for static text zone.
-    addZoneWithField(field = null) {
+    // Add a new zone.
+    addZoneWithField(field = null, staticFieldKey = null) {
       const baseZone = {
         id: generateUUID(),
         page: this.currentPage,
@@ -189,9 +189,7 @@ export const useWorkingPdfStore = defineStore("working_pdf", {
         font_size: 12,
         font_color: '#000000',
       }
-      const newZone = field
-        ? { ...baseZone, field_id: field.id }
-        : { ...baseZone, static_text: '' }
+      const newZone = field ? { ...baseZone, field_id: field.id } : { ...baseZone, [staticFieldKey]: '' }
       this.addZone(newZone)
       this.selectedZoneId = newZone.id
     },
@@ -207,6 +205,9 @@ export const useWorkingPdfStore = defineStore("working_pdf", {
     getZoneLabel(zone) {
       if (zone.static_text !== undefined) {
         return 'Static Text'
+      }
+      if (zone.static_image !== undefined) {
+        return 'Image'
       }
       const allFields = [...this.formFields, ...this.specialFields]
       const field = allFields.find(f => f.id === zone.field_id)
