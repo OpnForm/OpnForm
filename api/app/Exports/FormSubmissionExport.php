@@ -3,27 +3,22 @@
 namespace App\Exports;
 
 use Maatwebsite\Excel\Concerns\FromArray;
-use Maatwebsite\Excel\Concerns\WithHeadingRow;
+use Maatwebsite\Excel\Concerns\WithHeadings;
 
-class FormSubmissionExport implements FromArray, WithHeadingRow
+class FormSubmissionExport implements FromArray, WithHeadings
 {
     protected array $submissionData;
+    protected array $headings;
 
     public function __construct(array $submissionData)
     {
-        $headingRow = [];
-        $contentRow = [];
-        foreach ($submissionData as $i => $row) {
-            if ($i == 0) {
-                $headingRow[] = $this->cleanColumnNames(array_keys($row));
-            }
-            $contentRow[] = array_values($row);
-        }
+        $this->headings = empty($submissionData)
+            ? []
+            : $this->cleanColumnNames(array_keys($submissionData[0]));
 
-        $this->submissionData = [
-            $headingRow,
-            $contentRow,
-        ];
+        $this->submissionData = array_map(function ($row) {
+            return array_values($row);
+        }, $submissionData);
     }
 
     private function cleanColumnNames(array $columnNames): array
@@ -36,5 +31,10 @@ class FormSubmissionExport implements FromArray, WithHeadingRow
     public function array(): array
     {
         return $this->submissionData;
+    }
+
+    public function headings(): array
+    {
+        return $this->headings;
     }
 }
