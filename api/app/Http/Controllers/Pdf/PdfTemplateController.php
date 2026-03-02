@@ -220,9 +220,9 @@ class PdfTemplateController extends Controller
         } catch (CrossReferenceException $e) {
             // This exception is thrown for PDFs with unsupported compression (PDF 1.5+)
             throw new PdfNotSupportedException();
-        } catch (\Exception $e) {
-            // Default to 1 if we can't read the page count for other reasons
-            return 1;
+        } catch (\Throwable $e) {
+            // Fail closed so invalid/unreadable PDFs are rejected at upload time.
+            throw new PdfNotSupportedException();
         }
     }
 }
