@@ -3,6 +3,7 @@
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\OAuthController;
+use App\Http\Controllers\Auth\OidcLinkController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\Auth\UserController;
@@ -51,6 +52,7 @@ if (config('app.self_hosted')) {
 
 Route::group(['middleware' => 'auth.multi'], function () {
     Route::post('logout', [LoginController::class, 'logout'])->name('logout');
+    Route::post('auth/oidc/link', [OidcLinkController::class, 'link'])->name('oidc.link');
 
     // Versions
     Route::prefix('versions')->name('versions.')->group(function () {
@@ -344,6 +346,11 @@ Route::group(['middleware' => 'auth.multi'], function () {
         Route::post(
             'disable-two-factor-authentication',
             [\App\Http\Controllers\Admin\AdminController::class, 'disableTwoFactorAuthentication']
+        );
+
+        Route::post(
+            'clear-user-cache',
+            [\App\Http\Controllers\Admin\AdminController::class, 'clearUserCache']
         );
 
         Route::group(['prefix'  => 'billing'], function () {

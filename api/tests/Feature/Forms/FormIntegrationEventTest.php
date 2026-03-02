@@ -31,3 +31,34 @@ it('can fetch form integration events', function () {
         ->assertSuccessful()
         ->assertJsonCount(0);
 });
+
+it('prevents fetching another form integration events via mismatched form and integration ids', function () {
+    $victim = $this->actingAsProUser();
+    $victimWorkspace = $this->createUserWorkspace($victim);
+    $victimForm = $this->createForm($victim, $victimWorkspace);
+
+    $victimIntegrationResponse = $this->postJson(route('open.forms.integrations.create', $victimForm), [
+        'status' => 'active',
+        'integration_id' => 'webhook',
+        'logic' => null,
+        'data' => [
+            'webhook_url' => 'https://victim.example/webhook'
+        ]
+    ])->assertSuccessful();
+
+    $victimIntegrationId = $victimIntegrationResponse->json('form_integration.id');
+
+    \App\Models\Integration\FormIntegrationsEvent::create([
+        'integration_id' => $victimIntegrationId,
+        'status' => \App\Models\Integration\FormIntegrationsEvent::STATUS_SUCCESS,
+        'data' => ['message' => 'delivered']
+    ]);
+
+    $attacker = $this->createProUser();
+    $this->actingAs($attacker, 'api');
+    $attackerWorkspace = $this->createUserWorkspace($attacker);
+    $attackerForm = $this->createForm($attacker, $attackerWorkspace);
+
+    $this->getJson(route('open.forms.integrations.events', [$attackerForm, $victimIntegrationId]))
+        ->assertStatus(404);
+});

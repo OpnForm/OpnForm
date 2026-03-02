@@ -13,6 +13,7 @@ use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\Http\Request;
 use App\Rules\CssOnlyRule;
+use Stevebauman\Purify\Facades\Purify;
 
 /**
  * Abstract class to validate create/update forms
@@ -35,8 +36,15 @@ abstract class UserFormRequest extends \Illuminate\Foundation\Http\FormRequest
 
         if (isset($data['properties']) && is_array($data['properties'])) {
             $data['properties'] = array_map(function ($property) {
-                if (isset($property['help']) && is_string($property['help']) && strip_tags($property['help']) === '') {
-                    $property['help'] = null;
+                if (isset($property['name']) && is_string($property['name'])) {
+                    $property['name'] = trim(strip_tags($property['name']));
+                }
+
+                if (isset($property['help']) && is_string($property['help'])) {
+                    $property['help'] = Purify::clean($property['help']);
+                    if (strip_tags($property['help']) === '') {
+                        $property['help'] = null;
+                    }
                 }
                 return $property;
             }, $data['properties']);

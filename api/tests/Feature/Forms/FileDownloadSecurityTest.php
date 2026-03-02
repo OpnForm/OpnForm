@@ -2,6 +2,7 @@
 
 use App\Models\Forms\FormSubmission;
 use App\Service\Storage\FileUploadPathService;
+use App\Service\Storage\FilenameUrlEncoder;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
 
@@ -26,8 +27,10 @@ it('forces attachment download with safe headers for submission files', function
         'status' => FormSubmission::STATUS_COMPLETED,
     ]);
 
-    // Call signed file route (route is protected by 'signed' middleware)
-    $signedUrl = URL::signedRoute('open.forms.submissions.file', [$form->id, $fileName]);
+    // Call signed file route with encoded filename (as the new implementation does)
+    // See: https://github.com/OpnForm/OpnForm/issues/1024
+    $encodedFilename = FilenameUrlEncoder::encode($fileName);
+    $signedUrl = URL::signedRoute('open.forms.submissions.file', [$form->id, $encodedFilename]);
     $response = $this->get($signedUrl);
 
     $response->assertOk();

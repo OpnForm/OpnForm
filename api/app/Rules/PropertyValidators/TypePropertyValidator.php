@@ -62,7 +62,6 @@ class TypePropertyValidator implements PropertyValidatorInterface
         'checkbox' => [
             'use_toggle_switch' => ['type' => 'boolean'],
         ],
-
     ];
 
     /**

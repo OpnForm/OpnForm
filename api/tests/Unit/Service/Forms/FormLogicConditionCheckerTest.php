@@ -432,6 +432,80 @@ describe('FormLogicConditionChecker', function () {
             $condition['value']['operator'] = 'contains';
             expect(FormLogicConditionChecker::conditionsMet($condition, $formData))->toBeTrue();
         });
+
+        it('handles missing rows in field value for equals operator', function () {
+            // Reproduces issue #1026: when a matrix condition checks for a specific row
+            // but the user submission doesn't have that row yet, it should return false
+            // instead of throwing "Undefined array key" error
+            $condition = [
+                'value' => [
+                    'property_meta' => [
+                        'id' => 'matrix_field',
+                        'type' => 'matrix'
+                    ],
+                    'operator' => 'equals',
+                    'value' => ['15+ Jahre' => 'Option A', 'row2' => 'col2']
+                ]
+            ];
+
+            // User has only filled in one row, condition expects two rows
+            $formData = ['matrix_field' => ['row2' => 'col2']];
+            expect(FormLogicConditionChecker::conditionsMet($condition, $formData))->toBeFalse();
+
+            // User has no data for matrix field
+            $formData = ['matrix_field' => []];
+            expect(FormLogicConditionChecker::conditionsMet($condition, $formData))->toBeFalse();
+
+            // User has null value for matrix field
+            $formData = ['matrix_field' => null];
+            expect(FormLogicConditionChecker::conditionsMet($condition, $formData))->toBeFalse();
+        });
+
+        it('handles missing rows in field value for does_not_equal operator', function () {
+            $condition = [
+                'value' => [
+                    'property_meta' => [
+                        'id' => 'matrix_field',
+                        'type' => 'matrix'
+                    ],
+                    'operator' => 'does_not_equal',
+                    'value' => ['15+ Jahre' => 'Option A', 'row2' => 'col2']
+                ]
+            ];
+
+            // User has only filled in one row - they "do not equal" the condition
+            $formData = ['matrix_field' => ['row2' => 'col2']];
+            expect(FormLogicConditionChecker::conditionsMet($condition, $formData))->toBeTrue();
+
+            // User has no data for matrix field
+            $formData = ['matrix_field' => []];
+            expect(FormLogicConditionChecker::conditionsMet($condition, $formData))->toBeTrue();
+        });
+
+        it('handles missing rows in field value for contains operator', function () {
+            $condition = [
+                'value' => [
+                    'property_meta' => [
+                        'id' => 'matrix_field',
+                        'type' => 'matrix'
+                    ],
+                    'operator' => 'contains',
+                    'value' => ['15+ Jahre' => 'Option A', 'row2' => 'col2']
+                ]
+            ];
+
+            // User has one matching row - contains should return true
+            $formData = ['matrix_field' => ['row2' => 'col2']];
+            expect(FormLogicConditionChecker::conditionsMet($condition, $formData))->toBeTrue();
+
+            // User has no matching rows
+            $formData = ['matrix_field' => ['row2' => 'col1']];
+            expect(FormLogicConditionChecker::conditionsMet($condition, $formData))->toBeFalse();
+
+            // User has empty matrix
+            $formData = ['matrix_field' => []];
+            expect(FormLogicConditionChecker::conditionsMet($condition, $formData))->toBeFalse();
+        });
     });
 
     describe('group conditions', function () {

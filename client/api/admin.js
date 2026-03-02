@@ -17,6 +17,7 @@ export const adminApi = {
   extendTrial: (data) => apiService.patch(`${BASE_PATH}/extend-trial`, data),
   cancelSubscription: (data) => apiService.patch(`${BASE_PATH}/cancellation-subscription`, data),
   sendPasswordResetEmail: (data) => apiService.patch(`${BASE_PATH}/send-password-reset-email`, data),
+  clearUserCache: (data) => apiService.post(`${BASE_PATH}/clear-user-cache`, data),
 
   // Billing management
   billing: {

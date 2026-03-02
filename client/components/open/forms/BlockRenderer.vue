@@ -192,8 +192,8 @@ const clientOnlyVal = computed(() => {
 const hasComponent = computed(() => !!componentVal.value)
 
 function getFieldAlignClasses(field) {
-  if (!field.align || field.align === 'left') return 'text-left'
-  else if (field.align === 'right') return 'text-right'
+  if (!field.align || field.align === 'left') return 'text-start'
+  else if (field.align === 'right') return 'text-end'
   else if (field.align === 'center') return 'text-center'
   else if (field.align === 'justify') return 'text-justify'
 }
@@ -335,8 +335,26 @@ const boundProps = computed(() => {
   } else if (field.type === 'payment') {
     inputProperties.direction = form.value.layout_rtl ? 'rtl' : 'ltr'
     inputProperties.currency = field.currency
-    inputProperties.amount = field.amount
+    // Parse amount with mentions - field.amount may contain mention HTML
+    const parsedAmount = useParseMention(field.amount, true, form.value, dataForm.value)
+    const sanitizedAmount = parsedAmount
+      .replace(/<[^>]*>/g, '')
+      .replace(/,/g, '')
+      .trim()
+    const amountMatch = sanitizedAmount.match(/-?\d+(\.\d+)?/)
+    const numericAmount = amountMatch ? parseFloat(amountMatch[0]) : NaN
+    inputProperties.amount = (!isNaN(numericAmount) && numericAmount > 0) ? numericAmount : 0
     inputProperties.oauthProviderId = field.stripe_account_id
+
+    // Parse prefill fields with mentions
+    if (field.prefill_name) {
+      const parsed = useParseMention(field.prefill_name, true, form.value, dataForm.value)
+      inputProperties.prefillName = parsed.replace(/<[^>]*>/g, '').trim()
+    }
+    if (field.prefill_email) {
+      const parsed = useParseMention(field.prefill_email, true, form.value, dataForm.value)
+      inputProperties.prefillEmail = parsed.replace(/<[^>]*>/g, '').trim()
+    }
     if (props.formManager?.payment) {
       try { inputProperties.paymentData = props.formManager.payment.getPaymentData(field) } catch (e) { console.error(e) }
     }

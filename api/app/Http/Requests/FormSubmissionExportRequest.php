@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use App\Models\Forms\Form;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class FormSubmissionExportRequest extends FormRequest
 {
@@ -24,15 +25,23 @@ class FormSubmissionExportRequest extends FormRequest
         $validColumns[] = 'created_at';
 
         return [
-            'columns' => 'required|array',
+            'columns' => [
+                'required',
+                'array',
+                function ($attribute, $value, $fail) use ($validColumns) {
+                    $submittedColumns = array_keys($value);
+                    $invalidColumns = array_diff($submittedColumns, $validColumns);
+                    if (!empty($invalidColumns)) {
+                        $fail('The columns contain invalid values: ' . implode(', ', $invalidColumns));
+                    }
+                },
+            ],
             'columns.*' => ['boolean', 'required'],
-            'columns' => [function ($attribute, $value, $fail) use ($validColumns) {
-                $submittedColumns = array_keys($value);
-                $invalidColumns = array_diff($submittedColumns, $validColumns);
-                if (!empty($invalidColumns)) {
-                    $fail('The columns contain invalid values: ' . implode(', ', $invalidColumns));
-                }
-            }],
+            'submissionIds' => 'nullable|array',
+            'submissionIds.*' => [
+                'integer',
+                Rule::exists('form_submissions', 'id')->where('form_id', $this->form->id),
+            ],
         ];
     }
 }

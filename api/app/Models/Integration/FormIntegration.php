@@ -8,6 +8,7 @@ use App\Models\Forms\Form;
 use App\Models\OAuthProvider;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class FormIntegration extends Model
@@ -53,7 +54,7 @@ class FormIntegration extends Model
         return $this->hasMany(FormIntegrationsEvent::class, 'integration_id');
     }
 
-    public function provider()
+    public function provider(): BelongsTo
     {
         return $this->belongsTo(OAuthProvider::class, 'oauth_id');
     }
