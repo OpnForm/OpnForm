@@ -1,7 +1,7 @@
 <template>
   <div
     ref="elementRef"
-    class="relative bg-white dark:bg-gray-800 border-r border-gray-300 dark:border-gray-700 flex flex-col overflow-hidden flex-shrink-0"
+    class="relative bg-white dark:bg-neutral-800 border-r border-neutral-300 dark:border-neutral-700 flex flex-col overflow-hidden flex-shrink-0"
     :class="isResizable ? '' : 'w-40'"
     :style="isResizable ? dynamicStyles : {}"
   >
@@ -17,8 +17,8 @@
       />
     </div>
     <!-- Header -->
-    <div class="p-3 border-b border-gray-300 dark:border-gray-600">
-      <p class="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">
+    <div class="p-3 border-b border-neutral-300 dark:border-neutral-600">
+      <p class="text-sm font-medium text-neutral-700 dark:text-neutral-300 truncate">
         {{ pdfTemplate?.page_count }} page{{ pdfTemplate?.page_count > 1 ? 's' : '' }} •
         {{ (pdfTemplate?.zone_mappings?.length || 0) }} zone{{ (pdfTemplate?.zone_mappings?.length || 0) > 1 ? 's' : '' }}
       </p>
@@ -30,7 +30,13 @@
         v-for="pageNum in pageList"
         :key="pageNum"
         class="cursor-pointer group relative"
+        :class="{ 'opacity-70': dragSourcePage === pageNum }"
+        draggable="true"
         @click="selectPage(pageNum)"
+        @dragstart="onDragStart(pageNum, $event)"
+        @dragover.prevent="onDragOver(pageNum, $event)"
+        @drop.prevent="onDrop(pageNum)"
+        @dragend="onDragEnd"
       >
         <!-- Thumbnail Container -->
         <div
@@ -38,7 +44,7 @@
           :class="[
             currentPage === pageNum
               ? 'border-blue-500 ring-2 ring-blue-500/30'
-              : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
+              : 'border-neutral-300 dark:border-neutral-600 hover:border-neutral-400 dark:hover:border-neutral-500'
           ]"
         >
           <canvas
@@ -49,22 +55,30 @@
           <!-- Blank page placeholder -->
           <div
             v-else
-            class="w-full aspect-[8.5/11] bg-gray-200 dark:bg-gray-600 flex items-center justify-center"
-          >
-            <span class="text-xs text-gray-500 dark:text-gray-400">New Page</span>
-          </div>
+            class="w-full aspect-[8.5/11] bg-white"
+          />
           <!-- Loading overlay -->
           <div
             v-if="!isNewPage(pageNum) && !thumbnailsLoaded[pageNum]"
-            class="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-gray-900/80"
+            class="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-neutral-900/80"
           >
             <Loader class="h-4 w-4 text-blue-600" />
           </div>
           <!-- Top-right: Add page / Remove page (hover only) -->
           <div
-            class="absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+            class="absolute top-1 right-1 flex gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
             @click.stop
           >
+            <button
+              type="button"
+              class="p-1 rounded bg-neutral-500 hover:bg-neutral-600 text-white shadow"
+              title="Duplicate page"
+              @click.stop="duplicatePage(Number(pageNum))"
+            >
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
+            </button>
             <button
               type="button"
               class="p-1 rounded bg-blue-600 hover:bg-blue-700 text-white shadow"
@@ -94,7 +108,7 @@
           :class="[
             currentPage === pageNum
               ? 'text-blue-600 dark:text-blue-400'
-              : 'text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-300'
+              : 'text-neutral-500 dark:text-neutral-400 group-hover:text-neutral-700 dark:group-hover:text-neutral-300'
           ]"
         >
           {{ pageNum }}
@@ -140,6 +154,10 @@ function addPageAfter(pageNum) {
   pdfStore.addPageAfter(pageNum)
 }
 
+function duplicatePage(pageNum) {
+  pdfStore.duplicatePage(pageNum)
+}
+
 function removePage(pageNum) {
   alert.confirm(
     'All zones on this page will be permanently deleted. Are you sure you want to remove this page?',
@@ -147,17 +165,55 @@ function removePage(pageNum) {
   )
 }
 
+const onDragStart = (pageNum, event) => {
+  dragSourcePage.value = pageNum
+  event.dataTransfer.effectAllowed = 'move'
+}
+
+const onDragOver = (_pageNum, event) => {
+  if (dragSourcePage.value == null) return
+  event.dataTransfer.dropEffect = 'move'
+}
+
+const onDrop = (pageNum) => {
+  if (dragSourcePage.value == null) return
+  pdfStore.reorderPages(dragSourcePage.value, pageNum)
+  dragSourcePage.value = null
+}
+
+const onDragEnd = () => {
+  dragSourcePage.value = null
+}
+
 // PDF state
 const pdfDoc = shallowRef(null)
 const pdfjsLibRef = shallowRef(null)
 const canvasRefs = ref({})
 const thumbnailsLoaded = ref({})
+const dragSourcePage = ref(null)
+const activeThumbnailRenderTasks = new Map()
+const thumbnailRenderPassId = ref(0)
 
 // Set canvas ref for each page
 const setCanvasRef = (el, pageNum) => {
   if (el) {
     canvasRefs.value[pageNum] = el
   }
+}
+
+const cancelThumbnailRenderTaskForPage = (pageNum) => {
+  const task = activeThumbnailRenderTasks.get(pageNum)
+  if (task) {
+    task.cancel()
+    activeThumbnailRenderTasks.delete(pageNum)
+  }
+}
+
+const cancelAllThumbnailRenderTasks = () => {
+  for (const [, task] of activeThumbnailRenderTasks.entries()) {
+    task.cancel()
+  }
+  activeThumbnailRenderTasks.clear()
 }
 
 // Select page
@@ -184,6 +240,8 @@ const loadPdf = async () => {
   if (!pdfTemplate.value?.id) return
   
   try {
+    cancelAllThumbnailRenderTasks()
+    thumbnailRenderPassId.value++
     const pdfjsLib = await initPdfJs()
 
     const loadingTask = pdfjsLib.getDocument(
@@ -201,44 +259,70 @@ const loadPdf = async () => {
 // Render all page thumbnails (skip new/blank pages)
 const renderAllThumbnails = async () => {
   if (!pdfDoc.value) return
+  const thisPassId = ++thumbnailRenderPassId.value
+  const renderPromises = []
   for (const pageNum of pageList.value) {
+    if (thisPassId !== thumbnailRenderPassId.value) return
     if (pdfStore.isNewPage(pageNum)) continue
-    await renderThumbnail(pageNum)
+    renderPromises.push(renderThumbnail(pageNum, thisPassId))
   }
+  await Promise.all(renderPromises)
 }
 
 // Render single thumbnail (pageNum is logical)
-const renderThumbnail = async (pageNum) => {
+const renderThumbnail = async (pageNum, thisPassId = thumbnailRenderPassId.value) => {
   if (!pdfDoc.value) return
+  if (thisPassId !== thumbnailRenderPassId.value) return
+  let renderTask = null
   
   const canvas = canvasRefs.value[pageNum]
   if (!canvas) {
     await new Promise(resolve => setTimeout(resolve, 50))
     if (canvasRefs.value[pageNum]) {
-      await renderThumbnail(pageNum)
+      await renderThumbnail(pageNum, thisPassId)
     }
     return
   }
   
-  const physicalPage = pdfStore.getPhysicalPageNumber(pageNum)
-  if (physicalPage == null) return
+  const sourcePage = pdfStore.getSourcePageNumber(pageNum)
+  if (sourcePage == null) return
   try {
-    const page = await pdfDoc.value.getPage(physicalPage)
+    const page = await pdfDoc.value.getPage(sourcePage)
+    if (thisPassId !== thumbnailRenderPassId.value) return
     // Use a smaller scale for thumbnails
     const viewport = page.getViewport({ scale: 0.3 })
     
+    const renderCanvas = document.createElement('canvas')
+    renderCanvas.height = viewport.height
+    renderCanvas.width = viewport.width
+    const renderContext = renderCanvas.getContext('2d')
+    if (!renderContext) return
+    
+    cancelThumbnailRenderTaskForPage(pageNum)
+    renderTask = page.render({
+      canvasContext: renderContext,
+      viewport
+    })
+    activeThumbnailRenderTasks.set(pageNum, renderTask)
+    await renderTask.promise
+    if (thisPassId !== thumbnailRenderPassId.value) return
+
     const context = canvas.getContext('2d')
+    if (!context) return
     canvas.height = viewport.height
     canvas.width = viewport.width
-    
-    await page.render({
-      canvasContext: context,
-      viewport
-    }).promise
+    context.clearRect(0, 0, canvas.width, canvas.height)
+    context.drawImage(renderCanvas, 0, 0)
     
     thumbnailsLoaded.value[pageNum] = true
   } catch (err) {
+    if (err?.name === 'RenderingCancelledException') return
     console.error(`Failed to render thumbnail for page ${pageNum}:`, err)
+  } finally {
+    const activeTask = activeThumbnailRenderTasks.get(pageNum)
+    if (activeTask === renderTask) {
+      activeThumbnailRenderTasks.delete(pageNum)
+    }
   }
 }
 
@@ -249,9 +333,10 @@ watch(() => pdfTemplate.value?.id, loadPdf, { immediate: true })
 watch(
   () => ({
     page_count: pdfTemplate.value?.page_count,
-    new_pages: pdfTemplate.value?.new_pages,
+    page_manifest: pdfTemplate.value?.page_manifest,
   }),
   () => {
+    cancelAllThumbnailRenderTasks()
     thumbnailsLoaded.value = {}
     if (pdfDoc.value) {
       nextTick(() => renderAllThumbnails())
@@ -270,4 +355,8 @@ watch(canvasRefs, async () => {
     }
   }
 }, { deep: true })
+
+onUnmounted(() => {
+  cancelAllThumbnailRenderTasks()
+})
 </script>

@@ -17,6 +17,7 @@ class PdfTemplate extends Model
     use SoftDeletes;
 
     public const DEFAULT_FILENAME_PATTERN = '<span mention="true" mention-field-id="form_name" mention-field-name="Form Name" mention-fallback="" contenteditable="false" class="mention-item">Form Name</span>-<span mention="true" mention-field-id="submission_id" mention-field-name="Submission ID" mention-fallback="" contenteditable="false" class="mention-item">Submission ID</span>';
+    public const DEFAULT_TEMPLATE_NAME_PREFIX = 'My PDF Template';
 
     protected $fillable = [
         'form_id',
@@ -26,6 +27,7 @@ class PdfTemplate extends Model
         'file_path',
         'file_size',
         'page_count',
+        'page_manifest',
         'zone_mappings',
         'filename_pattern',
         'remove_branding',
@@ -36,6 +38,7 @@ class PdfTemplate extends Model
         return [
             'file_size' => 'integer',
             'page_count' => 'integer',
+            'page_manifest' => 'array',
             'zone_mappings' => 'array',
             'remove_branding' => 'boolean',
         ];
@@ -89,5 +92,46 @@ class PdfTemplate extends Model
     public function form()
     {
         return $this->belongsTo(Form::class);
+    }
+
+    public static function generateDefaultTemplateName(int $formId): string
+    {
+        $prefix = self::DEFAULT_TEMPLATE_NAME_PREFIX;
+        $pattern = $prefix . ' ';
+
+        $numbers = self::query()
+            ->where('form_id', $formId)
+            ->where('name', 'like', $pattern . '%')
+            ->pluck('name')
+            ->map(function (string $name) use ($pattern) {
+                $suffix = trim(substr($name, strlen($pattern)));
+                return ctype_digit($suffix) ? (int) $suffix : null;
+            })
+            ->filter(fn ($value) => $value !== null)
+            ->values();
+
+        $next = ($numbers->max() ?? 0) + 1;
+
+        return "{$prefix} {$next}";
+    }
+
+    public static function buildDefaultPageManifest(int $pageCount): array
+    {
+        $count = max(1, $pageCount);
+
+        return collect(range(1, $count))->map(fn ($sourcePage) => [
+            'id' => (string) Str::uuid(),
+            'type' => 'source',
+            'source_page' => $sourcePage,
+        ])->all();
+    }
+
+    protected static function booted(): void
+    {
+        static::creating(function (self $template) {
+            if (!is_array($template->page_manifest) || empty($template->page_manifest)) {
+                $template->page_manifest = self::buildDefaultPageManifest((int) ($template->page_count ?: 1));
+            }
+        });
     }
 }

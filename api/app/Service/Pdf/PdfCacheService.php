@@ -57,16 +57,6 @@ class PdfCacheService
     }
 
     /**
-     * Invalidate cache for a specific template.
-     */
-    public function invalidateTemplate(PdfTemplate $template): void
-    {
-        // We can't easily invalidate all submissions for this template
-        // The cache will naturally expire after TTL
-        // For immediate invalidation, we rely on the template updated_at in the cache key
-    }
-
-    /**
      * Generate a unique cache key for template-based PDF.
      * Includes template updated_at to automatically invalidate when template changes.
      */

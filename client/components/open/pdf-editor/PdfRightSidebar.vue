@@ -1,7 +1,7 @@
 <template>
-  <div class="w-72 bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden">
+  <div class="w-72 bg-white dark:bg-neutral-800 border-l border-neutral-200 dark:border-neutral-700 flex flex-col overflow-hidden">
     <!-- Add Zone -->
-    <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+    <div class="p-4 border-b border-neutral-200 dark:border-neutral-700">
       <UDropdownMenu
         autofocus
         :items="addZoneMenuItems"
@@ -11,7 +11,7 @@
         <template #content-top>
           <div
             v-if="formFields.length"
-            class="p-2 border-b border-gray-100 dark:border-gray-700"
+            class="p-2 border-b border-neutral-100 dark:border-neutral-700"
           >
             <UInput
               ref="searchInput"
@@ -112,36 +112,26 @@
 
         <!-- Font Size (hidden for text and image zones) -->
         <template v-if="selectedZone.static_text === undefined && selectedZone.static_image === undefined">
-          <TextInput
-            v-model="selectedZone.font_size"
-            name="font_size"
-            label="Font Size (px)"
-            native-type="number"
-            :min="6"
-            :max="72"
-            size="sm"
-            class="mt-4"
-          />
-
-          <!-- Font Color -->
-          <div class="mt-4">
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Font Color
-            </label>
-            <div class="flex items-center gap-2">
+          <div class="mt-4 flex items-end gap-3">
+            <TextInput
+              v-model="selectedZone.font_size"
+              name="font_size"
+              label="Font Size (px)"
+              native-type="number"
+              :min="6"
+              :max="72"
+              size="sm"
+              wrapper-class="flex-1"
+            />
+            <div class="shrink-0">
+              <label class="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
+                Color
+              </label>
               <input
                 v-model="selectedZone.font_color"
                 type="color"
-                class="h-9 w-9 rounded-lg border border-gray-300 dark:border-gray-600 cursor-pointer p-0.5"
+                class="h-9 w-12 rounded-lg border border-neutral-300 dark:border-neutral-600 cursor-pointer p-0.5 bg-transparent"
               >
-              <TextInput
-                v-model="selectedZone.font_color"
-                name="font_color"
-                placeholder="#000000"
-                size="sm"
-                :hide-field-name="true"
-                wrapper-class="flex-1"
-              />
             </div>
           </div>
         </template>
@@ -153,13 +143,13 @@
           v-if="currentPageZones?.length === 0"
           class="text-center py-8"
         >
-          <div class="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center mx-auto mb-3">
-            <UIcon name="i-heroicons-cursor-arrow-ripple" class="w-6 h-6 text-gray-400" />
+          <div class="w-12 h-12 rounded-full bg-neutral-100 dark:bg-neutral-700 flex items-center justify-center mx-auto mb-3">
+            <UIcon name="i-heroicons-cursor-arrow-ripple" class="w-6 h-6 text-neutral-400" />
           </div>
-          <p class="text-sm text-gray-500 dark:text-gray-400">
+          <p class="text-sm text-neutral-500 dark:text-neutral-400">
             No zones yet on this page
           </p>
-          <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
+          <p class="text-xs text-neutral-400 dark:text-neutral-500 mt-1">
             Click "Add Zone" to map form fields to PDF locations
           </p>
         </div>
@@ -169,17 +159,17 @@
           <div
             v-for="zone in currentPageZones"
             :key="zone.id"
-            class="flex items-center justify-between gap-2 p-3 transition-colors cursor-pointer border-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+            class="flex items-center justify-between gap-2 p-3 transition-colors cursor-pointer border-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-700"
             :class="{
               'border-b': zone !== currentPageZones[currentPageZones.length - 1]
             }"
             @click="pdfStore.setSelectedZone(zone.id)"
           >
             <div class="min-w-0 flex-1">
-              <p class="text-sm font-medium text-gray-900 dark:text-white truncate">
+              <p class="text-sm font-medium text-neutral-900 dark:text-white truncate">
                 {{ getZoneLabel(zone) }}
               </p>
-              <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+              <p class="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
                 Page {{ zone.page }} • {{ zone.font_size }}px
               </p>
             </div>

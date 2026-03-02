@@ -33,6 +33,9 @@
     <div
       class="flex items-center gap-x-2"
     >
+
+      <slot name="before-save" />
+      
       <TrackClick name="pdf_editor_help_button_clicked">
         <UTooltip
           text="Help"
@@ -49,41 +52,21 @@
         </UTooltip>
       </TrackClick>
 
-      <slot name="before-save" />
-
-      <div class="flex items-center gap-1 rounded-md border border-neutral-200 dark:border-neutral-700 px-1.5 py-1">
+      <div class="flex items-center gap-1">
         <UTooltip text="Zoom out" :content="{ side: 'bottom' }" arrow>
           <UButton
             color="neutral"
             variant="ghost"
             icon="i-heroicons-magnifying-glass-minus"
-            size="xs"
             @click="pdfStore.zoomOut()"
           />
         </UTooltip>
-        <button
-          class="min-w-12 text-xs font-medium text-neutral-600 dark:text-neutral-300 hover:text-neutral-800 dark:hover:text-neutral-100 transition-colors"
-          type="button"
-          @click="pdfStore.resetZoom()"
-        >
-          {{ zoomPercent }}%
-        </button>
         <UTooltip text="Zoom in" :content="{ side: 'bottom' }" arrow>
           <UButton
             color="neutral"
             variant="ghost"
             icon="i-heroicons-magnifying-glass-plus"
-            size="xs"
             @click="pdfStore.zoomIn()"
-          />
-        </UTooltip>
-        <UTooltip text="Reset zoom" :content="{ side: 'bottom' }" arrow>
-          <UButton
-            color="neutral"
-            variant="ghost"
-            icon="i-heroicons-arrow-path"
-            size="xs"
-            @click="pdfStore.resetZoom()"
           />
         </UTooltip>
       </div>
@@ -193,8 +176,7 @@ const emit = defineEmits(['go-back', 'save-pdf-template'])
 
 const alert = useAlert()
 const pdfStore = useWorkingPdfStore()
-const { content: pdfTemplate, form, saving, zoomScale } = storeToRefs(pdfStore)
-const zoomPercent = computed(() => Math.round((zoomScale.value || 1) * 100))
+const { content: pdfTemplate, form, saving } = storeToRefs(pdfStore)
 
 defineShortcuts({
   meta_s: {

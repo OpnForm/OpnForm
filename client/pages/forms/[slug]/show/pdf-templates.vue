@@ -165,10 +165,9 @@ const creatingFromScratch = ref(false)
 const deletingId = ref(null)
 
 // Fetch templates
-const { list, upload, createFromScratch, remove } = usePdfTemplates()
+const { list, upload, remove } = usePdfTemplates()
 const { data: templatesData, isLoading } = list(() => props.form?.id)
 const uploadTemplate = upload(() => props.form?.id)
-const createFromScratchTemplate = createFromScratch(() => props.form?.id)
 const deleteTemplate = remove(() => props.form?.id)
 
 const templates = computed(() => templatesData.value?.data || [])
@@ -220,7 +219,7 @@ const handleFileUpload = async (event) => {
 const handleCreateFromScratch = async () => {
   creatingFromScratch.value = true
   try {
-    const response = await createFromScratchTemplate.mutateAsync({})
+    const response = await uploadTemplate.mutateAsync({})
     editTemplate(response.data)
     alert.success(response.message)
   } catch (error) {
