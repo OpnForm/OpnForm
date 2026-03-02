@@ -258,9 +258,15 @@ const onDeleteClick = () => {
 }
 
 const deleteRecord = () => {
+  const currentSubmissionId = submission.value?.id
+  if (!currentSubmissionId) {
+    alert.error("Something went wrong!")
+    return
+  }
+
   deleteSubmissionMutation.mutateAsync({ 
     formId: props.form.id, 
-    submissionId: props.submissionId 
+    submissionId: currentSubmissionId
   }).then((data) => {
     if (data.type === "success") {
       alert.success(data.message)

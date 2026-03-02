@@ -4,11 +4,11 @@ namespace App\Http\Controllers\Pdf;
 
 use App\Exceptions\PdfNotSupportedException;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Pdf\CreatePdfTemplateRequest;
 use App\Http\Requests\Pdf\UpdatePdfTemplateRequest;
 use App\Models\Forms\Form;
 use App\Models\PdfTemplate;
 use App\Service\Pdf\PdfTemplateRebuildService;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use setasign\Fpdi\Fpdi;
@@ -36,90 +36,60 @@ class PdfTemplateController extends Controller
     /**
      * Upload a new PDF template.
      */
-    public function store(Request $request, Form $form)
+    public function store(CreatePdfTemplateRequest $request, Form $form)
     {
         $this->authorize('update', $form);
-
-        $request->validate([
-            'file' => 'required|file|mimes:pdf|max:5120', // 5MB max
-            'name' => 'nullable|string|max:255',
-        ]);
-
-        $file = $request->file('file');
-
-        // Validate PDF compatibility before storing (catches unsupported compression early)
-        try {
-            $pageCount = $this->getPageCount($file->getRealPath());
-        } catch (PdfNotSupportedException $e) {
-            return response()->json([
-                'message' => $e->getMessage(),
-                'errors' => [
-                    'file' => [$e->getMessage()],
-                ],
-            ], 422);
-        }
 
         $uuid = (string) Str::uuid();
         $filename = $uuid . '.pdf';
         $path = "pdf-templates/{$form->id}/{$filename}";
+        $file = $request->file('file');
 
-        // Store the file
-        Storage::put($path, file_get_contents($file->getRealPath()));
+        if ($file) {
+            try {
+                $pageCount = $this->getPageCount($file->getRealPath());
+            } catch (PdfNotSupportedException $e) {
+                return response()->json([
+                    'message' => $e->getMessage(),
+                    'errors' => [
+                        'file' => [$e->getMessage()],
+                    ],
+                ], 422);
+            }
+            Storage::put($path, file_get_contents($file->getRealPath()));
+            $fileSize = $file->getSize();
+            $originalFilename = $file->getClientOriginalName();
+            $message = 'PDF template uploaded successfully. Let\'s customize as per your needs.';
+        } else {
+            $pdf = new Fpdi();
+            $pdf->AddPage();
+            $pdfContent = $pdf->Output('S');
 
-        // Use provided name or generate from original filename
-        $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
-        $templateName = $request->input('name') ?: $originalName;
+            Storage::put($path, $pdfContent);
+            $pageCount = 1;
+            $fileSize = strlen($pdfContent);
+            $originalFilename = $filename;
+            $message = 'PDF template created. Let\'s customize as per your needs.';
+        }
+
+        $templateName = $request->input('name') ?: PdfTemplate::generateDefaultTemplateName($form->id);
 
         $template = PdfTemplate::create([
             'form_id' => $form->id,
             'name' => $templateName,
             'filename' => $filename,
-            'original_filename' => $file->getClientOriginalName(),
+            'original_filename' => $originalFilename,
             'file_path' => $path,
-            'file_size' => $file->getSize(),
+            'file_size' => $fileSize,
             'page_count' => $pageCount,
+            'page_manifest' => PdfTemplate::buildDefaultPageManifest($pageCount),
             'zone_mappings' => [],
             'filename_pattern' => PdfTemplate::DEFAULT_FILENAME_PATTERN,
             'remove_branding' => false,
         ]);
 
         return response()->json([
-            'message' => 'PDF template uploaded successfully. Let\'s customize as per your needs.',
-            'data' => $template,
-        ], 201);
-    }
-
-    /**
-     * Create a new PDF template from scratch (1 blank page).
-     */
-    public function storeFromScratch(Request $request, Form $form)
-    {
-        $this->authorize('update', $form);
-
-        $pdf = new Fpdi();
-        $pdf->AddPage();
-        $pdfContent = $pdf->Output('S');
-
-        $filename = time() . '.pdf';
-        $path = "pdf-templates/{$form->id}/{$filename}";
-
-        Storage::put($path, $pdfContent);
-
-        $template = PdfTemplate::create([
-            'form_id' => $form->id,
-            'name' => 'Untitled Template',
-            'filename' => $filename,
-            'original_filename' => $filename,
-            'file_path' => $path,
-            'file_size' => strlen($pdfContent),
-            'page_count' => 1,
-            'zone_mappings' => [],
-            'filename_pattern' => PdfTemplate::DEFAULT_FILENAME_PATTERN,
-            'remove_branding' => false,
-        ]);
-
-        return response()->json([
-            'message' => 'PDF template created. Let\'s customize as per your needs.',
+            'message' => $message,
             'data' => $template,
         ], 201);
     }
@@ -143,7 +113,7 @@ class PdfTemplateController extends Controller
 
     /**
      * Update a PDF template (zone mappings, name, filename pattern, branding).
-     * If new_pages or removed_pages are sent, the stored PDF file is rebuilt (add/remove pages) then not stored in DB.
+     * If page_manifest is sent, the stored PDF file is rebuilt to match the explicit logical page order/content.
      */
     public function update(UpdatePdfTemplateRequest $request, Form $form, PdfTemplate $pdfTemplate)
     {
@@ -154,19 +124,15 @@ class PdfTemplateController extends Controller
         }
 
         $validated = $request->validated();
-        $newPages = $validated['new_pages'] ?? [];
-        $removedPages = $validated['removed_pages'] ?? [];
-        $targetPageCount = (int) ($validated['page_count'] ?? $pdfTemplate->page_count);
+        $pageManifest = $validated['page_manifest'] ?? null;
 
-        // Rebuild PDF file when add/remove pages (apply to file only; do not store in DB)
-        if (! empty($newPages) || ! empty($removedPages)) {
+        // Rebuild PDF file from explicit page manifest order/content.
+        if (is_array($pageManifest) && !empty($pageManifest)) {
             try {
                 $service = app(PdfTemplateRebuildService::class);
-                $newContent = $service->rebuild(
+                $newContent = $service->rebuildFromManifest(
                     $pdfTemplate->file_path,
-                    $removedPages,
-                    $newPages,
-                    $targetPageCount
+                    $pageManifest
                 );
                 Storage::put($pdfTemplate->file_path, $newContent);
             } catch (PdfNotSupportedException $e) {
@@ -175,8 +141,8 @@ class PdfTemplateController extends Controller
                     'errors' => ['file' => [$e->getMessage()]],
                 ], 422);
             }
+            $validated['page_count'] = count($pageManifest);
         }
-        unset($validated['new_pages'], $validated['removed_pages']);
         $pdfTemplate->update($validated);
 
         return response()->json([

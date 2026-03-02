@@ -45,19 +45,6 @@ export function usePdfTemplates() {
     })
   }
 
-  const createFromScratch = (formId, mutationOptions = {}) => {
-    const { onSuccess, ...restMutationOptions } = mutationOptions
-
-    return useMutation({
-      mutationFn: (data) => formsApi.pdfTemplates.createFromScratch(toValue(formId), data),
-      onSuccess: (...args) => {
-        invalidate(formId)
-        onSuccess?.(...args)
-      },
-      ...restMutationOptions,
-    })
-  }
-
   const update = (formId, templateId, mutationOptions = {}) => {
     const { onSuccess, ...restMutationOptions } = mutationOptions
 
@@ -88,7 +75,6 @@ export function usePdfTemplates() {
     list,
     detail,
     upload,
-    createFromScratch,
     update,
     remove,
     invalidate,

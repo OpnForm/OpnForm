@@ -56,16 +56,15 @@ class PdfZoneMappingsRule implements ValidationRule
         }
 
         // Required fields
-        $required = ['id', 'page', 'x', 'y', 'width', 'height'];
+        $required = ['id', 'page_id', 'x', 'y', 'width', 'height'];
         foreach ($required as $field) {
             if (!isset($zone[$field])) {
                 $this->errors[] = "Zone {$index}: missing required field '{$field}'";
             }
         }
 
-        // Page must be positive integer
-        if (isset($zone['page']) && (!is_int($zone['page']) || $zone['page'] < 1)) {
-            $this->errors[] = "Zone {$index}: page must be a positive integer";
+        if (isset($zone['page_id']) && (!is_string($zone['page_id']) || trim($zone['page_id']) === '')) {
+            $this->errors[] = "Zone {$index}: page_id must be a non-empty string";
         }
 
         // Position and size validation (0-100 percent values)

@@ -20,7 +20,7 @@ class PdfGenerateController extends Controller
         private PdfGeneratorService $generator,
         private PdfCacheService $cache
     ) {
-        $this->middleware('auth')->only(['getTemplateSignedUrl', 'getPreviewSignedUrl', 'preview']);
+        $this->middleware('auth')->only(['getTemplateSignedUrl', 'getPreviewSignedUrl']);
     }
 
     /**
@@ -98,34 +98,6 @@ class PdfGenerateController extends Controller
         }
 
         return $this->servePdfFromTemplate($form, $submission, $pdfTemplate, true);
-    }
-
-    /**
-     * Preview PDF using latest submission or empty data (admin only).
-     */
-    public function preview(
-        Request $request,
-        Form $form,
-        PdfTemplate $pdfTemplate
-    ) {
-        $this->authorize('update', $form);
-
-        // Validate template belongs to form
-        if ($pdfTemplate->form_id !== $form->id) {
-            abort(404, 'Template not found.');
-        }
-
-        // Get latest submission or create a fake one with empty data for preview
-        $submission = $form->submissions()->latest()->first();
-        if (!$submission) {
-            $submission = new FormSubmission([
-                'form_id' => $form->id,
-                'data' => [],
-            ]);
-            $submission->id = 0; // Fake ID for preview
-        }
-
-        return $this->servePdfFromTemplate($form, $submission, $pdfTemplate, false);
     }
 
     /**
