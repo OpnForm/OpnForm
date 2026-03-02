@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Auth;
 class EmailIntegration extends AbstractIntegrationHandler
 {
     public const RISKY_USERS_LIMIT = 120;
+    public const MAX_PDF_ATTACHMENTS = 3;
 
     public static function getValidationRules(?Form $form): array
     {
@@ -29,7 +30,7 @@ class EmailIntegration extends AbstractIntegrationHandler
             'include_hidden_fields_submission_data' => ['nullable', 'boolean'],
             'reply_to' => 'nullable',
             'link_edit_submission' => ['nullable', 'boolean'],
-            'pdf_template_ids' => ['nullable', 'array'],
+            'pdf_template_ids' => ['nullable', 'array', 'max:' . self::MAX_PDF_ATTACHMENTS],
             'pdf_template_ids.*' => ['integer', Rule::exists('pdf_templates', 'id')->where('form_id', $form->id)],
         ];
 

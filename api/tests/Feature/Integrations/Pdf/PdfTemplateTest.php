@@ -120,7 +120,7 @@ describe('PDF Template Create from Scratch', function () {
         $workspace = $this->createUserWorkspace($user);
         $form = $this->createForm($user, $workspace);
 
-        $response = $this->postJson(route('open.forms.pdf-templates.store-from-scratch', $form));
+        $response = $this->postJson(route('open.forms.pdf-templates.store', $form), []);
 
         $response->assertStatus(201)
             ->assertJsonStructure([
@@ -140,23 +140,35 @@ describe('PDF Template Create from Scratch', function () {
         expect(PdfTemplate::where('form_id', $form->id)->count())->toBe(1);
 
         $template = PdfTemplate::where('form_id', $form->id)->first();
-        expect($template->name)->toBe('Untitled Template');
+        expect($template->name)->toBe('My PDF Template 1');
         expect($template->page_count)->toBe(1);
         expect($template->zone_mappings)->toBe([]);
         expect(Storage::exists($template->file_path))->toBeTrue();
     });
 
-    it('accepts optional name when creating from scratch', function () {
+    it('uses incremental default name when creating from scratch', function () {
         $user = $this->actingAsProUser();
         $workspace = $this->createUserWorkspace($user);
         $form = $this->createForm($user, $workspace);
 
-        $response = $this->postJson(route('open.forms.pdf-templates.store-from-scratch', $form));
+        $response = $this->postJson(route('open.forms.pdf-templates.store', $form), []);
 
         $response->assertStatus(201);
 
         $template = PdfTemplate::where('form_id', $form->id)->first();
-        expect($template->name)->toBe('Untitled Template');
+        expect($template->name)->toBe('My PDF Template 1');
+    });
+
+    it('increments default template name per form', function () {
+        $user = $this->actingAsProUser();
+        $workspace = $this->createUserWorkspace($user);
+        $form = $this->createForm($user, $workspace);
+
+        $this->postJson(route('open.forms.pdf-templates.store', $form), [])->assertStatus(201);
+        $this->postJson(route('open.forms.pdf-templates.store', $form), [])->assertStatus(201);
+
+        $names = PdfTemplate::where('form_id', $form->id)->orderBy('id')->pluck('name')->all();
+        expect($names)->toBe(['My PDF Template 1', 'My PDF Template 2']);
     });
 
     it('requires authentication to create from scratch', function () {
@@ -164,7 +176,7 @@ describe('PDF Template Create from Scratch', function () {
         $workspace = $this->createUserWorkspace($user);
         $form = $this->createForm($user, $workspace);
 
-        $response = $this->postJson(route('open.forms.pdf-templates.store-from-scratch', $form));
+        $response = $this->postJson(route('open.forms.pdf-templates.store', $form), []);
 
         $response->assertStatus(401);
     });
@@ -176,7 +188,7 @@ describe('PDF Template Create from Scratch', function () {
 
         $this->actingAsUser();
 
-        $response = $this->postJson(route('open.forms.pdf-templates.store-from-scratch', $form));
+        $response = $this->postJson(route('open.forms.pdf-templates.store', $form), []);
 
         $response->assertStatus(403);
     });
@@ -632,7 +644,7 @@ describe('PDF From-Scratch Default Filename Pattern', function () {
         $workspace = $this->createUserWorkspace($user);
         $form = $this->createForm($user, $workspace, ['title' => 'Test Form']);
 
-        $this->postJson(route('open.forms.pdf-templates.store-from-scratch', $form));
+        $this->postJson(route('open.forms.pdf-templates.store', $form), []);
 
         $template = PdfTemplate::where('form_id', $form->id)->first();
 

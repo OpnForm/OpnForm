@@ -19,6 +19,9 @@ use Symfony\Component\Mime\Email;
 
 class FormEmailNotification extends Notification
 {
+    private const MAX_PDF_ATTACHMENTS = 3;
+    private const MAX_TOTAL_ATTACHMENT_BYTES = 15 * 1024 * 1024;
+
     public FormSubmitted $event;
     private ?array $computedValues = null;
 
@@ -117,6 +120,7 @@ class FormEmailNotification extends Notification
         if (! is_array($templateIds) || count($templateIds) === 0) {
             return;
         }
+        $templateIds = array_values(array_unique(array_slice($templateIds, 0, self::MAX_PDF_ATTACHMENTS)));
 
         $submissionId = $this->event->data['submission_id'] ?? null;
         if (! $submissionId) {
@@ -130,6 +134,7 @@ class FormEmailNotification extends Notification
 
         $cacheService = app(PdfCacheService::class);
         $generator = app(PdfGeneratorService::class);
+        $totalBytes = 0;
 
         foreach ($templateIds as $templateId) {
             $template = PdfTemplate::where('form_id', $form->id)->find($templateId);
@@ -140,8 +145,20 @@ class FormEmailNotification extends Notification
                 $pdfPath = $cacheService->getOrGenerateFromTemplate($form, $submission, $template, $generator);
                 $content = Storage::get($pdfPath);
                 if ($content !== false) {
+                    $nextSize = strlen($content);
+                    if (($totalBytes + $nextSize) > self::MAX_TOTAL_ATTACHMENT_BYTES) {
+                        logger()->warning('Skipping PDF email attachment: total size limit exceeded', [
+                            'form_id' => $form->id,
+                            'submission_id' => $submission->id,
+                            'template_id' => $template->id,
+                            'limit_bytes' => self::MAX_TOTAL_ATTACHMENT_BYTES,
+                        ]);
+                        continue;
+                    }
+
                     $filename = $template->resolveFilename($form, $submission);
                     $mail->attachData($content, $filename, ['mime' => 'application/pdf']);
+                    $totalBytes += $nextSize;
                 }
             } catch (\Throwable $e) {
                 report($e);

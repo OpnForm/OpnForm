@@ -69,37 +69,51 @@ class PdfGeneratorService
         try {
             // Create FPDI instance
             $pdf = new Fpdi();
-            $pageCount = $pdf->setSourceFile($tempFile);
+            $sourcePageCount = $pdf->setSourceFile($tempFile);
         } catch (CrossReferenceException $e) {
             @unlink($tempFile);
             throw new PdfNotSupportedException();
         }
 
-        // Group zones by page
-        $zonesByPage = [];
-        foreach ($zoneMappings as $zone) {
-            $page = $zone['page'] ?? 1;
-            if (!isset($zonesByPage[$page])) {
-                $zonesByPage[$page] = [];
-            }
-            $zonesByPage[$page][] = $zone;
+        $pageManifest = $template->page_manifest;
+        if (!is_array($pageManifest) || empty($pageManifest)) {
+            @unlink($tempFile);
+            throw new PdfNotSupportedException('Template page manifest is missing or invalid.');
         }
 
-        // Process each page
-        for ($pageNum = 1; $pageNum <= $pageCount; $pageNum++) {
-            // Import the page
-            $templateId = $pdf->importPage($pageNum);
-            $size = $pdf->getTemplateSize($templateId);
+        // Group zones by page_id
+        $zonesByPage = [];
+        foreach ($zoneMappings as $zone) {
+            $pageId = $zone['page_id'] ?? null;
+            if (!is_string($pageId) || $pageId === '') {
+                continue;
+            }
+            if (!isset($zonesByPage[$pageId])) {
+                $zonesByPage[$pageId] = [];
+            }
+            $zonesByPage[$pageId][] = $zone;
+        }
 
-            // Add a page with the same size as the template
-            $pdf->AddPage($size['orientation'], [$size['width'], $size['height']]);
+        // Process each logical page from manifest order
+        foreach ($pageManifest as $entry) {
+            $type = $entry['type'] ?? 'source';
+            $sourcePage = isset($entry['source_page']) ? (int) $entry['source_page'] : null;
+            $pageId = $entry['id'] ?? null;
 
-            // Use the imported page
-            $pdf->useTemplate($templateId, 0, 0, $size['width'], $size['height']);
+            if ($type === 'source' && $sourcePage !== null && $sourcePage >= 1 && $sourcePage <= $sourcePageCount) {
+                $templateId = $pdf->importPage($sourcePage);
+                $size = $pdf->getTemplateSize($templateId);
+                $pdf->AddPage($size['orientation'], [$size['width'], $size['height']]);
+                $pdf->useTemplate($templateId, 0, 0, $size['width'], $size['height']);
+            } else {
+                // Blank pages inherit dimensions from first source page.
+                $templateId = $pdf->importPage(1);
+                $size = $pdf->getTemplateSize($templateId);
+                $pdf->AddPage($size['orientation'], [$size['width'], $size['height']]);
+            }
 
-            // Add zones for this page
-            if (isset($zonesByPage[$pageNum])) {
-                foreach ($zonesByPage[$pageNum] as $zone) {
+            if (is_string($pageId) && isset($zonesByPage[$pageId])) {
+                foreach ($zonesByPage[$pageId] as $zone) {
                     $this->addZoneContent($pdf, $zone, $submissionData, $size);
                 }
             }
@@ -189,7 +203,7 @@ class PdfGeneratorService
         $width = ($zone['width'] / 100) * $pageSize['width'];
         $height = ($zone['height'] / 100) * $pageSize['height'];
 
-        $renderer = new PdfZoneRenderer($this->form);
+        $renderer = PdfContentRenderer::forForm($this->form);
         $renderer->renderContent($pdf, $value, $x, $y, $width, $height, $zone, $pageSize['width']);
     }
 
