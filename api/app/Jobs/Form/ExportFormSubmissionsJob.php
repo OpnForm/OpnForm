@@ -25,6 +25,7 @@ class ExportFormSubmissionsJob implements ShouldQueue
     public function __construct(
         public Form $form,
         public array $columns,
+        public array $submissionIds,
         public string $jobId,
         public int $userId
     ) {
@@ -35,8 +36,13 @@ class ExportFormSubmissionsJob implements ShouldQueue
         // Initialize job status in cache
         $this->updateJobStatus('processing', 0);
 
+        $submissionQuery = $this->form->submissions()->orderBy('created_at', 'desc');
+        if (!empty($this->submissionIds)) {
+            $submissionQuery->whereIn('id', $this->submissionIds);
+        }
+
         // Get total submission count
-        $totalSubmissions = $this->form->submissions()->count();
+        $totalSubmissions = (clone $submissionQuery)->count();
 
         if ($totalSubmissions === 0) {
             $this->updateJobStatus('failed', 0, 'No submissions to export');
@@ -48,23 +54,21 @@ class ExportFormSubmissionsJob implements ShouldQueue
         $processedCount = 0;
         $allRows = [];
 
-        $this->form->submissions()
-            ->orderBy('created_at', 'desc')
-            ->chunk($chunkSize, function ($submissions) use (&$processedCount, &$allRows, $totalSubmissions, $exportService) {
-                foreach ($submissions as $submission) {
-                    $formattedRow = $exportService->formatSubmissionForExport(
-                        $this->form,
-                        $submission,
-                        $this->columns
-                    );
-                    $allRows[] = $formattedRow;
-                    $processedCount++;
-                }
+        $submissionQuery->chunk($chunkSize, function ($submissions) use (&$processedCount, &$allRows, $totalSubmissions, $exportService) {
+            foreach ($submissions as $submission) {
+                $formattedRow = $exportService->formatSubmissionForExport(
+                    $this->form,
+                    $submission,
+                    $this->columns
+                );
+                $allRows[] = $formattedRow;
+                $processedCount++;
+            }
 
-                // Update progress
-                $progress = min(90, ($processedCount / $totalSubmissions) * 90); // Reserve 10% for file generation
-                $this->updateJobStatus('processing', $progress, null, $processedCount, $totalSubmissions);
-            });
+            // Update progress
+            $progress = min(90, ($processedCount / $totalSubmissions) * 90); // Reserve 10% for file generation
+            $this->updateJobStatus('processing', $progress, null, $processedCount, $totalSubmissions);
+        });
 
         // Generate and upload file to S3
         $this->updateJobStatus('processing', 95, 'Generating export file...');

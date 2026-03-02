@@ -14,9 +14,11 @@ use App\Models\Forms\Form;
 use App\Models\Forms\FormSubmission;
 use App\Service\Forms\FormExportService;
 use App\Service\Storage\FileUploadPathService;
+use App\Service\Storage\FilenameUrlEncoder;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Http\Request;
 
@@ -102,14 +104,16 @@ class FormSubmissionController extends Controller
         $this->authorize('view', $form);
 
         $displayColumns = collect($request->columns)->filter(fn ($value, $key) => $value === true)->toArray();
+        $submissionIds = $request->input('submissionIds', []);
+        $submissionCount = !empty($submissionIds) ? count($submissionIds) : null;
 
         // Check if we should process asynchronously
-        if ($exportService->shouldExportAsync($form)) {
-            return $this->startAsyncExport($form, $displayColumns, $exportService);
+        if ($exportService->shouldExportAsync($form, $submissionCount)) {
+            return $this->startAsyncExport($form, $displayColumns, $submissionIds, $exportService);
         }
 
         // Process synchronously for small exports
-        return $this->processSyncExport($form, $displayColumns, $exportService);
+        return $this->processSyncExport($form, $displayColumns, $submissionIds, $exportService);
     }
 
     public function exportStatus(Form $form, string $jobId, FormExportService $exportService)
@@ -131,11 +135,11 @@ class FormSubmissionController extends Controller
         return new ExportJobStatusResource($jobData);
     }
 
-    private function startAsyncExport(Form $form, array $displayColumns, FormExportService $exportService)
+    private function startAsyncExport(Form $form, array $displayColumns, array $submissionIds, FormExportService $exportService)
     {
         $jobId = $exportService->initializeAsyncExport($form, Auth::id());
 
-        ExportFormSubmissionsJob::dispatch($form, $displayColumns, $jobId, Auth::id());
+        ExportFormSubmissionsJob::dispatch($form, $displayColumns, $submissionIds, $jobId, Auth::id());
 
         return $this->success([
             'message' => 'Export started. Large export will be processed in the background.',
@@ -144,11 +148,16 @@ class FormSubmissionController extends Controller
         ]);
     }
 
-    private function processSyncExport(Form $form, array $displayColumns, FormExportService $exportService)
+    private function processSyncExport(Form $form, array $displayColumns, array $submissionIds, FormExportService $exportService)
     {
         $allRows = [];
         // Use query builder with orderBy for consistency with async export
-        foreach ($form->submissions()->orderByDesc('created_at')->get() as $submission) {
+        $submissionQuery = $form->submissions()->orderByDesc('created_at');
+        if (!empty($submissionIds)) {
+            $submissionQuery->whereIn('id', $submissionIds);
+        }
+
+        foreach ($submissionQuery->get() as $submission) {
             $allRows[] = $exportService->formatSubmissionForExport($form, $submission, $displayColumns);
         }
 
@@ -163,9 +172,14 @@ class FormSubmissionController extends Controller
 
     public function submissionFile(Form $form, $filename)
     {
-        $fileName = FileUploadPathService::getFileUploadPath($form->id, urldecode($filename));
+        // Decode the base64url encoded filename
+        // See: https://github.com/OpnForm/OpnForm/issues/1024
+        $decodedFilename = FilenameUrlEncoder::decode($filename);
 
-        if (! Storage::exists($fileName)) {
+        // Build the full storage path
+        $filePath = FileUploadPathService::getFileUploadPath($form->id, $decodedFilename);
+
+        if (! Storage::exists($filePath)) {
             return $this->error([
                 'message' => 'File not found.',
             ], 404);
@@ -173,12 +187,12 @@ class FormSubmissionController extends Controller
 
         if (config('filesystems.default') !== 's3') {
             return response()->download(
-                Storage::path($fileName),
-                basename($fileName),
+                Storage::path($filePath),
+                basename($filePath),
                 [
                     'Content-Type' => 'application/octet-stream',
                     'X-Content-Type-Options' => 'nosniff',
-                    'Content-Disposition' => 'attachment; filename="' . basename($fileName) . '"'
+                    'Content-Disposition' => 'attachment; filename="' . basename($filePath) . '"'
                 ]
             );
         }
@@ -186,10 +200,10 @@ class FormSubmissionController extends Controller
         // Force download on S3 as well
         return redirect(
             Storage::temporaryUrl(
-                $fileName,
+                $filePath,
                 now()->addMinute(),
                 [
-                    'ResponseContentDisposition' => 'attachment; filename="' . basename($fileName) . '"',
+                    'ResponseContentDisposition' => 'attachment; filename="' . basename($filePath) . '"',
                     'ResponseContentType' => 'application/octet-stream'
                 ]
             )
@@ -212,8 +226,11 @@ class FormSubmissionController extends Controller
     {
         $request->validate([
             'submissionIds' => 'required|array',
-            'submissionIds.*' => 'required|integer',
-            'submissionIds.*' => 'exists:form_submissions,id',
+            'submissionIds.*' => [
+                'required',
+                'integer',
+                Rule::exists('form_submissions', 'id')->where('form_id', $form->id),
+            ],
         ]);
 
         $this->authorize('delete', $form);

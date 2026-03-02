@@ -458,7 +458,7 @@ defineExpose({
 <style lang="scss">
 .open-complete-form {
   * {
-    font-family: var(--font-family) !important;
+    font-family: var(--font-family, Inter, sans-serif) !important;
   }
 
 }

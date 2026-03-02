@@ -32,5 +32,7 @@ export const oidcApi = {
       }
     })
   },
+
+  link: (linkToken) => apiService.post('/auth/oidc/link', { link_token: linkToken }),
 }
 

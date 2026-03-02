@@ -58,6 +58,8 @@
 <script setup>
 
 
+import { escapeHtml } from '~/lib/utils'
+
 const props = defineProps({
   user: { type: Object, required: true }
 })
@@ -118,7 +120,9 @@ const lastBlock = computed(() => {
 
 const alertContent = computed(() => {
   if (isBlocked.value) {
-    const blockedBy = lastBlock.value?.blocked_by || 'Automatically blocked by our AI'
+    const blockedBy = escapeHtml(lastBlock.value?.blocked_by || 'Automatically blocked by our AI')
+    const blockedOn = escapeHtml(new Date(props.user.blocked_at).toLocaleString())
+    const reason = escapeHtml(lastBlock.value?.reason || '')
     return {
       icon: 'i-heroicons-exclamation-triangle',
       color: 'error',
@@ -126,11 +130,11 @@ const alertContent = computed(() => {
       content: `
         This will unblock the user and allow them to log in again. Their forms will remain in draft status.
         <div class="mt-2">
-          <b>Blocked on:</b> ${new Date(props.user.blocked_at).toLocaleString()}
+          <b>Blocked on:</b> ${blockedOn}
           <br>
           <b>Blocked by:</b> ${blockedBy}
           <br>
-          <b>Reason:</b> ${lastBlock.value?.reason || ''}
+          <b>Reason:</b> ${reason}
         </div>
       `
     }

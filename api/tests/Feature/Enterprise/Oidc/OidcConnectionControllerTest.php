@@ -430,6 +430,26 @@ describe('OidcConnectionController - Update Connection', function () {
         expect($options['field_mappings']['email'])->toBe('email_address');
         expect($options['custom_field'])->toBe('custom_value'); // Should be preserved
     });
+
+    it('returns 404 when workspace and connection do not match', function () {
+        $user = User::factory()->create(['email' => 'user@company.com']);
+        $this->actingAs($user);
+
+        $workspaceA = Workspace::factory()->create();
+        $workspaceB = Workspace::factory()->create();
+        $user->workspaces()->attach($workspaceA->id, ['role' => 'admin']);
+        $user->workspaces()->attach($workspaceB->id, ['role' => 'admin']);
+
+        $connection = IdentityConnection::factory()->create([
+            'workspace_id' => $workspaceA->id,
+            'domain' => 'company.com',
+        ]);
+
+        $this->patchJson(
+            "/open/workspaces/{$workspaceB->id}/oidc-connections/{$connection->id}",
+            ['name' => 'Cross Workspace Update Attempt']
+        )->assertStatus(404);
+    });
 });
 
 describe('OidcConnectionController - Delete Connection', function () {

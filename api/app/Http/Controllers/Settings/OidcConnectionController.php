@@ -70,6 +70,7 @@ class OidcConnectionController extends Controller
      */
     public function show(Workspace $workspace, IdentityConnection $connection)
     {
+        $this->ensureConnectionBelongsToWorkspace($workspace, $connection);
         $this->authorize('view', $connection);
 
         return response()->json($this->formatConnection($connection));
@@ -80,6 +81,7 @@ class OidcConnectionController extends Controller
      */
     public function update(UpdateOidcConnectionRequest $request, Workspace $workspace, IdentityConnection $connection)
     {
+        $this->ensureConnectionBelongsToWorkspace($workspace, $connection);
         $this->authorize('update', $connection);
 
         $data = $request->validated();
@@ -105,6 +107,7 @@ class OidcConnectionController extends Controller
      */
     public function destroy(Workspace $workspace, IdentityConnection $connection)
     {
+        $this->ensureConnectionBelongsToWorkspace($workspace, $connection);
         $this->authorize('delete', $connection);
 
         $connection->delete();
@@ -134,5 +137,12 @@ class OidcConnectionController extends Controller
             'created_at' => $connection->created_at,
             'updated_at' => $connection->updated_at,
         ];
+    }
+
+    protected function ensureConnectionBelongsToWorkspace(Workspace $workspace, IdentityConnection $connection): void
+    {
+        if ($connection->workspace_id !== null && $connection->workspace_id !== $workspace->id) {
+            abort(404);
+        }
     }
 }

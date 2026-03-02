@@ -13,6 +13,7 @@ use Database\Factories\FormFactory;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -365,7 +366,7 @@ class Form extends Model implements CachableAttributes, VersionableNestedDiff
     /**
      * Relationships
      */
-    public function workspace()
+    public function workspace(): BelongsTo
     {
         return $this->belongsTo(Workspace::class);
     }

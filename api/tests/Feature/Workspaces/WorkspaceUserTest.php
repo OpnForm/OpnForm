@@ -63,6 +63,19 @@ it('can update user role in a workspace', function () {
         ]);
 });
 
+it('returns 404 when updating role for a user outside the workspace', function () {
+    $outsideUser = User::factory()->create();
+
+    $this->putJson(route('open.workspaces.users.update-role', [
+        'workspace' => $this->workspace,
+        'user' => $outsideUser
+    ]), [
+        'role' => 'admin',
+    ])->assertStatus(404);
+
+    expect($this->workspace->users()->whereKey($outsideUser->id)->exists())->toBeFalse();
+});
+
 it('can remove a user from a workspace', function () {
     $existingUser = User::factory()->create();
     $this->workspace->users()->attach($existingUser);
@@ -77,6 +90,17 @@ it('can remove a user from a workspace', function () {
         ]);
 
     expect($this->workspace->users()->count())->toBe(1);
+});
+
+it('returns 404 when removing a user outside the workspace', function () {
+    $outsideUser = User::factory()->create();
+
+    $this->deleteJson(route('open.workspaces.users.remove', [
+        'workspace' => $this->workspace,
+        'user' => $outsideUser
+    ]))->assertStatus(404);
+
+    expect($this->workspace->users()->whereKey($outsideUser->id)->exists())->toBeFalse();
 });
 
 it('can leave a workspace', function () {

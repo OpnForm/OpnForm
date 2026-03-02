@@ -17,16 +17,36 @@
       :searchable="true"
       :disabled="stripeAccounts.length === 0"
     />
-    <text-input
+    <MentionInput
+      class="mt-4"
       name="amount"
       label="Amount"
       native-type="number"
       :form="field"
+      :mentions="form.properties"
       :required="true"
       :disabled="stripeAccounts.length === 0"
     />
+    <MentionInput
+      class="mt-4"
+      name="prefill_name"
+      label="Name on Card"
+      :form="field"
+      :mentions="form.properties"
+      :disabled="stripeAccounts.length === 0"
+    />
+    <MentionInput
+      class="mt-4"
+      name="prefill_email"
+      label="Billing Email"
+      :form="field"
+      :mentions="form.properties"
+      :disabled="stripeAccounts.length === 0"
+    />
+    
     <div v-if="stripeAccounts.length > 0">
       <select-input
+        class="mt-4"
         name="stripe_account_id"
         label="Stripe Account"
         :options="stripeAccounts"
@@ -70,6 +90,10 @@ import { useWindowMessage, WindowMessageTypes } from '~/composables/useWindowMes
 
 const props = defineProps({
   field: {
+    type: Object,
+    required: true
+  },
+  form: {
     type: Object,
     required: true
   }

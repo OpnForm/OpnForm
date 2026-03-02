@@ -1,6 +1,23 @@
 <?php
 
 use App\Models\User;
+use App\Models\Forms\FormSubmission;
+
+function parseCsvRows(string $content): array
+{
+    $handle = fopen('php://temp', 'r+');
+    fwrite($handle, $content);
+    rewind($handle);
+
+    $rows = [];
+    while (($row = fgetcsv($handle)) !== false) {
+        $rows[] = $row;
+    }
+
+    fclose($handle);
+
+    return $rows;
+}
 
 it('can export form submissions with selected columns', function () {
     $user = $this->actingAsProUser();
@@ -48,6 +65,77 @@ it('can export form submissions with selected columns', function () {
         ->assertHeader('content-disposition', 'attachment; filename=' . $form->slug . '-submission-data.csv');
 });
 
+it('exports only the selected submission ids', function () {
+    $user = $this->actingAsProUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace);
+
+    $textField = collect($form->properties)->firstWhere('type', 'text');
+
+    $firstSubmissionData = $this->generateFormSubmissionData($form, [
+        $textField['id'] => 'John Selected',
+    ]);
+    $this->postJson(route('forms.answer', $form->slug), $firstSubmissionData)
+        ->assertSuccessful();
+
+    $firstSubmissionId = $form->refresh()->submissions()->orderByDesc('id')->first()->id;
+
+    $secondSubmissionData = $this->generateFormSubmissionData($form, [
+        $textField['id'] => 'Jane Not Selected',
+    ]);
+    $this->postJson(route('forms.answer', $form->slug), $secondSubmissionData)
+        ->assertSuccessful();
+
+    $secondSubmissionId = $form->refresh()->submissions()->orderByDesc('id')->first()->id;
+
+    $response = $this->postJson(route('open.forms.submissions.export', [
+        'form' => $form,
+    ]), [
+        'columns' => [
+            $textField['id'] => true,
+        ],
+        'submissionIds' => [$firstSubmissionId],
+    ]);
+
+    $response->assertSuccessful();
+
+    ob_start();
+    $response->sendContent();
+    $content = ob_get_clean();
+
+    expect(str_contains($content, 'John Selected'))->toBeTrue();
+    expect(str_contains($content, 'Jane Not Selected'))->toBeFalse();
+    expect(str_contains($content, (string) $secondSubmissionId))->toBeFalse();
+});
+
+it('rejects submission ids that do not belong to the form', function () {
+    $user = $this->actingAsProUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace);
+    $otherForm = $this->createForm($user, $workspace);
+
+    $textField = collect($otherForm->properties)->firstWhere('type', 'text');
+    $submissionData = $this->generateFormSubmissionData($otherForm, [
+        $textField['id'] => 'Other Form Submission',
+    ]);
+    $this->postJson(route('forms.answer', $otherForm->slug), $submissionData)
+        ->assertSuccessful();
+
+    $otherSubmissionId = $otherForm->refresh()->submissions()->orderByDesc('id')->first()->id;
+
+    $response = $this->postJson(route('open.forms.submissions.export', [
+        'form' => $form,
+    ]), [
+        'columns' => [
+            $textField['id'] => true,
+        ],
+        'submissionIds' => [$otherSubmissionId],
+    ]);
+
+    $response->assertStatus(422)
+        ->assertJsonValidationErrors(['submissionIds.0']);
+});
+
 it('cannot export form submissions with invalid columns', function () {
     $user = $this->actingAsProUser();
     $workspace = $this->createUserWorkspace($user);
@@ -79,13 +167,17 @@ it('cannot export form submissions from another user form', function () {
     $workspace = createUserWorkspace($user);
 
     $form = createForm($user, $workspace);
+    $textField = collect($form->properties)->firstWhere('type', 'text');
 
     $this->actingAsProUser();
 
     $response = $this->postJson(route('open.forms.submissions.export', [
         'form' => $form,
-        'columns' => []
-    ]));
+    ]), [
+        'columns' => [
+            $textField['id'] => true,
+        ],
+    ]);
 
     $response->assertJson([
         'message' => 'This action is unauthorized.'
@@ -142,6 +234,60 @@ it('includes status column when partial submissions are enabled', function () {
     expect(str_contains($content, 'status'))->toBeTrue();
     expect(str_contains($content, 'In Progress'))->toBeTrue();
     expect(str_contains($content, 'Completed'))->toBeTrue();
+});
+
+it('preserves multiline values without corrupting CSV rows', function () {
+    $user = $this->actingAsProUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace);
+    $textFieldId = collect($form->properties)->firstWhere('type', 'text')['id'];
+    $emailFieldId = collect($form->properties)->firstWhere('type', 'email')['id'];
+
+    $form->submissions()->create([
+        'form_id' => $form->id,
+        'data' => [
+            $textFieldId => 'Single line content',
+            $emailFieldId => 'first@example.com',
+        ],
+        'status' => FormSubmission::STATUS_COMPLETED,
+    ]);
+
+    $multilineValue = "First paragraph.\nSecond paragraph, with comma and \"quoted\" text.";
+    $form->submissions()->create([
+        'form_id' => $form->id,
+        'data' => [
+            $textFieldId => $multilineValue,
+            $emailFieldId => 'second@example.com',
+        ],
+        'status' => FormSubmission::STATUS_COMPLETED,
+    ]);
+
+    $response = $this->postJson(route('open.forms.submissions.export', [
+        'form' => $form,
+    ]), [
+        'columns' => [
+            $textFieldId => true,
+            $emailFieldId => true,
+        ],
+    ]);
+
+    $response->assertSuccessful();
+
+    ob_start();
+    $response->sendContent();
+    $content = ob_get_clean();
+    $rows = parseCsvRows($content);
+
+    expect(count($rows))->toBe(3); // Header + 2 data rows
+
+    $headerColumnCount = count($rows[0]);
+    foreach ($rows as $row) {
+        expect(count($row))->toBe($headerColumnCount);
+    }
+
+    expect($content)->toContain('First paragraph.');
+    expect($content)->toContain('Second paragraph, with comma and ""quoted"" text.');
+    expect($content)->toMatch('/First paragraph\.(\r\n|\n)Second paragraph, with comma and ""quoted"" text\./');
 });
 
 it('does not include status column when partial submissions are disabled', function () {

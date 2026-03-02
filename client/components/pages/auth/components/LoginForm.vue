@@ -136,6 +136,7 @@ const router = useRouter()
 const { login: loginMutationFactory } = useAuth()
 const authFlow = useAuthFlow()
 const { showTwoFactorModal, pendingAuthToken, handleTwoFactorVerified, handleTwoFactorCancel, handleTwoFactorError } = authFlow
+const { completeLinkIfNeeded } = useOidcLinking()
 
 // Feature flags
 const oidcAvailable = computed(() => useFeatureFlag('oidc.available', false))
@@ -240,7 +241,11 @@ const login = () => {
   form.mutate(loginMutation).then(() => {
     // If 2FA modal is shown, don't redirect yet (handled in handleTwoFactorVerified)
     if (!showTwoFactorModal.value) {
-      redirect()
+      completeLinkIfNeeded().then((shouldRedirect) => {
+        if (shouldRedirect) {
+          redirect()
+        }
+      })
     }
   }).catch((error) => {
     // Check if this is a 2FA requirement (422 with requires_2fa flag)
@@ -292,8 +297,13 @@ const signInwithGoogle = () => {
   }
 }
 
-const handleTwoFactorVerifiedAndRedirect = async (tokenData) => {
-  await handleTwoFactorVerified(tokenData)
-  redirect()
+const handleTwoFactorVerifiedAndRedirect = (tokenData) => {
+  handleTwoFactorVerified(tokenData).then(() => {
+    completeLinkIfNeeded().then((shouldRedirect) => {
+      if (shouldRedirect) {
+        redirect()
+      }
+    })
+  })
 }
 </script>

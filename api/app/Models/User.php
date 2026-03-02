@@ -353,7 +353,6 @@ class User extends Authenticatable implements JWTSubject, CachableAttributes, Tw
     public function getJWTCustomClaims()
     {
         return [
-            'ip' => Hash::make(request()->ip()),
             'ua' => Hash::make(request()->userAgent()),
         ];
     }

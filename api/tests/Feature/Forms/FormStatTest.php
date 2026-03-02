@@ -134,3 +134,16 @@ it('checks form stats details', function () {
                 ->etc();
         });
 });
+
+it('returns 404 when workspace and form do not match on stats endpoints', function () {
+    $user = $this->actingAsProUser();
+    $workspaceA = $this->createUserWorkspace($user);
+    $workspaceB = $this->createUserWorkspace($user);
+    $formInWorkspaceA = $this->createForm($user, $workspaceA);
+
+    $this->getJson(route('open.workspaces.form.stats', [$workspaceB, $formInWorkspaceA]) . '?date_from=' . now()->subDays(7)->format('Y-m-d') . '&date_to=' . now()->format('Y-m-d'))
+        ->assertStatus(404);
+
+    $this->getJson(route('open.workspaces.form.stats-details', [$workspaceB, $formInWorkspaceA]))
+        ->assertStatus(404);
+});

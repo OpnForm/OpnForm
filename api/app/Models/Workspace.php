@@ -8,6 +8,7 @@ use App\Models\Traits\CachesAttributes;
 use App\Service\BillingHelper;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Collection;
 
 class Workspace extends Model implements CachableAttributes
@@ -240,7 +241,7 @@ class Workspace extends Model implements CachableAttributes
     /**
      * Relationships
      */
-    public function users()
+    public function users(): BelongsToMany
     {
         return $this->belongsToMany(User::class);
     }

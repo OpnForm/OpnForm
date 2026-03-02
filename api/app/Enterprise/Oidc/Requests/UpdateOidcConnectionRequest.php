@@ -54,6 +54,7 @@ class UpdateOidcConnectionRequest extends FormRequest
             'scopes' => ['nullable', 'array'],
             'scopes.*' => ['string'],
             'options' => ['nullable', 'array'],
+            'options.require_state' => ['nullable', 'boolean'],
             'options.field_mappings' => ['nullable', 'array'],
             'options.field_mappings.email' => ['nullable', 'string', 'max:255'],
             'options.field_mappings.name' => ['nullable', 'string', 'max:255'],

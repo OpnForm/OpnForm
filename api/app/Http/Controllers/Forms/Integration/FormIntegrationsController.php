@@ -51,7 +51,7 @@ class FormIntegrationsController extends Controller
     {
         $this->authorize('manageIntegrations', $form);
 
-        $formIntegration = FormIntegration::findOrFail((int)$integrationid);
+        $formIntegration = $form->integrations()->findOrFail((int) $integrationid);
         $formIntegration->update($request->toIntegrationData());
         $formIntegration->load('provider.user');
 
@@ -65,7 +65,7 @@ class FormIntegrationsController extends Controller
     {
         $this->authorize('manageIntegrations', $form);
 
-        $formIntegration = FormIntegration::findOrFail((int)$integrationid);
+        $formIntegration = $form->integrations()->findOrFail((int) $integrationid);
         $formIntegration->delete();
 
         return $this->success([

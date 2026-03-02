@@ -9,6 +9,7 @@ use App\Service\Forms\SubmissionUrlService;
 use App\Service\Formulas\ComputedVariableEvaluator;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Symfony\Component\Mime\Email;
 
@@ -61,6 +62,11 @@ class FormEmailNotification extends Notification
                 'mail.mailers.custom_smtp.username' => $emailSettings['username'],
                 'mail.mailers.custom_smtp.password' => $emailSettings['password']
             ]);
+
+            // Laravel caches mailer instances (and their transport) in long-lived processes
+            // like queue workers (Horizon). If workspace SMTP settings change, we must purge
+            // the cached mailer so the next send uses the updated config.
+            Mail::purge('custom_smtp');
             return 'custom_smtp';
         }
 
