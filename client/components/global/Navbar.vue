@@ -48,12 +48,54 @@
             My Forms
           </NuxtLink>  
           <NuxtLink
+            v-if="$route.name !== 'enterprise'"
+            :to="{ name: 'enterprise' }"
+            :class="navLinkClasses"
+          >
+            Enterprise
+          </NuxtLink>
+          <NuxtLink
+            v-if="$route.name !== 'integrations'"
+            :to="{ name: 'integrations' }"
+            :class="navLinkClasses"
+          >
+            Integrations
+          </NuxtLink>
+          <NuxtLink
             v-if="$route.name !== 'templates'"
             :to="{ name: 'templates' }"
             :class="navLinkClasses"
           >
             Templates
           </NuxtLink>
+          <NuxtLink
+            v-if="($route.name !== 'ai-form-builder' && user === null) && (!useFeatureFlag('self_hosted') && useFeatureFlag('ai_features'))"
+            :to="{ name: 'ai-form-builder' }"
+            :class="navLinkClasses"
+            class="hidden lg:inline"
+          >
+            AI Form Builder
+          </NuxtLink>
+          <NuxtLink
+            v-if="(useFeatureFlag('billing.enabled') && $route.name !== 'pricing') && !isSelfHosted"
+            :to="{ name: 'pricing' }"
+            :class="navLinkClasses"
+          >
+            <span
+              v-if="user && workspace && !workspace.is_pro"
+              class="text-primary"
+            >Upgrade</span>
+            <span v-else>Pricing</span>
+          </NuxtLink>
+
+          <NuxtLink
+            :href="opnformConfig.links.tech_docs"
+            :class="navLinkClasses"
+            target="_blank"
+          >
+            Documentation
+          </NuxtLink>
+
           <template v-if="appStore.featureBaseEnabled">
             <button
               v-if="user"
@@ -75,44 +117,9 @@
               What's new?
             </a>
           </template>
-          <NuxtLink
-            v-if="($route.name !== 'ai-form-builder' && user === null) && (!useFeatureFlag('self_hosted') && useFeatureFlag('ai_features'))"
-            :to="{ name: 'ai-form-builder' }"
-            :class="navLinkClasses"
-            class="hidden lg:inline"
-          >
-            AI Form Builder
-          </NuxtLink>
-          <NuxtLink
-            v-if="
-              (useFeatureFlag('billing.enabled') &&
-                (user === null || (user && workspace && !workspace.is_pro)) &&
-                $route.name !== 'pricing') && !isSelfHosted
-            "
-            :to="{ name: 'pricing' }"
-            :class="navLinkClasses"
-          >
-            <span
-              v-if="user"
-              class="text-primary"
-            >Upgrade</span>
-            <span v-else>Pricing</span>
-          </NuxtLink>
-
-          <NuxtLink
-            :href="helpUrl"
-            :class="navLinkClasses"
-            target="_blank"
-          >
-            Help
-          </NuxtLink>
         </div>
-        <div
-          class="hidden md:block pl-5 border-neutral-300 border-r h-5"
-        />
-        <div
-          class="block"
-        >
+         
+        <div class="block">
           <div class="flex items-center">
             <div class="ml-4 relative">
               <div class="relative inline-block text-left">
@@ -137,16 +144,15 @@
                 </UserDropdown>
                 <div
                   v-else
-                  class="flex gap-2"
+                  class="flex gap-4"
                 >
-                  <NuxtLink
+                  <UButton
                     v-if="$route.name !== 'login'"
                     :to="{ name: 'login' }"
-                    :class="navLinkClasses"
-                    active-class="text-neutral-800 dark:text-white"
-                  >
-                    Login
-                  </NuxtLink>
+                    variant="outline"
+                    color="neutral"
+                    label="Login"
+                  />
 
                   <TrackClick
                     class="flex items-center"
@@ -155,9 +161,8 @@
                   >
                     <UButton
                       :to="{ name: 'forms-create-guest' }"
-                      variant="outline"
                       color="primary"
-                      trailing-icon="i-heroicons-arrow-right"
+                      trailing-icon="i-heroicons-arrow-up-right-20-solid"
                       label="Create a form"
                     />
                   </TrackClick>
@@ -205,8 +210,6 @@ const { data: form } = useForms().detail(formSlug.value, {
 const navLinkClasses =
   'border border-transparent hover:border-neutral-200 text-neutral-500 hover:text-neutral-800 hover:no-underline dark:hover:text-white py-1.5 px-3 hover:bg-neutral-50 rounded-md text-sm font-medium transition-colors w-full md:w-auto text-center md:text-left'
 
-// Computed values
-const helpUrl = computed(() => opnformConfig.links.help_url)
 
 const hasNavbar = computed(() => {
   if (isIframe.value) return false
