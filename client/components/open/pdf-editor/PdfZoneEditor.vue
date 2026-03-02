@@ -161,11 +161,20 @@ const getZoneStyle = (zone) => {
 }
 
 const setCanvasRef = (el, pageNum) => {
-  if (el) canvasRefs.value[pageNum] = el
+  if (el) {
+    canvasRefs.value[pageNum] = el
+    return
+  }
+  delete canvasRefs.value[pageNum]
+  delete canvasRects.value[pageNum]
 }
 
 const setPageRef = (el, pageNum) => {
-  if (el) pageRefs.value[pageNum] = el
+  if (el) {
+    pageRefs.value[pageNum] = el
+    return
+  }
+  delete pageRefs.value[pageNum]
 }
 
 const setZoneRef = (el, zoneId) => {
@@ -183,6 +192,11 @@ const getPageSurfaceRect = (pageNum) => {
   const pageEl = pageRefs.value[pageNum]
   const surfaceEl = pageEl?.querySelector?.('.pdf-page-surface')
   return surfaceEl?.getBoundingClientRect?.() ?? null
+}
+
+const getActiveZoneLive = () => {
+  if (!activeZone.value?.id || !pdfTemplate.value?.zone_mappings) return null
+  return pdfTemplate.value.zone_mappings.find((z) => z.id === activeZone.value.id) || null
 }
 
 // Initialize PDF.js library
@@ -494,8 +508,9 @@ const handleBackgroundClick = () => {
 
 // Get canvas dimensions for a zone's page (for drag/resize)
 const getCanvasDimensions = () => {
-  if (!activeZone.value) return { w: canvasWidth.value, h: canvasHeight.value }
-  const rect = getPageSurfaceRect(activeZone.value.page)
+  const liveZone = getActiveZoneLive()
+  if (!liveZone) return { w: canvasWidth.value, h: canvasHeight.value }
+  const rect = getPageSurfaceRect(liveZone.page)
   if (rect) {
     return { w: rect.width, h: rect.height }
   }
@@ -503,16 +518,14 @@ const getCanvasDimensions = () => {
 }
 
 const moveZoneToAdjacentPage = (direction, event) => {
-  if (!activeZone.value || !pdfTemplate.value?.zone_mappings) return false
-  const currentPageNum = Number(activeZone.value.page)
+  const zone = getActiveZoneLive()
+  if (!zone) return false
+  const currentPageNum = Number(zone.page)
   const currentIndex = pageList.value.indexOf(currentPageNum)
   if (currentIndex === -1) return false
 
   const targetIndex = currentIndex + direction
   if (targetIndex < 0 || targetIndex >= pageList.value.length) return false
-
-  const zone = pdfTemplate.value.zone_mappings.find((z) => z.id === activeZone.value.id)
-  if (!zone) return false
 
   const targetPageNum = pageList.value[targetIndex]
   zone.page = targetPageNum
@@ -529,8 +542,9 @@ const moveZoneToAdjacentPage = (direction, event) => {
 // Start dragging
 const startDragging = (event, zone) => {
   if (isResizing.value) return
+  updateCanvasRects()
   isDragging.value = true
-  activeZone.value = zone
+  activeZone.value = { id: zone.id }
   dragStart.value = { x: event.clientX, y: event.clientY }
   zoneStart.value = { x: zone.x, y: zone.y, width: zone.width, height: zone.height }
   selectZone(zone.id)
@@ -540,10 +554,11 @@ const startDragging = (event, zone) => {
 
 // Dragging
 const onDrag = (event) => {
-  if (!isDragging.value || !activeZone.value || !pdfTemplate.value?.zone_mappings) return
+  const zone = getActiveZoneLive()
+  if (!isDragging.value || !zone) return
   const PAGE_TRANSFER_THRESHOLD_PX = 24
   const pointerDeltaY = event.clientY - dragStart.value.y
-  const pageRect = getPageSurfaceRect(activeZone.value.page)
+  const pageRect = getPageSurfaceRect(zone.page)
   if (pageRect) {
     const nearTopEdge = event.clientY <= pageRect.top + PAGE_TRANSFER_THRESHOLD_PX
     const nearBottomEdge = event.clientY >= pageRect.bottom - PAGE_TRANSFER_THRESHOLD_PX
@@ -558,6 +573,7 @@ const onDrag = (event) => {
   }
 
   const { w, h } = getCanvasDimensions()
+  if (!Number.isFinite(w) || !Number.isFinite(h) || w < 20 || h < 20) return
 
   const dx = event.clientX - dragStart.value.x
   const dy = event.clientY - dragStart.value.y
@@ -579,11 +595,8 @@ const onDrag = (event) => {
     return
   }
 
-  const zone = pdfTemplate.value.zone_mappings.find((z) => z.id === activeZone.value.id)
-  if (zone) {
-    zone.x = newX
-    zone.y = newY
-  }
+  zone.x = newX
+  zone.y = newY
 }
 
 // Stop dragging
@@ -597,8 +610,9 @@ const stopDragging = () => {
 // Start resizing
 const startResizing = (event, zone) => {
   event.preventDefault()
+  updateCanvasRects()
   isResizing.value = true
-  activeZone.value = zone
+  activeZone.value = { id: zone.id }
   dragStart.value = { x: event.clientX, y: event.clientY }
   zoneStart.value = { x: zone.x, y: zone.y, width: zone.width, height: zone.height }
   selectZone(zone.id)
@@ -608,8 +622,10 @@ const startResizing = (event, zone) => {
 
 // Resizing
 const onResize = (event) => {
-  if (!isResizing.value || !activeZone.value || !pdfTemplate.value?.zone_mappings) return
+  const zone = getActiveZoneLive()
+  if (!isResizing.value || !zone) return
   const { w, h } = getCanvasDimensions()
+  if (!Number.isFinite(w) || !Number.isFinite(h) || w < 20 || h < 20) return
 
   const dx = event.clientX - dragStart.value.x
   const dy = event.clientY - dragStart.value.y
@@ -619,11 +635,8 @@ const onResize = (event) => {
   let newWidth = Math.max(5, Math.min(100 - zoneStart.value.x, zoneStart.value.width + dxPercent))
   let newHeight = Math.max(2, Math.min(100 - zoneStart.value.y, zoneStart.value.height + dyPercent))
 
-  const zone = pdfTemplate.value.zone_mappings.find((z) => z.id === activeZone.value.id)
-  if (zone) {
-    zone.width = newWidth
-    zone.height = newHeight
-  }
+  zone.width = newWidth
+  zone.height = newHeight
 }
 
 // Stop resizing

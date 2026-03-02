@@ -43,11 +43,21 @@ class PdfContentRenderer
         array $zone,
         float $pageWidth
     ): void {
-        if (!is_string($value) || $value === '') {
+        if ($value === null) {
             return;
         }
 
-        if ($this->isImageReference($value)) {
+        if (!is_scalar($value)) {
+            return;
+        }
+
+        $value = (string) $value;
+        if ($value === '') {
+            return;
+        }
+
+        $shouldRenderAsImage = array_key_exists('static_image', $zone) || $this->isImageReference($value);
+        if ($shouldRenderAsImage) {
             $imageContent = $this->imageResolver->resolveContent($value);
             if ($imageContent !== null) {
                 try {
