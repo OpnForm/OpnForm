@@ -18,12 +18,18 @@ class License extends Model
         'license_provider',
         'status',
         'meta',
+        'last_checked_at',
+        'expires_at',
+        'features',
     ];
 
     protected function casts()
     {
         return [
             'meta' => 'array',
+            'features' => 'array',
+            'last_checked_at' => 'datetime',
+            'expires_at' => 'datetime',
         ];
     }
 

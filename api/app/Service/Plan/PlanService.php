@@ -5,6 +5,7 @@ namespace App\Service\Plan;
 use App\Models\License;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Service\License\LicenseService;
 
 class PlanService
 {
@@ -34,7 +35,7 @@ class PlanService
     public function getUserTier(User $user): string
     {
         if (!pricing_enabled()) {
-            return self::TIER_ENTERPRISE;
+            return $this->getSelfHostedTier();
         }
 
         // Use same caching pattern as existing is_subscribed attribute
@@ -77,7 +78,7 @@ class PlanService
     public function getWorkspaceTier(Workspace $workspace): string
     {
         if (!pricing_enabled()) {
-            return self::TIER_ENTERPRISE;
+            return $this->getSelfHostedTier();
         }
 
         // Use workspace's caching mechanism (same as existing is_pro)
@@ -209,10 +210,31 @@ class PlanService
             return true;
         }
 
-        // 2. Check tier-based access
+        // 2. Self-hosted: use license-based feature check
+        if (!pricing_enabled() && config('app.self_hosted')) {
+            return app(LicenseService::class)->hasAppFeature($feature);
+        }
+
+        // 3. Check tier-based access
         $tier = $this->getWorkspaceTier($workspace);
 
         return $this->tierHasFeature($tier, $feature);
+    }
+
+    /**
+     * Determine tier for self-hosted instances based on license status.
+     * Returns enterprise if license is active/grace, free if expired/invalid.
+     */
+    private function getSelfHostedTier(): string
+    {
+        if (!config('app.self_hosted')) {
+            return self::TIER_ENTERPRISE;
+        }
+
+        $licenseService = app(LicenseService::class);
+        $result = $licenseService->checkLicense();
+
+        return $result->isActive() ? self::TIER_ENTERPRISE : self::TIER_FREE;
     }
 
     /**

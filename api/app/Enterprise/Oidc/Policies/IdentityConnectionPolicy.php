@@ -6,6 +6,7 @@ use App\Enterprise\Oidc\Models\IdentityConnection;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Policies\WorkspacePolicy;
+use App\Service\License\LicenseService;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
 class IdentityConnectionPolicy
@@ -95,11 +96,17 @@ class IdentityConnectionPolicy
     }
 
     /**
-     * Check if workspace has Enterprise access (always true for self-hosted).
+     * Check if workspace has Enterprise access.
+     * For self-hosted: requires a valid license with SSO feature.
+     * For cloud: requires an Enterprise subscription.
      */
     protected function hasEnterpriseAccess(Workspace $workspace): bool
     {
         if (!pricing_enabled()) {
+            if (config('app.self_hosted')) {
+                return app(LicenseService::class)->hasFeature('sso');
+            }
+
             return true;
         }
 
