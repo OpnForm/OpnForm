@@ -55,7 +55,7 @@
 
     <section class="py-14 sm:py-28 px-8 sm:px-12 bg-white">
       <div class="max-w-266 mx-auto">
-        <div class="text-center">
+        <div class="max-w-lg mx-auto text-center">
           <div
             class="text-base leading-7 tracking-[-1.1%] font-medium text-blue-600"
           >
@@ -175,9 +175,8 @@
           <h2
             class="my-4 text-4xl sm:text-5xl sm:leading-14 tracking-[-1%] font-semibold text-neutral-900"
           >
-            Forms that adapt to
-            <br />
-            all your needs
+            Forms that adapt <br />
+            to all your needs
           </h2>
 
           <p
@@ -192,7 +191,7 @@
           <div
             v-for="item in enterpriseFeatures"
             :key="item.title"
-            class="overflow-hidden relative rounded-3xl bg-neutral-50 p-8 shadow-sm ring-1 ring-neutral-200 flex flex-col justify-between"
+            class="overflow-hidden relative rounded-3xl bg-neutral-50 p-8 flex flex-col justify-between"
           >
             <div>
               <div
@@ -253,9 +252,7 @@
               and operate OpnForm with confidence.
             </p>
           </div>
-          <div
-            class="col-span-5 rounded-3xl bg-neutral-50 px-8 pt-8 pb-4 shadow-sm ring-1 ring-neutral-200/50"
-          >
+          <div class="col-span-5 rounded-3xl bg-neutral-50 px-8 pt-8 pb-4">
             <div
               v-for="badge in vipSupportBadges"
               :key="badge.label"

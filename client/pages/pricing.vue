@@ -88,9 +88,11 @@
                 variant="outline"
                 :to="{ name: 'register' }"
                 label="Get started free"
+                color="neutral"
               />
               <UButton
                 v-else
+                color="neutral"
                 class="w-full justify-center px-4 py-2.5 rounded-[12px] text-base leading-7 tracking-[-1.1%] font-medium"
                 :to="{ name: 'home' }"
                 label="Go to app"
@@ -189,7 +191,7 @@
 
           <!-- Pro (Most popular) -->
           <div
-            class="relative p-6 sm:p-8 bg-white border shadow-sm rounded-3xl border-blue-600"
+            class="relative p-6 sm:p-8 bg-white border-2 shadow-sm rounded-3xl border-blue-500"
           >
             <div class="absolute top-6 right-6">
               <span
@@ -349,6 +351,7 @@
                 class="w-full justify-center px-4 py-2.5 rounded-[12px] text-base leading-7 tracking-[-1.1%] font-medium"
                 variant="outline"
                 label="Get started free"
+                color="neutral"
                 @click.prevent="handleBusinessCta"
               />
             </div>
@@ -463,6 +466,7 @@
                 class="w-full justify-center px-4 py-2.5 rounded-[12px] text-base leading-7 tracking-[-1.1%] font-medium"
                 variant="outline"
                 label="Request a quote"
+                color="neutral"
                 @click.prevent="contactUs"
               />
             </div>
@@ -605,6 +609,7 @@
                   <UButton
                     size="lg"
                     variant="outline"
+                    color="neutral"
                     label="Request a quote"
                     @click.prevent="contactUs"
                     class="px-4 py-2.5 rounded-[12px] text-base leading-7 tracking-[-1.1%] font-medium"
@@ -675,6 +680,7 @@
                   <UButton
                     size="lg"
                     variant="outline"
+                    color="neutral"
                     label="Request a quote"
                     @click.prevent="contactUs"
                     class="px-4 py-2.5 rounded-[12px] text-base leading-7 tracking-[-1.1%] font-medium"
