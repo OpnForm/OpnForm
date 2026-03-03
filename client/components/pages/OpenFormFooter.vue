@@ -2,11 +2,11 @@
   <section class="relative px-4 sm:px-8 lg:px-12">
     <div class="max-w-336 mx-auto">
       <div
-        class="relative rounded-4xl overflow-hidden bg-linear-to-br from-blue-600 via-blue-700 to-blue-800 shadow-2xl pt-10 sm:pt-14 md:pt-24 pl-10 sm:pl-20 md:pl-24 lg:pl-35"
+        class="relative rounded-4xl overflow-hidden bg-linear-to-br from-blue-600 via-blue-700 to-blue-800 pt-10 sm:pt-14 md:pt-24 pl-10 sm:pl-20 md:pl-24 lg:pl-35"
       >
         <img
           src="/img/pages/welcome/powerForm-bg.png"
-          class="absolute bottom-0 top-0 left-0 right-0 opacity-30"
+          class="absolute min-h-full inset-0 opacity-30"
         />
         <div class="grid lg:grid-cols-2 relative z-10">
           <div
@@ -73,15 +73,18 @@
             </div>
           </div>
 
-          <div class="relative flex items-end justify-end pl-8 sm:pl-10">
+          <div class="flex items-end justify-end pl-8 sm:pl-10">
             <div
-              class="w-full bg-white/95 border border-neutral-200 shadow-2xl rounded-tl-3xl overflow-hidden"
+              class="relative w-full bg-white/95 border border-neutral-200 rounded-tl-3xl overflow-hidden"
             >
               <img
                 src="/img/pages/welcome/product-cover-half.png"
                 alt="Product screenshot"
                 class="w-full h-auto"
               />
+              <div
+                class="absolute bottom-0 left-0 right-0 min-h-2/5 backdrop-blur-[2px] bg-linear-to-b from-transparent to-[#0002]"
+              ></div>
             </div>
           </div>
         </div>
@@ -110,6 +113,7 @@
               :to="{ name: 'pricing' }"
               label="View Pricing"
               variant="outline"
+              color="neutral"
               class="px-4 py-2.5 rounded-[12px] text-base leading-7 tracking-[-1.1%] font-medium"
             />
             <UButton
@@ -259,6 +263,7 @@ const linkGroups = computed(() => [
     title: "Company",
     links: [
       { label: "Blog", href: opnformConfig.links.changelog_url },
+      { label: "Status", href: opnformConfig.links.changelog_url },
       // { label: "Feature Requests", href: opnformConfig.links.feature_requests },
       // { label: "Roadmap", href: opnformConfig.links.roadmap },
       // { label: "Privacy Policy", to: { name: "privacy-policy" } },

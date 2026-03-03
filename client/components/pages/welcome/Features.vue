@@ -8,7 +8,7 @@
         :key="panel.eyebrow"
         class="rounded-4xl border border-neutral-200/80 bg-white py-10 sm:py-14 md:py-24 px-10 sm:px-14 md:px-24 lg:px-35"
       >
-        <div class="grid gap-12 md:gap-16 lg:grid-cols-2 items-center">
+        <div class="grid gap-12 lg:gap-16 lg:grid-cols-2 items-center">
           <div>
             <div
               :class="[
@@ -140,10 +140,14 @@
                 :key="point"
                 class="flex items-start gap-4 text-base leading-7 font-medium tracking-[-1.1%] text-neutral-700"
               >
-                <UIcon
-                  name="i-heroicons-check-20-solid"
-                  class="h-6 w-6 text-blue-600"
-                />
+                <div
+                  class="h-6 w-6 bg-primary-100 flex justify-center items-center rounded-[6px]"
+                >
+                  <UIcon
+                    name="i-heroicons-check-20-solid"
+                    class="h-3.5 w-3.5 text-blue-500"
+                  />
+                </div>
                 <span>{{ point }}</span>
               </div>
             </div>
