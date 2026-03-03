@@ -3,18 +3,26 @@
 namespace App\Notifications\Forms;
 
 use App\Events\Forms\FormSubmitted;
+use App\Models\Forms\FormSubmission;
+use App\Models\PdfTemplate;
 use App\Open\MentionParser;
 use App\Service\Forms\FormSubmissionFormatter;
 use App\Service\Forms\SubmissionUrlService;
 use App\Service\Formulas\ComputedVariableEvaluator;
+use App\Service\Pdf\PdfCacheService;
+use App\Service\Pdf\PdfGeneratorService;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Symfony\Component\Mime\Email;
 
 class FormEmailNotification extends Notification
 {
+    private const MAX_PDF_ATTACHMENTS = 3;
+    private const MAX_TOTAL_ATTACHMENT_BYTES = 15 * 1024 * 1024;
+
     public FormSubmitted $event;
     private ?array $computedValues = null;
 
@@ -92,7 +100,7 @@ class FormEmailNotification extends Notification
      */
     public function toMail($notifiable)
     {
-        return (new MailMessage())
+        $mail = (new MailMessage())
             ->mailer($this->getMailer())
             ->replyTo($this->getReplyToEmail($this->event->form->creator->email))
             ->from($this->getFromEmail(), $this->getSenderName())
@@ -101,6 +109,67 @@ class FormEmailNotification extends Notification
                 $this->addCustomHeaders($message);
             })
             ->markdown('mail.form.email-notification', $this->getMailData());
+
+        $this->attachPdfTemplatesIfRequested($mail);
+
+        return $mail;
+    }
+
+    /**
+     * Attach PDFs for selected templates when integration has pdf_template_ids.
+     */
+    private function attachPdfTemplatesIfRequested(MailMessage $mail): void
+    {
+        $form = $this->event->form;
+
+        $templateIds = $this->integrationData->pdf_template_ids ?? [];
+        if (! is_array($templateIds) || count($templateIds) === 0) {
+            return;
+        }
+        $templateIds = array_values(array_unique(array_slice($templateIds, 0, self::MAX_PDF_ATTACHMENTS)));
+
+        $submissionId = $this->event->data['submission_id'] ?? null;
+        if (! $submissionId) {
+            return;
+        }
+
+        $submission = FormSubmission::where('form_id', $form->id)->where('id', $submissionId)->first();
+        if (! $submission) {
+            return;
+        }
+
+        $cacheService = app(PdfCacheService::class);
+        $generator = app(PdfGeneratorService::class);
+        $totalBytes = 0;
+
+        foreach ($templateIds as $templateId) {
+            $template = PdfTemplate::where('form_id', $form->id)->find($templateId);
+            if (! $template) {
+                continue;
+            }
+            try {
+                $pdfPath = $cacheService->getOrGenerateFromTemplate($form, $submission, $template, $generator);
+                $content = Storage::get($pdfPath);
+                if ($content !== false) {
+                    $nextSize = strlen($content);
+                    if (($totalBytes + $nextSize) > self::MAX_TOTAL_ATTACHMENT_BYTES) {
+                        logger()->warning('Skipping PDF email attachment: total size limit exceeded', [
+                            'form_id' => $form->id,
+                            'submission_id' => $submission->id,
+                            'template_id' => $template->id,
+                            'limit_bytes' => self::MAX_TOTAL_ATTACHMENT_BYTES,
+                        ]);
+                        continue;
+                    }
+
+                    $filename = $template->resolveFilename($form, $submission);
+                    $mail->attachData($content, $filename, ['mime' => 'application/pdf']);
+                    $totalBytes += $nextSize;
+                }
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
     }
 
     private function formatSubmissionData($createLinks = true): array

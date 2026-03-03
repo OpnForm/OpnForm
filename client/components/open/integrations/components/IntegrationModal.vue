@@ -2,7 +2,7 @@
   <UModal 
     v-model:open="isOpen" 
     :dismissible="false" 
-    :ui="{ content: 'sm:max-w-2xl' }"
+    :ui="modalUi"
   >
     <template #header>
       <div class="flex items-center w-full gap-4 px-2">
@@ -109,6 +109,11 @@ const isOpen = computed({
       emit('close')
     }
   }
+})
+
+// Modal size based on integration type
+const modalUi = computed(() => {
+  return { content: 'sm:max-w-2xl' }
 })
 
 const crisp = useCrisp()
