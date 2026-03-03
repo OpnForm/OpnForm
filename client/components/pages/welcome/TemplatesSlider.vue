@@ -13,7 +13,8 @@
       <p
         class="mt-4 text-base font-normal text-neutral-500 leading-7 tracking-[-1.1%]"
       >
-        If you need inspiration, checkout our templates.
+        All templates are fully customizable — adapt them to your compliance and
+        brand requirements in minutes.
       </p>
     </div>
     <!-- <div class="my-3 flex justify-center">
