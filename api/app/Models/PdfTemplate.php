@@ -52,7 +52,7 @@ class PdfTemplate extends Model
     public function isInUse(): bool
     {
         // Check if any form uses this template for success page download
-        $isInUse = Form::where('pdf_template_id', $this->id)->exists();
+        $isInUse = Form::where('pdf_template_id', $this->id)->where('pdf_download_enabled', true)->exists();
         if ($isInUse) {
             return true;
         }
@@ -107,7 +107,7 @@ class PdfTemplate extends Model
                 $suffix = trim(substr($name, strlen($pattern)));
                 return ctype_digit($suffix) ? (int) $suffix : null;
             })
-            ->filter(fn ($value) => $value !== null)
+            ->filter(fn($value) => $value !== null)
             ->values();
 
         $next = ($numbers->max() ?? 0) + 1;
@@ -119,7 +119,7 @@ class PdfTemplate extends Model
     {
         $count = max(1, $pageCount);
 
-        return collect(range(1, $count))->map(fn ($sourcePage) => [
+        return collect(range(1, $count))->map(fn($sourcePage) => [
             'id' => (string) Str::uuid(),
             'type' => 'source',
             'source_page' => $sourcePage,
