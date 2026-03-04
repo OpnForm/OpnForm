@@ -119,7 +119,54 @@
     </section>
 
     <section class="bg-white">
-      <Integrations />
+      <div class="px-8 lg:px-12">
+        <div
+          class="mx-auto max-w-full sm:max-w-xl md:max-w-336 rounded-4xl bg-linear-to-br from-neutral-950 via-neutral-900 to-neutral-950 shadow-2xl overflow-hidden py-10 sm:py-14 md:py-24 px-10 sm:px-14 md:px-24 lg:px-35"
+        >
+          <div class="text-center max-w-3xl mx-auto">
+            <div
+              class="text-blue-400 text-base tracking-[-1.1%] font-medium leading-7"
+            >
+              Integrations
+            </div>
+            <h3
+              class="my-4 text-4xl sm:text-5xl font-semibold text-white tracking-[-1%] leading-14"
+            >
+              Connect OpnForm with the tools your team already uses
+            </h3>
+            <p
+              class="text-base tracking-[-1.1%] font-medium leading-7 text-neutral-400"
+            >
+              Some text goes here...
+            </p>
+          </div>
+          <div class="mt-12 sm:mt-16 flex justify-center">
+            <div
+              class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 justify-center items-center"
+            >
+              <div
+                v-for="app in integrationApps"
+                :key="app.icon"
+                class="h-30 w-30 rounded-2xl bg-gray-800 flex items-center justify-center"
+              >
+                <UIcon
+                  :name="app.icon"
+                  class="h-14 w-14"
+                  :class="app.iconClass"
+                />
+              </div>
+            </div>
+          </div>
+          <div class="mt-12 sm:mt-16 flex justify-center">
+            <UButton
+              :to="{ name: 'integrations' }"
+              label="Explore All Integrations"
+              trailing-icon="i-heroicons-arrow-up-right-20-solid"
+              class="pl-4 pr-3.5 py-2.5 rounded-[12px] text-base leading-7 tracking-[-1.1%] font-medium"
+            />
+          </div>
+        </div>
+      </div>
     </section>
 
     <section class="py-14 sm:py-28 px-8 sm:px-12 bg-white">
@@ -307,5 +354,25 @@ const keyFeatures = [
     iconWrapClass: "bg-fuchsia-50 ring-1 ring-fuchsia-100",
     iconClass: "text-fuchsia-600",
   },
+];
+
+const integrationApps = [
+  { icon: "i-simple-icons-zendesk", iconClass: "text-[#ffffff]" },
+  { icon: "heroicons:envelope-20-solid", iconClass: "text-[#3B82F6]" },
+  { icon: "ic:baseline-discord", iconClass: "text-[#5865F2]" },
+  { icon: "mdi:telegram", iconClass: "text-[#27A7E7]" },
+  { icon: "material-symbols:webhook", iconClass: "text-[#0061FF]" },
+
+  { icon: "i-simple-icons-zapier", iconClass: "text-[#FF4A00]" },
+  { icon: "simple-icons:n8n", iconClass: "text-[#EA4B71]" },
+  { icon: "opnform:activepieces", iconClass: "text-[#6366F1]" },
+  { icon: "mdi:google-spreadsheet", iconClass: "text-[#34A853]" },
+  { icon: "i-simple-icons-zoom", iconClass: "text-[#2D8CFF]" },
+
+  // { icon: "i-simple-icons-linear", iconClass: "text-[#5E6AD2]" },
+  // { icon: "i-simple-icons-evernote", iconClass: "text-[#00A82D]" },
+  // { icon: "i-simple-icons-notion", iconClass: "text-white" },
+  // { icon: "i-simple-icons-airtable", iconClass: "text-[#18BFFF]" },
+  // { icon: "i-simple-icons-meta", iconClass: "text-[#0668E1]" },
 ];
 </script>
