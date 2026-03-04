@@ -276,11 +276,149 @@
     </section>
 
     <section class="bg-white">
-      <Integrations />
+      <div class="px-8 lg:px-12">
+        <div
+          class="mx-auto max-w-full sm:max-w-xl md:max-w-336 rounded-4xl bg-linear-to-br from-neutral-950 via-neutral-900 to-neutral-950 shadow-2xl overflow-hidden py-10 sm:py-14 md:py-24 px-10 sm:px-14 md:px-24 lg:px-35"
+        >
+          <div class="text-center">
+            <div
+              class="text-blue-400 text-base tracking-[-1.1%] font-medium leading-7"
+            >
+              Integrations
+            </div>
+            <h3
+              class="my-4 text-4xl sm:text-5xl font-semibold text-white tracking-[-1%] leading-14"
+            >
+              Works with your stack
+            </h3>
+            <p
+              class="text-base tracking-[-1.1%] font-medium leading-7 text-neutral-400"
+            >
+              OpnForm fits into your workflow — connect to tools your team
+              already uses.
+            </p>
+          </div>
+          <div class="mt-12 sm:mt-16 flex justify-center">
+            <div
+              class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 justify-center items-center"
+            >
+              <div
+                v-for="app in integrationApps"
+                :key="app.icon"
+                class="h-30 w-30 rounded-2xl bg-gray-800 flex items-center justify-center"
+              >
+                <UIcon
+                  :name="app.icon"
+                  class="h-14 w-14"
+                  :class="app.iconClass"
+                />
+              </div>
+            </div>
+          </div>
+          <div class="mt-12 sm:mt-16 flex justify-center">
+            <UButton
+              :to="{ name: 'integrations' }"
+              label="Explore All Integrations"
+              trailing-icon="i-heroicons-arrow-up-right-20-solid"
+              class="pl-4 pr-3.5 py-2.5 rounded-[12px] text-base leading-7 tracking-[-1.1%] font-medium"
+            />
+          </div>
+        </div>
+      </div>
     </section>
 
     <section class="px-8 sm:px-12 py-14 sm:py-28 bg-white">
-      <Testimonials title="See how teams use <br> Opnform at scale" />
+      <div class="max-w-4xl mx-auto">
+        <div class="text-center">
+          <div
+            class="text-blue-400 text-base tracking-[-1.1%] font-medium leading-7"
+          >
+            Case Studies
+          </div>
+          <h3
+            class="mt-4 text-4xl sm:text-5xl font-semibold text-neutral-900 tracking-[-1%] leading-14"
+          >
+            See how teams use <br class="hidden sm:block" />
+            OpnForm at scale
+          </h3>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-7 gap-12 my-12 sm:my16">
+          <div
+            class="col-span-3 max-h-70 md:max-h-50 max-w-100 mx-auto rounded-[12px] overflow-hidden flex items-center justify-centers"
+          >
+            <img src="/img/pages/enterprise/enterprise-7.png" alt="John Doe" />
+          </div>
+          <div class="col-span-4">
+            <h3 class="text-xl leading-7 font-medium text-neutral-900">
+              “Scaled internal workflows without adding complexity”
+            </h3>
+            <p
+              class="mt-3 text-base leading-7 font-normal tracking-[-1.1%] text-neutral-600"
+            >
+              We use OpnForm across multiple teams for internal requests,
+              approvals, and data collection. Having unlimited forms with clear
+              access controls made it easy to standardize workflows without
+              slowing teams down.
+            </p>
+            <div class="mt-8">
+              <h4
+                class="text-base leading-7 tracking-[-1.1%] font-medium text-neutral-900"
+              >
+                John Doe
+              </h4>
+              <p
+                class="mt-1.5 text-sm leading-5 tracking-[-0.6%] font-medium text-neutral-600"
+              >
+                Head of Engineering, Vercel
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-7 gap-12 my-12 sm:my16">
+          <div
+            class="col-span-3 max-h-70 md:max-h-50 max-w-100 mx-auto rounded-[12px] overflow-hidden flex items-center justify-centers"
+          >
+            <img
+              src="/img/pages/enterprise/enterprise-8.png"
+              alt="James Smith"
+            />
+          </div>
+          <div class="col-span-4">
+            <h3 class="text-xl leading-7 font-medium text-neutral-900">
+              “Finally had one system that worked for every team.”
+            </h3>
+            <p
+              class="mt-3 text-base leading-7 font-normal tracking-[-1.1%] text-neutral-600"
+            >
+              Marketing, HR, and Support were all using different tools. OpnForm
+              gave us a single, flexible platform that everyone could adapt to
+              their needs, while still keeping data centralized and secure.
+            </p>
+            <div class="mt-8">
+              <h4
+                class="text-base leading-7 tracking-[-1.1%] font-medium text-neutral-900"
+              >
+                James Smith
+              </h4>
+              <p
+                class="mt-1.5 text-sm leading-5 tracking-[-0.6%] font-medium text-neutral-600"
+              >
+                Operations Lead, Airtable
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="flex justify-center items-center">
+          <UButton
+            to="#"
+            target="_blank"
+            label="Read More Customer Stories"
+            variant="outline"
+            size="lg"
+            class="px-4 py-2.5 rounded-[12px] text-base leading-7 tracking-[-1.1%] font-medium"
+          />
+        </div>
+      </div>
     </section>
 
     <OpenFormFooter />
@@ -382,5 +520,25 @@ const vipSupportBadges = [
     badgeBg: "bg-blue-50",
     iconColor: "text-blue-600",
   },
+];
+
+const integrationApps = [
+  { icon: "i-simple-icons-zendesk", iconClass: "text-[#ffffff]" },
+  { icon: "heroicons:envelope-20-solid", iconClass: "text-[#3B82F6]" },
+  { icon: "ic:baseline-discord", iconClass: "text-[#5865F2]" },
+  { icon: "mdi:telegram", iconClass: "text-[#27A7E7]" },
+  { icon: "material-symbols:webhook", iconClass: "text-[#0061FF]" },
+
+  { icon: "i-simple-icons-zapier", iconClass: "text-[#FF4A00]" },
+  { icon: "simple-icons:n8n", iconClass: "text-[#EA4B71]" },
+  { icon: "opnform:activepieces", iconClass: "text-[#6366F1]" },
+  { icon: "mdi:google-spreadsheet", iconClass: "text-[#34A853]" },
+  { icon: "i-simple-icons-zoom", iconClass: "text-[#2D8CFF]" },
+
+  // { icon: "i-simple-icons-linear", iconClass: "text-[#5E6AD2]" },
+  // { icon: "i-simple-icons-evernote", iconClass: "text-[#00A82D]" },
+  // { icon: "i-simple-icons-notion", iconClass: "text-white" },
+  // { icon: "i-simple-icons-airtable", iconClass: "text-[#18BFFF]" },
+  // { icon: "i-simple-icons-meta", iconClass: "text-[#0668E1]" },
 ];
 </script>
