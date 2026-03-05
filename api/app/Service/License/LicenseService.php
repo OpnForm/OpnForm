@@ -34,27 +34,29 @@ class LicenseService
     }
 
     /**
-     * Store an encrypted license key and trigger validation.
+     * Validate a license key and store it if valid.
      */
     public function storeLicenseKey(string $licenseKey): LicenseCheckResult
     {
-        $encrypted = encrypt($licenseKey);
-
-        License::updateOrCreate(
-            ['license_provider' => self::LICENSE_PROVIDER, 'user_id' => null],
-            [
-                'license_key' => $encrypted,
-                'status' => License::STATUS_ACTIVE,
-                'meta' => [],
-                'features' => null,
-                'last_checked_at' => null,
-                'expires_at' => null,
-            ]
-        );
-
+        $result = $this->validateAndCache($licenseKey);
         Cache::forget(self::CACHE_KEY);
+        Cache::forget('feature_flags');
 
-        return $this->validateAndCache($licenseKey);
+        if ($result->isActive()) {
+            License::updateOrCreate(
+                ['license_provider' => self::LICENSE_PROVIDER, 'user_id' => null],
+                [
+                    'license_key' => $licenseKey,
+                    'status' => License::STATUS_ACTIVE,
+                    'meta' => [],
+                    'features' => $result->features,
+                    'last_checked_at' => null,
+                    'expires_at' => $result->expiresAt,
+                ]
+            );
+        }
+
+        return $result;
     }
 
     /**
@@ -67,25 +69,7 @@ class LicenseService
             return null;
         }
 
-        try {
-            return decrypt($license->license_key);
-        } catch (\Exception $e) {
-            Log::error('Failed to decrypt license key', ['error' => $e->getMessage()]);
-
-            return null;
-        }
-    }
-
-    /**
-     * Remove the stored license key.
-     */
-    public function removeLicenseKey(): void
-    {
-        License::where('license_provider', self::LICENSE_PROVIDER)
-            ->whereNull('user_id')
-            ->delete();
-
-        Cache::forget(self::CACHE_KEY);
+        return $license->license_key;
     }
 
     /**
@@ -145,13 +129,8 @@ class LicenseService
      */
     private function validateAndCache(string $licenseKey): LicenseCheckResult
     {
-        $apiEndpoint = config('services.license.endpoint');
-
-        if (!$apiEndpoint) {
-            return $this->handleNoApiEndpoint($licenseKey);
-        }
-
         try {
+            $apiEndpoint = config('services.license.endpoint');
             $response = Http::timeout(self::API_TIMEOUT_SECONDS)
                 ->post("{$apiEndpoint}/licenses/validate", [
                     'licenseKey' => $licenseKey,
@@ -181,27 +160,6 @@ class LicenseService
         } catch (\Exception $e) {
             return $this->handleApiFailure($licenseKey, $e->getMessage());
         }
-    }
-
-    /**
-     * When no LICENSE_API_ENDPOINT is configured, treat a stored key as locally valid.
-     * This allows the system to work before the private API is built.
-     */
-    private function handleNoApiEndpoint(string $licenseKey): LicenseCheckResult
-    {
-        $license = $this->getLicenseRecord();
-        $features = $license?->features ?? $this->defaultEnterpriseFeatures();
-
-        $result = new LicenseCheckResult(
-            status: 'active',
-            features: $features,
-            lastChecked: now(),
-            expiresAt: null,
-        );
-
-        $this->cacheResult($result);
-
-        return $result;
     }
 
     /**
@@ -278,18 +236,6 @@ class LicenseService
     {
         return [
             'userCount' => \App\Models\User::count(),
-        ];
-    }
-
-    private function defaultEnterpriseFeatures(): array
-    {
-        return [
-            'sso' => true,
-            'multiOrg' => true,
-            'whitelabel' => true,
-            'custom_smtp' => true,
-            'audit_logs' => true,
-            'external_storage' => true,
         ];
     }
 }

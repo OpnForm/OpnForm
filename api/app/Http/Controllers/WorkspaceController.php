@@ -59,6 +59,13 @@ class WorkspaceController extends Controller
     public function saveEmailSettings(EmailSettingsRequest $request)
     {
         $this->authorize('adminAction', $request->workspace);
+
+        if ($request->workspace->hasFeature('custom_smtp')) {
+            return $this->error([
+                'message' => 'Need Self-Hosted license to use this feature.',
+            ], 403);
+        }
+
         if (!$request->workspace->is_pro) {
             return $this->error([
                 'message' => 'A Pro plan is required to use this feature.',

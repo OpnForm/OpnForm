@@ -9,7 +9,8 @@ class LicenseCheckResult
         public ?array $features = null,
         public ?\DateTimeInterface $lastChecked = null,
         public ?\DateTimeInterface $expiresAt = null,
-    ) {}
+    ) {
+    }
 
     public function isActive(): bool
     {

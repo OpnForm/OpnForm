@@ -12,6 +12,8 @@ use App\Http\Middleware\IsAdmin;
 use App\Http\Middleware\IsModerator;
 use App\Http\Middleware\IsNotSubscribed;
 use App\Http\Middleware\IsSubscribed;
+use App\Http\Middleware\EnsureCloudInstance;
+use App\Http\Middleware\EnsureSelfHostedInstance;
 use App\Http\Middleware\RequireFeature;
 use App\Http\Middleware\RequirePlan;
 use App\Http\Middleware\RequireProPlan;
@@ -120,6 +122,8 @@ class Kernel extends HttpKernel
         'require-pro' => RequireProPlan::class, // Legacy - use 'plan' or 'feature' instead
         'plan' => RequirePlan::class,           // Usage: ->middleware('plan:business')
         'feature' => RequireFeature::class,     // Usage: ->middleware('feature:custom_domain')
+        'cloud' => EnsureCloudInstance::class,  // Allow cloud instances only
+        'self-hosted' => EnsureSelfHostedInstance::class, // Allow self-hosted instances only
         'cache.headers' => \Illuminate\Http\Middleware\SetCacheHeaders::class,
         'can' => \Illuminate\Auth\Middleware\Authorize::class,
         'guest' => \App\Http\Middleware\RedirectIfAuthenticated::class,

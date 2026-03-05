@@ -11,6 +11,7 @@ const TIER_ORDER = {
   pro: 1,
   business: 2,
   enterprise: 3,
+  self_hosted: 4,
 }
 
 // Tier display names
@@ -19,6 +20,7 @@ const TIER_NAMES = {
   pro: 'Pro',
   business: 'Business',
   enterprise: 'Enterprise',
+  self_hosted: 'Enterprise',
 }
 
 /**
@@ -30,6 +32,7 @@ export const PLAN_PRICING = {
   pro: { monthly: 29, yearly: 25 },
   business: { monthly: 79, yearly: 67 },
   enterprise: { monthly: 250, yearly: 213 },
+  self_hosted: { monthly: 199, yearly: 165 },
 }
 
 // Feature to minimum tier mapping (mirrors config/plans.php)

@@ -6,6 +6,10 @@
         <p class="mt-1 text-sm text-neutral-500">
           Customize email sender - connect your SMTP server.
         </p>
+        <PlanTag
+          :self-hosted-only="true"
+          required-tier="self_hosted"
+        />
       </div>
 
       <UButton
@@ -29,7 +33,7 @@
         label: 'Try Pro plan',
         color: 'warning',
         variant: 'solid',
-        onClick: () => openSubscriptionModal()
+        onClick: () => openUpgradeModal()
       }]"
     />
 
@@ -114,15 +118,22 @@
 </template>
 
 <script setup>
+import PlanTag from "~/components/app/PlanTag.vue"
+
 const alert = useAlert()
 
 const { current: workspace } = useCurrentWorkspace()
 
-const { openSubscriptionModal: openModal } = useAppModals()
+const { openSubscriptionModal } = useAppModals()
 const crisp = useCrisp()
+const isSelfHosted = computed(() => useFeatureFlag('self_hosted'))
+const { canAccessEnterprise, hasLicenseFeature } = useInstanceLicense()
 
-const openSubscriptionModal = () => {
-  openModal({ modal_title: 'Upgrade to send emails using your own domain' })
+const openUpgradeModal = () => {
+  openSubscriptionModal({
+    plan: isSelfHosted.value ? 'self_hosted' : 'pro',
+    modal_title: 'Upgrade to send emails using your own domain'
+  })
 }
 
 const encryptionOptions = [
@@ -157,6 +168,14 @@ const clearEmailSettings = () => {
 }
 
 const saveChanges = () => {
+  if (isSelfHosted.value) {
+    const canAccessFeature = canAccessEnterprise.value && hasLicenseFeature('custom_smtp')
+    if (!canAccessFeature) {
+      openUpgradeModal()
+      return
+    }
+  }
+
   // Update the workspace Email Settings
   emailSettingsForm
     .put("/open/workspaces/" + workspace.value.id + "/email-settings", {

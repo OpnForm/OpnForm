@@ -122,7 +122,10 @@
                   </div>
                 </div>
               </section>
-              <footer class="justify-center py-1.5 mt-8 text-base font-medium leading-6 text-center text-blue-500 max-md:mt-10">
+              <footer 
+                v-if="!isSelfHosted" 
+                class="justify-center py-1.5 mt-8 text-base font-medium leading-6 text-center text-blue-500 max-md:mt-10"
+              >
                 <UButton
                   class="font-bold"
                   :to="{ name: 'pricing' }"
@@ -235,8 +238,7 @@
                       class="w-auto flex-grow"
                       :loading="form.busy || loading"
                       :disabled="form.busy || loading"
-                      :to="checkoutUrl"
-                      target="_blank"
+                      @click.prevent="onConfirmSubscription"
                     >
                       <template v-if="isSubscribed">
                         Upgrade to {{ selectedPlanName }}
@@ -327,6 +329,8 @@ const closeModal = () => {
   isOpen.value = false
 }
 
+const isSelfHosted = computed(() => useFeatureFlag('self_hosted'))
+
 const subscribeBroadcast = useBroadcastChannel('subscribe')
 const broadcastData = subscribeBroadcast.data
 const confetti = useConfetti()
@@ -343,7 +347,7 @@ const selectedPlanPrice = computed(() => {
 })
 
 const selectedPlanName = computed(() => {
-  const names = { pro: 'Pro', business: 'Business', enterprise: 'Enterprise' }
+  const names = { pro: 'Pro', business: 'Business', enterprise: 'Enterprise', self_hosted: 'Enterprise' }
   return names[currentPlan.value] || 'Pro'
 })
 
@@ -363,7 +367,8 @@ const modalDescription = computed(() => {
   const descriptions = {
     pro: 'Remove branding, use custom domains, and unlock all Pro features.',
     business: 'Get team roles, advanced analytics, and Business-tier integrations.',
-    enterprise: 'Enterprise-grade security with SSO, audit logs, and compliance features.'
+    enterprise: 'Enterprise-grade security with SSO, audit logs, and compliance features.',
+    self_hosted: 'Unlock all features and get the most out of OpnForm Enterprise License.'
   }
   return descriptions[currentPlan.value] || descriptions.pro
 })
@@ -416,11 +421,18 @@ const planFeatures = computed(() => {
     { icon: 'heroicons:document-text', title: 'Audit logs & compliance', description: 'Track all actions for security and compliance.' },
     { icon: 'heroicons:server', title: 'External storage', description: 'Store files in your own S3 or GCS buckets.' }
   ]
+
+  const selfHostedFeatures = [
+    { icon: 'heroicons:shield-check', title: 'SSO (SAML, OIDC, LDAP)', description: 'Enterprise authentication for your organization.' },
+    { icon: 'heroicons:document-text', title: 'Audit logs & compliance', description: 'Track all actions for security and compliance.' },
+    { icon: 'heroicons:server', title: 'External storage', description: 'Store files in your own S3 or GCS buckets.' }
+  ]
   
   const features = {
     pro: proFeatures,
     business: businessFeatures,
-    enterprise: enterpriseFeatures
+    enterprise: enterpriseFeatures,
+    self_hosted: selfHostedFeatures
   }
   
   return features[currentPlan.value] || proFeatures
@@ -545,7 +557,7 @@ watch(user, () => {
   updateUser()
 }, { immediate: true })
 
-const onSelectPlan = (planName) => {
+const onSelectPlan = async (planName) => {
   if (!authenticated.value) {
     closeModal()
     router.push({ name: "register" })
@@ -560,5 +572,31 @@ const onSelectPlan = (planName) => {
 
 const goBackToStep1 = () => {
   currentStep.value = 1
+}
+
+const onConfirmSubscription = async () => {
+  if (isSelfHosted.value) {
+    loading.value = true
+    const cloudApiUrl = useRuntimeConfig().public.licenseApiEndpoint
+    $fetch(`${cloudApiUrl}/licenses/create`, {
+      method: 'POST',
+      body: {
+        billingEmail: form.email || user.value?.email,
+        plan: 'self_hosted',
+        period: isYearly.value ? 'yearly' : 'monthly',
+        successUrl: 'https://opnform.com/self-hosted/checkout/success',
+        cancelUrl: 'https://opnform.com/self-hosted/checkout/canceled',
+      },
+    }).then((response) => {
+      window.open(response.checkoutUrl, '_blank')
+    }).catch(() => {
+      useAlert().error('Failed to start checkout. Please try again.')
+    }).finally(() => {
+      loading.value = false
+    })
+    return
+  }
+
+  window.open(checkoutUrl.value, '_blank')
 }
 </script>

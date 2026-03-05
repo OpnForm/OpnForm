@@ -98,6 +98,6 @@ return [
     ],
 
     'license' => [
-        'endpoint' => env('LICENSE_API_ENDPOINT'),
+        'endpoint' => 'https://api.opnform.com',
     ],
 ];

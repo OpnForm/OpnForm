@@ -77,6 +77,10 @@ Route::group(['middleware' => 'auth.multi'], function () {
             Route::delete('/{provider}', [OAuthProviderController::class, 'destroy'])->name('destroy');
         });
 
+        Route::prefix('/license')->name('license.')->middleware(['self-hosted'])->group(function () {
+            Route::post('/activate', [\App\Http\Controllers\Settings\LicenseController::class, 'activate'])->name('activate');
+        });
+
         Route::prefix('/two-factor')->name('two-factor.')->group(function () {
             Route::post('/enable', [\App\Http\Controllers\Settings\TwoFactorController::class, 'enable'])->name('enable');
             Route::post('/confirm', [\App\Http\Controllers\Settings\TwoFactorController::class, 'confirm'])->name('confirm');
@@ -413,6 +417,16 @@ Route::post(
     '/stripe/webhook',
     [\App\Http\Controllers\Webhook\StripeController::class, 'handleWebhook']
 )->name('cashier.webhook');
+
+/*
+ * Cloud API: Self-hosted license endpoints
+ * Only available on cloud instances (not self-hosted)
+ */
+Route::prefix('licenses')->middleware(['cloud', 'throttle:30,1'])->group(function () {
+    Route::post('/create', [\App\Http\Controllers\CloudApi\LicenseController::class, 'create'])->name('licenses.create');
+    Route::post('/validate', [\App\Http\Controllers\CloudApi\LicenseController::class, 'validateKey'])->name('licenses.validate');
+    Route::get('/{licenseKey}', [\App\Http\Controllers\CloudApi\LicenseController::class, 'show'])->name('licenses.show');
+});
 
 Route::post(
     '/vapor/signed-storage-url',

@@ -45,9 +45,10 @@ class FormEmailNotification extends Notification
     {
         $workspace = $this->event->form->workspace;
         $emailSettings = $workspace->settings['email_settings'] ?? [];
+        $allowCustomSmtp = (config('app.self_hosted') && $workspace->hasFeature('custom_smtp')) || $workspace->is_pro;
 
         if (
-            $workspace->is_pro
+            $allowCustomSmtp
             && $emailSettings
             && !empty($emailSettings['host'])
             && !empty($emailSettings['port'])
