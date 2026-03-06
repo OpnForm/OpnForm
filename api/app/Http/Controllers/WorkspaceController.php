@@ -60,7 +60,7 @@ class WorkspaceController extends Controller
     {
         $this->authorize('adminAction', $request->workspace);
 
-        if ($request->workspace->hasFeature('custom_smtp')) {
+        if (!$request->workspace->hasFeature('custom_smtp')) {
             return $this->error([
                 'message' => 'Need Self-Hosted license to use this feature.',
             ], 403);
@@ -80,6 +80,13 @@ class WorkspaceController extends Controller
     public function saveCustomCodeSettings(CustomCodeSettingsRequest $request)
     {
         $this->authorize('adminAction', $request->workspace);
+
+        if (!$request->workspace->hasFeature('custom_code')) {
+            return $this->error([
+                'message' => 'Need Self-Hosted license to use this feature.',
+            ], 403);
+        }
+
         if (!$request->workspace->is_pro) {
             return $this->error([
                 'message' => 'A Pro plan is required to use this feature.',

@@ -23,7 +23,7 @@
     </template>
 
     <template #body>
-      <template v-if="paidPlansEnabled && !hasActiveLicense">
+      <template v-if="!isSelfHosted && paidPlansEnabled && !hasActiveLicense">
         <UAlert
           v-if="workspace.is_pro"
           icon="i-heroicons-credit-card"
@@ -63,10 +63,7 @@
             label: 'Upgrade to Pro',
             color: 'warning',
             variant: 'solid',
-            onClick: () => openSubscriptionModal({
-              modal_title: 'Upgrade to invite users to your workspace',
-              modal_description: 'Upgrade to our Pro plan to unlock team collaboration features along with customized branding, form analytics, custom domains, and more!'
-            })
+            onClick: () => openUpgradeModal()
           }]"
         />
       </template>
@@ -124,7 +121,7 @@ const hasActiveLicense = computed(() => {
   return user.value !== null && user.value !== undefined && user.value.active_license !== null
 })
 const crisp = useCrisp()
-const { openSubscriptionModal: openModal } = useAppModals()
+const { openSubscriptionModal } = useAppModals()
 const { current: workspace, currentId: workspaceId } = useCurrentWorkspace()
 const alert = useAlert()
 
@@ -150,11 +147,15 @@ const closeModal = () => {
   isOpen.value = false
 }
 
-const openSubscriptionModal = () => {
-  openModal({ modal_title: 'Upgrade to invite users to your workspace' })
+const openUpgradeModal = () => {
+  openSubscriptionModal({
+    plan: isSelfHosted.value ? 'self_hosted' : 'pro',
+    modal_title: 'Upgrade to invite users to your workspace'
+  })
 }
 
 const paidPlansEnabled = ref(useFeatureFlag('billing.enabled'))
+const isSelfHosted = computed(() => useFeatureFlag('self_hosted'))
 
 const inviteUserForm = useForm({
   email: '',
@@ -178,7 +179,7 @@ const addUser = () => {
     emit('user-added')
     closeModal()
   }).catch((error) => {
-    alert.error(error.response?.data?.message || "There was an error adding user")
+    alert.error(error?.data?.message || "There was an error adding user")
   })
 }
 </script>

@@ -145,6 +145,7 @@ return [
             'custom_smtp' => ['custom_smtp'],
             'audit_logs' => ['audit_logs', 'compliance_features'],
             'external_storage' => ['external_storage'],
+            'custom_code' => ['custom_code', 'custom_css'],
         ],
     ],
 
