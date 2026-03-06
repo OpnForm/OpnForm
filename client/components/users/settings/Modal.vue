@@ -43,7 +43,7 @@
       v-if="isSelfHosted"
       id="license"
       label="License"
-      icon="i-heroicons-credit-card"
+      icon="i-heroicons-check-circle"
     >
       <LazyUsersSettingsLicense />
     </SettingsModalPage>

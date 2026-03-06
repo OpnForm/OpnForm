@@ -42,10 +42,6 @@ const props = defineProps({
   upgradeModalDescription: {
     type: String,
     default: null
-  },
-  selfHostedOnly: {
-    type: Boolean,
-    default: false
   }
 })
 
@@ -68,8 +64,7 @@ const displayTier = computed(() => {
 
 // Check if we should display the tag
 const shouldDisplayTag = computed(() => {
-  if(props.selfHostedOnly && useFeatureFlag('self_hosted')) return true
-  if (useFeatureFlag('self_hosted')) return false
+  if (props.requiredTier !== 'self_hosted' && useFeatureFlag('self_hosted')) return false
   if (!useFeatureFlag('billing.enabled')) return false
   if (!user.value || !workspace.value) return true
 

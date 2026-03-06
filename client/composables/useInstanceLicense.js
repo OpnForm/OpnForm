@@ -12,27 +12,37 @@ const LICENSE_FEATURES_MAPPING = {
   external_storage: ['external_storage'],
 }
 
+function getFlag(flags, path, defaultValue = null) {
+  if (!flags || typeof flags !== 'object') return defaultValue
+  return path.split('.').reduce((acc, part) => {
+    if (acc === undefined || acc === null) return defaultValue
+    return acc && acc[part] !== undefined ? acc[part] : defaultValue
+  }, flags)
+}
+
 export function useInstanceLicense() {
-  const isSelfHosted = useFeatureFlag('self_hosted', false)
-  const licenseData = useFeatureFlag('license', null)
+  const featureFlags = useState('featureFlags', () => ({}))
+
+  const isSelfHosted = computed(() => !!getFlag(featureFlags.value, 'self_hosted', false))
+  const licenseData = computed(() => getFlag(featureFlags.value, 'license', null))
 
   const licenseStatus = computed(() => {
-    if (!isSelfHosted || !licenseData) return null
-    return licenseData.status || 'invalid'
+    if (!isSelfHosted.value || !licenseData.value) return null
+    return licenseData.value.status || 'invalid'
   })
 
   const licenseFeatures = computed(() => {
-    if (!isSelfHosted || !licenseData) return null
-    return licenseData.features || null
+    if (!isSelfHosted.value || !licenseData.value) return null
+    return licenseData.value.features || null
   })
 
   const expiresAt = computed(() => {
-    if (!isSelfHosted || !licenseData) return null
-    return licenseData.expires_at || null
+    if (!isSelfHosted.value || !licenseData.value) return null
+    return licenseData.value.expires_at || null
   })
 
   const canAccessEnterprise = computed(() => {
-    if (!isSelfHosted) return false
+    if (!isSelfHosted.value) return false
     return licenseStatus.value === 'active' || licenseStatus.value === 'grace'
   })
 

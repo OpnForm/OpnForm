@@ -7,7 +7,6 @@
           Customize email sender - connect your SMTP server.
         </p>
         <PlanTag
-          :self-hosted-only="true"
           required-tier="self_hosted"
         />
       </div>

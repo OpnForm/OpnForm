@@ -73,7 +73,7 @@
                           </div>
                         </div>
                         <TrackClick
-                          v-if="['free', 'pro'].includes(user?.plan_tier)"
+                          v-if="isSelfHosted || ['free', 'pro'].includes(user?.plan_tier)"
                           name="upgrade_modal_start_trial"
                           :properties="{ plan: currentPlan, period: isYearly ? 'yearly' : 'monthly' }"
                           class="w-full"

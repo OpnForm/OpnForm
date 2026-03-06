@@ -29,7 +29,10 @@ class LicenseKeyNotification extends Notification implements ShouldQueue
             ->line('Your license key is ready. Copy it and enter it in your self-hosted instance to activate Enterprise features.')
             ->line('**Your License Key:**')
             ->line('`' . $this->licenseKey->license_key . '`')
-            ->line('**Click below to activate your license:**')
-            ->action('Activate License', front_url('home') . '?user-settings=license');
+            ->line('**How to activate your license:**')
+            ->line('1. Open your email and copy the license key.')
+            ->line('2. Go back to your self-hosted OpnForm instance.')
+            ->line('3. Click your avatar in the sidebar and open **User Settings**.')
+            ->line('4. Go to the **License** tab, paste your key, and click **Activate License**.');
     }
 }

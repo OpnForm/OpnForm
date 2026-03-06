@@ -13,6 +13,7 @@ class PlanService
     public const TIER_PRO = 'pro';
     public const TIER_BUSINESS = 'business';
     public const TIER_ENTERPRISE = 'enterprise';
+    public const TIER_SELF_HOSTED = 'self_hosted';
 
     /**
      * Tier order for comparison (higher = more features)
@@ -22,6 +23,7 @@ class PlanService
         self::TIER_PRO => 1,
         self::TIER_BUSINESS => 2,
         self::TIER_ENTERPRISE => 3,
+        self::TIER_SELF_HOSTED => 4,
     ];
 
     /**
@@ -234,7 +236,7 @@ class PlanService
         $licenseService = app(LicenseService::class);
         $result = $licenseService->checkLicense();
 
-        return $result->isActive() ? self::TIER_ENTERPRISE : self::TIER_FREE;
+        return $result->isActive() ? self::TIER_SELF_HOSTED : self::TIER_ENTERPRISE;
     }
 
     /**
