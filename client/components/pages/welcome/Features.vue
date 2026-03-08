@@ -1,14 +1,12 @@
 <template>
   <section id="features" class="px-8 lg:px-12">
-    <div
-      class="space-y-8 sm:space-y-12 mx-auto max-w-full sm:max-w-xl md:max-w-336"
-    >
+    <div class="space-y-8 sm:space-y-12 mx-auto w-full max-w-336">
       <div
         v-for="panel in panels"
         :key="panel.eyebrow"
-        class="rounded-4xl border border-neutral-200/80 bg-white py-10 sm:py-14 md:py-24 px-10 sm:px-14 md:px-24 lg:px-35"
+        class="rounded-4xl border border-gray-200/80 bg-white py-8 sm:py-10 lg:py-14 xl:py-24 px-8 md:px-10 lg:px-14 xl:px-35"
       >
-        <div class="grid gap-12 lg:gap-16 lg:grid-cols-2 items-center">
+        <div class="grid gap-8 lg:gap-16 lg:grid-cols-2 items-start">
           <div>
             <div
               :class="[
@@ -20,22 +18,22 @@
             </div>
 
             <h2
-              class="my-4 text-3xl sm:text-[40px] font-semibold sm:leading-12 tracking-[-1%] text-neutral-900"
+              class="my-4 text-3xl sm:text-[40px] font-semibold sm:leading-12 tracking-[-1%] text-gray-950"
             >
               {{ panel.title }}
             </h2>
 
             <p
-              class="text-base mt-4 leading-7 font-normal tracking-[-1.1%] text-neutral-500"
+              class="text-base mt-4 leading-7 font-normal tracking-[-1.1%] text-gray-600"
             >
               {{ panel.description }}
             </p>
 
-            <div class="mt-12 space-y-4">
+            <div class="mt-8 sm:mt-12 space-y-4">
               <div
                 v-for="item in panel.items"
                 :key="item.title"
-                class="flex items-start gap-4"
+                class="flex items-center gap-4"
               >
                 <div
                   :class="[
@@ -45,18 +43,18 @@
                 >
                   <UIcon
                     :name="item.icon"
-                    :class="['h-3.5 w-3.5', item.iconClass]"
+                    :class="['h-4 w-4', item.iconClass]"
                   />
                 </div>
                 <div
-                  class="text-base leading-7 font-medium tracking-[-1.1%] text-neutral-700"
+                  class="text-base leading-7 font-medium tracking-[-1.1%] text-gray-600"
                 >
                   {{ item.title }}
                 </div>
               </div>
             </div>
 
-            <div v-if="panel.link" class="mt-10">
+            <div v-if="panel.link" class="mt-8 sm:mt-10">
               <NuxtLink
                 :to="panel.link.to"
                 class="inline-flex items-center gap-2 font-semibold"
@@ -75,7 +73,7 @@
             <img
               :src="panel.imageSrc"
               :alt="panel.eyebrow"
-              class="w-full h-auto rounded-2xl"
+              class="w-full max-w-100 lg:max-w-120 mx-auto h-auto rounded-2xl"
               loading="lazy"
             />
           </div>
@@ -86,12 +84,12 @@
     <div class="py-14 md:py-28">
       <div class="max-w-3xl mx-auto text-center">
         <h2
-          class="text-3xl sm:text-5xl sm:leading-14 font-semibold text-neutral-900 tracking-[-1%]"
+          class="text-3xl sm:text-5xl sm:leading-14 font-semibold text-gray-950 tracking-[-1%]"
         >
           Everything you expect from a modern form builder.
         </h2>
         <p
-          class="mx-auto max-w-lg mt-4 text-base leading-7 font-medium tracking-[-1.1%] text-neutral-500"
+          class="mx-auto max-w-lg mt-4 text-base leading-7 font-medium tracking-[-1.1%] text-gray-600"
         >
           Automate your workflows with native integrations or connect anything
           with webhooks and our public API.
@@ -109,7 +107,7 @@
           :class="
             activeTab === tab.key
               ? 'bg-blue-50 border-blue-200 text-blue-700'
-              : 'bg-white border-neutral-200 text-neutral-600 hover:bg-neutral-50'
+              : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
           "
           @click="activeTab = tab.key"
         >
@@ -119,17 +117,17 @@
       </div>
 
       <div
-        class="mt-8 rounded-[24px] mx-auto max-w-266 border border-neutral-200/80 bg-white p-8"
+        class="mt-8 rounded-[24px] mx-auto max-w-266 border border-gray-200/80 bg-white p-8 md:p-10 lg:p-8"
       >
         <div class="grid gap-8 lg:grid-cols-2 items-center">
           <div>
             <div
-              class="text-2xl leading-8 font-semibold tracking-[-0.5%] text-neutral-900"
+              class="text-2xl leading-8 font-semibold tracking-[-0.5%] text-gray-950"
             >
               {{ activeContent.title }}
             </div>
             <p
-              class="mt-4 text-base leading-7 font-normal tracking-[-1.1%] text-neutral-500"
+              class="mt-4 text-base leading-7 font-normal tracking-[-1.1%] text-gray-600"
             >
               {{ activeContent.description }}
             </p>
@@ -138,14 +136,14 @@
               <div
                 v-for="point in activeContent.points"
                 :key="point"
-                class="flex items-start gap-4 text-base leading-7 font-medium tracking-[-1.1%] text-neutral-700"
+                class="flex items-start gap-4 text-base leading-7 font-medium tracking-[-1.1%] text-gray-600"
               >
                 <div
                   class="h-6 w-6 bg-primary-100 flex justify-center items-center rounded-[6px]"
                 >
                   <UIcon
                     name="i-heroicons-check-20-solid"
-                    class="h-3.5 w-3.5 text-blue-500"
+                    class="h-4.5 w-4.5 text-blue-500"
                   />
                 </div>
                 <span>{{ point }}</span>
@@ -157,7 +155,7 @@
             <img
               :src="activeContent.imageSrc"
               :alt="activeContent.title"
-              class="w-full h-auto rounded-2xl"
+              class="w-full max-w-100 lg:max-w-121 max-auto h-auto rounded-2xl"
               loading="lazy"
             />
           </div>

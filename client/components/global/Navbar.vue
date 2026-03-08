@@ -1,5 +1,5 @@
 <template>
-  <nav v-if="hasNavbar" class="bg-white dark:bg-notion-dark border-b">
+  <nav v-if="hasNavbar" class="bg-white dark:bg-notion-dark">
     <div class="max-w-7xl mx-auto px-8">
       <div class="flex items-center justify-between h-14">
         <div class="flex items-center gap-2">
@@ -9,7 +9,7 @@
           >
             <img src="/img/logo.svg" alt="notion tools logo" class="w-6 h-6" />
             <span
-              class="ml-2 text-md hidden sm:inline text-black dark:text-white"
+              class="ml-2 text-md hidden sm:inline text-gray-950 dark:text-white"
               >OpnForm</span
             >
           </NuxtLink>
@@ -151,8 +151,7 @@
                   <UButton
                     v-if="$route.name !== 'login'"
                     :to="{ name: 'login' }"
-                    variant="outline"
-                    color="neutral"
+                    class="bg-gray-100! text-gray-600! text-sm leading-5 tracking-[-0.6%] font-medium"
                     label="Login"
                   />
 
