@@ -11,19 +11,19 @@
             >
               NEW
             </span>
-            <span class="font-normal text-gray-700">
+            <span class="font-normal text-gray-600">
               Built for Teams & Enterprises
             </span>
           </div>
           <h1
-            class="text-4xl sm:text-[56px] sm:leading-16 tracking-[-1%] font-semibold text-neutral-900 my-4"
+            class="text-4xl sm:text-[56px] sm:leading-16 tracking-[-1%] font-semibold text-gray-950 my-4"
           >
             Build beautiful forms,
             <span class="text-blue-600">fast.</span>
           </h1>
 
           <p
-            class="text-lg sm:text-xl leading-7 tracking-[-1.5%] sm:leading-8 font-normal text-neutral-500"
+            class="text-lg sm:text-xl leading-7 tracking-[-1.5%] sm:leading-8 font-normal text-gray-600"
           >
             Create powerful forms in minutes with a clean, modern builder that
             works the way you do. Unlimited submissions, AI-powered creation,
@@ -67,7 +67,8 @@
                   name="i-heroicons-building-office-2"
                   class="h-5 w-5 text-blue-600"
                 />
-                <span class="text-base leading-7 tracking-[-1.1%] font-medium"
+                <span
+                  class="text-base leading-7 tracking-[-1.1%] font-medium text-gray-600"
                   >10k+ Companies</span
                 >
               </div>
@@ -85,7 +86,7 @@
                 <NuxtLink
                   to="https://github.com/OpnForm/OpnForm"
                   target="_blank"
-                  class="text-base leading-7 tracking-[-1.1%] font-medium text-neutral-600"
+                  class="text-base leading-7 tracking-[-1.1%] font-medium text-gray-600"
                   >3k+ GitHub Stars</NuxtLink
                 >
               </div>
@@ -100,7 +101,8 @@
                   name="i-heroicons-star-solid"
                   class="h-5 w-5 text-green-500"
                 />
-                <span class="text-base leading-7 tracking-[-1.1%] font-medium"
+                <span
+                  class="text-base leading-7 tracking-[-1.1%] font-medium text-gray-600"
                   >Trustpilot grade</span
                 >
               </div>
@@ -108,15 +110,18 @@
           </div>
         </div>
       </div>
-      <div class="relative pt-8 pb-12 sm:pt-12 sm:pb-24">
+      <div class="relative pt-12 pb-12 sm:pb-24 px-8 lg:px-12">
         <div class="absolute inset-0">
           <img
-            class="w-full h-full object-cover object-top opacity-[0.20]"
+            class="w-full h-full object-cover object-top opacity-[0.20] relative z-1"
             src="/img/pages/ai_form_builder/background-pattern.svg"
             alt="Page abstract background"
           />
           <div
-            class="min-h-3/5 absolute bottom-0 left-0 right-0 bg-linear-to-b from-transparent to-white"
+            class="w-full h-full bg-linear-to-b from-white from-35% via-blue-100 via-60% to-white to-85% absolute inset-0"
+          ></div>
+          <div
+            class="min-h-3/5 absolute bottom-0 left-0 right-0 bg-linear-to-b from-transparent to-white z-2"
           ></div>
         </div>
         <LiveDemo />

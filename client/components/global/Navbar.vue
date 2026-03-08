@@ -1,15 +1,15 @@
 <template>
-  <nav v-if="hasNavbar" class="bg-white dark:bg-notion-dark border-b">
+  <nav v-if="hasNavbar" class="bg-white dark:bg-notion-dark">
     <div class="max-w-7xl mx-auto px-8">
       <div class="flex items-center justify-between h-14">
         <div class="flex items-center gap-2">
           <NuxtLink
             :to="{ name: user ? 'home' : 'index' }"
-            class="flex-shrink-0 font-semibold hover:no-underline flex items-center"
+            class="shrink-0 font-semibold hover:no-underline flex items-center"
           >
             <img src="/img/logo.svg" alt="notion tools logo" class="w-6 h-6" />
             <span
-              class="ml-2 text-md hidden sm:inline text-black dark:text-white"
+              class="ml-2 text-md hidden sm:inline text-gray-950 dark:text-white"
               >OpnForm</span
             >
           </NuxtLink>
@@ -22,7 +22,7 @@
               >
                 <WorkspaceIcon :workspace="workspace" />
                 <p
-                  class="hidden md:block max-w-10 truncate text-sm ml-2 text-neutral-800 dark:text-neutral-200"
+                  class="hidden md:block max-w-10 truncate text-sm ml-2 text-gray-800 dark:text-gray-200"
                 >
                   {{ workspace.name }}
                 </p>
@@ -146,8 +146,7 @@
                   <UButton
                     v-if="$route.name !== 'login'"
                     :to="{ name: 'login' }"
-                    variant="outline"
-                    color="neutral"
+                    class="bg-gray-100! text-gray-600! text-sm leading-5 tracking-[-0.6%] font-medium"
                     label="Login"
                   />
 

@@ -1,10 +1,10 @@
 <template>
   <div class="px-8 lg:px-12">
     <div
-      class="mx-auto max-w-full sm:max-w-xl md:max-w-336 rounded-4xl bg-linear-to-br from-neutral-950 via-neutral-900 to-neutral-950 shadow-2xl overflow-hidden"
+      class="mx-auto w-full max-w-336 rounded-4xl bg-linear-to-br from-neutral-950 via-neutral-900 to-neutral-950 shadow-2xl overflow-hidden"
     >
       <div
-        class="grid lg:grid-cols-2 gap-12 md:gap-16 items-center py-10 sm:py-14 md:py-24 px-10 sm:px-14 md:px-24 lg:px-35"
+        class="grid xl:grid-cols-2 gap-12 md:gap-16 items-center py-8 md:py-10 lg:py-14 xl:py-24 px-8 md:px-10 lg:px-14 xl:px-35"
       >
         <div class="max-w-124">
           <div
@@ -18,7 +18,7 @@
             Connect OpnForm to your workflow.
           </h3>
           <p
-            class="text-base tracking-[-1.1%] font-medium leading-7 text-neutral-300"
+            class="text-base tracking-[-1.1%] font-medium leading-7 text-gray-400"
           >
             Send responses instantly to your tools. Automate notifications. Sync
             data across your stack with one click.
@@ -34,18 +34,16 @@
           </div>
         </div>
 
-        <div class="flex justify-center lg:justify-end">
-          <div
-            class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-4 xl:grid-cols-5 gap-4"
-          >
+        <div class="flex justify-center xl:justify-end">
+          <div class="grid grid-cols-5 gap-4">
             <div
               v-for="app in integrationApps"
               :key="app.icon"
-              class="h-22 w-22 rounded-2xl bg-white/5 ring-1 ring-white/10 flex items-center justify-center backdrop-blur-sm"
+              class="h-14 sm:h-22 w-14 sm:w-22 rounded-2xl bg-white/5 ring-1 ring-white/10 flex items-center justify-center backdrop-blur-sm"
             >
               <UIcon
                 :name="app.icon"
-                class="h-12 w-12"
+                class="h-9 sm:h-12 w-9 sm:w-12"
                 :class="app.iconClass"
               />
             </div>
