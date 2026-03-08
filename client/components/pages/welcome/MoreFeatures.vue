@@ -2,17 +2,16 @@
   <section class="bg-white">
     <Integrations />
   </section>
-
   <section class="bg-white py-14 sm:py-28 px-8 lg:px-12">
     <div class="max-w-266 mx-auto">
       <div class="text-center">
         <h3
-          class="text-3xl sm:text-5xl sm:leading-14 font-semibold text-neutral-900 tracking-[-1%]"
+          class="text-3xl sm:text-5xl sm:leading-14 font-semibold text-gray-950 tracking-[-1%]"
         >
           Share your form anywhere.
         </h3>
         <p
-          class="mt-4 text-base font-normal text-neutral-500 leading-7 tracking-[-1.1%]"
+          class="mt-4 text-base font-normal text-gray-600 leading-7 tracking-[-1.1%]"
         >
           Choose the distribution method that fits your workflow.
         </p>
@@ -23,34 +22,36 @@
           <div
             v-for="card in shareCards"
             :key="card.key"
-            class="rounded-[24px] bg-neutral-50 border border-neutral-200/70 pt-6 pl-6 overflow-hidden"
+            class="rounded-[24px] bg-gray-50 border border-gray-200/70 pt-8 md:pt-10 lg:pt-6 pl-8 md:pl-10 lg:pl-6 overflow-hidden"
             :class="card.size === 'large' ? 'lg:col-span-2' : ''"
           >
             <div
-              class="grid gap-6 items-start relative"
-              :class="
-                card.size === 'large' ? 'lg:grid-cols-12' : 'sm:grid-cols-12'
-              "
+              class="grid gap-3 sm:gap-6 sm:grid-cols-12 relative"
+              :class="card.size === 'large' ? 'items-end' : 'items-start'"
             >
               <div
-                class="flex flex-col items-start gap-6 pb-6"
+                class="flex flex-col items-start gap-6 lg:pb-6"
                 :class="
-                  card.size === 'large' ? 'lg:col-span-3' : 'sm:col-span-5'
+                  card.size === 'large'
+                    ? 'sm:col-span-4 lg:col-span-3 sm:pb-6 md:pb-10'
+                    : 'sm:col-span-6 md:col-span-5'
                 "
               >
                 <div
-                  class="h-16 w-16 rounded-[20px] ring-1 flex items-center justify-center bg-white shadow-xs ring-neutral-200/70"
+                  class="h-16 w-16 rounded-[20px] flex items-center justify-center bg-white shadow-xs"
                 >
                   <UIcon :name="card.icon" class="h-8 w-8 text-blue-600" />
                 </div>
-                <div class="text-xl leading-7 font-medium text-neutral-900">
+                <div class="text-xl leading-7 font-medium text-neutral-950">
                   {{ card.title }}
                 </div>
               </div>
 
               <div
                 :class="
-                  card.size === 'large' ? 'lg:col-span-9' : 'sm:col-span-7'
+                  card.size === 'large'
+                    ? '-ml-8 sm:ml-0 sm:col-span-8 lg:col-span-9'
+                    : 'sm:col-span-6 md:col-span-7 max-w-[278.16px] ml-auto'
                 "
               >
                 <img
@@ -66,7 +67,7 @@
       </div>
 
       <div
-        class="mt-12 sm:mt-16 text-center text-base font-normal text-neutral-500 leading-7 tracking-[-1.1%]"
+        class="mt-12 sm:mt-16 text-center text-base font-normal text-gray-600 leading-7 tracking-[-1.1%]"
       >
         Your forms are accessible wherever your audience is.
       </div>
@@ -89,34 +90,32 @@
   <section class="bg-white">
     <div class="px-8 lg:px-12">
       <div
-        class="mx-auto max-w-full sm:max-w-xl md:max-w-336 rounded-4xl bg-neutral-50 border border-neutral-200/60 overflow-hidden"
+        class="mx-auto w-full max-w-336 rounded-4xl bg-neutral-50 border border-neutral-200/60 overflow-hidden"
       >
         <div
-          class="relative py-10 sm:py-14 md:py-24 px-10 sm:px-14 md:px-24 lg:px-35"
+          class="relative py-8 sm:py-10 lg:py-14 xl:py-24 px-8 md:px-10 lg:px-14 xl:px-35"
         >
           <img
             src="/img/pages/welcome/Graphic.svg"
-            class="absolute top-[45%] min-w-[134%] -translate-x-[17%]"
+            class="absolute top-[80%] md:top-[70%] lg:top-[45%] left-0 right-0 min-w-full object-cover min-h-[20%] md:min-h-[30%] lg:min-h-[55%]"
           />
           <div
             class="grid grid-cols-1 lg:grid-cols-2 gap-12 md:gap-16 relative z-10"
           >
-            <div
-              class="flex flex-col items-start gap-2 min-w-full lg:min-w-138"
-            >
+            <div class="flex flex-col items-start gap-2">
               <h3
-                class="text-3xl sm:text-5xl sm:leading-14 font-semibold text-neutral-900 tracking-[-1%]"
+                class="text-3xl sm:text-5xl sm:leading-14 font-semibold text-gray-950 tracking-[-1%] xl:w-138"
               >
                 Open-source. Secure. Yours to host anywhere.
               </h3>
               <p
-                class="my-4 text-base font-normal text-neutral-500 leading-7 tracking-[-1.1%]"
+                class="my-4 text-base font-normal text-gray-600 leading-7 tracking-[-1.1%]"
               >
                 OpnForm is fully open-source and built for privacy-first
                 organizations.
               </p>
               <p
-                class="text-base font-normal text-neutral-500 leading-7 tracking-[-1.1%]"
+                class="text-base font-normal text-gray-600 leading-7 tracking-[-1.1%]"
               >
                 Use our EU-based cloud or deploy on-premise to keep full control
                 of your data.
@@ -127,12 +126,12 @@
                   name: authenticated ? 'forms-create' : 'forms-create-guest',
                 }"
                 size="lg"
-                class="my-10 pl-4 pr-3.5 py-2.5 rounded-[12px] text-base leading-7 tracking-[-1.1%] font-medium"
+                class="my-4 lg:my-10 pl-4 pr-3.5 py-2.5 rounded-[12px] text-base leading-7 tracking-[-1.1%] font-medium"
                 trailing-icon="i-heroicons-arrow-up-right-20-solid"
                 label="Create a Form"
               />
 
-              <div class="flex flex-wrap gap-8 text-blue-600">
+              <div class="flex flex-wrap gap-4 sm:gap-8 text-blue-600">
                 <a
                   class="inline-flex items-center gap-1 hover:no-underline hover:text-blue-700 text-base font-medium leading-7 tracking-[-1.1%]"
                   :href="opnformConfig.links.github_url"
@@ -172,11 +171,11 @@
                 </a>
               </div>
             </div>
-            <div class="flex flex-col gap-3 lg:pl-6">
+            <div class="flex flex-col gap-3 xl:pl-13">
               <div
                 v-for="pill in securityPills"
                 :key="pill.label"
-                class="flex items-center gap-2.5 w-fit rounded-full bg-white border border-neutral-200/80 py-1.5 pl-1.5 pr-4 text-sm leading-5 tracking-[-0.6%] font-medium text-neutral-900 shadow-sm"
+                class="flex items-center gap-2.5 w-fit rounded-full bg-white border border-neutral-200/80 py-1.5 pl-1.5 pr-4 text-sm leading-5 tracking-[-0.6%] font-medium text-gray-950 shadow-sm"
               >
                 <div
                   class="h-8 w-8 shrink-0 rounded-full flex items-center justify-center"
@@ -184,7 +183,7 @@
                 >
                   <UIcon
                     :name="pill.icon"
-                    class="h-4 w-4"
+                    class="h-5.5 w-5.5"
                     :class="pill.iconClass"
                   />
                 </div>
@@ -201,14 +200,14 @@
     <div class="max-w-266 mx-auto">
       <div class="text-center">
         <h3
-          class="text-3xl sm:text-5xl sm:leading-14 font-semibold text-neutral-900 tracking-[-1%]"
+          class="text-3xl sm:text-5xl sm:leading-14 font-semibold text-gray-950 tracking-[-1%]"
         >
           Flexible for individuals —
           <br />
           reliable for teams.
         </h3>
         <p
-          class="mt-4 text-base font-normal text-neutral-500 leading-7 tracking-[-1.1%]"
+          class="mt-4 text-base font-normal text-gray-600 leading-7 tracking-[-1.1%]"
         >
           Manage forms at scale with powerful collaboration and compliance
           features.
@@ -220,28 +219,28 @@
           <div
             v-for="block in teamFeatureBlocks.slice(0, 2)"
             :key="block.title"
-            class="overflow-hidden relative rounded-[24px] bg-neutral-50 p-8 shadow-sm ring-1 ring-neutral-200"
+            class="overflow-hidden relative rounded-[24px] bg-neutral-50 p-8 shadow-sm"
           >
             <h4
-              class="text-xl leading-7 tracking-[-0.6%] font-semibold text-neutral-900"
+              class="text-xl leading-7 tracking-[-0.6%] font-semibold text-gray-950"
             >
               {{ block.title }}
             </h4>
             <p
-              class="mt-4 text-base font-normal text-neutral-500 leading-7 tracking-[-1.1%]"
+              class="mt-4 text-base font-normal text-gray-600 leading-7 tracking-[-1.1%]"
             >
               {{ block.description }}
             </p>
-            <div class="mt-4 -mx-8 -mb-12">
+            <div class="mt-4 -mx-8 -mb-8">
               <img
                 :src="block.image"
                 :alt="block.title"
-                class="w-full rounded-t-xl object-cover"
+                class="w-full max-w-114 mx-auto rounded-t-xl object-cover"
                 loading="lazy"
               />
             </div>
             <div
-              class="absolute bottom-0 left-0 right-0 min-h-2/6 bg-linear-to-b from-transparent to-[#F8FAFC]"
+              class="absolute bottom-0 left-0 right-0 min-h-1/5 bg-linear-to-b from-transparent to-[#F8FAFC]"
             ></div>
           </div>
         </div>
@@ -249,24 +248,26 @@
           <div
             v-for="block in teamFeatureBlocks.slice(2)"
             :key="block.title"
-            class="overflow-hidden relative rounded-3xl bg-neutral-50 p-8 shadow-sm ring-1 ring-neutral-200"
+            class="overflow-hidden relative rounded-3xl bg-neutral-50 p-8 shadow-sm"
           >
-            <h4 class="text-xl font-semibold text-neutral-900">
+            <h4 class="text-xl font-semibold text-gray-950">
               {{ block.title }}
             </h4>
-            <p class="mt-4 text-base font-medium text-neutral-500 leading-7">
+            <p class="mt-4 text-base font-medium text-gray-600 leading-7">
               {{ block.description }}
             </p>
-            <div class="mt-6 -mx-8 -mb-12">
+            <div
+              class="flex lg:block justify-end items-end mt-6 -mr-8 lg:-ml-2 -mb-12"
+            >
               <img
                 :src="block.image"
                 :alt="block.title"
-                class="w-full rounded-t-xl object-cover"
+                class="w-full max-w-78.5 rounded-t-xl object-cover"
                 loading="lazy"
               />
             </div>
             <div
-              class="absolute bottom-0 left-0 right-0 min-h-2/6 bg-linear-to-b from-transparent to-[#F8FAFC]"
+              class="absolute bottom-0 left-0 right-0 min-h-1/5 bg-linear-to-b from-transparent to-[#F8FAFC]"
             ></div>
           </div>
         </div>

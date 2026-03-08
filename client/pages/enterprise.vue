@@ -1,56 +1,94 @@
 <template>
   <div>
-    <section class="py-14 sm:py-28 px-8 sm:px-12 bg-white">
-      <div class="max-w-3xl mx-auto text-center">
-        <h1
-          class="text-4xl sm:text-[56px] sm:leading-16 tracking-[-1%] font-semibold text-neutral-900"
-        >
-          Powerful and secure form
-          <br />
-          builder for all your teams
-        </h1>
-        <p
-          class="mt-4 text-lg sm:text-xl leading-7 tracking-[-1.5%] sm:leading-8 font-normal text-neutral-500"
-        >
-          OpnForm Enterprise gives your organization full control over your data
-          and infrastructure — whether you self-host or use our managed cloud.
-        </p>
-
-        <div
-          class="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4"
-        >
-          <UButton
-            :to="opnformConfig.links.book_onboarding"
-            target="_blank"
-            label="Book a Demo"
-            trailing-icon="i-heroicons-arrow-up-right-20-solid"
-            size="lg"
-            class="pl-4 pr-3.5 py-2.5 rounded-[12px] text-base leading-7 tracking-[-1.1%] font-medium"
-          />
-          <UButton
-            :to="opnformConfig.links.self_hosting"
-            target="_blank"
-            label="Explore Self-Hosting"
-            variant="outline"
-            size="lg"
-            class="px-4 py-2.5 rounded-[12px] text-base leading-7 tracking-[-1.1%] font-medium"
-          />
-        </div>
-
-        <div class="mt-12 sm:mt-16">
-          <div
-            class="text-base leading-7 tracking-[-1.1%] font-medium text-neutral-600"
+    <section class="relative">
+      <div class="py-14 sm:py-28 px-8 sm:px-12 relative z-2">
+        <div class="max-w-3xl mx-auto text-center">
+          <h1
+            class="text-4xl sm:text-[56px] sm:leading-16 tracking-[-1%] font-semibold text-gray-950"
           >
-            Trusted by teams that value transparency, flexibility, and security.
+            Powerful and secure form
+            <br />
+            builder for all your teams
+          </h1>
+          <p
+            class="mt-4 text-lg sm:text-xl leading-7 tracking-[-1.5%] sm:leading-8 font-normal text-gray-600"
+          >
+            OpnForm Enterprise gives your organization full control over your
+            data and infrastructure — whether you self-host or use our managed
+            cloud.
+          </p>
+
+          <div
+            class="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4"
+          >
+            <UButton
+              :to="opnformConfig.links.book_onboarding"
+              target="_blank"
+              label="Book a Demo"
+              trailing-icon="i-heroicons-arrow-up-right-20-solid"
+              size="lg"
+              class="pl-4 pr-3.5 py-2.5 rounded-[12px] text-base leading-7 tracking-[-1.1%] font-medium"
+            />
+            <UButton
+              :to="opnformConfig.links.self_hosting"
+              target="_blank"
+              label="Explore Self-Hosting"
+              variant="outline"
+              size="lg"
+              class="px-4 py-2.5 rounded-[12px] text-base leading-7 tracking-[-1.1%] font-medium"
+            />
           </div>
-          <img
-            src="/img/pages/welcome/trusted-teams.png"
-            alt="Trusted teams"
-            class="m-auto mt-6 max-w-3xl w-full h-auto opacity-80"
-            loading="lazy"
-          />
+
+          <div class="mt-12 sm:mt-16">
+            <div
+              class="text-base leading-7 tracking-[-1.1%] font-medium text-gray-600"
+            >
+              Trusted by teams that value transparency, flexibility, and
+              security.
+            </div>
+            <div class="mt-6 flex items-center justify-center gap-12 flex-wrap">
+              <div class="w-fit">
+                <img
+                  src="/img/pages/welcome/vanguard-1.png"
+                  alt="Trusted Teams"
+                  class="w-full"
+                />
+              </div>
+              <div class="w-fit">
+                <img
+                  src="/img/pages/welcome/logo-berkeley-2.png"
+                  alt="Trusted Teams"
+                  class="w-full"
+                />
+              </div>
+              <div class="w-fit">
+                <img
+                  src="/img/pages/welcome/UN_emblem_blue-2.png"
+                  alt="Trusted Teams"
+                  class="w-full"
+                />
+              </div>
+              <div class="w-fit">
+                <img
+                  src="/img/pages/welcome/Frame-47.png"
+                  alt="Trusted Teams"
+                  class="w-full"
+                />
+              </div>
+              <div class="w-fit">
+                <img
+                  src="/img/pages/welcome/Zomato_Logo-2.png"
+                  alt="Trusted Teams"
+                  class="w-full"
+                />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
+      <div
+        class="w-full h-full bg-linear-to-b from-white from-35% via-blue-50 via-60% to-white to-85% absolute inset-0"
+      ></div>
     </section>
 
     <section class="py-14 sm:py-28 px-8 sm:px-12 bg-white">
@@ -63,7 +101,7 @@
           </div>
 
           <h2
-            class="my-4 text-4xl sm:text-5xl sm:leading-14 tracking-[-1%] font-semibold text-neutral-900"
+            class="my-4 text-4xl sm:text-5xl sm:leading-14 tracking-[-1%] font-semibold text-gray-950"
           >
             Your Data,
             <br />
@@ -73,7 +111,7 @@
           </h2>
 
           <p
-            class="text-base leading-7 tracking-[-1.1%] font-normal text-neutral-500"
+            class="text-base leading-7 tracking-[-1.1%] font-normal text-gray-600"
           >
             Choose how and where you host your forms — without compromising on
             enterprise-grade security.
@@ -84,42 +122,42 @@
           class="my-12 sm:my-16 flex flex-wrap items-center justify-center gap-4"
         >
           <div
-            class="inline-flex items-center gap-2 rounded-full bg-white pl-1.5 pr-4 py-1.5 text-sm leading-5 tracking-[-0.6%] font-medium text-neutral-800 shadow-sm"
+            class="inline-flex items-center gap-2 rounded-full bg-white pl-1.5 pr-4 py-1.5 text-sm leading-5 tracking-[-0.6%] font-medium text-gray-950 shadow-sm border border-gray-200"
           >
             <span
               class="h-8 w-8 rounded-full bg-purple-50 flex items-center justify-center"
             >
               <UIcon
                 name="i-heroicons-lock-closed"
-                class="h-4 w-4 text-purple-600"
+                class="h-5.5 w-5.5 text-purple-600"
               />
             </span>
             <span>Single Sign-On (SSO) / SAML</span>
           </div>
 
           <div
-            class="inline-flex items-center gap-2 rounded-full bg-white pl-1.5 pr-4 py-1.5 text-sm leading-5 tracking-[-0.6%] font-medium text-neutral-800 shadow-sm"
+            class="inline-flex items-center gap-2 rounded-full bg-white pl-1.5 pr-4 py-1.5 text-sm leading-5 tracking-[-0.6%] font-medium text-gray-950 shadow-sm border border-gray-200"
           >
             <span
               class="h-8 w-8 rounded-full bg-red-50 flex items-center justify-center"
             >
               <UIcon
                 name="i-heroicons-shield-check"
-                class="h-4 w-4 text-red-600"
+                class="h-5.5 w-5.5 text-red-600"
               />
             </span>
             <span>GDPR SOC2</span>
           </div>
 
           <div
-            class="inline-flex items-center gap-2 rounded-full bg-white pl-1.5 pr-4 py-1.5 text-sm leading-5 tracking-[-0.6%] font-medium text-neutral-800 shadow-sm"
+            class="inline-flex items-center gap-2 rounded-full bg-white pl-1.5 pr-4 py-1.5 text-sm leading-5 tracking-[-0.6%] font-medium text-gray-950 shadow-sm border border-gray-200"
           >
             <span
               class="h-8 w-8 rounded-full bg-blue-50 flex items-center justify-center"
             >
               <UIcon
                 name="i-heroicons-globe-europe-africa"
-                class="h-4 w-4 text-blue-500"
+                class="h-5.5 w-5.5 text-blue-500"
               />
             </span>
             <span>Hosted in Europe</span>
@@ -130,7 +168,7 @@
           <div
             v-for="item in securityFeatures"
             :key="item.title"
-            class="rounded-3xl bg-neutral-50 p-8"
+            class="rounded-3xl bg-gray-50 p-8"
           >
             <div
               class="h-16 w-16 rounded-[20px] bg-white shadow-sm flex items-center justify-center"
@@ -138,11 +176,11 @@
               <UIcon :name="item.icon" class="h-8 w-8 text-blue-600" />
             </div>
 
-            <div class="mt-8 text-xl leading-7 font-medium text-neutral-900">
+            <div class="mt-8 text-xl leading-7 font-medium text-gray-950">
               {{ item.title }}
             </div>
             <div
-              class="mt-4 text-base tracking-[-1.1%] font-medium leading-7 text-neutral-600"
+              class="mt-4 text-base tracking-[-1.1%] font-medium leading-7 text-gray-600"
             >
               {{ item.description }}
             </div>
@@ -173,14 +211,14 @@
           </div>
 
           <h2
-            class="my-4 text-4xl sm:text-5xl sm:leading-14 tracking-[-1%] font-semibold text-neutral-900"
+            class="my-4 text-4xl sm:text-5xl sm:leading-14 tracking-[-1%] font-semibold text-gray-950"
           >
             Forms that adapt <br />
             to all your needs
           </h2>
 
           <p
-            class="max-w-lg mx-auto text-base leading-7 tracking-[-1.1%] font-normal text-neutral-500"
+            class="max-w-lg mx-auto text-base leading-7 tracking-[-1.1%] font-normal text-gray-600"
           >
             Build, automate, and integrate secure forms at scale — all without
             writing a single line of code.
@@ -191,16 +229,16 @@
           <div
             v-for="item in enterpriseFeatures"
             :key="item.title"
-            class="overflow-hidden relative rounded-3xl bg-neutral-50 p-8 flex flex-col justify-between"
+            class="overflow-hidden relative rounded-3xl bg-gray-50 p-8 flex flex-col justify-between"
           >
             <div>
               <div
-                class="text-xl leading-7 tracking-[-0.6%] font-semibold text-neutral-900"
+                class="text-xl leading-7 tracking-[-0.6%] font-semibold text-gray-950"
               >
                 {{ item.title }}
               </div>
               <div
-                class="mt-4 text-base font-normal text-neutral-600 leading-7 tracking-[-1.1%]"
+                class="mt-4 text-base font-normal text-gray-600 leading-7 tracking-[-1.1%]"
               >
                 {{ item.description }}
               </div>
@@ -209,12 +247,12 @@
               <img
                 :src="item.imageSrc"
                 :alt="item.title"
-                class="w-full rounded-t-xl object-cover"
+                class="w-full max-w-84.5 mx-auto rounded-t-xl object-cover"
                 loading="lazy"
               />
             </div>
             <div
-              class="absolute bottom-0 left-0 right-0 min-h-2/6 bg-linear-to-b from-transparent to-[#F8FAFC]"
+              class="absolute bottom-0 left-0 right-0 min-h-1/6 bg-linear-to-b from-transparent to-[#F8FAFC]"
             ></div>
           </div>
         </div>
@@ -237,26 +275,28 @@
         <div
           class="grid grid-cols-1 lg:grid-cols-12 lg:gap-12 items-center gap-10"
         >
-          <div class="col-span-7">
+          <div class="lg:col-span-7">
             <h2
-              class="text-4xl sm:text-5xl sm:leading-14 tracking-[-1%] font-semibold text-neutral-900"
+              class="text-4xl sm:text-5xl sm:leading-14 tracking-[-1%] font-semibold text-gray-950"
             >
               VIP support and
               <br />
               account management
             </h2>
             <p
-              class="mt-4 text-base leading-7 tracking-[-1.1%] font-normal text-neutral-500"
+              class="mt-4 text-base leading-7 tracking-[-1.1%] font-normal text-gray-600"
             >
               Get direct access to dedicated experts who help you deploy, scale,
               and operate OpnForm with confidence.
             </p>
           </div>
-          <div class="col-span-5 rounded-3xl bg-neutral-50 px-8 pt-8 pb-4">
+          <div
+            class="lg:col-span-5 w-full max-w-fit mx-auto lg:max-w-none rounded-3xl bg-gray-50 px-8 pt-8 pb-4"
+          >
             <div
               v-for="badge in vipSupportBadges"
               :key="badge.label"
-              class="inline-flex mb-4 sm:w-auto items-center gap-3 rounded-full border border-neutral-200 bg-white pl-1.5 pr-4 py-1.5 text-sm leading-5 tracking-[-0.6%] font-medium text-neutral-800 shadow-sm"
+              class="flex mb-4 max-w-fit sm:w-auto items-center gap-3 rounded-full border border-gray-200 bg-white pl-1.5 pr-4 py-1.5 text-sm leading-5 tracking-[-0.6%] font-medium text-gray-800 shadow-sm"
             >
               <span
                 class="h-8 w-8 rounded-full flex items-center justify-center shrink-0"
@@ -278,7 +318,7 @@
     <section class="bg-white">
       <div class="px-8 lg:px-12">
         <div
-          class="mx-auto max-w-full sm:max-w-xl md:max-w-336 rounded-4xl bg-linear-to-br from-neutral-950 via-neutral-900 to-neutral-950 shadow-2xl overflow-hidden py-10 sm:py-14 md:py-24 px-10 sm:px-14 md:px-24 lg:px-35"
+          class="mx-auto w-full max-w-336 rounded-4xl bg-linear-to-br from-gray-950 via-gray-900 to-gray-950 shadow-2xl overflow-hidden py-8 sm:py-10 lg:py-14 xl:py-24 px-8 md:px-10 lg:px-14 xl:px-35"
         >
           <div class="text-center">
             <div
@@ -292,7 +332,7 @@
               Works with your stack
             </h3>
             <p
-              class="text-base tracking-[-1.1%] font-medium leading-7 text-neutral-400"
+              class="text-base tracking-[-1.1%] font-medium leading-7 text-gray-400"
             >
               OpnForm fits into your workflow — connect to tools your team
               already uses.
@@ -300,16 +340,16 @@
           </div>
           <div class="mt-12 sm:mt-16 flex justify-center">
             <div
-              class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 justify-center items-center"
+              class="grid grid-cols-5 sm:grid-cols-5 gap-4 justify-center items-center"
             >
               <div
                 v-for="app in integrationApps"
                 :key="app.icon"
-                class="h-30 w-30 rounded-2xl bg-gray-800 flex items-center justify-center"
+                class="h-14 sm:h-22 md:h-30 w-14 sm:w-22 md:w-30 rounded-2xl bg-gray-800 flex items-center justify-center"
               >
                 <UIcon
                   :name="app.icon"
-                  class="h-14 w-14"
+                  class="h-9 sm:h-12 md:h-14 w-9 sm:w-12 md:w-14"
                   :class="app.iconClass"
                 />
               </div>
@@ -336,24 +376,26 @@
             Case Studies
           </div>
           <h3
-            class="mt-4 text-4xl sm:text-5xl font-semibold text-neutral-900 tracking-[-1%] leading-14"
+            class="mt-4 text-4xl sm:text-5xl font-semibold text-gray-950 tracking-[-1%] leading-14"
           >
             See how teams use <br class="hidden sm:block" />
             OpnForm at scale
           </h3>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-7 gap-12 my-12 sm:my16">
+        <div
+          class="grid grid-cols-1 md:grid-cols-7 gap-y-12 md:gap-12 my-12 sm:my-16"
+        >
           <div
             class="col-span-3 max-h-70 md:max-h-50 max-w-100 mx-auto rounded-[12px] overflow-hidden flex items-center justify-centers"
           >
             <img src="/img/pages/enterprise/enterprise-7.png" alt="John Doe" />
           </div>
           <div class="col-span-4">
-            <h3 class="text-xl leading-7 font-medium text-neutral-900">
+            <h3 class="text-xl leading-7 font-medium text-gray-950">
               “Scaled internal workflows without adding complexity”
             </h3>
             <p
-              class="mt-3 text-base leading-7 font-normal tracking-[-1.1%] text-neutral-600"
+              class="mt-3 text-base leading-7 font-normal tracking-[-1.1%] text-gray-600"
             >
               We use OpnForm across multiple teams for internal requests,
               approvals, and data collection. Having unlimited forms with clear
@@ -362,19 +404,21 @@
             </p>
             <div class="mt-8">
               <h4
-                class="text-base leading-7 tracking-[-1.1%] font-medium text-neutral-900"
+                class="text-base leading-7 tracking-[-1.1%] font-medium text-gray-950"
               >
                 John Doe
               </h4>
               <p
-                class="mt-1.5 text-sm leading-5 tracking-[-0.6%] font-medium text-neutral-600"
+                class="mt-1.5 text-sm leading-5 tracking-[-0.6%] font-medium text-gray-600"
               >
                 Head of Engineering, Vercel
               </p>
             </div>
           </div>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-7 gap-12 my-12 sm:my16">
+        <div
+          class="grid grid-cols-1 md:grid-cols-7 gap-y-12 md:gap-12 my-12 sm:my16"
+        >
           <div
             class="col-span-3 max-h-70 md:max-h-50 max-w-100 mx-auto rounded-[12px] overflow-hidden flex items-center justify-centers"
           >
@@ -384,11 +428,11 @@
             />
           </div>
           <div class="col-span-4">
-            <h3 class="text-xl leading-7 font-medium text-neutral-900">
+            <h3 class="text-xl leading-7 font-medium text-gray-950">
               “Finally had one system that worked for every team.”
             </h3>
             <p
-              class="mt-3 text-base leading-7 font-normal tracking-[-1.1%] text-neutral-600"
+              class="mt-3 text-base leading-7 font-normal tracking-[-1.1%] text-gray-600"
             >
               Marketing, HR, and Support were all using different tools. OpnForm
               gave us a single, flexible platform that everyone could adapt to
@@ -396,12 +440,12 @@
             </p>
             <div class="mt-8">
               <h4
-                class="text-base leading-7 tracking-[-1.1%] font-medium text-neutral-900"
+                class="text-base leading-7 tracking-[-1.1%] font-medium text-gray-950"
               >
                 James Smith
               </h4>
               <p
-                class="mt-1.5 text-sm leading-5 tracking-[-0.6%] font-medium text-neutral-600"
+                class="mt-1.5 text-sm leading-5 tracking-[-0.6%] font-medium text-gray-600"
               >
                 Operations Lead, Airtable
               </p>
