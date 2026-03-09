@@ -50,6 +50,14 @@ export const formsApi = {
     get: (generationId, options) => apiService.get(`/forms/ai/${generationId}`, options)
   },
 
+  // ChatGPT draft flows (hosted-only)
+  chatgpt: {
+    createDraft: (data, options) => apiService.post('/chatgpt/drafts', data, options),
+    getDraft: (gptChatId, options) => apiService.get(`/chatgpt/drafts/${gptChatId}`, options),
+    updateDraft: (gptChatId, data, options) => apiService.patch(`/chatgpt/drafts/${gptChatId}`, data, options),
+    handoffDraft: (gptChatId, options) => apiService.post(`/chatgpt/drafts/${gptChatId}/handoff`, null, options),
+  },
+
   // Stripe/Payment
   stripe: {
     getAccount: (slug, options) => apiService.get(`/forms/${slug}/stripe-connect/get-account`, options),

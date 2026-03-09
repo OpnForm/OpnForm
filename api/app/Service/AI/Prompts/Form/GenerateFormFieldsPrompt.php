@@ -65,42 +65,7 @@ class GenerateFormFieldsPrompt extends Prompt
         - Follow the form's overall purpose and flow
     EOD;
 
-    /**
-     * JSON schema for form output
-     */
-    protected ?array $jsonSchema = [
-        'type' => 'object',
-        'required' => ['properties'],
-        'additionalProperties' => false,
-        'properties' => [
-            'properties' => [
-                'type' => 'array',
-                'description' => 'Array of form fields and elements',
-                'items' => [
-                    'anyOf' => [
-                        ['$ref' => '#/definitions/textProperty'],
-                        ['$ref' => '#/definitions/richTextProperty'],
-                        ['$ref' => '#/definitions/dateProperty'],
-                        ['$ref' => '#/definitions/urlProperty'],
-                        ['$ref' => '#/definitions/phoneNumberProperty'],
-                        ['$ref' => '#/definitions/emailProperty'],
-                        ['$ref' => '#/definitions/checkboxProperty'],
-                        ['$ref' => '#/definitions/selectProperty'],
-                        ['$ref' => '#/definitions/multiSelectProperty'],
-                        ['$ref' => '#/definitions/numberProperty'],
-                        ['$ref' => '#/definitions/filesProperty'],
-                        ['$ref' => '#/definitions/nfTextProperty'],
-                        ['$ref' => '#/definitions/nfPageBreakProperty'],
-                        ['$ref' => '#/definitions/nfDividerProperty'],
-                        ['$ref' => '#/definitions/nfImageProperty'],
-                        ['$ref' => '#/definitions/nfVideoProperty'],
-                        ['$ref' => '#/definitions/nfCodeProperty']
-                    ]
-                ]
-            ]
-        ],
-        'definitions' => FormFieldSchemas::FIELD_TYPE_DEFINITIONS
-    ];
+    protected ?array $jsonSchema = null;
 
     public function __construct(
         public string $formPrompt,
@@ -109,6 +74,7 @@ class GenerateFormFieldsPrompt extends Prompt
         public array $params = []
     ) {
         parent::__construct();
+        $this->jsonSchema = FormStateSchemaFactory::buildFieldsOnlySchema();
     }
 
     protected function getSystemMessage(): ?string

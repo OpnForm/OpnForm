@@ -206,7 +206,7 @@ watch([
   () => formManager?.strategy?.value?.admin?.showAdminControls,
   () => formManager?.structure?.value
 ], ([showAdminControls, struct]) => {
-  if (workingFormStore && showAdminControls && struct) {
+  if (import.meta.client && workingFormStore && showAdminControls && struct) {
     workingFormStore.setStructureService(struct)
   }
 }, { immediate: true })

@@ -54,6 +54,8 @@ onBeforeRouteLeave((to, from, next) => {
 
 const route = useRoute()
 const workingFormStore = useWorkingFormStore()
+const { fetchDraft } = useChatGptDrafts()
+const isUuid = (value) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)
 
 let template = null
 if (route.query.template) {
@@ -86,7 +88,7 @@ watch(
   },
 )
 
-onMounted(() => {
+onMounted(async () => {
   if (import.meta.client) {
     window.onbeforeunload = () => {
       if (isDirty()) {
@@ -96,13 +98,36 @@ onMounted(() => {
   }
 
   form.value = initForm({ workspace_id: workspace.value?.id, no_branding: workspace.value?.is_pro }, true)
-  formInitialHash.value = hash(JSON.stringify(form.value.data()))
+
   if (template && template.structure) {
     form.value = useForm({ ...form.value.data(), ...template.structure })
-  } else {
-    // No template loaded, ask how to start
-    showInitialFormModal.value = true
+    showInitialFormModal.value = false
+    formInitialHash.value = hash(JSON.stringify(form.value.data()))
+    return
   }
+
+  const gptChatId = typeof route.query.gpt_chat_id === 'string' ? route.query.gpt_chat_id : null
+  const canImportChatGptDraft = !!gptChatId && isUuid(gptChatId) && !useFeatureFlag('self_hosted', true) && !!useFeatureFlag('chatgpt_app.enabled', false)
+
+  if (canImportChatGptDraft) {
+    try {
+      const response = await fetchDraft(gptChatId)
+      const importedDraft = response?.draft?.form_state
+
+      if (importedDraft && typeof importedDraft === 'object') {
+        form.value = useForm({ ...form.value.data(), ...importedDraft })
+        showInitialFormModal.value = false
+        formInitialHash.value = hash(JSON.stringify(form.value.data()))
+        return
+      }
+    } catch (error) {
+      console.warn('Failed to import ChatGPT draft in authenticated editor, falling back to default create flow.', error)
+    }
+  }
+
+  // No template/draft loaded, ask how to start
+  showInitialFormModal.value = true
+  formInitialHash.value = hash(JSON.stringify(form.value.data()))
 })
 
 // Methods

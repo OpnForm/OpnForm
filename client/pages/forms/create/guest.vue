@@ -31,6 +31,7 @@ const appStore = useAppStore()
 const workingFormStore = useWorkingFormStore()
 const route = useRoute()
 const queryClient = useQueryClient()
+const { fetchDraft } = useChatGptDrafts()
 
 let template = null
 if (route.query.template) {
@@ -65,6 +66,7 @@ const showInitialFormModal = ref(false)
 
 // Component ref
 const editor = ref(null)
+const isUuid = (value) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)
 
 onMounted(() => {
   // Set guest workspace data in query cache instead of store
@@ -78,14 +80,39 @@ onMounted(() => {
   // Manually set the workspace data in query cache
   queryClient.setQueryData(["workspaces", "list"], [guestWorkspace])
 
-  form.value = initForm({}, true)
-  if (template && template.structure) {
-    form.value = useForm({ ...form.value.data(), ...template.structure })
-  } else {
-    // No template loaded, ask how to start
+  const initializeGuestForm = async () => {
+    form.value = initForm({}, true)
+
+    if (template && template.structure) {
+      form.value = useForm({ ...form.value.data(), ...template.structure })
+      showInitialFormModal.value = false
+      return
+    }
+
+    const gptChatId = typeof route.query.gpt_chat_id === 'string' ? route.query.gpt_chat_id : null
+    const canImportChatGptDraft = !!gptChatId && isUuid(gptChatId) && !useFeatureFlag('self_hosted', true) && !!useFeatureFlag('chatgpt_app.enabled', false)
+
+    if (canImportChatGptDraft) {
+      try {
+        const response = await fetchDraft(gptChatId)
+        const importedDraft = response?.draft?.form_state
+
+        if (importedDraft && typeof importedDraft === 'object') {
+          form.value = useForm({ ...form.value.data(), ...importedDraft })
+          showInitialFormModal.value = false
+          return
+        }
+      } catch (error) {
+        console.warn('Failed to import ChatGPT draft, falling back to default guest flow.', error)
+      }
+    }
+
     showInitialFormModal.value = true
   }
-  stateReady.value = true
+
+  initializeGuestForm().finally(() => {
+    stateReady.value = true
+  })
 
   // Set up window message listener for after-login
   const afterLoginMessage = useWindowMessage(WindowMessageTypes.AFTER_LOGIN)

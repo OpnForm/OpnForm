@@ -15,6 +15,9 @@ class FeatureFlagsController extends Controller
                 'setup_required' => config('app.self_hosted', true) && !\App\Models\User::max('id'),
                 'custom_domains' => config('custom-domains.enabled', false),
                 'ai_features' => !empty(config('services.openai.api_key')),
+                'chatgpt_app' => [
+                    'enabled' => !config('app.self_hosted', true) && (bool) config('app.chatgpt_app_enabled', false),
+                ],
                 'version' => $this->getAppVersion(),
 
                 'billing' => [

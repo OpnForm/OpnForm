@@ -11,6 +11,8 @@ use App\Http\Controllers\Auth\VerificationController;
 use App\Http\Controllers\Forms\FormController;
 use App\Http\Controllers\Forms\FormStatsController;
 use App\Http\Controllers\Forms\FormSubmissionController;
+use App\Http\Controllers\Forms\ChatGptDraftController;
+use App\Http\Controllers\Forms\ChatGptMcpController;
 use App\Http\Controllers\Forms\Integration\FormIntegrationsController;
 use App\Http\Controllers\Forms\Integration\FormIntegrationsEventController;
 use App\Http\Controllers\Forms\Integration\FormZapierWebhookController;
@@ -378,6 +380,31 @@ Route::prefix('forms')->name('forms.')->group(function () {
     Route::get('ai/{aiFormCompletion}', [\App\Http\Controllers\Forms\AiFormController::class, 'show'])->name('ai.show');
     Route::post('ai/generate-fields', [\App\Http\Controllers\Forms\AiFormController::class, 'generateFields'])->name('ai.generate-fields');
 });
+
+
+/*
+ * ChatGPT draft and MCP routes (hosted-only)
+ */
+if (!config('app.self_hosted') && config('app.chatgpt_app_enabled')) {
+    Route::match(['GET', 'POST'], 'mcp', [ChatGptMcpController::class, 'handle'])->name('chatgpt.mcp');
+
+    Route::prefix('chatgpt')->name('chatgpt.')->group(function () {
+        Route::prefix('drafts')->name('drafts.')->group(function () {
+            Route::post('/', [ChatGptDraftController::class, 'create'])->name('create');
+            Route::get('/{gptChatId}', [ChatGptDraftController::class, 'show'])->name('show');
+            Route::patch('/{gptChatId}', [ChatGptDraftController::class, 'update'])->name('update');
+            Route::post('/{gptChatId}/handoff', [ChatGptDraftController::class, 'handoff'])->name('handoff');
+        });
+    });
+} else {
+    Route::any('mcp/{any?}', function () {
+        abort(404);
+    })->where('any', '.*');
+
+    Route::any('chatgpt/{any?}', function () {
+        abort(404);
+    })->where('any', '.*');
+}
 
 /**
  * Other public routes

@@ -155,6 +155,12 @@ export default defineNuxtConfig({
     port: Number(process.env.NUXT_PORT) || 3000,
   },
 
+  vite: {
+    server: {
+      allowedHosts: ['opnform.loyaltiz.com', 'opnform-api.loyaltiz.com'],
+    },
+  },
+
   sitemap,
   runtimeConfig,
   compatibilityDate: '2024-10-30'

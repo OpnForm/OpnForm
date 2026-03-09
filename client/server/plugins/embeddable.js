@@ -2,7 +2,8 @@ import { getDomain } from '~/lib/utils'
 
 export default defineNitroPlugin((nitroApp) => {
   nitroApp.hooks.hook("render:response", (response, { event }) => {
-    const routePath = event.node?.req?.url || event.node?.req?.originalUrl
+    const rawRoutePath = event.node?.req?.url || event.node?.req?.originalUrl
+    const routePath = (rawRoutePath || '').split('?')[0]
     const config = useRuntimeConfig()
     
     // Parse allowed domains from private config
@@ -17,7 +18,10 @@ export default defineNitroPlugin((nitroApp) => {
     delete response.headers["X-Frame-Options"]
     delete response.headers["x-frame-options"]
 
-    if (routePath && !routePath.startsWith("/forms/")) {
+    const isFormPublicRoute = routePath.startsWith("/forms/")
+    const isChatGptPreviewRoute = /^\/gpt\/drafts\/[^/]+\/preview\/?$/.test(routePath)
+
+    if (routePath && !isFormPublicRoute && !isChatGptPreviewRoute) {
       // Build frame-ancestors for non-form routes: localhost variants + matching allowlisted domain (if Referer present)
       // Note: CSP frame-ancestors doesn't support port wildcards, so we list common dev ports
       const commonPorts = ['', ':3000', ':3001', ':4200', ':5000', ':5173', ':8000', ':8080', ':8081', ':9000']
@@ -30,23 +34,15 @@ export default defineNitroPlugin((nitroApp) => {
         ancestors.push(`https://127.0.0.1${port}`)
       })
 
-      const referer = event.node?.req?.headers?.referer || ''
-      const refererHost = referer ? (getDomain(referer) || '').toLowerCase() : ''
+      normalizedAllowed.forEach((allowedHost) => {
+        ancestors.push(`https://${allowedHost}`)
+        ancestors.push(`https://*.${allowedHost}`)
+      })
 
-      function hostMatchesAllowed(host, allowedHost) {
-        if (!host || !allowedHost) return false
-        return host === allowedHost || host.endsWith(`.${allowedHost}`)
-      }
-
-      const matched = normalizedAllowed.find((allowedHost) => hostMatchesAllowed(refererHost, allowedHost))
-      if (matched) {
-        ancestors.push(`https://${refererHost}`)
-      }
-
-      // Restrict embedding to localhost + (optionally) matched allowlisted domain
+      // Restrict embedding to localhost + allowlisted domains
       response.headers["Content-Security-Policy"] = `frame-ancestors ${ancestors.join(' ')};`
     } else {
-      // Forms: embeddable anywhere, omit CSP directive
+      // Public forms and GPT preview: embeddable anywhere, omit CSP directive
       delete response.headers["Content-Security-Policy"]
     }
 

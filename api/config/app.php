@@ -69,6 +69,12 @@ return [
 
     'asset_url' => env('ASSET_URL', null),
     'self_hosted' => env('SELF_HOSTED', true),
+    'chatgpt_app_enabled' => env('CHATGPT_APP_ENABLED', false),
+    'chatgpt_widget_domain' => env('CHATGPT_WIDGET_DOMAIN', null),
+    'chatgpt_widget_frame_domains' => array_values(array_filter(array_map(
+        static fn (string $domain): string => trim($domain),
+        explode(',', (string) env('CHATGPT_WIDGET_FRAME_DOMAINS', ''))
+    ))),
 
     /*
     |--------------------------------------------------------------------------
