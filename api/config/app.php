@@ -121,6 +121,7 @@ return [
     'locales' => [
         'en' => 'EN',
         'fr' => 'FR',
+        'hu' => 'HU',
         'hi' => 'HI',
         'es' => 'ES',
         'ar' => 'AR',
