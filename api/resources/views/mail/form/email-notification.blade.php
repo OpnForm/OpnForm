@@ -1,4 +1,7 @@
-@component('mail::message', ['noBranding' => $noBranding])
+@component('mail::message', [
+'noBranding' => $noBranding,
+'emailAppearance' => $emailAppearance ?? [],
+])
 
 {!! $emailContent !!}
 

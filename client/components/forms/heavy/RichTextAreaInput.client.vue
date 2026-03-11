@@ -156,6 +156,10 @@ const props = defineProps({
   allowFullscreen: {
     type: Boolean,
     default: false
+  },
+  enableImage: {
+    type: Boolean,
+    default: false
   }
 })
 const emit = defineEmits(['update:modelValue'])
@@ -246,6 +250,7 @@ const buildQuillOptions = (includeFullscreen = false) => {
         ['link'],
         [{ list: 'ordered' }, { list: 'bullet' }],
         [{ color: [] }],
+        ...(props.enableImage ? [['image']] : []),
       ],
       keyboard: {
         bindings: {
@@ -254,7 +259,14 @@ const buildQuillOptions = (includeFullscreen = false) => {
             handler: () => true // Allow Tab to navigate out of editor for accessibility
           }
         }
-      }
+      },
+      ...(props.enableImage ? {
+        resize: {
+          modules: ['DisplaySize', 'Toolbar', 'Resize', 'Keyboard'],
+          keyboardSelect: true,
+          tools: ['left', 'center', 'right', 'full']
+        }
+      } : {})
     }
   }
 
@@ -279,6 +291,15 @@ const buildQuillOptions = (includeFullscreen = false) => {
           openFullscreen()
         }
       }
+    }
+  }
+
+  // Add image and resize alignment formats if enabled
+  if (props.enableImage) {
+    const formats = mergedOptions.formats || baseFormats
+    const toAdd = ['image', 'resize-inline', 'resize-block'].filter((f) => !formats.includes(f))
+    if (toAdd.length) {
+      mergedOptions.formats = [...formats, ...toAdd]
     }
   }
   

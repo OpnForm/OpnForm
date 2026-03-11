@@ -27,7 +27,12 @@ class EmailIntegration extends AbstractIntegrationHandler
             'include_submission_data' => 'boolean',
             'include_hidden_fields_submission_data' => ['nullable', 'boolean'],
             'reply_to' => 'nullable',
-            'link_edit_submission' => ['nullable', 'boolean']
+            'link_edit_submission' => ['nullable', 'boolean'],
+            'logo_url' => ['nullable', 'url', 'starts_with:https://'],
+            'font_family' => ['nullable', 'string', 'max:255'],
+            'font_color' => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'outer_background_color' => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'inner_background_color' => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
         ];
 
         if ($form->is_pro || config('app.self_hosted')) {
