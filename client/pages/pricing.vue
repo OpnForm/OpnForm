@@ -1,50 +1,52 @@
 <template>
   <div>
     <section class="bg-white">
+      <div class="relative">
+        <div class="px-8 lg:px-12 py-14 sm:py-28 text-center relative z-2">
+          <h1
+            class="text-4xl sm:text-[56px] sm:leading-16 tracking-[-1%] font-semibold text-gray-950"
+          >
+            Simple pricing
+            <br class="hidden sm:block" />
+            based on your needs
+          </h1>
+          <p
+            class="text-lg sm:text-xl leading-7 tracking-[-1.5%] sm:leading-8 font-normal text-gray-600"
+          >
+            No locked-in contracts. Upgrade or cancel anytime.
+          </p>
+        </div>
+        <div
+          class="w-full h-full bg-linear-to-b from-white from-20% via-blue-50 via-50% to-white to-80% absolute inset-0"
+        ></div>
+      </div>
       <div class="px-8 lg:px-12">
-        <div class="text-center">
-          <div class="py-14 sm:py-28">
-            <h1
-              class="text-4xl sm:text-[56px] sm:leading-16 tracking-[-1%] font-semibold text-neutral-900"
-            >
-              Simple pricing
-              <br class="hidden sm:block" />
-              based on your needs
-            </h1>
-            <p
-              class="text-lg sm:text-xl leading-7 tracking-[-1.5%] sm:leading-8 font-normal text-neutral-500"
-            >
-              No locked-in contracts. Upgrade or cancel anytime.
-            </p>
-          </div>
-
-          <div class="flex items-center justify-center gap-3">
-            <!-- <span class="text-sm font-semibold text-neutral-700">
+        <div class="flex items-center justify-center gap-3">
+          <!-- <span class="text-sm font-semibold text-gray-700">
               Monthly
             </span> -->
-            <button
-              type="button"
-              class="relative inline-flex h-4 w-7 items-center rounded-full transition-colors"
-              :class="pricingIsYearly ? 'bg-blue-600' : 'bg-neutral-200'"
-              @click="pricingIsYearly = !pricingIsYearly"
-              aria-label="Toggle yearly billing"
-            >
-              <span
-                class="inline-block h-3 w-3 transform rounded-full bg-white shadow transition-transform"
-                :class="pricingIsYearly ? 'translate-x-3' : 'translate-x-1'"
-              ></span>
-            </button>
+          <button
+            type="button"
+            class="relative inline-flex h-4 w-7 items-center rounded-full transition-colors"
+            :class="pricingIsYearly ? 'bg-blue-600' : 'bg-gray-200'"
+            @click="pricingIsYearly = !pricingIsYearly"
+            aria-label="Toggle yearly billing"
+          >
             <span
-              class="text-sm leading-5 tracking-[-0.6%] font-medium text-neutral-700"
-            >
-              Annually
-            </span>
-            <span
-              class="hidden sm:inline-flex items-center ml-1 pl-2 py-1 pr-2.5 text-xs font-medium text-purple-600 bg-purple-50 rounded-[7px]"
-            >
-              Save 15% with yearly billing
-            </span>
-          </div>
+              class="inline-block h-3 w-3 transform rounded-full bg-white shadow transition-transform"
+              :class="pricingIsYearly ? 'translate-x-3' : 'translate-x-1'"
+            ></span>
+          </button>
+          <span
+            class="text-sm leading-5 tracking-[-0.6%] font-medium text-gray-700"
+          >
+            Annually
+          </span>
+          <span
+            class="hidden sm:inline-flex items-center ml-1 pl-2 py-1 pr-2.5 text-xs font-medium text-purple-600 bg-purple-50 rounded-[7px]"
+          >
+            Save 15% with yearly billing
+          </span>
         </div>
 
         <div
@@ -52,7 +54,7 @@
         >
           <!-- Free -->
           <div
-            class="p-6 sm:p-8 bg-white border shadow-sm rounded-3xl border-neutral-200"
+            class="p-6 sm:p-8 bg-white border shadow-sm rounded-3xl border-gray-200"
           >
             <div class="flex items-center gap-4">
               <span class="inline-flex items-center justify-center w-5 h-5">
@@ -61,13 +63,11 @@
                   name="heroicons:bolt-20-solid"
                 />
               </span>
-              <h3 class="text-xl leading-7 font-medium text-neutral-950">
-                Free
-              </h3>
+              <h3 class="text-xl leading-7 font-medium text-gray-950">Free</h3>
             </div>
 
             <p
-              class="mt-4 text-sm font-medium leading-5 tracking-[-0.6%] text-neutral-600"
+              class="mt-4 text-sm font-medium leading-5 tracking-[-0.6%] text-gray-600"
             >
               Start collecting unlimited responses with no friction.
             </p>
@@ -75,16 +75,16 @@
             <div class="mt-6">
               <p class="flex items-center gap-2">
                 <span
-                  class="text-3xl sm:text-[40px] sm:leading-12 font-medium tracking-[-1%] text-neutral-950"
+                  class="text-3xl sm:text-[40px] sm:leading-12 font-medium tracking-[-1%] text-gray-950"
                   >$0</span
                 >
               </p>
             </div>
 
-            <div class="mt-6">
+            <div class="mt-6 flex justify-center sm:block sm:justify-normal">
               <UButton
                 v-if="!authenticated"
-                class="w-full justify-center px-4 py-2.5 rounded-[12px] text-base leading-7 tracking-[-1.1%] font-medium"
+                class="w-fit sm:w-full justify-center px-4 py-2.5 rounded-[12px] text-base leading-7 tracking-[-1.1%] font-medium"
                 variant="outline"
                 :to="{ name: 'register' }"
                 label="Get started free"
@@ -93,7 +93,7 @@
               <UButton
                 v-else
                 color="neutral"
-                class="w-full justify-center px-4 py-2.5 rounded-[12px] text-base leading-7 tracking-[-1.1%] font-medium"
+                class="w-fit sm:w-full justify-center px-4 py-2.5 rounded-[12px] text-base leading-7 tracking-[-1.1%] font-medium"
                 :to="{ name: 'home' }"
                 label="Go to app"
               />
@@ -101,84 +101,84 @@
 
             <div class="mt-6">
               <p
-                class="text-sm leading-5 tracking-[-0.6%] font-medium text-neutral-950"
+                class="text-sm leading-5 tracking-[-0.6%] font-medium text-gray-950"
               >
                 Includes
               </p>
               <ul
-                class="mt-4 space-y-4 text-sm leading-5 tracking-[-0.6%] font-medium text-neutral-700"
+                class="mt-4 space-y-4 text-sm leading-5 tracking-[-0.6%] font-medium text-gray-700"
               >
-                <li class="flex gap-2.5">
+                <li class="flex items-center gap-2.5">
                   <Icon
                     class="w-4 h-5 text-emerald-600"
                     name="heroicons:check-20-solid"
                   />
                   Unlimited forms & submissions
                 </li>
-                <li class="flex gap-2.5">
+                <li class="flex items-center gap-2.5">
                   <Icon
                     class="w-4 h-5 text-emerald-600"
                     name="heroicons:check-20-solid"
                   />
                   File uploads (basic quota)
                 </li>
-                <li class="flex gap-2.5">
+                <li class="flex items-center gap-2.5">
                   <Icon
                     class="w-4 h-5 text-emerald-600"
                     name="heroicons:check-20-solid"
                   />
                   Form logic & validation
                 </li>
-                <li class="flex gap-2.5">
+                <li class="flex items-center gap-2.5">
                   <Icon
                     class="w-4 h-5 text-emerald-600"
                     name="heroicons:check-20-solid"
                   />
                   Computed fields (calculations)
                 </li>
-                <li class="flex gap-2.5">
+                <li class="flex items-center gap-2.5">
                   <Icon
                     class="w-4 h-5 text-emerald-600"
                     name="heroicons:check-20-solid"
                   />
                   Pre-fills, URL parameters
                 </li>
-                <li class="flex gap-2.5">
+                <li class="flex items-center gap-2.5">
                   <Icon
                     class="w-4 h-5 text-emerald-600"
                     name="heroicons:check-20-solid"
                   />
                   Multi-user access (all admins, no roles)
                 </li>
-                <li class="flex gap-2.5">
+                <li class="flex items-center gap-2.5">
                   <Icon
                     class="w-4 h-5 text-emerald-600"
                     name="heroicons:check-20-solid"
                   />
                   1 workspace only
                 </li>
-                <li class="flex gap-2.5">
+                <li class="flex items-center gap-2.5">
                   <Icon
                     class="w-4 h-5 text-emerald-600"
                     name="heroicons:check-20-solid"
                   />
                   Branding required
                 </li>
-                <li class="flex gap-2.5">
+                <li class="flex items-center gap-2.5">
                   <Icon
                     class="w-4 h-5 text-emerald-600"
                     name="heroicons:check-20-solid"
                   />
                   Community support
                 </li>
-                <li class="flex gap-2.5">
+                <li class="flex items-center gap-2.5">
                   <Icon
                     class="w-4 h-5 text-emerald-600"
                     name="heroicons:check-20-solid"
                   />
                   API
                 </li>
-                <li class="flex gap-2.5">
+                <li class="flex items-center gap-2.5">
                   <Icon
                     class="w-4 h-5 text-emerald-600"
                     name="heroicons:check-20-solid"
@@ -208,13 +208,11 @@
                   name="heroicons:sparkles-20-solid"
                 />
               </span>
-              <h3 class="text-xl leading-7 font-medium text-neutral-950">
-                Pro
-              </h3>
+              <h3 class="text-xl leading-7 font-medium text-gray-950">Pro</h3>
             </div>
 
             <p
-              class="mt-4 text-sm font-medium leading-5 tracking-[-0.6%] text-neutral-600"
+              class="mt-4 text-sm font-medium leading-5 tracking-[-0.6%] text-gray-600"
             >
               A polished, professional experience for serious work.
             </p>
@@ -222,20 +220,20 @@
             <div class="mt-6">
               <p class="flex items-center gap-2">
                 <span
-                  class="text-3xl sm:text-[40px] sm:leading-12 font-medium tracking-[-1%] text-neutral-950"
+                  class="text-3xl sm:text-[40px] sm:leading-12 font-medium tracking-[-1%] text-gray-950"
                 >
                   {{ pricingIsYearly ? "$25" : "$29" }}
                 </span>
                 <span
-                  class="text-base leading-7 tracking-[-1.1%] font-medium text-neutral-600"
+                  class="text-base leading-7 tracking-[-1.1%] font-medium text-gray-600"
                   >/mo</span
                 >
               </p>
             </div>
 
-            <div class="mt-6">
+            <div class="mt-6 flex justify-center sm:block sm:justify-normal">
               <UButton
-                class="w-full justify-center px-4 py-2.5 rounded-[12px] text-base leading-7 tracking-[-1.1%] font-medium"
+                class="w-fit sm:w-full justify-center px-4 py-2.5 rounded-[12px] text-base leading-7 tracking-[-1.1%] font-medium"
                 label="Get started free"
                 @click.prevent="handleProCta"
               />
@@ -243,63 +241,63 @@
 
             <div class="mt-6">
               <p
-                class="text-sm leading-5 tracking-[-0.6%] font-medium text-neutral-950"
+                class="text-sm leading-5 tracking-[-0.6%] font-medium text-gray-950"
               >
                 Everything in Free, plus
               </p>
               <ul
-                class="mt-4 space-y-4 text-sm leading-5 tracking-[-0.6%] font-medium text-neutral-700"
+                class="mt-4 space-y-4 text-sm leading-5 tracking-[-0.6%] font-medium text-gray-700"
               >
-                <li class="flex gap-2.5">
+                <li class="flex items-center gap-2.5">
                   <Icon
                     class="w-4 h-5 text-emerald-600"
                     name="heroicons:check-20-solid"
                   />
                   Remove branding
                 </li>
-                <li class="flex gap-2.5">
+                <li class="flex items-center gap-2.5">
                   <Icon
                     class="w-4 h-5 text-emerald-600"
                     name="heroicons:check-20-solid"
                   />
                   Custom domains
                 </li>
-                <li class="flex gap-2.5">
+                <li class="flex items-center gap-2.5">
                   <Icon
                     class="w-4 h-5 text-emerald-600"
                     name="heroicons:check-20-solid"
                   />
                   Custom SMTP
                 </li>
-                <li class="flex gap-2.5">
+                <li class="flex items-center gap-2.5">
                   <Icon
                     class="w-4 h-5 text-emerald-600"
                     name="heroicons:check-20-solid"
                   />
                   Discord, Slack, Telegram
                 </li>
-                <li class="flex gap-2.5">
+                <li class="flex items-center gap-2.5">
                   <Icon
                     class="w-4 h-5 text-emerald-600"
                     name="heroicons:check-20-solid"
                   />
                   Password-protected forms
                 </li>
-                <li class="flex gap-2.5">
+                <li class="flex items-center gap-2.5">
                   <Icon
                     class="w-4 h-5 text-emerald-600"
                     name="heroicons:check-20-solid"
                   />
                   Form expiration
                 </li>
-                <li class="flex gap-2.5">
+                <li class="flex items-center gap-2.5">
                   <Icon
                     class="w-4 h-5 text-emerald-600"
                     name="heroicons:check-20-solid"
                   />
                   Captcha
                 </li>
-                <li class="flex gap-2.5">
+                <li class="flex items-center gap-2.5">
                   <Icon
                     class="w-4 h-5 text-emerald-600"
                     name="heroicons:check-20-solid"
@@ -312,7 +310,7 @@
 
           <!-- Business -->
           <div
-            class="p-6 sm:p-8 bg-white border shadow-sm rounded-3xl border-neutral-200"
+            class="p-6 sm:p-8 bg-white border shadow-sm rounded-3xl border-gray-200"
           >
             <div class="flex items-center gap-4">
               <span class="inline-flex items-center justify-center w-5 h-5">
@@ -321,13 +319,13 @@
                   name="heroicons:building-office-20-solid"
                 />
               </span>
-              <h3 class="text-xl leading-7 font-medium text-neutral-950">
+              <h3 class="text-xl leading-7 font-medium text-gray-950">
                 Business
               </h3>
             </div>
 
             <p
-              class="mt-4 text-sm font-medium leading-5 tracking-[-0.6%] text-neutral-600"
+              class="mt-4 text-sm font-medium leading-5 tracking-[-0.6%] text-gray-600"
             >
               Built for teams and agencies managing forms at scale.
             </p>
@@ -335,20 +333,20 @@
             <div class="mt-6">
               <p class="flex items-center gap-2">
                 <span
-                  class="text-3xl sm:text-[40px] sm:leading-12 font-medium tracking-[-1%] text-neutral-950"
+                  class="text-3xl sm:text-[40px] sm:leading-12 font-medium tracking-[-1%] text-gray-950"
                 >
                   {{ pricingIsYearly ? "$67" : "$79" }}
                 </span>
                 <span
-                  class="text-base leading-7 tracking-[-1.1%] font-medium text-neutral-600"
+                  class="text-base leading-7 tracking-[-1.1%] font-medium text-gray-600"
                   >/mo</span
                 >
               </p>
             </div>
 
-            <div class="mt-6">
+            <div class="mt-6 flex justify-center sm:block sm:justify-normal">
               <UButton
-                class="w-full justify-center px-4 py-2.5 rounded-[12px] text-base leading-7 tracking-[-1.1%] font-medium"
+                class="w-fit sm:w-full justify-center px-4 py-2.5 rounded-[12px] text-base leading-7 tracking-[-1.1%] font-medium"
                 variant="outline"
                 label="Get started free"
                 color="neutral"
@@ -358,63 +356,63 @@
 
             <div class="mt-6">
               <p
-                class="text-sm leading-5 tracking-[-0.6%] font-medium text-neutral-950"
+                class="text-sm leading-5 tracking-[-0.6%] font-medium text-gray-950"
               >
                 Everything in Pro, plus
               </p>
               <ul
-                class="mt-4 space-y-4 text-sm leading-5 tracking-[-0.6%] font-medium text-neutral-700"
+                class="mt-4 space-y-4 text-sm leading-5 tracking-[-0.6%] font-medium text-gray-700"
               >
-                <li class="flex gap-2.5">
+                <li class="flex items-center gap-2.5">
                   <Icon
                     class="w-4 h-5 text-emerald-600"
                     name="heroicons:check-20-solid"
                   />
                   Multi-user with roles & permissions
                 </li>
-                <li class="flex gap-2.5">
+                <li class="flex items-center gap-2.5">
                   <Icon
                     class="w-4 h-5 text-emerald-600"
                     name="heroicons:check-20-solid"
                   />
                   Advanced branding (CSS, fonts, favicons)
                 </li>
-                <li class="flex gap-2.5">
+                <li class="flex items-center gap-2.5">
                   <Icon
                     class="w-4 h-5 text-emerald-600"
                     name="heroicons:check-20-solid"
                   />
                   Higher file upload size limits
                 </li>
-                <li class="flex gap-2.5">
+                <li class="flex items-center gap-2.5">
                   <Icon
                     class="w-4 h-5 text-emerald-600"
                     name="heroicons:check-20-solid"
                   />
                   Priority support
                 </li>
-                <li class="flex gap-2.5">
+                <li class="flex items-center gap-2.5">
                   <Icon
                     class="w-4 h-5 text-emerald-600"
                     name="heroicons:check-20-solid"
                   />
                   Partial submissions
                 </li>
-                <li class="flex gap-2.5">
+                <li class="flex items-center gap-2.5">
                   <Icon
                     class="w-4 h-5 text-emerald-600"
                     name="heroicons:check-20-solid"
                   />
                   Versioning
                 </li>
-                <li class="flex gap-2.5">
+                <li class="flex items-center gap-2.5">
                   <Icon
                     class="w-4 h-5 text-emerald-600"
                     name="heroicons:check-20-solid"
                   />
                   Analytics dashboard
                 </li>
-                <li class="flex gap-2.5">
+                <li class="flex items-center gap-2.5">
                   <Icon
                     class="w-4 h-5 text-emerald-600"
                     name="heroicons:check-20-solid"
@@ -427,7 +425,7 @@
 
           <!-- Enterprise -->
           <div
-            class="p-6 sm:p-8 bg-white border shadow-sm rounded-3xl border-neutral-200"
+            class="p-6 sm:p-8 bg-white border shadow-sm rounded-3xl border-gray-200"
           >
             <div class="flex items-center gap-4">
               <span class="inline-flex items-center justify-center w-5 h-5">
@@ -436,13 +434,13 @@
                   name="heroicons:globe-alt-20-solid"
                 />
               </span>
-              <h3 class="text-xl leading-7 font-medium text-neutral-950">
+              <h3 class="text-xl leading-7 font-medium text-gray-950">
                 Enterprise
               </h3>
             </div>
 
             <p
-              class="mt-4 text-sm font-medium leading-5 tracking-[-0.6%] text-neutral-600"
+              class="mt-4 text-sm font-medium leading-5 tracking-[-0.6%] text-gray-600"
             >
               Enterprise-grade security, compliance, and control.
             </p>
@@ -450,20 +448,20 @@
             <div class="mt-6">
               <p class="flex items-center gap-2">
                 <span
-                  class="text-3xl sm:text-[40px] sm:leading-12 font-medium tracking-[-1%] text-neutral-950"
+                  class="text-3xl sm:text-[40px] sm:leading-12 font-medium tracking-[-1%] text-gray-950"
                 >
                   {{ pricingIsYearly ? "$213+" : "$250+" }}
                 </span>
                 <span
-                  class="text-base leading-7 tracking-[-1.1%] font-medium text-neutral-600"
+                  class="text-base leading-7 tracking-[-1.1%] font-medium text-gray-600"
                   >/mo</span
                 >
               </p>
             </div>
 
-            <div class="mt-6">
+            <div class="mt-6 flex justify-center sm:block sm:justify-normal">
               <UButton
-                class="w-full justify-center px-4 py-2.5 rounded-[12px] text-base leading-7 tracking-[-1.1%] font-medium"
+                class="w-fit sm:w-full justify-center px-4 py-2.5 rounded-[12px] text-base leading-7 tracking-[-1.1%] font-medium"
                 variant="outline"
                 label="Request a quote"
                 color="neutral"
@@ -473,42 +471,42 @@
 
             <div class="mt-6">
               <p
-                class="text-sm leading-5 tracking-[-0.6%] font-medium text-neutral-950"
+                class="text-sm leading-5 tracking-[-0.6%] font-medium text-gray-950"
               >
                 Everything in Business, plus
               </p>
               <ul
-                class="mt-4 space-y-4 text-sm leading-5 tracking-[-0.6%] font-medium text-neutral-700"
+                class="mt-4 space-y-4 text-sm leading-5 tracking-[-0.6%] font-medium text-gray-700"
               >
-                <li class="flex gap-2.5">
+                <li class="flex items-center gap-2.5">
                   <Icon
                     class="w-4 h-5 text-emerald-600"
                     name="heroicons:check-20-solid"
                   />
                   SSO (SAML, OIDC, LDAP)
                 </li>
-                <li class="flex gap-2.5">
+                <li class="flex items-center gap-2.5">
                   <Icon
                     class="w-4 h-5 text-emerald-600"
                     name="heroicons:check-20-solid"
                   />
                   Audit logs & compliance features
                 </li>
-                <li class="flex gap-2.5">
+                <li class="flex items-center gap-2.5">
                   <Icon
                     class="w-4 h-5 text-emerald-600"
                     name="heroicons:check-20-solid"
                   />
                   External storage support
                 </li>
-                <li class="flex gap-2.5">
+                <li class="flex items-center gap-2.5">
                   <Icon
                     class="w-4 h-5 text-emerald-600"
                     name="heroicons:check-20-solid"
                   />
                   White-label hosting option
                 </li>
-                <li class="flex gap-2.5">
+                <li class="flex items-center gap-2.5">
                   <Icon
                     class="w-4 h-5 text-emerald-600"
                     name="heroicons:check-20-solid"
@@ -560,12 +558,12 @@
       <div class="mx-auto max-w-266">
         <div class="text-center">
           <h2
-            class="text-4xl sm:text-5xl sm:leading-14 tracking-[-1%] font-semibold text-neutral-900"
+            class="text-4xl sm:text-5xl sm:leading-14 tracking-[-1%] font-semibold text-gray-950"
           >
             Self-host OpnForm
           </h2>
           <p
-            class="mt-4 text-base font-normal tracking-[-1.1%] leading-7 text-neutral-500"
+            class="mt-4 text-base font-normal tracking-[-1.1%] leading-7 text-gray-600"
           >
             The self-hosted commercial licenses are the same price as hosted
             plans.
@@ -574,7 +572,7 @@
 
         <div class="mt-12 sm:mt-16 space-y-6">
           <div
-            class="p-8 bg-white border shadow-sm rounded-3xl border-neutral-200"
+            class="p-6 sm:p-8 bg-white border shadow-sm rounded-3xl border-gray-200"
           >
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
               <div>
@@ -585,13 +583,13 @@
                       name="heroicons:users-20-solid"
                     />
                   </span>
-                  <h3 class="text-xl leading-7 font-medium text-neutral-950">
+                  <h3 class="text-xl leading-7 font-medium text-gray-950">
                     Community Edition
                   </h3>
                 </div>
 
                 <p
-                  class="mt-4 text-base font-medium tracking-[-1.1%] leading-7 text-neutral-600"
+                  class="mt-4 text-base font-medium tracking-[-1.1%] leading-7 text-gray-600"
                 >
                   Perfect for individuals and teams who want full control and
                   community-driven software.
@@ -599,7 +597,7 @@
 
                 <div class="mt-6">
                   <p
-                    class="text-3xl sm:text-[40px] sm:leading-12 font-medium tracking-[-1%] text-neutral-950"
+                    class="text-3xl sm:text-[40px] sm:leading-12 font-medium tracking-[-1%] text-gray-950"
                   >
                     Free OSS
                   </p>
@@ -619,12 +617,12 @@
 
               <div>
                 <ul
-                  class="space-y-4 text-base leading-7 tracking-[-1.1%] font-medium text-neutral-700"
+                  class="space-y-4 text-base leading-7 tracking-[-1.1%] font-medium text-gray-700"
                 >
                   <li
                     v-for="feature in communityEditionFeatures"
                     :key="feature"
-                    class="flex gap-3"
+                    class="flex items-center gap-3"
                   >
                     <Icon
                       class="w-4 h-5 text-emerald-600"
@@ -638,7 +636,7 @@
           </div>
 
           <div
-            class="p-8 bg-white border shadow-sm rounded-3xl border-neutral-200"
+            class="p-6 sm:p-8 bg-white border shadow-sm rounded-3xl border-gray-200"
           >
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
               <div>
@@ -649,13 +647,13 @@
                       name="heroicons:shield-check-20-solid"
                     />
                   </span>
-                  <h3 class="text-xl leading-7 font-medium text-neutral-950">
+                  <h3 class="text-xl leading-7 font-medium text-gray-950">
                     Enterprise License
                   </h3>
                 </div>
 
                 <p
-                  class="mt-4 text-base font-medium tracking-[-1.1%] leading-7 text-neutral-600"
+                  class="mt-4 text-base font-medium tracking-[-1.1%] leading-7 text-gray-600"
                 >
                   Built for organizations that need governance, customization,
                   and long-term reliability.
@@ -664,12 +662,12 @@
                 <div class="mt-6">
                   <p class="flex items-center gap-3">
                     <span
-                      class="text-3xl sm:text-[40px] sm:leading-12 font-medium tracking-[-1%] text-neutral-950"
+                      class="text-3xl sm:text-[40px] sm:leading-12 font-medium tracking-[-1%] text-gray-950"
                     >
                       $1,990
                     </span>
                     <span
-                      class="text-base leading-7 tracking-[-1.1%] font-medium text-neutral-600"
+                      class="text-base leading-7 tracking-[-1.1%] font-medium text-gray-600"
                     >
                       /year per instance
                     </span>
@@ -690,12 +688,12 @@
 
               <div>
                 <ul
-                  class="space-y-4 text-base leading-7 tracking-[-1.1%] font-medium text-neutral-700"
+                  class="space-y-4 text-base leading-7 tracking-[-1.1%] font-medium text-gray-700"
                 >
                   <li
                     v-for="feature in enterpriseLicenseFeatures"
                     :key="feature"
-                    class="flex gap-3"
+                    class="flex items-center gap-3"
                   >
                     <Icon
                       class="w-5 h-5 text-emerald-600"
@@ -720,14 +718,14 @@
             Frequently Asked Questions
           </p>
           <h2
-            class="my-4 text-4xl sm:text-5xl sm:leading-14 tracking-[-1%] font-semibold text-neutral-950"
+            class="my-4 text-4xl sm:text-5xl sm:leading-14 tracking-[-1%] font-semibold text-gray-950"
           >
             Everything you need to
             <br class="hidden sm:block" />
             know
           </h2>
           <p
-            class="text-base leading-7 font-normal tracking-[-1.1%] text-neutral-600"
+            class="text-base leading-7 font-normal tracking-[-1.1%] text-gray-600"
           >
             Find answers about plans, onboarding, roles, and how teams use our
             tool every day.
@@ -739,16 +737,16 @@
             <div
               v-for="(q, i) in faqs"
               :key="q.question"
-              class="bg-neutral-50 rounded-3xl"
+              class="bg-gray-50 rounded-3xl"
             >
               <button
                 type="button"
                 class="w-full p-6 text-left rounded-3xl focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                 @click="toggleFaq(i)"
               >
-                <div class="flex items-center gap-8 sm:gap-16">
+                <div class="flex items-center gap-4 sm:gap-16">
                   <span
-                    class="w-6 text-lg leading-8 tracking-[-1.5%] font-medium text-neutral-400"
+                    class="w-6 text-lg leading-8 tracking-[-1.5%] font-medium text-gray-400"
                   >
                     {{ String(i + 1).padStart(2, "0") }}
                   </span>
@@ -756,12 +754,12 @@
                     class="flex items-center justify-between flex-1 gap-8 sm:gap-16"
                   >
                     <p
-                      class="text-lg leading-8 tracking-[-1.5%] font-medium text-neutral-600"
+                      class="text-lg leading-8 tracking-[-1.5%] font-medium text-gray-600"
                     >
                       {{ q.question }}
                     </p>
                     <span
-                      class="inline-flex items-center justify-center w-6 h-6 rounded-full text-neutral-400"
+                      class="inline-flex items-center justify-center w-6 h-6 rounded-full text-gray-400"
                     >
                       <Icon
                         v-if="openFaqIndex !== i"
@@ -779,8 +777,8 @@
               </button>
 
               <div v-if="openFaqIndex === i" class="px-6 pb-6">
-                <div class="pl-21">
-                  <p class="text-sm font-medium leading-6 text-neutral-600">
+                <div class="pl-10 sm:pl-21">
+                  <p class="text-sm font-medium leading-6 text-gray-600">
                     {{ q.answer }}
                   </p>
                 </div>
@@ -790,7 +788,7 @@
 
           <div class="mt-12 text-center sm:mt-16">
             <p
-              class="text-base leading-7 tracking-[-1.1%] font-medium text-neutral-600"
+              class="text-base leading-7 tracking-[-1.1%] font-medium text-gray-600"
             >
               Didn't find the answer?
               <a

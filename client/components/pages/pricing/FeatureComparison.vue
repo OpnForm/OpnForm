@@ -2,14 +2,15 @@
   <div class="mx-auto max-w-266">
     <div class="text-center">
       <h2
-        class="text-4xl sm:text-5xl sm:leading-14 tracking-[-1%] font-semibold text-neutral-900"
+        class="text-4xl sm:text-5xl sm:leading-14 tracking-[-1%] font-semibold text-gray-950"
       >
         Feature Comparison
       </h2>
       <p
-        class="mt-4 text-base font-normal tracking-[-1.1%] leading-7 text-neutral-500"
+        class="mt-4 text-base font-normal tracking-[-1.1%] leading-7 text-gray-600"
       >
-        Some description text goes here...
+        Compare the features of the different plans and choose the one that best
+        suits your needs.
       </p>
     </div>
 
@@ -17,9 +18,7 @@
       <table class="w-full min-w-108.75border-collapse">
         <thead>
           <tr class="border-b border-neutral-200">
-            <th
-              class="py-4 pr-6 text-left text-sm font-semibold text-neutral-500"
-            >
+            <th class="py-4 pr-6 text-left text-sm font-semibold text-gray-600">
               &nbsp;
             </th>
             <th
@@ -27,11 +26,11 @@
               :key="planIndex"
               class="p-6 text-center"
             >
-              <div class="text-xl leading-7 font-medium text-neutral-900">
+              <div class="text-xl leading-7 font-medium text-gray-950">
                 {{ plan.label }}
               </div>
               <div
-                class="mt-0.5 text-base leading-7 tracking-[-1.1%] font-medium text-neutral-500"
+                class="mt-0.5 text-base leading-7 tracking-[-1.1%] font-medium text-gray-600"
               >
                 ({{ plan.priceLabel }})
               </div>
@@ -44,7 +43,7 @@
             <tr class="bg-white border-b border-neutral-200">
               <th
                 colspan="5"
-                class="pt-8 pb-4 pr-6 text-left text-xl leading-7 font-medium text-neutral-900"
+                class="pt-8 pb-4 pr-6 text-left text-xl leading-7 font-medium text-gray-950"
               >
                 {{ section.title }}
               </th>
@@ -56,7 +55,7 @@
               class="bg-white"
             >
               <th
-                class="py-5 pr-6 text-left text-sm leading-5 tracking-[-0.6%] font-medium text-neutral-700"
+                class="py-5 pr-6 text-left text-sm leading-5 tracking-[-0.6%] font-medium text-gray-700"
               >
                 {{ row.label }}
               </th>
@@ -80,7 +79,7 @@
                       row.values?.[planIndex] == null
                     "
                   >
-                    <span class="text-sm font-medium text-neutral-300">—</span>
+                    <span class="text-sm font-medium text-gray-300">—</span>
                   </template>
 
                   <template v-else-if="row.values?.[planIndex] === 'soon'">
@@ -92,7 +91,7 @@
                   </template>
 
                   <template v-else>
-                    <span class="text-sm font-medium text-neutral-700">
+                    <span class="text-sm font-medium text-gray-700">
                       {{ row.values?.[planIndex] }}
                     </span>
                   </template>

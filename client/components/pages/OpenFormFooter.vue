@@ -1,5 +1,5 @@
 <template>
-  <section class="relative px-4 sm:px-8 lg:px-12">
+  <section class="relative px-8 lg:px-12">
     <div class="max-w-336 mx-auto">
       <div
         class="relative rounded-4xl overflow-hidden bg-linear-to-br from-blue-600 via-blue-700 to-blue-800 pt-8 sm:pt-10 lg:pt-14 xl:pt-24 pl-8 md:pl-10 lg:pl-14 xl:pl-35"
@@ -106,7 +106,7 @@
 
           <div class="flex items-end justify-end pl-8 sm:pl-10">
             <div
-              class="relative w-full overflow-hidden rounded-tl-[3%] sm:rounded-tl-[13%] md:rounded-tl-[40%] lg:rounded-tl-[3%] xl:rounded-tl-[12%] flex justify-end items-end"
+              class="relative w-full overflow-hidden flex justify-end items-end"
             >
               <img
                 src="/img/pages/welcome/product-cover-half.png"
@@ -166,7 +166,7 @@
   </section>
 
   <footer class="bg-white">
-    <div class="px-4 sm:px-8 lg:px-12 pt-12 sm:pt-16 pb-14 sm:pb-28">
+    <div class="px-8 lg:px-12 pt-12 sm:pt-16 pb-14 sm:pb-28">
       <div class="max-w-266 mx-auto grid gap-12 lg:gap-24 lg:grid-cols-12">
         <div class="lg:col-span-4">
           <NuxtLink
