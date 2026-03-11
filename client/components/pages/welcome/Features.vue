@@ -136,14 +136,14 @@
               <div
                 v-for="point in activeContent.points"
                 :key="point"
-                class="flex items-start gap-4 text-base leading-7 font-medium tracking-[-1.1%] text-gray-600"
+                class="flex items-center gap-4 text-base leading-7 font-medium tracking-[-1.1%] text-gray-600"
               >
                 <div
                   class="h-6 w-6 bg-primary-100 flex justify-center items-center rounded-[6px]"
                 >
                   <UIcon
                     name="i-heroicons-check-20-solid"
-                    class="h-4.5 w-4.5 text-blue-500"
+                    class="h-5 w-5 text-blue-500"
                   />
                 </div>
                 <span>{{ point }}</span>

@@ -26,15 +26,19 @@
             :class="card.size === 'large' ? 'lg:col-span-2' : ''"
           >
             <div
-              class="grid gap-3 sm:gap-6 sm:grid-cols-12 relative"
-              :class="card.size === 'large' ? 'items-end' : 'items-start'"
+              class="grid gap-3 relative"
+              :class="
+                card.size === 'large'
+                  ? 'items-end lg:grid-cols-12 gap-0 sm:gap-2 lg:gap-6'
+                  : 'items-start sm:grid-cols-12 gap-2 sm:gap-6'
+              "
             >
               <div
-                class="flex flex-col items-start gap-6 lg:pb-6"
+                class="flex flex-col items-start lg:pb-6"
                 :class="
                   card.size === 'large'
-                    ? 'sm:col-span-4 lg:col-span-3 sm:pb-6 md:pb-10'
-                    : 'sm:col-span-6 md:col-span-5'
+                    ? 'sm:col-span-4 lg:col-span-3 gap-2 lg:gap-6'
+                    : 'sm:col-span-6 md:col-span-5 gap-2 sm:gap-6'
                 "
               >
                 <div
@@ -90,17 +94,17 @@
   <section class="bg-white">
     <div class="px-8 lg:px-12">
       <div
-        class="mx-auto w-full max-w-336 rounded-4xl bg-neutral-50 border border-neutral-200/60 overflow-hidden"
+        class="mx-auto w-full max-w-336 rounded-4xl bg-gray-50 border border-gray-200 overflow-hidden"
       >
         <div
           class="relative py-8 sm:py-10 lg:py-14 xl:py-24 px-8 md:px-10 lg:px-14 xl:px-35"
         >
           <img
             src="/img/pages/welcome/Graphic.svg"
-            class="absolute top-[80%] md:top-[70%] lg:top-[45%] left-0 right-0 min-w-full object-cover min-h-[20%] md:min-h-[30%] lg:min-h-[55%]"
+            class="absolute top-[45%] left-0 right-0 min-w-full object-cover min-h-[55%]"
           />
           <div
-            class="grid grid-cols-1 lg:grid-cols-2 gap-12 md:gap-16 relative z-10"
+            class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 relative z-10"
           >
             <div class="flex flex-col items-start gap-2">
               <h3
@@ -219,7 +223,7 @@
           <div
             v-for="block in teamFeatureBlocks.slice(0, 2)"
             :key="block.title"
-            class="overflow-hidden relative rounded-[24px] bg-neutral-50 p-8 shadow-sm"
+            class="overflow-hidden relative rounded-[24px] border border-gray-200 bg-gray-50 p-8 shadow-sm"
           >
             <h4
               class="text-xl leading-7 tracking-[-0.6%] font-semibold text-gray-950"
@@ -235,7 +239,7 @@
               <img
                 :src="block.image"
                 :alt="block.title"
-                class="w-full max-w-114 mx-auto rounded-t-xl object-cover"
+                class="w-full max-w-[500px] mx-auto rounded-t-xl object-cover"
                 loading="lazy"
               />
             </div>
@@ -248,7 +252,7 @@
           <div
             v-for="block in teamFeatureBlocks.slice(2)"
             :key="block.title"
-            class="overflow-hidden relative rounded-3xl bg-neutral-50 p-8 shadow-sm"
+            class="overflow-hidden relative rounded-3xl border border-gray-200 bg-gray-50 p-8 shadow-sm"
           >
             <h4 class="text-xl font-semibold text-gray-950">
               {{ block.title }}

@@ -39,6 +39,33 @@
           >
             My Forms
           </NuxtLink>
+          <div class="relative z-20" @mouseleave="isOpen = false">
+            <button
+              :class="navLinkClasses"
+              class="flex items-center gap-1"
+              @mouseenter="isOpen = true"
+            >
+              <span>Features</span>
+              <Icon name="heroicons:chevron-down" class="w-2.5 h-4" />
+            </button>
+
+            <div
+              v-if="isOpen"
+              @mouseenter="isOpen = true"
+              @mouseleave="isOpen = false"
+              class="absolute left-0 top-full pt-2 w-56 bg-white shadow-lg rounded-md transition-all duration-150"
+            >
+              <NuxtLink to="#" :class="navLinkClasses" class="block px-4 py-2">
+                Some links
+              </NuxtLink>
+              <NuxtLink to="#" :class="navLinkClasses" class="block px-4 py-2">
+                Some links
+              </NuxtLink>
+              <NuxtLink to="#" :class="navLinkClasses" class="block px-4 py-2">
+                Some links
+              </NuxtLink>
+            </div>
+          </div>
           <NuxtLink
             v-if="$route.name !== 'enterprise'"
             :to="{ name: 'enterprise' }"
@@ -54,11 +81,11 @@
             Integrations
           </NuxtLink>
           <NuxtLink
-            v-if="$route.name !== 'templates'"
-            :to="{ name: 'templates' }"
+            v-if="$route.name !== 'pricing'"
+            :to="{ name: 'pricing' }"
             :class="navLinkClasses"
           >
-            Templates
+            Pricing
           </NuxtLink>
           <NuxtLink
             v-if="
@@ -98,7 +125,7 @@
             Documentation
           </NuxtLink>
 
-          <template v-if="appStore.featureBaseEnabled">
+          <!-- <template v-if="appStore.featureBaseEnabled">
             <button
               v-if="user"
               :class="navLinkClasses"
@@ -119,7 +146,7 @@
             >
               What's new?
             </a>
-          </template>
+          </template> -->
         </div>
 
         <div class="block">
@@ -146,7 +173,7 @@
                   <UButton
                     v-if="$route.name !== 'login'"
                     :to="{ name: 'login' }"
-                    class="bg-gray-100! text-gray-600! text-sm leading-5 tracking-[-0.6%] font-medium"
+                    class="bg-gray-100! text-gray-950! text-sm leading-5 tracking-[-0.6%] font-medium"
                     label="Login"
                   />
 
@@ -183,6 +210,9 @@ import UserDropdown from "../dashboard/UserDropdown.vue";
 import opnformConfig from "~/opnform.config.js";
 import { useFeatureFlag } from "~/composables/useFeatureFlag";
 import TrackClick from "~/components/global/TrackClick.vue";
+import { ref } from "vue";
+
+const isOpen = ref(false);
 
 // Stores & composables
 const { current: workspace } = useCurrentWorkspace();
@@ -207,7 +237,7 @@ const { data: form } = useForms().detail(formSlug.value, {
 
 // Constants / classes
 const navLinkClasses =
-  "border border-transparent hover:border-neutral-200 text-neutral-500 hover:text-neutral-800 hover:no-underline dark:hover:text-white py-1.5 px-3 hover:bg-neutral-50 rounded-md text-sm font-medium transition-colors w-full md:w-auto text-center md:text-left";
+  "border border-transparent hover:border-gray-200 text-gray-600 hover:text-gray-950 hover:no-underline dark:hover:text-white py-2.5 px-3 hover:bg-gray-50 rounded-md text-sm leading-5 tracking-[-0.6%] font-medium transition-colors w-full md:w-auto text-center md:text-left";
 
 const hasNavbar = computed(() => {
   if (isIframe.value) return false;

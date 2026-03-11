@@ -123,6 +123,12 @@
           <div
             class="min-h-3/5 absolute bottom-0 left-0 right-0 bg-linear-to-b from-transparent to-white z-2"
           ></div>
+          <div
+            class="w-[15%] min-h-full bg-linear-to-r from-[#fff8] to-transparent z-3 absolute top-0 left-0"
+          ></div>
+          <div
+            class="w-[15%] min-h-full bg-linear-to-l from-[#fff8] to-transparent z-3 absolute top-0 right-0"
+          ></div>
         </div>
         <LiveDemo />
       </div>
