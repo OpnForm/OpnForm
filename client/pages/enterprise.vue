@@ -6,9 +6,7 @@
           <h1
             class="text-4xl sm:text-[56px] sm:leading-16 tracking-[-1%] font-semibold text-gray-950"
           >
-            Powerful and secure form
-            <br />
-            builder for all your teams
+            Powerful and secure form builder for all your teams
           </h1>
           <p
             class="mt-4 text-lg sm:text-xl leading-7 tracking-[-1.5%] sm:leading-8 font-normal text-gray-600"
@@ -168,7 +166,7 @@
           <div
             v-for="item in securityFeatures"
             :key="item.title"
-            class="rounded-3xl bg-gray-50 p-8"
+            class="rounded-3xl bg-gray-50 border border-gray-200 p-8"
           >
             <div
               class="h-16 w-16 rounded-[20px] bg-white shadow-sm flex items-center justify-center"
@@ -229,7 +227,7 @@
           <div
             v-for="item in enterpriseFeatures"
             :key="item.title"
-            class="overflow-hidden relative rounded-3xl bg-gray-50 p-8 flex flex-col justify-between"
+            class="overflow-hidden relative rounded-3xl border border-gray-200 bg-gray-50 p-8 flex flex-col justify-between"
           >
             <div>
               <div
@@ -291,7 +289,7 @@
             </p>
           </div>
           <div
-            class="lg:col-span-5 w-full max-w-fit mx-auto lg:max-w-none rounded-3xl bg-gray-50 px-8 pt-8 pb-4"
+            class="lg:col-span-5 w-full max-w-fit mx-auto lg:max-w-none rounded-3xl border border-gray-200 bg-gray-50 px-8 pt-8 pb-4"
           >
             <div
               v-for="badge in vipSupportBadges"
@@ -318,7 +316,7 @@
     <section class="bg-white">
       <div class="px-8 lg:px-12">
         <div
-          class="mx-auto w-full max-w-336 rounded-4xl bg-linear-to-br from-gray-950 via-gray-900 to-gray-950 shadow-2xl overflow-hidden py-8 sm:py-10 lg:py-14 xl:py-24 px-8 md:px-10 lg:px-14 xl:px-35"
+          class="mx-auto w-full max-w-336 rounded-4xl bg-gray-950 shadow-2xl overflow-hidden py-8 sm:py-10 lg:py-14 xl:py-24 px-8 md:px-10 lg:px-14 xl:px-35"
         >
           <div class="text-center">
             <div
