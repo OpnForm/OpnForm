@@ -16,7 +16,7 @@
         @start-resize="startResize"
       />
       
-      <div class="h-full overflow-y-auto">
+      <div class="h-full min-h-0 overflow-y-auto">
         <slot />
       </div>
     </div>

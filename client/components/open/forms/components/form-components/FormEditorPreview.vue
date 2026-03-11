@@ -12,11 +12,11 @@
     ref="parent"
     :class="{
       'fixed inset-8 z-50 !flex': isExpanded,
-      'bg-neutral-50 dark:bg-notion-dark-light hidden md:flex flex-grow p-4 flex-col items-center shadow-inner': !isExpanded
+      'bg-neutral-50 dark:bg-notion-dark-light hidden md:flex flex-grow min-h-0 p-4 flex-col items-center shadow-inner': !isExpanded
     }"
   >
     <div 
-      class="border rounded-lg bg-white dark:bg-notion-dark w-full grow shadow-xs transition-all overflow-y-scroll flex flex-col"
+      class="border rounded-lg bg-white dark:bg-notion-dark w-full grow shadow-xs transition-all overflow-y-auto flex flex-col min-h-0"
       :class="{ 'h-full': isExpanded }"
     >
       <div class="w-full bg-white dark:bg-neutral-950 border-b border-neutral-300 dark:border-blue-900 dark:border-neutral-700 rounded-t-lg p-1.5 pl-4 pr-1.5 flex items-center gap-x-1.5">
