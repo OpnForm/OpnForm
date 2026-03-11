@@ -1,42 +1,49 @@
 <template>
-  <div class="px-4 mx-auto sm:px-6 lg:px-8 max-w-7xl">
-    <div class="max-w-3xl mx-auto text-center">
-      <h2 class="text-4xl font-semibold tracking-tight text-neutral-950">
+  <div class="mx-auto max-w-266">
+    <div class="text-center">
+      <h2
+        class="text-4xl sm:text-5xl sm:leading-14 tracking-[-1%] font-semibold text-gray-950"
+      >
         Feature Comparison
       </h2>
-      <p class="max-w-2xl mx-auto mt-3 text-lg font-medium leading-7 text-neutral-500">
-        Compare the features of the different plans and choose the one that best suits your needs.
+      <p
+        class="mt-4 text-base font-normal tracking-[-1.1%] leading-7 text-gray-600"
+      >
+        Compare the features of the different plans and choose the one that best
+        suits your needs.
       </p>
     </div>
 
-    <div class="mt-10 overflow-x-auto sm:mt-14">
-      <table class="w-full min-w-[760px] border-collapse">
+    <div class="mt-12 sm:mt-16 overflow-x-auto">
+      <table class="w-full min-w-108.75border-collapse">
         <thead>
           <tr class="border-b border-neutral-200">
-            <th class="py-4 pr-6 text-left text-sm font-semibold text-neutral-500">
+            <th class="py-4 pr-6 text-left text-sm font-semibold text-gray-600">
               &nbsp;
             </th>
             <th
               v-for="(plan, planIndex) in plans"
               :key="planIndex"
-              class="py-4 px-6 text-center"
+              class="p-6 text-center"
             >
-              <div class="text-sm font-semibold text-neutral-900">
+              <div class="text-xl leading-7 font-medium text-gray-950">
                 {{ plan.label }}
               </div>
-              <div class="mt-1 text-xs font-medium text-neutral-500">
+              <div
+                class="mt-0.5 text-base leading-7 tracking-[-1.1%] font-medium text-gray-600"
+              >
                 ({{ plan.priceLabel }})
               </div>
             </th>
           </tr>
         </thead>
 
-        <tbody class="divide-y divide-neutral-200">
+        <tbody>
           <template v-for="section in sections" :key="section.title">
-            <tr class="bg-white">
+            <tr class="bg-white border-b border-neutral-200">
               <th
                 colspan="5"
-                class="py-5 text-left text-sm font-semibold text-neutral-900"
+                class="pt-8 pb-4 pr-6 text-left text-xl leading-7 font-medium text-gray-950"
               >
                 {{ section.title }}
               </th>
@@ -47,30 +54,44 @@
               :key="rowIndex"
               class="bg-white"
             >
-              <th class="py-4 pr-6 text-left text-sm font-medium text-neutral-700">
+              <th
+                class="py-5 pr-6 text-left text-sm leading-5 tracking-[-0.6%] font-medium text-gray-700"
+              >
                 {{ row.label }}
               </th>
 
               <td
                 v-for="(plan, planIndex) in plans"
                 :key="planIndex"
-                class="py-4 px-6 text-center"
+                class="py-5 px-6 text-center"
               >
                 <div class="flex items-center justify-center gap-2">
                   <template v-if="row.values?.[planIndex] === true">
-                    <Icon class="w-5 h-5 text-emerald-600" name="heroicons:check-20-solid" />
+                    <Icon
+                      class="w-5 h-5 text-emerald-600"
+                      name="heroicons:check-20-solid"
+                    />
                   </template>
 
-                  <template v-else-if="row.values?.[planIndex] === false || row.values?.[planIndex] == null">
-                    <span class="text-sm font-medium text-neutral-300">—</span>
+                  <template
+                    v-else-if="
+                      row.values?.[planIndex] === false ||
+                      row.values?.[planIndex] == null
+                    "
+                  >
+                    <span class="text-sm font-medium text-gray-300">—</span>
                   </template>
 
                   <template v-else-if="row.values?.[planIndex] === 'soon'">
-                    <Icon title="Coming soon..." class="w-5 h-5 text-amber-500" name="heroicons:clock-20-solid" />
+                    <Icon
+                      title="Coming soon..."
+                      class="w-5 h-5 text-amber-500"
+                      name="heroicons:clock-20-solid"
+                    />
                   </template>
 
                   <template v-else>
-                    <span class="text-sm font-medium text-neutral-700">
+                    <span class="text-sm font-medium text-gray-700">
                       {{ row.values?.[planIndex] }}
                     </span>
                   </template>
@@ -90,7 +111,7 @@ const plans = [
   { key: "pro", label: "Pro", priceLabel: "$29" },
   { key: "business", label: "Business", priceLabel: "$79" },
   { key: "enterprise", label: "Enterprise", priceLabel: "$250+" },
-]
+];
 
 const sections = [
   {
@@ -102,7 +123,7 @@ const sections = [
       },
       {
         label: "File uploads",
-        values: ["10MB", true, "1GB", "configurable"],
+        values: ["(10MB)", true, "(1GB)", "(configurable)"],
       },
       {
         label: "Form logic & validation",
@@ -123,7 +144,12 @@ const sections = [
     rows: [
       {
         label: "Multi-user access",
-        values: ["all admins", "all admins", "roles & permissions", "roles + SSO"],
+        values: [
+          "(all admins)",
+          "(all admins)",
+          "(roles & permissions)",
+          "(roles + SSO)",
+        ],
       },
       {
         label: "Workspaces",
@@ -218,7 +244,7 @@ const sections = [
     rows: [
       {
         label: "Priority support",
-        values: [false, false, true, "SLA"],
+        values: [false, false, true, "(SLA)"],
       },
       {
         label: "SLA & onboarding",
@@ -226,5 +252,5 @@ const sections = [
       },
     ],
   },
-]
+];
 </script>
