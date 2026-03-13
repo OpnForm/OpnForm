@@ -333,6 +333,87 @@ describe('FormLogicConditionChecker', function () {
             $condition['value']['value'] = '['; // Invalid regex
             expect(FormLogicConditionChecker::conditionsMet($condition, $formData))->toBeFalse();
         });
+
+        it('supports equals compare_to field for text type', function () {
+            $condition = [
+                'value' => [
+                    'property_meta' => [
+                        'id' => 'confirm_text',
+                        'type' => 'text'
+                    ],
+                    'operator' => 'equals',
+                    'compare_to' => ['type' => 'field', 'field_id' => 'original_text'],
+                ]
+            ];
+
+            $formData = ['original_text' => 'hello', 'confirm_text' => 'hello'];
+            expect(FormLogicConditionChecker::conditionsMet($condition, $formData))->toBeTrue();
+
+            $formData = ['original_text' => 'hello', 'confirm_text' => 'world'];
+            expect(FormLogicConditionChecker::conditionsMet($condition, $formData))->toBeFalse();
+        });
+
+        it('supports does_not_equal compare_to field for email type', function () {
+            $condition = [
+                'value' => [
+                    'property_meta' => [
+                        'id' => 'confirm_email',
+                        'type' => 'email'
+                    ],
+                    'operator' => 'does_not_equal',
+                    'compare_to' => ['type' => 'field', 'field_id' => 'email'],
+                ]
+            ];
+
+            $formData = ['email' => 'a@b.com', 'confirm_email' => 'x@y.com'];
+            expect(FormLogicConditionChecker::conditionsMet($condition, $formData))->toBeTrue();
+
+            $formData = ['email' => 'a@b.com', 'confirm_email' => 'a@b.com'];
+            expect(FormLogicConditionChecker::conditionsMet($condition, $formData))->toBeFalse();
+        });
+
+        it('handles missing compare_to field_id gracefully', function () {
+            $condition = [
+                'value' => [
+                    'property_meta' => [
+                        'id' => 'confirm_email',
+                        'type' => 'email'
+                    ],
+                    'operator' => 'equals',
+                    'compare_to' => ['type' => 'field', 'field_id' => 'nonexistent_field'],
+                ]
+            ];
+
+            // Field not in formData: resolves to null, compared against 'a@b.com' => false
+            $formData = ['confirm_email' => 'a@b.com'];
+            expect(FormLogicConditionChecker::conditionsMet($condition, $formData))->toBeFalse();
+
+            // Both null => true
+            $formData = ['confirm_email' => null];
+            expect(FormLogicConditionChecker::conditionsMet($condition, $formData))->toBeTrue();
+        });
+
+        it('remains backwards compatible with literal value comparisons', function () {
+            $condition = [
+                'value' => [
+                    'property_meta' => [
+                        'id' => 'text_field',
+                        'type' => 'text'
+                    ],
+                    'operator' => 'equals',
+                    'value' => 'hello',
+                ]
+            ];
+
+            $formData = ['text_field' => 'hello'];
+            expect(FormLogicConditionChecker::conditionsMet($condition, $formData))->toBeTrue();
+
+            $formData = ['text_field' => 'other'];
+            expect(FormLogicConditionChecker::conditionsMet($condition, $formData))->toBeFalse();
+
+            $condition['value']['operator'] = 'does_not_equal';
+            expect(FormLogicConditionChecker::conditionsMet($condition, $formData))->toBeTrue();
+        });
     });
 
     describe('date conditions', function () {

@@ -57,6 +57,7 @@ export default {
           const workspaceId = this.form.workspace_id
           const formSlug = this.form.slug
           const customValidation = this.customValidation
+          const form = this.form
           return {
             identifier: property.id,
             name: property.name,
@@ -78,6 +79,9 @@ export default {
                       form_slug: formSlug,
                       workspace_id: workspaceId,
                     }
+                  },
+                  formProperties() {
+                    return form.properties
                   },
                 },
               })

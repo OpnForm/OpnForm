@@ -19,8 +19,50 @@
       }"
     />
 
-    <!-- Value Input (if needed) -->
-    <template v-if="needsInput">
+    <!-- Compare-to mode: text/email + equals/does_not_equal -->
+    <template v-if="supportsCompareToField">
+      <!-- Mode toggle: Value vs Field -->
+      <USelectMenu
+        v-model="compareMode"
+        :items="compareModeOptions"
+        value-key="value"
+        size="sm"
+        variant="outline"
+        class="w-[80px]"
+        :search-input="false"
+        :ui="{ content: 'min-w-fit' }"
+      />
+      <!-- Field selector when in field mode -->
+      <USelectMenu
+        v-if="compareMode === 'field'"
+        v-model="compareToFieldId"
+        :items="compareToFieldOptions"
+        value-key="value"
+        size="sm"
+        variant="outline"
+        class="flex-1 min-w-[120px]"
+        placeholder="Select field..."
+        :search-input="false"
+        :ui="{ content: 'min-w-fit' }"
+      />
+      <!-- Static value input when in value mode -->
+      <template v-else>
+        <component
+          v-bind="inputComponentData"
+          :is="inputComponentData.component"
+          v-model="content.value"
+          class="flex-1 min-w-[120px]"
+          :name="'value_' + property.id"
+          placeholder="Value"
+          wrapper-class="my-0"
+          margin-bottom=""
+          @update:model-value="emitInput()"
+        />
+      </template>
+    </template>
+
+    <!-- Standard value input for other operators/types -->
+    <template v-else-if="needsInput">
       <component
         v-bind="inputComponentData"
         :is="inputComponentData.component"
@@ -58,6 +100,10 @@ export default {
       content: this.modelValue ? { ...this.modelValue } : {},
       available_filters: OpenFilters,
       hasInput: false,
+      compareModeOptions: [
+        { label: 'Value', value: 'value' },
+        { label: 'Field', value: 'field' },
+      ],
       inputComponent: {
         text: "TextInput",
         rich_text: "TextInput",
@@ -160,6 +206,49 @@ export default {
 
       return true
     },
+    supportsCompareToField() {
+      return (
+        ['text', 'email'].includes(this.property.type) &&
+        ['equals', 'does_not_equal'].includes(this.content.operator)
+      )
+    },
+    // Overridden by ConditionEditor.client.vue to provide the full form's properties list.
+    // Falls back to [] so ColumnCondition remains usable standalone (no field options shown).
+    formProperties() {
+      return []
+    },
+    compareToFieldOptions() {
+      return (this.formProperties || [])
+        .filter((p) => ['text', 'email'].includes(p.type) && p.id !== this.property.id)
+        .map((p) => ({ label: p.name, value: p.id }))
+    },
+    compareMode: {
+      get() {
+        return this.content.compare_to?.type === 'field' ? 'field' : 'value'
+      },
+      set(val) {
+        if (val === 'field') {
+          // Auto-select the first available field to avoid a null field_id state
+          const firstField = this.compareToFieldOptions[0]?.value ?? null
+          this.content.compare_to = { type: 'field', field_id: firstField }
+          this.content.value = null
+        } else {
+          delete this.content.compare_to
+        }
+        this.emitInput()
+      },
+    },
+    compareToFieldId: {
+      get() {
+        return this.content.compare_to?.field_id ?? null
+      },
+      set(val) {
+        if (this.content.compare_to) {
+          this.content.compare_to = { ...this.content.compare_to, field_id: val }
+        }
+        this.emitInput()
+      },
+    },
   },
 
   watch: {
@@ -196,6 +285,11 @@ export default {
     operatorChanged() {
       if (!this.content.operator) {
         return
+      }
+
+      // Clear compare_to when switching to an operator that doesn't support it
+      if (!this.supportsCompareToField && this.content.compare_to) {
+        delete this.content.compare_to
       }
 
       const operator = this.selectedOperator()

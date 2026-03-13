@@ -539,12 +539,40 @@ class FormLogicConditionChecker
         return $query->exists();
     }
 
+    /**
+     * Resolve the comparison value for a condition.
+     * If compare_to.type === 'field', reads the value from $this->formData using field_id.
+     * Otherwise, falls back to the static literal in $propertyCondition['value'].
+     */
+    private function resolveExpectedValue(array $propertyCondition): mixed
+    {
+        $compareTo = $propertyCondition['compare_to'] ?? null;
+
+        if (
+            is_array($compareTo) &&
+            ($compareTo['type'] ?? null) === 'field' &&
+            !empty($compareTo['field_id'])
+        ) {
+            return $this->formData[$compareTo['field_id']] ?? null;
+        }
+
+        return $propertyCondition['value'] ?? null;
+    }
+
     private function textConditionMet(array $propertyCondition, $value): bool
     {
         switch ($propertyCondition['operator']) {
             case 'equals':
+                if (isset($propertyCondition['compare_to'])) {
+                    $expected = $this->resolveExpectedValue($propertyCondition);
+                    return $value === $expected;
+                }
                 return $this->checkEquals($propertyCondition, $value);
             case 'does_not_equal':
+                if (isset($propertyCondition['compare_to'])) {
+                    $expected = $this->resolveExpectedValue($propertyCondition);
+                    return $value !== $expected;
+                }
                 return !$this->checkEquals($propertyCondition, $value);
             case 'contains':
                 return $this->checkContains($propertyCondition, $value);

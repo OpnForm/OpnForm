@@ -10,6 +10,7 @@ export function conditionsMet(conditions, formData) {
     return propertyConditionMet(
       conditions.value,
       conditions.value ? formData[conditions.value.property_meta.id] : null,
+      formData,
     )
   }
 
@@ -36,7 +37,7 @@ export function conditionsMet(conditions, formData) {
   )
 }
 
-function propertyConditionMet(propertyCondition, value) {
+function propertyConditionMet(propertyCondition, value, formData) {
   if (!propertyCondition) {
     return false
   }
@@ -45,7 +46,7 @@ function propertyConditionMet(propertyCondition, value) {
     case "url":
     case "email":
     case "phone_number":
-      return textConditionMet(propertyCondition, value)
+      return textConditionMet(propertyCondition, value, formData)
     case "number":
     case "rating":
     case "scale":
@@ -311,11 +312,19 @@ function checkLength(condition, fieldValue, operator = "===") {
   return false
 }
 
-function textConditionMet(propertyCondition, value) {
+function textConditionMet(propertyCondition, value, formData) {
   switch (propertyCondition.operator) {
     case "equals":
+      if (propertyCondition.compare_to?.type === 'field' && propertyCondition.compare_to?.field_id) {
+        const expected = formData?.[propertyCondition.compare_to.field_id] ?? null
+        return value === expected
+      }
       return checkEquals(propertyCondition, value)
     case "does_not_equal":
+      if (propertyCondition.compare_to?.type === 'field' && propertyCondition.compare_to?.field_id) {
+        const expected = formData?.[propertyCondition.compare_to.field_id] ?? null
+        return value !== expected
+      }
       return !checkEquals(propertyCondition, value)
     case "contains":
       return checkContains(propertyCondition, value)
