@@ -14,6 +14,7 @@ use App\Http\Controllers\Forms\FormSubmissionController;
 use App\Http\Controllers\Forms\Integration\FormIntegrationsController;
 use App\Http\Controllers\Forms\Integration\FormIntegrationsEventController;
 use App\Http\Controllers\Forms\Integration\FormZapierWebhookController;
+use App\Http\Controllers\Forms\FormImportController;
 use App\Http\Controllers\Forms\PublicFormController;
 use App\Http\Controllers\Settings\OAuthProviderController;
 use App\Http\Controllers\Settings\PasswordController;
@@ -181,6 +182,9 @@ Route::group(['middleware' => 'auth.multi'], function () {
         });
 
         Route::prefix('forms')->name('forms.')->group(function () {
+            Route::post('/import', [FormImportController::class, 'import'])
+                ->middleware('throttle:10,1')
+                ->name('import');
             Route::post('/', [FormController::class, 'store'])->name('store');
             Route::post('/{form}/workspace/{workspace}', [FormController::class, 'updateWorkspace'])->name('workspace.update');
             Route::put('/{form}', [FormController::class, 'update'])->name('update');
