@@ -16,6 +16,7 @@
         "ext-json": "*",
         "aws/aws-sdk-php": "*",
         "doctrine/dbal": "*",
+        "enshrined/svg-sanitize": "^0.22",
         "fakerphp/faker": "^1.23",
         "giggsey/libphonenumber-for-php": "*",
         "google/apiclient": "^2.16",
