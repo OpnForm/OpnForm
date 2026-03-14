@@ -25,10 +25,10 @@ use App\Http\Controllers\Auth\UserInviteController;
 use App\Http\Controllers\Forms\FormPaymentController;
 use App\Http\Controllers\WorkspaceController;
 use App\Http\Controllers\WorkspaceUserController;
+use App\Service\Storage\SafeFileResponseService;
 use Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Storage;
 use App\Http\Controllers\HealthCheckController;
 
 /*
@@ -204,7 +204,7 @@ Route::group(['middleware' => 'auth.multi'], function () {
             Route::post(
                 '/assets/upload',
                 [FormController::class, 'uploadAsset']
-            )->withoutMiddleware(['auth.multi'])->name('assets.upload');
+            )->middleware(['throttle:10,1', 'throttle:30,60'])->withoutMiddleware(['auth.multi'])->name('assets.upload');
             Route::get(
                 '/{form}/uploaded-file/{filename}',
                 [FormController::class, 'viewFile']
@@ -366,12 +366,12 @@ Route::prefix('forms')->name('forms.')->group(function () {
         )->name('users.index');
     });
 
+    // File uploads
+    Route::get('assets/{assetFileName}', [PublicFormController::class, 'showAsset'])->name('assets.show');
+
     // Get form and submit
     Route::get('{form}', [PublicFormController::class, 'show'])->name('show');
     Route::get('{form}/submissions/{submission_id}', [PublicFormController::class, 'fetchSubmission'])->name('fetchSubmission');
-
-    // File uploads
-    Route::get('assets/{assetFileName}', [PublicFormController::class, 'showAsset'])->name('assets.show');
 
     // AI
     Route::post('ai/generate', [\App\Http\Controllers\Forms\AiFormController::class, 'generateForm'])->name('ai.generate');
@@ -413,14 +413,14 @@ Route::post(
 Route::post(
     '/upload-file',
     [\App\Http\Controllers\Content\FileUploadController::class, 'upload']
-)->name('upload-file');
+)->middleware(['throttle:10,1', 'throttle:30,60'])->name('upload-file');
 
 Route::get('local/temp/{path}', function (Request $request, string $path) {
     if (!$request->hasValidSignature()) {
         abort(401);
     }
 
-    return response()->file(Storage::path($path), ['Content-Type' => Storage::mimeType($path)]);
+    return app(SafeFileResponseService::class)->serve($path, basename($path));
 })->where('path', '(.*)')->name('local.temp');
 
 Route::get('caddy/ask-certificate/{secret?}', [\App\Http\Controllers\CaddyController::class, 'ask'])
