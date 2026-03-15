@@ -232,17 +232,17 @@
 </template>
 
 <script setup>
-import TemplatesSlider from "~/components/pages/welcome/TemplatesSlider.vue";
+import TemplatesSlider from "~/components/pages/welcome/TemplatesSlider.vue"
 
 definePageMeta({
   layout: "default",
-});
+})
 
 useOpnSeoMeta({
   title: "Industry",
   description:
     "Transform financial operations with powerful and secure forms built for teams that need flexibility, security, and control.",
-});
+})
 
 const financialUseCases = [
   {
@@ -280,7 +280,7 @@ const financialUseCases = [
     description: "Some text goes here...",
     icon: "i-heroicons-circle-stack",
   },
-];
+]
 
 const financialImprovements = [
   {
@@ -318,7 +318,7 @@ const financialImprovements = [
     description: "Some text goes here...",
     icon: "i-heroicons-users",
   },
-];
+]
 
 const keyFeatures = [
   {
@@ -363,7 +363,7 @@ const keyFeatures = [
     iconWrapClass: "bg-fuchsia-50 ring-1 ring-fuchsia-100",
     iconClass: "text-fuchsia-600",
   },
-];
+]
 
 const integrationApps = [
   { icon: "i-simple-icons-zendesk", iconClass: "text-[#ffffff]" },
@@ -383,5 +383,5 @@ const integrationApps = [
   // { icon: "i-simple-icons-notion", iconClass: "text-white" },
   // { icon: "i-simple-icons-airtable", iconClass: "text-[#18BFFF]" },
   // { icon: "i-simple-icons-meta", iconClass: "text-[#0668E1]" },
-];
+]
 </script>

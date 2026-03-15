@@ -154,25 +154,25 @@
 </template>
 
 <script setup>
-import { useFuse } from "@vueuse/integrations/useFuse";
-import FormCard from "~/components/pages/home/FormCard.vue";
-import FormCardSkeleton from "~/components/pages/home/FormCardSkeleton.vue";
-import TrackClick from "~/components/global/TrackClick.vue";
-import UpgradeBanner from "~/components/dashboard/UpgradeBanner.vue";
+import { useFuse } from "@vueuse/integrations/useFuse"
+import FormCard from "~/components/pages/home/FormCard.vue"
+import FormCardSkeleton from "~/components/pages/home/FormCardSkeleton.vue"
+import TrackClick from "~/components/global/TrackClick.vue"
+import UpgradeBanner from "~/components/dashboard/UpgradeBanner.vue"
 
 definePageMeta({
   middleware: ["auth"],
   layout: "dashboard",
-});
+})
 
 useOpnSeoMeta({
   title: "Your Forms",
   description:
     "All of your OpnForm are here. Create new forms, or update your existing forms.",
-});
+})
 
 // Composables
-const { current: workspace, currentId: workspaceId } = useCurrentWorkspace();
+const { current: workspace, currentId: workspaceId } = useCurrentWorkspace()
 
 const {
   forms,
@@ -185,57 +185,57 @@ const {
 } = useFormsList(workspaceId, {
   fetchAll: true,
   enabled: computed(() => import.meta.client && !!workspaceId.value),
-});
+})
 
 // State
-const search = ref("");
-const debouncedSearch = refDebounced(search, 500);
-const selectedTags = ref([]);
+const search = ref("")
+const debouncedSearch = refDebounced(search, 500)
+const selectedTags = ref([])
 
 // Methods
 const clearFilters = () => {
-  search.value = "";
-  selectedTags.value = [];
-};
+  search.value = ""
+  selectedTags.value = []
+}
 
 // Computed
 const isFilteringForms = computed(() => {
   return (
     (search.value !== "" && search.value !== null) ||
     selectedTags.value.length > 0
-  );
-});
+  )
+})
 
 // Extract all unique tags from forms
 const allTags = computed(() => {
-  if (!forms.value) return [];
+  if (!forms.value) return []
 
-  const tagsSet = new Set();
+  const tagsSet = new Set()
   forms.value.forEach((form) => {
     if (form.tags && form.tags.length) {
-      form.tags.forEach((tag) => tagsSet.add(tag));
+      form.tags.forEach((tag) => tagsSet.add(tag))
     }
-  });
+  })
 
-  return Array.from(tagsSet).sort();
-});
+  return Array.from(tagsSet).sort()
+})
 
 const tagOptions = computed(() =>
   allTags.value.map((tag) => ({ label: tag, value: tag })),
-);
+)
 
 const baseForms = computed(() => {
-  if (!forms.value) return [];
+  if (!forms.value) return []
   return forms.value.filter((form) => {
-    if (selectedTags.value.length === 0) return true;
+    if (selectedTags.value.length === 0) return true
     const selectedTagStrings = selectedTags.value
       .map((t) => (typeof t === "string" ? t : t?.value))
-      .filter(Boolean);
+      .filter(Boolean)
     return form.tags && form.tags.length
       ? selectedTagStrings.every((tag) => form.tags.includes(tag))
-      : false;
-  });
-});
+      : false
+  })
+})
 
 const { results: fuseResults } = useFuse(debouncedSearch, baseForms, {
   fuseOptions: {
@@ -245,12 +245,12 @@ const { results: fuseResults } = useFuse(debouncedSearch, baseForms, {
     includeScore: false,
   },
   matchAllWhenSearchEmpty: true,
-});
+})
 
 const enrichedForms = computed(() => {
-  const base = baseForms.value;
-  if (!base || base.length === 0) return [];
-  const results = fuseResults.value;
-  return results && results.length > 0 ? results.map((r) => r.item) : base;
-});
+  const base = baseForms.value
+  if (!base || base.length === 0) return []
+  const results = fuseResults.value
+  return results && results.length > 0 ? results.map((r) => r.item) : base
+})
 </script>
