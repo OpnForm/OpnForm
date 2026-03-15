@@ -4,11 +4,14 @@ import { initServiceClients } from '~/composables/useAuthFlow'
 export default defineNuxtRouteMiddleware(async () => {
   const authStore = useAuthStore()
   const queryClient = useQueryClient()
+  const tokenCookie = useCookie('token')
+  const adminTokenCookie = useCookie('admin_token')
 
-  // Initialize tokens from cookies first
+  // Hydrate missing tokens from cookies without overwriting a fresh in-memory
+  // token during the same client-side navigation cycle.
   authStore.initStore(
-    useCookie('token').value,
-    useCookie('admin_token').value,
+    tokenCookie.value,
+    adminTokenCookie.value,
   )
 
   // If no token, nothing to do
