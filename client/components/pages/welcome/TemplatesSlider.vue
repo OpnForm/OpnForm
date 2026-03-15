@@ -62,18 +62,18 @@
 </template>
 
 <script>
-import SingleTemplate from "../templates/SingleTemplate.vue";
+import SingleTemplate from "../templates/SingleTemplate.vue"
 
 export default {
   components: { SingleTemplate },
   setup() {
-    const { list } = useTemplates();
-    const { data: templates } = list({ limit: 10 });
+    const { list } = useTemplates()
+    const { data: templates } = list({ limit: 10 })
 
     return {
       sliderTemplates: computed(() => {
         if (templates.value && templates.value.length) {
-          return templates.value;
+          return templates.value
         }
 
         return [
@@ -107,9 +107,9 @@ export default {
             slug: "some-title",
             short_description: "Some text goes here...",
           },
-        ];
+        ]
       }),
-    };
+    }
   },
 
   // watch: {
@@ -125,8 +125,8 @@ export default {
 
   mounted() {
     this.$nextTick(() => {
-      this.setInfinite();
-    });
+      this.setInfinite()
+    })
   },
 
   // methods: {
@@ -138,5 +138,5 @@ export default {
   //     ul.nextSibling.setAttribute("aria-hidden", "true");
   //   },
   // },
-};
+}
 </script>

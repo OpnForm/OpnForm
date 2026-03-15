@@ -76,7 +76,7 @@ defineProps({
     required: false,
     default: "https://opnform.com/forms/opnform-contact",
   },
-});
+})
 
-const { isAuthenticated: authenticated } = useIsAuthenticated();
+const { isAuthenticated: authenticated } = useIsAuthenticated()
 </script>

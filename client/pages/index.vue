@@ -147,18 +147,17 @@
 </template>
 
 <script setup>
-import LiveDemo from "~/components/pages/welcome/LiveDemo.vue";
-import Features from "~/components/pages/welcome/Features.vue";
-import MoreFeatures from "../components/pages/welcome/MoreFeatures.vue";
-import AiFeature from "../components/pages/welcome/AiFeature.vue";
-import { useIsAuthenticated } from "~/composables/useAuthFlow";
+import LiveDemo from "~/components/pages/welcome/LiveDemo.vue"
+import Features from "~/components/pages/welcome/Features.vue"
+import MoreFeatures from "../components/pages/welcome/MoreFeatures.vue"
+import { useIsAuthenticated } from "~/composables/useAuthFlow"
 
 definePageMeta({
   layout: "default",
   middleware: ["root-redirect"],
-});
+})
 
-const { isAuthenticated: authenticated } = useIsAuthenticated();
+const { isAuthenticated: authenticated } = useIsAuthenticated()
 </script>
 
 <style lang="scss" scoped>

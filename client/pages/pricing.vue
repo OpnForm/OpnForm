@@ -808,24 +808,24 @@
 </template>
 
 <script setup>
-import FeatureComparison from "~/components/pages/pricing/FeatureComparison.vue";
-import { useIsAuthenticated } from "~/composables/useAuthFlow";
+import FeatureComparison from "~/components/pages/pricing/FeatureComparison.vue"
+import { useIsAuthenticated } from "~/composables/useAuthFlow"
 
 definePageMeta({
   layout: "default",
   middleware: ["self-hosted"],
-});
+})
 
 useOpnSeoMeta({
   title: "Pricing",
   description:
     "All of our core features are free, and there is no quantity limit. You can also created more advanced and customized forms with OpnForms Pro.",
-});
+})
 
-const { openSubscriptionModal } = useAppModals();
-const { isAuthenticated: authenticated } = useIsAuthenticated();
+const { openSubscriptionModal } = useAppModals()
+const { isAuthenticated: authenticated } = useIsAuthenticated()
 
-const pricingIsYearly = ref(true);
+const pricingIsYearly = ref(true)
 
 const communityEditionFeatures = [
   "Unlimited forms & submissions",
@@ -835,7 +835,7 @@ const communityEditionFeatures = [
   "Unlimited workspaces",
   "Branding required",
   "Community support",
-];
+]
 
 const enterpriseLicenseFeatures = [
   "Branding removal",
@@ -847,9 +847,9 @@ const enterpriseLicenseFeatures = [
   "White-labeling & theming",
   "Packaged updates + migration tooling",
   "Priority support",
-];
+]
 
-const openFaqIndex = ref(2);
+const openFaqIndex = ref(2)
 const faqs = [
   {
     question: "Is there any submission limit?",
@@ -916,23 +916,23 @@ const faqs = [
     answer:
       "Yes — multi-user collaboration is supported. Higher tiers add roles and permissions for larger teams.",
   },
-];
+]
 
 const handlePlanCta = (plan) => {
   if (!authenticated.value) {
-    return navigateTo({ name: "register" });
+    return navigateTo({ name: "register" })
   }
-  openSubscriptionModal({ plan, yearly: pricingIsYearly.value });
-};
+  openSubscriptionModal({ plan, yearly: pricingIsYearly.value })
+}
 
-const handleProCta = () => handlePlanCta("pro");
-const handleBusinessCta = () => handlePlanCta("business");
+const handleProCta = () => handlePlanCta("pro")
+const handleBusinessCta = () => handlePlanCta("business")
 
 const contactUs = () => {
-  useCrisp().openAndShowChat();
-};
+  useCrisp().openAndShowChat()
+}
 
 const toggleFaq = (index) => {
-  openFaqIndex.value = openFaqIndex.value === index ? null : index;
-};
+  openFaqIndex.value = openFaqIndex.value === index ? null : index
+}
 </script>

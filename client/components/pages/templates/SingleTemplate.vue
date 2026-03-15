@@ -71,7 +71,7 @@
 </template>
 
 <script>
-import TemplateTags from "./TemplateTags.vue";
+import TemplateTags from "./TemplateTags.vue"
 
 export default {
   components: { TemplateTags },
@@ -85,17 +85,17 @@ export default {
   data() {
     return {
       imageError: false,
-    };
+    }
   },
 
   methods: {
     cleanQuotes(str) {
       // Remove starting and ending quotes if any
-      return str ? str.replace(/^"/, "").replace(/"$/, "") : "";
+      return str ? str.replace(/^"/, "").replace(/"$/, "") : ""
     },
     handleImageError() {
-      this.imageError = true;
+      this.imageError = true
     },
   },
-};
+}
 </script>
