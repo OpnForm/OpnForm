@@ -111,7 +111,7 @@ const plans = [
   { key: "pro", label: "Pro", priceLabel: "$29" },
   { key: "business", label: "Business", priceLabel: "$79" },
   { key: "enterprise", label: "Enterprise", priceLabel: "$250+" },
-];
+]
 
 const sections = [
   {
@@ -252,5 +252,5 @@ const sections = [
       },
     ],
   },
-];
+]
 </script>

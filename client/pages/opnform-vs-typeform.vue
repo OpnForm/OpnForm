@@ -547,21 +547,21 @@
 </template>
 
 <script setup>
-import LiveDemo from "~/components/pages/welcome/LiveDemo.vue";
-import Testimonials from "~/components/pages/welcome/Testimonials.vue";
-import { useIsAuthenticated } from "~/composables/useAuthFlow";
+import LiveDemo from "~/components/pages/welcome/LiveDemo.vue"
+import Testimonials from "~/components/pages/welcome/Testimonials.vue"
+import { useIsAuthenticated } from "~/composables/useAuthFlow"
 
 definePageMeta({
   layout: "default",
-});
+})
 
 useOpnSeoMeta({
   title: "OpnForm vs Typeform",
   description:
     "A powerful Typeform alternative with unlimited responses and full control — for free.",
-});
+})
 
-const { isAuthenticated: authenticated } = useIsAuthenticated();
+const { isAuthenticated: authenticated } = useIsAuthenticated()
 
 const freePlanComparison = [
   {
@@ -603,7 +603,7 @@ const freePlanComparison = [
     label: "Price for 1,000 Responses",
     cells: ["Free", "$10/month"],
   },
-];
+]
 
 const switchReasons = [
   {
@@ -636,7 +636,7 @@ const switchReasons = [
     title: "Some title goes here...",
     description: "Some text goes here...",
   },
-];
+]
 
 const featureComparison = [
   {
@@ -687,26 +687,26 @@ const featureComparison = [
     label: "GDPR compliance",
     cells: ["Y", "Y"],
   },
-];
+]
 
 const submissionOptions = [
   100, 250, 500, 1000, 2500, 5000, 7500, 10000, 15000, 20000, 25000,
-];
-const submissionsIndex = ref(7);
+]
+const submissionsIndex = ref(7)
 
 const submissionsPerMonth = computed(
   () => submissionOptions[submissionsIndex.value] ?? 10000,
-);
+)
 const sliderPercent = computed(
   () => (submissionsIndex.value / (submissionOptions.length - 1)) * 100,
-);
+)
 const sliderStyle = computed(() => ({
   background: `linear-gradient(to right, #2563eb 0%, #2563eb ${sliderPercent.value}%, #f3f4f6 ${sliderPercent.value}%, #f3f4f6 100%)`,
-}));
+}))
 
 function formatSubmissionsLabel(value, idx) {
-  const formatted = new Intl.NumberFormat("en-US").format(value);
-  return idx === submissionOptions.length - 1 ? `${formatted}+` : formatted;
+  const formatted = new Intl.NumberFormat("en-US").format(value)
+  return idx === submissionOptions.length - 1 ? `${formatted}+` : formatted
 }
 
 function formatCurrency(amount) {
@@ -714,28 +714,28 @@ function formatCurrency(amount) {
     style: "currency",
     currency: "USD",
     maximumFractionDigits: 0,
-  }).format(amount);
+  }).format(amount)
 }
 
 function getTypeformPrice(submissions) {
   // A simple, easy-to-tweak approximation for the comparison chart.
-  if (submissions <= 100) return 0;
-  if (submissions <= 1000) return 29;
-  if (submissions <= 2500) return 59;
-  if (submissions <= 5000) return 99;
-  if (submissions <= 10000) return 149;
-  if (submissions <= 15000) return 249;
-  if (submissions <= 20000) return 399;
-  return 499;
+  if (submissions <= 100) return 0
+  if (submissions <= 1000) return 29
+  if (submissions <= 2500) return 59
+  if (submissions <= 5000) return 99
+  if (submissions <= 10000) return 149
+  if (submissions <= 15000) return 249
+  if (submissions <= 20000) return 399
+  return 499
 }
 
-const opnformPrice = computed(() => 0);
+const opnformPrice = computed(() => 0)
 const typeformPrice = computed(() =>
   getTypeformPrice(submissionsPerMonth.value),
-);
+)
 const monthlySavings = computed(() =>
   Math.max(0, typeformPrice.value - opnformPrice.value),
-);
+)
 
 const integrationLogosrow1 = [
   {
@@ -750,7 +750,7 @@ const integrationLogosrow1 = [
     icon: "material-symbols:webhook",
     iconClass: "text-[#0061FF]",
   },
-];
+]
 
 const integrationLogosrow2 = [
   { name: "Telegram", icon: "mdi:telegram", iconClass: "text-[#27A7E7]" },
@@ -761,7 +761,7 @@ const integrationLogosrow2 = [
     iconClass: "text-[#34A853]",
   },
   { name: "n8n", icon: "simple-icons:n8n", iconClass: "text-[#EA4B71]" },
-];
+]
 
 const privacyFeatures = [
   {
@@ -787,5 +787,5 @@ const privacyFeatures = [
     description:
       "No tracking pixels, no hidden analytics — just clean, honest form building.",
   },
-];
+]
 </script>
