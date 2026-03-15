@@ -26,19 +26,19 @@
             :class="card.size === 'large' ? 'lg:col-span-2' : ''"
           >
             <div
-              class="grid gap-3 relative"
+              class="grid items-end sm:grid-cols-12 relative"
               :class="
                 card.size === 'large'
-                  ? 'items-end lg:grid-cols-12 gap-0 sm:gap-2 lg:gap-6'
-                  : 'items-start sm:grid-cols-12 gap-2 sm:gap-6'
+                  ? 'gap-0 sm:gap-2 lg:gap-6'
+                  : 'gap-2 sm:gap-6'
               "
             >
               <div
-                class="flex flex-col items-start lg:pb-6"
+                class="flex flex-col items-start gap-2 pb-2 sm:pb-6"
                 :class="
                   card.size === 'large'
-                    ? 'sm:col-span-4 lg:col-span-3 gap-2 lg:gap-6'
-                    : 'sm:col-span-6 md:col-span-5 gap-2 sm:gap-6'
+                    ? 'sm:col-span-4 lg:col-span-3 lg:gap-6'
+                    : 'sm:col-span-6 md:col-span-5 sm:gap-6'
                 "
               >
                 <div
@@ -61,7 +61,7 @@
                 <img
                   :src="card.imageSrc"
                   :alt="card.title"
-                  class="w-full translate-y-4"
+                  class="w-full"
                   loading="lazy"
                 />
               </div>
@@ -339,7 +339,7 @@ const shareCards = [
   {
     key: "qr",
     size: "small",
-    title: "Generate QR codes for offline collection",
+    title: "Share your form with a QR code",
     icon: "i-heroicons-qr-code",
     imageSrc: "/img/pages/welcome/share-5.png",
   },

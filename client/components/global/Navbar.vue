@@ -173,7 +173,7 @@
                   <UButton
                     v-if="$route.name !== 'login'"
                     :to="{ name: 'login' }"
-                    class="bg-gray-100! text-gray-950! text-sm leading-5 tracking-[-0.6%] font-medium"
+                    class="bg-gray-100 text-gray-600 text-sm leading-5 tracking-[-0.6%] font-medium border border-transparent hover:border-gray-200 hover:text-gray-950 dark:hover:text-white hover:bg-gray-50"
                     label="Login"
                   />
 

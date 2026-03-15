@@ -20,35 +20,35 @@
           <img
             src="/img/pages/welcome/vanguard-1.png"
             alt="Trusted Teams"
-            class="w-full"
+            class="max-w-[94px]"
           />
         </div>
         <div class="w-fit">
           <img
             src="/img/pages/welcome/logo-berkeley-2.png"
             alt="Trusted Teams"
-            class="w-full"
+            class="max-w-25"
           />
         </div>
         <div class="w-fit">
           <img
             src="/img/pages/welcome/UN_emblem_blue-2.png"
             alt="Trusted Teams"
-            class="w-full"
+            class="max-w-[47px]"
           />
         </div>
         <div class="w-fit">
           <img
             src="/img/pages/welcome/Frame-47.png"
             alt="Trusted Teams"
-            class="w-full"
+            class="max-w-[89px]"
           />
         </div>
         <div class="w-fit">
           <img
             src="/img/pages/welcome/Zomato_Logo-2.png"
             alt="Trusted Teams"
-            class="w-full"
+            class="max-w-[93px]"
           />
         </div>
       </div>
