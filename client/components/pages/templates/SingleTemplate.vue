@@ -57,7 +57,7 @@
       </p>
     </div>
 
-    <template-tags
+    <!-- <template-tags
       :template="template"
       class="flex mt-4 items-center flex-wrap gap-3"
     />
@@ -66,7 +66,7 @@
       :to="{ name: 'templates-slug', params: { slug: template.slug } }"
     >
       <span class="absolute inset-0" aria-hidden="true" />
-    </NuxtLink>
+    </NuxtLink> -->
   </div>
 </template>
 

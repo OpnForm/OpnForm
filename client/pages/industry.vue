@@ -60,7 +60,7 @@
                 >
                   <UIcon
                     :name="feature.icon"
-                    class="h-4 w-4"
+                    class="h-5 w-5"
                     :class="feature.iconClass"
                   />
                 </div>
