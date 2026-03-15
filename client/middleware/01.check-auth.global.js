@@ -31,10 +31,15 @@ export default defineNuxtRouteMiddleware(async () => {
 
       userData = queryClient.getQueryData(['user'])
     } catch (error) {
-      // On 401, clear auth state
+      // A server-side bootstrap request can 401 even when the browser still has a
+      // valid token (for example if SSR auth validation differs from the browser
+      // request context). Do not destroy auth state during SSR; let the client
+      // retry before treating it as a real logout.
       if (error?.status === 401) {
-        authStore.clearToken()
-        queryClient.clear()
+        if (import.meta.client) {
+          authStore.clearToken()
+          queryClient.clear()
+        }
       }
       return
     }

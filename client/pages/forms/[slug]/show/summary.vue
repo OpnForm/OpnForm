@@ -1,10 +1,11 @@
 <template>
-  <div class="p-4 sm:p-6 lg:p-8">
+  <PageContainer>
     <FormSummary :form="form" />
-  </div>
+  </PageContainer>
 </template>
 
 <script setup>
+import PageContainer from "~/components/dashboard/PageContainer.vue"
 import FormSummary from "~/components/open/forms/components/FormSummary.vue"
 
 const props = defineProps({

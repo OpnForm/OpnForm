@@ -1,19 +1,14 @@
 <template>
-  <div class="p-4">
-    <div class="w-full max-w-4xl mx-auto">
-      <div class="flex items-center justify-between mb-6">
-        <div>
-          <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">
-            PDF Templates
-          </h1>
-          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Create PDF documents from your form submissions.
-          </p>
-        </div>
+  <PageContainer spacing="md">
+    <PageSection
+      title="PDF Templates"
+      description="Create PDF documents from your form submissions."
+    >
+      <template #actions>
         <UDropdownMenu
           :items="createMenuItems"
           :content="{ side: 'bottom', align: 'end' }"
-          arrow 
+          arrow
         >
           <UButton
             color="primary"
@@ -31,112 +26,111 @@
           class="hidden"
           @change="handleFileUpload"
         >
-      </div>
+      </template>
 
-      <div
-        v-if="isLoading"
-        class="space-y-4"
-      >
-        <div
-          v-for="i in 3"
-          :key="i"
-          class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4"
-        >
-          <div class="animate-pulse flex items-center justify-between">
-            <div class="flex items-center gap-4">
-              <div class="h-10 w-10 bg-gray-200 dark:bg-gray-700 rounded" />
-              <div>
-                <div class="h-4 w-32 bg-gray-200 dark:bg-gray-700 rounded mb-2" />
-                <div class="h-3 w-24 bg-gray-200 dark:bg-gray-700 rounded" />
+      <DashboardLoadingBlock :loading="isLoading">
+        <template #skeleton>
+          <div class="space-y-4">
+            <DashboardPanel
+              v-for="i in 3"
+              :key="i"
+              padding="sm"
+            >
+              <div class="animate-pulse flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                  <div class="h-10 w-10 bg-neutral-200 rounded" />
+                  <div>
+                    <div class="h-4 w-32 bg-neutral-200 rounded mb-2" />
+                    <div class="h-3 w-24 bg-neutral-200 rounded" />
+                  </div>
+                </div>
+                <div class="h-8 w-20 bg-neutral-200 rounded" />
               </div>
-            </div>
-            <div class="h-8 w-20 bg-gray-200 dark:bg-gray-700 rounded" />
+            </DashboardPanel>
           </div>
-        </div>
-      </div>
+        </template>
 
-      <div
-        v-else-if="templates.length"
-        class="space-y-4"
-      >
         <div
-          v-for="template in templates"
-          :key="template.id"
-          class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 hover:border-gray-300 dark:hover:border-gray-600 transition-colors"
+          v-if="templates.length"
+          class="space-y-4"
         >
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-4">
-              <div class="h-10 w-10 bg-neutral-100 dark:bg-neutral-900/30 rounded flex items-center justify-center">
-                <UIcon
-                  name="material-symbols:picture-as-pdf-rounded"
-                  class="h-5 w-5 text-primary-600 dark:text-primary-400"
-                />
-              </div>
-              <div>
-                <h3 class="font-medium text-gray-900 dark:text-white">
-                  {{ template.name }}
-                </h3>
-                <p class="text-sm text-gray-500 dark:text-gray-400">
-                  {{ template.original_filename }} •
-                  {{ template.page_count }} page{{ template.page_count > 1 ? 's' : '' }} •
-                  {{ template.zone_mappings?.length || 0 }} zone{{ template.zone_mappings?.length >= 1 ? 's' : '' }}
-                </p>
-              </div>
-            </div>
-            <div class="relative z-20">
-              <UDropdownMenu
-                :items="getTemplateMenuItems(template)"
-                :content="{ side: 'bottom', align: 'end' }"
-                arrow
-              >
-                <UButton
-                  color="neutral"
-                  variant="ghost"
-                  icon="i-heroicons-ellipsis-horizontal"
-                  size="md"
-                  :loading="deletingId === template.id"
-                />
-              </UDropdownMenu>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div
-        v-else
-        class="text-center py-12 px-6 bg-gray-50 dark:bg-gray-900/50 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-700"
-      >
-        <UIcon
-          name="i-heroicons-document-arrow-down"
-          class="mx-auto h-12 w-12 text-gray-400"
-        />
-        <h3 class="mt-2 text-lg font-semibold text-gray-900 dark:text-white">
-          No PDF templates yet
-        </h3>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400 max-w-sm mx-auto">
-          Upload a PDF template or create one from scratch, then map form fields to create customized documents from submissions.
-        </p>
-        <UDropdownMenu
-          class="mt-4"
-          :items="createMenuItems"
-          :content="{ side: 'bottom', align: 'center' }"
-          arrow
-        >
-          <UButton
-            color="primary"
-            icon="i-heroicons-plus"
-            trailing-icon="i-heroicons-chevron-down"
-            :loading="uploading || creatingFromScratch"
+          <DashboardPanel
+            v-for="template in templates"
+            :key="template.id"
+            padding="sm"
           >
-            Add template
-          </UButton>
-        </UDropdownMenu>
-      </div>
-    </div>
-  </div>
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-4">
+                <div class="h-10 w-10 bg-neutral-100 rounded flex items-center justify-center">
+                  <UIcon
+                    name="material-symbols:picture-as-pdf-rounded"
+                    class="h-5 w-5 text-primary-600"
+                  />
+                </div>
+                <div>
+                  <h3 class="font-medium text-neutral-900">
+                    {{ template.name }}
+                  </h3>
+                  <p class="text-sm text-neutral-500">
+                    {{ template.original_filename }} •
+                    {{ template.page_count }} page{{ template.page_count > 1 ? 's' : '' }} •
+                    {{ template.zone_mappings?.length || 0 }} zone{{ template.zone_mappings?.length >= 1 ? 's' : '' }}
+                  </p>
+                </div>
+              </div>
+              <div class="relative z-20">
+                <UDropdownMenu
+                  :items="getTemplateMenuItems(template)"
+                  :content="{ side: 'bottom', align: 'end' }"
+                  arrow
+                >
+                  <UButton
+                    color="neutral"
+                    variant="ghost"
+                    icon="i-heroicons-ellipsis-horizontal"
+                    size="md"
+                    :loading="deletingId === template.id"
+                  />
+                </UDropdownMenu>
+              </div>
+            </div>
+          </DashboardPanel>
+        </div>
+
+        <DashboardEmptyState
+          v-else
+          icon="i-heroicons-document-arrow-down"
+          title="No PDF templates yet"
+          description="Upload a PDF template or create one from scratch, then map form fields to create customized documents from submissions."
+        >
+          <template #action>
+            <UDropdownMenu
+              :items="createMenuItems"
+              :content="{ side: 'bottom', align: 'center' }"
+              arrow
+            >
+              <UButton
+                color="primary"
+                icon="i-heroicons-plus"
+                trailing-icon="i-heroicons-chevron-down"
+                :loading="uploading || creatingFromScratch"
+              >
+                Add template
+              </UButton>
+            </UDropdownMenu>
+          </template>
+        </DashboardEmptyState>
+      </DashboardLoadingBlock>
+    </PageSection>
+  </PageContainer>
 </template>
 
 <script setup>
+import PageContainer from '~/components/dashboard/PageContainer.vue'
+import PageSection from '~/components/dashboard/PageSection.vue'
+import DashboardPanel from '~/components/dashboard/DashboardPanel.vue'
+import DashboardLoadingBlock from '~/components/dashboard/states/DashboardLoadingBlock.vue'
+import DashboardEmptyState from '~/components/dashboard/states/DashboardEmptyState.vue'
 import { formsApi } from '~/api/forms'
 import { usePdfTemplates } from '~/composables/query/forms/usePdfTemplates'
 

@@ -61,10 +61,12 @@ export function getOpnRequestsOptions(request, opts) {
     async onResponseError({ response }) {
       const { status } = response
       if (status === 401) {
-        // Always handle 401 errors with token expiry flow
-        // This covers both cases: token expired AND no token present
-        const { handleTokenExpiry } = useAuthFlow()
-        await handleTokenExpiry()
+        // Do not run token-expiry UX during SSR. Server-side requests can fail
+        // for context-specific reasons and should be retried client-side first.
+        if (import.meta.client) {
+          const { handleTokenExpiry } = useAuthFlow()
+          await handleTokenExpiry()
+        }
       } else if (status === 420) {
         // If invalid domain, redirect to main domain
         console.warn("Invalid response from back-end - redirecting to main domain")
