@@ -2,12 +2,8 @@
   <section class="relative px-8 lg:px-12">
     <div class="max-w-336 mx-auto">
       <div
-        class="relative rounded-4xl overflow-hidden bg-linear-to-br from-blue-600 via-blue-700 to-blue-800 pt-8 sm:pt-10 lg:pt-14 xl:pt-24 pl-8 md:pl-10 lg:pl-14 xl:pl-35"
+        class="footer-hero relative rounded-4xl overflow-hidden bg-linear-to-br from-blue-600 via-blue-700 to-blue-800 pt-8 sm:pt-10 lg:pt-14 xl:pt-24 pl-8 md:pl-10 lg:pl-14 xl:pl-35"
       >
-        <img
-          src="/img/pages/welcome/powerForm-bg.png"
-          class="absolute min-h-full inset-0 opacity-30"
-        />
         <div class="grid lg:grid-cols-2 relative z-10">
           <div
             class="text-white relative z-20 pr-8 sm:pr-10 md:pr-0 pb-8 sm:pb-10 lg:pb-14 xl:pb-24"
@@ -307,3 +303,21 @@ const linkGroups = computed(() => [
   },
 ]);
 </script>
+
+<style scoped>
+.footer-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.2;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.24) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.24) 1px, transparent 1px),
+    linear-gradient(rgba(255, 255, 255, 0.11) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.11) 1px, transparent 1px);
+  background-size: 72px 72px, 72px 72px, 12px 12px, 12px 12px;
+  background-position: 0 0, 0 0, 0 0, 0 0;
+  background-repeat: repeat;
+}
+</style>
