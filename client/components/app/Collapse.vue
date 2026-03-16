@@ -8,7 +8,7 @@
         <slot name="title" />
       </div>
       <div
-        class="text-neutral-400 hover:text-neutral-600 absolute -right-2  cursor-pointer p-2"
+        class="text-neutral-400 hover:text-neutral-600 absolute right-4 cursor-pointer p-2"
         @click="trigger"
       >
         <svg

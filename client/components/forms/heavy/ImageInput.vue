@@ -13,6 +13,7 @@
         class="cursor-pointer relative w-full"
         :class="ui.button({ class: props.ui?.slots?.button })"
         :style="inputStyle"
+        :disabled="disabled ? true : null"
         @click.prevent="showUploadModal = true"
       >
         <div
@@ -40,6 +41,7 @@
           </div>
           <slot name="left-action" />
           <a
+            v-if="!disabled"
             href="#"
             class="text-neutral-500 hover:text-red-500 flex items-center"
             @click.stop.prevent="clearUrl"
@@ -221,6 +223,7 @@ export default {
 
   methods: {
     clearUrl() {
+      if (this.disabled) return
       this.compVal = null
     },
     onUploadDragoverEvent() {
@@ -239,25 +242,30 @@ export default {
       this.droppedFiles(e.clipboardData.files)
     },
     selectUnsplashImage(imageUrl) {
+      if (this.disabled) return
       this.compVal = imageUrl
       this.showUploadModal = false
     },
     insertUrl() {
+      if (this.disabled) return
       if (!this.urlInput || !/^https?:\/\/[^\s$.?#].[^\s]*$/i.test(this.urlInput)) return
       this.compVal = this.urlInput
       this.urlInput = ''
       this.showUploadModal = false
     },
     droppedFiles(droppedFiles) {
+      if (this.disabled) return
       if (!droppedFiles) return
 
       this.file = droppedFiles[0]
       this.uploadFileToServer()
     },
     openFileUpload() {
+      if (this.disabled) return
       this.$refs["actual-input"].click()
     },
     manualFileUpload(e) {
+      if (this.disabled) return
       this.file = e.target.files[0]
       this.uploadFileToServer()
     },

@@ -64,6 +64,7 @@
     <rich-text-area-input
       :form="integrationData"
       :enable-mentions="true"
+      :enable-image="true"
       :mentions="form.properties"
       name="data.email_content"
       label="Email Content"
@@ -71,10 +72,10 @@
     />
     <collapse
       v-model="showEmailAppearance"
-      class="mt-4 w-full border rounded-lg bg-gray-50 dark:bg-neutral-900"
+      class="mt-4 w-full border rounded-lg bg-gray-50 dark:bg-neutral-900 pr-4"
     >
       <template #title>
-        <div class="flex gap-x-3 items-start pr-8 p-4">
+        <div class="flex gap-x-3 items-start pr-12 p-4">
           <div
             class="transition-colors"
             :class="{
@@ -99,11 +100,24 @@
         </div>
       </template>
       <div class="border-t dark:border-neutral-700 p-4 space-y-4">
-        <TextInput
+        <div
+          v-if="emailAppearanceLocked"
+          class="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900 dark:border-blue-900/60 dark:bg-blue-950/40 dark:text-blue-100"
+        >
+          Email appearance customisation is part of the Pro plan.
+          <a
+            class="underline cursor-pointer"
+            @click="openSubscriptionModal"
+          >
+            Upgrade to Pro
+          </a>
+          to add your logo, custom fonts and colors.
+        </div>
+        <image-input
           :form="integrationData"
+          :disabled="emailAppearanceLocked"
           name="data.logo_url"
-          label="Logo URL"
-          placeholder="https://example.com/logo.png"
+          label="Logo"
           help="Display your logo in the email header (replaces app name)"
         />
         <div class="grid grid-cols-2 gap-4 mt-4">
@@ -114,6 +128,7 @@
               block
               size="lg"
               variant="outline"
+              :disabled="emailAppearanceLocked"
               @click="showGoogleFontPicker = true"
             >
               <span :style="{ 'font-family': (integrationData.data.font_family ? integrationData.data.font_family + ', sans-serif' : null) }">
@@ -129,6 +144,7 @@
           </div>
           <ColorInput
             :form="integrationData"
+            :disabled="emailAppearanceLocked"
             name="data.font_color"
             label="Font color"
             help="Color of the text in the email"
@@ -137,12 +153,14 @@
         <div class="grid grid-cols-2 gap-4">
           <ColorInput
             :form="integrationData"
+            :disabled="emailAppearanceLocked"
             name="data.outer_background_color"
             label="Outer background color"
             help="Background around the email content area"
           />
           <ColorInput
             :form="integrationData"
+            :disabled="emailAppearanceLocked"
             name="data.inner_background_color"
             label="Inner background color"
             help="Background of the email content area"
@@ -203,6 +221,7 @@ const { data: user } = useAuth().user()
 
 const showEmailAppearance = ref(false)
 const showGoogleFontPicker = ref(false)
+const emailAppearanceLocked = computed(() => !props.form.is_pro)
 
 function onApplyFont(val) {
   if (props.integrationData.data) {

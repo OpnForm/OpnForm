@@ -7,12 +7,14 @@ $innerBackgroundColor = $appearance['innerBackgroundColor'] ?? null;
 $fontFamily = $appearance['fontFamily'] ?? null;
 $fontColor = $appearance['fontColor'] ?? null;
 
-$wrapperStyle = $outerBackgroundColor ? 'background-color: ' . e($outerBackgroundColor) . ';' : '';
-$bodyStyle = $outerBackgroundColor ? 'background-color: ' . e($outerBackgroundColor) . ';' : '';
-$innerBodyStyle = $innerBackgroundColor ? 'background-color: ' . e($innerBackgroundColor) . ';' : '';
+$pageBackgroundStyle = $outerBackgroundColor ? 'background-color: ' . e($outerBackgroundColor) . ';' : '';
+$wrapperStyle = $pageBackgroundStyle;
+$bodyStyle = trim(($outerBackgroundColor ? 'background-color: ' . e($outerBackgroundColor) . '; ' : '') . 'border-top: 0; border-bottom: 0;');
+$innerBodyStyle = trim(($innerBackgroundColor ? 'background-color: ' . e($innerBackgroundColor) . '; ' : '') . 'border: 0; box-shadow: none;');
 $fontFamilyCss = $fontFamily ? 'font-family: \'' . e($fontFamily) . '\', sans-serif;' : '';
 $fontColorCss = $fontColor ? 'color: ' . e($fontColor) . ';' : '';
 $contentCellStyle = ($fontFamilyCss || $fontColorCss) ? $fontFamilyCss . ' ' . $fontColorCss : '';
+$dividerColor = $innerBackgroundColor ?: ($outerBackgroundColor ?: 'transparent');
 @endphp
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
@@ -41,10 +43,49 @@ $contentCellStyle = ($fontFamilyCss || $fontColorCss) ? $fontFamilyCss . ' ' . $
                 width: 100% !important;
             }
         }
+
+        @if($fontFamily || $fontColor)
+        .content-cell,
+        .content-cell p,
+        .content-cell div,
+        .content-cell span,
+        .content-cell li,
+        .content-cell ul,
+        .content-cell ol,
+        .content-cell td,
+        .content-cell th,
+        .content-cell h1,
+        .content-cell h2,
+        .content-cell h3,
+        .content-cell h4,
+        .content-cell h5,
+        .content-cell h6,
+        .content-cell blockquote,
+        .content-cell a {
+            @if($fontFamily)
+            font-family: '{{ e($fontFamily) }}', sans-serif !important;
+            @endif
+            @if($fontColor)
+            color: {{ e($fontColor) }} !important;
+            @endif
+        }
+        @endif
+
+        .header,
+        .footer .content-cell,
+        .subcopy td {
+            border-color: {{ e($dividerColor) }} !important;
+        }
+
+        .header,
+        .footer,
+        .subcopy {
+            background-color: {{ e($outerBackgroundColor ?: 'transparent') }} !important;
+        }
     </style>
 </head>
 
-<body>
+<body @if($pageBackgroundStyle) style="{{ $pageBackgroundStyle }}" @endif>
 
     <table class="wrapper" width="100%" cellpadding="0" cellspacing="0" role="presentation" @if($wrapperStyle) style="{{ $wrapperStyle }}" @endif>
         <tr>
