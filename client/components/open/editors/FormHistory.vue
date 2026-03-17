@@ -116,7 +116,7 @@ const versions = ref([])
 const isLoading = ref(false)
 
 onMounted(() => {
-  if (form.value) {
+  if (form.value && form.value?.id) {
     fetchVersions()
   }
 })
