@@ -351,6 +351,24 @@ class AdminController extends Controller
         ]);
     }
 
+    public function clearUserCache(Request $request)
+    {
+        $request->validate([
+            'user_id' => 'required|integer|exists:users,id'
+        ]);
+
+        $user = User::findOrFail($request->get('user_id'));
+        $user->flushCache();
+
+        self::log('Clear user cache', [
+            'user_id' => $user->id,
+        ]);
+
+        return $this->success([
+            'message' => 'User cache cleared.',
+        ]);
+    }
+
     public static function log($message, $data = [])
     {
         $moderator = request()->user();

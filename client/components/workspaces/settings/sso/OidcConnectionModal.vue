@@ -99,6 +99,13 @@
             />
 
             <ToggleSwitchInput
+              name="options.require_state"
+              :form="form"
+              label="Require state parameter"
+              help="Recommended: validates the state parameter on callback. Disable only if your IdP cannot send state."
+            />
+
+            <ToggleSwitchInput
               name="enabled"
               class="mt-2"
               :form="form"

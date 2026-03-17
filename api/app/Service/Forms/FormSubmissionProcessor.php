@@ -17,6 +17,11 @@ class FormSubmissionProcessor
             return true;
         }
 
+        // If PDF download is enabled, always process synchronously
+        if ($form->pdf_download_enabled) {
+            return true;
+        }
+
         // If no redirect URL, no need to process synchronously
         if (!$form->redirect_url) {
             return false;

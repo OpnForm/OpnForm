@@ -52,6 +52,7 @@ export const useAuthStore = defineStore("auth", {
         const secureDefault = (typeof window !== 'undefined') ? window.location.protocol === 'https:' : true
         const embedded = typeof window !== 'undefined' && window.top !== window.self
         const safeOptions = {
+          path: options.path ?? '/',
           sameSite: options.sameSite ?? (embedded ? 'none' : 'lax'),
           secure: options.secure ?? (embedded ? true : secureDefault),
           ...options,
@@ -61,8 +62,15 @@ export const useAuthStore = defineStore("auth", {
     },
 
     initStore(token, adminToken) {
-      this.token = token
-      this.admin_token = adminToken
+      // Prefer explicit values from cookies, but do not clobber a live in-memory
+      // token during client-side navigation when cookie reactivity lags behind.
+      if (token !== undefined) {
+        this.token = token ?? this.token
+      }
+
+      if (adminToken !== undefined) {
+        this.admin_token = adminToken ?? this.admin_token
+      }
     },
 
     setUser(user) {

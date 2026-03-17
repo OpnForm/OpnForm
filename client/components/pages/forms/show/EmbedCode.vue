@@ -26,9 +26,22 @@ export default {
 
   computed: {
     embedCode() {
-      const autoResize = this.form?.presentation_style !== 'focused'
       // eslint-disable no-useless-escape
-      return `${this.iframeCode}<script type="text/javascript" onload="initEmbed('${this.form.slug}', { autoResize: ${autoResize} })" src="${appUrl("/widgets/iframe.min.js")}"><\/script>`
+      const isFocused = this.form?.presentation_style === 'focused'
+      const resizeComment = isFocused
+        ? '  // Focused style: iframe has fixed height; no autoResize needed.\n  '
+        : '  // SDK auto-resizes iframe by default.\n  '
+      return `${this.iframeCode}<script src="${appUrl("/widgets/opnform-sdk.min.js")}"><\/script>
+<script>
+  // Optional: example for demonstration — remove or replace with your own handlers
+${resizeComment}
+  opnform.on('submit', function(data) {
+    console.log('Form submitted:', data);
+  });
+  
+  // More SDK methods: opnform.get('${this.form.slug}').setField(id, value)
+  // Docs: https://docs.opnform.com/embedding/javascript-sdk
+<\/script>`
     },
     iframeCode() {
       const share_url = this.extraQueryParam

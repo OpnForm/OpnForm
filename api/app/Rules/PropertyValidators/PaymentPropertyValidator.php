@@ -54,9 +54,19 @@ class PaymentPropertyValidator implements PropertyValidatorInterface
             return $errors;
         }
 
-        // Amount validation
-        if (!isset($property['amount']) || !is_numeric($property['amount']) || $property['amount'] < 1) {
-            $errors['amount'] = 'Amount must be a number of at least 1';
+        // Amount validation - allow numeric value >= 1 or string with mention
+        $amount = $property['amount'] ?? null;
+        $isValidAmount = false;
+
+        if (is_numeric($amount) && $amount >= 1) {
+            $isValidAmount = true;
+        } elseif (is_string($amount) && preg_match('/mention[-\w]*=/', $amount)) {
+            // Amount contains a mention reference - will be parsed at runtime
+            $isValidAmount = true;
+        }
+
+        if (!$isValidAmount) {
+            $errors['amount'] = 'Amount must be a number of at least 1 or a field reference';
             return $errors;
         }
 

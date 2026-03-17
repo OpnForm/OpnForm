@@ -1,15 +1,17 @@
 /* eslint-disable */
 /**
- * OpnForm SDK Bridge Composable
+ * OpnForm SDK Bridge & Local SDK
  * Handles communication between embedded form iframe and parent window SDK
+ * Also provides local SDK for non-iframe usage (custom code support)
  */
-import { watch, toValue, onMounted, onUnmounted } from 'vue'
+import { watch, toValue, onMounted, onUnmounted, toRaw, isRef, unref } from 'vue'
 import { useIsIframe } from '~/composables/useIsIframe'
 import { handleDarkMode } from '~/lib/forms/public-page'
 
 const MSG_PREFIX = 'opnform:'
+const POST_MESSAGE_TARGET = '*'
 
-// Event types to emit
+// Event types
 const EVENTS = {
   READY: 'ready',
   SUBMIT: 'submit',
@@ -26,6 +28,643 @@ const EVENTS = {
   RESIZE: 'resize'
 }
 
+// ============================================================================
+// Local SDK Classes (for custom code support without iframe)
+// ============================================================================
+
+/**
+ * Simple EventEmitter implementation
+ */
+class EventEmitter {
+  constructor() {
+    this._listeners = {}
+    this._onceListeners = {}
+  }
+
+  on(event, callback) {
+    if (Array.isArray(event)) {
+      event.forEach(e => this.on(e, callback))
+      return this
+    }
+    if (!this._listeners[event]) {
+      this._listeners[event] = []
+    }
+    this._listeners[event].push(callback)
+    return this
+  }
+
+  once(event, callback) {
+    if (!this._onceListeners[event]) {
+      this._onceListeners[event] = []
+    }
+    this._onceListeners[event].push(callback)
+    return this
+  }
+
+  off(event, callback) {
+    if (!callback) {
+      delete this._listeners[event]
+      delete this._onceListeners[event]
+      return this
+    }
+    if (this._listeners[event]) {
+      this._listeners[event] = this._listeners[event].filter(cb => cb !== callback)
+    }
+    if (this._onceListeners[event]) {
+      this._onceListeners[event] = this._onceListeners[event].filter(cb => cb !== callback)
+    }
+    return this
+  }
+
+  emit(event, data) {
+    if (this._listeners[event]) {
+      this._listeners[event].forEach(callback => {
+        try { callback(data) } catch (e) { console.error('[OpnForm SDK] Error in event handler:', e) }
+      })
+    }
+    if (this._onceListeners[event]) {
+      const callbacks = this._onceListeners[event]
+      delete this._onceListeners[event]
+      callbacks.forEach(callback => {
+        try { callback(data) } catch (e) { console.error('[OpnForm SDK] Error in once handler:', e) }
+      })
+    }
+  }
+}
+
+/**
+ * Local Form Instance - represents the current form on the page
+ */
+class LocalFormInstance extends EventEmitter {
+  constructor(slug, sdk) {
+    super()
+    this.slug = slug
+    this.id = slug
+    this._sdk = sdk
+    this._ready = false
+    this._bridgeData = null
+    this._cachedData = {}
+    this._cachedErrors = {}
+    this._darkMode = false
+    this._currentPage = { index: 0, total: 1 }
+  }
+
+  /**
+   * Register the SDK bridge data from the form component
+   */
+  _registerBridge(bridgeData) {
+    this._bridgeData = bridgeData
+    
+    // Migrate listeners from stub if exists
+    if (typeof window !== 'undefined' && window.opnform?._isStub) {
+      const formStub = window.opnform._forms?.[this.slug]
+      if (formStub) {
+        Object.entries(formStub._listeners || {}).forEach(([event, cbs]) => {
+          cbs.forEach(cb => this.on(event, cb))
+        })
+        Object.entries(formStub._onceListeners || {}).forEach(([event, cbs]) => {
+          cbs.forEach(cb => this.once(event, cb))
+        })
+      }
+    }
+  }
+
+  _getFormManager() {
+    return this._bridgeData?.formManager
+  }
+
+  isReady() { return this._ready }
+
+  // --- Field Operations ---
+  getField(fieldId) { 
+    const fm = this._getFormManager()
+    return fm?.form ? fm.form[fieldId] : this._cachedData[fieldId]
+  }
+
+  setField(fieldId, value) { 
+    const fm = this._getFormManager()
+    if (fm?.form) {
+      fm.form[fieldId] = value
+      return true
+    }
+    return false
+  }
+
+  setFields(data) { 
+    const fm = this._getFormManager()
+    if (fm?.form && data) {
+      Object.entries(data).forEach(([fieldId, value]) => {
+        fm.form[fieldId] = value
+      })
+      return true
+    }
+    return false
+  }
+
+  getData() { 
+    const fm = this._getFormManager()
+    return fm?.form?.data ? fm.form.data() : { ...this._cachedData }
+  }
+
+  clearField(fieldId) { 
+    const fm = this._getFormManager()
+    if (fm?.form) {
+      fm.form[fieldId] = null
+      return true
+    }
+    return false
+  }
+
+  clearAll() { 
+    const fm = this._getFormManager()
+    if (fm?.form?.reset) {
+      fm.form.reset()
+      return true
+    }
+    return false
+  }
+
+  // --- Field State ---
+  hasError(fieldId) { 
+    const fm = this._getFormManager()
+    if (fm?.form?.errors) {
+      return !!fm.form.errors.all()[fieldId]
+    }
+    return !!this._cachedErrors[fieldId]
+  }
+
+  getError(fieldId) { 
+    const fm = this._getFormManager()
+    if (fm?.form?.errors) {
+      return fm.form.errors.all()[fieldId] || null
+    }
+    return this._cachedErrors[fieldId] || null
+  }
+
+  getErrors() { 
+    const fm = this._getFormManager()
+    return fm?.form?.errors ? fm.form.errors.all() : { ...this._cachedErrors }
+  }
+
+  isFieldVisible(fieldId) { 
+    const fm = this._getFormManager()
+    if (fm?.fieldState?.isFieldVisible) {
+      const visible = fm.fieldState.isFieldVisible(fieldId)
+      return typeof visible === 'object' && 'value' in visible ? visible.value : visible
+    }
+    return true
+  }
+
+  // --- Theme ---
+  toggleDarkMode() { 
+    return this.setDarkMode(!this._darkMode)
+  }
+
+  setDarkMode(enabled) {
+    if (typeof window !== 'undefined') {
+      if (enabled === 'auto') {
+        handleDarkMode('auto')
+        this._darkMode = null
+      } else {
+        handleDarkMode(enabled ? 'dark' : 'light')
+        this._darkMode = !!enabled
+      }
+    }
+    return true
+  }
+
+  isDarkMode() { return this._darkMode }
+
+  setTheme(theme) { 
+    console.warn('[OpnForm SDK] setTheme is not yet implemented')
+    return false
+  }
+
+  // --- Navigation ---
+  goToPage(index) { 
+    const fm = this._getFormManager()
+    if (fm?.goToPage) {
+      fm.goToPage(index)
+      return true
+    } else if (fm?.state) {
+      fm.state.currentPage = index
+      return true
+    }
+    return false
+  }
+
+  nextPage() { 
+    const fm = this._getFormManager()
+    if (fm?.nextPage) {
+      fm.nextPage()
+      return true
+    }
+    return false
+  }
+
+  previousPage() { 
+    const fm = this._getFormManager()
+    if (fm?.previousPage) {
+      fm.previousPage()
+      return true
+    }
+    return false
+  }
+
+  getCurrentPage() { 
+    const fm = this._getFormManager()
+    if (fm?.state) {
+      const total = fm.structure?.value?.pageCount?.value || 1
+      return { index: fm.state.currentPage || 0, total }
+    }
+    return { ...this._currentPage }
+  }
+
+  canGoNext() { 
+    const page = this.getCurrentPage()
+    return page.index < page.total - 1
+  }
+
+  canGoPrevious() { 
+    const page = this.getCurrentPage()
+    return page.index > 0
+  }
+
+  // --- Actions ---
+  submit() { 
+    const submitBtn = document.querySelector('#public-form button[type="submit"], #public-form [data-submit-button]')
+    if (submitBtn) {
+      submitBtn.click()
+      return Promise.resolve(true)
+    }
+    return Promise.reject(new Error('Submit button not found'))
+  }
+
+  reset() { 
+    const fm = this._getFormManager()
+    if (fm?.restart) {
+      fm.restart()
+      return true
+    } else if (fm?.form?.reset) {
+      fm.form.reset()
+      return true
+    }
+    return false
+  }
+
+  focusFirstError() { 
+    const errors = this.getErrors()
+    const firstField = Object.keys(errors)[0]
+    if (firstField) {
+      const element = document.querySelector(`[name="${firstField}"], #${firstField}`)
+      if (element) {
+        element.focus()
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        return true
+      }
+    }
+    return false
+  }
+
+  // --- Popup Control (not applicable for direct page) ---
+  open() { console.warn('[OpnForm SDK] open() not applicable for non-iframe forms') }
+  close() { console.warn('[OpnForm SDK] close() not applicable for non-iframe forms') }
+  toggle() { console.warn('[OpnForm SDK] toggle() not applicable for non-iframe forms') }
+  isOpen() { return true }
+
+  _getFormInfo() {
+    return { slug: this.slug, id: this.id }
+  }
+}
+
+/**
+ * Local OpnForm SDK - runs on form pages directly
+ */
+class OpnFormLocalSDK extends EventEmitter {
+  constructor() {
+    super()
+    this._forms = {}
+    this._options = { defaultDarkMode: 'auto' }
+    this._initialized = false
+    this._messageHandler = this._handleMessage.bind(this)
+  }
+
+  init(options = {}) {
+    this._options = { ...this._options, ...options }
+    
+    if (!this._initialized && typeof window !== 'undefined') {
+      window.addEventListener('message', this._messageHandler)
+      this._initialized = true
+    }
+
+    if (this._options.onReady && Object.keys(this._forms).length > 0) {
+      const readyForms = Object.values(this._forms).filter(f => f.isReady())
+      if (readyForms.length > 0) {
+        this._options.onReady(readyForms)
+      }
+    }
+  }
+
+  _registerForm(slug, bridgeData) {
+    if (!this._forms[slug]) {
+      this._forms[slug] = new LocalFormInstance(slug, this)
+    }
+    this._forms[slug]._registerBridge(bridgeData)
+    
+    // Migrate global listeners from stub
+    if (typeof window !== 'undefined' && window.opnform?._isStub) {
+      const stub = window.opnform
+      Object.entries(stub._listeners || {}).forEach(([event, cbs]) => {
+        cbs.forEach(cb => this.on(event, cb))
+      })
+      Object.entries(stub._onceListeners || {}).forEach(([event, cbs]) => {
+        cbs.forEach(cb => this.once(event, cb))
+      })
+    }
+    
+    return this._forms[slug]
+  }
+
+  _handleMessage(event) {
+    const data = event.data
+    if (!data || typeof data !== 'object') return
+
+    if (data.type && data.type.startsWith && data.type.startsWith(MSG_PREFIX)) {
+      const messageType = data.type.replace(MSG_PREFIX, '')
+      if (messageType === 'event') {
+        this._handleEvent(data)
+      }
+    }
+  }
+
+  _handleEvent(message) {
+    const { event, formSlug, payload } = message
+    let form = this._forms[formSlug]
+
+    if (!form && formSlug) {
+      form = new LocalFormInstance(formSlug, this)
+      this._forms[formSlug] = form
+    }
+
+    if (!form) return
+
+    // Update internal state
+    switch (event) {
+      case EVENTS.READY:
+        form._ready = true
+        if (payload.data) form._cachedData = payload.data
+        if (payload.currentPage) form._currentPage = payload.currentPage
+        if (payload.darkMode !== undefined) form._darkMode = payload.darkMode
+        break
+      case EVENTS.DATA_CHANGE:
+        form._cachedData = payload.data || {}
+        break
+      case EVENTS.ERROR:
+      case EVENTS.SUBMIT_ERROR:
+        form._cachedErrors = payload.errors || {}
+        break
+      case EVENTS.SUBMIT:
+        form._cachedData = payload.data || {}
+        break
+      case EVENTS.PAGE_CHANGE:
+      case EVENTS.NEXT_PAGE:
+      case EVENTS.PREVIOUS_PAGE:
+        if (payload.currentPage !== undefined) form._currentPage.index = payload.currentPage
+        if (payload.toPage !== undefined) form._currentPage.index = payload.toPage
+        if (payload.totalPages !== undefined) form._currentPage.total = payload.totalPages
+        break
+      case EVENTS.RESET:
+        form._cachedData = {}
+        form._cachedErrors = {}
+        form._currentPage = { index: 0, total: form._currentPage.total }
+        break
+    }
+
+    // Emit events
+    const eventData = { form: form._getFormInfo(), ...payload }
+    form.emit(event, eventData)
+    this.emit(event, eventData)
+
+    if (event === EVENTS.READY && this._options.onReady) {
+      const allForms = Object.values(this._forms)
+      if (allForms.every(f => f.isReady())) {
+        this._options.onReady(allForms)
+      }
+    }
+  }
+
+  get(slugOrId) { 
+    return this._forms[slugOrId] || null 
+  }
+
+  getAll() {
+    return Object.values(this._forms)
+  }
+
+  isReady(slugOrId) {
+    const form = this._forms[slugOrId]
+    return form ? form.isReady() : false
+  }
+
+  create(slug, options = {}) {
+    console.warn('[OpnForm SDK] create() not applicable for local SDK.')
+    return null
+  }
+}
+
+/**
+ * Create and initialize the local SDK
+ */
+export function createLocalSDK() {
+  if (typeof window === 'undefined') return null
+  
+  // Already initialized with real SDK
+  if (window.opnform && window.opnform._isLocal) {
+    return window.opnform
+  }
+
+  const sdk = new OpnFormLocalSDK()
+  sdk._isLocal = true
+  
+  // Migrate from stub if exists
+  if (window.opnform && window.opnform._isStub) {
+    const stub = window.opnform
+    
+    // Copy global listeners
+    Object.entries(stub._listeners || {}).forEach(([event, cbs]) => {
+      cbs.forEach(cb => sdk.on(event, cb))
+    })
+    Object.entries(stub._onceListeners || {}).forEach(([event, cbs]) => {
+      cbs.forEach(cb => sdk.once(event, cb))
+    })
+    
+    // Copy form stubs
+    Object.entries(stub._forms || {}).forEach(([slug, formStub]) => {
+      if (!sdk._forms[slug]) {
+        const instance = new LocalFormInstance(slug, sdk)
+        Object.entries(formStub._listeners || {}).forEach(([event, cbs]) => {
+          cbs.forEach(cb => instance.on(event, cb))
+        })
+        Object.entries(formStub._onceListeners || {}).forEach(([event, cbs]) => {
+          cbs.forEach(cb => instance.once(event, cb))
+        })
+        sdk._forms[slug] = instance
+      }
+    })
+  }
+  
+  sdk.init()
+  return sdk
+}
+
+/**
+ * Initialize local SDK for non-iframe custom code support
+ */
+function initLocalSDK() {
+  if (typeof window === 'undefined') return null
+  
+  // Don't replace existing SDK (iframe SDK takes precedence)
+  if (window.opnform && !window.opnform._isStub) return window.opnform
+  
+  const sdk = createLocalSDK()
+  if (sdk) {
+    window.opnform = sdk
+  }
+  return sdk
+}
+
+// ============================================================================
+// SDK Bridge Composable (for form-parent communication)
+// ============================================================================
+function normalizeForPostMessage(value, seen = new WeakSet()) {
+  if (isRef(value)) {
+    return normalizeForPostMessage(unref(value), seen)
+  }
+
+  if (typeof window !== 'undefined' && value === window) {
+    return '[Window]'
+  }
+
+  if (typeof document !== 'undefined' && value === document) {
+    return '[Document]'
+  }
+
+  if (typeof Node !== 'undefined' && value instanceof Node) {
+    if (value.nodeType === Node.TEXT_NODE) {
+      return value.textContent || ''
+    }
+    return value.outerHTML || value.nodeName
+  }
+
+  if (value instanceof Error) {
+    return {
+      name: value.name,
+      message: value.message,
+      stack: value.stack
+    }
+  }
+
+  if (value instanceof Date) {
+    return value
+  }
+
+  if (value instanceof Map) {
+    return Array.from(value.entries(), ([key, val]) => ([
+      normalizeForPostMessage(key, seen),
+      normalizeForPostMessage(val, seen)
+    ]))
+  }
+
+  if (value instanceof Set) {
+    return Array.from(value.values(), (val) => normalizeForPostMessage(val, seen))
+  }
+
+  if (typeof FormData !== 'undefined' && value instanceof FormData) {
+    const entries = {}
+    value.forEach((val, key) => {
+      const normalized = normalizeForPostMessage(val, seen)
+      if (normalized !== undefined) {
+        entries[key] = normalized
+      }
+    })
+    return entries
+  }
+
+  if (typeof URLSearchParams !== 'undefined' && value instanceof URLSearchParams) {
+    return Object.fromEntries(value.entries())
+  }
+
+  if (typeof FileList !== 'undefined' && value instanceof FileList) {
+    return Array.from(value, (file) => normalizeForPostMessage(file, seen))
+  }
+
+  if (typeof File !== 'undefined' && value instanceof File) {
+    return value
+  }
+
+  if (typeof Blob !== 'undefined' && value instanceof Blob) {
+    return value
+  }
+
+  if (typeof ArrayBuffer !== 'undefined' && value instanceof ArrayBuffer) {
+    return value
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((item) => normalizeForPostMessage(item, seen))
+  }
+
+  if (value && typeof value === 'object') {
+    const raw = toRaw(value)
+    if (seen.has(raw)) return null
+    seen.add(raw)
+
+    const normalized = {}
+    Object.entries(raw).forEach(([key, val]) => {
+      const result = normalizeForPostMessage(val, seen)
+      if (result !== undefined) {
+        normalized[key] = result
+      }
+    })
+    return normalized
+  }
+
+  if (typeof value === 'function' || typeof value === 'symbol') {
+    return undefined
+  }
+
+  if (typeof value === 'bigint') {
+    return value.toString()
+  }
+
+  return value
+}
+
+function makeCloneableMessage(message) {
+  const normalized = normalizeForPostMessage(message)
+  if (!normalized) return null
+
+  if (typeof structuredClone === 'function') {
+    try {
+      return structuredClone(normalized)
+    } catch (error) {
+      if (error?.name !== 'DataCloneError') {
+        throw error
+      }
+    }
+  }
+
+  try {
+    return JSON.parse(JSON.stringify(normalized))
+  } catch (error) {
+    return {
+      type: normalized?.type,
+      event: normalized?.event,
+      formSlug: normalized?.formSlug,
+      payload: { error: 'Payload not cloneable' }
+    }
+  }
+}
 /**
  * Creates an SDK bridge for form-parent communication
  * @param {Object} options - Bridge options
@@ -47,6 +686,41 @@ export function useSdkBridge(options) {
   const isIframe = useIsIframe()
   let messageHandler = null
 
+  function postMessageSafe(target, message) {
+    try {
+      target.postMessage(message, POST_MESSAGE_TARGET)
+    } catch (error) {
+      if (error?.name !== 'DataCloneError') {
+        console.error('[OpnForm SDK Bridge] postMessage failed:', error)
+      }
+    }
+  }
+
+  function emitMessage(message) {
+    const cloneableMessage = makeCloneableMessage(message)
+    if (!cloneableMessage) return
+
+    if (isIframe) {
+      postMessageSafe(window.parent, cloneableMessage)
+    }
+    postMessageSafe(window, cloneableMessage)
+  }
+
+  /**
+   * Deep clone to convert reactive objects/proxies to plain objects
+   * This is necessary because postMessage uses structured clone which cannot handle Proxies
+   */
+  function toPlainObject(obj) {
+    if (obj === null || obj === undefined) return obj
+    try {
+      return JSON.parse(JSON.stringify(obj))
+    } catch (e) {
+      // If JSON serialization fails, return empty object
+      console.warn('[OpnForm SDK] Failed to serialize payload:', e)
+      return {}
+    }
+  }
+
   /**
    * Send event to parent window
    */
@@ -58,15 +732,10 @@ export function useSdkBridge(options) {
       type: MSG_PREFIX + 'event',
       event: event,
       formSlug: config?.slug,
-      payload: payload
+      payload: toPlainObject(payload)
     }
 
-    // Send to parent if in iframe
-    if (isIframe) {
-      window.parent.postMessage(message, '*')
-    }
-    // Also send to current window for local listeners
-    window.postMessage(message, '*')
+    emitMessage(message)
   }
 
   /**
@@ -81,14 +750,11 @@ export function useSdkBridge(options) {
       formSlug: config?.slug,
       requestId: requestId,
       success: success,
-      data: data,
-      error: error
+      data: toPlainObject(data),
+      error: toPlainObject(error)
     }
 
-    if (isIframe) {
-      window.parent.postMessage(message, '*')
-    }
-    window.postMessage(message, '*')
+    emitMessage(message)
   }
 
   /**
@@ -189,13 +855,9 @@ export function useSdkBridge(options) {
         case 'submit':
           if (formManager?.submit) {
             formManager.submit()
-              .then(() => {
-                sendResponse(requestId, true, { success: true })
-              })
-              .catch((err) => {
-                sendResponse(requestId, false, null, err?.message || 'Submit failed')
-              })
-            return // Don't send response yet, it will be sent async
+              .then(() => sendResponse(requestId, true, { success: true }))
+              .catch((err) => sendResponse(requestId, false, null, err?.message || 'Submit failed'))
+            return
           }
           break
 
@@ -264,10 +926,7 @@ export function useSdkBridge(options) {
       slug: config?.slug,
       id: config?.id,
       data: data,
-      currentPage: {
-        index: currentPage,
-        total: pageCount
-      },
+      currentPage: { index: currentPage, total: pageCount },
       darkMode: toValue(darkMode)
     })
   }
@@ -335,15 +994,9 @@ export function useSdkBridge(options) {
           })
 
           if (newPage > previousPage) {
-            emitEvent(EVENTS.NEXT_PAGE, {
-              currentPage: newPage,
-              totalPages
-            })
+            emitEvent(EVENTS.NEXT_PAGE, { currentPage: newPage, totalPages })
           } else {
-            emitEvent(EVENTS.PREVIOUS_PAGE, {
-              currentPage: newPage,
-              totalPages
-            })
+            emitEvent(EVENTS.PREVIOUS_PAGE, { currentPage: newPage, totalPages })
           }
 
           previousPage = newPage
@@ -352,20 +1005,12 @@ export function useSdkBridge(options) {
     }
   }
 
-  // --- Public API for form components to use ---
-
-  /**
-   * Emit submit start event
-   */
+  // --- Public API ---
   function onSubmitStart() {
     emitEvent(EVENTS.SUBMIT_START, {})
   }
 
-  /**
-   * Emit submit success event
-   */
   function onSubmitSuccess(submissionData) {
-    const config = toValue(formConfig)
     emitEvent(EVENTS.SUBMIT, {
       data: submissionData.data || toValue(formData),
       submissionId: submissionData.submissionId,
@@ -373,16 +1018,10 @@ export function useSdkBridge(options) {
     })
   }
 
-  /**
-   * Emit submit error event
-   */
   function onSubmitError(errors) {
     emitEvent(EVENTS.SUBMIT_ERROR, { errors })
   }
 
-  /**
-   * Emit reset event
-   */
   function onReset() {
     emitEvent(EVENTS.RESET, {})
   }
@@ -395,10 +1034,23 @@ export function useSdkBridge(options) {
     window.addEventListener('message', messageHandler)
     setupWatchers()
 
-    // Emit ready after a short delay to ensure form is fully loaded
-    setTimeout(() => {
-      emitReady()
-    }, 100)
+    // Initialize local SDK for custom code support
+    const localSDK = initLocalSDK()
+    if (localSDK && localSDK._registerForm) {
+      const config = toValue(formConfig)
+      if (config?.slug) {
+        localSDK._registerForm(config.slug, {
+          formManager,
+          formConfig,
+          formData,
+          formErrors,
+          darkMode
+        })
+      }
+    }
+
+    // Emit ready after short delay
+    setTimeout(() => emitReady(), 100)
   })
 
   onUnmounted(() => {
@@ -417,3 +1069,5 @@ export function useSdkBridge(options) {
   }
 }
 
+// Export for external use
+export { OpnFormLocalSDK, EVENTS }

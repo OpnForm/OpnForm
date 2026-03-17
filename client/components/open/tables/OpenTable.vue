@@ -46,6 +46,7 @@
       <FormExportModal 
         :form="form"
         :columns="columnVisibility"
+        :selected-ids="selectedIds"
       />
 
       <UTooltip text="Refresh" arrow>

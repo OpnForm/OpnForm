@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\Workspace\CustomDomainRequest;
 use App\Models\Workspace;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class CaddyController extends Controller
 {
@@ -22,12 +23,12 @@ class CaddyController extends Controller
             ]);
         }
 
-        \Log::info('Caddy request received', [
+        Log::info('Caddy request received', [
             'domain' => $domain,
         ]);
 
         if ($workspace = Workspace::whereJsonContains('custom_domains', $domain)->first()) {
-            \Log::info('Caddy request successful', [
+            Log::info('Caddy request successful', [
                 'domain' => $domain,
                 'workspace' => $workspace->id,
             ]);
@@ -38,7 +39,7 @@ class CaddyController extends Controller
             ]);
         }
 
-        \Log::info('Caddy request failed', [
+        Log::info('Caddy request failed', [
             'domain' => $domain,
             'workspace' => $workspace?->id,
         ]);

@@ -91,6 +91,9 @@ class WorkspaceUserController extends Controller
     public function updateUserRole(Request $request, Workspace $workspace, User $user)
     {
         $this->authorize('adminAction', $workspace);
+        if (!$workspace->users()->whereKey($user->id)->exists()) {
+            abort(404);
+        }
 
         $this->validate($request, [
             'role' => 'required|in:' . implode(',', User::ROLES),
@@ -110,6 +113,9 @@ class WorkspaceUserController extends Controller
     public function removeUser(Request $request, Workspace $workspace, User $user)
     {
         $this->authorize('adminAction', $workspace);
+        if (!$workspace->users()->whereKey($user->id)->exists()) {
+            abort(404);
+        }
 
         $workspace->users()->detach($user->id);
         $this->ensureUserHasWorkspace($user);

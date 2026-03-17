@@ -109,6 +109,10 @@
         <ImpersonateUser :user="userInfo" />
         <SendPasswordResetEmail :user="userInfo" />
         <ClarityLink :user="userInfo" />
+        <ClearUserCacheButton
+          :user="userInfo"
+          @cache-cleared="refreshUser"
+        />
       </div>
       <div
         class="w-full grid gap-2 grid-cols-1 lg:grid-cols-2"
@@ -239,6 +243,13 @@ function clearUser() {
   userInfo.value = null
   userPlan.value = 'free'
   fetchUserForm.reset()
+}
+
+function refreshUser() {
+  if (!fetchUserForm.identifier && userInfo.value?.id) {
+    fetchUserForm.identifier = userInfo.value.id
+  }
+  fetchUser()
 }
 
 async function createTemplate() {
