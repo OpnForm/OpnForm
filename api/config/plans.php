@@ -39,6 +39,7 @@ return [
 
         // Workspaces
         'workspaces.multiple' => 'pro',
+        'invite_user' => 'pro',
 
         // Multi-user
         'multi_user.roles' => 'business',
@@ -49,6 +50,7 @@ return [
 
         // Analytics & Summary
         'form_summary' => 'pro',
+        'form_analytics' => 'pro',
 
         // Email/SMTP
         'custom_smtp' => 'pro',
@@ -71,7 +73,7 @@ return [
         'enable_partial_submissions' => 'business',
         'form_versioning' => 'business',
         'google_address_autocomplete' => 'business',
-        'editable_submissions' => 'business',
+        'editable_submissions' => 'pro',
         'database_fields_update' => 'business',
         'enable_ip_tracking' => 'business',
 

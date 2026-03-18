@@ -73,7 +73,7 @@ it('cannot restore version as free user - requires business', function () {
 
     $this->postJson(route('versions.restore', ['versionId' => $version->version_id]))
         ->assertStatus(402)
-        ->assertJson(['message' => 'You need to be a Business user to restore this version']);
+        ->assertJson(['required_tier' => 'business']);
 });
 
 it('cannot restore version as pro user - requires business', function () {
@@ -88,7 +88,7 @@ it('cannot restore version as pro user - requires business', function () {
 
     $this->postJson(route('versions.restore', ['versionId' => $version->version_id]))
         ->assertStatus(402)
-        ->assertJson(['message' => 'You need to be a Business user to restore this version']);
+        ->assertJson(['required_tier' => 'business']);
 });
 
 it('cannot restore version for unauthorized form', function () {

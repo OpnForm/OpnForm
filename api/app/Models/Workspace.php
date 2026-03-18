@@ -244,7 +244,7 @@ class Workspace extends Model implements CachableAttributes
 
             foreach ($owners as $owner) {
                 if ($owner->is_subscribed) {
-                    $subscription = $owner->subscription();
+                    $subscription = $owner->subscriptions->first(fn ($sub) => $sub->valid());
                     if ($subscription && BillingHelper::getSubscriptionInterval($subscription) === 'yearly') {
                         return true;
                     }
@@ -301,8 +301,16 @@ class Workspace extends Model implements CachableAttributes
         return $this->users()->wherePivot('role', 'admin');
     }
 
+    /**
+     * Get workspace owners who have an active billing relationship.
+     * Returns all admins if workspace has plan_overrides (paid without subscription is valid).
+     */
     public function billingOwners(): Collection
     {
+        if (!empty($this->plan_overrides['tier'])) {
+            return $this->owners;
+        }
+
         return $this->owners->filter(fn ($owner) => $owner->is_subscribed);
     }
 
@@ -373,6 +381,14 @@ class Workspace extends Model implements CachableAttributes
             ->wherePivot('user_id', $user->id)
             ->wherePivot('role', User::ROLE_READONLY)
             ->exists();
+    }
+
+    /**
+     * Check if workspace's plan tier meets or exceeds the required tier.
+     */
+    public function meetsTierRequirement(string $requiredTier): bool
+    {
+        return app(\App\Service\Plan\PlanService::class)->tierMeetsRequirement($this->plan_tier, $requiredTier);
     }
 
     /**

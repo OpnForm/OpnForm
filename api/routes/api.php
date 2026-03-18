@@ -50,6 +50,23 @@ if (config('app.self_hosted')) {
     Route::get('/healthcheck', [HealthCheckController::class, 'apiCheck']);
 }
 
+// Plan manifest — single source of truth for feature/tier mapping, consumed by frontend
+Route::get('/plan-manifest', function () {
+    return response()->json([
+        'features' => config('plans.features', []),
+        'form_features' => config('plans.form_features', []),
+        'limits' => config('plans.limits', []),
+        'tiers' => collect(config('plans.tiers', []))->map(fn ($t) => [
+            'name' => $t['name'],
+            'order' => $t['order'],
+        ]),
+        'pricing' => collect(config('plans.tiers', []))->map(fn ($t) => [
+            'monthly' => $t['price_monthly'],
+            'yearly' => $t['price_yearly'],
+        ]),
+    ]);
+})->name('plan.manifest');
+
 Route::group(['middleware' => 'auth.multi'], function () {
     Route::post('logout', [LoginController::class, 'logout'])->name('logout');
     Route::post('auth/oidc/link', [OidcLinkController::class, 'link'])->name('oidc.link');
@@ -171,7 +188,7 @@ Route::group(['middleware' => 'auth.multi'], function () {
                     Route::delete('/{connection}', [\App\Http\Controllers\Settings\OidcConnectionController::class, 'destroy'])->name('destroy');
                 });
 
-                Route::middleware('pro-form')->group(function () {
+                Route::middleware('plan:pro')->group(function () {
                     Route::get('form-stats/{form}', [FormStatsController::class, 'getFormStats'])->name('form.stats');
                     Route::get('form-stats-details/{form}', [FormStatsController::class, 'getFormStatsDetails'])->name('form.stats-details');
                 });

@@ -278,7 +278,7 @@ describe('Form Summary', function () {
 
         // Try to access other user's form
         $this->getJson(route('open.workspaces.form.summary', [$otherWorkspace, $otherForm]))
-            ->assertStatus(403);
+            ->assertStatus(402);
     });
 });
 
@@ -397,5 +397,35 @@ describe('Form Summary Request Validation', function () {
         ]) . '?offset=-1')
             ->assertStatus(422)
             ->assertJsonValidationErrors(['offset']);
+    });
+});
+
+describe('Form Summary Plan Gating', function () {
+    it('denies free user access to form summary', function () {
+        $user = $this->actingAsUser();
+        $workspace = $this->createUserWorkspace($user);
+        $form = $this->createForm($user, $workspace);
+
+        $this->getJson(route('open.workspaces.form.summary', [$workspace, $form]))
+            ->assertStatus(402)
+            ->assertJson(['required_tier' => 'pro']);
+    });
+
+    it('allows pro user access to form summary', function () {
+        $user = $this->actingAsProUser();
+        $workspace = $this->createUserWorkspace($user);
+        $form = $this->createForm($user, $workspace);
+
+        $this->getJson(route('open.workspaces.form.summary', [$workspace, $form]))
+            ->assertSuccessful();
+    });
+
+    it('allows business user access to form summary', function () {
+        $user = $this->actingAsBusinessUser();
+        $workspace = $this->createUserWorkspace($user);
+        $form = $this->createForm($user, $workspace);
+
+        $this->getJson(route('open.workspaces.form.summary', [$workspace, $form]))
+            ->assertSuccessful();
     });
 });
