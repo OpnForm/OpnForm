@@ -95,7 +95,7 @@
           <div class="grow">
             <h4 class="font-semibold flex items-center gap-2">
               Email appearance
-              <ProTag upgrade-modal-title="Upgrade to customise email appearance" />
+              <PlanTag upgrade-modal-title="Upgrade to customise email appearance" />
             </h4>
             <p class="text-gray-400 dark:text-neutral-500 text-xs">
               Logo, fonts and colors for your email notifications
@@ -224,7 +224,7 @@ import { usePdfTemplates } from '~/composables/query/forms/usePdfTemplates'
 import IntegrationWrapper from "./components/IntegrationWrapper.vue"
 import GoogleFontPicker from "~/components/open/editors/GoogleFontPicker.vue"
 import Collapse from "~/components/app/Collapse.vue"
-import ProTag from "~/components/app/ProTag.vue"
+import PlanTag from "~/components/app/PlanTag.vue"
 
 const props = defineProps({
   integration: { type: Object, required: true },
