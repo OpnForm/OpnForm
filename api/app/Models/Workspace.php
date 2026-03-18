@@ -199,7 +199,7 @@ class Workspace extends Model implements CachableAttributes
 
             foreach ($owners as $owner) {
                 if ($owner->is_subscribed) {
-                    $subscription = $owner->subscription();
+                    $subscription = $owner->activeDefaultSubscription();
                     if ($subscription && BillingHelper::getSubscriptionInterval($subscription) === 'yearly') {
                         return true;
                     }

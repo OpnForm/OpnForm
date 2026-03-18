@@ -27,6 +27,8 @@ class StripeController extends WebhookController
         if ($user = $this->getUserByStripeId($payload['data']['object']['customer'])) {
             $data = $payload['data']['object'];
 
+            // We keep one local row per Stripe subscription id. If duplicates exist for the same
+            // logical plan, application checks always resolve entitlement from the newest active/trialing row.
             $subscription = $user->subscriptions()->firstOrNew(['stripe_id' => $data['id']]);
 
             if (

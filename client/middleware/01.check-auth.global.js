@@ -1,17 +1,26 @@
 import { useQueryClient } from '@tanstack/vue-query'
 import { initServiceClients } from '~/composables/useAuthFlow'
 
-export default defineNuxtRouteMiddleware(async () => {
+const AUTH_COOKIE_NAME = 'opnform_token'
+const LEGACY_AUTH_COOKIE_NAME = 'token'
+const ADMIN_AUTH_COOKIE_NAME = 'opnform_admin_token'
+const LEGACY_ADMIN_AUTH_COOKIE_NAME = 'admin_token'
+
+export default defineNuxtRouteMiddleware(async (_to, _from) => {
   const authStore = useAuthStore()
   const queryClient = useQueryClient()
-  const tokenCookie = useCookie('token')
-  const adminTokenCookie = useCookie('admin_token')
+  const tokenCookie = useCookie(AUTH_COOKIE_NAME)
+  const legacyTokenCookie = useCookie(LEGACY_AUTH_COOKIE_NAME)
+  const adminTokenCookie = useCookie(ADMIN_AUTH_COOKIE_NAME)
+  const legacyAdminTokenCookie = useCookie(LEGACY_ADMIN_AUTH_COOKIE_NAME)
+  const resolvedToken = tokenCookie.value ?? legacyTokenCookie.value
+  const resolvedAdminToken = adminTokenCookie.value ?? legacyAdminTokenCookie.value
 
   // Hydrate missing tokens from cookies without overwriting a fresh in-memory
   // token during the same client-side navigation cycle.
   authStore.initStore(
-    tokenCookie.value,
-    adminTokenCookie.value,
+    resolvedToken,
+    resolvedAdminToken,
   )
 
   // If no token, nothing to do

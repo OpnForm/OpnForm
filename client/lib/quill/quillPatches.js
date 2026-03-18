@@ -1,5 +1,9 @@
 import Quill from 'quill'
-
+import QuillResize from 'quill-resize-module'
+import 'quill-resize-module/dist/resize.css'
+  
+Quill.register('modules/resize', QuillResize)
+  
 // Self-executing function to patch Quill's prototype
 ;(function installQuillFixes() {
 
@@ -44,18 +48,46 @@ import Quill from 'quill'
     }
 
     Clipboard.DEFAULTS.matchers.push([Node.TEXT_NODE, matcher])
-  }
 
-  // ---------------------------------------------------------------------------
-  // Tab key accessibility fix: allow Tab to navigate out of editor
-  // ---------------------------------------------------------------------------
-  
-  const Keyboard = Quill.import('modules/keyboard')
-  
-  // Override Tab key behavior to allow navigation instead of inserting tabs
-  Keyboard.DEFAULTS.bindings.tab = {
-    key: 'Tab',
-    handler: () => true // Return true to let browser handle Tab navigation
+    // 2c) Preserve quill-resize-module alignment (ql-resize-style-*) when pasting HTML
+    const resizeAlignments = ['left', 'right', 'center', 'full']
+    const getResizeAlignment = (el) => {
+      if (!el || !el.classList) return null
+      for (const align of resizeAlignments) {
+        if (el.classList.contains(`ql-resize-style-${align}`)) return align
+      }
+      return null
+    }
+
+    const imgMatcher = (node, delta) => {
+      const align = getResizeAlignment(node) || getResizeAlignment(node.parentElement)
+      if (align && delta && delta.ops && delta.ops[0]) {
+        const attrs = delta.ops[0].attributes || {}
+        if (delta.ops[0].insert && typeof delta.ops[0].insert === 'object' && delta.ops[0].insert.image) {
+          attrs['resize-inline'] = align
+          delta.ops[0].attributes = attrs
+        }
+      }
+      return delta
+    }
+
+    const blockMatcher = (node, delta) => {
+      const align = getResizeAlignment(node)
+      if (align && delta && delta.ops) {
+        for (const op of delta.ops) {
+          if (op.insert === '\n' || (typeof op.insert === 'string' && op.insert.includes('\n'))) {
+            op.attributes = op.attributes || {}
+            op.attributes['resize-block'] = align
+            break
+          }
+        }
+      }
+      return delta
+    }
+
+    Clipboard.DEFAULTS.matchers.push(['IMG', imgMatcher])
+    Clipboard.DEFAULTS.matchers.push(['P', blockMatcher])
+    Clipboard.DEFAULTS.matchers.push(['DIV', blockMatcher])
   }
 })()
 

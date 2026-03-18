@@ -49,10 +49,10 @@
       </FormEditorNavbar>
 
       <FormEditorErrorHandler>
-        <div class="w-full flex grow overflow-y-scroll relative bg-white">
+        <div class="w-full flex grow min-h-0 overflow-hidden relative bg-white">
           <div 
             ref="elementRef"
-            class="relative shrink-0 overflow-y-scroll border-r"
+            class="relative shrink-0 min-h-0 overflow-y-auto border-r"
             :class="isResizable ? '' : 'w-full md:w-1/2 md:max-w-xs lg:w-2/5'"
             :style="isResizable ? dynamicStyles : {}"
           >

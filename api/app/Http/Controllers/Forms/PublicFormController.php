@@ -12,6 +12,7 @@ use App\Service\Forms\Analytics\UserAgentHelper;
 use App\Service\Forms\FormSubmissionProcessor;
 use App\Service\Forms\FormCleaner;
 use App\Service\Forms\SubmissionUrlService;
+use App\Service\Storage\SafeFileResponseService;
 use App\Service\WorkspaceHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -89,7 +90,7 @@ class PublicFormController extends Controller
         return (new WorkspaceHelper($workspace))->getAllUsers();
     }
 
-    public function showAsset($assetFileName)
+    public function showAsset(string $assetFileName, SafeFileResponseService $safeFileResponseService)
     {
         $path = FormController::ASSETS_UPLOAD_PATH . '/' . $assetFileName;
         if (!Storage::exists($path)) {
@@ -99,13 +100,7 @@ class PublicFormController extends Controller
             ]);
         }
 
-        $internal_url = Storage::temporaryUrl($path, now()->addMinutes(5));
-
-        foreach (config('filesystems.disks.s3.temporary_url_rewrites') as $from => $to) {
-            $internal_url = str_replace($from, $to, $internal_url);
-        }
-
-        return redirect()->to($internal_url);
+        return $safeFileResponseService->serve($path, $assetFileName);
     }
 
     /**

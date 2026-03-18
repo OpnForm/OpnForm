@@ -30,6 +30,11 @@ class EmailIntegration extends AbstractIntegrationHandler
             'include_hidden_fields_submission_data' => ['nullable', 'boolean'],
             'reply_to' => 'nullable',
             'link_edit_submission' => ['nullable', 'boolean'],
+            'logo_url' => ['nullable', 'url', 'starts_with:https://'],
+            'font_family' => ['nullable', 'string', 'max:255'],
+            'font_color' => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'outer_background_color' => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'inner_background_color' => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
             'pdf_template_ids' => ['nullable', 'array', 'max:' . self::MAX_PDF_ATTACHMENTS],
             'pdf_template_ids.*' => ['integer', Rule::exists('pdf_templates', 'id')->where('form_id', $form->id)],
         ];
