@@ -180,9 +180,15 @@ class SubscriptionController extends Controller
 
         // Upgrade the subscription to yearly plan
         try {
-            $subscription = $user->subscription();
+            // Find the user's active subscription (not just 'default' type)
+            $subscription = $user->subscriptions->first(fn ($sub) => $sub->valid());
 
-            // Get the yearly price for the current subscription type
+            if (!$subscription) {
+                return $this->error([
+                    'message' => 'No active subscription found.',
+                ]);
+            }
+
             $subscriptionType = $subscription->type ?? 'default';
             $yearlyPriceId = BillingHelper::getPricing($subscriptionType)['yearly']
                 ?? BillingHelper::getPricing('default')['yearly'];

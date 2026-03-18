@@ -68,8 +68,7 @@ class FormController extends Controller
     {
         $this->authorize('view', $form);
 
-        // Use for restore form version
-        if (request()->has('version_id') && $form->is_business) {
+        if (request()->has('version_id') && $form->workspace->hasFeature('form_versioning')) {
             // Verify that the version belongs to this form to prevent unauthorized access
             $version = Version::where('versionable_id', $form->id)
                 ->where('versionable_type', Form::class)
@@ -107,8 +106,8 @@ class FormController extends Controller
             $this->authorize('ownsWorkspace', $workspace);
             $this->authorize('viewAny', Form::class);
 
-            $workspaceHasBrandingRemoval = $workspace->hasFeature(Feature::BRANDING_REMOVAL);
-            $newForms = $workspace->forms()->get()->map(function (Form $form) use ($workspace, $workspaceHasBrandingRemoval) {
+            $workspaceIsPro = $workspace->meetsTierRequirement('pro');
+            $newForms = $workspace->forms()->get()->map(function (Form $form) use ($workspace, $workspaceIsPro) {
                 $form->extra = (object) [
                     'loadedWorkspace' => $workspace,
                     'workspaceHasBrandingRemoval' => $workspaceHasBrandingRemoval,

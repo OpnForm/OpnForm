@@ -115,7 +115,7 @@ defineProps({
 })
 
 const { openSubscriptionModal } = useAppModals()
-const { getTierDisplayName, userCanAccessTier } = useBillingUpsell()
+const { tierMeetsRequirement, getTierDisplayName } = usePlanFeatures()
 const router = useRouter()
 const route = useRoute()
 const appStore = useAppStore()
@@ -138,7 +138,8 @@ const isDropdownOpen = ref(false)
 // Computed text for workspace plan
 const workspacePlanText = computed(() => {
   if (!workspace.value) return ''
-  return workspace.value.is_business ? 'Business Plan' : workspace.value.is_pro ? 'Pro Plan' : 'Free Plan'
+  const tier = workspace.value.plan_tier || 'free'
+  return `${getTierDisplayName(tier)} Plan`
 })
 
 // Computed text for member count
@@ -161,7 +162,8 @@ const switchWorkspace = (workspaceToSwitch) => {
 }
 
 const createNewWorkspace = () => {
-  if (!userCanAccessTier('pro') && workspaces.value.length >= 1) {
+  const userTier = user.value?.plan_tier || 'free'
+  if (!tierMeetsRequirement(userTier, 'pro') && workspaces.value.length >= 1) {
     openSubscriptionModal({ modal_title: 'Upgrade to create additional workspaces', modal_description: 'Try our Pro plan for free today, and unlock all of our features such as collaboration, multiple workspaces, custom domains, forms analytics, integrations, and more!' })
     return
   }
@@ -184,7 +186,8 @@ const openSettings = () => {
 const openInviteUserModal = () => {
   isDropdownOpen.value = false
 
-  if (workspace.value && !workspace.value?.features?.includes('workspaces.multiple')) {
+  const workspaceTier = workspace.value?.plan_tier || 'free'
+  if (workspace.value && !tierMeetsRequirement(workspaceTier, 'pro')) {
     openSubscriptionModal({ modal_title: 'Upgrade to invite users to your workspace' })
     return
   }

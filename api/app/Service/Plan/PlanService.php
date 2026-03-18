@@ -123,8 +123,14 @@ class PlanService
         $features = config('plans.features', []);
         $requiredTier = $features[$feature] ?? null;
 
+        // Also check form_features if not found in features
         if ($requiredTier === null) {
-            return true; // Feature not defined = available to all
+            $formFeatures = config('plans.form_features', []);
+            $requiredTier = $formFeatures[$feature] ?? null;
+        }
+
+        if ($requiredTier === null) {
+            return true;
         }
 
         return $this->tierMeetsRequirement($tier, $requiredTier);
@@ -157,8 +163,14 @@ class PlanService
     public function getRequiredTier(string $feature): ?string
     {
         $features = config('plans.features', []);
+        $tier = $features[$feature] ?? null;
 
-        return $features[$feature] ?? null;
+        if ($tier === null) {
+            $formFeatures = config('plans.form_features', []);
+            $tier = $formFeatures[$feature] ?? null;
+        }
+
+        return $tier;
     }
 
     /**

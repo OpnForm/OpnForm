@@ -1,9 +1,15 @@
 /**
- * Composable for managing plan-based feature access
+ * Composable for managing plan-based feature access.
  *
- * Mirrors the backend PlanService logic for client-side checks.
- * Single source of truth for plan tiers and features on the frontend.
+ * The canonical source of truth is the backend config/plans.php.
+ * On the client side we fetch the plan manifest once from /plan-manifest
+ * and cache it in a module-level ref so every consumer shares the same data.
+ *
+ * Hardcoded FALLBACK_* maps are kept only as SSR / pre-hydration defaults
+ * and must stay in sync with config/plans.php until the manifest loads.
  */
+
+import { opnFetch } from '~/composables/useOpnApi'
 
 // Tier ordering (higher = more features)
 const TIER_ORDER = {
@@ -21,59 +27,41 @@ const TIER_NAMES = {
   enterprise: 'Enterprise',
 }
 
-/**
- * Plan pricing - single source of truth for all frontend pricing display.
- * Mirrors backend config/plans.php tiers pricing.
- */
-export const PLAN_PRICING = {
+// ─── Fallback maps (used before manifest loads / during SSR) ────────────────
+const FALLBACK_PRICING = {
   free: { monthly: 0, yearly: 0 },
   pro: { monthly: 29, yearly: 25 },
   business: { monthly: 79, yearly: 67 },
   enterprise: { monthly: 250, yearly: 213 },
 }
 
-// Feature to minimum tier mapping (mirrors config/plans.php)
-const FEATURE_TIERS = {
-  // Branding
+const FALLBACK_FEATURES = {
   'branding.removal': 'pro',
   'branding.advanced': 'business',
-
-  // Workspaces
   'workspaces.multiple': 'pro',
-
-  // Multi-user
   'multi_user.roles': 'business',
-
-  // Domains
+  'invite_user': 'pro',
   custom_domain: 'pro',
   'custom_domain.wildcard': 'business',
-
-  // Analytics & Summary
   form_summary: 'pro',
-
-  // Email/SMTP
+  form_analytics: 'pro',
   custom_smtp: 'pro',
-
-  // Security
   'security.password_protection': 'pro',
   'security.form_expiration': 'pro',
   'security.captcha': 'pro',
-
-  // Integrations
   'integrations.slack': 'pro',
   'integrations.discord': 'pro',
   'integrations.telegram': 'pro',
   'integrations.hubspot': 'business',
   'integrations.salesforce': 'business',
   'integrations.airtable': 'business',
-
-  // Form Features
   partial_submissions: 'business',
+  enable_partial_submissions: 'business',
   form_versioning: 'business',
   google_address_autocomplete: 'business',
-  editable_submissions: 'business',
-
-  // Enterprise
+  editable_submissions: 'pro',
+  database_fields_update: 'business',
+  enable_ip_tracking: 'business',
   'sso.oidc': 'enterprise',
   'sso.saml': 'enterprise',
   'sso.ldap': 'enterprise',
@@ -83,8 +71,7 @@ const FEATURE_TIERS = {
   white_label: 'enterprise',
 }
 
-// Form feature to tier mapping (for form editing context)
-const FORM_FEATURE_TIERS = {
+const FALLBACK_FORM_FEATURES = {
   no_branding: 'pro',
   redirect_url: 'pro',
   secret_input: 'pro',
@@ -97,10 +84,47 @@ const FORM_FEATURE_TIERS = {
   enable_ip_tracking: 'business',
 }
 
+// ─── Module-level cached manifest ───────────────────────────────────────────
+let manifestPromise = null
+const manifest = ref(null)
+
+function fetchManifest() {
+  if (import.meta.server) return // Don't fetch on server
+  if (manifestPromise) return manifestPromise
+  manifestPromise = opnFetch('/plan-manifest')
+    .then((data) => {
+      manifest.value = data
+    })
+    .catch((e) => {
+      console.warn('Failed to fetch plan manifest, using fallback', e)
+      manifestPromise = null // allow retry
+    })
+  return manifestPromise
+}
+
+// ─── Reactive getters that prefer manifest, fall back to hardcoded ──────────
+function getFeatureTiers() {
+  return manifest.value?.features ?? FALLBACK_FEATURES
+}
+
+function getFormFeatureTiers() {
+  return manifest.value?.form_features ?? FALLBACK_FORM_FEATURES
+}
+
+function getPricingMap() {
+  return manifest.value?.pricing ?? FALLBACK_PRICING
+}
+
+// ─── Exported static PLAN_PRICING for components that import it directly ────
+export const PLAN_PRICING = FALLBACK_PRICING
+
 /**
  * Main composable for plan feature checks
  */
 export function usePlanFeatures() {
+  // Trigger manifest fetch on first client-side usage
+  fetchManifest()
+
   const { data: user } = useAuth().user()
   const { current: workspace } = useCurrentWorkspace()
 
@@ -131,9 +155,9 @@ export function usePlanFeatures() {
    * Check if the current workspace/user has access to a feature
    */
   const hasFeature = (feature) => {
-    const requiredTier = FEATURE_TIERS[feature]
-    if (!requiredTier) return true // Feature not defined = available to all
-
+    const features = getFeatureTiers()
+    const requiredTier = features[feature] || false
+    if (!requiredTier) return true
     return tierMeetsRequirement(currentWorkspaceTier.value, requiredTier)
   }
 
@@ -141,7 +165,8 @@ export function usePlanFeatures() {
    * Check if a specific tier has access to a feature
    */
   const tierHasFeature = (tier, feature) => {
-    const requiredTier = FEATURE_TIERS[feature]
+    const features = getFeatureTiers()
+    const requiredTier = features[feature] || false
     if (!requiredTier) return true
     return tierMeetsRequirement(tier, requiredTier)
   }
@@ -150,7 +175,7 @@ export function usePlanFeatures() {
    * Get the required tier for a feature
    */
   const getRequiredTier = (feature) => {
-    return FEATURE_TIERS[feature] || FORM_FEATURE_TIERS[feature] || null
+    return getFeatureTiers()[feature] || getFormFeatureTiers()[feature] || null
   }
 
   /**
@@ -182,9 +207,8 @@ export function usePlanFeatures() {
    * Check if a form feature requires upgrade
    */
   const formFeatureNeedsUpgrade = (feature) => {
-    const requiredTier = FORM_FEATURE_TIERS[feature]
+    const requiredTier = getFormFeatureTiers()[feature]
     if (!requiredTier) return false
-
     return !tierMeetsRequirement(currentWorkspaceTier.value, requiredTier)
   }
 
@@ -192,52 +216,37 @@ export function usePlanFeatures() {
    * Get the required tier for a form feature
    */
   const getFormFeatureRequiredTier = (feature) => {
-    return FORM_FEATURE_TIERS[feature] || null
+    return getFormFeatureTiers()[feature] || null
   }
 
   /**
    * Get display price for a plan
    */
   const getPlanPrice = (plan, yearly = true) => {
-    const pricing = PLAN_PRICING[plan]
+    const pricing = getPricingMap()[plan]
     if (!pricing) return null
     return yearly ? pricing.yearly : pricing.monthly
   }
 
   return {
-    // Tier info
     currentUserTier,
     currentWorkspaceTier,
     TIER_ORDER,
     TIER_NAMES,
-    PLAN_PRICING,
+    PLAN_PRICING: getPricingMap(),
 
-    // Feature checks
     hasFeature,
     tierHasFeature,
     tierMeetsRequirement,
     needsUpgradeFor,
 
-    // Tier info
     getRequiredTier,
     getTierDisplayName,
     getUpgradeMessage,
 
-    // Pricing
     getPlanPrice,
 
-    // Form-specific
     formFeatureNeedsUpgrade,
     getFormFeatureRequiredTier,
   }
-}
-
-/**
- * Simple helper to check if user has pro or higher
- * @deprecated Use usePlanFeatures().hasFeature() instead
- */
-export function useIsPro() {
-  const { currentWorkspaceTier, tierMeetsRequirement } = usePlanFeatures()
-
-  return computed(() => tierMeetsRequirement(currentWorkspaceTier.value, 'pro'))
 }

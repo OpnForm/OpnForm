@@ -8,6 +8,7 @@ use App\Models\Forms\FormSubmission;
 use App\Models\PdfTemplate;
 use App\Service\Billing\Feature;
 use App\Service\Forms\FormSubmissionFormatter;
+use App\Service\Plan\PlanService;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use setasign\Fpdi\Fpdi;
@@ -37,8 +38,8 @@ class PdfGeneratorService
         $submissionData = $this->getFormattedSubmissionData($form, $submission);
 
         // Check if branding should be added
-        $hasBrandingRemoval = $form->workspace?->hasFeature(Feature::BRANDING_REMOVAL) ?? false;
-        $addBranding = !($template->remove_branding && $hasBrandingRemoval);
+        $hasProAccess = $form->workspace?->meetsTierRequirement(PlanService::TIER_PRO) ?? false;
+        $addBranding = !($template->remove_branding && $hasProAccess);
 
         // Generate the PDF
         $pdfContent = $this->generatePdfContent($template, $zoneMappings, $submissionData, $addBranding);

@@ -43,10 +43,10 @@ useOpnSeoMeta({
   title: props.form ? "Form Summary - " + props.form.title : "Form Summary",
 })
 
-const { current: workspace } = useCurrentWorkspace()
 const { openSubscriptionModal } = useAppModals()
 
-const canAccessSummary = computed(() => workspace.value?.is_pro)
+const { hasFeature } = usePlanFeatures()
+const canAccessSummary = computed(() => hasFeature('form_summary'))
 
 const openUpgradeModal = () => {
   openSubscriptionModal({

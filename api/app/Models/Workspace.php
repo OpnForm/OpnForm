@@ -244,7 +244,7 @@ class Workspace extends Model implements CachableAttributes
 
             foreach ($owners as $owner) {
                 if ($owner->is_subscribed) {
-                    $subscription = $owner->subscription();
+                    $subscription = $owner->subscriptions->first(fn ($sub) => $sub->valid());
                     if ($subscription && BillingHelper::getSubscriptionInterval($subscription) === 'yearly') {
                         return true;
                     }
@@ -381,6 +381,14 @@ class Workspace extends Model implements CachableAttributes
             ->wherePivot('user_id', $user->id)
             ->wherePivot('role', User::ROLE_READONLY)
             ->exists();
+    }
+
+    /**
+     * Check if workspace's plan tier meets or exceeds the required tier.
+     */
+    public function meetsTierRequirement(string $requiredTier): bool
+    {
+        return app(\App\Service\Plan\PlanService::class)->tierMeetsRequirement($this->plan_tier, $requiredTier);
     }
 
     /**
