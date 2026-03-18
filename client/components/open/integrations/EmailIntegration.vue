@@ -95,10 +95,7 @@
           <div class="grow">
             <h4 class="font-semibold flex items-center gap-2">
               Email appearance
-              <PlanTag
-                feature="branding.advanced"
-                upgrade-modal-title="Upgrade to customise email appearance"
-              />
+              <PlanTag upgrade-modal-title="Upgrade to customise email appearance" />
             </h4>
             <p class="text-gray-400 dark:text-neutral-500 text-xs">
               Logo, fonts and colors for your email notifications

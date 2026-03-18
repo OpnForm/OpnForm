@@ -163,9 +163,7 @@ class User extends Authenticatable implements JWTSubject, CachableAttributes, Tw
         }
 
         return $this->remember('is_subscribed', 5 * 60, function (): bool {
-            $hasActiveSubscription = $this->subscriptions->contains(fn ($sub) => $sub->valid());
-
-            return $hasActiveSubscription
+            return $this->hasActivePaidSubscription()
                 || in_array($this->email, config('opnform.extra_pro_users_emails'))
                 || !is_null($this->activeLicense());
         });
@@ -353,6 +351,19 @@ class User extends Authenticatable implements JWTSubject, CachableAttributes, Tw
     public function activePaidSubscription(): ?Subscription
     {
         return app(BillingStateResolver::class)->resolveActiveSubscription($this);
+    }
+
+    /**
+     * Whether the user has any active paid subscription (default, pro, business, enterprise).
+     */
+    public function hasActivePaidSubscription(): bool
+    {
+        $paidTypes = ['default', 'pro', 'business', 'enterprise'];
+
+        return $this->subscriptions()
+            ->whereIn('type', $paidTypes)
+            ->whereIn('stripe_status', ['trialing', 'active'])
+            ->exists();
     }
 
     /**
