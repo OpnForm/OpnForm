@@ -14,7 +14,8 @@
     "section_name": "Notifications",
     "file_name": "SlackIntegration",
     "actions_file_name": "SlackIntegrationActions",
-    "is_pro": true
+    "is_pro": true,
+    "crisp_help_page_slug": "do-you-want-to-get-notified-of-new-submissions-via-slack-21mhhh"
   },
   "discord": {
     "name": "Discord Notification",
@@ -22,7 +23,8 @@
     "section_name": "Notifications",
     "file_name": "DiscordIntegration",
     "actions_file_name": "DiscordIntegrationActions",
-    "is_pro": true
+    "is_pro": true,
+    "crisp_help_page_slug": "do-you-want-to-get-notified-of-new-submissions-via-discord-1b2oxcx"
   },
   "telegram": {
     "name": "Telegram Notification",
@@ -30,7 +32,8 @@
     "section_name": "Notifications",
     "file_name": "TelegramIntegration",
     "actions_file_name": "TelegramIntegrationActions",
-    "is_pro": true
+    "is_pro": true,
+    "crisp_help_page_slug": "how-to-connect-telegram-to-your-opnform-bxqqq2"
   },
   "webhook": {
     "name": "Webhook Notification",
@@ -38,7 +41,8 @@
     "section_name": "Automation",
     "file_name": "WebhookIntegration",
     "actions_file_name": "WebhookIntegrationActions",
-    "is_pro": false
+    "is_pro": false,
+    "crisp_help_page_slug": "can-i-trigger-another-service-whenever-my-form-receives-a-submission-webhooks-6nrnfn"
   },
   "zapier": {
     "name": "Zapier",
@@ -48,7 +52,8 @@
     "is_pro": false,
     "is_external": true,
     "is_editable": false,
-    "url": "https://zapier.com/apps/opnform/integrations"
+    "url": "https://zapier.com/apps/opnform/integrations",
+    "crisp_help_page_slug": "how-to-connect-your-form-with-zapier-t1t45"
   },
   "n8n": {
     "name": "n8n",

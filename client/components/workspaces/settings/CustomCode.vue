@@ -13,13 +13,23 @@
           The code will be injected in the <b>head</b> section of all forms in this workspace. Workspace code is applied first, then form-specific code (if any).
         </p>
       </div>
-      <UButton
-        label="Help"
-        icon="i-heroicons-question-mark-circle"
-        variant="outline"
-        color="neutral"
-        @click="crisp.openHelpdeskArticle('how-do-i-add-custom-code-to-my-form-1amadj3')"
-      />
+      <div class="flex gap-2">
+        <UButton
+          label="SDK Docs"
+          icon="i-heroicons-code-bracket"
+          variant="outline"
+          color="neutral"
+          to="https://docs.opnform.com/embedding/javascript-sdk#custom-code-integration"
+          target="_blank"
+        />
+        <UButton
+          label="Help"
+          icon="i-heroicons-question-mark-circle"
+          variant="outline"
+          color="neutral"
+          @click="crisp.openHelpdeskArticle('how-do-i-add-custom-code-to-my-form-1amadj3')"
+        />
+      </div>
     </div>
 
     <UAlert

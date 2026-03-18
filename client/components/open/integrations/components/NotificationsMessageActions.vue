@@ -3,6 +3,7 @@
     <MentionInput
       v-model="compVal.message"
       :mentions="form.properties"
+      :computed-variables="form.computed_variables"
       name="message"
       class="mt-4"
       label="Notification Message"

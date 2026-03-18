@@ -16,6 +16,7 @@
     <MentionInput
       :form="integrationData"
       :mentions="form.properties"
+      :computed-variables="form.computed_variables"
       :disable-mention="!form.is_pro"
       :disabled="!form.is_pro"
       name="data.send_to"
@@ -41,6 +42,7 @@
       <MentionInput
         :form="integrationData"
         :mentions="form.properties"
+        :computed-variables="form.computed_variables"
         name="data.sender_name"
         label="Sender Name"
         class="flex-1"
@@ -57,6 +59,7 @@
     <MentionInput
       :form="integrationData"
       :mentions="form.properties"
+      :computed-variables="form.computed_variables"
       required
       name="data.subject"
       label="Subject"
@@ -66,6 +69,7 @@
       :enable-mentions="true"
       :enable-image="true"
       :mentions="form.properties"
+      :computed-variables="form.computed_variables"
       name="data.email_content"
       label="Email Content"
       class="mt-4"
@@ -191,9 +195,22 @@
       class="mt-4"
       label="Edit Submission Link"
     />
+     
+    <SelectInput
+      :form="integrationData"
+      name="data.pdf_template_ids"
+      :options="pdfTemplateOptions"
+      multiple
+      clearable
+      class="mt-4"
+      label="Attach PDF templates"
+      help="Generate PDFs from selected templates and attach them to the email. Leave empty to not attach any PDF."
+    />
+
     <MentionInput
       :form="integrationData"
       :mentions="form.properties"
+      :computed-variables="form.computed_variables"
       class="mt-4"
       name="data.reply_to"
       label="Reply To"
@@ -203,6 +220,7 @@
 </template>
 
 <script setup>
+import { usePdfTemplates } from '~/composables/query/forms/usePdfTemplates'
 import IntegrationWrapper from "./components/IntegrationWrapper.vue"
 import GoogleFontPicker from "~/components/open/editors/GoogleFontPicker.vue"
 import Collapse from "~/components/app/Collapse.vue"
@@ -230,6 +248,14 @@ function onApplyFont(val) {
   showGoogleFontPicker.value = false
 }
 
+const { list } = usePdfTemplates()
+const { data: pdfTemplates } = list(() => props.form?.id)
+
+const pdfTemplateOptions = computed(() => {
+  const list = pdfTemplates.value?.data ?? []
+  return list.map((t) => ({ name: t.name, value: t.id }))
+})
+
 function openEmailsModal () {
   openWorkspaceSettings('emails')
 }
@@ -254,6 +280,7 @@ onBeforeMount(() => {
     font_color: null,
     outer_background_color: '#f0f0f0',
     inner_background_color: '#ffffff',
+    pdf_template_ids: null,
   })) {
     if (props.integrationData.data[keyname] === undefined) {
       props.integrationData.data[keyname] = defaultValue

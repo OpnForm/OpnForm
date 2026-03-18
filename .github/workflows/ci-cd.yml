@@ -91,6 +91,59 @@ jobs:
       - name: Run front-end tests
         run: npm run test -- --run
 
+  sync_check:
+    runs-on: ubuntu-latest
+    name: Verify shared files are in sync
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check file sync
+        run: |
+          check_sync() {
+            local client_file=$1
+            local api_file=$2
+            
+            if [ ! -f "$client_file" ]; then
+              echo "❌ ERROR: Client file missing: $client_file"
+              return 1
+            fi
+            
+            if [ ! -f "$api_file" ]; then
+              echo "❌ ERROR: API file missing: $api_file"
+              return 1
+            fi
+            
+            if ! diff -q "$client_file" "$api_file" > /dev/null; then
+              echo "❌ ERROR: Files differ:"
+              echo "   Client: $client_file"
+              echo "   API:    $api_file"
+              echo ""
+              echo "Diff:"
+              diff "$client_file" "$api_file" || true
+              return 1
+            else
+              echo "✅ Files in sync: $client_file ↔ $api_file"
+              return 0
+            fi
+          }
+          
+          failed=false
+          
+          check_sync "client/data/blocks_types.json" "api/resources/data/forms/blocks_types.json" || failed=true
+          check_sync "client/data/forms/integrations.json" "api/resources/data/forms/integrations.json" || failed=true
+          check_sync "client/test/fixtures/formula-parity-tests.json" "api/tests/fixtures/formula-parity-tests.json" || failed=true
+          
+          if [ "$failed" = true ]; then
+            echo ""
+            echo "⚠️  Some shared files are out of sync!"
+            echo "Please ensure both copies are identical and commit the changes."
+            exit 1
+          fi
+          
+          echo ""
+          echo "✅ All shared files are in sync!"
+
   tests:
     runs-on: ubuntu-latest
 
@@ -240,7 +293,7 @@ jobs:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
 
   production-deploy:
-    needs: [code_lint, client_lint, tests, build-nuxt-app]
+    needs: [code_lint, client_lint, sync_check, tests, build-nuxt-app]
     if: success() && github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     name: Triggers Deployment (Vapor & Amplify)
@@ -306,7 +359,7 @@ jobs:
 
   publish-docker-images:
     name: Push Docker images to Docker Hub
-    needs: [code_lint, client_lint, tests, build-nuxt-app]
+    needs: [code_lint, client_lint, sync_check, tests, build-nuxt-app]
     if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') }}
     runs-on: ubuntu-latest
     permissions:

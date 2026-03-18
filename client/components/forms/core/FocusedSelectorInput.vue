@@ -7,7 +7,10 @@
     <div
       ref="root"
       :style="optionStyle"
-      :class="variantSlots.container({ class: props.ui?.slots?.container })"
+      :class="[
+        variantSlots.container({ class: props.ui?.slots?.container }),
+        {'grid grid-cols-1 sm:grid-cols-2 gap-2': optionDisplayMode === 'image_only'}
+      ]"
       role="listbox"
       :aria-multiselectable="multiple ? 'true' : 'false'"
       :tabindex="0"
@@ -34,8 +37,25 @@
             {{ getOptionLabel(idx) }}
           </span>
 
+          <!-- Image (if enabled) -->
+          <div v-if="hasImages" class="relative shrink-0 mr-3" :class="{'flex-1 flex justify-center': optionDisplayMode === 'image_only'}">
+            <img
+              v-if="option.image"
+              :src="option.image"
+              :alt="getOptionName(option)"
+              :class="imageSizeClass"
+              class="rounded object-cover"
+            >
+            <div
+              v-else
+              :class="[imageSizeClass, 'bg-neutral-200 dark:bg-neutral-700 rounded flex items-center justify-center']"
+            >
+              <Icon name="heroicons:photo" class="w-4 h-4 text-neutral-400" />
+            </div>
+          </div>
+
           <!-- Option text -->
-          <span :class="textClasses()">
+          <span v-if="optionDisplayMode !== 'image_only'" :class="textClasses()">
             {{ getOptionName(option) }}
           </span>
 
@@ -114,7 +134,9 @@ const props = defineProps({
   allowCreation: { type: Boolean, default: false },
   minSelection: { type: Number, default: null },
   maxSelection: { type: Number, default: null },
-  presentation: { type: String, default: 'classic' }
+  presentation: { type: String, default: 'classic' },
+  optionDisplayMode: { type: String, default: 'text_only' },
+  optionImageSize: { type: String, default: 'md' }
 })
 
 const emit = defineEmits(['update:modelValue', 'focus', 'blur', 'input-filled'])
@@ -141,6 +163,17 @@ const optionStyle = computed(() => ({
   '--bg-form-color': props.color,
   '--text-form-color': props.color
 }))
+
+const hasImages = computed(() => ['text_and_image', 'image_only'].includes(props.optionDisplayMode))
+
+const imageSizeClass = computed(() => {
+  const sizes = {
+    sm: 'w-12 h-12',
+    md: 'w-20 h-20',
+    lg: 'w-28 h-28'
+  }
+  return sizes[props.optionImageSize] || sizes.md
+})
 
 // Use variants from composable (already handles UI merging properly)
 const variantSlots = computed(() => ui.value)

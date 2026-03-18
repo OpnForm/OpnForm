@@ -1108,5 +1108,47 @@
         }
       }
     }
+  },
+  "computed": {
+    "comparators": {
+      "equals": {
+        "expected_type": "string"
+      },
+      "does_not_equal": {
+        "expected_type": "string"
+      },
+      "contains": {
+        "expected_type": "string"
+      },
+      "does_not_contain": {
+        "expected_type": "string"
+      },
+      "greater_than": {
+        "expected_type": "number"
+      },
+      "less_than": {
+        "expected_type": "number"
+      },
+      "greater_than_or_equal_to": {
+        "expected_type": "number"
+      },
+      "less_than_or_equal_to": {
+        "expected_type": "number"
+      },
+      "is_empty": {
+        "expected_type": "boolean",
+        "format": {
+          "type": "enum",
+          "values": [true]
+        }
+      },
+      "is_not_empty": {
+        "expected_type": "boolean",
+        "format": {
+          "type": "enum",
+          "values": [true]
+        }
+      }
+    }
   }
 }
