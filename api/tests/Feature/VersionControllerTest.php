@@ -107,7 +107,8 @@ it('cannot restore version for unauthorized form', function () {
 
     // Pro user should not be able to restore another user's form version
     $this->postJson(route('versions.restore', ['versionId' => $version->version_id]))
-        ->assertStatus(403);
+        ->assertStatus(402)
+        ->assertJson(['required_tier' => 'business']);
 });
 
 it('cannot restore non-existent version', function () {
