@@ -61,8 +61,8 @@ export function getOpnRequestsOptions(request, opts) {
     async onResponseError({ response }) {
       const { status } = response
       if (status === 401) {
-        // Do not run token-expiry UX during SSR. Server-side requests can fail
-        // for context-specific reasons and should be retried client-side first.
+        // Do not run token-expiry UX during SSR. Server-side bootstrap requests can
+        // fail for context-specific reasons and should be retried client-side first.
         if (import.meta.client) {
           const { handleTokenExpiry } = useAuthFlow()
           await handleTokenExpiry()

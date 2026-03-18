@@ -68,6 +68,10 @@ it('check formstat chart data', function () {
 
 
 it('checks form stats details', function () {
+    if (config('database.default') === 'sqlite') {
+        $this->markTestSkipped('Skipped on sqlite because the stats query uses PostgreSQL JSON casting syntax.');
+    }
+
     $user = $this->actingAsProUser();
     $workspace = $this->createUserWorkspace($user);
     $form = $this->createForm($user, $workspace, []);

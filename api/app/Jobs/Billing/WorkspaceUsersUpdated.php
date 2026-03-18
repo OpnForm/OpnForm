@@ -58,7 +58,10 @@ class WorkspaceUsersUpdated implements ShouldQueue
         }
 
         // Now update the subscription accordingly
-        $subscription = $billingOwner->subscription();
+        $subscription = $billingOwner->activeDefaultSubscription();
+        if (!$subscription) {
+            return;
+        }
         $totalUsersCount = (new UserHelper($billingOwner))->getActiveMembersCount() - 1;
         $this->updateSubscriptionWithExtraUsers($subscription, $totalUsersCount);
     }

@@ -1,5 +1,76 @@
 # AGENTS.md
 
+Instructions for AI coding agents working in this repository.
+
+## Scope
+
+- This file applies to the full repository.
+- If a deeper `AGENTS.md` exists in a subdirectory, follow the deeper file for files in that subtree.
+
+## Repository Overview
+
+- Monorepo with:
+- `api/`: Laravel 11+ / PHP 8.2 backend.
+- `client/`: Nuxt 3 / Vue frontend (JavaScript, not TypeScript by default).
+- `docs/`: Mintlify documentation.
+
+## Working Style
+
+- Make focused changes that directly solve the request.
+- Prefer editing existing patterns over introducing new architecture.
+- Keep diffs small and avoid unrelated refactors.
+- Preserve existing conventions and file organization.
+
+## Setup And Commands
+
+- Frontend (`client/`):
+- Install: `npm install`
+- Dev server: `npm run dev`
+- Lint: `npm run lint`
+- Tests: `npm run test`
+- Backend (`api/`):
+- Install: `composer install`
+- Tests: `php artisan test`
+
+## Validation Before Handoff
+
+- Run targeted checks for changed areas first.
+- If frontend code changed, run `npm run lint` (in `client/`) and relevant tests.
+- If backend code changed, run relevant `php artisan test --filter=...` and broaden only if needed.
+- Report what was run and what could not be run.
+
+## Project Conventions
+
+- Frontend:
+- Use Nuxt UI v3 + Tailwind patterns already used in the codebase.
+- Prefer Composition API and existing composables.
+- Use Promise chaining style (`.then().catch().finally()`) where this project already enforces it.
+- Backend:
+- Follow Laravel conventions, Form Requests, Eloquent relationships, and Pest tests.
+- Keep controllers thin and place business logic in services when appropriate.
+
+## Cursor Rules (Source Of Truth)
+
+- For detailed conventions, read and follow:
+- [`.cursor/rules/opnform-overview.mdc`](./.cursor/rules/opnform-overview.mdc)
+- [`.cursor/rules/front-end.mdc`](./.cursor/rules/front-end.mdc)
+- [`.cursor/rules/api-query.mdc`](./.cursor/rules/api-query.mdc)
+- [`.cursor/rules/front-end-testing.mdc`](./.cursor/rules/front-end-testing.mdc)
+- [`.cursor/rules/back-end.mdc`](./.cursor/rules/back-end.mdc)
+- [`.cursor/rules/back-end-testing.mdc`](./.cursor/rules/back-end-testing.mdc)
+- [`.cursor/rules/forms.mdc`](./.cursor/rules/forms.mdc)
+- [`.cursor/rules/formula-engine.mdc`](./.cursor/rules/formula-engine.mdc)
+- [`.cursor/rules/docs.mdc`](./.cursor/rules/docs.mdc)
+
+## Documentation Changes
+
+- When behavior, configuration, or workflows change, update docs in `README.md`, `docs/`, or both.
+
+## Safety
+
+- Do not commit secrets or tokens.
+- Do not change licensing files or enterprise-only code boundaries unless explicitly requested.
+
 ## Cursor Cloud specific instructions
 
 ### Project overview
@@ -36,26 +107,3 @@ docker exec opnform-api sh -c "curl -sS https://getcomposer.org/installer | php 
 docker exec opnform-api composer install --no-interaction --optimize-autoloader
 docker restart opnform-api
 ```
-
-### Running tests
-
-- **API tests** use SQLite in-memory (no PostgreSQL needed). Run locally:
-  ```bash
-  cd /workspace/api && ./vendor/bin/pest
-  ```
-  Before first local run, ensure `storage/` and `bootstrap/cache/` are writable (`sudo chmod -R 777 api/storage api/bootstrap/cache`) and clear any Docker-cached config (`rm -f api/bootstrap/cache/config.php`).
-
-- **Client tests** (Vitest):
-  ```bash
-  cd /workspace/client && npm run test -- --run
-  ```
-  If `.nuxt/` has permission issues, run `sudo chown -R $(whoami) client/.nuxt`.
-
-- **Client lint** (ESLint):
-  ```bash
-  cd /workspace/client && npm run lint
-  ```
-
-### Key dev commands reference
-
-See `client/package.json` scripts and `api/composer.json` scripts for full list. The lockfile is `package-lock.json` so use `npm` (not pnpm/yarn) for the client.

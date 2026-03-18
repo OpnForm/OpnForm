@@ -286,13 +286,25 @@ class FormEmailNotification extends Notification
 
     private function getMailData(): array
     {
+        $form = $this->event->form;
+        $isPro = $form->is_pro ?? false;
+
+        $emailAppearance = $isPro ? [
+            'logoUrl' => $this->integrationData->logo_url ?? null,
+            'fontFamily' => $this->integrationData->font_family ?? null,
+            'fontColor' => $this->integrationData->font_color ?? null,
+            'outerBackgroundColor' => $this->integrationData->outer_background_color ?? null,
+            'innerBackgroundColor' => $this->integrationData->inner_background_color ?? null,
+        ] : [];
+
         return [
             'emailContent' => $this->getEmailContent(),
             'fields' => $this->formatSubmissionData(),
-            'form' => $this->event->form,
+            'form' => $form,
             'integrationData' => $this->integrationData,
-            'noBranding' => $this->event->form->no_branding,
+            'noBranding' => $form->no_branding,
             'submission_id' => $this->getEncodedSubmissionId(),
+            'emailAppearance' => $emailAppearance,
         ];
     }
 
@@ -303,7 +315,53 @@ class FormEmailNotification extends Notification
             $this->formatSubmissionData(),
             $this->getComputedValues()
         );
-        return $parser->parse();
+        $html = $parser->parse();
+
+        return $this->convertResizeAlignmentToInlineStyles($html);
+    }
+
+    /**
+     * Convert quill-resize-module CSS classes to inline styles for email client compatibility.
+     * Email clients often strip class-based styles; inline styles are required.
+     */
+    private function convertResizeAlignmentToInlineStyles(string $html): string
+    {
+        $alignments = [
+            'ql-resize-style-left' => 'float:left; margin:0 1em 1em 0;',
+            'ql-resize-style-right' => 'float:right; margin:0 0 1em 1em;',
+            'ql-resize-style-center' => 'display:block; margin:auto; text-align:center;',
+            'ql-resize-style-full' => 'width:100% !important;',
+        ];
+
+        foreach ($alignments as $class => $inlineStyle) {
+            $html = preg_replace_callback(
+                '/<([a-z]+)([^>]*\bclass\s*=\s*["\']([^"\']*' . preg_quote($class, '/') . '[^"\']*)["\'])([^>]*)>/i',
+                function ($m) use ($class, $inlineStyle) {
+                    $tagName = $m[1];
+                    $beforeClass = $m[2];
+                    $classes = $m[3];
+                    $after = $m[4];
+
+                    $newClasses = preg_replace('/\s*' . preg_quote($class, '/') . '\s*/', ' ', $classes);
+                    $newClasses = trim(preg_replace('/\s+/', ' ', $newClasses));
+
+                    $style = $inlineStyle;
+                    if (preg_match('/style\s*=\s*["\']([^"\']*)["\']/', $beforeClass . $after, $sm)) {
+                        $style = $inlineStyle . $sm[1];
+                        $beforeClass = preg_replace('/\s*style\s*=\s*["\'][^"\']*["\']/', '', $beforeClass);
+                        $after = preg_replace('/\s*style\s*=\s*["\'][^"\']*["\']/', '', $after);
+                    }
+
+                    $beforeClass = preg_replace('/\s*class\s*=\s*["\'][^"\']*["\']/', '', $beforeClass);
+                    $classAttr = $newClasses !== '' ? ' class="' . $newClasses . '"' : '';
+
+                    return '<' . $tagName . $beforeClass . $classAttr . ' style="' . $style . '"' . $after . '>';
+                },
+                $html
+            );
+        }
+
+        return $html;
     }
 
     private function getEncodedSubmissionId(): ?string

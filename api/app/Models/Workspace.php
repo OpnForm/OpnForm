@@ -244,7 +244,7 @@ class Workspace extends Model implements CachableAttributes
 
             foreach ($owners as $owner) {
                 if ($owner->is_subscribed) {
-                    $subscription = $owner->subscriptions->first(fn ($sub) => $sub->valid());
+                    $subscription = $owner->activeDefaultSubscription();
                     if ($subscription && BillingHelper::getSubscriptionInterval($subscription) === 'yearly') {
                         return true;
                     }
@@ -311,7 +311,7 @@ class Workspace extends Model implements CachableAttributes
             return $this->owners;
         }
 
-        return $this->owners->filter(fn ($owner) => $owner->is_subscribed);
+        return $this->owners->filter(fn($owner) => $owner->is_subscribed);
     }
 
     public function forms()

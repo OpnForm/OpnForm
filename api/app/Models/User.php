@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Billing\Subscription;
 use App\Models\Forms\Form;
 use App\Models\Traits\CachableAttributes;
 use App\Models\Traits\CachesAttributes;
@@ -160,9 +161,7 @@ class User extends Authenticatable implements JWTSubject, CachableAttributes, Tw
         }
 
         return $this->remember('is_subscribed', 5 * 60, function (): bool {
-            $hasActiveSubscription = $this->subscriptions->contains(fn ($sub) => $sub->valid());
-
-            return $hasActiveSubscription
+            return $this->hasActiveDefaultSubscription()
                 || in_array($this->email, config('opnform.extra_pro_users_emails'))
                 || !is_null($this->activeLicense());
         });
@@ -342,6 +341,21 @@ class User extends Authenticatable implements JWTSubject, CachableAttributes, Tw
 
             return $this->licenses()->active()->first();
         });
+    }
+
+    public function activeDefaultSubscription(): ?Subscription
+    {
+        return $this->subscriptions()
+            ->where('type', 'default')
+            ->whereIn('stripe_status', ['trialing', 'active'])
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->first();
+    }
+
+    public function hasActiveDefaultSubscription(): bool
+    {
+        return !is_null($this->activeDefaultSubscription());
     }
 
     /**
