@@ -123,7 +123,7 @@ const sections = [
       },
       {
         label: "File uploads",
-        values: ["(10MB)", true, "(1GB)", "(configurable)"],
+        values: ["10MB", "50MB", "1GB", "(configurable)"],
       },
       {
         label: "Form logic & validation",
@@ -209,7 +209,7 @@ const sections = [
       },
       {
         label: "Advanced integrations (HubSpot, Salesforce, Airtable)",
-        values: [false, false, "soon", true],
+        values: [false, false, "soon", "soon"],
       },
     ],
   },
@@ -218,11 +218,11 @@ const sections = [
     rows: [
       {
         label: "Analytics dashboard",
-        values: [false, false, "soon", true],
+        values: [false, false, true, true],
       },
       {
         label: "Partial submissions / draft saving",
-        values: [false, false, "soon", true],
+        values: [false, false, true, true],
       },
     ],
   },
