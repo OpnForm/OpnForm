@@ -278,28 +278,6 @@
       </div>
     </section>
 
-    <!-- <section class="py-12 bg-white">
-      <div
-        class="flex items-start gap-4 max-w-3xl p-6 mx-auto bg-yellow-50 ring ring-inset ring-yellow-200 rounded-3xl"
-      >
-        <UIcon
-          name="i-heroicons-shield-check"
-          class="h-8 w-8 shrink-0 text-yellow-500"
-        />
-        <div>
-          <p class="text-lg font-semibold text-yellow-600">
-            Nonprofit & Student Discount — 50%
-          </p>
-          <p class="mt-1 text-base font-medium leading-7 text-yellow-600">
-            Whether your nonprofit is large or small, OpnForm's online Form
-            Builder helps your organization help others. It takes just a few
-            minutes to create and publish your forms online. As an exclusive
-            benefit, we offer nonprofits & students a 50-percent discount!
-          </p>
-        </div>
-      </div>
-    </section> -->
-
     <section class="pt-16 bg-white">
       <TrustedTeams />
     </section>
@@ -689,6 +667,11 @@ const faqs = [
     question: "Can I collaborate with my team?",
     answer:
       "Yes — multi-user collaboration is supported. Higher tiers add roles and permissions for larger teams.",
+  },
+  {
+    question: "Can I get a Nonprofit or Student Discount?",
+    answer:
+      "Yes — we offer a 50% discount for registered nonprofits and students. Contact us to verify your eligibility and get set up.",
   },
 ]
 
