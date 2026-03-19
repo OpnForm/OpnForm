@@ -8,20 +8,6 @@
 
 import { opnFetch } from '~/composables/useOpnApi'
 
-const TIER_ORDER = {
-  free: 0,
-  pro: 1,
-  business: 2,
-  enterprise: 3,
-}
-
-const TIER_NAMES = {
-  free: 'Free',
-  pro: 'Pro',
-  business: 'Business',
-  enterprise: 'Enterprise',
-}
-
 // ─── Module-level cached manifest ───────────────────────────────────────────
 let manifestPromise = null
 const manifest = ref(null)
@@ -40,12 +26,20 @@ function fetchManifest() {
   return manifestPromise
 }
 
+function getTiers() {
+  return manifest.value?.tiers ?? {}
+}
+
 function getFeatureTiers() {
   return manifest.value?.features ?? {}
 }
 
-function getPricingMap() {
-  return manifest.value?.pricing ?? {}
+function getTierOrder(tier) {
+  return getTiers()[tier]?.order ?? 0
+}
+
+function getTierName(tier) {
+  return getTiers()[tier]?.name ?? tier
 }
 
 
@@ -77,9 +71,7 @@ export function usePlanFeatures() {
    * Check if a tier meets the requirement for another tier
    */
   const tierMeetsRequirement = (tier, requiredTier) => {
-    const tierOrder = TIER_ORDER[tier] ?? 0
-    const requiredOrder = TIER_ORDER[requiredTier] ?? 0
-    return tierOrder >= requiredOrder
+    return getTierOrder(tier) >= getTierOrder(requiredTier)
   }
 
   /**
@@ -113,7 +105,7 @@ export function usePlanFeatures() {
    * Get the display name for a tier
    */
   const getTierDisplayName = (tier) => {
-    return TIER_NAMES[tier] || tier
+    return getTierName(tier)
   }
 
   /**
@@ -154,16 +146,14 @@ export function usePlanFeatures() {
    * Get display price for a plan
    */
   const getPlanPrice = (plan, yearly = true) => {
-    const pricing = getPricingMap()[plan]
-    if (!pricing) return null
-    return yearly ? pricing.yearly : pricing.monthly
+    const tier = getTiers()[plan]
+    if (!tier) return null
+    return yearly ? tier.price_yearly_per_month : tier.price_monthly
   }
 
   return {
     currentUserTier,
     currentWorkspaceTier,
-    TIER_ORDER,
-    TIER_NAMES,
 
     hasFeature,
     tierHasFeature,
