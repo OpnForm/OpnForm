@@ -95,7 +95,8 @@ onMounted(() => {
     }
   }
 
-  form.value = initForm({ workspace_id: workspace.value?.id, no_branding: workspace.value?.is_pro }, true)
+  const { hasFeature } = usePlanFeatures()
+  form.value = initForm({ workspace_id: workspace.value?.id, no_branding: hasFeature('branding.removal') }, true)
   formInitialHash.value = hash(JSON.stringify(form.value.data()))
   if (template && template.structure) {
     form.value = useForm({ ...form.value.data(), ...template.structure })

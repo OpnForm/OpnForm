@@ -122,7 +122,7 @@ const navigationSections = computed(() => [
         active: isActiveRoute('templates')
       }),
       // Show upgrade for non-pro users
-      ...(workspace.value && !tierMeetsRequirement(workspace.value.plan_tier || 'free', 'pro') && !isSelfHosted.value ? [createNavItem({
+      ...(workspace.value && !tierMeetsRequirement(workspace.value.plan_tier, 'pro') && !isSelfHosted.value ? [createNavItem({
         label: 'Upgrade to Pro',
         icon: 'i-heroicons-sparkles-solid', 
         onClick: () => {
@@ -134,7 +134,7 @@ const navigationSections = computed(() => [
         },
         color: 'primary'
       })] : []),
-      ...(workspace.value && tierMeetsRequirement(workspace.value.plan_tier || 'free', 'pro') && !tierMeetsRequirement(workspace.value.plan_tier || 'free', 'business') && !isSelfHosted.value ? [createNavItem({
+      ...(workspace.value && tierMeetsRequirement(workspace.value.plan_tier, 'pro') && !tierMeetsRequirement(workspace.value.plan_tier, 'business') && !isSelfHosted.value ? [createNavItem({
         label: 'Upgrade to Business',
         icon: 'i-heroicons-sparkles-solid',
         onClick: () => {

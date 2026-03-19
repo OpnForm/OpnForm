@@ -17,15 +17,15 @@
       :form="integrationData"
       :mentions="form.properties"
       :computed-variables="form.computed_variables"
-      :disable-mention="!form.is_pro"
-      :disabled="!form.is_pro"
+      :disable-mention="isFreePlan"
+      :disabled="isFreePlan"
       name="data.send_to"
       required
       label="Send To"
     >
       <template #help>
         <InputHelp>
-        <span v-if="form.is_pro">
+        <span v-if="!isFreePlan">
           Add one email per line
         </span>
         <span v-else>
@@ -105,7 +105,7 @@
       </template>
       <div class="border-t dark:border-neutral-700 p-4 space-y-4">
         <div
-          v-if="emailAppearanceLocked"
+          v-if="isFreePlan"
           class="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900 dark:border-blue-900/60 dark:bg-blue-950/40 dark:text-blue-100"
         >
           Email appearance customisation is part of the Pro plan.
@@ -119,7 +119,7 @@
         </div>
         <image-input
           :form="integrationData"
-          :disabled="emailAppearanceLocked"
+          :disabled="isFreePlan"
           name="data.logo_url"
           label="Logo"
           help="Display your logo in the email header (replaces app name)"
@@ -132,7 +132,7 @@
               block
               size="lg"
               variant="outline"
-              :disabled="emailAppearanceLocked"
+              :disabled="isFreePlan"
               @click="showGoogleFontPicker = true"
             >
               <span :style="{ 'font-family': (integrationData.data.font_family ? integrationData.data.font_family + ', sans-serif' : null) }">
@@ -148,7 +148,7 @@
           </div>
           <ColorInput
             :form="integrationData"
-            :disabled="emailAppearanceLocked"
+            :disabled="isFreePlan"
             name="data.font_color"
             label="Font color"
             help="Color of the text in the email"
@@ -157,14 +157,14 @@
         <div class="grid grid-cols-2 gap-4">
           <ColorInput
             :form="integrationData"
-            :disabled="emailAppearanceLocked"
+            :disabled="isFreePlan"
             name="data.outer_background_color"
             label="Outer background color"
             help="Background around the email content area"
           />
           <ColorInput
             :form="integrationData"
-            :disabled="emailAppearanceLocked"
+            :disabled="isFreePlan"
             name="data.inner_background_color"
             label="Inner background color"
             help="Background of the email content area"
@@ -239,7 +239,7 @@ const { data: user } = useAuth().user()
 
 const showEmailAppearance = ref(false)
 const showGoogleFontPicker = ref(false)
-const emailAppearanceLocked = computed(() => !props.form.is_pro)
+const isFreePlan = computed(() => props.form?.plan_tier === 'free')
 
 function onApplyFont(val) {
   if (props.integrationData.data) {

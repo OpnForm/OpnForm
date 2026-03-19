@@ -204,6 +204,22 @@ export function usePlanFeatures() {
   }
 
   /**
+   * Check feature access and open subscription modal if denied.
+   * Returns true if the user has the feature, false otherwise.
+   */
+  const requireFeature = (feature, modalTitle) => {
+    if (hasFeature(feature)) return true
+    if (import.meta.client) {
+      const requiredTier = getRequiredTier(feature) || 'pro'
+      useAppModals().openSubscriptionModal({
+        plan: requiredTier,
+        modal_title: modalTitle || `Upgrade to ${getTierDisplayName(requiredTier)} to unlock this feature`,
+      })
+    }
+    return false
+  }
+
+  /**
    * Check if a form feature requires upgrade
    */
   const formFeatureNeedsUpgrade = (feature) => {
@@ -239,6 +255,7 @@ export function usePlanFeatures() {
     tierHasFeature,
     tierMeetsRequirement,
     needsUpgradeFor,
+    requireFeature,
 
     getRequiredTier,
     getTierDisplayName,

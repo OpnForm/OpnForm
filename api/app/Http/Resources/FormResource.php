@@ -50,6 +50,7 @@ class FormResource extends JsonResource
 
         return array_merge(parent::toArray($request), $ownerData, [
             'settings' => $this->settings ?? new \stdClass(),
+            'plan_tier' => $this->workspace->plan_tier ?? 'free',
             'is_pro' => $this->workspaceIsPro(),
             'is_business' => $this->workspaceIsBusiness(),
             'is_trialing' => $this->workspaceIsTrialing(),
