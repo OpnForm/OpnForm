@@ -416,7 +416,8 @@ const broadcastData = subscribeBroadcast.data
 const confetti = useConfetti()
 const { isAuthenticated: authenticated } = useIsAuthenticated()
 const { data: user } = useAuth().user()
-const isSubscribed = computed(() => user.value.is_pro)
+const { tierMeetsRequirement } = usePlanFeatures()
+const isSubscribed = computed(() => tierMeetsRequirement(user.value?.plan_tier, 'pro'))
 const currency = 'usd'
 
 // Get price for selected plan

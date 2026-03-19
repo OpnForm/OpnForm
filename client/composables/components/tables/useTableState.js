@@ -308,7 +308,7 @@ export function useTableState(form, withActions = false) {
       const { hasFeature } = usePlanFeatures()
 
       // Add status column if needed
-      if (form.value?.is_business && (form.value.enable_partial_submissions ?? false)) {
+      if (hasFeature('enable_partial_submissions') && (form.value?.enable_partial_submissions ?? false)) {
         cols.push({
           id: 'status',
           accessorKey: 'status',
@@ -323,7 +323,7 @@ export function useTableState(form, withActions = false) {
       }
 
       // Add IP address column if needed
-      if (form.value?.is_business && (form.value.enable_ip_tracking ?? false)) {
+      if (hasFeature('enable_ip_tracking') && (form.value?.enable_ip_tracking ?? false)) {
         cols.push({
           id: 'ip_address',
           accessorKey: 'ip_address',

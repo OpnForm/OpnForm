@@ -86,29 +86,10 @@
             :class="navLinkClasses"
           >
             <span
-              v-if="user && workspace && !workspaceIsPaid"
+              v-if="user && workspace && workspace.plan_tier === 'free'"
               class="text-primary"
               >Upgrade</span
             >
-            <span v-else>Pricing</span>
-          </NuxtLink>
-          <NuxtLink
-            v-if="($route.name !== 'ai-form-builder' && user === null) && (!useFeatureFlag('self_hosted') && useFeatureFlag('ai_features'))"
-            :to="{ name: 'ai-form-builder' }"
-            :class="navLinkClasses"
-            class="hidden lg:inline"
-          >
-            AI Form Builder
-          </NuxtLink>
-          <NuxtLink
-            v-if="(useFeatureFlag('billing.enabled') && $route.name !== 'pricing') && !isSelfHosted"
-            :to="{ name: 'pricing' }"
-            :class="navLinkClasses"
-          >
-            <span
-              v-if="user && workspace && !workspace.is_pro"
-              class="text-primary"
-            >Upgrade</span>
             <span v-else>Pricing</span>
           </NuxtLink>
 
