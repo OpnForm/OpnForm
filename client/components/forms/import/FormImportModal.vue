@@ -72,6 +72,7 @@ import { formsApi } from '~/api/forms'
 const props = defineProps({
   show: { type: Boolean, required: true },
   workspaceId: { type: [Number, String], default: null },
+  defaultSource: { type: String, default: null },
 })
 
 const emit = defineEmits(['close', 'imported'])
@@ -92,7 +93,7 @@ const importForm = useForm({
 })
 
 const sourceConfigs = {
-  typeform: { label: 'Typeform', placeholder: 'https://yourname.typeform.com/to/abc123' },
+  typeform: { label: 'Typeform', placeholder: 'https://example.typeform.com/to/abc123' },
   tally: { label: 'Tally', placeholder: 'https://tally.so/r/mBGjOq' },
   fillout: { label: 'Fillout', placeholder: 'https://example.fillout.com/t/abc123' },
   google_forms: { label: 'Google Forms', placeholder: '' },
@@ -103,10 +104,7 @@ const urlPlaceholder = computed(() => sourceConfigs[selectedSource.value]?.place
 
 watch(() => props.show, (open) => {
   if (open) {
-    step.value = 'source'
-    selectedSource.value = null
-    importForm.url = ''
-    importForm.errors.clear()
+    selectSource(props.defaultSource ?? null)
   }
 })
 
@@ -115,7 +113,9 @@ const selectSource = (source) => {
   importForm.url = ''
   importForm.errors.clear()
 
-  if (source === 'google_forms') {
+  if (source === null) {
+    step.value = 'source'
+  } else if (source === 'google_forms') {
     step.value = 'google'
   } else {
     step.value = 'url'
@@ -123,9 +123,7 @@ const selectSource = (source) => {
 }
 
 const handleBack = () => {
-  step.value = 'source'
-  selectedSource.value = null
-  importForm.url = ''
+  selectSource(null)
 }
 
 const submitImport = () => {

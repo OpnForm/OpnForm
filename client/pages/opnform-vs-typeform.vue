@@ -59,7 +59,7 @@
               <UButton
                 size="lg"
                 variant="outline"
-                to="#"
+                @click="openFormImportModal"
                 label="Have a Typeform URL? Import it now"
                 class="w-fit px-4 py-2.5 rounded-[12px] text-base leading-7 tracking-[-1.1%] font-medium"
               />
@@ -544,11 +544,20 @@
 
     <OpenFormFooter />
   </div>
+
+  <FormImportModal
+    default-source="typeform"
+    :show="showImportModal"
+    :workspace-id="workspace?.id"
+    @close="showImportModal = false"
+    @imported="handleFormImported"
+  />
 </template>
 
 <script setup>
 import LiveDemo from "~/components/pages/welcome/LiveDemo.vue"
 import Testimonials from "~/components/pages/welcome/Testimonials.vue"
+import FormImportModal from "~/components/forms/import/FormImportModal.vue"
 import { useIsAuthenticated } from "~/composables/useAuthFlow"
 
 definePageMeta({
@@ -561,7 +570,22 @@ useOpnSeoMeta({
     "A powerful Typeform alternative with unlimited responses and full control — for free.",
 })
 
+const appStore = useAppStore()
 const { isAuthenticated: authenticated } = useIsAuthenticated()
+const { current: workspace } = useCurrentWorkspace()
+
+const showImportModal = ref(false)
+const openFormImportModal = () => {
+  if (!authenticated.value) {
+    appStore.quickRegisterModal = true
+    return
+  }
+  showImportModal.value = true
+}
+const handleFormImported = (formData) => {
+  showImportModal.value = false
+  useRouter().push({ name: 'forms-slug-show', params: { slug: formData.slug } })
+}
 
 const freePlanComparison = [
   {
