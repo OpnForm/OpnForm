@@ -150,22 +150,24 @@
         <!-- Not Found State -->
         <div
           v-else
-          class="flex items-center justify-center h-screen bg-white"
+          class="flex items-center justify-center flex-1 bg-white"
         >
-          <div class="flex flex-col gap-4 items-center justify-center">
-            <h2 class="text-lg font-semibold text-neutral-900">Form not found</h2>
-            <p class="text-neutral-500">The form you're looking for doesn't exist or has been deleted.</p>
-            <div class="">
-            <UButton
-              variant="soft"
-              class="hover:no-underline"
-              icon="i-heroicons-arrow-left"
-              :to="{ name: 'home' }"
-            >
+          <DashboardEmptyState
+            icon="i-heroicons-document-magnifying-glass"
+            title="Form not found"
+            description="The form you're looking for doesn't exist or has been deleted."
+          >
+            <template #action>
+              <UButton
+                variant="soft"
+                class="hover:no-underline"
+                icon="i-heroicons-arrow-left"
+                :to="{ name: 'home' }"
+              >
                 Go to Dashboard
               </UButton>
-            </div>
-          </div>
+            </template>
+          </DashboardEmptyState>
         </div>
 
         <div id="form-show-portals" class="z-20" />
@@ -176,6 +178,7 @@
 
 <script setup>
 import { formatNumber, formatNumberWithCommas } from "~/lib/utils.js"
+import DashboardEmptyState from "~/components/dashboard/states/DashboardEmptyState.vue"
 import FormSidebar from "../../../components/layouts/FormSidebar.vue"
 import ExtraMenu from "../../../components/pages/forms/show/ExtraMenu.vue"
 import FormCleanings from "../../../components/pages/forms/show/FormCleanings.vue"

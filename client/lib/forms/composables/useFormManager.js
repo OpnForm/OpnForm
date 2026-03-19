@@ -310,7 +310,7 @@ export function useFormManager(initialFormConfig, initialMode = FormMode.LIVE, o
           form: {
             slug: formConfig.slug,
             id: formConfig.id,
-            redirect_target_url: (formConfig.is_pro && submissionResult?.redirect && submissionResult?.redirect_url) 
+            redirect_target_url: (formConfig.plan_tier !== 'free' && submissionResult?.redirect && submissionResult?.redirect_url) 
                               ? submissionResult.redirect_url 
                               : null
           },

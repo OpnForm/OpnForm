@@ -1,106 +1,55 @@
 /**
- * Composable for managing plan-based feature access
+ * Composable for managing plan-based feature access.
  *
- * Mirrors the backend PlanService logic for client-side checks.
- * Single source of truth for plan tiers and features on the frontend.
+ * The canonical source of truth is the backend config/plans.php.
+ * On the client side we fetch the plan manifest once from /plan-manifest
+ * and cache it in a module-level ref so every consumer shares the same data.
  */
 
-// Tier ordering (higher = more features)
-const TIER_ORDER = {
-  free: 0,
-  pro: 1,
-  business: 2,
-  enterprise: 3,
+import { opnFetch } from '~/composables/useOpnApi'
+
+// ─── Module-level cached manifest ───────────────────────────────────────────
+let manifestPromise = null
+const manifest = ref(null)
+
+function fetchManifest() {
+  if (import.meta.server) return
+  if (manifestPromise) return manifestPromise
+  manifestPromise = opnFetch('/plan-manifest')
+    .then((data) => {
+      manifest.value = data
+    })
+    .catch((e) => {
+      console.warn('Failed to fetch plan manifest', e)
+      manifestPromise = null
+    })
+  return manifestPromise
 }
 
-// Tier display names
-const TIER_NAMES = {
-  free: 'Free',
-  pro: 'Pro',
-  business: 'Business',
-  enterprise: 'Enterprise',
+function getTiers() {
+  return manifest.value?.tiers ?? {}
 }
 
-/**
- * Plan pricing - single source of truth for all frontend pricing display.
- * Mirrors backend config/plans.php tiers pricing.
- */
-export const PLAN_PRICING = {
-  free: { monthly: 0, yearly: 0 },
-  pro: { monthly: 29, yearly: 25 },
-  business: { monthly: 79, yearly: 67 },
-  enterprise: { monthly: 250, yearly: 213 },
+function getFeatureTiers() {
+  return manifest.value?.features ?? {}
 }
 
-// Feature to minimum tier mapping (mirrors config/plans.php)
-const FEATURE_TIERS = {
-  // Branding
-  'branding.removal': 'pro',
-  'branding.advanced': 'business',
-
-  // Workspaces
-  'workspaces.multiple': 'pro',
-
-  // Multi-user
-  'multi_user.roles': 'business',
-
-  // Domains
-  custom_domain: 'pro',
-  'custom_domain.wildcard': 'business',
-
-  // Analytics & Summary
-  form_summary: 'pro',
-
-  // Email/SMTP
-  custom_smtp: 'pro',
-
-  // Security
-  'security.password_protection': 'pro',
-  'security.form_expiration': 'pro',
-  'security.captcha': 'pro',
-
-  // Integrations
-  'integrations.slack': 'pro',
-  'integrations.discord': 'pro',
-  'integrations.telegram': 'pro',
-  'integrations.hubspot': 'business',
-  'integrations.salesforce': 'business',
-  'integrations.airtable': 'business',
-
-  // Form Features
-  partial_submissions: 'business',
-  form_versioning: 'business',
-  google_address_autocomplete: 'business',
-  editable_submissions: 'business',
-
-  // Enterprise
-  'sso.oidc': 'enterprise',
-  'sso.saml': 'enterprise',
-  'sso.ldap': 'enterprise',
-  audit_logs: 'enterprise',
-  compliance_features: 'enterprise',
-  external_storage: 'enterprise',
-  white_label: 'enterprise',
+function getTierOrder(tier) {
+  return getTiers()[tier]?.order ?? 0
 }
 
-// Form feature to tier mapping (for form editing context)
-const FORM_FEATURE_TIERS = {
-  no_branding: 'pro',
-  redirect_url: 'pro',
-  secret_input: 'pro',
-  analytics: 'pro',
-  custom_css: 'business',
-  seo_meta: 'business',
-  enable_partial_submissions: 'business',
-  editable_submissions: 'business',
-  database_fields_update: 'business',
-  enable_ip_tracking: 'business',
+function getTierName(tier) {
+  return getTiers()[tier]?.name ?? tier
 }
+
 
 /**
  * Main composable for plan feature checks
  */
 export function usePlanFeatures() {
+  // Trigger manifest fetch on first client-side usage
+  fetchManifest()
+
   const { data: user } = useAuth().user()
   const { current: workspace } = useCurrentWorkspace()
 
@@ -122,18 +71,16 @@ export function usePlanFeatures() {
    * Check if a tier meets the requirement for another tier
    */
   const tierMeetsRequirement = (tier, requiredTier) => {
-    const tierOrder = TIER_ORDER[tier] ?? 0
-    const requiredOrder = TIER_ORDER[requiredTier] ?? 0
-    return tierOrder >= requiredOrder
+    return getTierOrder(tier) >= getTierOrder(requiredTier)
   }
 
   /**
    * Check if the current workspace/user has access to a feature
    */
   const hasFeature = (feature) => {
-    const requiredTier = FEATURE_TIERS[feature]
-    if (!requiredTier) return true // Feature not defined = available to all
-
+    const features = getFeatureTiers()
+    const requiredTier = features[feature] || false
+    if (!requiredTier) return true
     return tierMeetsRequirement(currentWorkspaceTier.value, requiredTier)
   }
 
@@ -141,7 +88,8 @@ export function usePlanFeatures() {
    * Check if a specific tier has access to a feature
    */
   const tierHasFeature = (tier, feature) => {
-    const requiredTier = FEATURE_TIERS[feature]
+    const features = getFeatureTiers()
+    const requiredTier = features[feature] || false
     if (!requiredTier) return true
     return tierMeetsRequirement(tier, requiredTier)
   }
@@ -150,14 +98,14 @@ export function usePlanFeatures() {
    * Get the required tier for a feature
    */
   const getRequiredTier = (feature) => {
-    return FEATURE_TIERS[feature] || FORM_FEATURE_TIERS[feature] || null
+    return getFeatureTiers()[feature] || null
   }
 
   /**
    * Get the display name for a tier
    */
   const getTierDisplayName = (tier) => {
-    return TIER_NAMES[tier] || tier
+    return getTierName(tier)
   }
 
   /**
@@ -179,65 +127,44 @@ export function usePlanFeatures() {
   }
 
   /**
-   * Check if a form feature requires upgrade
+   * Check feature access and open subscription modal if denied.
+   * Returns true if the user has the feature, false otherwise.
    */
-  const formFeatureNeedsUpgrade = (feature) => {
-    const requiredTier = FORM_FEATURE_TIERS[feature]
-    if (!requiredTier) return false
-
-    return !tierMeetsRequirement(currentWorkspaceTier.value, requiredTier)
-  }
-
-  /**
-   * Get the required tier for a form feature
-   */
-  const getFormFeatureRequiredTier = (feature) => {
-    return FORM_FEATURE_TIERS[feature] || null
+  const requireFeature = (feature, modalTitle) => {
+    if (hasFeature(feature)) return true
+    if (import.meta.client) {
+      const requiredTier = getRequiredTier(feature) || 'pro'
+      useAppModals().openSubscriptionModal({
+        plan: requiredTier,
+        modal_title: modalTitle || `Upgrade to ${getTierDisplayName(requiredTier)} to unlock this feature`,
+      })
+    }
+    return false
   }
 
   /**
    * Get display price for a plan
    */
   const getPlanPrice = (plan, yearly = true) => {
-    const pricing = PLAN_PRICING[plan]
-    if (!pricing) return null
-    return yearly ? pricing.yearly : pricing.monthly
+    const tier = getTiers()[plan]
+    if (!tier) return null
+    return yearly ? tier.price_yearly_per_month : tier.price_monthly
   }
 
   return {
-    // Tier info
     currentUserTier,
     currentWorkspaceTier,
-    TIER_ORDER,
-    TIER_NAMES,
-    PLAN_PRICING,
 
-    // Feature checks
     hasFeature,
     tierHasFeature,
     tierMeetsRequirement,
     needsUpgradeFor,
+    requireFeature,
 
-    // Tier info
     getRequiredTier,
     getTierDisplayName,
     getUpgradeMessage,
 
-    // Pricing
     getPlanPrice,
-
-    // Form-specific
-    formFeatureNeedsUpgrade,
-    getFormFeatureRequiredTier,
   }
-}
-
-/**
- * Simple helper to check if user has pro or higher
- * @deprecated Use usePlanFeatures().hasFeature() instead
- */
-export function useIsPro() {
-  const { currentWorkspaceTier, tierMeetsRequirement } = usePlanFeatures()
-
-  return computed(() => tierMeetsRequirement(currentWorkspaceTier.value, 'pro'))
 }

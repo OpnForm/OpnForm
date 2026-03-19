@@ -7,6 +7,7 @@ use App\Http\Resources\FormTemplateResource;
 use App\Models\Template;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use App\Http\Controllers\Controller;
 
@@ -18,7 +19,7 @@ class TemplateController extends Controller
             return [];
         }
 
-        $prodTemplates = \Cache::remember('prod_templates', 3600, function () {
+        $prodTemplates = Cache::remember('prod_templates', 3600, function () {
             $response = Http::get('https://api.opnform.com/templates');
             if ($response->successful()) {
                 return collect($response->json())->map(function ($item) {
@@ -111,6 +112,13 @@ class TemplateController extends Controller
     public function show(string $slug)
     {
         $template = Template::whereSlug($slug)->first();
-        return ($template) ? new FormTemplateResource($template) : $this->getProdTemplates($slug);
+        if ($template) {
+            return new FormTemplateResource($template);
+        }
+
+        // Get prod template by slug and return first match (or null if not found)
+        $prodTemplates = $this->getProdTemplates($slug);
+        // Use array_values to reindex since filter() preserves original keys
+        return !empty($prodTemplates) ? array_values($prodTemplates)[0] : null;
     }
 }

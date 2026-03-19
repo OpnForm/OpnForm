@@ -5,6 +5,7 @@ namespace App\Models\Forms;
 use App\Events\Models\FormCreated;
 use App\Models\Integration\FormIntegration;
 use App\Models\Integration\FormZapierWebhook;
+use App\Models\PdfTemplate;
 use App\Models\Traits\CachableAttributes;
 use App\Models\Traits\CachesAttributes;
 use App\Models\User;
@@ -13,6 +14,7 @@ use Database\Factories\FormFactory;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -62,7 +64,7 @@ class Form extends Model implements CachableAttributes, VersionableNestedDiff
 
     public const VISIBILITY = ['public', 'draft', 'closed'];
 
-    public const LANGUAGES = ['en', 'fr', 'hi', 'es', 'ar', 'zh', 'ja', 'bn', 'pt', 'ru', 'ur', 'pa', 'de', 'jv', 'ko', 'vi', 'te', 'mr', 'ta', 'tr', 'sk', 'cs', 'eu', 'gl', 'ca', 'sv', 'pl', 'nl', 'sr', 'uk'];
+    public const LANGUAGES = ['en', 'fr', 'hu', 'hi', 'es', 'ar', 'zh', 'ja', 'bn', 'pt', 'ru', 'ur', 'pa', 'de', 'jv', 'ko', 'vi', 'te', 'mr', 'ta', 'tr', 'sk', 'cs', 'eu', 'gl', 'ca', 'sv', 'pl', 'nl', 'sr', 'uk'];
 
     protected $fillable = [
         'workspace_id',
@@ -118,6 +120,9 @@ class Form extends Model implements CachableAttributes, VersionableNestedDiff
         'max_submissions_reached_text',
         'editable_submissions',
         'editable_submissions_button_text',
+        'pdf_download_enabled',
+        'pdf_download_button_text',
+        'pdf_template_id',
         'confetti_on_submission',
         'show_progress_bar',
         'auto_save',
@@ -151,6 +156,7 @@ class Form extends Model implements CachableAttributes, VersionableNestedDiff
             'enable_partial_submissions' => 'boolean',
             'enable_ip_tracking' => 'boolean',
             'auto_save' => 'boolean',
+            'pdf_download_enabled' => 'boolean',
             'clear_empty_fields_on_update' => 'boolean',
             'presentation_style' => 'string',
             'settings' => 'array',
@@ -372,7 +378,7 @@ class Form extends Model implements CachableAttributes, VersionableNestedDiff
     /**
      * Relationships
      */
-    public function workspace()
+    public function workspace(): BelongsTo
     {
         return $this->belongsTo(Workspace::class);
     }
@@ -405,6 +411,16 @@ class Form extends Model implements CachableAttributes, VersionableNestedDiff
     public function integrations()
     {
         return $this->hasMany(FormIntegration::class);
+    }
+
+    public function pdfTemplates()
+    {
+        return $this->hasMany(PdfTemplate::class);
+    }
+
+    public function pdfDownloadTemplate()
+    {
+        return $this->belongsTo(PdfTemplate::class, 'pdf_template_id');
     }
 
     /**

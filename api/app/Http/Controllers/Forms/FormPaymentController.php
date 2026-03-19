@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Forms;
 use App\Http\Controllers\Controller;
 use App\Models\Forms\Form;
 use App\Models\OAuthProvider;
+use App\Http\Requests\Forms\CreatePaymentIntentRequest;
 use App\Http\Requests\Forms\GetStripeAccountRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -75,7 +76,7 @@ class FormPaymentController extends Controller
         return $this->success(['stripeAccount' => $provider->provider_user_id]);
     }
 
-    public function createIntent(Form $form)
+    public function createIntent(CreatePaymentIntentRequest $request, Form $form)
     {
         // Disable payment features on self-hosted instances
         if (config('app.self_hosted')) {
@@ -108,10 +109,23 @@ class FormPaymentController extends Controller
             return $this->error(['message' => 'Failed to find Stripe account']);
         }
 
+        // Resolve amount from submission data
+        $amount = $request->resolveAmount($paymentBlock['amount']);
+
+        // Validate amount
+        if (!is_numeric($amount) || $amount <= 0) {
+            Log::warning('Invalid payment amount', [
+                'form_id' => $form->id,
+                'amount' => $amount,
+                'original_amount' => $paymentBlock['amount']
+            ]);
+            return $this->error(['message' => 'Invalid payment amount. Please ensure the amount field has a valid value.']);
+        }
+
         try {
             Log::info('Creating payment intent', [
                 'form_id' => $form->id,
-                'amount' => $paymentBlock['amount'],
+                'amount' => $amount,
                 'currency' => $paymentBlock['currency']
             ]);
 
@@ -120,7 +134,7 @@ class FormPaymentController extends Controller
             $intent = PaymentIntent::create([
                 // Use description from payment block if available, fallback to form title
                 'description' => $paymentBlock['description'] ?? ('Form - ' . $form->title),
-                'amount' => (int) ($paymentBlock['amount'] * 100),  // Stripe requires amount in cents
+                'amount' => (int) ($amount * 100),  // Stripe requires amount in cents
                 'currency' => strtolower($paymentBlock['currency']),
                 'payment_method_types' => ['card'],
                 'metadata' => [

@@ -1,14 +1,26 @@
 import { useQueryClient } from '@tanstack/vue-query'
 import { initServiceClients } from '~/composables/useAuthFlow'
 
-export default defineNuxtRouteMiddleware(async () => {
+const AUTH_COOKIE_NAME = 'opnform_token'
+const LEGACY_AUTH_COOKIE_NAME = 'token'
+const ADMIN_AUTH_COOKIE_NAME = 'opnform_admin_token'
+const LEGACY_ADMIN_AUTH_COOKIE_NAME = 'admin_token'
+
+export default defineNuxtRouteMiddleware(async (_to, _from) => {
   const authStore = useAuthStore()
   const queryClient = useQueryClient()
+  const tokenCookie = useCookie(AUTH_COOKIE_NAME)
+  const legacyTokenCookie = useCookie(LEGACY_AUTH_COOKIE_NAME)
+  const adminTokenCookie = useCookie(ADMIN_AUTH_COOKIE_NAME)
+  const legacyAdminTokenCookie = useCookie(LEGACY_ADMIN_AUTH_COOKIE_NAME)
+  const resolvedToken = tokenCookie.value ?? legacyTokenCookie.value
+  const resolvedAdminToken = adminTokenCookie.value ?? legacyAdminTokenCookie.value
 
-  // Initialize tokens from cookies first
+  // Hydrate missing tokens from cookies without overwriting a fresh in-memory
+  // token during the same client-side navigation cycle.
   authStore.initStore(
-    useCookie('token').value,
-    useCookie('admin_token').value,
+    resolvedToken,
+    resolvedAdminToken,
   )
 
   // If no token, nothing to do
@@ -28,10 +40,15 @@ export default defineNuxtRouteMiddleware(async () => {
 
       userData = queryClient.getQueryData(['user'])
     } catch (error) {
-      // On 401, clear auth state
+      // A server-side bootstrap request can 401 even when the browser still has a
+      // valid token (for example if SSR auth validation differs from the browser
+      // request context). Do not destroy auth state during SSR; let the client
+      // retry before treating it as a real logout.
       if (error?.status === 401) {
-        authStore.clearToken()
-        queryClient.clear()
+        if (import.meta.client) {
+          authStore.clearToken()
+          queryClient.clear()
+        }
       }
       return
     }

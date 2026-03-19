@@ -14,7 +14,7 @@ class IsSubscribed
      */
     public function handle(Request $request, Closure $next)
     {
-        if ($request->user() && ! $request->user()->subscribed()) {
+        if ($request->user() && !$request->user()->hasActiveDefaultSubscription()) {
             // This user is not a paying customer...
             if ($request->expectsJson()) {
                 return response([

@@ -2,6 +2,8 @@
 
 namespace App\Service\Storage;
 
+use Illuminate\Support\Facades\File;
+
 class S3KeyCleaner
 {
     public static function sanitize($objectKey, $separator = '-')
@@ -12,7 +14,7 @@ class S3KeyCleaner
     public function replaceLatinCharacters($value)
     {
         // Load the latin map
-        $latinMap = json_decode(\File::get(resource_path('data/latin-map.json')), true);
+        $latinMap = json_decode(File::get(resource_path('data/latin-map.json')), true);
 
         $result = '';
         $length = mb_strlen($value);

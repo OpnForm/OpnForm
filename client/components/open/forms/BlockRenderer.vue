@@ -103,6 +103,7 @@ import ClientOnlyWrapper from '~/components/global/ClientOnlyWrapper.vue'
 import { useComponentRegistry } from '~/composables/components/useComponentRegistry'
 import TextBlock from '~/components/forms/core/TextBlock.vue'
 import { shuffleArray } from '~/lib/utils.js'
+import { useWorkingFormStore } from '~/stores/working_form'
 import { useParseMention } from '@/composables/components/useParseMention'
 import { useComputedVariables } from '@/composables/forms/useComputedVariables'
 
@@ -191,8 +192,8 @@ const clientOnlyVal = computed(() => {
 const hasComponent = computed(() => !!componentVal.value)
 
 function getFieldAlignClasses(field) {
-  if (!field.align || field.align === 'left') return 'text-left'
-  else if (field.align === 'right') return 'text-right'
+  if (!field.align || field.align === 'left') return 'text-start'
+  else if (field.align === 'right') return 'text-end'
   else if (field.align === 'center') return 'text-center'
   else if (field.align === 'justify') return 'text-justify'
 }
@@ -311,7 +312,7 @@ const boundProps = computed(() => {
     let maxFileSize = (form.value?.workspace && form.value?.workspace.max_file_size) ? form.value?.workspace?.max_file_size : 10
     if (field?.max_file_size > 0) maxFileSize = Math.min(field.max_file_size, maxFileSize)
     inputProperties.mbLimit = maxFileSize
-    inputProperties.accept = (form.value.is_pro && field.allowed_file_types) ? field.allowed_file_types : ''
+    inputProperties.accept = (form.value.plan_tier !== 'free' && field.allowed_file_types) ? field.allowed_file_types : ''
   } else if (field.type === 'rating') {
     inputProperties.numberOfStars = parseInt(field.rating_max_value) ?? 5
   } else if (field.type === 'scale') {
@@ -334,8 +335,26 @@ const boundProps = computed(() => {
   } else if (field.type === 'payment') {
     inputProperties.direction = form.value.layout_rtl ? 'rtl' : 'ltr'
     inputProperties.currency = field.currency
-    inputProperties.amount = field.amount
+    // Parse amount with mentions - field.amount may contain mention HTML
+    const parsedAmount = useParseMention(field.amount, true, form.value, dataForm.value)
+    const sanitizedAmount = parsedAmount
+      .replace(/<[^>]*>/g, '')
+      .replace(/,/g, '')
+      .trim()
+    const amountMatch = sanitizedAmount.match(/-?\d+(\.\d+)?/)
+    const numericAmount = amountMatch ? parseFloat(amountMatch[0]) : NaN
+    inputProperties.amount = (!isNaN(numericAmount) && numericAmount > 0) ? numericAmount : 0
     inputProperties.oauthProviderId = field.stripe_account_id
+
+    // Parse prefill fields with mentions
+    if (field.prefill_name) {
+      const parsed = useParseMention(field.prefill_name, true, form.value, dataForm.value)
+      inputProperties.prefillName = parsed.replace(/<[^>]*>/g, '').trim()
+    }
+    if (field.prefill_email) {
+      const parsed = useParseMention(field.prefill_email, true, form.value, dataForm.value)
+      inputProperties.prefillEmail = parsed.replace(/<[^>]*>/g, '').trim()
+    }
     if (props.formManager?.payment) {
       try { inputProperties.paymentData = props.formManager.payment.getPaymentData(field) } catch (e) { console.error(e) }
     }

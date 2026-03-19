@@ -2,7 +2,7 @@
   <div class="w-full">
     <h3 class="font-medium text-lg mb-4">Traffic Breakdown</h3>
     
-    <div v-if="!form.is_pro" class="border border-neutral-300 rounded-lg shadow-xs p-4 relative overflow-hidden">
+    <div v-if="!canAccessAnalytics" class="border border-neutral-300 rounded-lg shadow-xs p-4 relative overflow-hidden">
       <div class="absolute inset-0 z-10">
         <div class="p-5 max-w-md mx-auto flex flex-col items-center justify-center h-full">
           <p class="text-center">
@@ -123,6 +123,8 @@ const props = defineProps({
 })
 
 const { openSubscriptionModal } = useAppModals()
+const { hasFeature } = usePlanFeatures()
+const canAccessAnalytics = computed(() => hasFeature('form_analytics'))
 
 // Chart types configuration
 const chartTypes = [

@@ -101,17 +101,15 @@ const { openSubscriptionModal } = useAppModals()
 
 const workspaceId = computed(() => workspace.value?.id)
 
+const { hasFeature } = usePlanFeatures()
 const canManageConnections = computed(() => !!workspace.value && workspace.value.is_admin)
 
 // Check if feature is accessible (Enterprise required for cloud, free for self-hosted)
 const isSelfHosted = computed(() => useFeatureFlag('self_hosted'))
 const billingEnabled = computed(() => useFeatureFlag('billing.enabled'))
 const canAccessFeature = computed(() => {
-  // Self-hosted: always accessible
-  if (isSelfHosted.value) {
-    return true
-  }
-  return billingEnabled.value && workspace.value?.is_enterprise
+  if (isSelfHosted.value) return true
+  return billingEnabled.value && hasFeature('sso.oidc')
 })
 
 const { connections, create, update, remove } = useOidcConnections(workspaceId)

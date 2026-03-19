@@ -5,6 +5,7 @@ namespace App\Service\Forms;
 use App\Models\Forms\Form;
 use App\Models\Forms\FormSubmission;
 use App\Service\Formulas\ComputedVariableEvaluator;
+use Illuminate\Support\Facades\DB;
 
 class FormLogicConditionChecker
 {
@@ -198,11 +199,16 @@ class FormLogicConditionChecker
         if (!isset($condition['value'])) {
             return false;
         }
+        if (!is_array($fieldValue)) {
+            return false;
+        }
 
         foreach ($condition['value'] as $key => $value) {
-            if (!(array_key_exists($key, $condition['value']) && array_key_exists($key, $fieldValue))) {
-                return false;
+            // Skip rows that don't exist in the field value
+            if (!array_key_exists($key, $fieldValue)) {
+                continue;
             }
+            // If any row matches, return true (contains semantics)
             if ($condition['value'][$key] == $fieldValue[$key]) {
                 return true;
             }
@@ -215,7 +221,14 @@ class FormLogicConditionChecker
         if (!isset($condition['value'])) {
             return false;
         }
+        if (!is_array($fieldValue)) {
+            return false;
+        }
         foreach ($condition['value'] as $key => $value) {
+            // Check if the key exists in the field value before comparing
+            if (!array_key_exists($key, $fieldValue)) {
+                return false;
+            }
             if ($condition['value'][$key] !== $fieldValue[$key]) {
                 return false;
             }
@@ -551,12 +564,15 @@ class FormLogicConditionChecker
             return false;
         }
 
-        $dbConnection = config('database.default');
+        $dbConnection = DB::connection()->getDriverName();
 
-        // Use lockForUpdate to prevent race conditions when checking for uniqueness
         $query = FormSubmission::where('form_id', $formId)
-            ->where('status', '!=', FormSubmission::STATUS_PARTIAL)
-            ->lockForUpdate();
+            ->where('status', '!=', FormSubmission::STATUS_PARTIAL);
+
+        // SQLite does not support row-level locking for this query path.
+        if ($dbConnection !== 'sqlite') {
+            $query->lockForUpdate();
+        }
 
         if ($dbConnection === 'mysql') {
             // MySQL: Use fully parameterized JSON path query
@@ -574,8 +590,8 @@ class FormLogicConditionChecker
                     [$fieldId, $fieldValue]
                 );
             }
-        } else {
-            // PostgreSQL: Already uses parameterized queries with -> operator
+        } elseif ($dbConnection === 'pgsql') {
+            // PostgreSQL: Use parameterized queries with -> operator
             if (is_array($fieldValue)) {
                 // For array values (multi_select, matrix)
                 $query->whereRaw("data->? @> ?::jsonb", [
@@ -586,6 +602,20 @@ class FormLogicConditionChecker
                 // For scalar values
                 $query->whereRaw("data->? = ?::jsonb", [$fieldId, json_encode($fieldValue)]);
             }
+        } elseif ($dbConnection === 'sqlite') {
+            // SQLite JSON1: compare extracted JSON values from submissions.
+            $jsonPath = '$."' . $fieldId . '"';
+
+            if (is_array($fieldValue)) {
+                $query->whereRaw("json_extract(data, ?) = json(?)", [
+                    $jsonPath,
+                    json_encode($fieldValue),
+                ]);
+            } else {
+                $query->whereRaw("json_extract(data, ?) = ?", [$jsonPath, $fieldValue]);
+            }
+        } else {
+            return false;
         }
 
         return $query->exists();

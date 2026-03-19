@@ -42,11 +42,11 @@ export function useFocusedStructure(formConfig, managerState, formData, fieldSta
   }
 
   const hasPaymentBlock = (pageIndex) => {
-    return getPageFields(pageIndex).some(field => field?.type === 'payment')
+    return getPageFields(pageIndex).some(field => field?.type === 'payment' && !isFieldHidden(field))
   }
 
   const getPaymentBlock = (pageIndex) => {
-    return getPageFields(pageIndex).find(field => field?.type === 'payment')
+    return getPageFields(pageIndex).find(field => field?.type === 'payment' && !isFieldHidden(field))
   }
 
   const currentPageHasPaymentBlock = computed(() => {

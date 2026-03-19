@@ -2,6 +2,11 @@ import { defineStore } from "pinia"
 import { authApi } from "~/api"
 import { initServiceClients } from '~/composables/useAuthFlow'
 
+const AUTH_COOKIE_NAME = "opnform_token"
+const LEGACY_AUTH_COOKIE_NAME = "token"
+const ADMIN_AUTH_COOKIE_NAME = "opnform_admin_token"
+const LEGACY_ADMIN_AUTH_COOKIE_NAME = "admin_token"
+
 export const useAuthStore = defineStore("auth", {
   state: () => {
     return {
@@ -38,12 +43,12 @@ export const useAuthStore = defineStore("auth", {
         cookieOptions.maxAge = expiresIn
       }
       
-      this.setCookie("token", token, cookieOptions)
+      this.setCookie(AUTH_COOKIE_NAME, token, cookieOptions)
       this.token = token
     },
 
     setAdminToken(token) {
-      this.setCookie("admin_token", token)
+      this.setCookie(ADMIN_AUTH_COOKIE_NAME, token)
       this.admin_token = token
     },
 
@@ -52,6 +57,7 @@ export const useAuthStore = defineStore("auth", {
         const secureDefault = (typeof window !== 'undefined') ? window.location.protocol === 'https:' : true
         const embedded = typeof window !== 'undefined' && window.top !== window.self
         const safeOptions = {
+          path: options.path ?? '/',
           sameSite: options.sameSite ?? (embedded ? 'none' : 'lax'),
           secure: options.secure ?? (embedded ? true : secureDefault),
           ...options,
@@ -61,8 +67,15 @@ export const useAuthStore = defineStore("auth", {
     },
 
     initStore(token, adminToken) {
-      this.token = token
-      this.admin_token = adminToken
+      // Prefer explicit values from cookies, but do not clobber a live in-memory
+      // token during client-side navigation when cookie reactivity lags behind.
+      if (token !== undefined) {
+        this.token = token ?? this.token
+      }
+
+      if (adminToken !== undefined) {
+        this.admin_token = adminToken ?? this.admin_token
+      }
     },
 
     setUser(user) {
@@ -90,13 +103,16 @@ export const useAuthStore = defineStore("auth", {
     },
 
     clearToken(){
-      this.setCookie("token", null, { maxAge: 0 })
+      this.setCookie(AUTH_COOKIE_NAME, null, { maxAge: 0 })
+      this.setCookie(LEGACY_AUTH_COOKIE_NAME, null, { maxAge: 0 })
       this.token = null
     },
 
     clearTokens(){
       this.clearToken()
-      this.setAdminToken(null)
+      this.setCookie(ADMIN_AUTH_COOKIE_NAME, null, { maxAge: 0 })
+      this.setCookie(LEGACY_ADMIN_AUTH_COOKIE_NAME, null, { maxAge: 0 })
+      this.admin_token = null
     },
   },
 })

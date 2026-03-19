@@ -281,3 +281,205 @@ describe('Display Names', function () {
         expect($this->planService->getTierDisplayName('unknown'))->toBe('Unknown');
     });
 });
+
+describe('Multi-workspace Authorization', function () {
+    it('prevents cross-workspace feature leakage', function () {
+        $proUser = $this->createProUser();
+        $freeUser = $this->createUser();
+
+        $proWorkspace = $this->createUserWorkspace($proUser);
+        $freeWorkspace = $this->createUserWorkspace($freeUser);
+
+        // Pro user's workspace has feature access
+        expect($this->planService->workspaceHasFeature($proWorkspace, 'branding.removal'))->toBeTrue();
+
+        // Free user's workspace does NOT, even though a pro user exists elsewhere
+        expect($this->planService->workspaceHasFeature($freeWorkspace, 'branding.removal'))->toBeFalse();
+    });
+
+    it('grants access when pro user is added to free workspace', function () {
+        $proUser = $this->createProUser();
+        $freeUser = $this->createUser();
+
+        $workspace = $this->createUserWorkspace($freeUser);
+
+        expect($this->planService->computeWorkspaceTier($workspace))->toBe('free');
+
+        // Add pro user as admin
+        $workspace->users()->attach($proUser->id, ['role' => 'admin']);
+        $workspace->flush();
+
+        expect($this->planService->computeWorkspaceTier($workspace))->toBe('pro');
+    });
+
+    it('downgrades workspace tier when pro owner is removed', function () {
+        $proUser = $this->createProUser();
+        $freeUser = $this->createUser();
+
+        $workspace = Workspace::create(['name' => 'Shared', 'icon' => '🔗']);
+        $workspace->users()->sync([
+            $proUser->id => ['role' => 'admin'],
+            $freeUser->id => ['role' => 'admin'],
+        ]);
+
+        expect($this->planService->computeWorkspaceTier($workspace))->toBe('pro');
+
+        // Remove pro user
+        $workspace->users()->detach($proUser->id);
+        $workspace->flush();
+
+        expect($this->planService->computeWorkspaceTier($workspace))->toBe('free');
+    });
+});
+
+describe('Subscription Name Billing', function () {
+    it('handles pro subscription type correctly', function () {
+        $user = $this->createUser();
+        $user->subscriptions()->create([
+            'type' => 'pro',
+            'stripe_id' => Str::random(),
+            'stripe_status' => 'active',
+            'stripe_price' => Str::random(),
+            'quantity' => 1,
+        ]);
+
+        expect($this->planService->computeUserTier($user))->toBe('pro');
+    });
+
+    it('selects highest tier when user has multiple subscriptions', function () {
+        $user = $this->createUser();
+        $user->subscriptions()->create([
+            'type' => 'pro',
+            'stripe_id' => Str::random(),
+            'stripe_status' => 'active',
+            'stripe_price' => Str::random(),
+            'quantity' => 1,
+        ]);
+        $user->subscriptions()->create([
+            'type' => 'business',
+            'stripe_id' => Str::random(),
+            'stripe_status' => 'active',
+            'stripe_price' => Str::random(),
+            'quantity' => 1,
+        ]);
+
+        expect($this->planService->computeUserTier($user))->toBe('business');
+    });
+
+    it('ignores inactive subscriptions', function () {
+        $user = $this->createUser();
+        $user->subscriptions()->create([
+            'type' => 'business',
+            'stripe_id' => Str::random(),
+            'stripe_status' => 'canceled',
+            'stripe_price' => Str::random(),
+            'quantity' => 1,
+            'ends_at' => now()->subDay(), // Ended subscription — Cashier's valid() checks ends_at
+        ]);
+
+        expect($this->planService->computeUserTier($user))->toBe('free');
+    });
+});
+
+describe('Override-only Workspace', function () {
+    it('grants tier via plan_overrides without any subscription', function () {
+        $user = $this->createUser();
+        $workspace = $this->createUserWorkspace($user);
+
+        // No subscription — free by default
+        expect($this->planService->computeWorkspaceTier($workspace))->toBe('free');
+
+        // Admin sets an override
+        $workspace->update(['plan_overrides' => ['tier' => 'business']]);
+        $workspace->flush();
+
+        expect($this->planService->computeWorkspaceTier($workspace))->toBe('business');
+    });
+
+    it('grants specific features via plan_overrides without matching tier', function () {
+        $user = $this->createUser();
+        $workspace = $this->createUserWorkspace($user);
+
+        $workspace->update(['plan_overrides' => ['features' => ['sso.oidc']]]);
+        $workspace->flush();
+
+        // Free tier, but OIDC specifically overridden
+        expect($this->planService->getWorkspaceTier($workspace))->toBe('free');
+        expect($this->planService->workspaceHasFeature($workspace, 'sso.oidc'))->toBeTrue();
+        // Other enterprise features NOT granted
+        expect($this->planService->workspaceHasFeature($workspace, 'audit_logs'))->toBeFalse();
+    });
+
+    it('grants specific limits via plan_overrides', function () {
+        $user = $this->createUser();
+        $workspace = $this->createUserWorkspace($user);
+
+        $workspace->update(['plan_overrides' => ['limits' => ['custom_domain_count' => 50]]]);
+        $workspace->flush();
+
+        $limit = $this->planService->getWorkspaceLimit($workspace, 'custom_domain_count');
+        expect($limit)->toBe(50);
+    });
+
+    it('billingOwners returns all admins for override-only workspace', function () {
+        $user = $this->createUser();
+        $workspace = $this->createUserWorkspace($user);
+        $workspace->update(['plan_overrides' => ['tier' => 'pro']]);
+
+        $billingOwners = $workspace->billingOwners();
+        expect($billingOwners->count())->toBe(1);
+        expect($billingOwners->first()->id)->toBe($user->id);
+    });
+});
+
+describe('Cache Invalidation', function () {
+    it('flushWithOwners clears workspace and owner caches', function () {
+        $user = $this->createProUser();
+        $workspace = $this->createUserWorkspace($user);
+
+        // Warm the cache
+        $this->planService->getWorkspaceTier($workspace);
+        expect($workspace->is_pro)->toBeTrue();
+
+        // Flush
+        $workspace->flushWithOwners();
+
+        // After flush, cache should be rebuilt on next access
+        // (This tests that flush doesn't error and the value is still correct)
+        expect($this->planService->computeWorkspaceTier($workspace))->toBe('pro');
+    });
+
+    it('user flushCache cascades to workspaces and forms', function () {
+        $user = $this->createProUser();
+        $workspace = $this->createUserWorkspace($user);
+        $form = $this->createForm($user, $workspace);
+
+        // Warm caches
+        $workspace->is_pro;
+        $user->is_pro;
+
+        // Flush user cache (cascades to workspaces/forms)
+        $user->flushCache();
+
+        // Verify no errors and values rebuild correctly
+        expect($user->plan_tier)->toBe('pro');
+        expect($workspace->plan_tier)->toBe('pro');
+    });
+});
+
+describe('Form Feature Checks', function () {
+    it('checks form_features via tierHasFeature', function () {
+        // Form features should be checked by tierHasFeature too
+        expect($this->planService->tierHasFeature('free', 'no_branding'))->toBeFalse();
+        expect($this->planService->tierHasFeature('pro', 'no_branding'))->toBeTrue();
+        expect($this->planService->tierHasFeature('free', 'seo_meta'))->toBeFalse();
+        expect($this->planService->tierHasFeature('business', 'seo_meta'))->toBeTrue();
+    });
+
+    it('getRequiredTier looks up both features and form_features', function () {
+        expect($this->planService->getRequiredTier('custom_smtp'))->toBe('pro');
+        expect($this->planService->getRequiredTier('seo_meta'))->toBe('business');
+        expect($this->planService->getRequiredTier('no_branding'))->toBe('pro');
+        expect($this->planService->getRequiredTier('nonexistent'))->toBeNull();
+    });
+});

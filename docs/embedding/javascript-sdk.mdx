@@ -373,73 +373,153 @@ opnform.once("ready", function () {
 
 ---
 
-## Security Considerations
+## Custom Code Integration
 
-<Info>
-The SDK is designed for cross-domain embedding, which requires specific security trade-offs that are standard for embeddable widget frameworks.
-</Info>
+The SDK is automatically available when using the **Custom Code** feature in OpnForm. You can add custom JavaScript directly in your form or workspace settings, and the `window.opnform` SDK will be ready to use.
 
-### Cross-Origin Communication
+<Tip>
+    Custom Code works without iframes - the SDK is initialized directly on your
+    form page, giving you full access to form methods and events.
+</Tip>
 
-The SDK uses `postMessage` with a wildcard (`*`) target origin to enable communication between your page and the embedded form iframe. This is necessary because:
+### Adding Custom Code
 
-- Forms can be embedded on any domain
-- The parent page origin is not known in advance
+1. Go to your form's **Settings** → **Custom Code** (or Workspace Settings for workspace-wide code)
+2. Add your JavaScript code in a `<script>` tag
+3. The SDK (`window.opnform`) is automatically available
 
-**What this means:**
-- Form data (field values, submission data) is transmitted via postMessage
-- Any script on your page can listen to these messages
-- This is the same approach used by other embeddable widgets (Stripe, YouTube, etc.)
+### Example: Google Analytics Tracking
 
-### Best Practices
+```html
+<script>
+    // Track form submission
+    opnform.on("submit", function (data) {
+        gtag("event", "form_submission", {
+            form_slug: data.form.slug,
+            submission_id: data.submissionId,
+        });
+    });
 
-<AccordionGroup>
-<Accordion title="Secure your embedding page">
-- Only embed forms on pages you control
-- Use Content Security Policy (CSP) headers to restrict script execution
-- Avoid embedding forms on pages with untrusted third-party scripts
-</Accordion>
+    // Track page progress
+    opnform.on("pageChange", function (data) {
+        gtag("event", "form_progress", {
+            page: data.toPage + 1,
+            total_pages: data.totalPages,
+        });
+    });
+</script>
+```
 
-<Accordion title="Sensitive data handling">
-- Avoid pre-filling sensitive data (passwords, SSNs) via `setField()`
-- For highly sensitive forms, consider using OpnForm's hosted pages instead of embedding
-- Form submissions are sent directly to OpnForm servers over HTTPS, not through postMessage
-</Accordion>
-</AccordionGroup>
+### Example: Facebook Pixel
+
+```html
+<script>
+    opnform.on("submit", function (data) {
+        fbq("track", "Lead", {
+            content_name: data.form.slug,
+        });
+    });
+</script>
+```
+
+### Example: Conditional Logic with External Data
+
+```html
+<script>
+    opnform.once("ready", function () {
+        // Fetch user data and pre-fill form
+        fetch("/api/user-info")
+            .then((r) => r.json())
+            .then((user) => {
+                opnform.get("my-form").setFields({
+                    email: user.email,
+                    name: user.name,
+                });
+            });
+    });
+</script>
+```
+
+### Example: Custom Validation Feedback
+
+```html
+<script>
+    opnform.on("error", function (data) {
+        // Show custom toast notification for errors
+        Object.values(data.errors).forEach(function (error) {
+            showToast(error, "error");
+        });
+    });
+
+    opnform.on("submit", function (data) {
+        showToast("Thank you for your submission!", "success");
+    });
+</script>
+```
+
+### Example: Live Data Change Tracking
+
+```html
+<script>
+    opnform.on("dataChange", function (data) {
+        console.log("Field changed:", data.changedField);
+        console.log("New value:", data.newValue);
+
+        // Example: Show/hide elements based on form data
+        if (data.changedField === "country" && data.newValue === "US") {
+            document.querySelector(".us-only-info").style.display = "block";
+        }
+    });
+</script>
+```
+
+### Accessing Form Data Directly
+
+```html
+<script>
+    opnform.once("ready", function () {
+        var form = opnform.get("my-form-slug");
+
+        // Get all current form data
+        var data = form.getData();
+        console.log("Current form data:", data);
+
+        // Get specific field value
+        var email = form.getField("email");
+
+        // Check if field has validation error
+        if (form.hasError("email")) {
+            console.log("Email error:", form.getError("email"));
+        }
+
+        // Get current page (for multi-page forms)
+        var page = form.getCurrentPage();
+        console.log("Page " + (page.index + 1) + " of " + page.total);
+    });
+</script>
+```
 
 ---
 
-## Debugging
+## Backward Compatibility
 
-### Listen to All Events
+<Info>
+    Existing embeds using `initEmbed()` continue to work without changes. The
+    SDK provides full backward compatibility.
+</Info>
 
-For debugging, you can listen to all SDK events at once using an array:
-
-```javascript
-// All available events
-const ALL_EVENTS = [
-    "ready",
-    "submit",
-    "submitStart",
-    "submitError",
-    "dataChange",
-    "error",
-    "pageChange",
-    "nextPage",
-    "previousPage",
-    "reset",
-    "show",
-    "hide",
-];
-
-// Log all events to console
-opnform.on(ALL_EVENTS, function (data) {
-    console.log("[OpnForm Event]", data);
-});
+```html
+<!-- Old embed code still works -->
+<iframe id="my-form" src="https://opnform.com/forms/my-form"></iframe>
+<script src="https://opnform.com/widgets/iframe.min.js"></script>
+<script>
+    initEmbed("my-form", { autoResize: true });
+</script>
 ```
 
 <Tip>
-This is useful during development to understand the event flow and payload structure. Remove or disable in production to avoid console noise.
+    We recommend upgrading to the new SDK to access event callbacks and
+    programmatic control features.
 </Tip>
 
 ---

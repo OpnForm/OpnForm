@@ -45,7 +45,16 @@ class FormIntegrationsRequest extends FormRequest
             'integration_id' => ['required', Rule::in(array_keys(FormIntegration::getAllIntegrations()))],
             'oauth_id' => [
                 $this->isOAuthRequired() ? 'required' : 'nullable',
-                Rule::exists('oauth_providers', 'id')
+                Rule::exists('oauth_providers', 'id')->where(function ($query) {
+                    if ($this->form?->workspace) {
+                        $query->whereIn('user_id', $this->form->workspace->users()->select('users.id'));
+                        return;
+                    }
+
+                    if ($this->user()) {
+                        $query->where('user_id', $this->user()->id);
+                    }
+                }),
             ],
             'data' => [
                 'present',

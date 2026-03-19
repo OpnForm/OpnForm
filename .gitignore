@@ -3,7 +3,6 @@ Homestead.json
 Homestead.yaml
 npm-debug.log
 yarn-error.log
-phpunit.dusk.xml
 .DS_Store
 public/.DS_Store
 *.DS_Store

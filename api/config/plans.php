@@ -12,10 +12,10 @@ return [
      * Tier definitions and ordering
      */
     'tiers' => [
-        'free' => ['order' => 0, 'name' => 'Free', 'price_monthly' => 0, 'price_yearly' => 0],
-        'pro' => ['order' => 1, 'name' => 'Pro', 'price_monthly' => 29, 'price_yearly' => 290],
-        'business' => ['order' => 2, 'name' => 'Business', 'price_monthly' => 79, 'price_yearly' => 790],
-        'enterprise' => ['order' => 3, 'name' => 'Enterprise', 'price_monthly' => 250, 'price_yearly' => 3000],
+        'free' => ['order' => 0, 'name' => 'Free', 'price_monthly' => 0, 'price_yearly' => 0, 'price_yearly_per_month' => 0],
+        'pro' => ['order' => 1, 'name' => 'Pro', 'price_monthly' => 29, 'price_yearly' => 290, 'price_yearly_per_month' => 25],
+        'business' => ['order' => 2, 'name' => 'Business', 'price_monthly' => 79, 'price_yearly' => 790, 'price_yearly_per_month' => 67],
+        'enterprise' => ['order' => 3, 'name' => 'Enterprise', 'price_monthly' => 250, 'price_yearly' => 3000, 'price_yearly_per_month' => 213],
     ],
 
     /**
@@ -33,47 +33,37 @@ return [
      * If a feature is not listed, it's available to all tiers (free)
      */
     'features' => [
-        // Branding
+        // Pro
         'branding.removal' => 'pro',
-        'branding.advanced' => 'business',  // CSS, fonts, favicons
-
-        // Workspaces
         'workspaces.multiple' => 'pro',
-
-        // Multi-user
-        'multi_user.roles' => 'business',
-
-        // Domains
+        'invite_user' => 'pro',
         'custom_domain' => 'pro',
-        'custom_domain.wildcard' => 'business',
-
-        // Analytics & Summary
         'form_summary' => 'pro',
-
-        // Email/SMTP
+        'form_analytics' => 'pro',
         'custom_smtp' => 'pro',
-
-        // Security
         'security.password_protection' => 'pro',
         'security.form_expiration' => 'pro',
         'security.captcha' => 'pro',
-
-        // Integrations (basic ones like email, webhook, zapier, google_sheets are free)
         'integrations.slack' => 'pro',
         'integrations.discord' => 'pro',
         'integrations.telegram' => 'pro',
+        'editable_submissions' => 'pro',
+
+
+        // Business
+        'branding.advanced' => 'business',  // CSS, fonts, favicons
+        'custom_domain.wildcard' => 'business',
+        'multi_user.roles' => 'business',
         'integrations.hubspot' => 'business',
         'integrations.salesforce' => 'business',
         'integrations.airtable' => 'business',
-
-        // Form Features
         'partial_submissions' => 'business',
         'enable_partial_submissions' => 'business',
         'form_versioning' => 'business',
         'google_address_autocomplete' => 'business',
-        'editable_submissions' => 'business',
         'database_fields_update' => 'business',
         'enable_ip_tracking' => 'business',
+
 
         // Enterprise
         'sso.oidc' => 'enterprise',
@@ -127,8 +117,7 @@ return [
         'database_fields_update' => 'business',
         'enable_ip_tracking' => 'business',
 
-        // Business tier features
-
+        // Enterprise tier features
     ],
 
     /**

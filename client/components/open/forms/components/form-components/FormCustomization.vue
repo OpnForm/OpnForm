@@ -241,19 +241,16 @@ import ImageWithSettings from "../media/ImageWithSettings.vue"
 
 const workingFormStore = useWorkingFormStore()
 const { openSubscriptionModal } = useAppModals()
+const { hasFeature } = usePlanFeatures()
 const form = storeToRefs(workingFormStore).content
 const isMounted = ref(false)
 const confetti = useConfetti()
 const showGoogleFontPicker = ref(false)
 const { $i18n } = useNuxtApp()
 
-const { data: user } = useAuth().user()
-const { current: workspace } = useCurrentWorkspace()
-
 const isPro = computed(() => {
   if (!useFeatureFlag('billing.enabled')) return true
-  if (!user.value || !workspace.value) return false
-  return workspace.value.is_pro
+  return hasFeature('branding.removal')
 })
 
 const isFocused = computed(() => form.value?.presentation_style === 'focused')

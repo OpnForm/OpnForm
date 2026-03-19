@@ -9,7 +9,6 @@
 .env.api-production
 .env.backup
 .env.testing
-.env.dusk.local
 .env.api-*
 .env.docker.local
 .phpunit.result.cache
@@ -18,7 +17,6 @@ Homestead.json
 Homestead.yaml
 npm-debug.log
 yarn-error.log
-phpunit.dusk.xml
 /public/dist
 /public/build
 /public/mix-manifest.json

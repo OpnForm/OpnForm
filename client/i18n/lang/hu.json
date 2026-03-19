@@ -1,0 +1,77 @@
+{
+    "app": {
+        "name": "OpnForm"
+    },
+    "forms": {
+        "buttons": {
+            "submit": "Beküldés",
+            "next": "Tovább",
+            "previous": "Vissza",
+            "re_fill": "Új válasz beküldése"
+        },
+        "powered_by": "Működteti",
+        "password_protected": "Ez az űrlap jelszóval védett.",
+        "invalid_password": "Érvénytelen jelszó.",
+        "password_required": "A jelszó megadása kötelező.",
+        "create_form_free": "Készítsd el az űrlapodat ingyen az OpnFormmal",
+        "submit": "Beküldés",
+        "wrong_form_structure": "Valami nincs rendben ennek az űrlapnak a szerkezetével. Ha te vagy az űrlap tulajdonosa, kérjük, vedd fel velünk a kapcsolatot.",
+        "cannot_access_here": "Ez a tartalom innen nem érhető el. Kattints az alábbi linkre a megnyitásához.",
+        "open_form": "Űrlap megnyitása",
+        "restricted_to_workspace": "Csak a Notion Workspace tagjai számára érhető el. A tartalom megtekintéséhez jelentkezz be.",
+        "select": {
+            "search": "Keresés",
+            "searchOrTypeToCreateNew": "Keress vagy írj be valamit új létrehozásához",
+            "typeSomethingToAddAnOption": "Írj be valamit egy opció hozzáadásához",
+            "noOptionAvailable": "Nincs elérhető opció",
+            "create": "Létrehozás"
+        },
+        "fileInput": {
+            "chooseFiles": "Kattints a fájl(ok) kiválasztásához vagy húzd ide | Kattints egy fájl kiválasztásához vagy húzd ide",
+            "sizeLimit": "Méretkorlát: {count} MB fájlonként",
+            "uploadingFile": "A fájl feltöltése folyamatban..."
+        },
+        "cameraUpload": {
+            "allowCameraPermission": "Kameraengedély megadása",
+            "allowCameraPermissionDescription": "Képek készítéséhez engedélyezned kell a kamera használatát. A böngésző beállításaiban kapcsold be a kameraengedélyt ezen az oldalon.",
+            "gotIt": "Értem",
+            "cameraDeviceError": "Kameraeszköz-hiba",
+            "cameraDeviceErrorDescription": "Ismeretlen hiba történt a webkamera indításakor.",
+            "goBack": "Vissza"
+        },
+        "signatureInput": {
+            "uploadFileInstead": "Fájl feltöltése helyette",
+            "clear": "Törlés"
+        },
+        "barcodeInput": {
+            "clickToOpenCamera": "Kattints a kamera megnyitásához"
+        },
+        "payment": {
+            "amount_to_pay": "Fizetendő összeg",
+            "success": "Sikeres fizetés",
+            "name_on_card": "Kártyán szereplő név",
+            "billing_email": "Számlázási e-mail-cím",
+            "payment_disclaimer": "A hitelkártyád a gombra kattintás után kerül megterhelésre. A fizetéseket a Stripe biztonságosan dolgozza fel.",
+            "errors": {
+                "missingFormOrProvider": "Hiányzik az űrlap slugja vagy a szolgáltató azonosítója.",
+                "failedAccountDetails": "Nem sikerült lekérni a Stripe-fiók adatait.",
+                "setupError": "Hiba történt a Stripe beállítása közben.",
+                "systemNotReady": "A fizetési rendszer még nem áll készen. Kérjük, várj egy pillanatot, majd próbáld újra.",
+                "misconfigured": "A fizetési rendszer hibásan van beállítva. Frissítsd az oldalt, majd próbáld újra.",
+                "notFullyReady": "A fizetési rendszer még nincs teljesen kész. Frissítsd az oldalt, majd próbáld újra.",
+                "paymentRequired": "A továbblépés előtt fejezd be a fizetést.",
+                "nameRequired": "A kártyabirtokos neve kötelező.",
+                "emailRequired": "A számlázási e-mail-cím megadása kötelező.",
+                "invalidEmail": "Érvénytelen számlázási e-mail-cím.",
+                "failedIntent": "Nem sikerült létrehozni a fizetési szándékot.",
+                "processingFailed": "A fizetés feldolgozása sikertelen."
+            }
+        },
+        "validation_error": "Érvényesítési hiba",
+        "validation_error_with_count": "Érvényesítési hiba ({count} mező)",
+        "toggle": {
+            "yes": "Igen",
+            "no": "Nem"
+        }
+    }
+}

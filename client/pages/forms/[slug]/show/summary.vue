@@ -1,5 +1,5 @@
 <template>
-  <div class="p-4 sm:p-6 lg:p-8">
+  <PageContainer>
     <FormSummary v-if="canAccessSummary" :form="form" />
 
     <div v-else class="border border-neutral-300 rounded-lg shadow-xs p-4 relative overflow-hidden max-w-5xl mx-auto space-y-6">
@@ -24,10 +24,11 @@
         class="mx-auto w-full filter blur-md z-0 pointer-events-none"
       >
     </div>
-  </div>
+  </PageContainer>
 </template>
 
 <script setup>
+import PageContainer from "~/components/dashboard/PageContainer.vue"
 import PlanTag from "~/components/app/PlanTag.vue"
 import FormSummary from "~/components/open/forms/components/FormSummary.vue"
 
@@ -43,10 +44,10 @@ useOpnSeoMeta({
   title: props.form ? "Form Summary - " + props.form.title : "Form Summary",
 })
 
-const { current: workspace } = useCurrentWorkspace()
 const { openSubscriptionModal } = useAppModals()
 
-const canAccessSummary = computed(() => workspace.value?.is_pro)
+const { hasFeature } = usePlanFeatures()
+const canAccessSummary = computed(() => hasFeature('form_summary'))
 
 const openUpgradeModal = () => {
   openSubscriptionModal({

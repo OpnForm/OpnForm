@@ -138,8 +138,8 @@ class WorkspacePolicy
             return Response::allow();
         }
 
-        if (!$workspace->is_pro) {
-            return Response::deny('You need a Pro subscription to invite a user.');
+        if (!$workspace->hasFeature('workspaces.multiple')) {
+            return Response::deny('A Pro plan is required to invite users.');
         }
 
         // In case of special license, check license limit

@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Service\Storage\FilenameUrlEncoder;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\URL;
 use Stevebauman\Purify\Facades\Purify;
@@ -83,10 +84,14 @@ class FormSubmissionResource extends JsonResource
                 $mapped = collect($fileItems)
                     ->filter(fn ($file) => !is_null($file) && $file !== '')
                     ->map(function ($file) {
+                        // Use base64url encoding to avoid URL encoding issues with special characters
+                        // See: https://github.com/OpnForm/OpnForm/issues/1024
+                        $encodedFilename = FilenameUrlEncoder::encode($file);
+
                         return [
                             'file_url' => URL::signedRoute(
                                 'open.forms.submissions.file',
-                                [$this->form_id, $file],
+                                [$this->form_id, $encodedFilename],
                                 now()->addMinutes(10)
                             ),
                             'file_name' => $file,

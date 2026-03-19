@@ -8,6 +8,7 @@ use App\Models\Traits\CachesAttributes;
 use App\Service\BillingHelper;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Collection;
 
 class Workspace extends Model implements CachableAttributes
@@ -243,7 +244,7 @@ class Workspace extends Model implements CachableAttributes
 
             foreach ($owners as $owner) {
                 if ($owner->is_subscribed) {
-                    $subscription = $owner->subscription();
+                    $subscription = $owner->activeDefaultSubscription();
                     if ($subscription && BillingHelper::getSubscriptionInterval($subscription) === 'yearly') {
                         return true;
                     }
@@ -285,7 +286,7 @@ class Workspace extends Model implements CachableAttributes
     /**
      * Relationships
      */
-    public function users()
+    public function users(): BelongsToMany
     {
         return $this->belongsToMany(User::class);
     }
@@ -300,8 +301,16 @@ class Workspace extends Model implements CachableAttributes
         return $this->users()->wherePivot('role', 'admin');
     }
 
+    /**
+     * Get workspace owners who have an active billing relationship.
+     * Returns all admins if workspace has plan_overrides (paid without subscription is valid).
+     */
     public function billingOwners(): Collection
     {
+        if (!empty($this->plan_overrides['tier'])) {
+            return $this->owners;
+        }
+
         return $this->owners->filter(fn ($owner) => $owner->is_subscribed);
     }
 
@@ -372,6 +381,14 @@ class Workspace extends Model implements CachableAttributes
             ->wherePivot('user_id', $user->id)
             ->wherePivot('role', User::ROLE_READONLY)
             ->exists();
+    }
+
+    /**
+     * Check if workspace's plan tier meets or exceeds the required tier.
+     */
+    public function meetsTierRequirement(string $requiredTier): bool
+    {
+        return app(\App\Service\Plan\PlanService::class)->tierMeetsRequirement($this->plan_tier, $requiredTier);
     }
 
     /**
