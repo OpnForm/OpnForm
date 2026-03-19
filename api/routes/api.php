@@ -54,7 +54,6 @@ if (config('app.self_hosted')) {
 Route::get('/plan-manifest', function () {
     return response()->json([
         'features' => config('plans.features', []),
-        'form_features' => config('plans.form_features', []),
         'limits' => config('plans.limits', []),
         'tiers' => collect(config('plans.tiers', []))->map(fn ($t) => [
             'name' => $t['name'],
