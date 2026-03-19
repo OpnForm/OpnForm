@@ -44,10 +44,6 @@ function getFeatureTiers() {
   return manifest.value?.features ?? {}
 }
 
-function getFormFeatureTiers() {
-  return manifest.value?.form_features ?? {}
-}
-
 function getPricingMap() {
   return manifest.value?.pricing ?? {}
 }
@@ -110,7 +106,7 @@ export function usePlanFeatures() {
    * Get the required tier for a feature
    */
   const getRequiredTier = (feature) => {
-    return getFeatureTiers()[feature] || getFormFeatureTiers()[feature] || null
+    return getFeatureTiers()[feature] || null
   }
 
   /**
@@ -155,22 +151,6 @@ export function usePlanFeatures() {
   }
 
   /**
-   * Check if a form feature requires upgrade
-   */
-  const formFeatureNeedsUpgrade = (feature) => {
-    const requiredTier = getFormFeatureTiers()[feature]
-    if (!requiredTier) return false
-    return !tierMeetsRequirement(currentWorkspaceTier.value, requiredTier)
-  }
-
-  /**
-   * Get the required tier for a form feature
-   */
-  const getFormFeatureRequiredTier = (feature) => {
-    return getFormFeatureTiers()[feature] || null
-  }
-
-  /**
    * Get display price for a plan
    */
   const getPlanPrice = (plan, yearly = true) => {
@@ -196,8 +176,5 @@ export function usePlanFeatures() {
     getUpgradeMessage,
 
     getPlanPrice,
-
-    formFeatureNeedsUpgrade,
-    getFormFeatureRequiredTier,
   }
 }
