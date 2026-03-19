@@ -137,8 +137,7 @@ class AnswerFormRequest extends FormRequest
             }
         }
 
-        // Validate submission_id for edit mode
-        if ($this->form->is_pro && $this->form->editable_submissions) {
+        if ($this->form->workspace && $this->form->workspace->hasFeature('editable_submissions') && $this->form->editable_submissions) {
             $this->requestRules['submission_id'] = 'string';
         }
 

@@ -26,7 +26,7 @@
       <div
         class="justify-center px-2 py-1 text-xs font-semibold tracking-wide text-center text-emerald-600 uppercase bg-emerald-50 rounded-md"
       >
-        Save 20%
+        Save 15%
       </div>
     </div>
   </div>

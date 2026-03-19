@@ -55,8 +55,8 @@ class IdentityConnectionPolicy
             return false;
         }
 
-        // For cloud (non-self-hosted), require Pro subscription for creation
-        return $this->hasProAccess($workspace);
+        // For cloud (non-self-hosted), require Enterprise subscription for creation
+        return $this->hasEnterpriseAccess($workspace);
     }
 
     /**
@@ -90,21 +90,19 @@ class IdentityConnectionPolicy
             return false;
         }
 
-        // For cloud (non-self-hosted), require Pro subscription for modifications
-        return $this->hasProAccess($identityConnection->workspace);
+        // For cloud (non-self-hosted), require Enterprise subscription for modifications
+        return $this->hasEnterpriseAccess($identityConnection->workspace);
     }
 
     /**
-     * Check if workspace has Pro access (always true for self-hosted).
+     * Check if workspace has Enterprise access (always true for self-hosted).
      */
-    protected function hasProAccess(Workspace $workspace): bool
+    protected function hasEnterpriseAccess(Workspace $workspace): bool
     {
-        // Self-hosted installations don't require Pro
         if (!pricing_enabled()) {
             return true;
         }
 
-        // Cloud installations require Pro subscription
-        return $workspace->is_pro;
+        return $workspace->is_enterprise;
     }
 }

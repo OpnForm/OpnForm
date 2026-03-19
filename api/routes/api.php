@@ -50,6 +50,15 @@ if (config('app.self_hosted')) {
     Route::get('/healthcheck', [HealthCheckController::class, 'apiCheck']);
 }
 
+// Plan manifest — single source of truth for feature/tier mapping, consumed by frontend
+Route::get('/plan-manifest', function () {
+    return response()->json([
+        'features' => config('plans.features', []),
+        'limits' => config('plans.limits', []),
+        'tiers' => config('plans.tiers', []),
+    ]);
+})->name('plan.manifest');
+
 Route::group(['middleware' => 'auth.multi'], function () {
     Route::post('logout', [LoginController::class, 'logout'])->name('logout');
     Route::post('auth/oidc/link', [OidcLinkController::class, 'link'])->name('oidc.link');
@@ -171,13 +180,13 @@ Route::group(['middleware' => 'auth.multi'], function () {
                     Route::delete('/{connection}', [\App\Http\Controllers\Settings\OidcConnectionController::class, 'destroy'])->name('destroy');
                 });
 
-                Route::middleware('pro-form')->group(function () {
+                Route::middleware('plan:pro')->group(function () {
                     Route::get('form-stats/{form}', [FormStatsController::class, 'getFormStats'])->name('form.stats');
                     Route::get('form-stats-details/{form}', [FormStatsController::class, 'getFormStatsDetails'])->name('form.stats-details');
                 });
 
-                // Summary endpoints with rate limiting
-                Route::middleware('throttle:summary')->group(function () {
+                // Summary endpoints - Pro plan required, with rate limiting
+                Route::middleware(['plan:pro', 'throttle:summary'])->group(function () {
                     Route::get('form-summary/{form}', [FormSummaryController::class, 'getSummary'])->name('form.summary');
                     Route::get('form-summary/{form}/field/{fieldId}/values', [FormSummaryController::class, 'getFieldValues'])->name('form.summary.field-values');
                 });

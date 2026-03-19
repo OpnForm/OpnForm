@@ -118,10 +118,10 @@ const isModalOpen = computed({
 
 const emit = defineEmits(['restored', 'close'])
 
-const { openSubscriptionModal } = useAppModals()
 const versions = ref([])
 const isLoading = ref(false)
 const { invalidateSubmissions } = useFormSubmissions()
+const { requireFeature } = usePlanFeatures()
 
 onMounted(() => {
   if (props.submissionId) {
@@ -177,11 +177,7 @@ const getFieldName = (key) => {
 }
 
 const onRestore = async (version) => {
-  if (!props.form.is_pro) {
-    openSubscriptionModal({ modal_title: 'Upgrade to restore submission history' })
-    return
-  }
-
+  if(!requireFeature('form_versioning', 'Upgrade to restore submission history')) return
   useAlert().confirm('Are you sure you want to restore this version?', () => restoreVersion(version))
 }
 
@@ -198,8 +194,8 @@ const restoreVersion = async (version) => {
     useAlert().success('Submission restored successfully')
     await fetchVersions()
     isModalOpen.value = false
-  } catch {
-    useAlert().error('Failed to restore version')
+  } catch (error) {
+    useAlert().error(error.data?.message || 'Failed to restore version')
   }
 }
 </script>

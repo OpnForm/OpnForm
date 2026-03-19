@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Controllers\SubscriptionController;
 use App\Http\Middleware\IsNotSubscribed;
 use App\Http\Middleware\IsSubscribed;
 use Illuminate\Http\Request;
@@ -117,7 +116,7 @@ it('blocks checkout when a user already has an active subscription', function ()
     $this->actingAsUser($user);
 
     $response = $this->getJson(route('subscription.checkout', [
-        'subscription' => SubscriptionController::PRO_SUBSCRIPTION_NAME,
+        'subscription' => 'pro',
         'plan' => 'monthly',
     ]));
 
@@ -132,14 +131,14 @@ it('blocks checkout while another checkout creation is already in progress', fun
     $this->actingAsUser($user);
 
     $lock = Cache::lock(
-        'subscription_checkout:' . $user->id . ':' . SubscriptionController::PRO_SUBSCRIPTION_NAME,
+        'subscription_checkout:' . $user->id . ':pro',
         15
     );
     expect($lock->get())->toBeTrue();
 
     try {
         $response = $this->getJson(route('subscription.checkout', [
-            'subscription' => SubscriptionController::PRO_SUBSCRIPTION_NAME,
+            'subscription' => 'pro',
             'plan' => 'monthly',
         ]));
 

@@ -202,7 +202,7 @@ const isEligibleForModal = computed(() => {
   return import.meta.client && 
     !isSelfHosted.value && 
     workspace.value?.is_admin &&
-    workspace.value?.is_pro && 
+    workspace.value?.plan_tier !== 'free' && 
     !workspace.value?.is_yearly_plan
 })
 

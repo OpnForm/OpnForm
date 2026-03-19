@@ -5,6 +5,7 @@ namespace App\Jobs\Form;
 use App\Events\Forms\FormSubmitted;
 use App\Http\Controllers\Forms\FormController;
 use App\Http\Requests\AnswerFormRequest;
+use App\Service\Plan\PlanService;
 use App\Service\Storage\FileUploadPathService;
 use App\Models\Forms\Form;
 use App\Models\Forms\FormSubmission;
@@ -131,7 +132,7 @@ class StoreFormSubmissionJob implements ShouldQueue
      */
     private function resolveRecordToUpdate(array $submissionData)
     {
-        if (!$this->form->is_pro || !isset($this->form->database_fields_update) || $this->submissionId) {
+        if (!($this->form->workspace?->meetsTierRequirement(PlanService::TIER_PRO)) || !isset($this->form->database_fields_update) || $this->submissionId) {
             return null;
         }
 
@@ -202,8 +203,8 @@ class StoreFormSubmissionJob implements ShouldQueue
             $submission->public_id = \Illuminate\Support\Str::uuid()->toString();
         }
 
-        // Store IP address in meta if IP tracking is enabled
-        if ($this->form->enable_ip_tracking && $this->form->is_pro && $this->submitterIp) {
+        // Store IP address in meta if IP tracking is enabled (business feature)
+        if ($this->form->enable_ip_tracking && $this->form->workspace->hasFeature('enable_ip_tracking') && $this->submitterIp) {
             $existingMeta = $submission->meta ?? [];
             $existingMeta['ip_address'] = $this->submitterIp;
             $submission->meta = $existingMeta;
@@ -275,13 +276,13 @@ class StoreFormSubmissionJob implements ShouldQueue
                 // Standard field processing (text, ID generation, etc.)
                 if (isset($field['generates_uuid']) && $field['generates_uuid'] && $field['type'] == 'text') {
                     if (empty($answerValue) || !Str::isUuid($answerValue)) {
-                        $finalData[$field['id']] = ($this->form->is_pro) ? Str::uuid()->toString() : 'Please upgrade your OpenForm subscription to use our ID generation features';
+                        $finalData[$field['id']] = $this->workspaceHasProAccess() ? Str::uuid()->toString() : 'Please upgrade your OpenForm subscription to use our ID generation features';
                     } else {
                         $finalData[$field['id']] = $answerValue;
                     }
                 } elseif (isset($field['generates_auto_increment_id']) && $field['generates_auto_increment_id'] && $field['type'] == 'text') {
                     if (empty($answerValue) || !is_numeric($answerValue)) {
-                        $finalData[$field['id']] = ($this->form->is_pro) ? (string)($this->form->submissions_count + 1) : 'Please upgrade your OpenForm subscription to use our ID generation features';
+                        $finalData[$field['id']] = $this->workspaceHasProAccess() ? (string)($this->form->submissions_count + 1) : 'Please upgrade your OpenForm subscription to use our ID generation features';
                     } else {
                         $finalData[$field['id']] = $answerValue;
                     }
@@ -398,12 +399,12 @@ class StoreFormSubmissionJob implements ShouldQueue
             // Handle ID Generation for text fields
             if ($property['type'] == 'text') {
                 if (isset($property['generates_uuid']) && $property['generates_uuid']) {
-                    $formData[$property['id']] = ($this->form->is_pro) ? Str::uuid()->toString() : 'Please upgrade your OpenForm subscription to use our ID generation features';
-                    return; // ID generated, so we skip prefill logic for this field.
+                    $formData[$property['id']] = $this->workspaceHasProAccess() ? Str::uuid()->toString() : 'Please upgrade your OpenForm subscription to use our ID generation features';
+                    return;
                 }
 
                 if (isset($property['generates_auto_increment_id']) && $property['generates_auto_increment_id']) {
-                    $formData[$property['id']] = ($this->form->is_pro) ? (string)($this->form->submissions_count + 1) : 'Please upgrade your OpenForm subscription to use our ID generation features';
+                    $formData[$property['id']] = $this->workspaceHasProAccess() ? (string)($this->form->submissions_count + 1) : 'Please upgrade your OpenForm subscription to use our ID generation features';
                     return; // ID generated, so we skip prefill logic for this field.
                 }
             }
@@ -437,5 +438,15 @@ class StoreFormSubmissionJob implements ShouldQueue
         $data = $this->formData;
         $data['submission_id'] = $this->submissionId;
         return $data;
+    }
+
+    private function workspaceHasProAccess(): bool
+    {
+        $workspace = $this->form->workspace;
+        if (!$workspace) {
+            return false;
+        }
+
+        return $workspace->meetsTierRequirement(PlanService::TIER_PRO);
     }
 }

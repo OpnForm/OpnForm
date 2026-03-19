@@ -191,6 +191,36 @@ trait TestHelpers
         return $user;
     }
 
+    public function createBusinessUser()
+    {
+        $user = $this->createUser();
+
+        $user->subscriptions()->create([
+            'type' => 'business',
+            'stripe_id' => Str::random(),
+            'stripe_status' => 'active',
+            'stripe_price' => Str::random(),
+            'quantity' => 1,
+        ]);
+
+        return $user;
+    }
+
+    public function createEnterpriseUser()
+    {
+        $user = $this->createUser();
+
+        $user->subscriptions()->create([
+            'type' => 'enterprise',
+            'stripe_id' => Str::random(),
+            'stripe_status' => 'active',
+            'stripe_price' => Str::random(),
+            'quantity' => 1,
+        ]);
+
+        return $user;
+    }
+
     public function createTrialingUser()
     {
         $user = $this->createUser();
@@ -229,6 +259,24 @@ trait TestHelpers
     {
         if ($user == null) {
             $user = $this->createProUser();
+        }
+
+        return $this->actingAsUser($user);
+    }
+
+    public function actingAsBusinessUser(?User $user = null)
+    {
+        if ($user == null) {
+            $user = $this->createBusinessUser();
+        }
+
+        return $this->actingAsUser($user);
+    }
+
+    public function actingAsEnterpriseUser(?User $user = null)
+    {
+        if ($user == null) {
+            $user = $this->createEnterpriseUser();
         }
 
         return $this->actingAsUser($user);

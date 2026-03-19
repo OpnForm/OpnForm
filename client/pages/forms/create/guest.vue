@@ -73,6 +73,7 @@ onMounted(() => {
     name: "Guest Workspace",
     is_enterprise: false,
     is_pro: false,
+    plan_tier: 'free',
   }
   
   // Manually set the workspace data in query cache

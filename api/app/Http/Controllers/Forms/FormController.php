@@ -67,8 +67,7 @@ class FormController extends Controller
     {
         $this->authorize('view', $form);
 
-        // Use for restore form version
-        if (request()->has('version_id') && $form->is_pro) {
+        if (request()->has('version_id') && $form->workspace->hasFeature('form_versioning')) {
             // Verify that the version belongs to this form to prevent unauthorized access
             $version = Version::where('versionable_id', $form->id)
                 ->where('versionable_type', Form::class)
@@ -106,9 +105,8 @@ class FormController extends Controller
             $this->authorize('ownsWorkspace', $workspace);
             $this->authorize('viewAny', Form::class);
 
-            $workspaceIsPro = $workspace->is_pro;
+            $workspaceIsPro = $workspace->meetsTierRequirement('pro');
             $newForms = $workspace->forms()->get()->map(function (Form $form) use ($workspace, $workspaceIsPro) {
-                // Add attributes for faster loading
                 $form->extra = (object) [
                     'loadedWorkspace' => $workspace,
                     'workspaceIsPro' => $workspaceIsPro,

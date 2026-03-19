@@ -106,12 +106,37 @@
 </template>
 
 <script setup>
-const plans = [
-  { key: "free", label: "Free", priceLabel: "$0" },
-  { key: "pro", label: "Pro", priceLabel: "$29" },
-  { key: "business", label: "Business", priceLabel: "$79" },
-  { key: "enterprise", label: "Enterprise", priceLabel: "$250+" },
-]
+const { getPlanPrice, getTierDisplayName } = usePlanFeatures()
+
+const formatPlanPrice = (plan) => {
+  const price = getPlanPrice(plan, false)
+  if (price == null) return null
+  const suffix = plan === 'enterprise' ? '+' : ''
+  return `$${price}${suffix}`
+}
+
+const plans = computed(() => [
+  {
+    key: 'free',
+    label: getTierDisplayName('free'),
+    priceLabel: formatPlanPrice('free'),
+  },
+  {
+    key: 'pro',
+    label: getTierDisplayName('pro'),
+    priceLabel: formatPlanPrice('pro'),
+  },
+  {
+    key: 'business',
+    label: getTierDisplayName('business'),
+    priceLabel: formatPlanPrice('business'),
+  },
+  {
+    key: 'enterprise',
+    label: getTierDisplayName('enterprise'),
+    priceLabel: formatPlanPrice('enterprise'),
+  },
+])
 
 const sections = [
   {
@@ -123,7 +148,7 @@ const sections = [
       },
       {
         label: "File uploads",
-        values: ["(10MB)", true, "(1GB)", "(configurable)"],
+        values: ["10MB", "50MB", "1GB", "(configurable)"],
       },
       {
         label: "Form logic & validation",
@@ -209,7 +234,7 @@ const sections = [
       },
       {
         label: "Advanced integrations (HubSpot, Salesforce, Airtable)",
-        values: [false, false, "soon", true],
+        values: [false, false, "soon", "soon"],
       },
     ],
   },
@@ -218,11 +243,11 @@ const sections = [
     rows: [
       {
         label: "Analytics dashboard",
-        values: [false, false, "soon", true],
+        values: [false, false, true, true],
       },
       {
         label: "Partial submissions / draft saving",
-        values: [false, false, "soon", true],
+        values: [false, false, true, true],
       },
     ],
   },

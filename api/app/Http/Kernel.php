@@ -12,7 +12,8 @@ use App\Http\Middleware\IsAdmin;
 use App\Http\Middleware\IsModerator;
 use App\Http\Middleware\IsNotSubscribed;
 use App\Http\Middleware\IsSubscribed;
-use App\Http\Middleware\RequireProPlan;
+use App\Http\Middleware\RequireFeature;
+use App\Http\Middleware\RequirePlan;
 use Illuminate\Foundation\Http\Kernel as HttpKernel;
 use App\Http\Middleware\CheckUserIsBlocked;
 
@@ -115,7 +116,8 @@ class Kernel extends HttpKernel
         'moderator' => IsModerator::class,
         'subscribed' => IsSubscribed::class,
         'not-subscribed' => IsNotSubscribed::class,
-        'require-pro' => RequireProPlan::class,
+        'plan' => RequirePlan::class,           // Usage: ->middleware('plan:business')
+        'feature' => RequireFeature::class,     // Usage: ->middleware('feature:custom_domain')
         'cache.headers' => \Illuminate\Http\Middleware\SetCacheHeaders::class,
         'can' => \Illuminate\Auth\Middleware\Authorize::class,
         'guest' => \App\Http\Middleware\RedirectIfAuthenticated::class,

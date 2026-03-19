@@ -25,7 +25,7 @@
     <template #body>
       <template v-if="paidPlansEnabled && !hasActiveLicense">
         <UAlert
-          v-if="workspace.is_pro"
+          v-if="canInviteUsers"
           icon="i-heroicons-credit-card"
           color="primary"
           variant="subtle"
@@ -81,14 +81,14 @@
           name="email"
           label="Email"
           :required="true"
-          :disabled="!workspace.is_pro"
+          :disabled="!canInviteUsers"
           placeholder="Add a new user by email"
         />
         <FlatSelectInput
           :form="inviteUserForm"
           name="role"
           :options="roleOptions"
-          :disabled="!workspace.is_pro"
+          :disabled="!canInviteUsers"
           placeholder="Select User Role"
           label="Role"
           :required="true"
@@ -96,7 +96,7 @@
         <div class="flex justify-center mt-4">
           <UButton
             type="submit"
-            :disabled="!workspace.is_pro"
+            :disabled="!canInviteUsers"
             :loading="inviteUserMutation.isPending.value"
             icon="i-heroicons-envelope"
           >
@@ -125,8 +125,10 @@ const hasActiveLicense = computed(() => {
 })
 const crisp = useCrisp()
 const { openSubscriptionModal: openModal } = useAppModals()
-const { current: workspace, currentId: workspaceId } = useCurrentWorkspace()
+const { currentId: workspaceId } = useCurrentWorkspace()
 const alert = useAlert()
+const { hasFeature } = usePlanFeatures()
+const canInviteUsers = computed(() => hasFeature('invite_user'))
 
 const emit = defineEmits(['update:modelValue', 'user-added'])
 

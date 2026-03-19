@@ -32,15 +32,18 @@ class BillingHelper
         try {
             $stripeSub = $subscription->asStripeSubscription();
             $lineItems = collect($stripeSub->items);
-            $productId = self::getProductId('default');
 
-            if (!$productId) {
+            // Check all possible product IDs (pro, business, enterprise, and legacy default)
+            $productNames = ['pro', 'business', 'enterprise', 'default'];
+            $productIds = array_filter(array_map(fn ($name) => self::getProductId($name), $productNames));
+
+            if (empty($productIds)) {
                 return null;
             }
 
-            // Find the main subscription line item for the default product
-            $mainItem = $lineItems->first(function ($lineItem) use ($productId) {
-                return $lineItem->price->product === $productId;
+            // Find the main subscription line item for any known product
+            $mainItem = $lineItems->first(function ($lineItem) use ($productIds) {
+                return in_array($lineItem->price->product, $productIds);
             });
 
             if (!$mainItem) {
@@ -50,7 +53,7 @@ class BillingHelper
             // Check the actual billing interval from Stripe
             return self::getLineItemInterval($mainItem);
         } catch (\Exception $e) {
-            // If we can't fetch from Stripe, fall back to false
+            // If we can't fetch from Stripe, fall back to null
             return null;
         }
     }

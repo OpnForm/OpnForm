@@ -4,6 +4,7 @@ namespace App\Service\Forms;
 
 use App\Models\Forms\Form;
 use App\Open\MentionParser;
+use App\Service\Plan\PlanService;
 
 class FormSubmissionProcessor
 {
@@ -74,7 +75,9 @@ class FormSubmissionProcessor
             $redirectUrl = null;
         }
 
-        return $form->is_pro && $redirectUrl ? [
+        $hasProAccess = $form->workspace?->meetsTierRequirement(PlanService::TIER_PRO) ?? false;
+
+        return $hasProAccess && $redirectUrl ? [
             'redirect' => true,
             'redirect_url' => $redirectUrl,
         ] : [

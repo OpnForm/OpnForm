@@ -180,7 +180,7 @@
           :native-for="'no_branding'"
           class="text-sm font-medium!"
         />
-        <pro-tag
+        <PlanTag
           upgrade-modal-title="Upgrade today to remove OpnForm branding"
           class="-mt-1"
         />
@@ -233,7 +233,7 @@
 import EditorSectionHeader from "./EditorSectionHeader.vue"
 import { useWorkingFormStore } from "../../../../../stores/working_form"
 import GoogleFontPicker from "../../../editors/GoogleFontPicker.vue"
-import ProTag from "~/components/app/ProTag.vue"
+import PlanTag from "~/components/app/PlanTag.vue"
 import { DEFAULT_COLOR, ensureSettingsObject } from "@/composables/forms/initForm"
 import PresentationStyleSwitch from "./PresentationStyleSwitch.vue"
 import ImageWithSettings from "../media/ImageWithSettings.vue"
@@ -241,19 +241,16 @@ import ImageWithSettings from "../media/ImageWithSettings.vue"
 
 const workingFormStore = useWorkingFormStore()
 const { openSubscriptionModal } = useAppModals()
+const { hasFeature } = usePlanFeatures()
 const form = storeToRefs(workingFormStore).content
 const isMounted = ref(false)
 const confetti = useConfetti()
 const showGoogleFontPicker = ref(false)
 const { $i18n } = useNuxtApp()
 
-const { data: user } = useAuth().user()
-const { current: workspace } = useCurrentWorkspace()
-
 const isPro = computed(() => {
   if (!useFeatureFlag('billing.enabled')) return true
-  if (!user.value || !workspace.value) return false
-  return workspace.value.is_pro
+  return hasFeature('branding.removal')
 })
 
 const isFocused = computed(() => form.value?.presentation_style === 'focused')

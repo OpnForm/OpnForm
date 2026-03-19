@@ -39,7 +39,7 @@
           >
             My Forms
           </NuxtLink>
-          <div class="relative z-20" @mouseleave="isOpen = false">
+          <!-- <div class="relative z-20" @mouseleave="isOpen = false">
             <button
               :class="navLinkClasses"
               class="flex items-center gap-1"
@@ -65,7 +65,7 @@
                 Some links
               </NuxtLink>
             </div>
-          </div>
+          </div> -->
           <NuxtLink
             v-if="$route.name !== 'enterprise'"
             :to="{ name: 'enterprise' }"
@@ -79,13 +79,6 @@
             :class="navLinkClasses"
           >
             Integrations
-          </NuxtLink>
-          <NuxtLink
-            v-if="$route.name !== 'pricing'"
-            :to="{ name: 'pricing' }"
-            :class="navLinkClasses"
-          >
-            Pricing
           </NuxtLink>
           <NuxtLink
             v-if="
@@ -110,7 +103,7 @@
             :class="navLinkClasses"
           >
             <span
-              v-if="user && workspace && !workspace.is_pro"
+              v-if="user && workspace && workspace.plan_tier === 'free'"
               class="text-primary"
               >Upgrade</span
             >
@@ -125,7 +118,8 @@
             Documentation
           </NuxtLink>
 
-          <!-- <template v-if="appStore.featureBaseEnabled">
+
+          <template v-if="appStore.featureBaseEnabled">
             <button
               v-if="user"
               :class="navLinkClasses"
@@ -146,7 +140,7 @@
             >
               What's new?
             </a>
-          </template> -->
+          </template>
         </div>
 
         <div class="block">
@@ -210,12 +204,12 @@ import UserDropdown from "../dashboard/UserDropdown.vue"
 import opnformConfig from "~/opnform.config.js"
 import { useFeatureFlag } from "~/composables/useFeatureFlag"
 import TrackClick from "~/components/global/TrackClick.vue"
-import { ref } from "vue"
 
-const isOpen = ref(false)
+// const isOpen = ref(false)
 
 // Stores & composables
 const { current: workspace } = useCurrentWorkspace()
+const appStore = useAppStore()
 
 const { data: user } = useAuth().user()
 const isIframe = useIsIframe()
