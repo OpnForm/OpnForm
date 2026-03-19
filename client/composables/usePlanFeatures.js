@@ -4,14 +4,10 @@
  * The canonical source of truth is the backend config/plans.php.
  * On the client side we fetch the plan manifest once from /plan-manifest
  * and cache it in a module-level ref so every consumer shares the same data.
- *
- * Hardcoded FALLBACK_* maps are kept only as SSR / pre-hydration defaults
- * and must stay in sync with config/plans.php until the manifest loads.
  */
 
 import { opnFetch } from '~/composables/useOpnApi'
 
-// Tier ordering (higher = more features)
 const TIER_ORDER = {
   free: 0,
   pro: 1,
@@ -19,7 +15,6 @@ const TIER_ORDER = {
   enterprise: 3,
 }
 
-// Tier display names
 const TIER_NAMES = {
   free: 'Free',
   pro: 'Pro',
@@ -27,96 +22,36 @@ const TIER_NAMES = {
   enterprise: 'Enterprise',
 }
 
-// ─── Fallback maps (used before manifest loads / during SSR) ────────────────
-const FALLBACK_PRICING = {
-  free: { monthly: 0, yearly: 0 },
-  pro: { monthly: 29, yearly: 25 },
-  business: { monthly: 79, yearly: 67 },
-  enterprise: { monthly: 250, yearly: 213 },
-}
-
-const FALLBACK_FEATURES = {
-  'branding.removal': 'pro',
-  'branding.advanced': 'business',
-  'workspaces.multiple': 'pro',
-  'multi_user.roles': 'business',
-  'invite_user': 'pro',
-  custom_domain: 'pro',
-  'custom_domain.wildcard': 'business',
-  form_summary: 'pro',
-  form_analytics: 'pro',
-  custom_smtp: 'pro',
-  'security.password_protection': 'pro',
-  'security.form_expiration': 'pro',
-  'security.captcha': 'pro',
-  'integrations.slack': 'pro',
-  'integrations.discord': 'pro',
-  'integrations.telegram': 'pro',
-  'integrations.hubspot': 'business',
-  'integrations.salesforce': 'business',
-  'integrations.airtable': 'business',
-  partial_submissions: 'business',
-  enable_partial_submissions: 'business',
-  form_versioning: 'business',
-  google_address_autocomplete: 'business',
-  editable_submissions: 'pro',
-  database_fields_update: 'business',
-  enable_ip_tracking: 'business',
-  'sso.oidc': 'enterprise',
-  'sso.saml': 'enterprise',
-  'sso.ldap': 'enterprise',
-  audit_logs: 'enterprise',
-  compliance_features: 'enterprise',
-  external_storage: 'enterprise',
-  white_label: 'enterprise',
-}
-
-const FALLBACK_FORM_FEATURES = {
-  no_branding: 'pro',
-  redirect_url: 'pro',
-  secret_input: 'pro',
-  analytics: 'pro',
-  custom_css: 'business',
-  seo_meta: 'business',
-  enable_partial_submissions: 'business',
-  editable_submissions: 'business',
-  database_fields_update: 'business',
-  enable_ip_tracking: 'business',
-}
-
 // ─── Module-level cached manifest ───────────────────────────────────────────
 let manifestPromise = null
 const manifest = ref(null)
 
 function fetchManifest() {
-  if (import.meta.server) return // Don't fetch on server
+  if (import.meta.server) return
   if (manifestPromise) return manifestPromise
   manifestPromise = opnFetch('/plan-manifest')
     .then((data) => {
       manifest.value = data
     })
     .catch((e) => {
-      console.warn('Failed to fetch plan manifest, using fallback', e)
-      manifestPromise = null // allow retry
+      console.warn('Failed to fetch plan manifest', e)
+      manifestPromise = null
     })
   return manifestPromise
 }
 
-// ─── Reactive getters that prefer manifest, fall back to hardcoded ──────────
 function getFeatureTiers() {
-  return manifest.value?.features ?? FALLBACK_FEATURES
+  return manifest.value?.features ?? {}
 }
 
 function getFormFeatureTiers() {
-  return manifest.value?.form_features ?? FALLBACK_FORM_FEATURES
+  return manifest.value?.form_features ?? {}
 }
 
 function getPricingMap() {
-  return manifest.value?.pricing ?? FALLBACK_PRICING
+  return manifest.value?.pricing ?? {}
 }
 
-// ─── Exported static PLAN_PRICING for components that import it directly ────
-export const PLAN_PRICING = FALLBACK_PRICING
 
 /**
  * Main composable for plan feature checks
@@ -249,7 +184,6 @@ export function usePlanFeatures() {
     currentWorkspaceTier,
     TIER_ORDER,
     TIER_NAMES,
-    PLAN_PRICING: getPricingMap(),
 
     hasFeature,
     tierHasFeature,

@@ -172,9 +172,9 @@
 
                   <p class="text-sm leading-5 text-slate-500">
                     <span
-                      v-if="isYearly && PLAN_PRICING[currentPlan]"
+                      v-if="isYearly && selectedPlanMonthlyPrice"
                       class="font-medium line-through mr-2"
-                    >${{ PLAN_PRICING[currentPlan].monthly }}</span>
+                    >${{ selectedPlanMonthlyPrice }}</span>
                     <span
                       class="font-medium"
                       :class="{ 'text-green-700': isYearly }"
@@ -269,7 +269,6 @@
 import TrackClick from '~/components/global/TrackClick.vue'
 
 import { useCheckoutUrl } from '@/composables/components/stripe/useCheckoutUrl'
-import { PLAN_PRICING } from '~/composables/usePlanFeatures'
 import { authApi } from '~/api'
 import { computed, watchEffect } from 'vue'
 import { useElementSize } from '@vueuse/core'
@@ -416,15 +415,16 @@ const broadcastData = subscribeBroadcast.data
 const confetti = useConfetti()
 const { isAuthenticated: authenticated } = useIsAuthenticated()
 const { data: user } = useAuth().user()
-const { tierMeetsRequirement } = usePlanFeatures()
+const { tierMeetsRequirement, getPlanPrice } = usePlanFeatures()
 const isSubscribed = computed(() => tierMeetsRequirement(user.value?.plan_tier, 'pro'))
 const currency = 'usd'
 
-// Get price for selected plan
 const selectedPlanPrice = computed(() => {
-  const pricing = PLAN_PRICING[currentPlan.value]
-  if (!pricing) return null
-  return isYearly.value ? pricing.yearly : pricing.monthly
+  return getPlanPrice(currentPlan.value, isYearly.value)
+})
+
+const selectedPlanMonthlyPrice = computed(() => {
+  return getPlanPrice(currentPlan.value, false)
 })
 
 const selectedPlanName = computed(() => {

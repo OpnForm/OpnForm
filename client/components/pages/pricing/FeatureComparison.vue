@@ -104,7 +104,7 @@ const sections = [
       },
       {
         label: "File uploads",
-        values: ["10MB", "50MB", "1GB", "configurable"],
+        values: ["10MB", "50MB", "1GB", "(configurable)"],
       },
       {
         label: "Form logic & validation",
@@ -198,14 +198,10 @@ const sections = [
     rows: [
       {
         label: "Analytics dashboard",
-        values: [false, false, "soon", "soon"],
+        values: [false, false, true, true],
       },
       {
         label: "Partial submissions / draft saving",
-        values: [false, true, true, true],
-      },
-      {
-        label: "IP tracking",
         values: [false, false, true, true],
       },
     ],
