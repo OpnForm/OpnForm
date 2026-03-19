@@ -55,14 +55,7 @@ Route::get('/plan-manifest', function () {
     return response()->json([
         'features' => config('plans.features', []),
         'limits' => config('plans.limits', []),
-        'tiers' => collect(config('plans.tiers', []))->map(fn ($t) => [
-            'name' => $t['name'],
-            'order' => $t['order'],
-        ]),
-        'pricing' => collect(config('plans.tiers', []))->map(fn ($t) => [
-            'monthly' => $t['price_monthly'],
-            'yearly' => $t['price_yearly'],
-        ]),
+        'tiers' => config('plans.tiers', []),
     ]);
 })->name('plan.manifest');
 
