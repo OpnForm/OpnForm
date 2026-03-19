@@ -85,14 +85,37 @@
 </template>
 
 <script setup>
-import { PLAN_PRICING } from "~/composables/usePlanFeatures"
+const { getPlanPrice, getTierDisplayName } = usePlanFeatures()
 
-const plans = [
-  { key: "free", label: "Free", priceLabel: `$${PLAN_PRICING.free.monthly}` },
-  { key: "pro", label: "Pro", priceLabel: `$${PLAN_PRICING.pro.monthly}` },
-  { key: "business", label: "Business", priceLabel: `$${PLAN_PRICING.business.monthly}` },
-  { key: "enterprise", label: "Enterprise", priceLabel: `$${PLAN_PRICING.enterprise.monthly}+` },
-]
+const formatPlanPrice = (plan) => {
+  const price = getPlanPrice(plan, false)
+  if (price == null) return null
+  const suffix = plan === 'enterprise' ? '+' : ''
+  return `$${price}${suffix}`
+}
+
+const plans = computed(() => [
+  {
+    key: 'free',
+    label: getTierDisplayName('free'),
+    priceLabel: formatPlanPrice('free'),
+  },
+  {
+    key: 'pro',
+    label: getTierDisplayName('pro'),
+    priceLabel: formatPlanPrice('pro'),
+  },
+  {
+    key: 'business',
+    label: getTierDisplayName('business'),
+    priceLabel: formatPlanPrice('business'),
+  },
+  {
+    key: 'enterprise',
+    label: getTierDisplayName('enterprise'),
+    priceLabel: formatPlanPrice('enterprise'),
+  },
+])
 
 const sections = [
   {
