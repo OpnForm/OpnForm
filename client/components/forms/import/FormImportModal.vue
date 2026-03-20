@@ -43,7 +43,7 @@
             class="w-12 h-12 text-gray-300 mx-auto mb-3"
           />
           <p class="text-sm text-gray-500">
-            Google Forms import via OAuth is coming soon.
+            Coming soon...
           </p>
         </div>
       </div>

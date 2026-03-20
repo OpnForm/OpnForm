@@ -236,7 +236,7 @@ class FilloutImporter extends AbstractImporter
     {
         if (!empty($options)) {
             $property[$property['type']]['options'] = array_map(
-                fn($label) => ['id' => $this->generateFieldId(), 'name' => $label],
+                fn ($label) => ['id' => $this->generateFieldId(), 'name' => $label],
                 array_values($options)
             );
         }

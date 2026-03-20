@@ -228,7 +228,7 @@ class TypeformImporter extends AbstractImporter
         $choices = $field['properties']['choices'] ?? [];
 
         return array_map(
-            fn($choice) => $this->sanitizeText($choice['label'] ?? ''),
+            fn ($choice) => $this->sanitizeText($choice['label'] ?? ''),
             $choices
         );
     }
@@ -237,7 +237,7 @@ class TypeformImporter extends AbstractImporter
     {
         if (!empty($choices)) {
             $property[$property['type']]['options'] = array_map(
-                fn($label) => ['id' => $this->generateFieldId(), 'name' => $label],
+                fn ($label) => ['id' => $this->generateFieldId(), 'name' => $label],
                 $choices
             );
         }
