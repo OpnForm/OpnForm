@@ -40,8 +40,6 @@ class Workspace extends Model implements CachableAttributes
 
     protected $appends = [
         'plan_tier',
-        'is_pro',
-        'is_business',
         'is_trialing',
         'users_count',
         'is_yearly_plan',
@@ -58,8 +56,6 @@ class Workspace extends Model implements CachableAttributes
 
     protected $cachableAttributes = [
         'plan_tier',
-        'is_pro',
-        'is_business',
         'is_trialing',
         'is_risky',
         'is_yearly_plan',
@@ -71,7 +67,7 @@ class Workspace extends Model implements CachableAttributes
     ];
 
     /**
-     * Flush workspace cache and also flush owners' cache (is_pro depends on workspace tier).
+     * Flush workspace cache and also flush owners' cache because plan-derived state is shared.
      */
     public function flushWithOwners(): bool
     {
@@ -146,37 +142,7 @@ class Workspace extends Model implements CachableAttributes
      */
     public function getPlanTierAttribute(): string
     {
-        return app(\App\Service\Plan\PlanService::class)->getWorkspaceTier($this);
-    }
-
-    /**
-     * Check if workspace has Pro-level access or higher.
-     * Kept for backward compatibility - use plan_tier for new code.
-     */
-    public function getIsProAttribute()
-    {
-        if (!pricing_enabled()) {
-            return true;    // If no paid plan so TRUE for ALL
-        }
-
-        return $this->remember('is_pro', self::CACHE_TTL, function (): bool {
-            $tier = app(\App\Service\Plan\PlanService::class)->computeWorkspaceTier($this);
-
-            return in_array($tier, ['pro', 'business', 'enterprise']);
-        });
-    }
-
-    public function getIsBusinessAttribute()
-    {
-        if (!pricing_enabled()) {
-            return true;    // If no paid plan so TRUE for ALL
-        }
-
-        return $this->remember('is_business', self::CACHE_TTL, function (): bool {
-            $tier = app(\App\Service\Plan\PlanService::class)->computeWorkspaceTier($this);
-
-            return in_array($tier, ['business', 'enterprise']);
-        });
+        return app(PlanAccessService::class)->getTier($this);
     }
 
     public function getIsTrialingAttribute()
@@ -201,23 +167,6 @@ class Workspace extends Model implements CachableAttributes
         });
     }
 
-    /**
-     * Check if workspace has Enterprise-level access.
-     * Kept for backward compatibility - use plan_tier for new code.
-     */
-    public function getIsEnterpriseAttribute()
-    {
-        if (!pricing_enabled()) {
-            return true;    // If no paid plan so TRUE for ALL
-        }
-
-        return $this->remember('is_enterprise', self::CACHE_TTL, function (): bool {
-            $tier = app(\App\Service\Plan\PlanService::class)->computeWorkspaceTier($this);
-
-            return $tier === 'enterprise';
-        });
-    }
-
     public function getIsRiskyAttribute()
     {
         return $this->remember('is_risky', self::CACHE_TTL, function (): bool {
@@ -237,22 +186,7 @@ class Workspace extends Model implements CachableAttributes
             return false;
         }
 
-        return $this->remember('is_yearly_plan', self::CACHE_TTL, function (): bool {
-            $owners = $this->relationLoaded('users')
-                ? $this->users->where('pivot.role', 'admin')
-                : $this->owners()->get();
-
-            foreach ($owners as $owner) {
-                if ($owner->is_subscribed) {
-                    $subscription = $owner->subscriptions->first(fn ($sub) => $sub->valid());
-                    if ($subscription && BillingHelper::getSubscriptionInterval($subscription) === 'yearly') {
-                        return true;
-                    }
-                }
-            }
-
-            return false;
-        });
+        return $this->remember('is_yearly_plan', self::CACHE_TTL, fn (): bool => app(BillingStateResolver::class)->isYearly($this));
     }
 
     public function getSubmissionsCountAttribute()
@@ -384,21 +318,18 @@ class Workspace extends Model implements CachableAttributes
     }
 
     /**
-     * Check if workspace's plan tier meets or exceeds the required tier.
-     */
-    public function meetsTierRequirement(string $requiredTier): bool
-    {
-        return app(\App\Service\Plan\PlanService::class)->tierMeetsRequirement($this->plan_tier, $requiredTier);
-    }
-
-    /**
      * Check if workspace has access to a specific feature.
      * Considers workspace overrides and tier-based access.
      */
     public function hasFeature(string $feature): bool
     {
         return $this->remember('has_feature_' . $feature, self::CACHE_TTL, function () use ($feature): bool {
-            return app(\App\Service\Plan\PlanService::class)->workspaceHasFeature($this, $feature);
+            return app(PlanAccessService::class)->hasFeature($this, $feature);
         });
+    }
+
+    public function requireFeature(string $feature): void
+    {
+        app(PlanAccessService::class)->requireFeature($this, $feature);
     }
 }

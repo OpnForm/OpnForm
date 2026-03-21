@@ -12,7 +12,6 @@ use App\Service\Forms\SubmissionUrlService;
 use App\Service\Formulas\ComputedVariableEvaluator;
 use App\Service\Pdf\PdfCacheService;
 use App\Service\Pdf\PdfGeneratorService;
-use App\Service\Plan\PlanService;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Mail;
@@ -58,7 +57,7 @@ class FormEmailNotification extends Notification
         $emailSettings = $workspace->settings['email_settings'] ?? [];
 
         if (
-            $workspace->meetsTierRequirement(PlanService::TIER_PRO)
+            $workspace->hasFeature(Feature::CUSTOM_SMTP)
             && $emailSettings
             && !empty($emailSettings['host'])
             && !empty($emailSettings['port'])
@@ -196,7 +195,7 @@ class FormEmailNotification extends Notification
         $emailSettings = $workspace->settings['email_settings'] ?? [];
 
         if (
-            $workspace->meetsTierRequirement(PlanService::TIER_PRO)
+            $workspace->hasFeature(Feature::CUSTOM_SMTP)
             && $emailSettings
             && !empty($emailSettings['sender_address'])
         ) {

@@ -60,9 +60,8 @@ class VersionController extends Controller
         $model = $modelClass::findOrFail($version->versionable_id);
 
         $workspace = $model->workspace ?? ($model->form->workspace ?? null);
-        if (!$workspace || !$workspace->hasFeature('form_versioning')) {
-            return $this->featureDenied($workspace, 'form_versioning');
-        }
+        abort_unless($workspace, 404, 'Workspace not found');
+        $workspace->requireFeature('form_versioning');
 
         $this->authorize('update', $model);
 

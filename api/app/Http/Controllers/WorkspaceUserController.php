@@ -63,9 +63,7 @@ class WorkspaceUserController extends Controller
 
     private function inviteUser(Workspace $workspace, string $email, string $role)
     {
-        if (!$workspace->hasFeature('workspaces.multiple')) {
-            return $this->featureDenied($workspace, 'workspaces.multiple');
-        }
+        $workspace->requireFeature('workspaces.multiple');
 
         if (
             UserInvite::where('email', $email)

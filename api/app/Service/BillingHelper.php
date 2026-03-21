@@ -3,7 +3,7 @@
 namespace App\Service;
 
 use App\Models\Billing\Subscription as BillingSubscription;
-use App\Service\Billing\PlanTier;
+use App\Support\Billing\PlanTier;
 use Illuminate\Support\Facades\App;
 use Laravel\Cashier\Subscription;
 use Stripe\SubscriptionItem;
@@ -108,20 +108,7 @@ class BillingHelper
     {
         try {
             $stripeSub = $subscription->asStripeSubscription();
-            $lineItems = collect($stripeSub->items);
-
-            // Check all possible product IDs (pro, business, enterprise, and legacy default)
-            $productNames = ['pro', 'business', 'enterprise', 'default'];
-            $productIds = array_filter(array_map(fn ($name) => self::getProductId($name), $productNames));
-
-            if (empty($productIds)) {
-                return null;
-            }
-
-            // Find the main subscription line item for any known product
-            $mainItem = $lineItems->first(function ($lineItem) use ($productIds) {
-                return in_array($lineItem->price->product, $productIds);
-            });
+            $mainItem = self::getMainPlanLineItem($stripeSub->items);
 
             if (!$mainItem) {
                 return null;

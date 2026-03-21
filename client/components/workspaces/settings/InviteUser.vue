@@ -23,53 +23,24 @@
     </template>
 
     <template #body>
-      <template v-if="paidPlansEnabled && !hasActiveLicense">
-        <UAlert
-          v-if="canInviteUsers"
-          icon="i-heroicons-credit-card"
-          color="primary"
-          variant="subtle"
-          title="This is a billable event."
-        >
-          <template #description>
-            You will be charged $6/month for each user you invite to this workspace. More details on the
-            <NuxtLink
-              target="_blank"
-              class="underline cursor-pointer"
-              @click="openBilling"
-            >
-              billing
-            </NuxtLink>
-            and
-            <NuxtLink
-              target="_blank"
-              class="underline"
-              :to="{name:'pricing'}"
-            >
-              pricing
-            </NuxtLink>
-            page.
-          </template>
-        </UAlert>
-        <UAlert
-          v-else
-          icon="i-heroicons-user-group-20-solid"
-          class="mb-4"
-          color="warning"
-          variant="subtle"
-          title="Pro plan required"
-          description="Please upgrade your account to invite users to your workspace."
-          :actions="[{
-            label: 'Upgrade to Pro',
-            color: 'warning',
-            variant: 'solid',
-            onClick: () => openSubscriptionModal({
-              modal_title: 'Upgrade to invite users to your workspace',
-              modal_description: 'Upgrade to our Pro plan to unlock team collaboration features along with customized branding, form analytics, custom domains, and more!'
-            })
-          }]"
-        />
-      </template>
+      <UAlert
+        v-if="paidPlansEnabled && !hasActiveLicense && !canInviteUsers"
+        icon="i-heroicons-user-group-20-solid"
+        class="mb-4"
+        color="warning"
+        variant="subtle"
+        title="Pro plan required"
+        description="Please upgrade your account to invite users to your workspace."
+        :actions="[{
+          label: 'Upgrade to Pro',
+          color: 'warning',
+          variant: 'solid',
+          onClick: () => openSubscriptionModal({
+            modal_title: 'Upgrade to invite users to your workspace',
+            modal_description: 'Upgrade to our Pro plan to unlock team collaboration features along with customized branding, form analytics, custom domains, and more!'
+          })
+        }]"
+      />
 
       <VForm
         size="sm"

@@ -106,8 +106,8 @@ class FormController extends Controller
             $this->authorize('ownsWorkspace', $workspace);
             $this->authorize('viewAny', Form::class);
 
-            $workspaceIsPro = $workspace->meetsTierRequirement('pro');
-            $newForms = $workspace->forms()->get()->map(function (Form $form) use ($workspace, $workspaceIsPro) {
+            $workspaceHasBrandingRemoval = $workspace->hasFeature(Feature::BRANDING_REMOVAL);
+            $newForms = $workspace->forms()->get()->map(function (Form $form) use ($workspace, $workspaceHasBrandingRemoval) {
                 $form->extra = (object) [
                     'loadedWorkspace' => $workspace,
                     'workspaceHasBrandingRemoval' => $workspaceHasBrandingRemoval,

@@ -52,15 +52,13 @@ class WorkspacePolicy
      */
     public function create(User $user)
     {
-        // Use tier-based workspace limits
-        $userTier = $user->plan_tier;
+        $userTier = app(PlanAccessService::class)->getUserTier($user);
         $workspaceLimit = config("plans.limits.workspace_count.{$userTier}");
         $currentCount = $user->workspaces()->count();
 
         // null limit = unlimited
         if ($workspaceLimit !== null && $currentCount >= $workspaceLimit) {
-            $planService = app(\App\Service\Plan\PlanService::class);
-            $tierName = $planService->getTierDisplayName($userTier);
+            $tierName = app(PlanAccessService::class)->getTierDisplayName($userTier);
 
             return Response::deny("You have reached the workspace limit for {$tierName} plan. Upgrade to create additional workspaces.");
         }

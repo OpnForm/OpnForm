@@ -192,7 +192,7 @@ onBeforeRouteLeave(() => {
 })
 
 const pageMeta = computed(() => {
-  if (form.value && form.value?.plan_tier == 'business' && form.value.seo_meta) {
+  if (form.value?.seo_meta) {
     return form.value.seo_meta
   }
   return {}

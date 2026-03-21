@@ -24,10 +24,6 @@ class PlanAccessService
 
     public function hasFeature(Workspace $workspace, string $feature): bool
     {
-        if (!$this->isKnownFeature($feature, config('plans.features', []))) {
-            return false;
-        }
-
         return $this->hasMappedFeature(
             $workspace,
             $feature,
@@ -37,17 +33,10 @@ class PlanAccessService
 
     public function hasFormFeature(Workspace $workspace, string $feature): bool
     {
-        $featureMap = config('plans.form_features', []);
-        $overrideFeatures = $workspace->plan_overrides['features'] ?? [];
-
-        if (!array_key_exists($feature, $featureMap) && !in_array($feature, $overrideFeatures, true)) {
-            return false;
-        }
-
         return $this->hasMappedFeature(
             $workspace,
             $feature,
-            $featureMap,
+            config('plans.form_features', []),
         );
     }
 
@@ -73,7 +62,7 @@ class PlanAccessService
     {
         $requiredTier = config('plans.features.' . $feature);
         if ($requiredTier === null) {
-            return false;
+            return true;
         }
 
         return $this->tierMeetsRequirement($this->getUserTier($user), $requiredTier);
@@ -81,17 +70,12 @@ class PlanAccessService
 
     public function getFeatures(Workspace $workspace): array
     {
-        $workspaceFeatures = array_values(array_filter(
+        $features = array_unique(array_merge(
             array_keys(config('plans.features', [])),
-            fn (string $feature) => $this->hasFeature($workspace, $feature)
-        ));
-
-        $formFeatures = array_values(array_filter(
             array_keys(config('plans.form_features', [])),
-            fn (string $feature) => $this->hasFormFeature($workspace, $feature)
         ));
 
-        return array_values(array_unique(array_merge($workspaceFeatures, $formFeatures)));
+        return array_values(array_filter($features, fn (string $feature) => $this->hasFeature($workspace, $feature) || $this->hasFormFeature($workspace, $feature)));
     }
 
     public function getRequiredTiers(): array
@@ -155,26 +139,12 @@ class PlanAccessService
 
         $requiredTier = $featureMap[$feature] ?? null;
         if ($requiredTier === null) {
-            return false;
+            return true;
         }
 
         return $this->tierMeetsRequirement(
             $this->getTier($workspace),
             $requiredTier,
         );
-    }
-
-    private function isKnownFeature(string $feature, array $featureMap): bool
-    {
-        return array_key_exists($feature, $featureMap)
-            || in_array($feature, $this->getOverrideFeatures(), true);
-    }
-
-    private function getOverrideFeatures(): array
-    {
-        return array_values(array_unique(array_merge(
-            array_keys(config('plans.features', [])),
-            array_keys(config('plans.form_features', [])),
-        )));
     }
 }

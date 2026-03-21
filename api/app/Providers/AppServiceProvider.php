@@ -91,9 +91,6 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(\App\Service\OAuth\OAuthInviteService::class);
         $this->app->singleton(\App\Service\OAuth\OAuthUserDataService::class);
         $this->app->singleton(\App\Service\OAuth\OAuthFlowOrchestrator::class);
-
-        // Plan Service (singleton for caching efficiency)
-        $this->app->singleton(\App\Service\Plan\PlanService::class);
     }
 
     private function ensureSafeTestingDatabase(): void

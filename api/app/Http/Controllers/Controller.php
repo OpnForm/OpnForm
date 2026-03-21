@@ -2,8 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Workspace;
-use App\Service\Plan\PlanService;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Foundation\Bus\DispatchesJobs;
 use Illuminate\Foundation\Validation\ValidatesRequests;
@@ -27,18 +25,5 @@ class Controller extends BaseController
         return response()->json(array_merge([
             'type' => 'error',
         ], $data), $statusCode);
-    }
-
-    protected function featureDenied(Workspace $workspace, string $feature)
-    {
-        $planService = app(PlanService::class);
-        $requiredTier = $planService->getRequiredTier($feature) ?? 'pro';
-        $tierName = $planService->getTierDisplayName($requiredTier);
-
-        return response()->json([
-            'message' => "A {$tierName} plan is required to use this feature.",
-            'required_tier' => $requiredTier,
-            'current_tier' => $planService->getWorkspaceTier($workspace),
-        ], 402);
     }
 }

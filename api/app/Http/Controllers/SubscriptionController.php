@@ -46,17 +46,13 @@ class SubscriptionController extends Controller
             ], 429);
         }
 
-        // Get the pricing for this plan
-        $pricingConfig = BillingHelper::getPricing($pricing);
-        if (!$pricingConfig || !isset($pricingConfig[$plan])) {
-            return $this->error([
-                'message' => 'Invalid pricing plan selected.',
-            ]);
-        }
-
-        $checkoutBuilder = $user
-            ->newSubscription($pricing, $pricingConfig[$plan])
-            ->allowPromotionCodes();
+        try {
+            // Check User does not already have an active/trialing subscription
+            if ($this->billingStateResolver->hasActivePaidSubscription($user)) {
+                return $this->error([
+                    'message' => 'You already have an active subscription.',
+                ]);
+            }
 
             // Check User does not have a pending subscription
             if ($user->subscriptions()->where('stripe_status', 'past_due')->first()) {
@@ -180,9 +176,7 @@ class SubscriptionController extends Controller
 
         // Upgrade the subscription to yearly plan
         try {
-            // Find the user's active subscription (not just 'default' type)
-            $subscription = $user->subscriptions->first(fn ($sub) => $sub->valid());
-
+            $subscription = $this->billingStateResolver->resolveActiveSubscription($user);
             if (!$subscription) {
                 return $this->error([
                     'message' => 'No active subscription found.',

@@ -89,7 +89,7 @@ const { current: workspace } = useCurrentWorkspace()
 const isSelfHosted = computed(() => useFeatureFlag('self_hosted'))
 const { can } = useWorkspaceAbilities()
 const { openSubscriptionModal } = useAppModals()
-const { tierMeetsRequirement } = usePlanFeatures()
+const { can } = useWorkspaceAbilities()
 
 // Check if current route matches a prefix
 function isActiveRoute(prefix) {
@@ -125,7 +125,7 @@ const navigationSections = computed(() => [
         active: isActiveRoute('templates')
       }),
       // Show upgrade for non-pro users
-      ...(workspace.value && !tierMeetsRequirement(workspace.value.plan_tier, 'pro') && !isSelfHosted.value ? [createNavItem({
+      ...(workspace.value && !can('workspaces.multiple') && !isSelfHosted.value ? [createNavItem({
         label: 'Upgrade to Pro',
         icon: 'i-heroicons-sparkles-solid', 
         onClick: () => {
@@ -137,7 +137,7 @@ const navigationSections = computed(() => [
         },
         color: 'primary'
       })] : []),
-      ...(workspace.value && tierMeetsRequirement(workspace.value.plan_tier, 'pro') && !tierMeetsRequirement(workspace.value.plan_tier, 'business') && !isSelfHosted.value ? [createNavItem({
+      ...(workspace.value && can('workspaces.multiple') && !can('multi_user.roles') && !isSelfHosted.value ? [createNavItem({
         label: 'Upgrade to Business',
         icon: 'i-heroicons-sparkles-solid',
         onClick: () => {

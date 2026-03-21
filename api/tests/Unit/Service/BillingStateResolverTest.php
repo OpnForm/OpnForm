@@ -64,13 +64,3 @@ it('resolves active appsumo licenses as paid pro access', function () {
     expect($state->hasLicense)->toBeTrue();
     expect($state->tier)->toBe(PlanTier::PRO);
 });
-
-it('resolves extra pro users as paid pro access without a subscription row', function () {
-    $user = $this->createUser(['email' => 'extra-pro@example.com']);
-    config(['opnform.extra_pro_users_emails' => [$user->email]]);
-
-    $state = $this->resolver->resolveUser($user->fresh());
-
-    expect($state->isPaid)->toBeTrue();
-    expect($state->tier)->toBe(PlanTier::PRO);
-});

@@ -86,7 +86,7 @@
             :class="navLinkClasses"
           >
             <span
-              v-if="user && workspace && workspace.plan_tier === 'free'"
+              v-if="user && workspace && !workspaceIsPaid"
               class="text-primary"
               >Upgrade</span
             >
