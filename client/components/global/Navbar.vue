@@ -103,7 +103,7 @@
             :class="navLinkClasses"
           >
             <span
-              v-if="user && workspace && workspace.plan_tier === 'free'"
+              v-if="user && workspace && !workspaceIsPaid"
               class="text-primary"
               >Upgrade</span
             >
@@ -214,6 +214,7 @@ const appStore = useAppStore()
 const { data: user } = useAuth().user()
 const isIframe = useIsIframe()
 const isSelfHosted = computed(() => useFeatureFlag("self_hosted"))
+const { workspaceIsPaid } = useBillingUpsell()
 const route = useRoute()
 
 // Get current form for forms-slug routes

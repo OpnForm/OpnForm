@@ -57,9 +57,6 @@ class AnswerFormRequest extends FormRequest
         });
         foreach ($this->form->properties as $property) {
             $rules = [];
-            /*if (!$this->form->is_pro) {  // If not pro then not check logic
-                $property['logic'] = false;
-            }*/
 
             $data = $this->toArray();
 

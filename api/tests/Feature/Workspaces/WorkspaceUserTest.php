@@ -112,3 +112,25 @@ it('can leave a workspace', function () {
 
     expect($this->workspace->users()->count())->toBe(0);
 });
+
+it('enforces appsumo license member limits when inviting users', function () {
+    $licensedOwner = $this->createAppSumoLicensedUser(1);
+    $this->actingAs($licensedOwner);
+    $workspace = Workspace::factory()->create();
+    $workspace->users()->attach($licensedOwner, ['role' => 'admin']);
+    $workspace->load('users');
+    $workspace->flush();
+
+    $newUser = User::factory()->create(['email' => 'licensed-limit@example.com']);
+
+    $this->postJson(route('open.workspaces.users.add', ['workspace' => $workspace]), [
+        'email' => $newUser->email,
+        'role' => 'user',
+    ])
+        ->assertStatus(403)
+        ->assertJson([
+            'message' => 'You have reached the maximum number of users allowed with your license.',
+        ]);
+
+    expect($workspace->fresh()->users()->count())->toBe(1);
+});

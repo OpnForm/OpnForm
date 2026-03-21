@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Cashier\Cashier;
 use RuntimeException;
+use Stripe\StripeClient;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -81,14 +82,15 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register()
     {
+        $this->app->singleton(StripeClient::class, function () {
+            return new StripeClient(config('cashier.secret'));
+        });
+
         // OAuth Services
         $this->app->singleton(\App\Service\OAuth\OAuthContextService::class);
         $this->app->singleton(\App\Service\OAuth\OAuthInviteService::class);
         $this->app->singleton(\App\Service\OAuth\OAuthUserDataService::class);
         $this->app->singleton(\App\Service\OAuth\OAuthFlowOrchestrator::class);
-
-        // Plan Service (singleton for caching efficiency)
-        $this->app->singleton(\App\Service\Plan\PlanService::class);
     }
 
     private function ensureSafeTestingDatabase(): void

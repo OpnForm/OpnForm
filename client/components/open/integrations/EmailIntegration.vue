@@ -17,15 +17,15 @@
       :form="integrationData"
       :mentions="form.properties"
       :computed-variables="form.computed_variables"
-      :disable-mention="isFreePlan"
-      :disabled="isFreePlan"
+      :disable-mention="!canUseAdvancedEmail"
+      :disabled="!canUseAdvancedEmail"
       name="data.send_to"
       required
       label="Send To"
     >
       <template #help>
         <InputHelp>
-        <span v-if="!isFreePlan">
+        <span v-if="canUseAdvancedEmail">
           Add one email per line
         </span>
         <span v-else>
@@ -95,7 +95,10 @@
           <div class="grow">
             <h4 class="font-semibold flex items-center gap-2">
               Email appearance
-              <PlanTag upgrade-modal-title="Upgrade to customise email appearance" />
+              <PlanTag
+                feature="branding.advanced"
+                upgrade-modal-title="Upgrade to customise email appearance"
+              />
             </h4>
             <p class="text-gray-400 dark:text-neutral-500 text-xs">
               Logo, fonts and colors for your email notifications
@@ -105,21 +108,21 @@
       </template>
       <div class="border-t dark:border-neutral-700 p-4 space-y-4">
         <div
-          v-if="isFreePlan"
+          v-if="!canUseAdvancedBranding"
           class="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900 dark:border-blue-900/60 dark:bg-blue-950/40 dark:text-blue-100"
         >
-          Email appearance customisation is part of the Pro plan.
+          Email appearance customisation is part of the Business plan.
           <a
             class="underline cursor-pointer"
             @click="openSubscriptionModal"
           >
-            Upgrade to Pro
+            Upgrade to Business
           </a>
           to add your logo, custom fonts and colors.
         </div>
         <image-input
           :form="integrationData"
-          :disabled="isFreePlan"
+          :disabled="!canUseAdvancedBranding"
           name="data.logo_url"
           label="Logo"
           help="Display your logo in the email header (replaces app name)"
@@ -132,7 +135,7 @@
               block
               size="lg"
               variant="outline"
-              :disabled="isFreePlan"
+              :disabled="!canUseAdvancedBranding"
               @click="showGoogleFontPicker = true"
             >
               <span :style="{ 'font-family': (integrationData.data.font_family ? integrationData.data.font_family + ', sans-serif' : null) }">
@@ -148,7 +151,7 @@
           </div>
           <ColorInput
             :form="integrationData"
-            :disabled="isFreePlan"
+            :disabled="!canUseAdvancedBranding"
             name="data.font_color"
             label="Font color"
             help="Color of the text in the email"
@@ -157,14 +160,14 @@
         <div class="grid grid-cols-2 gap-4">
           <ColorInput
             :form="integrationData"
-            :disabled="isFreePlan"
+            :disabled="!canUseAdvancedBranding"
             name="data.outer_background_color"
             label="Outer background color"
             help="Background around the email content area"
           />
           <ColorInput
             :form="integrationData"
-            :disabled="isFreePlan"
+            :disabled="!canUseAdvancedBranding"
             name="data.inner_background_color"
             label="Inner background color"
             help="Background of the email content area"
@@ -239,7 +242,9 @@ const { data: user } = useAuth().user()
 
 const showEmailAppearance = ref(false)
 const showGoogleFontPicker = ref(false)
-const isFreePlan = computed(() => props.form?.plan_tier === 'free')
+const workspaceFeatures = computed(() => props.form?.workspace?.features ?? [])
+const canUseAdvancedEmail = computed(() => workspaceFeatures.value.includes('integrations.email.advanced'))
+const canUseAdvancedBranding = computed(() => workspaceFeatures.value.includes('branding.advanced'))
 
 function onApplyFont(val) {
   if (props.integrationData.data) {
@@ -262,8 +267,13 @@ function openEmailsModal () {
 
 function openSubscriptionModal () {
   useAppModals().openSubscriptionModal({
-    modal_title: 'Upgrade to unlock powerful email integration',
-    modal_description: 'Upgrade to Pro to customize email notification recipients, send confirmation email to form respondents, and more: form customization, custom domain, collaboration, etc.'
+    plan: canUseAdvancedEmail.value ? 'business' : 'pro',
+    modal_title: canUseAdvancedEmail.value
+      ? 'Upgrade to unlock email appearance customisation'
+      : 'Upgrade to unlock powerful email integration',
+    modal_description: canUseAdvancedEmail.value
+      ? 'Upgrade to Business to add your logo, custom fonts, and colors to email notifications.'
+      : 'Upgrade to Pro to customize email notification recipients, send confirmation email to form respondents, and more: form customization, custom domain, collaboration, etc.'
   })
 }
 

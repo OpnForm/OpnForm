@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\Subscriptions\UpdateStripeDetailsRequest;
 use App\Models\Workspace;
+use App\Service\Billing\BillingStateResolver;
 use App\Service\BillingHelper;
 use App\Service\UserHelper;
 use Illuminate\Http\Request;
@@ -12,6 +13,10 @@ use Illuminate\Support\Facades\Cache;
 
 class SubscriptionController extends Controller
 {
+    public function __construct(protected BillingStateResolver $billingStateResolver)
+    {
+    }
+
     public const SUBSCRIPTION_PLANS = ['monthly', 'yearly'];
 
     public const SUBSCRIPTION_NAMES = [
@@ -43,7 +48,7 @@ class SubscriptionController extends Controller
 
         try {
             // Check User does not already have an active/trialing subscription
-            if ($user->hasActiveDefaultSubscription()) {
+            if ($this->billingStateResolver->hasActivePaidSubscription($user)) {
                 return $this->error([
                     'message' => 'You already have an active subscription.',
                 ]);
@@ -171,7 +176,7 @@ class SubscriptionController extends Controller
 
         // Upgrade the subscription to yearly plan
         try {
-            $subscription = $user->activeDefaultSubscription();
+            $subscription = $this->billingStateResolver->resolveActiveSubscription($user);
             if (!$subscription) {
                 return $this->error([
                     "message" => "No active subscription found for this user.",

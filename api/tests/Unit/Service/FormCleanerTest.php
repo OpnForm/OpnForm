@@ -337,4 +337,38 @@ describe('FormCleaner tier-based cleaning', function () {
         // But cleanings should be recorded
         expect($cleaner->hasCleaned())->toBeTrue();
     });
+
+    it('keeps overridden form features even when tier would normally clean them', function () {
+        $user = $this->actingAsUser(); // Free tier
+        $workspace = $this->createUserWorkspace($user);
+        $workspace->update([
+            'plan_overrides' => [
+                'features' => ['redirect_url', 'secret_input'],
+            ],
+        ]);
+        $workspace->flush();
+
+        $form = $this->createForm($user, $workspace, [
+            'redirect_url' => 'https://example.com/thanks',
+            'properties' => [
+                [
+                    'id' => 'field1',
+                    'name' => 'Secret',
+                    'type' => 'text',
+                    'secret_input' => true,
+                ],
+            ],
+        ]);
+
+        $request = Request::create('/', 'GET');
+        $cleaner = (new FormCleaner())->processForm($request, $form);
+        $cleaner->performCleaning($workspace);
+        $data = $cleaner->getData();
+
+        $secretField = collect($data['properties'])->firstWhere('id', 'field1');
+
+        expect($data['redirect_url'])->toBe('https://example.com/thanks');
+        expect($secretField['secret_input'])->toBeTrue();
+        expect($cleaner->hasCleaned())->toBeFalse();
+    });
 });

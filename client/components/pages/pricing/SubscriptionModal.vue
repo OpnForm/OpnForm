@@ -73,7 +73,7 @@
                           </div>
                         </div>
                         <TrackClick
-                          v-if="['free', 'pro'].includes(user?.plan_tier)"
+                          v-if="!userIsSubscribed || user?.plan_tier === 'pro'"
                           name="upgrade_modal_start_trial"
                           :properties="{ plan: currentPlan, period: isYearly ? 'yearly' : 'monthly' }"
                           class="w-full"
@@ -158,7 +158,7 @@
               </div>
               <div class="flex-grow w-full max-w-sm">
                 <div
-                  v-if="['free', 'pro'].includes(user?.plan_tier)"
+                  v-if="!userIsSubscribed || user?.plan_tier === 'pro'"
                   class="rounded-md p-4 border flex flex-col my-4 gap-1"
                   :class="confirmationBoxClass"
                 >
@@ -331,8 +331,8 @@ const broadcastData = subscribeBroadcast.data
 const confetti = useConfetti()
 const { isAuthenticated: authenticated } = useIsAuthenticated()
 const { data: user } = useAuth().user()
-const { tierMeetsRequirement, getPlanPrice } = usePlanFeatures()
-const isSubscribed = computed(() => tierMeetsRequirement(user.value?.plan_tier, 'pro'))
+const { getPlanPrice, userIsSubscribed } = useBillingUpsell()
+const isSubscribed = computed(() => userIsSubscribed.value)
 const currency = 'usd'
 
 const selectedPlanPrice = computed(() => {

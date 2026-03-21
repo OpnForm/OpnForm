@@ -518,7 +518,7 @@ useOpnSeoMeta({
 
 const { openSubscriptionModal } = useAppModals()
 const { isAuthenticated: authenticated } = useIsAuthenticated()
-const { getPlanPrice } = usePlanFeatures()
+const { getPlanPrice } = useBillingUpsell()
 
 const pricingIsYearly = ref(true)
 

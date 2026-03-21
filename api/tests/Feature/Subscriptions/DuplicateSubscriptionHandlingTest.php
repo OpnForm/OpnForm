@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\IsNotSubscribed;
 use App\Http\Middleware\IsSubscribed;
+use App\Service\Billing\BillingStateResolver;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Cache;
@@ -24,7 +25,7 @@ it('keeps user subscribed when newest subscription is canceled but an older one 
 
     $user = $user->fresh();
 
-    expect($user->hasActiveDefaultSubscription())->toBeTrue();
+    expect($user->hasActivePaidSubscription())->toBeTrue();
     expect($user->is_subscribed)->toBeTrue();
 });
 
@@ -35,7 +36,7 @@ it('selects newest active trialing subscription while ignoring canceled rows', f
     $newerActive = createDefaultSubscriptionForTest($user, 'active');
     createDefaultSubscriptionForTest($user, 'canceled');
 
-    $selected = $user->fresh()->activeDefaultSubscription();
+    $selected = $user->fresh()->activePaidSubscription();
 
     expect($selected)->not->toBeNull();
     expect($selected->id)->toBe($newerActive->id);
@@ -48,7 +49,7 @@ it('treats trialing subscriptions as active for entitlement checks', function ()
 
     $user = $user->fresh();
 
-    expect($user->hasActiveDefaultSubscription())->toBeTrue();
+    expect($user->hasActivePaidSubscription())->toBeTrue();
     expect($user->is_subscribed)->toBeTrue();
 });
 
@@ -59,11 +60,11 @@ it('does not treat canceled or past due subscriptions as active', function () {
 
     $user = $user->fresh();
 
-    expect($user->hasActiveDefaultSubscription())->toBeFalse();
-    expect($user->activeDefaultSubscription())->toBeNull();
+    expect($user->hasActivePaidSubscription())->toBeFalse();
+    expect($user->activePaidSubscription())->toBeNull();
 });
 
-it('ignores non-default active subscriptions for default entitlement checks', function () {
+it('ignores non-plan active subscriptions for paid entitlement checks', function () {
     $user = $this->createUser();
     $user->subscriptions()->create([
         'type' => 'extra_user',
@@ -75,8 +76,8 @@ it('ignores non-default active subscriptions for default entitlement checks', fu
 
     $user = $user->fresh();
 
-    expect($user->hasActiveDefaultSubscription())->toBeFalse();
-    expect($user->activeDefaultSubscription())->toBeNull();
+    expect($user->hasActivePaidSubscription())->toBeFalse();
+    expect($user->activePaidSubscription())->toBeNull();
 });
 
 it('allows subscribed middleware access when at least one active subscription exists', function () {
@@ -89,7 +90,7 @@ it('allows subscribed middleware access when at least one active subscription ex
     ]);
     $request->setUserResolver(fn () => $user->fresh());
 
-    $response = (new IsSubscribed())->handle($request, fn () => response()->json(['ok' => true]));
+    $response = (new IsSubscribed(app(BillingStateResolver::class)))->handle($request, fn () => response()->json(['ok' => true]));
 
     expect($response->status())->toBe(200);
     expect($response->getData(true)['ok'])->toBeTrue();
@@ -105,7 +106,27 @@ it('blocks not subscribed middleware when at least one active subscription exist
     ]);
     $request->setUserResolver(fn () => $user->fresh());
 
-    $response = (new IsNotSubscribed())->handle($request, fn () => response()->json(['ok' => true]));
+    $response = (new IsNotSubscribed(app(BillingStateResolver::class)))->handle($request, fn () => response()->json(['ok' => true]));
+
+    expect($response->status())->toBe(401);
+});
+
+it('treats business subscriptions as active for middleware and checkout blocking', function () {
+    $user = $this->createUser();
+    $user->subscriptions()->create([
+        'type' => 'business',
+        'stripe_id' => (string) Str::uuid(),
+        'stripe_status' => 'active',
+        'stripe_price' => (string) Str::uuid(),
+        'quantity' => 1,
+    ]);
+
+    $request = Request::create('/subscription-test', 'GET', [], [], [], [
+        'HTTP_ACCEPT' => 'application/json',
+    ]);
+    $request->setUserResolver(fn () => $user->fresh());
+
+    $response = (new IsNotSubscribed(app(BillingStateResolver::class)))->handle($request, fn () => response()->json(['ok' => true]));
 
     expect($response->status())->toBe(401);
 });

@@ -106,7 +106,7 @@
 </template>
 
 <script setup>
-const { getPlanPrice, getTierDisplayName } = usePlanFeatures()
+const { getPlanPrice, getTierDisplayName } = useBillingUpsell()
 
 const formatPlanPrice = (plan) => {
   const price = getPlanPrice(plan, false)

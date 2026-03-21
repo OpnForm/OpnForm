@@ -3,6 +3,7 @@
 namespace Tests;
 
 use App\Models\Forms\Form;
+use App\Models\License;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Service\Forms\FormSubmissionDataFactory;
@@ -236,6 +237,20 @@ trait TestHelpers
         return $user;
     }
 
+    public function createAppSumoLicensedUser(int $tier = 1)
+    {
+        $user = $this->createUser();
+
+        $user->licenses()->create([
+            'license_key' => Str::random(32),
+            'license_provider' => 'appsumo',
+            'status' => License::STATUS_ACTIVE,
+            'meta' => ['tier' => $tier],
+        ]);
+
+        return $user->fresh();
+    }
+
     public function actingAsUser(?User $user = null)
     {
         if ($user == null) {
@@ -282,7 +297,7 @@ trait TestHelpers
         return $this->actingAsUser($user);
     }
 
-    public function actingAsTrialingUser(User $user = null)
+    public function actingAsTrialingUser(?User $user = null)
     {
         if ($user == null) {
             $user = $this->createTrialingUser();
