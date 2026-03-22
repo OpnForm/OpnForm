@@ -5,7 +5,8 @@ namespace App\Models;
 use App\Models\Forms\Form;
 use App\Models\Traits\CachableAttributes;
 use App\Models\Traits\CachesAttributes;
-use App\Service\BillingHelper;
+use App\Service\Billing\BillingStateResolver;
+use App\Service\Billing\PlanAccessService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -22,12 +23,15 @@ class Workspace extends Model implements CachableAttributes
 
     public const MAX_DOMAIN_PRO = 1;
 
+    private const CACHE_TTL = 15 * 60;
+
     protected $fillable = [
         'name',
         'icon',
         'user_id',
         'custom_domain',
         'settings',
+        'plan_overrides',
     ];
 
     protected $dispatchesEvents = [
@@ -35,9 +39,8 @@ class Workspace extends Model implements CachableAttributes
     ];
 
     protected $appends = [
-        'is_pro',
+        'plan_tier',
         'is_trialing',
-        'is_enterprise',
         'users_count',
         'is_yearly_plan',
     ];
@@ -46,21 +49,36 @@ class Workspace extends Model implements CachableAttributes
     {
         return [
             'custom_domains' => 'array',
-            'settings' => 'array'
+            'settings' => 'array',
+            'plan_overrides' => 'array',
         ];
     }
 
     protected $cachableAttributes = [
-        'is_pro',
+        'plan_tier',
         'is_trialing',
-        'is_enterprise',
         'is_risky',
         'is_yearly_plan',
+        'billing_state',
         'submissions_count',
         'max_file_size',
         'custom_domain_count',
         'users_count',
     ];
+
+    /**
+     * Flush workspace cache and also flush owners' cache because plan-derived state is shared.
+     */
+    public function flushWithOwners(): bool
+    {
+        $result = $this->flush();
+
+        foreach ($this->owners as $owner) {
+            $owner->flush();
+        }
+
+        return $result;
+    }
 
     public function getMaxFileSizeAttribute()
     {
@@ -68,20 +86,24 @@ class Workspace extends Model implements CachableAttributes
             return self::MAX_FILE_SIZE_PRO;
         }
 
-        return $this->remember('max_file_size', 15 * 60, function (): int {
-            // Return max file size depending on subscription
-            foreach ($this->owners as $owner) {
-                if ($owner->is_subscribed) {
-                    if ($license = $owner->activeLicense()) {
-                        // In case of special License
-                        return $license->max_file_size;
-                    }
-                }
-
-                return self::MAX_FILE_SIZE_PRO;
+        return $this->remember('max_file_size', self::CACHE_TTL, function (): int {
+            // 1. Check workspace-level override
+            $overrideLimit = $this->plan_overrides['limits']['file_upload_size'] ?? null;
+            if ($overrideLimit !== null) {
+                return (int) $overrideLimit;
             }
 
-            return self::MAX_FILE_SIZE_FREE;
+            // 2. Check for AppSumo/License limits (take precedence over tier)
+            foreach ($this->owners as $owner) {
+                if ($license = $owner->activeLicense()) {
+                    return $license->max_file_size;
+                }
+            }
+
+            // 3. Use tier-based limit from config
+            $tier = $this->plan_tier;
+
+            return config("plans.limits.file_upload_size.{$tier}") ?? self::MAX_FILE_SIZE_FREE;
         });
     }
 
@@ -91,42 +113,36 @@ class Workspace extends Model implements CachableAttributes
             return null;
         }
 
-        return $this->remember('custom_domain_count', 15 * 60, function (): ?int {
-            foreach ($this->owners as $owner) {
-                if ($owner->is_subscribed) {
-                    if ($license = $owner->activeLicense()) {
-                        // In case of special License
-                        return $license->custom_domain_limit_count;
-                    }
+        return $this->remember('custom_domain_count', self::CACHE_TTL, function (): ?int {
+            // 1. Check workspace-level override
+            $overrideLimit = $this->plan_overrides['limits']['custom_domain_count'] ?? null;
+            if ($overrideLimit !== null) {
+                return (int) $overrideLimit;
+            }
 
-                    return self::MAX_DOMAIN_PRO;
+            // 2. Check for AppSumo/License limits (take precedence over tier)
+            foreach ($this->owners as $owner) {
+                if ($license = $owner->activeLicense()) {
+                    return $license->custom_domain_limit_count;
                 }
             }
 
-            return 0;
+            // 3. Use tier-based limit from config
+            $tier = $this->plan_tier;
+
+            return config("plans.limits.custom_domain_count.{$tier}") ?? 0;
         });
     }
 
-    public function getIsProAttribute()
+    /**
+     * Get the workspace's effective plan tier.
+     * Checks overrides first, then highest owner tier.
+     *
+     * @return string One of: 'free', 'pro', 'business', 'enterprise'
+     */
+    public function getPlanTierAttribute(): string
     {
-        if (!pricing_enabled()) {
-            return true;    // If no paid plan so TRUE for ALL
-        }
-
-        return $this->remember('is_pro', 15 * 60, function (): bool {
-            // Make sure at least one owner is pro
-            $owners = $this->relationLoaded('users')
-                ? $this->users->where('pivot.role', 'admin')
-                : $this->owners()->get();
-
-            foreach ($owners as $owner) {
-                if ($owner->is_subscribed) {
-                    return true;
-                }
-            }
-
-            return false;
-        });
+        return app(PlanAccessService::class)->getTier($this);
     }
 
     public function getIsTrialingAttribute()
@@ -135,7 +151,7 @@ class Workspace extends Model implements CachableAttributes
             return false;    // If no paid plan so FALSE for ALL
         }
 
-        return $this->remember('is_trialing', 15 * 60, function (): bool {
+        return $this->remember('is_trialing', self::CACHE_TTL, function (): bool {
             // Make sure at least one owner is trialing
             $owners = $this->relationLoaded('users')
                 ? $this->users->where('pivot.role', 'admin')
@@ -151,31 +167,9 @@ class Workspace extends Model implements CachableAttributes
         });
     }
 
-    public function getIsEnterpriseAttribute()
-    {
-        if (!pricing_enabled()) {
-            return true;    // If no paid plan so TRUE for ALL
-        }
-
-        return $this->remember('is_enterprise', 15 * 60, function (): bool {
-            // Make sure at least one owner has enterprise subscription
-            $owners = $this->relationLoaded('users')
-                ? $this->users->where('pivot.role', 'admin')
-                : $this->owners()->get();
-
-            foreach ($owners as $owner) {
-                if ($owner->has_enterprise_subscription) {
-                    return true;
-                }
-            }
-
-            return false;
-        });
-    }
-
     public function getIsRiskyAttribute()
     {
-        return $this->remember('is_risky', 15 * 60, function (): bool {
+        return $this->remember('is_risky', self::CACHE_TTL, function (): bool {
             foreach ($this->owners as $owner) {
                 if (!$owner->is_risky) {
                     return false;
@@ -192,27 +186,12 @@ class Workspace extends Model implements CachableAttributes
             return false;
         }
 
-        return $this->remember('is_yearly_plan', 15 * 60, function (): bool {
-            $owners = $this->relationLoaded('users')
-                ? $this->users->where('pivot.role', 'admin')
-                : $this->owners()->get();
-
-            foreach ($owners as $owner) {
-                if ($owner->is_subscribed) {
-                    $subscription = $owner->activeDefaultSubscription();
-                    if ($subscription && BillingHelper::getSubscriptionInterval($subscription) === 'yearly') {
-                        return true;
-                    }
-                }
-            }
-
-            return false;
-        });
+        return $this->remember('is_yearly_plan', self::CACHE_TTL, fn (): bool => app(BillingStateResolver::class)->isYearly($this));
     }
 
     public function getSubmissionsCountAttribute()
     {
-        return $this->remember('submissions_count', 15 * 60, function (): int {
+        return $this->remember('submissions_count', self::CACHE_TTL, function (): int {
             $total = 0;
             // Use loaded relationship if available to avoid queries
             $forms = $this->relationLoaded('forms')
@@ -229,7 +208,7 @@ class Workspace extends Model implements CachableAttributes
 
     public function getUsersCountAttribute()
     {
-        return $this->remember('users_count', 15 * 60, function (): int {
+        return $this->remember('users_count', self::CACHE_TTL, function (): int {
             // Use loaded relationship if available to avoid queries
             if ($this->relationLoaded('users')) {
                 return $this->users->count();
@@ -256,8 +235,16 @@ class Workspace extends Model implements CachableAttributes
         return $this->users()->wherePivot('role', 'admin');
     }
 
+    /**
+     * Get workspace owners who have an active billing relationship.
+     * Returns all admins if workspace has plan_overrides (paid without subscription is valid).
+     */
     public function billingOwners(): Collection
     {
+        if (!empty($this->plan_overrides['tier'])) {
+            return $this->owners;
+        }
+
         return $this->owners->filter(fn ($owner) => $owner->is_subscribed);
     }
 
@@ -328,5 +315,21 @@ class Workspace extends Model implements CachableAttributes
             ->wherePivot('user_id', $user->id)
             ->wherePivot('role', User::ROLE_READONLY)
             ->exists();
+    }
+
+    /**
+     * Check if workspace has access to a specific feature.
+     * Considers workspace overrides and tier-based access.
+     */
+    public function hasFeature(string $feature): bool
+    {
+        return $this->remember('has_feature_' . $feature, self::CACHE_TTL, function () use ($feature): bool {
+            return app(PlanAccessService::class)->hasFeature($this, $feature);
+        });
+    }
+
+    public function requireFeature(string $feature): void
+    {
+        app(PlanAccessService::class)->requireFeature($this, $feature);
     }
 }

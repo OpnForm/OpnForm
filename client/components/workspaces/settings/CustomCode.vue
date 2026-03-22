@@ -3,7 +3,7 @@
     <div class="flex flex-col flex-wrap items-start justify-between gap-4 sm:flex-row sm:items-center">
       <div class="flex-1">
         <h3 class="text-lg font-medium text-neutral-900">
-          Custom Code <ProTag
+          Custom Code <PlanTag
             class="mb-2 block"
             upgrade-modal-title="Upgrade to Unlock Custom Code Capabilities"
             upgrade-modal-description="On the Free plan, you can explore custom code features within the workspace settings. Upgrade your plan to implement custom scripts, styles, and advanced tracking in all your workspace forms. Elevate your forms' functionality and design with unlimited customization options."
@@ -33,7 +33,7 @@
     </div>
 
     <UAlert
-      v-if="!workspace.is_pro"
+      v-if="!canAccessAdvancedBranding"
       icon="i-heroicons-user-group-20-solid"
       class="mb-4"
       color="warning"
@@ -70,7 +70,7 @@
             <div class="flex flex-col flex-wrap items-start justify-between gap-4 sm:flex-row sm:items-center">
               <div>
                 <h3 class="text-lg font-medium text-neutral-900">
-                  Custom CSS <ProTag
+                  Custom CSS <PlanTag
                     class="mb-2 block"
                     upgrade-modal-title="Upgrade to Unlock Custom CSS"
                     upgrade-modal-description="On the Free plan, you can explore custom CSS within the workspace settings. Upgrade to apply custom styles to all your workspace forms."
@@ -94,7 +94,7 @@
               name="custom_css"
               class="mt-4"
               :form="customCodeForm"
-              :disabled="!workspace.is_pro"
+              :disabled="!canAccessAdvancedBranding"
               help="CSS only. Example: body { background: #f8fafc }"
               label="Custom CSS"
               placeholder="body { background: #f8fafc }"
@@ -106,7 +106,7 @@
           <UButton
             type="submit"
             :loading="customCodeForm.busy"
-            :disabled="!workspace.is_pro"
+            :disabled="!canAccessAdvancedBranding"
             color="primary"
           >
             Save Changes
@@ -118,13 +118,15 @@
 </template>
 
 <script setup>
-import ProTag from "~/components/app/ProTag.vue"
+import PlanTag from "~/components/app/PlanTag.vue"
 
 const alert = useAlert()
 const crisp = useCrisp()
 const { current: workspace } = useCurrentWorkspace()
 const { openSubscriptionModal: openModal } = useAppModals()
 const { invalidateAll } = useWorkspaces()
+const { hasFeature } = usePlanFeatures()
+const canAccessAdvancedBranding = computed(() => hasFeature('branding.advanced'))
 
 const openSubscriptionModal = () => {
   openModal({ modal_title: 'Upgrade to use workspace level custom code' })
@@ -143,7 +145,7 @@ const selfHosted = computed(() => !!useFeatureFlag('self_hosted', false))
 const allowSelfHosted = computed(() => !!useFeatureFlag('custom_code.enable_self_hosted', false))
 
 const canUseCustomCode = computed(() => {
-  if (!workspace.value?.is_pro) return false
+  if (!canAccessAdvancedBranding.value) return false
   return hasCustomDomain.value || (selfHosted.value && allowSelfHosted.value)
 })
 
@@ -158,7 +160,7 @@ const customCodeHelp = computed(() => {
 })
 
 const saveChanges = () => {
-  if (!workspace.value?.is_pro) return
+  if (!canAccessAdvancedBranding.value) return
 
   customCodeForm
     .put(`/open/workspaces/${workspace.value.id}/custom-code-settings`, {

@@ -57,9 +57,6 @@ class AnswerFormRequest extends FormRequest
         });
         foreach ($this->form->properties as $property) {
             $rules = [];
-            /*if (!$this->form->is_pro) {  // If not pro then not check logic
-                $property['logic'] = false;
-            }*/
 
             $data = $this->toArray();
 
@@ -137,8 +134,7 @@ class AnswerFormRequest extends FormRequest
             }
         }
 
-        // Validate submission_id for edit mode
-        if ($this->form->is_pro && $this->form->editable_submissions) {
+        if ($this->form->workspace && $this->form->workspace->hasFeature('editable_submissions') && $this->form->editable_submissions) {
             $this->requestRules['submission_id'] = 'string';
         }
 

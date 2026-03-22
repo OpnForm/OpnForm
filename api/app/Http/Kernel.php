@@ -12,7 +12,7 @@ use App\Http\Middleware\IsAdmin;
 use App\Http\Middleware\IsModerator;
 use App\Http\Middleware\IsNotSubscribed;
 use App\Http\Middleware\IsSubscribed;
-use App\Http\Middleware\RequireProPlan;
+use App\Http\Middleware\RequireFeature;
 use Illuminate\Foundation\Http\Kernel as HttpKernel;
 use App\Http\Middleware\CheckUserIsBlocked;
 
@@ -115,7 +115,7 @@ class Kernel extends HttpKernel
         'moderator' => IsModerator::class,
         'subscribed' => IsSubscribed::class,
         'not-subscribed' => IsNotSubscribed::class,
-        'require-pro' => RequireProPlan::class,
+        'feature' => RequireFeature::class,     // Usage: ->middleware('feature:custom_domain')
         'cache.headers' => \Illuminate\Http\Middleware\SetCacheHeaders::class,
         'can' => \Illuminate\Auth\Middleware\Authorize::class,
         'guest' => \App\Http\Middleware\RedirectIfAuthenticated::class,
@@ -124,7 +124,6 @@ class Kernel extends HttpKernel
         'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
 
-        'pro-form' => \App\Http\Middleware\Form\ProForm::class,
         'protected-form' => \App\Http\Middleware\Form\ProtectedForm::class,
 
         'abilities' => \Laravel\Sanctum\Http\Middleware\CheckAbilities::class,

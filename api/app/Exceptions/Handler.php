@@ -64,6 +64,15 @@ class Handler extends ExceptionHandler
 
     public function render($request, Throwable $e)
     {
+        if ($e instanceof FeatureAccessDeniedException) {
+            return response()->json([
+                'message' => $e->getMessage(),
+                'feature' => $e->feature,
+                'required_tier' => $e->requiredTier,
+                'current_tier' => $e->currentTier,
+            ], 402);
+        }
+
         if ($this->shouldReport($e) && ! in_array(app()->environment(), ['testing'])) {
             Log::channel('slack_errors')->error('Exception', [
                 'exception' => $e,

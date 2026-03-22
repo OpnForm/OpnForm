@@ -60,7 +60,7 @@ it('returns lightweight form list without properties', function () {
                 'is_closed',
                 'max_submissions_count',
                 'max_number_of_submissions_reached',
-                'is_pro',
+                'plan_tier',
                 'workspace_id',
                 'share_url',
             ],
