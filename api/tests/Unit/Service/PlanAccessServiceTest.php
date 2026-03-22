@@ -37,6 +37,17 @@ it('distinguishes workspace features from form features when names overlap', fun
     expect($this->service->hasFormFeature($workspace, Feature::EDITABLE_SUBMISSIONS))->toBeFalse();
 });
 
+it('does not leak paid workspace or form features into a free workspace payload', function () {
+    $user = $this->createUser();
+    $workspace = $this->createUserWorkspace($user);
+
+    $features = $this->service->getFeatures($workspace);
+
+    expect($features)->toBe([]);
+    expect($this->service->hasFeature($workspace, Feature::BRANDING_REMOVAL))->toBeFalse();
+    expect($this->service->hasFormFeature($workspace, 'redirect_url'))->toBeFalse();
+});
+
 it('throws a feature exception when access is denied', function () {
     $user = $this->createUser();
     $workspace = $this->createUserWorkspace($user);
