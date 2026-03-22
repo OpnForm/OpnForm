@@ -70,6 +70,7 @@
             v-if="$route.name !== 'enterprise'"
             :to="{ name: 'enterprise' }"
             :class="navLinkClasses"
+            class="hidden xl:block"
           >
             Enterprise
           </NuxtLink>
@@ -77,6 +78,7 @@
             v-if="$route.name !== 'integrations'"
             :to="{ name: 'integrations' }"
             :class="navLinkClasses"
+            class="hidden lg:block xl:block"
           >
             Integrations
           </NuxtLink>
@@ -97,6 +99,7 @@
             :href="opnformConfig.links.tech_docs"
             :class="navLinkClasses"
             target="_blank"
+            class="hidden 2xl:block"
           >
             Documentation
           </NuxtLink>

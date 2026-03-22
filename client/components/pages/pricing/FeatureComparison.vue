@@ -13,13 +13,13 @@
       <table class="w-full min-w-[760px] border-collapse">
         <thead>
           <tr class="border-b border-neutral-200">
-            <th class="py-4 pr-6 text-left text-sm font-semibold text-neutral-500">
+            <th class="sticky top-0 z-20 bg-white py-4 pr-6 text-left text-sm font-semibold text-gray-600 shadow-[0_1px_0_0_rgba(229,229,229,1)]">
               &nbsp;
             </th>
             <th
               v-for="(plan, planIndex) in plans"
               :key="planIndex"
-              class="py-4 px-6 text-center"
+              class="sticky top-0 z-20 bg-white p-6 text-center shadow-[0_1px_0_0_rgba(229,229,229,1)]"
             >
               <div class="text-sm font-semibold text-neutral-900">
                 {{ plan.label }}

@@ -30,7 +30,7 @@
       <div
         class="inline-flex items-center whitespace-nowrap rounded-[7px] bg-purple-50 px-2 py-1 pr-2.5 text-xs font-medium text-purple-600"
       >
-        Save 15%
+        Save 15% with yearly billing
       </div>
     </div>
   </div>

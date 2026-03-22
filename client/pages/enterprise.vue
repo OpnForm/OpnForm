@@ -77,7 +77,7 @@
             <span class="h-8 w-8 rounded-full bg-red-50 flex items-center justify-center">
               <UIcon name="i-heroicons-shield-check" class="h-4 w-4 text-red-600" />
             </span>
-            <span>GDPR SOC2</span>
+            <span>GDPR</span>
           </div>
 
           <div class="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-2 py-1 text-sm font-semibold text-neutral-800 shadow-sm">

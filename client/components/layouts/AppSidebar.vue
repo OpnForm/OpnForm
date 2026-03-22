@@ -89,7 +89,6 @@ const { current: workspace } = useCurrentWorkspace()
 const isSelfHosted = computed(() => useFeatureFlag('self_hosted'))
 const { can } = useWorkspaceAbilities()
 const { openSubscriptionModal } = useAppModals()
-const { can } = useWorkspaceAbilities()
 
 // Check if current route matches a prefix
 function isActiveRoute(prefix) {

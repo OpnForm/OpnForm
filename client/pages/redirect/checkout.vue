@@ -25,37 +25,13 @@ onMounted(async () => {
   }
 
   try {
-    // Update customer details if provided
-    if (name && email) {
-      try {
-        await billingApi.updateCustomerDetails({ name, email })
-      } catch {
-        useAlert().error('Failed to update customer details, but proceeding with checkout')
-      }
-    }
-
-    // Get checkout URL
-    const params = { trial_duration, currency }
-    const subscription = yearly === 'true' ? 'yearly' : 'monthly'
-    const { checkout_url } = await billingApi.getCheckoutUrl(
-      plan, 
-      subscription, 
-      'with-trial', 
-      { params }
-    )
-    
-    if (!checkout_url) {
-      throw new Error('No checkout URL returned')
-    }
-
-    // Log trial usage if applicable
-    if (trial_duration) {
-      useAmplitude().logEvent('extended_trial_used', { duration: trial_duration })
-    }
-    
-    window.location.href = checkout_url
-  } catch (error) {
-    useAlert().error(error.response?._data?.message || 'Unable to start checkout process. Please try again or contact support.')
+    await startCheckout(plan, {
+      yearly: yearly === 'true',
+      trialDuration: trial_duration,
+      currency: currency || 'usd',
+      bypassBeforeUnload: false,
+    })
+  } catch {
     setTimeout(() => {
       navigateTo({ name: 'pricing' })
     }, 2000)
