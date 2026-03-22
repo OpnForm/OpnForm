@@ -33,10 +33,17 @@ class PlanAccessService
 
     public function hasFormFeature(Workspace $workspace, string $feature): bool
     {
+        $featureMap = config('plans.form_features', []);
+        $overrideFeatures = $workspace->plan_overrides['features'] ?? [];
+
+        if (!array_key_exists($feature, $featureMap) && !in_array($feature, $overrideFeatures, true)) {
+            return false;
+        }
+
         return $this->hasMappedFeature(
             $workspace,
             $feature,
-            config('plans.form_features', []),
+            $featureMap,
         );
     }
 
@@ -70,12 +77,17 @@ class PlanAccessService
 
     public function getFeatures(Workspace $workspace): array
     {
-        $features = array_unique(array_merge(
+        $workspaceFeatures = array_values(array_filter(
             array_keys(config('plans.features', [])),
-            array_keys(config('plans.form_features', [])),
+            fn (string $feature) => $this->hasFeature($workspace, $feature)
         ));
 
-        return array_values(array_filter($features, fn (string $feature) => $this->hasFeature($workspace, $feature) || $this->hasFormFeature($workspace, $feature)));
+        $formFeatures = array_values(array_filter(
+            array_keys(config('plans.form_features', [])),
+            fn (string $feature) => $this->hasFormFeature($workspace, $feature)
+        ));
+
+        return array_values(array_unique(array_merge($workspaceFeatures, $formFeatures)));
     }
 
     public function getRequiredTiers(): array
