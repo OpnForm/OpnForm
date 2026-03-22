@@ -522,8 +522,7 @@ const pricingIsYearly = ref(true)
 const formatPlanPrice = (plan) => {
   const price = getPlanPrice(plan, pricingIsYearly.value)
   if (price == null) return null
-  const suffix = plan === 'enterprise' ? '+' : ''
-  return `$${price}${suffix}`
+  return `$${price}`
 }
 
 const planPriceDisplay = computed(() => ({
