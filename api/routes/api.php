@@ -441,6 +441,7 @@ Route::prefix('forms')->name('forms.')->group(function () {
  */
 Route::prefix('content')->name('content.')->group(function () {
     Route::get('/feature-flags', [\App\Http\Controllers\Content\FeatureFlagsController::class, 'index'])->name('feature-flags');
+    Route::get('/plans', [\App\Http\Controllers\Content\PlansController::class, 'index'])->name('plans');
     Route::get('changelog/entries', [\App\Http\Controllers\Content\ChangelogController::class, 'index'])->name('changelog.entries');
 });
 

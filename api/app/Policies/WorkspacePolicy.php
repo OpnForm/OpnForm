@@ -137,7 +137,7 @@ class WorkspacePolicy
             return Response::allow();
         }
 
-        if (!$workspace->hasFeature('workspaces.multiple')) {
+        if (!$workspace->hasFeature('invite_user')) {
             return Response::deny('A Pro plan is required to invite users.');
         }
 
