@@ -85,8 +85,8 @@ const { sharedNavigationSections, createNavItem } = useSharedNavigation()
 
 const { current: workspace } = useCurrentWorkspace()
 const isSelfHosted = computed(() => useFeatureFlag('self_hosted'))
-const { openSubscriptionModal } = useAppModals()
 const { can } = useWorkspaceAbilities()
+const { openSubscriptionModal } = useAppModals()
 
 // Check if current route matches a prefix
 function isActiveRoute(prefix) {

@@ -45,7 +45,6 @@ useOpnSeoMeta({
 })
 
 const { openSubscriptionModal } = useAppModals()
-
 const { hasFeature } = usePlanFeatures()
 const canAccessSummary = computed(() => hasFeature('form_summary'))
 

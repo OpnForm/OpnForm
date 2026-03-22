@@ -30,7 +30,7 @@
             </template>
           </WorkspaceDropdown>
         </div>
-        <div class="hidden md:flex gap-x-2 ml-auto">
+        <div class="hidden md:flex gap-x-1 lg:gap-x-2 ml-auto">
           <NuxtLink
             v-if="user"
             :to="{ name: 'home' }"
@@ -70,6 +70,7 @@
             v-if="$route.name !== 'enterprise'"
             :to="{ name: 'enterprise' }"
             :class="navLinkClasses"
+            class="hidden xl:block"
           >
             Enterprise
           </NuxtLink>
@@ -77,6 +78,7 @@
             v-if="$route.name !== 'integrations'"
             :to="{ name: 'integrations' }"
             :class="navLinkClasses"
+            class="hidden lg:block xl:block"
           >
             Integrations
           </NuxtLink>
@@ -114,6 +116,7 @@
             :href="opnformConfig.links.tech_docs"
             :class="navLinkClasses"
             target="_blank"
+            class="hidden 2xl:block"
           >
             Documentation
           </NuxtLink>
@@ -123,6 +126,7 @@
             <button
               v-if="user"
               :class="navLinkClasses"
+              class="hidden xl:block"
               @click.prevent="openChangelog"
             >
               What's new?
@@ -137,6 +141,7 @@
               :href="opnformConfig.links.changelog_url"
               target="_blank"
               :class="navLinkClasses"
+              class="hidden xl:block"
             >
               What's new?
             </a>
@@ -145,7 +150,7 @@
 
         <div class="block">
           <div class="flex items-center">
-            <div class="ml-12 relative">
+            <div class="ml-4 lg:ml-8 xl:ml-12 relative">
               <div class="relative inline-block text-left">
                 <UserDropdown v-if="user">
                   <template #default="{ user }">
@@ -216,6 +221,18 @@ const isIframe = useIsIframe()
 const isSelfHosted = computed(() => useFeatureFlag("self_hosted"))
 const { workspaceIsPaid } = useBillingUpsell()
 const route = useRoute()
+const hasNewChanges = computed(() => {
+  if (import.meta.server || !window.Featurebase || !appStore.featureBaseEnabled) {
+    return false
+  }
+
+  return window.Featurebase("unviewed_changelog_count") > 0
+})
+
+function openChangelog() {
+  if (import.meta.server || !window.Featurebase) return
+  window.Featurebase("manually_open_changelog_popup")
+}
 
 // Get current form for forms-slug routes
 const isFormSlugRoute = computed(

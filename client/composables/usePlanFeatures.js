@@ -2,6 +2,7 @@ export function usePlanFeatures() {
   const { current: workspace } = useCurrentWorkspace()
   const { can, tierMeetsRequirement, requiredTier: workspaceRequiredTier } = useWorkspaceAbilities()
   const { currentUserTier, getTierDisplayName } = useBillingUpsell()
+  const { openSubscriptionModal } = useAppModals()
 
   const hasFeature = (feature) => {
     if (workspace.value) {
@@ -28,7 +29,7 @@ export function usePlanFeatures() {
     if (hasFeature(feature)) return true
     if (import.meta.client) {
       const requiredTier = getRequiredTier(feature) || 'pro'
-      useAppModals().openSubscriptionModal({
+      openSubscriptionModal({
         plan: requiredTier,
         modal_title: modalTitle || `Upgrade to ${getTierDisplayName(requiredTier)} to unlock this feature`,
       })

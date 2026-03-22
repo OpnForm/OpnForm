@@ -126,7 +126,8 @@ const onUpgradeClick = () => {
   openSubscriptionModal({
     plan: 'business',
     modal_title: 'Upgrade to unlock all features for your form',
-    modal_description: 'Some features are disabled on the published form. Upgrade your plan to unlock these features and much more. Gain full access to all advanced features.'
+    modal_description: 'Some features are disabled on the published form. Upgrade your plan to unlock these features and much more. Gain full access to all advanced features.',
+    show_requirement_hints: false,
   })
 }
 

@@ -18,13 +18,13 @@
       <table class="w-full min-w-108.75border-collapse">
         <thead>
           <tr class="border-b border-neutral-200">
-            <th class="py-4 pr-6 text-left text-sm font-semibold text-gray-600">
+            <th class="sticky top-0 z-20 bg-white py-4 pr-6 text-left text-sm font-semibold text-gray-600 shadow-[0_1px_0_0_rgba(229,229,229,1)]">
               &nbsp;
             </th>
             <th
               v-for="(plan, planIndex) in plans"
               :key="planIndex"
-              class="p-6 text-center"
+              class="sticky top-0 z-20 bg-white p-6 text-center shadow-[0_1px_0_0_rgba(229,229,229,1)]"
             >
               <div class="text-xl leading-7 font-medium text-gray-950">
                 {{ plan.label }}
