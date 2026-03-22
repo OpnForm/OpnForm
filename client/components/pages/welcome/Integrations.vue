@@ -1,10 +1,16 @@
 <template>
-  <div class="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-    <div class="rounded-[2.5rem] bg-gradient-to-br from-neutral-950 via-neutral-900 to-neutral-950 border border-white/10 shadow-2xl overflow-hidden">
-      <div class="grid gap-10 lg:grid-cols-2 items-center px-8 py-12 sm:px-12 sm:py-16">
-        <div class="max-w-xl">
-          <div class="text-blue-400 text-xs font-semibold tracking-[0.18em]">
-            INTEGRATIONS
+  <div class="px-8 pb-8 sm:pb-10 lg:px-12">
+    <div
+      class="mx-auto w-full max-w-336 rounded-4xl bg-linear-to-br from-neutral-950 via-neutral-900 to-neutral-950 shadow-2xl overflow-hidden"
+    >
+      <div
+        class="grid xl:grid-cols-2 gap-12 md:gap-16 items-center py-8 md:py-10 lg:py-14 xl:py-24 px-8 md:px-10 lg:px-14 xl:px-35"
+      >
+        <div class="max-w-124">
+          <div
+            class="text-blue-400 text-base tracking-[-1.1%] font-medium leading-7"
+          >
+            Integrations
           </div>
           <h3 class="mt-4 text-4xl sm:text-5xl font-semibold text-white tracking-tight leading-tight">
             Connect OpnForm to

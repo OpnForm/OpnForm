@@ -1,17 +1,25 @@
 <template>
-  <div>
-    <div class="flex mt-6 mb-10">
-      <div
-        class="w-full md:max-w-6xl mx-auto px-4 flex items-center md:flex-row-reverse flex-wrap"
-      >
-        <div class="w-full max-w-lg lg:max-w-auto mx-auto lg:w-1/2 md:p-6">
-          <app-sumo-register class="mb-10 p-6 lg:hidden" />
-          <div
-            data-testid="register-page"
-            class="border rounded-md p-6 shadow-md sticky top-4"
-          >
-            <h2 class="font-semibold text-2xl">
-              Create an account
+  <div class="bg-white">
+    <section class="relative overflow-hidden">
+      <div class="absolute inset-0">
+        <div class="absolute inset-0 bg-linear-to-b from-white via-blue-50 to-white" />
+        <div class="absolute left-0 top-12 h-80 w-80 rounded-full bg-blue-100/70 blur-3xl" />
+        <div class="absolute bottom-0 right-0 h-[28rem] w-[28rem] rounded-full bg-cyan-100/70 blur-3xl" />
+      </div>
+
+      <div class="relative px-6 py-10 sm:px-8 sm:py-14 lg:px-12 lg:py-16">
+        <div class="mx-auto max-w-xl">
+          <div class="rounded-[32px] border border-white/80 bg-white/90 p-6 shadow-[0_24px_80px_rgba(15,23,42,0.12)] backdrop-blur sm:p-8">
+            <div v-if="showAppSumoPanel" class="mb-6">
+              <AppSumoRegister />
+            </div>
+
+            <div class="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-sm font-medium text-blue-700">
+              <UIcon name="i-heroicons-user-plus" class="h-4 w-4" />
+              New account
+            </div>
+            <h2 class="mt-4 text-3xl font-semibold tracking-[-1%] text-neutral-950">
+              Create your account
             </h2>
             <p class="mt-3 text-base font-normal leading-7 tracking-[-1.1%] text-neutral-600">
               Start in a few minutes and begin building forms right away.
