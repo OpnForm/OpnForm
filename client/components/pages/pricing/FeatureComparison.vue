@@ -9,29 +9,49 @@
       </p>
     </div>
 
-    <div class="mt-10 overflow-x-auto sm:mt-14">
-      <table class="w-full min-w-[760px] border-collapse">
-        <thead>
-          <tr class="border-b border-neutral-200">
-            <th class="sticky top-0 z-20 bg-white py-4 pr-6 text-left text-sm font-semibold text-gray-600 shadow-[0_1px_0_0_rgba(229,229,229,1)]">
-              &nbsp;
-            </th>
-            <th
-              v-for="(plan, planIndex) in plans"
-              :key="planIndex"
-              class="sticky top-0 z-20 bg-white p-6 text-center shadow-[0_1px_0_0_rgba(229,229,229,1)]"
-            >
-              <div class="text-sm font-semibold text-neutral-900">
-                {{ plan.label }}
-              </div>
-              <div class="mt-1 text-xs font-medium text-neutral-500">
-                ({{ plan.priceLabel }})
-              </div>
-            </th>
-          </tr>
-        </thead>
+    <div class="relative mt-12 sm:mt-16 overflow-x-auto">
+      <div class="sticky top-0 z-20 bg-white">
+        <table class="w-full min-w-108.75 table-fixed border-collapse">
+          <colgroup>
+            <col class="w-[34%]">
+            <col class="w-[16.5%]">
+            <col class="w-[16.5%]">
+            <col class="w-[16.5%]">
+            <col class="w-[16.5%]">
+          </colgroup>
+          <thead>
+            <tr class="border-b border-neutral-200">
+              <th class="bg-white py-4 pr-6 text-left text-sm font-semibold text-gray-600 shadow-[0_1px_0_0_rgba(229,229,229,1)]">
+                &nbsp;
+              </th>
+              <th
+                v-for="(plan, planIndex) in plans"
+                :key="planIndex"
+                class="bg-white p-6 text-center shadow-[0_1px_0_0_rgba(229,229,229,1)]"
+              >
+                <div class="text-xl leading-7 font-medium text-gray-950">
+                  {{ plan.label }}
+                </div>
+                <div
+                  class="mt-0.5 text-base leading-7 tracking-[-1.1%] font-medium text-gray-600"
+                >
+                  ({{ plan.priceLabel }})
+                </div>
+              </th>
+            </tr>
+          </thead>
+        </table>
+      </div>
 
-        <tbody class="divide-y divide-neutral-200">
+      <table class="w-full min-w-108.75 table-fixed border-collapse">
+        <colgroup>
+          <col class="w-[34%]">
+          <col class="w-[16.5%]">
+          <col class="w-[16.5%]">
+          <col class="w-[16.5%]">
+          <col class="w-[16.5%]">
+        </colgroup>
+        <tbody>
           <template v-for="section in sections" :key="section.title">
             <tr class="bg-white">
               <th
@@ -90,8 +110,7 @@ const { getPlanPrice, getTierDisplayName } = useBillingUpsell()
 const formatPlanPrice = (plan) => {
   const price = getPlanPrice(plan, false)
   if (price == null) return null
-  const suffix = plan === 'enterprise' ? '+' : ''
-  return `$${price}${suffix}`
+  return `$${price}`
 }
 
 const plans = computed(() => [
