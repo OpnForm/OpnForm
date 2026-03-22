@@ -79,6 +79,14 @@ class BillingStateResolver
             );
         }
 
+        if (in_array($user->email, config('opnform.extra_pro_users_emails'), true)) {
+            return new BillingState(
+                workspaceId: $workspaceId,
+                tier: PlanTier::PRO,
+                isPaid: true,
+            );
+        }
+
         if ($license = $user->activeLicense()) {
             return $this->stateFromLicense($license, $workspaceId);
         }

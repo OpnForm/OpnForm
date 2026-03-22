@@ -134,3 +134,27 @@ it('enforces appsumo license member limits when inviting users', function () {
 
     expect($workspace->fresh()->users()->count())->toBe(1);
 });
+
+it('allows inviting users when the workspace has an invite_user override', function () {
+    Mail::fake();
+
+    $owner = $this->createUser();
+    $this->actingAs($owner);
+    $workspace = Workspace::factory()->create([
+        'plan_overrides' => ['features' => ['invite_user']],
+    ]);
+    $workspace->users()->attach($owner, ['role' => 'admin']);
+    $workspace->flush();
+    $owner->flush();
+
+    $this->postJson(route('open.workspaces.users.add', ['workspace' => $workspace]), [
+        'email' => 'invite-override@example.com',
+        'role' => 'user',
+    ])
+        ->assertSuccessful()
+        ->assertJson([
+            'message' => 'Registration invitation email sent to user.',
+        ]);
+
+    Mail::assertQueued(UserInvitationEmail::class);
+});

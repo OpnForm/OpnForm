@@ -3,7 +3,7 @@
 namespace App\Service;
 
 use App\Models\Billing\Subscription as BillingSubscription;
-use App\Support\Billing\PlanTier;
+use App\Service\Billing\PlanTier;
 use Illuminate\Support\Facades\App;
 use Laravel\Cashier\Subscription;
 use Stripe\SubscriptionItem;
