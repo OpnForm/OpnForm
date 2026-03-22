@@ -96,16 +96,42 @@
                 aria-hidden="true"
               ></span>
 
-              <div class="flex items-center gap-2">
-                <UIcon
-                  name="i-heroicons-star-solid"
-                  class="h-5 w-5 text-green-500"
-                />
-                <span
-                  class="text-base leading-7 tracking-[-1.1%] font-medium text-gray-600"
-                  >Trustpilot grade</span
-                >
-              </div>
+              <NuxtLink
+                to="https://www.trustpilot.com/review/opnform.com"
+                target="_blank"
+                class="flex items-center gap-2"
+              >
+                <div class="flex items-center gap-1">
+                  <UIcon
+                    name="i-heroicons-star-solid"
+                    class="h-5 w-5 text-green-500"
+                  />
+                  <UIcon
+                    name="i-heroicons-star-solid"
+                    class="h-5 w-5 text-green-500"
+                  />
+                  <UIcon
+                    name="i-heroicons-star-solid"
+                    class="h-5 w-5 text-green-500"
+                  />
+                  <UIcon
+                    name="i-heroicons-star-solid"
+                    class="h-5 w-5 text-green-500"
+                  />
+                  <div class="relative h-5 w-5">
+                    <UIcon
+                      name="i-heroicons-star"
+                      class="absolute inset-0 h-5 w-5 text-green-500"
+                    />
+                    <div class="absolute inset-y-0 left-0 w-1/2 overflow-hidden">
+                      <UIcon
+                        name="i-heroicons-star-solid"
+                        class="h-5 w-5 text-green-500"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </NuxtLink>
             </div>
           </div>
         </div>
