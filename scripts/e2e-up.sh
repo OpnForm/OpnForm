@@ -16,7 +16,7 @@ docker compose $COMPOSE_FILES exec -T api composer install --no-interaction --pr
 docker compose $COMPOSE_FILES exec -T api php artisan optimize:clear
 
 attempt=0
-until curl -fsS http://127.0.0.1:8089/content/feature-flags >/dev/null 2>&1; do
+until docker compose $COMPOSE_FILES exec -T api php artisan --version >/dev/null 2>&1; do
   attempt=$((attempt + 1))
   if [ "$attempt" -ge 90 ]; then
   echo "Laravel E2E stack did not become ready in time." >&2
