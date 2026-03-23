@@ -2,8 +2,15 @@
   <section class="bg-white">
     <Integrations />
   </section>
-  <section class="bg-white py-14 sm:py-28 px-8 lg:px-12">
-    <div class="max-w-266 mx-auto">
+  <section class="relative overflow-hidden bg-white py-14 sm:py-28 px-8 lg:px-12">
+    <div class="pointer-events-none absolute inset-0">
+      <div class="absolute inset-x-0 top-18 h-64 bg-linear-to-b from-blue-50/0 via-blue-50/55 to-transparent"></div>
+      <div class="absolute left-[-1rem] top-34 h-64 w-64 rounded-full bg-blue-100/55 blur-3xl"></div>
+      <div class="absolute right-[4%] top-40 h-52 w-52 rounded-full bg-cyan-100/50 blur-3xl"></div>
+      <div class="absolute left-1/2 top-44 h-36 w-[34rem] -translate-x-1/2 rounded-full bg-blue-100/35 blur-3xl"></div>
+    </div>
+
+    <div class="relative max-w-266 mx-auto">
       <div class="text-center">
         <h3
           class="text-3xl sm:text-5xl sm:leading-14 font-semibold text-gray-950 tracking-[-1%]"
