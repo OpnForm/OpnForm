@@ -371,14 +371,22 @@ jobs:
           echo $! > ../.e2e-ui.pid
 
           for attempt in $(seq 1 90); do
-            if curl -fsS http://127.0.0.1:3100/login >/dev/null 2>&1; then
+            login_html="$(curl -fsS http://127.0.0.1:3100/login || true)"
+            register_html="$(curl -fsS http://127.0.0.1:3100/register || true)"
+
+            if printf '%s' "$login_html" | grep -q 'data-testid="login-page"' \
+              && printf '%s' "$register_html" | grep -q 'data-testid="register-page"'; then
               break
             fi
             sleep 2
           done
 
-          if ! curl -fsS http://127.0.0.1:3100/login >/dev/null 2>&1; then
-            echo "Nuxt E2E UI did not become ready in time." >&2
+          login_html="$(curl -fsS http://127.0.0.1:3100/login || true)"
+          register_html="$(curl -fsS http://127.0.0.1:3100/register || true)"
+
+          if ! printf '%s' "$login_html" | grep -q 'data-testid="login-page"' \
+            || ! printf '%s' "$register_html" | grep -q 'data-testid="register-page"'; then
+            echo "Nuxt E2E UI did not become ready for auth routes in time." >&2
             if [ -f ../.e2e-ui.log ]; then
               cat ../.e2e-ui.log >&2
             fi

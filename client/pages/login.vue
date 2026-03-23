@@ -1,11 +1,20 @@
 <template>
-  <div class="bg-white">
-    <section class="relative overflow-hidden">
-      <div class="absolute inset-0">
-        <div class="absolute inset-0 bg-linear-to-b from-white via-blue-50 to-white" />
-        <div class="absolute left-0 top-0 h-80 w-80 rounded-full bg-blue-100/70 blur-3xl" />
-        <div class="absolute bottom-0 right-0 h-96 w-96 rounded-full bg-sky-100/70 blur-3xl" />
-      </div>
+  <div>
+    <div class="flex mt-6 mb-10">
+      <div
+        class="w-full md:max-w-6xl mx-auto px-4 flex md:flex-row-reverse flex-wrap"
+      >
+        <div class="w-full md:w-1/2 md:p-6">
+          <div
+            data-testid="login-page"
+            class="border rounded-md p-6 shadow-md sticky top-4"
+          >
+            <h2 class="font-semibold text-2xl">
+              Login to OpnForm
+            </h2>
+            <p class="text-sm text-neutral-500">
+              Welcome back! Please enter your details.
+            </p>
 
       <div class="relative px-6 py-10 sm:px-8 sm:py-14 lg:px-12 lg:py-16">
         <div class="mx-auto max-w-xl">
