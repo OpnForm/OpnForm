@@ -3,16 +3,16 @@
     <div
       v-for="source in sources"
       role="button"
-      class="rounded-md border p-4 flex flex-col items-center cursor-pointer hover:bg-neutral-50"
+      class="rounded-md border p-4 flex h-full flex-col items-center cursor-pointer hover:bg-neutral-50"
       @click="$emit('select', source.id)"
     >
-      <div class="p-2">
+      <div class="flex flex-1 items-center p-2">
         <UIcon
           :name="source.icon"
-          class="w-10 h-10 text-blue-500"
+          :class="source.iconClass"
         />
       </div>
-      <p class="font-medium text-center">
+      <p class="mt-auto font-medium text-center">
         {{ source.label }}
       </p>
     </div>
@@ -27,21 +27,25 @@ const sources = [
     id: 'typeform',
     label: 'Typeform',
     icon: 'i-simple-icons-typeform',
+    iconClass: 'w-14 h-14 text-[#262627]',
   },
   {
     id: 'tally',
     label: 'Tally',
-    icon: 'i-heroicons-link',
+    icon: 'opnform:tally',
+    iconClass: 'w-8 h-8 text-[#725BFF]',
   },
   {
     id: 'fillout',
     label: 'Fillout',
     icon: 'i-simple-icons-fillout',
+    iconClass: 'w-12 h-12 text-[#FFC738]',
   },
   {
     id: 'google_forms',
     label: 'Google Forms',
     icon: 'i-simple-icons-googleforms',
+    iconClass: 'w-8 h-8 text-[#7248B9]',
   },
 ]
 </script>

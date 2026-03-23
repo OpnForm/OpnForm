@@ -14,7 +14,7 @@ class FormImportService
         $importer = $this->registry->resolve($source);
 
         if (!$importer->validate($importData)) {
-            throw new FormImportException('Invalid import data for source: ' . $source);
+            throw new FormImportException('Invalid import data for source: ' . $this->registry->label($source));
         }
 
         return $importer->import($importData);

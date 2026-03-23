@@ -7,21 +7,26 @@ use InvalidArgumentException;
 class FormImportRegistry
 {
     private array $importers = [
-        'typeform' => Importers\TypeformImporter::class,
-        'tally' => Importers\TallyImporter::class,
-        'fillout' => Importers\FilloutImporter::class,
-        'google_forms' => Importers\GoogleFormsImporter::class,
+        'typeform' => ['class' => Importers\TypeformImporter::class, 'label' => 'Typeform'],
+        'tally' => ['class' => Importers\TallyImporter::class, 'label' => 'Tally'],
+        'fillout' => ['class' => Importers\FilloutImporter::class, 'label' => 'Fillout'],
+        'google_forms' => ['class' => Importers\GoogleFormsImporter::class, 'label' => 'Google Forms'],
     ];
 
     public function resolve(string $source): FormImporterInterface
     {
-        $class = $this->importers[$source] ?? null;
+        $entry = $this->importers[$source] ?? null;
 
-        if (!$class) {
-            throw new InvalidArgumentException("Unknown import source: {$source}");
+        if (!$entry) {
+            throw new InvalidArgumentException("Unknown import source: " . $this->label($source));
         }
 
-        return app($class);
+        return app($entry['class']);
+    }
+
+    public function label(string $source): string
+    {
+        return $this->importers[$source]['label'] ?? $source;
     }
 
     public function sources(): array
