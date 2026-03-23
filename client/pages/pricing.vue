@@ -111,7 +111,7 @@
             <div class="mt-6">
               <UButton
                 class="w-fit sm:w-full justify-center px-4 py-2.5 rounded-[12px] text-base leading-7 tracking-[-1.1%] font-medium"
-                label="Get started free"
+                :label="getPaidPlanCtaLabel()"
                 :loading="isPlanLoading('pro')"
                 @click.prevent="handleProCta"
               />
@@ -168,7 +168,7 @@
               <UButton
                 class="w-fit sm:w-full justify-center px-4 py-2.5 rounded-[12px] text-base leading-7 tracking-[-1.1%] font-medium"
                 variant="outline"
-                label="Get started free"
+                :label="getPaidPlanCtaLabel()"
                 color="neutral"
                 :loading="isPlanLoading('business')"
                 @click.prevent="handleBusinessCta"
@@ -222,9 +222,10 @@
 
             <div class="mt-6">
               <UButton
-                class="w-full justify-center"
-                variant="soft"
-                label="Request a quote"
+                class="w-fit sm:w-full justify-center px-4 py-2.5 rounded-[12px] text-base leading-7 tracking-[-1.1%] font-medium"
+                variant="outline"
+                label="Upgrade now"
+                color="neutral"
                 @click.prevent="contactUs"
               />
             </div>
@@ -298,13 +299,6 @@
                   </p>
                 </div>
 
-                <div class="mt-8">
-                  <UButton
-                    variant="outline"
-                    label="Request a quote"
-                    @click.prevent="contactUs"
-                  />
-                </div>
               </div>
 
               <div>
@@ -352,13 +346,6 @@
                   </p>
                 </div>
 
-                <div class="mt-8">
-                  <UButton
-                    variant="outline"
-                    label="Request a quote"
-                    @click.prevent="contactUs"
-                  />
-                </div>
               </div>
 
               <div>
@@ -654,6 +641,10 @@ const handlePlanCta = (plan) => {
     return navigateTo({ name: "register" })
   }
   return startCheckout(plan, { yearly: pricingIsYearly.value })
+}
+
+function getPaidPlanCtaLabel() {
+  return authenticated.value ? "Upgrade now" : "Get started free"
 }
 
 const handleProCta = () => handlePlanCta("pro")

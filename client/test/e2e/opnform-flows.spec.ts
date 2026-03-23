@@ -200,18 +200,18 @@ async function gotoPageWithRetry(page: Page, path: string, readyCheck: () => Pro
 
 async function openLogin(page: Page) {
   await gotoPageWithRetry(page, "/login", async () => {
-    await expect(page.getByTestId("login-page")).toBeVisible({ timeout: 15_000 })
-    await expect(page.locator('input[name="email"]')).toBeEnabled({ timeout: 15_000 })
-    await expect(page.locator('input[name="password"]')).toBeEnabled({ timeout: 15_000 })
+    await expect(page.getByRole("heading", { name: /login to opnform/i })).toBeVisible()
+    await expect(page.locator('input[name="email"]')).toBeEnabled()
+    await expect(page.locator('input[name="password"]')).toBeEnabled()
   })
 }
 
 async function openRegister(page: Page) {
   await gotoPageWithRetry(page, "/register", async () => {
-    await expect(page.getByTestId("register-page")).toBeVisible({ timeout: 15_000 })
-    await expect(page.locator('input[name="name"]')).toBeEnabled({ timeout: 15_000 })
-    await expect(page.locator('input[name="email"]')).toBeEnabled({ timeout: 15_000 })
-    await expect(page.locator('input[name="password"]')).toBeEnabled({ timeout: 15_000 })
+    await expect(page.getByRole("heading", { name: "Create an account" })).toBeVisible()
+    await expect(page.locator('input[name="name"]')).toBeEnabled()
+    await expect(page.locator('input[name="email"]')).toBeEnabled()
+    await expect(page.locator('input[name="password"]')).toBeEnabled()
   })
 }
 
