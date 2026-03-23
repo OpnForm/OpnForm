@@ -12,7 +12,17 @@ on:
       - "docker-compose*.yml"
       - ".github/workflows/**"
   pull_request:
+    paths:
+      - "api/**"
+      - "client/**"
+      - "docker/**"
+      - "docker-compose*.yml"
+      - ".github/workflows/**"
   workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   code_lint:
@@ -49,19 +59,15 @@ jobs:
 
       - name: Install composer dependencies
         working-directory: ./api
-        run: composer install --prefer-dist --no-interaction --no-progress --ignore-platform-reqs --optimize-autoloader
-
-      - name: Directory permissions
-        working-directory: ./api
-        run: chmod -R 777 storage bootstrap/cache
+        run: composer install --prefer-dist --no-interaction --no-progress --no-scripts --ignore-platform-reqs --optimize-autoloader
 
       - name: Run PHP lint check
         working-directory: ./api
         run: ./vendor/bin/pint --test
 
-  client_lint:
+  client_checks:
     runs-on: ubuntu-latest
-    name: Run client linters + tests
+    name: Run client linters, tests, and build
     defaults:
       run:
         working-directory: ./client
@@ -74,13 +80,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22.17.0"
-
-      - uses: actions/cache@v4
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
+          cache: npm
+          cache-dependency-path: client/package-lock.json
 
       - name: Install npm dependencies
         run: npm ci --no-audit --no-progress --silent
@@ -90,6 +91,24 @@ jobs:
 
       - name: Run front-end tests
         run: npm run test -- --run
+
+      - name: Prepare the environment
+        run: cp .env.example .env
+
+      - name: Build client
+        run: npm run build:e2e
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+
+      - name: Upload Nuxt Output Artifact
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuxt-output
+          path: client/.output
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
 
   sync_check:
     runs-on: ubuntu-latest
@@ -259,41 +278,154 @@ jobs:
           path: api/storage/logs/laravel.log
           retention-days: 3
 
-  build-nuxt-app:
+  e2e:
     runs-on: ubuntu-latest
-    name: Build the Nuxt app
-    defaults:
-      run:
-        working-directory: ./client
+    needs: [client_checks, tests]
+    timeout-minutes: 45
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.2
+          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, pdo_pgsql, pdo_sqlite, bcmath, soap, intl, gd, exif, iconv, imagick, fileinfo
+          coverage: none
+
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "22.17.0"
+          cache: npm
+          cache-dependency-path: client/package-lock.json
 
-      - uses: actions/cache@v4
+      - name: Cache Playwright Browsers
+        uses: actions/cache@v4
         with:
-          path: ~/.npm
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('client/package-lock.json') }}
           restore-keys: |
-            ${{ runner.os }}-node-
+            ${{ runner.os }}-playwright-
 
-      - name: Prepare the environment
-        run: cp .env.example .env
+      - name: Install composer dependencies
+        working-directory: ./api
+        run: composer install --prefer-dist --no-interaction --no-progress --ignore-platform-reqs --optimize-autoloader
 
       - name: Install npm dependencies
+        working-directory: ./client
         run: npm ci --no-audit --no-progress --silent
 
-      - name: Build client
-        run: npm run build
+      - name: Download Nuxt Output Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: nuxt-output
+          path: client/.output
+
+      - name: Install Playwright Browsers
+        working-directory: ./client
+        run: npx playwright install --with-deps chromium
+
+      - name: Start E2E Stack
+        run: ./scripts/e2e-up.sh
+
+      - name: Reset E2E Database
+        run: ./scripts/e2e-reset.sh
+
+      - name: Run Playwright E2E Tests
+        working-directory: ./client
         env:
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          CI: true
+          PLAYWRIGHT_NO_WEB_SERVER: "1"
+          PLAYWRIGHT_BASE_URL: http://127.0.0.1:3100
+          PLAYWRIGHT_API_BASE_URL: http://127.0.0.1:8089
+          PLAYWRIGHT_WORKERS: "2"
+        shell: bash
+        run: |
+          set -a
+          . ./.env.e2e
+          set +a
+
+          cleanup() {
+            local exit_code=$?
+
+            if [ "$exit_code" -ne 0 ]; then
+              docker compose -f ../docker-compose.e2e.yml logs --no-color > ../e2e-docker.log || true
+              if [ -f ../.e2e-ui.log ]; then
+                cp ../.e2e-ui.log ../e2e-ui.log || true
+              fi
+            fi
+
+            if [ -f ../.e2e-ui.pid ]; then
+              kill "$(cat ../.e2e-ui.pid)" || true
+            fi
+
+            exit "$exit_code"
+          }
+
+          trap cleanup EXIT
+
+          NITRO_HOST=127.0.0.1 NITRO_PORT=${NUXT_PORT:-3100} \
+            node --require ./scripts/e2e-runtime-guard.cjs .output/server/index.mjs > ../.e2e-ui.log 2>&1 &
+          echo $! > ../.e2e-ui.pid
+
+          for attempt in $(seq 1 90); do
+            if curl -fsS http://127.0.0.1:3100/login >/dev/null 2>&1; then
+              break
+            fi
+            sleep 2
+          done
+
+          if ! curl -fsS http://127.0.0.1:3100/login >/dev/null 2>&1; then
+            echo "Nuxt E2E UI did not become ready in time." >&2
+            if [ -f ../.e2e-ui.log ]; then
+              cat ../.e2e-ui.log >&2
+            fi
+            exit 1
+          fi
+
+          npm run test:e2e
+
+      - name: Capture E2E Stack Logs
+        if: ${{ failure() && !cancelled() }}
+        run: |
+          docker compose -f docker-compose.e2e.yml logs --no-color > e2e-docker.log
+          if [ -f .e2e-ui.log ]; then
+            cp .e2e-ui.log e2e-ui.log
+          fi
+
+      - name: Upload Playwright HTML Report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: .playwright/playwright-report
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Upload Playwright Test Results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-test-results
+          path: .playwright/test-results
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Upload E2E Debug Logs
+        if: ${{ failure() && !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-debug-logs
+          path: |
+            e2e-docker.log
+            e2e-ui.log
+          if-no-files-found: ignore
+          retention-days: 14
 
   production-deploy:
-    needs: [code_lint, client_lint, sync_check, tests, build-nuxt-app]
+    needs: [code_lint, client_checks, sync_check, tests, e2e]
     if: success() && github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     name: Triggers Deployment (Vapor & Amplify)
@@ -314,13 +446,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-composer-
 
-      - uses: actions/cache@v4
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
-
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
@@ -335,7 +460,7 @@ jobs:
 
       - name: Install composer dependencies
         working-directory: ./api
-        run: composer install --prefer-dist --no-interaction --no-progress --ignore-platform-reqs --optimize-autoloader
+        run: composer install --prefer-dist --no-dev --no-interaction --no-progress --ignore-platform-reqs --optimize-autoloader
 
       - name: Directory permissions
         working-directory: ./api
@@ -359,7 +484,7 @@ jobs:
 
   publish-docker-images:
     name: Push Docker images to Docker Hub
-    needs: [code_lint, client_lint, sync_check, tests, build-nuxt-app]
+    needs: [code_lint, client_checks, sync_check, tests, e2e]
     if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') }}
     runs-on: ubuntu-latest
     permissions:

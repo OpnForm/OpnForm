@@ -13,7 +13,9 @@ use App\Http\Middleware\IsModerator;
 use App\Http\Middleware\IsNotSubscribed;
 use App\Http\Middleware\IsSubscribed;
 use App\Http\Middleware\RequireFeature;
+use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Foundation\Http\Kernel as HttpKernel;
+use Illuminate\Routing\Router;
 use App\Http\Middleware\CheckUserIsBlocked;
 
 class Kernel extends HttpKernel
@@ -85,7 +87,6 @@ class Kernel extends HttpKernel
         ],
 
         'api' => [
-            'throttle:100,1',
             \App\Http\Middleware\EncryptCookies::class,
             \Illuminate\Session\Middleware\StartSession::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
@@ -130,4 +131,15 @@ class Kernel extends HttpKernel
         'ability' => \Laravel\Sanctum\Http\Middleware\CheckForAnyAbility::class,
         'auth.multi' => \App\Http\Middleware\AuthenticateWithJwtOrSanctum::class,
     ];
+
+    public function __construct(Application $app, Router $router)
+    {
+        parent::__construct($app, $router);
+
+        $appEnv = (string) ($_ENV['APP_ENV'] ?? $_SERVER['APP_ENV'] ?? 'production');
+
+        if (!in_array($appEnv, ['testing', 'e2e'], true)) {
+            array_unshift($this->middlewareGroups['api'], 'throttle:100,1');
+        }
+    }
 }
