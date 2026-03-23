@@ -6,7 +6,10 @@
       >
         <div class="w-full max-w-lg lg:max-w-auto mx-auto lg:w-1/2 md:p-6">
           <app-sumo-register class="mb-10 p-6 lg:hidden" />
-          <div class="border rounded-md p-6 shadow-md sticky top-4">
+          <div
+            data-testid="register-page"
+            class="border rounded-md p-6 shadow-md sticky top-4"
+          >
             <h2 class="font-semibold text-2xl">
               Create an account
             </h2>

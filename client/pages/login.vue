@@ -5,7 +5,10 @@
         class="w-full md:max-w-6xl mx-auto px-4 flex md:flex-row-reverse flex-wrap"
       >
         <div class="w-full md:w-1/2 md:p-6">
-          <div class="border rounded-md p-6 shadow-md sticky top-4">
+          <div
+            data-testid="login-page"
+            class="border rounded-md p-6 shadow-md sticky top-4"
+          >
             <h2 class="font-semibold text-2xl">
               Login to OpnForm
             </h2>
