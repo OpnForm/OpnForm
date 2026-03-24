@@ -11,8 +11,8 @@ class FormImportRequest extends FormRequest
         return [
             'source' => 'required|string|in:typeform,tally,fillout,google_forms',
             'import_data' => 'required|array',
-            'import_data.url' => 'required_unless:source,google_forms|url',
-            'import_data.google_access_token' => 'required_if:source,google_forms|string',
+            'import_data.url' => 'required|url',
+            'import_data.oauth_provider_id' => 'nullable|integer|exists:oauth_providers,id|required_if:source,google_forms',
             'workspace_id' => 'required|integer|exists:workspaces,id',
         ];
     }
@@ -20,9 +20,9 @@ class FormImportRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'import_data.url.required_unless' => 'A form URL is required for this import source.',
+            'import_data.url.required' => 'A form URL is required.',
             'import_data.url.url' => 'Please provide a valid URL.',
-            'import_data.google_access_token.required_if' => 'Google authentication is required to import Google Forms.',
+            'import_data.oauth_provider_id.required_if' => 'Please select an account to import from.',
         ];
     }
 }

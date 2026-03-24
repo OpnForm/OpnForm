@@ -570,16 +570,11 @@ useOpnSeoMeta({
     "A powerful Typeform alternative with unlimited responses and full control — for free.",
 })
 
-const appStore = useAppStore()
 const { isAuthenticated: authenticated } = useIsAuthenticated()
 const { current: workspace } = useCurrentWorkspace()
 
 const showImportModal = ref(false)
 const openFormImportModal = () => {
-  if (!authenticated.value) {
-    appStore.quickRegisterModal = true
-    return
-  }
   showImportModal.value = true
 }
 const handleFormImported = (formData) => {

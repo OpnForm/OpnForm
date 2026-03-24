@@ -3,7 +3,7 @@
     <TextInput
       :form="form"
       name="url"
-      label="Form URL"
+      :label="label"
       :placeholder="urlPlaceholder"
       :disabled="loading"
     />
@@ -13,7 +13,7 @@
         name="heroicons:information-circle"
         class="w-3.5 h-3.5 mt-0.5 flex-shrink-0"
       />
-      <span>Make sure your form URL is public and accessible without a login.</span>
+      <span>{{ helpText }}</span>
     </p>
 
     <UButton
@@ -21,7 +21,7 @@
       block
       :loading="loading"
       :disabled="!form.url"
-      label="Import Form"
+      :label="buttonLabel"
       @click="$emit('submit')"
     />
   </div>
@@ -30,9 +30,11 @@
 <script setup>
 defineProps({
   form: { type: Object, required: true },
-  sourceLabel: { type: String, required: true },
   urlPlaceholder: { type: String, default: 'https://...' },
+  label: { type: String, default: 'Form URL' },
   loading: { type: Boolean, default: false },
+  helpText: { type: String, default: 'Make sure your form URL is public and accessible without a login.' },
+  buttonLabel: { type: String, default: 'Import Form' },
 })
 
 defineEmits(['submit'])

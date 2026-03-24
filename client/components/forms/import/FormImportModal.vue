@@ -18,35 +18,31 @@
       </div>
     </template>
     <template #body>
-      <!-- Step 1: Choose source -->
+      <!-- Choose source -->
       <FormImportSourcePicker
         v-if="step === 'source'"
         @select="selectSource"
       />
 
-      <!-- Step 2: URL input (Typeform, Tally, Fillout) -->
+      <!-- URL based sources -->
       <FormImportUrlInput
         v-else-if="step === 'url'"
         :form="importForm"
-        :source-label="sourceLabel"
         :url-placeholder="urlPlaceholder"
         :loading="loading"
         @submit="submitImport"
         @back="step = 'source'"
       />
 
-      <!-- Step: Google Forms (coming soon) -->
-      <div v-else-if="step === 'google'">
-        <div class="text-center py-8">
-          <Icon
-            name="heroicons:clock"
-            class="w-12 h-12 text-gray-300 mx-auto mb-3"
-          />
-          <p class="text-sm text-gray-500">
-            Coming soon...
-          </p>
-        </div>
-      </div>
+      <!-- OAuth based sources -->
+      <FormImportOAuth
+        v-else-if="step === 'oauth'"
+        :form="importForm"
+        v-bind="oauthConfig"
+        :url-placeholder="urlPlaceholder"
+        :loading="loading"
+        @submit="submitImport"
+      />
 
       <div 
         v-if="step !== 'source'"
@@ -67,6 +63,7 @@
 <script setup>
 import FormImportSourcePicker from './FormImportSourcePicker.vue'
 import FormImportUrlInput from './FormImportUrlInput.vue'
+import FormImportOAuth from './FormImportOAuth.vue'
 import { formsApi } from '~/api/forms'
 
 const props = defineProps({
@@ -90,20 +87,44 @@ const loading = ref(false)
 
 const importForm = useForm({
   url: '',
+  oauth_provider_id: null,
 })
+
+const oAuth = useOAuth()
 
 const sourceConfigs = {
   typeform: { label: 'Typeform', placeholder: 'https://example.typeform.com/to/abc123' },
   tally: { label: 'Tally', placeholder: 'https://tally.so/r/mBGjOq' },
   fillout: { label: 'Fillout', placeholder: 'https://example.fillout.com/t/abc123' },
-  google_forms: { label: 'Google Forms', placeholder: '' },
+  google_forms: {
+    label: 'Google Forms',
+    placeholder: 'https://docs.google.com/forms/d/.../edit',
+    oauth: {
+      provider: 'google',
+      providerLabel: 'Google',
+      sourceLabel: 'Google Forms',
+      requiredScope: oAuth.googleFormsPermissionScope,
+      connectIcon: 'i-simple-icons-google',
+      connectHelpText: 'We need read-only access to import your Google Forms.',
+      helpText: 'Use the edit URL of your form. Published URLs (/d/e/...) are not supported.',
+    },
+  }
 }
 
 const sourceLabel = computed(() => sourceConfigs[selectedSource.value]?.label ?? '')
 const urlPlaceholder = computed(() => sourceConfigs[selectedSource.value]?.placeholder ?? '')
+const oauthConfig = computed(() => sourceConfigs[selectedSource.value]?.oauth ?? {})
+
+const appStore = useAppStore()
+const { isAuthenticated: authenticated } = useIsAuthenticated()
 
 watch(() => props.show, (open) => {
   if (open) {
+    if (!authenticated.value) {
+      appStore.quickRegisterModal = true
+      emit('close')
+      return
+    }
     selectSource(props.defaultSource ?? null)
   }
 })
@@ -111,12 +132,13 @@ watch(() => props.show, (open) => {
 const selectSource = (source) => {
   selectedSource.value = source
   importForm.url = ''
+  importForm.oauth_provider_id = null
   importForm.errors.clear()
 
   if (source === null) {
     step.value = 'source'
-  } else if (source === 'google_forms') {
-    step.value = 'google'
+  } else if (sourceConfigs[source]?.oauth) {
+    step.value = 'oauth'
   } else {
     step.value = 'url'
   }
@@ -133,7 +155,7 @@ const submitImport = () => {
 
   formsApi.import({
     source: selectedSource.value,
-    import_data: { url: importForm.url },
+    import_data: importForm.data(),
     workspace_id: props.workspaceId,
   })
     .then((response) => {

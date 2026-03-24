@@ -8,6 +8,7 @@ export function useOAuth() {
 
   // Constants
   const googleDrivePermissionFileScope = 'https://www.googleapis.com/auth/drive.file'
+  const googleFormsPermissionScope = 'https://www.googleapis.com/auth/forms.body.readonly'
   
   // Service definitions
   const services = computed(() => {
@@ -109,7 +110,7 @@ export function useOAuth() {
   }
 
   // Enhanced connect method with redirect/newtab/autoClose support
-  const connect = (service, redirect = false, newtab = false, autoClose = false) => {
+  const connect = (service, redirect = false, newtab = false, autoClose = false, additionalData = {}) => {
     const serviceConfig = getService(service)
     
     if (serviceConfig && serviceConfig.auth_type && serviceConfig.auth_type !== 'redirect') {
@@ -122,7 +123,8 @@ export function useOAuth() {
     
     return oauthApi.connect(service, {
       ...(intention && { intention }),
-      autoClose: autoClose 
+      autoClose: autoClose,
+      intent: additionalData.intent ?? 'integration'
     })
       .then((data) => {
         if (newtab) {
@@ -302,6 +304,7 @@ export function useOAuth() {
   return {
     // Constants
     googleDrivePermissionFileScope,
+    googleFormsPermissionScope,
     
     // Service definitions
     services,

@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Service\OAuth\OAuthFlowOrchestrator;
 use Illuminate\Foundation\Http\FormRequest;
 
 class OAuthRedirectRequest extends FormRequest
@@ -20,7 +21,7 @@ class OAuthRedirectRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'intent' => 'required|in:auth,integration',
+            'intent' => 'required|in:' . implode(',', OAuthFlowOrchestrator::INTENTS),
             'invite_token' => 'sometimes|string',
             'intention' => 'sometimes|string',
             'autoClose' => 'sometimes|boolean',

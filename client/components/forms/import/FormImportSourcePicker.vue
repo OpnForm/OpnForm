@@ -45,7 +45,7 @@ const sources = [
     id: 'google_forms',
     label: 'Google Forms',
     icon: 'i-simple-icons-googleforms',
-    iconClass: 'w-8 h-8 text-[#7248B9]',
+    iconClass: 'w-10 h-10 text-[#7248B9]',
   },
 ]
 </script>
