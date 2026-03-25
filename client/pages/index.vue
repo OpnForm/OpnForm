@@ -3,8 +3,9 @@
     <section>
       <div class="pt-8 sm:pt-16 px-8 lg:px-12 max-w-7xl mx-auto relative">
         <div class="max-w-3xl mx-auto text-center">
-          <div
-            class="inline-flex items-center gap-2 rounded-[10px] border border-gray-100 bg-gray-100 px-2 py-0.5 text-sm"
+          <NuxtLink
+            :to="{ name: 'enterprise' }"
+            class="inline-flex items-center gap-2 rounded-[10px] border border-gray-100 bg-gray-100 px-2 py-0.5 text-sm transition-colors hover:bg-gray-200/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
           >
             <span
               class="rounded-[5px] bg-white px-1.5 py-0.5 font-semibold text-blue-600 text-[11px] leading-3 tracking-wide"
@@ -14,7 +15,7 @@
             <span class="font-normal text-gray-600">
               Built for Teams & Enterprises
             </span>
-          </div>
+          </NuxtLink>
           <h1
             class="text-4xl sm:text-[56px] sm:leading-16 tracking-[-1%] font-semibold text-gray-950 my-4"
           >
@@ -43,14 +44,8 @@
                 label="Get started. It's FREE!"
                 class="pl-4 pr-3.5 py-2.5 rounded-[12px] text-base leading-7 tracking-[-1.1%] font-medium"
               />
-              <!-- <UButton
-                v-if="useFeatureFlag('billing.enabled')"
-                size="lg"
-                variant="outline"
-                :to="{ name: 'pricing' }"
-                label="View Pricing"
-              /> -->
               <UButton
+                v-if="useFeatureFlag('billing.enabled')"
                 size="lg"
                 variant="outline"
                 :to="{ name: 'pricing' }"
