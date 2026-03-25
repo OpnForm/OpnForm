@@ -1,13 +1,60 @@
 <template>
-  <div class="w-full mt-6 relative px-6 mx-auto max-w-4xl sm:px-10 lg:px-0 z-10 flex items-center justify-center">
-    <div class="-m-2 rounded-xl bg-blue-900/5 p-2 backdrop-blur-xs ring ring-inset ring-blue-900/10 lg:-m-4 lg:rounded-2xl lg:p-4 w-full">
-      <div class="rounded-3xl border border-blue-200 bg-white shadow-xl overflow-visible ring-1 ring-blue-100 relative">
-        <iframe
-          class="mt-4"
-          style="border: none; width: 100%"
-          height="480px"
-          :src="url"
-        />
+  <div
+    class="w-full mx-auto max-w-266 flex items-center justify-center relative z-10"
+  >
+    <div
+      class="rounded-[12px] bg-[#D5E2FF] border border-gray-200 shadow-xl overflow-visible relative p-2.5 w-full"
+    >
+      <!-- <iframe
+        class="min-h-150 sm:min-h-137.5 lg:min-h-175 bg-white rounded-[12px]"
+        style="border: none; width: 100%"
+        :src="url"
+      /> -->
+      <div class="min-h-[90vh] w-full overflow-hidden bg-white rounded-[6px]">
+        <div
+          class="flex items-center gap-3 justify-between border-b-[0.5px] border-gray-100 px-6 py-1"
+        >
+          <div class="flex items-center gap-3.5">
+            <UIcon
+              name="i-heroicons-view-columns-20-solid"
+              class="h-4 w-4 text-gray-600"
+            />
+            <UIcon
+              name="i-heroicons-arrow-left-20-solid"
+              class="h-4 w-4 text-gray-600"
+            />
+            <UIcon
+              name="i-heroicons-arrow-right-20-solid"
+              class="h-4 w-4 text-gray-600"
+            />
+            <UIcon
+              name="i-heroicons-arrow-path-20-solid"
+              class="h-4 w-4 text-gray-600"
+            />
+          </div>
+          <div class="flex items-center gap-1">
+            <UIcon
+              name="i-heroicons-link-20-solid"
+              class="h-4 w-4 text-gray-600"
+            />
+            <p
+              class="text-[12px] leading-4 tracking-[-1%] font-medium text-gray-600"
+            >
+              opnform.com/
+            </p>
+          </div>
+          <div class="flex items-center gap-3.5">
+            <UIcon
+              name="i-heroicons-adjustments-horizontal-20-solid"
+              class="h-4 w-4 text-gray-600"
+            />
+            <UIcon
+              name="i-heroicons-view-columns-20-solid"
+              class="h-4 w-4 text-gray-600"
+            />
+          </div>
+        </div>
+      </div>
 
         <NuxtLink
           :to="{ name: authenticated ? 'forms-create' : 'forms-create-guest' }"

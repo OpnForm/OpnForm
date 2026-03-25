@@ -75,11 +75,21 @@
     </div>
   </section>
 
-  <section class="bg-white py-8 sm:py-12">
-    <div class="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-      <div class="rounded-[2.5rem] bg-neutral-50 border border-neutral-200/60 overflow-hidden">
-        <div class="relative px-6 py-12 sm:px-12 sm:py-16">
-          <div class="grid lg:grid-cols-2 gap-12">
+  <section class="bg-white">
+    <div class="px-8 lg:px-12">
+      <div
+        class="mx-auto w-full max-w-336 rounded-[32px] bg-gray-50 border border-gray-200 overflow-hidden"
+      >
+        <div
+          class="relative py-8 sm:py-10 lg:py-14 xl:py-24 px-8 md:px-10 lg:px-14 xl:px-35"
+        >
+          <img
+            src="/img/pages/welcome/Graphic.svg"
+            class="absolute top-[45%] left-0 right-0 min-w-full object-cover min-h-[55%]"
+          />
+          <div
+            class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 relative z-10"
+          >
             <div class="flex flex-col items-start gap-2">
               <h3 class="text-3xl sm:text-4xl font-semibold text-neutral-900 tracking-tight">
                 Open-source. Secure.
@@ -135,7 +145,7 @@
               <div
                 v-for="pill in securityPills"
                 :key="pill.label"
-                class="flex items-center gap-2 w-fit rounded-full bg-white border border-neutral-200/80 py-1.5 pl-2 pr-4 text-sm font-semibold text-neutral-900 shadow-sm"
+                class="flex items-center gap-2.5 w-fit rounded-[96px] bg-white border border-neutral-200/80 py-1.5 pl-1.5 pr-4 text-sm leading-5 tracking-[-0.6%] font-medium text-gray-950 shadow-sm"
               >
                 <div class="h-8 w-8 shrink-0 rounded-full flex items-center justify-center" :class="pill.iconWrapClass">
                   <UIcon :name="pill.icon" class="h-5 w-5" :class="pill.iconClass" />

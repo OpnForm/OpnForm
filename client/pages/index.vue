@@ -1,25 +1,24 @@
 <template>
   <div>
-    <section class="bg-gradient-to-b relative from-white to-neutral-100 py-8 sm:py-16">
-      <div class="absolute inset-0">
-        <img
-          class="w-full h-full object-cover object-top opacity-[0.10]"
-          src="/img/pages/ai_form_builder/background-pattern.svg"
-          alt="Page abstract background"
-        >
-      </div>
-      
-      <div class="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto relative">
-        <div class="max-w-4xl mx-auto text-center">
-          <div class="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-gray-100 px-3 py-1.5 text-sm mb-6">
-            <span class="rounded-full bg-white px-3 py-1 font-semibold text-blue-600 text-xs">
+    <section>
+      <div class="pt-8 sm:pt-16 px-8 lg:px-12 max-w-7xl mx-auto relative">
+        <div class="max-w-3xl mx-auto text-center">
+          <NuxtLink
+            :to="{ name: 'enterprise' }"
+            class="inline-flex items-center gap-2 rounded-[10px] border border-gray-100 bg-gray-100 px-2 py-0.5 text-sm transition-colors hover:bg-gray-200/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+          >
+            <span
+              class="rounded-[5px] bg-white px-1.5 py-0.5 font-semibold text-blue-600 text-[11px] leading-3 tracking-wide"
+            >
               NEW
             </span>
             <span class="font-normal text-gray-700">
               Built for Teams & Enterprises
             </span>
-          </div>
-          <h1 class="text-5xl font-semibold text-neutral-900 tracking-tight">
+          </NuxtLink>
+          <h1
+            class="text-4xl sm:text-[56px] sm:leading-16 tracking-[-1%] font-semibold text-gray-950 my-4"
+          >
             Build beautiful forms,
             <span class="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-blue-400">fast.</span>
           </h1>
@@ -43,6 +42,7 @@
                 variant="outline"
                 :to="{ name: 'pricing' }"
                 label="View Pricing"
+                class="px-4 py-2.5 rounded-[12px] text-base leading-7 tracking-[-1.1%] font-medium"
               />
             </div>
 
