@@ -101,7 +101,7 @@
           <div
             v-for="useCase in financialUseCases"
             :key="useCase.title"
-            class="rounded-3xl border border-gray-200 bg-gray-50 p-8"
+            class="rounded-[24px] border border-gray-200 bg-gray-50 p-8"
           >
             <div
               class="h-16 w-16 rounded-[20px] flex items-center justify-center bg-white shadow-xs"

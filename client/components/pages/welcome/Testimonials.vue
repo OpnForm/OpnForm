@@ -1,11 +1,6 @@
 <template>
-  <div class="mx-auto max-w-266">
-    <div class="text-center">
-      <h2
-        class="text-4xl sm:text-5xl sm:leading-14 tracking-[-1%] font-semibold text-gray-950"
-        v-html="title"
-      ></h2>
-    </div>
+  <div class="relative px-6 sm:px-8">
+    <div class="pointer-events-none absolute left-1/2 top-0 h-[28rem] w-[72rem] max-w-[140%] -translate-x-1/2 rounded-full bg-blue-100/70 blur-3xl"></div>
 
     <div class="mt-12 sm:mt-16 grid gap-6 lg:grid-cols-3">
       <div
