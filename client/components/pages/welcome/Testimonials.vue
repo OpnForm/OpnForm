@@ -1,5 +1,5 @@
 <template>
-  <div class="relative px-6 py-10 sm:px-8 sm:py-14">
+  <div class="relative px-6 sm:px-8">
     <div class="pointer-events-none absolute left-1/2 top-0 h-[28rem] w-[72rem] max-w-[140%] -translate-x-1/2 rounded-full bg-blue-100/70 blur-3xl"></div>
 
     <div class="relative mx-auto max-w-266">
