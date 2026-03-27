@@ -1,13 +1,19 @@
 <template>
   <ComparisonPage
-    competitor-name="Typeform"
-    competitor-icon="opnform:typeform"
-    :hero-title="'OpnForm — the powerful Typeform alternative'"
+    competitor-name="Fillout"
+    competitor-icon="opnform:fillout"
+    :hero-title="'OpnForm — The Open-Source Fillout Alternative'"
     :free-plan-comparison="freePlanComparison"
     :switch-reasons="switchReasons"
     :feature-comparison="featureComparison"
     :get-competitor-price="getPrice"
-  />
+  >
+    <template #hero-subtitle>
+      Create powerful, customizable forms with <b>unlimited responses, developer control, and complete data ownership</b> — without monthly caps or usage ceilings.
+      <br/><br/>
+      Fillout has a modern interface and a free plan (1,000 responses/month), but OpnForm gives you <b>true unlimited submissions, open-source flexibility, and self-hosting options</b> so you can scale without constraints.
+    </template>
+  </ComparisonPage>
 </template>
 
 <script setup>
@@ -18,19 +24,19 @@ definePageMeta({
 })
 
 useOpnSeoMeta({
-  title: "OpnForm vs Typeform",
+  title: "OpnForm vs Fillout",
   description:
-    "A powerful Typeform alternative with unlimited responses and full control — for free.",
+    "A powerful Fillout alternative with unlimited responses and full control — for free.",
 })
 
 const freePlanComparison = [
   {
     label: "Monthly Responses",
-    cells: ["Unlimited submissions per month", "10 responses per month"],
+    cells: ["Unlimited submissions per month", "1,000 / month"],
   },
   {
     label: "Forms Allowed",
-    cells: ["Unlimited forms", "1 active form"],
+    cells: ["Unlimited forms", "Unlimited forms"],
   },
   {
     label: "Branding Removal",

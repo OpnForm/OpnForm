@@ -1,13 +1,19 @@
 <template>
   <ComparisonPage
-    competitor-name="Typeform"
-    competitor-icon="opnform:typeform"
-    :hero-title="'OpnForm — the powerful Typeform alternative'"
+    competitor-name="Tally"
+    competitor-icon="opnform:tally"
+    :hero-title="'OpnForm — The Open-Source Tally Alternative'"
     :free-plan-comparison="freePlanComparison"
     :switch-reasons="switchReasons"
     :feature-comparison="featureComparison"
     :get-competitor-price="getPrice"
-  />
+  >
+    <template #hero-subtitle>
+      Create beautiful, logic‑driven forms with <b>unlimited responses, full customization, and complete control over your data.</b>
+      <br/><br/>
+      Whether you're a creator, startup, agency, or enterprise team, OpnForm delivers the simplicity of modern form builders like Tally — but with <b>more flexibility, developer control, and open infrastructure.</b>
+    </template>
+  </ComparisonPage>
 </template>
 
 <script setup>
@@ -18,19 +24,19 @@ definePageMeta({
 })
 
 useOpnSeoMeta({
-  title: "OpnForm vs Typeform",
+  title: "OpnForm vs Tally",
   description:
-    "A powerful Typeform alternative with unlimited responses and full control — for free.",
+    "A powerful Tally alternative with unlimited responses and full control — for free.",
 })
 
 const freePlanComparison = [
   {
     label: "Monthly Responses",
-    cells: ["Unlimited submissions per month", "10 responses per month"],
+    cells: ["Unlimited submissions per month", "1,000 / month"],
   },
   {
     label: "Forms Allowed",
-    cells: ["Unlimited forms", "1 active form"],
+    cells: ["Unlimited forms", "Unlimited forms"],
   },
   {
     label: "Branding Removal",

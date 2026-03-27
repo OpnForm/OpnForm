@@ -1,13 +1,19 @@
 <template>
   <ComparisonPage
-    competitor-name="Typeform"
-    competitor-icon="opnform:typeform"
-    :hero-title="'OpnForm — the powerful Typeform alternative'"
+    competitor-name="Youform"
+    competitor-icon="i-simple-icons-youform"
+    :hero-title="'OpnForm — The Open-Source Youform Alternative'"
     :free-plan-comparison="freePlanComparison"
     :switch-reasons="switchReasons"
     :feature-comparison="featureComparison"
     :get-competitor-price="getPrice"
-  />
+  >
+    <template #hero-subtitle>
+      Create beautiful, logic‑driven forms with <b>unlimited responses, full control, and zero limits</b> — all for free.
+      <br/><br/>
+      Collect data the way you want. Whether you’re a big or small team, a startup, or a builder, OpnForm delivers everything Youform does — without paywalls, usage caps, or per‑month submission limits.
+    </template>
+  </ComparisonPage>
 </template>
 
 <script setup>
@@ -18,19 +24,19 @@ definePageMeta({
 })
 
 useOpnSeoMeta({
-  title: "OpnForm vs Typeform",
+  title: "OpnForm vs Youform",
   description:
-    "A powerful Typeform alternative with unlimited responses and full control — for free.",
+    "A powerful Youform alternative with unlimited responses and full control — for free.",
 })
 
 const freePlanComparison = [
   {
     label: "Monthly Responses",
-    cells: ["Unlimited submissions per month", "10 responses per month"],
+    cells: ["Unlimited submissions per month", "1,000 / month"],
   },
   {
     label: "Forms Allowed",
-    cells: ["Unlimited forms", "1 active form"],
+    cells: ["Unlimited forms", "Unlimited forms"],
   },
   {
     label: "Branding Removal",
