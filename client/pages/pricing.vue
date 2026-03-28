@@ -222,7 +222,7 @@
                 <span
                   class="text-3xl sm:text-[40px] sm:leading-12 font-medium tracking-[-1%] text-gray-950"
                 >
-                  {{ pricingIsYearly ? "$25" : "$29" }}
+                  {{ planPriceDisplay.pro }}
                 </span>
                 <span
                   class="text-base leading-7 tracking-[-1.1%] font-medium text-gray-600"
@@ -335,7 +335,7 @@
                 <span
                   class="text-3xl sm:text-[40px] sm:leading-12 font-medium tracking-[-1%] text-gray-950"
                 >
-                  {{ pricingIsYearly ? "$67" : "$79" }}
+                  {{ planPriceDisplay.business }}
                 </span>
                 <span
                   class="text-base leading-7 tracking-[-1.1%] font-medium text-gray-600"
@@ -450,7 +450,7 @@
                 <span
                   class="text-3xl sm:text-[40px] sm:leading-12 font-medium tracking-[-1%] text-gray-950"
                 >
-                  {{ pricingIsYearly ? "$213+" : "$250+" }}
+                  {{ planPriceDisplay.enterprise }}
                 </span>
                 <span
                   class="text-base leading-7 tracking-[-1.1%] font-medium text-gray-600"
@@ -824,64 +824,22 @@ useOpnSeoMeta({
 
 const { openSubscriptionModal } = useAppModals();
 const { isAuthenticated: authenticated } = useIsAuthenticated();
+const { getPlanPrice } = useBillingUpsell();
 
 const pricingIsYearly = ref(true);
 
 const formatPlanPrice = (plan) => {
-  const price = getPlanPrice(plan, pricingIsYearly.value)
-  if (price == null) return null
-  return `$${price}`
-}
+  const price = getPlanPrice(plan, pricingIsYearly.value);
+  if (price == null) return null;
+  return `$${price}`;
+};
 
 const planPriceDisplay = computed(() => ({
-  free: formatPlanPrice('free'),
-  pro: formatPlanPrice('pro'),
-  business: formatPlanPrice('business'),
-  enterprise: formatPlanPrice('enterprise'),
-}))
-
-const planFeatures = {
-  free: [
-    "Unlimited forms & submissions",
-    "File uploads (basic quota)",
-    "Form logic & validation",
-    "Computed fields (calculations)",
-    "Pre-fills, URL parameters",
-    "Multi-user access (all admins, no roles)",
-    "1 workspace only",
-    "Branding required",
-    "Community support",
-    "API",
-    "Basic integrations",
-  ],
-  pro: [
-    "Remove branding",
-    "Custom domains",
-    "Custom SMTP",
-    "Discord, Slack, Telegram",
-    "Password-protected forms",
-    "Form expiration",
-    "Captcha",
-    "Multiple workspaces",
-  ],
-  business: [
-    "Multi-user with roles & permissions",
-    "Advanced branding (CSS, fonts, favicons)",
-    "Higher file upload size limits",
-    "Priority support",
-    "Partial submissions",
-    "Versioning",
-    "Analytics dashboard",
-    "Advanced integrations",
-  ],
-  enterprise: [
-    "SSO (SAML, OIDC, LDAP)",
-    "Audit logs & compliance features",
-    "External storage support",
-    "White-label hosting option",
-    "SLA & onboarding support",
-  ],
-}
+  free: formatPlanPrice("free"),
+  pro: formatPlanPrice("pro"),
+  business: formatPlanPrice("business"),
+  enterprise: formatPlanPrice("enterprise"),
+}));
 
 const communityEditionFeatures = [
   "Unlimited forms & submissions",
