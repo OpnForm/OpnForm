@@ -1,6 +1,7 @@
 <template>
   <div
     id="public-form"
+    data-testid="public-form-page"
     class="flex flex-col min-h-screen"
   >
     <div class="w-full mx-auto flex flex-col grow h-full">

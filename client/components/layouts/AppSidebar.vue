@@ -8,6 +8,7 @@
           <template #default="{ workspace }">
             <button
               v-if="workspace"
+              aria-label="Workspace menu"
               class="flex items-center gap-2 p-2 rounded-md hover:bg-neutral-200 transition-colors min-w-32 text-left"
             >
               <WorkspaceIcon :workspace="workspace" />
@@ -26,6 +27,7 @@
         <UserDropdown>
           <template #default="{ user }">
             <button
+              aria-label="User menu"
               class="flex items-center gap-2 p-2 rounded-md hover:bg-neutral-200 transition-colors"
             >
               <img

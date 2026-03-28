@@ -18,7 +18,10 @@
               <UIcon name="i-heroicons-user-plus" class="h-4 w-4" />
               New account
             </div>
-            <h2 class="mt-4 text-3xl font-semibold tracking-[-1%] text-neutral-950">
+            <h2
+              data-testid="register-page"
+              class="mt-4 text-3xl font-semibold tracking-[-1%] text-neutral-950"
+            >
               Create your account
             </h2>
             <p class="mt-3 text-base font-normal leading-7 tracking-[-1.1%] text-neutral-600">
