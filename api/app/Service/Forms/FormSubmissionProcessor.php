@@ -3,6 +3,7 @@
 namespace App\Service\Forms;
 
 use App\Models\Forms\Form;
+use App\Service\Billing\PlanAccessService;
 use App\Open\MentionParser;
 
 class FormSubmissionProcessor
@@ -74,7 +75,11 @@ class FormSubmissionProcessor
             $redirectUrl = null;
         }
 
-        return $form->is_pro && $redirectUrl ? [
+        $hasRedirectAccess = $form->workspace
+            ? app(PlanAccessService::class)->hasFormFeature($form->workspace, 'redirect_url')
+            : false;
+
+        return $hasRedirectAccess && $redirectUrl ? [
             'redirect' => true,
             'redirect_url' => $redirectUrl,
         ] : [

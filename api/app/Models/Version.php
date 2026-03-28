@@ -49,10 +49,10 @@ class Version extends BaseVersion
      * Diff the attributes of this version model against another version.
      * If no version is provided, it will be diffed against the current version.
      *
-     * @param Version|null $againstVersion
+     * @param BaseVersion|null $againstVersion
      * @return array
      */
-    public function diff(BaseVersion $againstVersion = null)
+    public function diff(?BaseVersion $againstVersion = null)
     {
         // Use the parent's diff for the base behavior (timestamps filtered, attribute-level diffs)
         $diffArray = parent::diff($againstVersion);

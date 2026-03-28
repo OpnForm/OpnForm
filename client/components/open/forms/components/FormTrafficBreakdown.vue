@@ -2,11 +2,11 @@
   <div class="w-full">
     <h3 class="font-medium text-lg mb-4">Traffic Breakdown</h3>
     
-    <div v-if="!form.is_pro" class="border border-neutral-300 rounded-lg shadow-xs p-4 relative overflow-hidden">
+    <div v-if="!canAccessAnalytics" class="border border-neutral-300 rounded-lg shadow-xs p-4 relative overflow-hidden">
       <div class="absolute inset-0 z-10">
         <div class="p-5 max-w-md mx-auto flex flex-col items-center justify-center h-full">
           <p class="text-center">
-            You need a <pro-tag
+            You need a <PlanTag
               upgrade-modal-title="Upgrade today to access detailed analytics"
               class="mx-1"
             /> subscription to access detailed traffic breakdown.
@@ -19,7 +19,7 @@
         </div>
       </div>
       <img
-        src="/img/pages/forms/blurred_graph.png"
+        src="/img/pages/forms/blurred_traffic.png"
         alt="Sample Graph"
         class="mx-auto w-full filter blur-md z-0 pointer-events-none"
       >
@@ -105,7 +105,7 @@
 </template>
 
 <script setup>
-import ProTag from "~/components/app/ProTag.vue"
+import PlanTag from "~/components/app/PlanTag.vue"
 
 const props = defineProps({
   form: { 
@@ -123,6 +123,8 @@ const props = defineProps({
 })
 
 const { openSubscriptionModal } = useAppModals()
+const { hasFeature } = usePlanFeatures()
+const canAccessAnalytics = computed(() => hasFeature('form_analytics'))
 
 // Chart types configuration
 const chartTypes = [

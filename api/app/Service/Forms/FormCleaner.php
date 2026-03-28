@@ -5,8 +5,8 @@ namespace App\Service\Forms;
 use App\Http\Requests\UserFormRequest;
 use App\Http\Resources\FormResource;
 use App\Models\Forms\Form;
-use App\Models\User;
 use App\Models\Workspace;
+use App\Service\Billing\PlanAccessService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Stevebauman\Purify\Facades\Purify;
@@ -27,33 +27,6 @@ class FormCleaner
     // For remove keys those have empty value
     private array $customKeys = ['seo_meta'];
 
-    private array $formDefaults = [
-        'no_branding' => false,
-        'database_fields_update' => null,
-        'editable_submissions' => false,
-        'custom_code' => null,
-        'analytics' => [],
-        'custom_css' => null,
-        'seo_meta' => [],
-        'redirect_url' => null,
-        'enable_partial_submissions' => false,
-        'enable_ip_tracking' => false
-    ];
-
-    private array $formNonTrialingDefaults = [
-        // Custom code protection disabled for now
-        // 'custom_code' => null,
-    ];
-
-    private array $fieldDefaults = [
-        // 'name' => '' TODO: prevent name changing, use alias for column and keep original name as it is
-        'file_upload' => false,
-        'secret_input' => false,
-    ];
-
-    // Policy toggles for current cleaning run
-    private bool $allowCustomCode = true;
-
     private array $cleaningMessages = [
         // For form
         'no_branding' => 'OpenForm branding is not hidden.',
@@ -69,9 +42,15 @@ class FormCleaner
 
         // For fields
         'file_upload' => 'Link field is not a file upload.',
+        'allowed_file_types' => 'Custom file type restrictions were disabled.',
         'custom_block' => 'The custom block was removed.',
         'secret_input' => 'Secret input was disabled.',
     ];
+
+    protected PlanAccessService $planAccessService;
+
+    // Policy toggles for current cleaning run
+    private bool $allowCustomCode = true;
 
     /**
      * Returns form data after request ingestion
@@ -102,6 +81,14 @@ class FormCleaner
         }
 
         return $cleaningMsgs;
+    }
+
+    /**
+     * Returns the raw cleaning keys for internal logic.
+     */
+    public function getCleaningKeys(): array
+    {
+        return $this->cleanings;
     }
 
     /**
@@ -141,50 +128,111 @@ class FormCleaner
         return $this;
     }
 
-    private function isPro(Workspace $workspace)
+    private function getPlanAccessService(): PlanAccessService
     {
-        return $workspace->is_pro;
+        if (!isset($this->planAccessService)) {
+            $this->planAccessService = app(PlanAccessService::class);
+        }
+
+        return $this->planAccessService;
     }
 
-    private function isTrialing(Workspace $workspace)
-    {
-        return $workspace->is_trialing;
-    }
     /**
-     * Dry run celanings
-     *
-     * @param  User|null  $user
+     * Dry run cleanings
      */
     public function simulateCleaning(Workspace $workspace): FormCleaner
     {
-        if ($this->isTrialing($workspace)) {
-            $this->data = $this->removeNonTrialingFeatures($this->data, true);
-        }
-
-        if (!$this->isPro($workspace)) {
-            $this->data = $this->removeProFeatures($this->data, true);
-        }
+        $this->data = $this->cleanForTier($workspace, $this->data, true);
 
         return $this;
     }
 
     /**
-     * Perform Cleanigns
-     *
-     * @param  User|null  $user
-     * @return $this|array
+     * Perform cleanings based on workspace feature access
      */
     public function performCleaning(Workspace $workspace): FormCleaner
     {
-        if ($this->isTrialing($workspace)) {
-            $this->data = $this->removeNonTrialingFeatures($this->data, true);
-        }
-
-        if (!$this->isPro($workspace)) {
-            $this->data = $this->removeProFeatures($this->data);
-        }
+        $this->data = $this->cleanForTier($workspace, $this->data, false);
 
         return $this;
+    }
+
+    /**
+     * Clean form data based on the workspace's effective feature access.
+     */
+    private function cleanForTier(Workspace $workspace, array $data, bool $simulation = false): array
+    {
+        $planAccessService = $this->getPlanAccessService();
+
+        $formFeatures = config('plans.form_features', []);
+        $formDefaults = config('plans.form_feature_defaults', []);
+
+        // Clean form-level features
+        foreach (array_keys($formFeatures) as $feature) {
+            if (!$planAccessService->hasFormFeature($workspace, $feature)) {
+                $defaultValue = $formDefaults[$feature] ?? null;
+                $this->cleanFeature($data, $feature, $defaultValue, $simulation);
+            }
+        }
+
+        // Clean field-level features
+        if (isset($data['properties']) && is_array($data['properties'])) {
+            foreach ($data['properties'] as &$property) {
+                $this->cleanFieldForTier($workspace, $property, $planAccessService, $simulation);
+            }
+            unset($property);
+        }
+
+        return $data;
+    }
+
+    /**
+     * Clean a specific feature from form data.
+     */
+    private function cleanFeature(array &$data, string $feature, mixed $defaultValue, bool $simulation = false): void
+    {
+        $formVal = Arr::get($data, $feature);
+
+        // Transform customkeys values
+        $formVal = $this->cleanCustomKeys($feature, $formVal);
+
+        // Transform boolean values
+        $formVal = (($formVal === 0 || $formVal === '0') ? false : $formVal);
+        $formVal = (($formVal === 1 || $formVal === '1') ? true : $formVal);
+
+        if (!is_null($formVal) && $formVal !== $defaultValue) {
+            if (!isset($this->cleanings['form'])) {
+                $this->cleanings['form'] = [];
+            }
+            $this->cleanings['form'][] = $feature;
+
+            if (!$simulation) {
+                Arr::set($data, $feature, $defaultValue);
+            }
+        }
+    }
+
+    /**
+     * Clean field-level features based on tier.
+     */
+    private function cleanFieldForTier(Workspace $workspace, array &$property, PlanAccessService $planAccessService, bool $simulation = false): void
+    {
+        // secret_input requires pro
+        if (isset($property['secret_input']) && $property['secret_input'] === true) {
+            if (!$planAccessService->hasFormFeature($workspace, 'secret_input')) {
+                $this->cleanings[$property['name']][] = 'secret_input';
+                if (!$simulation) {
+                    $property['secret_input'] = false;
+                }
+            }
+        }
+
+        if (!empty($property['allowed_file_types']) && !$planAccessService->hasFeature($workspace, 'file_upload.allowed_types')) {
+            $this->cleanings[$property['name']][] = 'allowed_file_types';
+            if (!$simulation) {
+                $property['allowed_file_types'] = null;
+            }
+        }
     }
 
     /**
@@ -200,118 +248,14 @@ class FormCleaner
                 }
 
                 if (!$this->allowCustomCode && ($property['type'] ?? null) === 'nf-code') {
-                    // Remove the block entirely (silent, not recorded as cleaning)
                     unset($data['properties'][$index]);
                 }
             }
             unset($property);
-            // Reindex properties array if any removals occurred
             $data['properties'] = array_values($data['properties']);
         }
 
         return $data;
-    }
-
-    private function removeNonTrialingFeatures(array $data, $simulation = false)
-    {
-        $this->clean($data, $this->formNonTrialingDefaults);
-        return $data;
-    }
-
-    private function removeProFeatures(array $data, $simulation = false)
-    {
-        $this->cleanForm($data, $simulation);
-        $this->cleanProperties($data, $simulation);
-
-        return $data;
-    }
-
-    private function cleanForm(array &$data, $simulation = false): void
-    {
-        $this->clean($data, $this->formDefaults, $simulation);
-    }
-
-    private function cleanProperties(array &$data, $simulation = false): void
-    {
-        // Safely skip if properties are not present
-        if (!isset($data['properties']) || !is_array($data['properties'])) {
-            return;
-        }
-
-        foreach ($data['properties'] as $key => &$property) {
-            /*
-            // Remove pro custom blocks
-            if (\Str::of($property['type'])->startsWith('nf-')) {
-                $this->cleanings[$property['name']][] = 'custom_block';
-                if (!$simulation) {
-                    unset($data['properties'][$key]);
-                }
-                continue;
-            }
-
-            // Remove logic
-            if (($property['logic']['conditions'] ?? null) != null || ($property['logic']['actions'] ?? []) != []) {
-                $this->cleanings[$property['name']][] = 'logic';
-                if (!$simulation) {
-                    unset($data['properties'][$key]['logic']);
-                }
-            }
-            */
-
-            // Clean pro field options
-            $this->cleanField($property, $this->fieldDefaults, $simulation);
-        }
-        unset($property);
-    }
-
-    private function clean(array &$data, array $defaults, $simulation = false): void
-    {
-        foreach ($defaults as $key => $value) {
-
-            // Get value from form
-            $formVal = Arr::get($data, $key);
-
-            // Transform customkeys values
-            $formVal = $this->cleanCustomKeys($key, $formVal);
-
-            // Transform boolean values
-            $formVal = (($formVal === 0 || $formVal === '0') ? false : $formVal);
-            $formVal = (($formVal === 1 || $formVal === '1') ? true : $formVal);
-
-            if (!is_null($formVal) && $formVal !== $value) {
-                if (!isset($this->cleanings['form'])) {
-                    $this->cleanings['form'] = [];
-                }
-                $this->cleanings['form'][] = $key;
-
-                // If not a simulation, do the cleaning
-                if (!$simulation) {
-                    Arr::set($data, $key, $value);
-                }
-            }
-        }
-    }
-
-    private function cleanField(array &$data, array $defaults, $simulation = false): void
-    {
-        foreach ($defaults as $key => $value) {
-            if (isset($data[$key]) && Arr::get($data, $key) !== $value) {
-                $this->cleanings[$data['name']][] = $key;
-                if (!$simulation) {
-                    Arr::set($data, $key, $value);
-                }
-            }
-        }
-
-        // Remove pro types columns
-        /*foreach (['files'] as $proType) {
-            if ($data['type'] == $proType && (!isset($data['hidden']) || !$data['hidden'])) {
-                $this->cleanings[$data['name']][] = $proType;
-                if (!$simulation) {
-                    $data['hidden'] = true;
-                }
-            }
-        }*/
     }
 
     // Remove keys those have empty value
