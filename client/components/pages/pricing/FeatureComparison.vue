@@ -124,13 +124,13 @@
 </template>
 
 <script setup>
-const { getPlanPrice, getTierDisplayName } = useBillingUpsell();
+const { getPlanPrice, getTierDisplayName } = useBillingUpsell()
 
 const formatPlanPrice = (plan) => {
-  const price = getPlanPrice(plan, false);
-  if (price == null) return null;
-  return `$${price}`;
-};
+  const price = getPlanPrice(plan, false)
+  if (price == null) return null
+  return `$${price}`
+}
 
 const plans = computed(() => [
   {
@@ -153,7 +153,7 @@ const plans = computed(() => [
     label: getTierDisplayName("enterprise"),
     priceLabel: formatPlanPrice("enterprise"),
   },
-]);
+])
 
 const sections = [
   {
@@ -298,5 +298,5 @@ const sections = [
       },
     ],
   },
-];
+]
 </script>

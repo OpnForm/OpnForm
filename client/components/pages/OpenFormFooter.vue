@@ -242,14 +242,14 @@
 </template>
 
 <script setup>
-import opnformConfig from "~/opnform.config.js";
+import opnformConfig from "~/opnform.config.js"
 
-const { isAuthenticated: authenticated } = useIsAuthenticated();
-const { data: user } = useAuth().user();
-const currYear = ref(new Date().getFullYear());
+const { isAuthenticated: authenticated } = useIsAuthenticated()
+const { data: user } = useAuth().user()
+const currYear = ref(new Date().getFullYear())
 
 // Use the reactive version for proper template reactivity
-const version = computed(() => useFeatureFlag("version"));
+const version = computed(() => useFeatureFlag("version"))
 
 const socialLinks = computed(() => [
   { label: "X", href: opnformConfig.links.twitter, icon: "i-simple-icons-x" },
@@ -263,7 +263,7 @@ const socialLinks = computed(() => [
     href: opnformConfig.links.github_url,
     icon: "i-simple-icons-github",
   },
-]);
+])
 
 const linkGroups = computed(() => [
   {
@@ -306,7 +306,7 @@ const linkGroups = computed(() => [
       // { label: "Terms & Conditions", to: { name: "terms-conditions" } },
     ],
   },
-]);
+])
 </script>
 
 <style scoped>

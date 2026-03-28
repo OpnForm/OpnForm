@@ -303,9 +303,9 @@
 </template>
 
 <script setup>
-import opnformConfig from "~/opnform.config.js";
+import opnformConfig from "~/opnform.config.js"
 
-const { isAuthenticated: authenticated } = useIsAuthenticated();
+const { isAuthenticated: authenticated } = useIsAuthenticated()
 
 const shareCards = [
   {
@@ -343,7 +343,7 @@ const shareCards = [
     icon: "i-heroicons-qr-code",
     imageSrc: "/img/pages/welcome/share-5.png",
   },
-];
+]
 
 const securityPills = [
   {
@@ -394,7 +394,7 @@ const securityPills = [
     iconWrapClass: "bg-emerald-50",
     iconClass: "text-emerald-600",
   },
-];
+]
 
 const teamFeatureBlocks = [
   {
@@ -424,5 +424,5 @@ const teamFeatureBlocks = [
     description: "Get help fast with dedicated enterprise support.",
     image: "/img/pages/welcome/team-5.png",
   },
-];
+]
 </script>

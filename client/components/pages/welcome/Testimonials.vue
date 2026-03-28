@@ -62,7 +62,7 @@ defineProps({
     required: false,
     default: "Loved by builders and <br> teams worldwide",
   },
-});
+})
 
 const testimonials = [
   {
@@ -83,9 +83,9 @@ const testimonials = [
     name: "Ravi P.",
     role: "CTO",
   },
-];
+]
 
 function getInitial(name) {
-  return (name || "?").trim().charAt(0).toUpperCase() || "?";
+  return (name || "?").trim().charAt(0).toUpperCase() || "?"
 }
 </script>

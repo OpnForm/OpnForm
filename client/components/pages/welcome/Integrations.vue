@@ -74,5 +74,5 @@ const integrationApps = [
   { icon: "i-simple-icons-notion", iconClass: "text-white" },
   { icon: "i-simple-icons-airtable", iconClass: "text-[#18BFFF]" },
   { icon: "i-simple-icons-meta", iconClass: "text-[#0668E1]" },
-];
+]
 </script>

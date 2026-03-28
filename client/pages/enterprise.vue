@@ -468,17 +468,17 @@
 </template>
 
 <script setup>
-import opnformConfig from "~/opnform.config.js";
+import opnformConfig from "~/opnform.config.js"
 
 definePageMeta({
   layout: "default",
-});
+})
 
 useOpnSeoMeta({
   title: "Enterprise",
   description:
     "Powerful and secure form builder for teams that need full control over data, security, and deployment.",
-});
+})
 
 const securityFeatures = [
   {
@@ -503,7 +503,7 @@ const securityFeatures = [
     title: "Audit Logs & Security SLAs",
     description: "Get visibility and accountability at every step.",
   },
-];
+]
 
 const enterpriseFeatures = [
   {
@@ -541,7 +541,7 @@ const enterpriseFeatures = [
       "Use OpnForm Cloud for simplicity — or self-host for complete control over data and uptime.",
     imageSrc: "/img/pages/enterprise/enterprise-6.png",
   },
-];
+]
 
 const vipSupportBadges = [
   {
@@ -562,7 +562,7 @@ const vipSupportBadges = [
     badgeBg: "bg-blue-50",
     iconColor: "text-blue-600",
   },
-];
+]
 
 const integrationApps = [
   { icon: "i-simple-icons-zendesk", iconClass: "text-[#ffffff]" },
@@ -582,5 +582,5 @@ const integrationApps = [
   // { icon: "i-simple-icons-notion", iconClass: "text-white" },
   // { icon: "i-simple-icons-airtable", iconClass: "text-[#18BFFF]" },
   // { icon: "i-simple-icons-meta", iconClass: "text-[#0668E1]" },
-];
+]
 </script>

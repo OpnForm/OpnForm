@@ -191,11 +191,7 @@
 </template>
 
 <script setup>
-const { isAuthenticated: authenticated } = useIsAuthenticated();
-
-const desktopPanelRefs = ref([])
-const activeDesktopPanel = ref(0)
-let desktopPanelObserver = null
+const { isAuthenticated: authenticated } = useIsAuthenticated()
 
 const panels = [
   {
@@ -319,7 +315,7 @@ const panels = [
       class: "text-violet-600 hover:text-violet-700 hover:no-underline",
     },
   },
-];
+]
 
 const tabs = [
   { key: "smart", label: "Smart Forms", icon: "i-heroicons-sparkles" },
@@ -334,9 +330,9 @@ const tabs = [
     label: "Experience & Control",
     icon: "i-heroicons-adjustments-horizontal",
   },
-];
+]
 
-const activeTab = ref("smart");
+const activeTab = ref("smart")
 
 const tabContent = {
   smart: {
@@ -387,11 +383,11 @@ const tabContent = {
     ],
     imageSrc: "/img/pages/welcome/feature-7.png",
   },
-};
+}
 
 const activeContent = computed(
   () => tabContent[activeTab.value] || tabContent.smart,
-);
+)
 </script>
 
 <style scoped>

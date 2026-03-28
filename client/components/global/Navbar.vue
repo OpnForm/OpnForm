@@ -205,67 +205,55 @@
 </template>
 
 <script setup>
-import { computed } from "vue";
-import { useRoute } from "#imports";
+import { computed } from "vue"
+import { useRoute } from "#imports"
 
-import WorkspaceDropdown from "../dashboard/WorkspaceDropdown.vue";
-import WorkspaceIcon from "~/components/workspaces/WorkspaceIcon.vue";
-import UserDropdown from "../dashboard/UserDropdown.vue";
+import WorkspaceDropdown from "../dashboard/WorkspaceDropdown.vue"
+import WorkspaceIcon from "~/components/workspaces/WorkspaceIcon.vue"
+import UserDropdown from "../dashboard/UserDropdown.vue"
 
-import opnformConfig from "~/opnform.config.js";
-import { useFeatureFlag } from "~/composables/useFeatureFlag";
-import TrackClick from "~/components/global/TrackClick.vue";
-import { ref } from "vue";
+import opnformConfig from "~/opnform.config.js"
+import { useFeatureFlag } from "~/composables/useFeatureFlag"
+import TrackClick from "~/components/global/TrackClick.vue"
+import { ref } from "vue"
 
-const isOpen = ref(false);
+const isOpen = ref(false)
 
 // Stores & composables
-const { current: workspace } = useCurrentWorkspace();
-const appStore = useAppStore();
+const { current: workspace } = useCurrentWorkspace()
 
-const { data: user } = useAuth().user();
-const isIframe = useIsIframe();
-const isSelfHosted = computed(() => useFeatureFlag("self_hosted"));
-const route = useRoute();
+const { data: user } = useAuth().user()
+const isIframe = useIsIframe()
+const isSelfHosted = computed(() => useFeatureFlag("self_hosted"))
+const route = useRoute()
 
 // Get current form for forms-slug routes
 const isFormSlugRoute = computed(
   () => route.name && route.name.startsWith("forms-slug"),
-);
+)
 const formSlug = computed(() =>
   isFormSlugRoute.value ? route.params.slug : null,
-);
+)
 const { data: form } = useForms().detail(formSlug.value, {
   usePrivate: true,
   enabled: computed(() => !!formSlug.value),
-});
+})
 
 // Constants / classes
 const navLinkClasses =
-  "border border-transparent hover:border-gray-200 text-gray-600 hover:text-gray-950 hover:no-underline dark:hover:text-white py-2.5 px-3 hover:bg-gray-50 rounded-md text-sm leading-5 tracking-[-0.6%] font-medium transition-colors w-full md:w-auto text-center md:text-left";
+  "border border-transparent hover:border-gray-200 text-gray-600 hover:text-gray-950 hover:no-underline dark:hover:text-white py-2.5 px-3 hover:bg-gray-50 rounded-md text-sm leading-5 tracking-[-0.6%] font-medium transition-colors w-full md:w-auto text-center md:text-left"
 
 const hasNavbar = computed(() => {
-  if (isIframe.value) return false;
+  if (isIframe.value) return false
 
   if (route.name && route.name === "forms-slug") {
     if (form.value || import.meta.server) {
-      return false;
+      return false
     }
     // Form not found/404 case - show the navbar
-    return true;
+    return true
   }
-  return true;
-});
+  return true
+})
 
-const hasNewChanges = computed(() => {
-  if (import.meta.server || !window.Featurebase || !appStore.featureBaseEnabled)
-    return false;
-  return window.Featurebase("unviewed_changelog_count") > 0;
-});
-
-// Methods
-function openChangelog() {
-  if (import.meta.server || !window.Featurebase) return;
-  window.Featurebase("manually_open_changelog_popup");
-}
 </script>
