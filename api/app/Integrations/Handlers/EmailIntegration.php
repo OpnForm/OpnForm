@@ -8,6 +8,7 @@ use App\Notifications\Forms\FormEmailNotification;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use App\Open\MentionParser;
+use App\Service\Billing\Feature;
 use App\Service\Forms\FormSubmissionFormatter;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -39,7 +40,7 @@ class EmailIntegration extends AbstractIntegrationHandler
             'pdf_template_ids.*' => ['integer', Rule::exists('pdf_templates', 'id')->where('form_id', $form->id)],
         ];
 
-        if ($form->is_pro || config('app.self_hosted')) {
+        if ($form->workspace?->hasFeature(Feature::EMAIL_ADVANCED) || config('app.self_hosted')) {
             return $rules;
         }
 
@@ -115,7 +116,7 @@ class EmailIntegration extends AbstractIntegrationHandler
             return;
         }
 
-        if ($this->form->is_pro) {  // For Send to field Mentions are Pro feature
+        if ($this->form->workspace?->hasFeature(Feature::EMAIL_ADVANCED)) {
             $formatter = (new FormSubmissionFormatter($this->form, $this->submissionData))->outputStringsOnly()->showHiddenFields();
             $parser = new MentionParser(
                 $this->integrationData?->send_to,

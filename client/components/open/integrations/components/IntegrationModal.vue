@@ -13,7 +13,10 @@
         />
         <h2 class="text-lg font-semibold">
           {{ integration?.name }}
-          <pro-tag v-if="integration?.is_pro === true" />
+          <PlanTag
+            v-if="integration?.required_tier && integration.required_tier !== 'free'"
+            :required-tier="integration.required_tier"
+          />
         </h2>
       </div>
       <UButton
@@ -73,7 +76,7 @@
 <script setup>
 import { computed, toValue } from "vue"
 import { useComponentRegistry } from "~/composables/components/useComponentRegistry"
-import ProTag from "~/components/app/ProTag.vue"
+import PlanTag from "~/components/app/PlanTag.vue"
 
 const props = defineProps({
   show: { type: Boolean, required: true },

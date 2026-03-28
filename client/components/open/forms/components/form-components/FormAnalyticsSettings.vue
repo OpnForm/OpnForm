@@ -5,7 +5,7 @@
         <div>
           <h3 class="text-lg font-medium text-neutral-900">
             Analytics
-            <ProTag
+            <PlanTag
               class="ml-2"
               upgrade-modal-title="Upgrade to Unlock Analytics"
               upgrade-modal-description="Track form views and conversions with your preferred analytics platform. Integrate with Meta Pixel, Google Analytics, or Google Tag Manager."
@@ -50,7 +50,7 @@
 </template>
 
 <script setup>
-import ProTag from "~/components/app/ProTag.vue"
+import PlanTag from "~/components/app/PlanTag.vue"
 
 const crisp = useCrisp()
 const workingFormStore = useWorkingFormStore()

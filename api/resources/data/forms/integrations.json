@@ -5,7 +5,7 @@
     "section_name": "Notifications",
     "file_name": "EmailIntegration",
     "actions_file_name": "EmailIntegrationActions",
-    "is_pro": false,
+    "required_tier": "free",
     "crisp_help_page_slug": "can-i-receive-notifications-on-form-submissions-134svqv"
   },
   "slack": {
@@ -14,7 +14,7 @@
     "section_name": "Notifications",
     "file_name": "SlackIntegration",
     "actions_file_name": "SlackIntegrationActions",
-    "is_pro": true,
+    "required_tier": "pro",
     "crisp_help_page_slug": "do-you-want-to-get-notified-of-new-submissions-via-slack-21mhhh"
   },
   "discord": {
@@ -23,7 +23,7 @@
     "section_name": "Notifications",
     "file_name": "DiscordIntegration",
     "actions_file_name": "DiscordIntegrationActions",
-    "is_pro": true,
+    "required_tier": "pro",
     "crisp_help_page_slug": "do-you-want-to-get-notified-of-new-submissions-via-discord-1b2oxcx"
   },
   "telegram": {
@@ -32,7 +32,7 @@
     "section_name": "Notifications",
     "file_name": "TelegramIntegration",
     "actions_file_name": "TelegramIntegrationActions",
-    "is_pro": true,
+    "required_tier": "pro",
     "crisp_help_page_slug": "how-to-connect-telegram-to-your-opnform-bxqqq2"
   },
   "webhook": {
@@ -41,7 +41,7 @@
     "section_name": "Automation",
     "file_name": "WebhookIntegration",
     "actions_file_name": "WebhookIntegrationActions",
-    "is_pro": false,
+    "required_tier": "free",
     "crisp_help_page_slug": "can-i-trigger-another-service-whenever-my-form-receives-a-submission-webhooks-6nrnfn"
   },
   "zapier": {
@@ -49,7 +49,7 @@
     "icon": "cib:zapier",
     "section_name": "Automation",
     "file_name": "ZapierIntegration",
-    "is_pro": false,
+    "required_tier": "free",
     "is_external": true,
     "is_editable": false,
     "url": "https://zapier.com/apps/opnform/integrations",
@@ -61,7 +61,7 @@
     "section_name": "Automation",
     "file_name": "N8nIntegration",
     "actions_file_name": "N8nIntegrationActions",
-    "is_pro": false,
+    "required_tier": "free",
     "is_external": true,
     "is_editable": false,
     "url": "https://n8n.io/integrations/opnform-trigger/"
@@ -72,7 +72,7 @@
     "section_name": "Automation",
     "file_name": "ActivepiecesIntegration",
     "actions_file_name": "ActivepiecesIntegrationActions",
-    "is_pro": false,
+    "required_tier": "free",
     "is_external": true,
     "is_editable": false,
     "url": "https://www.activepieces.com/pieces/opnform"
@@ -83,7 +83,7 @@
     "section_name": "Databases",
     "file_name": "GoogleSheetsIntegration",
     "actions_file_name": "GoogleSheetsIntegrationActions",
-    "is_pro": false,
+    "required_tier": "free",
     "crisp_help_page_slug": "how-do-i-integrate-google-sheets-for-my-database-goefny"
   }
 }

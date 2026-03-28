@@ -5,7 +5,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
 it('can submit form partially and complete it later using submission hash', function () {
-    $user = $this->actingAsProUser();
+    $user = $this->actingAsBusinessUser();
     $workspace = $this->createUserWorkspace($user);
     $form = $this->createForm($user, $workspace, [
         'enable_partial_submissions' => true
@@ -45,7 +45,7 @@ it('can submit form partially and complete it later using submission hash', func
 });
 
 it('can update partial submission multiple times', function () {
-    $user = $this->actingAsProUser();
+    $user = $this->actingAsBusinessUser();
     $workspace = $this->createUserWorkspace($user);
     $form = $this->createForm($user, $workspace, [
         'enable_partial_submissions' => true
@@ -77,7 +77,7 @@ it('can update partial submission multiple times', function () {
 });
 
 it('calculates stats correctly for partial vs completed submissions', function () {
-    $user = $this->actingAsProUser();
+    $user = $this->actingAsBusinessUser();
     $workspace = $this->createUserWorkspace($user);
     $form = $this->createForm($user, $workspace, [
         'enable_partial_submissions' => true
@@ -101,7 +101,7 @@ it('calculates stats correctly for partial vs completed submissions', function (
 it('handles file uploads in partial submissions', function () {
     Storage::fake();
 
-    $user = $this->actingAsProUser();
+    $user = $this->actingAsBusinessUser();
     $workspace = $this->createUserWorkspace($user);
     $form = $this->createForm($user, $workspace, [
         'enable_partial_submissions' => true,
@@ -139,7 +139,7 @@ it('handles file uploads in partial submissions', function () {
 it('handles signature field in partial submissions', function () {
     Storage::fake();
 
-    $user = $this->actingAsProUser();
+    $user = $this->actingAsBusinessUser();
     $workspace = $this->createUserWorkspace($user);
     $form = $this->createForm($user, $workspace, [
         'enable_partial_submissions' => true,
@@ -172,7 +172,7 @@ it('handles signature field in partial submissions', function () {
 });
 
 it('requires at least one field with value for partial submission', function () {
-    $user = $this->actingAsProUser();
+    $user = $this->actingAsBusinessUser();
     $workspace = $this->createUserWorkspace($user);
     $form = $this->createForm($user, $workspace, [
         'enable_partial_submissions' => true
@@ -189,7 +189,7 @@ it('requires at least one field with value for partial submission', function () 
 });
 
 it('submits as completed when partial feature is disabled', function () {
-    $user = $this->actingAsProUser();
+    $user = $this->actingAsBusinessUser();
     $workspace = $this->createUserWorkspace($user);
 
     // Create form with partial submissions disabled
@@ -212,11 +212,11 @@ it('submits as completed when partial feature is disabled', function () {
     expect($submission->status)->toBe(FormSubmission::STATUS_COMPLETED);
 });
 
-it('submits as completed on non-pro forms', function () {
+it('submits as completed on free tier forms', function () {
     $user = $this->actingAsUser();
     $workspace = $this->createUserWorkspace($user);
 
-    // Create non-pro form with partial submissions enabled
+    // Create free tier form with partial submissions enabled
     $form = $this->createForm($user, $workspace, [
         'enable_partial_submissions' => true
     ]);
@@ -231,13 +231,83 @@ it('submits as completed on non-pro forms', function () {
             'message' => 'Form submission saved.',
         ]);
 
-    // Verify submission was saved as completed
+    // Verify submission was saved as completed (free tier cannot use partial submissions)
     $submission = FormSubmission::first();
     expect($submission->status)->toBe(FormSubmission::STATUS_COMPLETED);
 });
 
-it('cannot revert a completed submission back to partial', function () {
+it('submits as completed on pro tier forms - requires business', function () {
     $user = $this->actingAsProUser();
+    $workspace = $this->createUserWorkspace($user);
+
+    // Pro tier form with partial submissions enabled - but partial requires business
+    $form = $this->createForm($user, $workspace, [
+        'enable_partial_submissions' => true
+    ]);
+
+    $formData = $this->generateFormSubmissionData($form, ['text' => 'Test']);
+    $formData['is_partial'] = true;
+
+    $this->postJson(route('forms.answer', $form->slug), $formData)
+        ->assertSuccessful()
+        ->assertJson([
+            'type' => 'success',
+            'message' => 'Form submission saved.',
+        ]);
+
+    // Verify submission was saved as completed (pro tier cannot use partial submissions - needs business)
+    $submission = FormSubmission::first();
+    expect($submission->status)->toBe(FormSubmission::STATUS_COMPLETED);
+});
+
+it('allows partial submissions on business tier forms', function () {
+    $user = $this->actingAsBusinessUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace, [
+        'enable_partial_submissions' => true
+    ]);
+
+    $formData = $this->generateFormSubmissionData($form, ['text' => 'Test']);
+    $formData['is_partial'] = true;
+
+    $response = $this->postJson(route('forms.answer', $form->slug), $formData)
+        ->assertSuccessful()
+        ->assertJson([
+            'type' => 'success',
+        ]);
+
+    $submissionHash = $response->json('submission_hash');
+    expect($submissionHash)->not->toBeEmpty();
+
+    $submission = FormSubmission::first();
+    expect($submission->status)->toBe(FormSubmission::STATUS_PARTIAL);
+});
+
+it('allows partial submissions on enterprise tier forms', function () {
+    $user = $this->actingAsEnterpriseUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace, [
+        'enable_partial_submissions' => true
+    ]);
+
+    $formData = $this->generateFormSubmissionData($form, ['text' => 'Test']);
+    $formData['is_partial'] = true;
+
+    $response = $this->postJson(route('forms.answer', $form->slug), $formData)
+        ->assertSuccessful()
+        ->assertJson([
+            'type' => 'success',
+        ]);
+
+    $submissionHash = $response->json('submission_hash');
+    expect($submissionHash)->not->toBeEmpty();
+
+    $submission = FormSubmission::first();
+    expect($submission->status)->toBe(FormSubmission::STATUS_PARTIAL);
+});
+
+it('cannot revert a completed submission back to partial', function () {
+    $user = $this->actingAsBusinessUser();
     $workspace = $this->createUserWorkspace($user);
     $form = $this->createForm($user, $workspace, [
         'enable_partial_submissions' => true
@@ -264,7 +334,6 @@ it('cannot revert a completed submission back to partial', function () {
     expect($submission->status)->toBe(FormSubmission::STATUS_COMPLETED);
 
     // Step 3: Try to send another partial submission with the same hash
-    // This simulates a race condition where a delayed partial request arrives after completion
     $latePartialData = $this->generateFormSubmissionData($form, ['text' => 'Late partial update']);
     $latePartialData['is_partial'] = true;
     $latePartialData['submission_hash'] = $submissionHash;

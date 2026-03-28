@@ -52,19 +52,16 @@ class VersionController extends Controller
     {
         $version = Version::findOrFail($versionId);
 
-        // Check the current authenticated user's pro status
-        if (!$request->user()->is_pro) {
-            return $this->error([
-                'message' => 'You need to be a Pro user to restore this version',
-            ]);
-        }
-
         // Get the actual model from the database to verify ownership (prevents IDOR)
         $modelClass = $version->versionable_type;
         if (!class_exists($modelClass)) {
             abort(404, 'Version not found');
         }
         $model = $modelClass::findOrFail($version->versionable_id);
+
+        $workspace = $model->workspace ?? ($model->form->workspace ?? null);
+        abort_unless($workspace, 404, 'Workspace not found');
+        $workspace->requireFeature('form_versioning');
 
         $this->authorize('update', $model);
 

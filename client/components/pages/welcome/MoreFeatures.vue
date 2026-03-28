@@ -2,8 +2,15 @@
   <section class="bg-white">
     <Integrations />
   </section>
-  <section class="bg-white py-14 sm:py-28 px-8 lg:px-12">
-    <div class="max-w-266 mx-auto">
+  <section class="relative overflow-hidden bg-white py-14 sm:py-28 px-8 lg:px-12">
+    <div class="pointer-events-none absolute inset-0">
+      <div class="absolute inset-x-0 top-18 h-64 bg-linear-to-b from-blue-50/0 via-blue-50/55 to-transparent"></div>
+      <div class="absolute left-[-1rem] top-34 h-64 w-64 rounded-full bg-blue-100/55 blur-3xl"></div>
+      <div class="absolute right-[4%] top-40 h-52 w-52 rounded-full bg-cyan-100/50 blur-3xl"></div>
+      <div class="absolute left-1/2 top-44 h-36 w-[34rem] -translate-x-1/2 rounded-full bg-blue-100/35 blur-3xl"></div>
+    </div>
+
+    <div class="relative max-w-266 mx-auto">
       <div class="text-center">
         <h3
           class="text-3xl sm:text-5xl sm:leading-14 font-semibold text-gray-950 tracking-[-1%]"
@@ -94,7 +101,7 @@
   <section class="bg-white">
     <div class="px-8 lg:px-12">
       <div
-        class="mx-auto w-full max-w-336 rounded-4xl bg-gray-50 border border-gray-200 overflow-hidden"
+        class="mx-auto w-full max-w-336 rounded-[32px] bg-gray-50 border border-gray-200 overflow-hidden"
       >
         <div
           class="relative py-8 sm:py-10 lg:py-14 xl:py-24 px-8 md:px-10 lg:px-14 xl:px-35"
@@ -179,7 +186,7 @@
               <div
                 v-for="pill in securityPills"
                 :key="pill.label"
-                class="flex items-center gap-2.5 w-fit rounded-full bg-white border border-neutral-200/80 py-1.5 pl-1.5 pr-4 text-sm leading-5 tracking-[-0.6%] font-medium text-gray-950 shadow-sm"
+                class="flex items-center gap-2.5 w-fit rounded-[96px] bg-white border border-neutral-200/80 py-1.5 pl-1.5 pr-4 text-sm leading-5 tracking-[-0.6%] font-medium text-gray-950 shadow-sm"
               >
                 <div
                   class="h-8 w-8 shrink-0 rounded-full flex items-center justify-center"
