@@ -22,7 +22,7 @@ it('can not create more than 1 workspace for free user', function () {
     ])
         ->assertStatus(403)
         ->assertJson([
-            'message' => 'You have reached the workspace limit for Free plan. Upgrade to create additional workspaces.',
+            'message' => 'You have reached the limit for free workspaces. Upgrade to Pro to create additional workspaces.',
         ]);
 });
 
@@ -229,20 +229,9 @@ it('includes users_count attribute', function () {
     expect($workspace->fresh()->users_count)->toBe(2);
 });
 
-it('uses appsumo license limits for workspace file size and custom domains', function () {
-    $user = $this->createAppSumoLicensedUser(3);
-    $workspace = $this->createUserWorkspace($user);
-    $workspace->load('users');
-    $workspace->flush();
-
-    expect($workspace->fresh()->plan_tier)->toBe('pro');
-    expect($workspace->fresh()->max_file_size)->toBe(75000000);
-    expect($workspace->fresh()->custom_domain_count_limit)->toBeNull();
-});
-
 describe('Custom Code Settings', function () {
     it('can save custom code settings for workspace', function () {
-        $user = $this->actingAsBusinessUser();
+        $user = $this->actingAsProUser();
         $workspace = $this->createUserWorkspace($user);
 
         $this->putJson(route('open.workspaces.save-custom-code-settings', $workspace), [
@@ -261,20 +250,11 @@ describe('Custom Code Settings', function () {
 
         $this->putJson(route('open.workspaces.save-custom-code-settings', $workspace), [
             'custom_code' => '<script>test</script>',
-        ])->assertStatus(402);
-    });
-
-    it('prevents pro users from saving custom code settings', function () {
-        $user = $this->actingAsProUser();
-        $workspace = $this->createUserWorkspace($user);
-
-        $this->putJson(route('open.workspaces.save-custom-code-settings', $workspace), [
-            'custom_code' => '<script>test</script>',
-        ])->assertStatus(402);
+        ])->assertStatus(403);
     });
 
     it('validates custom CSS with CssOnlyRule', function () {
-        $user = $this->actingAsBusinessUser();
+        $user = $this->actingAsProUser();
         $workspace = $this->createUserWorkspace($user);
 
         $this->putJson(route('open.workspaces.save-custom-code-settings', $workspace), [
@@ -283,7 +263,7 @@ describe('Custom Code Settings', function () {
     });
 
     it('allows nullable custom code and css', function () {
-        $user = $this->actingAsBusinessUser();
+        $user = $this->actingAsProUser();
         $workspace = $this->createUserWorkspace($user);
         $workspace->update(['settings' => ['custom_code' => 'old', 'custom_css' => 'old']]);
 
@@ -298,7 +278,7 @@ describe('Custom Code Settings', function () {
     });
 
     it('preserves other settings when saving custom code', function () {
-        $user = $this->actingAsBusinessUser();
+        $user = $this->actingAsProUser();
         $workspace = $this->createUserWorkspace($user);
         $workspace->update(['settings' => ['email_settings' => ['host' => 'smtp.test.com']]]);
 
@@ -312,12 +292,14 @@ describe('Custom Code Settings', function () {
     });
 
     it('prevents non-admin users from saving custom code settings', function () {
-        $admin = $this->createBusinessUser();
+        // Create workspace with an admin
+        $admin = $this->createProUser();
         $workspace = $this->createUserWorkspace($admin);
 
-        $readonlyUser = $this->createBusinessUser();
+        // Create and login as a readonly user attached to the workspace
+        $readonlyUser = $this->createProUser();
         $workspace->users()->attach($readonlyUser, ['role' => 'user']);
-        $this->actingAsBusinessUser($readonlyUser);
+        $this->actingAsProUser($readonlyUser);
 
         $this->putJson(route('open.workspaces.save-custom-code-settings', $workspace), [
             'custom_code' => '<script>test</script>',

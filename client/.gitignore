@@ -24,4 +24,3 @@ logs
 .env.*
 !.env.example
 !.env.docker
-!.env.e2e

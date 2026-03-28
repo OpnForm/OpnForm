@@ -31,9 +31,8 @@
           >(soon)</span>
         </div>
       </div>
-      <PlanTag
-        v-if="integration.required_tier && integration.required_tier !== 'free'"
-        :required-tier="integration.required_tier"
+      <pro-tag
+        v-if="integration?.is_pro === true"
         class="absolute top-2 right-2"
       />
       <Icon
@@ -48,7 +47,7 @@
 
 <script setup>
 import { computed } from 'vue'
-import PlanTag from "~/components/app/PlanTag.vue"
+import ProTag from "~/components/app/ProTag.vue"
 import TrackClick from "~/components/global/TrackClick.vue"
 const emit = defineEmits(["select"])
 const { openSubscriptionModal } = useAppModals()
@@ -60,24 +59,28 @@ const props = defineProps({
   },
 })
 
+const { current: currentWorkspace } = useCurrentWorkspace()
+
 const unavailable = computed(() => {
-  return props.integration.coming_soon || props.integration.requires_upgrade
+  return (
+    props.integration.coming_soon || 
+    (props.integration.requires_subscription && !currentWorkspace.value.is_pro)
+  )
 })
 
 const tooltipText = computed(() => {
   if (props.integration.coming_soon) return "This integration is coming soon"
-  if (props.integration.requires_upgrade)
-    return "You need to upgrade your plan to use this integration."
+  if (props.integration.requires_subscription && !currentWorkspace.value.is_pro )
+    return "You need a subscription to use this integration."
   return null
 })
 
 const onClick = () => {
   if (props.integration.coming_soon) return
-  if (props.integration.requires_upgrade) {
+  if (props.integration.requires_subscription && !currentWorkspace.value.is_pro ) {
     openSubscriptionModal({
-      plan: props.integration.required_tier || 'pro',
-      modal_title: 'Upgrade to use this integration',
-      modal_description: `Upgrade your account to use our ${props.integration.name} and unlock more features.`
+      modal_title: 'Upgrade today to use this integration',
+      modal_description: `Upgrade your account to use our ${props.integration.name} and unlock all of our Pro features.`
     })
     return
   }

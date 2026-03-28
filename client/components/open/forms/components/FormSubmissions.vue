@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full" data-testid="form-submissions-page">
+  <div class="w-full">
     <DashboardLoadingBlock :loading="!form">
       <template #skeleton>
         <div class="overflow-hidden mt-4">

@@ -44,7 +44,11 @@ class WorkspaceController extends Controller
     public function saveCustomDomain(CustomDomainRequest $request)
     {
         $this->authorize('adminAction', $request->workspace);
-        $request->workspace->requireFeature('custom_domain');
+        if (!$request->workspace->is_pro) {
+            return $this->error([
+                'message' => 'A Pro plan is required to use this feature.',
+            ], 403);
+        }
 
         $request->workspace->custom_domains = $request->customDomains;
         $request->workspace->save();
@@ -55,7 +59,11 @@ class WorkspaceController extends Controller
     public function saveEmailSettings(EmailSettingsRequest $request)
     {
         $this->authorize('adminAction', $request->workspace);
-        $request->workspace->requireFeature('custom_smtp');
+        if (!$request->workspace->is_pro) {
+            return $this->error([
+                'message' => 'A Pro plan is required to use this feature.',
+            ], 403);
+        }
 
         $request->workspace->update(['settings' => array_merge($request->workspace->settings, ['email_settings' => $request->validated()])]);
 
@@ -65,7 +73,11 @@ class WorkspaceController extends Controller
     public function saveCustomCodeSettings(CustomCodeSettingsRequest $request)
     {
         $this->authorize('adminAction', $request->workspace);
-        $request->workspace->requireFeature('branding.advanced');
+        if (!$request->workspace->is_pro) {
+            return $this->error([
+                'message' => 'A Pro plan is required to use this feature.',
+            ], 403);
+        }
 
         $validated = $request->validated();
         $request->workspace->update([

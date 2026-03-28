@@ -1,6 +1,6 @@
 <template>
   <UTooltip 
-    :text="tooltipText"
+    text="Form History" 
     :content="{ side: 'bottom' }" 
     arrow
   >
@@ -107,19 +107,13 @@ import { versionsApi } from '~/api/versions'
 import { formsApi } from '~/api/forms'
 import { format, formatDistanceToNow } from 'date-fns'
 
+const { openSubscriptionModal } = useAppModals()
 const workingFormStore = useWorkingFormStore()
-const { requireFeature } = usePlanFeatures()
 
 const { content: form } = storeToRefs(workingFormStore)
 const isHistoryModalOpen = ref(false)
 const versions = ref([])
 const isLoading = ref(false)
-
-const tooltipText = computed(() => {
-  if (isLoading.value) return 'Form History'
-  if (!versions.value.length) return 'No versions available'
-  return 'Form History'
-})
 
 onMounted(() => {
   if (form.value && form.value?.id) {
@@ -175,7 +169,11 @@ const humanizeKey = (key, change) => {
 }
 
 const onRestore = async (version) => {
-  if(!requireFeature('form_versioning', 'Upgrade to restore form history')) return
+  if(!form.value.is_pro) {
+    openSubscriptionModal({ modal_title: 'Upgrade to restore form history' })
+    return
+  }
+
   useAlert().confirm('Are you sure you want to restore this version?', () => restoreVersion(version))
 }
 
@@ -186,8 +184,8 @@ const restoreVersion = async (version) => {
     workingFormStore.set(useForm(response))
     useAlert().success('Version restored successfully on editor. Please publish form to save the changes.')
     isHistoryModalOpen.value = false
-  } catch (error) {
-    useAlert().error(error.data?.message || 'Failed to restore version')
+  } catch {
+    useAlert().error('Failed to restore version')
   }
 }
 </script>

@@ -11,14 +11,14 @@
         class="flex-1 !mb-0"
         :date-range="true"
         :disable-future-dates="true"
-        :disabled="!canAccessAnalytics"
+        :disabled="!form.is_pro"
       />
       </VForm>
       <UButton 
         class="self-stretch mt-1"
         color="neutral"
         variant="outline"
-        :disabled="!canAccessAnalytics"
+        :disabled="!form.is_pro"
         @click.prevent="refresh" 
         icon="i-heroicons-arrow-path" 
         :loading="isLoading"
@@ -28,13 +28,13 @@
       class="border border-neutral-300 rounded-lg shadow-xs p-4 mb-5 w-full mx-auto mt-2 select-all"
     >
       <div
-        v-if="!canAccessAnalytics"
+        v-if="!form.is_pro"
         class="relative"
       >
         <div class="absolute inset-0 z-10">
           <div class="p-5 max-w-md mx-auto flex flex-col items-center justify-center h-full">
             <p class="text-center">
-              You need a <PlanTag
+              You need a <pro-tag
                 upgrade-modal-title="Upgrade today to access form analytics"
                 class="mx-1"
               /> subscription to access your form
@@ -74,7 +74,7 @@
 </template>
 
 <script setup>
-import PlanTag from "~/components/app/PlanTag.vue"
+import ProTag from "~/components/app/ProTag.vue"
 import { Line as LineChart } from "vue-chartjs"
 import {
   Chart as ChartJS,
@@ -105,8 +105,6 @@ const props = defineProps({
 })
 
 const { openSubscriptionModal } = useAppModals()
-const { hasFeature } = usePlanFeatures()
-const canAccessAnalytics = computed(() => hasFeature('form_analytics'))
 
 const toDate = new Date()
 const fromDate = new Date(toDate)
@@ -139,13 +137,13 @@ const { data: statsData, isFetching: isQueryLoading } = stats(
   props.form.id,
   fromDateComputed,
   toDateComputed,
-  {enabled: computed(() => import.meta.client && props.form && canAccessAnalytics.value)}
+  {enabled: computed(() => import.meta.client && props.form && props.form.is_pro)}
 )
 
 // Handle loading state for SSR - show skeleton during SSR if query would run on client
 const isLoading = computed(() => {
   if (import.meta.server) {
-    return !!props.form && canAccessAnalytics.value
+    return !!props.form && props.form.is_pro
   }
   return isQueryLoading.value
 })

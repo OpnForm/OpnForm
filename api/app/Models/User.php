@@ -8,8 +8,6 @@ use App\Models\Traits\CachableAttributes;
 use App\Models\Traits\CachesAttributes;
 use App\Notifications\ResetPassword;
 use App\Notifications\VerifyEmail;
-use App\Service\Billing\BillingStateResolver;
-use App\Service\Billing\PlanAccessService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -98,8 +96,8 @@ class User extends Authenticatable implements JWTSubject, CachableAttributes, Tw
     protected $cachableAttributes = [
         'has_forms',
         'is_subscribed',
+        'is_pro',
         'active_license',
-        'plan_tier',
     ];
 
     public function ownsForm(Form $form)
@@ -161,7 +159,7 @@ class User extends Authenticatable implements JWTSubject, CachableAttributes, Tw
         }
 
         return $this->remember('is_subscribed', 5 * 60, function (): bool {
-            return app(BillingStateResolver::class)->hasActivePaidSubscription($this)
+            return $this->hasActiveDefaultSubscription()
                 || in_array($this->email, config('opnform.extra_pro_users_emails'))
                 || !is_null($this->activeLicense());
         });
@@ -187,15 +185,20 @@ class User extends Authenticatable implements JWTSubject, CachableAttributes, Tw
         return $this->admin || in_array($this->email, config('opnform.template_editor_emails'));
     }
 
-    /**
-     * Get the user's current plan tier.
-     * This is the SINGLE source of truth for plan status.
-     *
-     * @return string One of: 'free', 'pro', 'business', 'enterprise'
-     */
-    public function getPlanTierAttribute(): string
+    public function getIsProAttribute()
     {
-        return app(PlanAccessService::class)->getUserTier($this);
+        return $this->remember('is_pro', 5 * 60, function (): bool {
+            // Use loaded relationship if available to avoid queries
+            if ($this->relationLoaded('workspaces')) {
+                return $this->workspaces->some(function ($workspace) {
+                    return $workspace->is_pro;
+                });
+            }
+
+            return $this->workspaces()->get()->some(function ($workspace) {
+                return $workspace->is_pro;
+            });
+        });
     }
 
     public function getIsBlockedAttribute()
@@ -311,17 +314,19 @@ class User extends Authenticatable implements JWTSubject, CachableAttributes, Tw
         });
     }
 
-    /**
-     * Whether the user has any active paid subscription (default, pro, business, enterprise).
-     */
-    public function hasActivePaidSubscription(): bool
+    public function activeDefaultSubscription(): ?Subscription
     {
-        return app(BillingStateResolver::class)->hasActivePaidSubscription($this);
+        return $this->subscriptions()
+            ->where('type', 'default')
+            ->whereIn('stripe_status', ['trialing', 'active'])
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->first();
     }
 
-    public function activePaidSubscription(): ?Subscription
+    public function hasActiveDefaultSubscription(): bool
     {
-        return app(BillingStateResolver::class)->resolveActiveSubscription($this);
+        return !is_null($this->activeDefaultSubscription());
     }
 
     /**

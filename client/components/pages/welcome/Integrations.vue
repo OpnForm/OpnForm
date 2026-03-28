@@ -1,7 +1,7 @@
 <template>
-  <div class="px-8 pb-8 sm:pb-10 lg:px-12">
+  <div class="px-8 lg:px-12">
     <div
-      class="mx-auto w-full max-w-336 rounded-[32px] bg-linear-to-br from-neutral-950 via-neutral-900 to-neutral-950 shadow-2xl overflow-hidden"
+      class="mx-auto w-full max-w-336 rounded-4xl bg-linear-to-br from-neutral-950 via-neutral-900 to-neutral-950 shadow-2xl overflow-hidden"
     >
       <div
         class="grid xl:grid-cols-2 gap-12 md:gap-16 items-center py-8 md:py-10 lg:py-14 xl:py-24 px-8 md:px-10 lg:px-14 xl:px-35"
@@ -39,7 +39,7 @@
             <div
               v-for="app in integrationApps"
               :key="app.icon"
-              class="h-14 sm:h-22 w-14 sm:w-22 rounded-[24px] bg-white/5 ring-1 ring-white/10 flex items-center justify-center backdrop-blur-sm"
+              class="h-14 sm:h-22 w-14 sm:w-22 rounded-2xl bg-white/5 ring-1 ring-white/10 flex items-center justify-center backdrop-blur-sm"
             >
               <UIcon
                 :name="app.icon"

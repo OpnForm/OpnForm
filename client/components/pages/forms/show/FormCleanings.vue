@@ -37,7 +37,12 @@
               icon="i-heroicons-check-badge-16-solid"
               @click.prevent="onUpgradeClick"
             >
-              Unlock all features
+              <template v-if="form.is_pro">
+                Upgrade plan - Unlock all features
+              </template>
+              <template v-else>
+                Unlock all features
+              </template>
             </UButton>
           </TrackClick>
           <UButton
@@ -124,10 +129,8 @@ const cleaningContent = computed(() => {
 // Methods
 const onUpgradeClick = () => {
   openSubscriptionModal({
-    plan: 'business',
     modal_title: 'Upgrade to unlock all features for your form',
-    modal_description: 'Some features are disabled on the published form. Upgrade your plan to unlock these features and much more. Gain full access to all advanced features.',
-    show_requirement_hints: false,
+    modal_description: 'Some features are disabled on the published form. Upgrade your plan to unlock these features and much more. Gain full access to all advanced features.'
   })
 }
 

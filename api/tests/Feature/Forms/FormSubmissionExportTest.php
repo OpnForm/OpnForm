@@ -185,7 +185,7 @@ it('cannot export form submissions from another user form', function () {
 });
 
 it('includes status column when partial submissions are enabled', function () {
-    $user = $this->actingAsBusinessUser();
+    $user = $this->actingAsProUser();
     $workspace = $this->createUserWorkspace($user);
     $form = $this->createForm($user, $workspace, [
         'enable_partial_submissions' => true,

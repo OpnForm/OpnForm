@@ -162,7 +162,6 @@
 </template>
 
 <script setup>
-import integrationsCatalog from '~/data/forms/integrations.json'
 import { useNotionCmsStore } from '~/stores/notion_cms.js'
 
 useOpnSeoMeta({
@@ -183,58 +182,12 @@ const crisp = useCrisp()
 const dbId = '1eda631bec208005bd8ed9988b380263'
 const notionCmsStore = useNotionCmsStore()
 const loading = computed(() => notionCmsStore.loading)
-await notionCmsStore.loadDatabase(dbId).catch(() => null)
+await notionCmsStore.loadDatabase(dbId)
 const pages = notionCmsStore.databasePages(dbId)
 
-function buildFallbackSteps (integration) {
-  if (integration.is_external) {
-    return [
-      'Open the integration provider',
-      'Connect your OpnForm account',
-      'Configure your automation',
-      'Test and activate it'
-    ]
-  }
-
-  return [
-    'Open your form integrations',
-    'Choose this integration',
-    'Configure the connection settings',
-    'Save and test it'
-  ]
-}
-
-function buildFallbackDescription (integration) {
-  if (integration.section_name === 'Notifications') {
-    return 'Send submission alerts to your team in real time.'
-  }
-
-  if (integration.section_name === 'Databases') {
-    return 'Sync form submissions with your spreadsheet or database tools.'
-  }
-
-  return 'Connect OpnForm with your automation tools and workflows.'
-}
-
-const fallbackIntegrationsList = computed(() => {
-  return Object.entries(integrationsCatalog).map(([slug, integration]) => ({
-    title: integration.name,
-    description: buildFallbackDescription(integration),
-    icon: integration.icon,
-    slug,
-    steps: buildFallbackSteps(integration),
-    popular: ['webhook', 'zapier', 'google_sheets'].includes(slug)
-  }))
-})
-
 const integrationsList = computed(() => {
-  const publishedPages = Object.values(pages.value || {}).filter(page => page.Published)
-
-  if (!publishedPages.length) {
-    return fallbackIntegrationsList.value
-  }
-
-  return publishedPages.map(page => ({
+  if (!pages.value) return []
+  return Object.values(pages.value).filter(page => page.Published).map(page => ({
     title: page['Integration Name'] ?? page.Name,
     description: page.Summary ?? '',
     icon: page.Icon ?? 'i-heroicons-envelope-20-solid',

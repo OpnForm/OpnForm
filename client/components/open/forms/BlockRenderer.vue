@@ -312,7 +312,7 @@ const boundProps = computed(() => {
     let maxFileSize = (form.value?.workspace && form.value?.workspace.max_file_size) ? form.value?.workspace?.max_file_size : 10
     if (field?.max_file_size > 0) maxFileSize = Math.min(field.max_file_size, maxFileSize)
     inputProperties.mbLimit = maxFileSize
-    inputProperties.accept = field.allowed_file_types || ''
+    inputProperties.accept = (form.value.is_pro && field.allowed_file_types) ? field.allowed_file_types : ''
   } else if (field.type === 'rating') {
     inputProperties.numberOfStars = parseInt(field.rating_max_value) ?? 5
   } else if (field.type === 'scale') {
@@ -367,4 +367,5 @@ const editFieldOptions = () => {
   workingFormStore.openSettingsForField(props.block, true)
 }
 </script>
+
 

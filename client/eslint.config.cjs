@@ -4,7 +4,7 @@ const pluginVue = require("eslint-plugin-vue")
 
 module.exports = [
     js.configs.recommended,
-    { ignores: [".nuxt/**", ".output/**", "node_modules/**", "dist/**"] },
+    { ignores: [".nuxt/**", "node_modules/**", "dist/**"] },
     {
         files: ["**/*.{js,mjs,cjs,vue}"],
         languageOptions: {

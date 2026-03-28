@@ -22,9 +22,9 @@
               <div
                 class="h-16 w-16 rounded-2xl bg-gray-950 shadow-sm flex items-center justify-center"
               >
-                <Icon
-                  name="opnform:typeform"
-                  class="h-16 w-16"
+                <UIcon
+                  name="i-simple-icons-typeform"
+                  class="h-12 w-12 text-white"
                 />
               </div>
             </div>
@@ -153,10 +153,10 @@
 
             <div class="col-span-12 md:col-span-4 pb-8">
               <div class="h-20 flex items-center justify-center gap-2">
-                <Icon
-                  name="opnform:typeform"
-                  class="h-8 w-8"
-                />
+                <!-- <UIcon
+                  name="i-simple-icons-typeform"
+                  class="h-8 w-8 text-gray-950"
+                /> -->
                 <div class="text-lg font-semibold text-gray-950">
                   Typeform
                   <span
@@ -275,10 +275,10 @@
                     class="w-[30%] sm:w-[27.5%] px-2 py-5 border-b border-l border-gray-200 text-center"
                   >
                     <div class="flex items-center justify-center gap-3">
-                      <Icon
-                        name="opnform:typeform"
-                        class="h-8 w-8 text-black"
-                      />
+                      <!-- <UIcon
+                        name="i-simple-icons-typeform"
+                        class="h-10 w-10 text-gray-950"
+                      /> -->
                       <span class="text-lg font-semibold text-gray-950"
                         >Typeform</span
                       >

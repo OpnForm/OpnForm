@@ -92,7 +92,7 @@
       <!-- Advanced Submission Settings -->
       <div class="mb-8">
         <h4 class="font-semibold mt-4 border-t pt-4">
-          Advanced Submission Options
+          Advanced Submission Options <ProTag  class="ml-1"/>
         </h4>
         <p class="text-gray-500 text-sm mb-4">
           Configure advanced options for form submissions and data collection.
@@ -107,8 +107,7 @@
             <span class="text-sm">
               Collect partial submissions
             </span>
-            <PlanTag
-              required-tier="business"
+            <ProTag
               class="ml-1"
               upgrade-modal-title="Upgrade to collect partial submissions"
               upgrade-modal-description="Capture valuable data from incomplete form submissions. Analyze where users drop off and collect partial information even when they don't complete the entire form."
@@ -127,9 +126,8 @@
           <span class="text-sm">
             Collect IP addresses
           </span>
-          <PlanTag
+          <ProTag
             class="ml-1"
-            required-tier="business"
             upgrade-modal-title="Upgrade to collect IP addresses"
             upgrade-modal-description="Automatically capture submitter IP addresses to gain valuable insights into your form traffic. Analyze geographic patterns, detect suspicious activity, and enhance your form security with detailed submission analytics."
           />
@@ -148,7 +146,7 @@
       <!-- Post-Submission Behavior -->
       <div class="mb-8">
         <h4 class="font-semibold mt-4 border-t pt-4">
-          After Submission <PlanTag
+          After Submission <pro-tag
             upgrade-modal-title="Upgrade to customize post-submission behavior"
             upgrade-modal-description="Customize post-submission behavior: redirect users, show custom messages, or trigger actions. Upgrade to unlock advanced options for a seamless user experience. We have plenty of other pro features to enhance your form functionality and user engagement."
           />
@@ -254,7 +252,7 @@
       <!-- Editable Submissions Settings -->
       <div class="mb-8">
         <h4 class="font-semibold mt-4 border-t pt-4">
-          Editable Submissions <PlanTag
+          Editable Submissions <ProTag
               class="ml-1"
               upgrade-modal-title="Upgrade to use Editable Submissions"
               upgrade-modal-description="On the Free plan, you can try out all paid features only within the form editor. Upgrade your plan to allow users to update their submissions via a unique URL, and much more. Gain full access to all advanced features."
@@ -284,7 +282,7 @@
 </template>
 
 <script setup>
-import PlanTag from "~/components/app/PlanTag.vue"
+import ProTag from "~/components/app/ProTag.vue"
 import { usePdfTemplates } from '~/composables/query/forms/usePdfTemplates'
 
 const workingFormStore = useWorkingFormStore()

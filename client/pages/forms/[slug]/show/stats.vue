@@ -19,7 +19,7 @@
             class="h-7 w-16"
           />
           <span
-            v-else-if="canAccessAnalytics"
+            v-else-if="form.is_pro"
             class="font-medium text-xl"
           >
             {{ stat.value }}
@@ -70,9 +70,6 @@ useOpnSeoMeta({
   title: props.form ? "Form Analytics - " + props.form.title : "Form Analytics",
 })
 
-const { hasFeature } = usePlanFeatures()
-const canAccessAnalytics = computed(() => hasFeature('form_analytics'))
-
 // Use query composables instead of manual API calls
 const { statsDetails } = useFormStats()
 
@@ -81,13 +78,13 @@ const { data: statsData, isFetching: isQueryLoading } = statsDetails(
   props.form.workspace_id, 
   props.form.id,
   {
-    enabled: computed(() => import.meta.client && !!props.form && canAccessAnalytics.value)
+    enabled: computed(() => import.meta.client && !!props.form && props.form.is_pro)
   }
 )
 
 const isLoading = computed(() => {
   if (import.meta.server) {
-    return !!props.form && canAccessAnalytics.value
+    return !!props.form && props.form.is_pro
   }
   return isQueryLoading.value
 })

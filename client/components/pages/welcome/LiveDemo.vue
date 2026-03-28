@@ -10,7 +10,7 @@
         style="border: none; width: 100%"
         :src="url"
       /> -->
-      <div class="min-h-[90vh] w-full overflow-hidden bg-white rounded-[6px]">
+      <div class="min-h-[90vh] w-full overflow-hidden bg-white rounded-[12px]">
         <div
           class="flex items-center gap-3 justify-between border-b-[0.5px] border-gray-100 px-6 py-1"
         >

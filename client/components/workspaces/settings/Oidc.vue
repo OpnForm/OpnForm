@@ -92,6 +92,7 @@
 
 <script setup>
 import { useOidcConnections } from '~/composables/query/useOidcConnections'
+import { getOidcRequireStateDefault, getOidcRequireStateForEdit } from "~/lib/oidc/connection-options"
 import OidcConnectionCard from './OidcConnectionCard.vue'
 import OidcConnectionModal from './OidcConnectionModal.vue'
 
@@ -177,6 +178,7 @@ const connectionForm = useForm({
   domain: '',
   enabled: true,
   options: {
+    require_state: getOidcRequireStateDefault(),
     field_mappings: {
       email: '',
       name: ''
@@ -233,6 +235,7 @@ const editConnection = (connection) => {
     enabled: connection.enabled,
     domain: connection.domain ?? '',
     options: {
+      require_state: getOidcRequireStateForEdit(connection.options),
       field_mappings: {
         email: connection.options?.field_mappings?.email ?? '',
         name: connection.options?.field_mappings?.name ?? ''

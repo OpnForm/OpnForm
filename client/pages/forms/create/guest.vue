@@ -71,10 +71,8 @@ onMounted(() => {
   const guestWorkspace = {
     id: null,
     name: "Guest Workspace",
-    plan_tier: 'free',
-    features: [],
-    limits: {},
-    required_tiers: {},
+    is_enterprise: false,
+    is_pro: false,
   }
   
   // Manually set the workspace data in query cache

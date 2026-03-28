@@ -171,13 +171,13 @@ Route::group(['middleware' => 'auth.multi'], function () {
                     Route::delete('/{connection}', [\App\Http\Controllers\Settings\OidcConnectionController::class, 'destroy'])->name('destroy');
                 });
 
-                Route::middleware('feature:form_analytics')->group(function () {
+                Route::middleware('pro-form')->group(function () {
                     Route::get('form-stats/{form}', [FormStatsController::class, 'getFormStats'])->name('form.stats');
                     Route::get('form-stats-details/{form}', [FormStatsController::class, 'getFormStatsDetails'])->name('form.stats-details');
                 });
 
-                // Summary endpoints - Pro plan required, with rate limiting
-                Route::middleware(['feature:form_summary', 'throttle:summary'])->group(function () {
+                // Summary endpoints with rate limiting
+                Route::middleware('throttle:summary')->group(function () {
                     Route::get('form-summary/{form}', [FormSummaryController::class, 'getSummary'])->name('form.summary');
                     Route::get('form-summary/{form}/field/{fieldId}/values', [FormSummaryController::class, 'getFieldValues'])->name('form.summary.field-values');
                 });
@@ -441,7 +441,6 @@ Route::prefix('forms')->name('forms.')->group(function () {
  */
 Route::prefix('content')->name('content.')->group(function () {
     Route::get('/feature-flags', [\App\Http\Controllers\Content\FeatureFlagsController::class, 'index'])->name('feature-flags');
-    Route::get('/plans', [\App\Http\Controllers\Content\PlansController::class, 'index'])->name('plans');
     Route::get('changelog/entries', [\App\Http\Controllers\Content\ChangelogController::class, 'index'])->name('changelog.entries');
 });
 

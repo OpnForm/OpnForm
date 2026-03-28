@@ -136,17 +136,13 @@
               <!-- Status Badges and Form Cleanings -->
               <div class="flex flex-wrap gap-2 flex-col mt-2">
                 <FormStatusBadges size="sm" :form="form" />
+                <FormCleanings :form="form" />
               </div>
             </div>
           </div>
 
           <!-- Page Content -->
           <div :class="['flex-1 bg-white', { 'overflow-y-auto': !isSubmissionsPage }]">
-            <div class="px-4 pt-4">
-              <div class="mx-auto max-w-4xl">
-                <FormCleanings :form="form" />
-              </div>
-            </div>
             <NuxtPage :form="form" />
           </div>
         </template>

@@ -46,7 +46,7 @@ class RemoveWorkspaceGuests implements ShouldQueue
         $this->user->workspaces->each(function (Workspace $workspace) {
             // Flush workspace cache to be sure we have the latest data
             $workspace->flush();
-            if ($workspace->hasFeature('workspaces.multiple')) {
+            if ($workspace->is_pro) {
                 // Another user still has pro subscription
                 return;
             }

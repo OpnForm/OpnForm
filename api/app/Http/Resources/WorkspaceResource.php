@@ -2,8 +2,6 @@
 
 namespace App\Http\Resources;
 
-use App\Service\Billing\BillingStateResolver;
-use App\Service\Billing\PlanAccessService;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class WorkspaceResource extends JsonResource
@@ -39,7 +37,7 @@ class WorkspaceResource extends JsonResource
             return [
                 'id' => $this->resource->id,
                 'max_file_size' => $this->resource->max_file_size / 1000000,
-                'settings' => $this->resource->hasFeature('branding.advanced') ? [
+                'settings' => $this->is_pro ? [
                     'custom_code' => $settings['custom_code'] ?? null,
                     'custom_css' => $settings['custom_css'] ?? null,
                 ] : [],
@@ -51,11 +49,6 @@ class WorkspaceResource extends JsonResource
             'is_readonly' => $this->isReadonlyUser($request->user()),
             'is_admin' => $this->isAdminUser($request->user()),
             'users_count' => $this->users_count,
-            'plan_tier' => app(PlanAccessService::class)->getTier($this->resource),
-            'features' => app(PlanAccessService::class)->getFeatures($this->resource),
-            'limits' => app(PlanAccessService::class)->getLimits($this->resource),
-            'required_tiers' => app(PlanAccessService::class)->getRequiredTiers(),
-            'is_grandfathered' => app(BillingStateResolver::class)->resolveWorkspace($this->resource)->isGrandfathered,
         ]);
 
         return $data;

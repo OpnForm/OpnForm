@@ -3,9 +3,9 @@
 namespace App\Http\Controllers;
 
 // Base controller
-use Illuminate\Contracts\Redis\Factory as RedisFactory;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Redis;
 use Illuminate\Http\JsonResponse;
 use Throwable;
 
@@ -31,10 +31,7 @@ class HealthCheckController extends Controller
         }
 
         try {
-            /** @var mixed $redisConnection */
-            $redisConnection = app(RedisFactory::class)->connection();
-            $method = 'ping';
-            $redisConnection->{$method}();
+            Redis::ping();
             $checks['redis'] = true;
         } catch (Throwable $e) {
             Log::error('Health check: Redis connection failed', ['exception' => $e->getMessage()]);

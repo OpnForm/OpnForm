@@ -1,42 +1,40 @@
 <template>
-  <div class="relative flex justify-center">
-    <div class="relative grid grid-cols-2 rounded-xl bg-slate-200/90 p-1 ring-1 ring-inset ring-white/60">
+  <div class="bg-slate-100 rounded-xl flex p-1 relative">
+    <button class="font-medium block flex-grow cursor-pointer">
       <div
-        class="pointer-events-none absolute inset-y-1 left-1 z-0 w-[calc(50%-0.25rem)] rounded-lg bg-white shadow-[0_8px_18px_-12px_rgba(15,23,42,0.18),0_1px_0_rgba(255,255,255,0.9)_inset] transform-gpu transition-transform duration-300 ease-out"
-        :class="modelValue ? 'translate-x-full' : 'translate-x-0'"
-      />
-
-      <button
-        type="button"
-        class="relative z-10 block cursor-pointer rounded-lg px-3 py-1.5 text-sm font-medium transition-colors duration-200"
-        :class="!modelValue ? 'text-slate-900' : 'text-slate-500 hover:text-slate-700'"
-        :aria-pressed="!modelValue"
+        class="py-1.5 px-3 rounded-lg transition-colors transition-colors text-slate-500"
+        :class="{ 'bg-white shadow-sm text-slate-900': !modelValue }"
         @click="set(false)"
       >
         Monthly
-      </button>
-      <button
-        type="button"
-        class="relative z-10 block cursor-pointer rounded-lg px-4 py-1.5 text-sm font-medium transition-colors duration-200"
-        :class="modelValue ? 'text-slate-900' : 'text-slate-500 hover:text-slate-700'"
-        :aria-pressed="modelValue"
-        @click="set(true)"
+      </div>
+    </button>
+    <button
+      class="font-medium block flex-grow cursor-pointer"
+      @click="set(true)"
+    >
+      <div
+        class="py-1.5 px-4 rounded-lg transition-colors text-slate-500"
+        :class="{ 'bg-white shadow-sm text-slate-900': modelValue }"
       >
         Yearly
-      </button>
-    </div>
-
-    <div class="absolute top-1/2 left-full ml-1.5 hidden -translate-y-1/2 sm:block">
+      </div>
+    </button>
+    <div
+      class="absolute hidden sm:block -right-4 -top-3 translate-x-full translate-y-full"
+    >
       <div
-        class="inline-flex items-center whitespace-nowrap rounded-[7px] bg-purple-50 px-2 py-1 pr-2.5 text-xs font-medium text-purple-600"
+        class="justify-center px-2 py-1 text-xs font-semibold tracking-wide text-center text-emerald-600 uppercase bg-emerald-50 rounded-md"
       >
-        Save 15% with yearly billing
+        Save 20%
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
+import { defineEmits, defineProps } from "vue"
+
 defineProps({
   modelValue: { type: Boolean, required: true },
 })

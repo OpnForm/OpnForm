@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\Subscriptions\UpdateStripeDetailsRequest;
 use App\Models\Workspace;
-use App\Service\Billing\BillingStateResolver;
 use App\Service\BillingHelper;
 use App\Service\UserHelper;
 use Illuminate\Http\Request;
@@ -13,24 +12,18 @@ use Illuminate\Support\Facades\Cache;
 
 class SubscriptionController extends Controller
 {
-    public function __construct(protected BillingStateResolver $billingStateResolver)
-    {
-    }
-
     public const SUBSCRIPTION_PLANS = ['monthly', 'yearly'];
 
+    public const PRO_SUBSCRIPTION_NAME = 'default';
+
     public const SUBSCRIPTION_NAMES = [
-        'default',
-        'pro',
-        'business',
-        'enterprise',
+        self::PRO_SUBSCRIPTION_NAME,
     ];
 
     /**
      * Returns stripe checkout URL
      *
-     * $pricing is the subscription name (pro, business, enterprise, or legacy 'default')
-     * $plan is the billing interval (monthly/yearly) constrained with regex in api.php
+     * $plan is constrained with regex in the api.php
      */
     public function checkout($pricing, $plan, $trial = null)
     {
@@ -48,7 +41,7 @@ class SubscriptionController extends Controller
 
         try {
             // Check User does not already have an active/trialing subscription
-            if ($this->billingStateResolver->hasActivePaidSubscription($user)) {
+            if ($user->hasActiveDefaultSubscription()) {
                 return $this->error([
                     'message' => 'You already have an active subscription.',
                 ]);
@@ -62,16 +55,8 @@ class SubscriptionController extends Controller
                 ]);
             }
 
-            // Get the pricing for this plan
-            $pricingConfig = BillingHelper::getPricing($pricing);
-            if (!$pricingConfig || !isset($pricingConfig[$plan])) {
-                return $this->error([
-                    'message' => 'Invalid pricing plan selected.',
-                ]);
-            }
-
             $checkoutBuilder = $user
-                ->newSubscription($pricing, $pricingConfig[$plan])
+                ->newSubscription($pricing, BillingHelper::getPricing($pricing)[$plan])
                 ->allowPromotionCodes();
 
             // Disable trial for now
@@ -176,20 +161,18 @@ class SubscriptionController extends Controller
 
         // Upgrade the subscription to yearly plan
         try {
-            $subscription = $this->billingStateResolver->resolveActiveSubscription($user);
+            $subscription = $user->activeDefaultSubscription();
             if (!$subscription) {
                 return $this->error([
                     "message" => "No active subscription found for this user.",
                 ]);
             }
 
-            $subscriptionType = $subscription->type ?? 'default';
-            $yearlyPriceId = BillingHelper::getPricing($subscriptionType)['yearly']
-                ?? BillingHelper::getPricing('default')['yearly'];
-
+            $yearlyPriceId = BillingHelper::getPricing('default')['yearly'];
             $subscription->swap($yearlyPriceId);
 
-            $workspace->flushWithOwners();
+            // Invalidate cached is_yearly_plan attribute
+            $workspace->forgetCachedAttribute('is_yearly_plan');
         } catch (\Exception $e) {
             return $this->error([
                 "message" => $e?->getMessage() ?? "Failed to upgrade the subscription to yearly plan.",

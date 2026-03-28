@@ -23,24 +23,53 @@
     </template>
 
     <template #body>
-      <UAlert
-        v-if="paidPlansEnabled && !hasActiveLicense && !canInviteUsers"
-        icon="i-heroicons-user-group-20-solid"
-        class="mb-4"
-        color="warning"
-        variant="subtle"
-        title="Pro plan required"
-        description="Please upgrade your account to invite users to your workspace."
-        :actions="[{
-          label: 'Upgrade to Pro',
-          color: 'warning',
-          variant: 'solid',
-          onClick: () => openSubscriptionModal({
-            modal_title: 'Upgrade to invite users to your workspace',
-            modal_description: 'Upgrade to our Pro plan to unlock team collaboration features along with customized branding, form analytics, custom domains, and more!'
-          })
-        }]"
-      />
+      <template v-if="paidPlansEnabled && !hasActiveLicense">
+        <UAlert
+          v-if="workspace.is_pro"
+          icon="i-heroicons-credit-card"
+          color="primary"
+          variant="subtle"
+          title="This is a billable event."
+        >
+          <template #description>
+            You will be charged $6/month for each user you invite to this workspace. More details on the
+            <NuxtLink
+              target="_blank"
+              class="underline cursor-pointer"
+              @click="openBilling"
+            >
+              billing
+            </NuxtLink>
+            and
+            <NuxtLink
+              target="_blank"
+              class="underline"
+              :to="{name:'pricing'}"
+            >
+              pricing
+            </NuxtLink>
+            page.
+          </template>
+        </UAlert>
+        <UAlert
+          v-else
+          icon="i-heroicons-user-group-20-solid"
+          class="mb-4"
+          color="warning"
+          variant="subtle"
+          title="Pro plan required"
+          description="Please upgrade your account to invite users to your workspace."
+          :actions="[{
+            label: 'Upgrade to Pro',
+            color: 'warning',
+            variant: 'solid',
+            onClick: () => openSubscriptionModal({
+              modal_title: 'Upgrade to invite users to your workspace',
+              modal_description: 'Upgrade to our Pro plan to unlock team collaboration features along with customized branding, form analytics, custom domains, and more!'
+            })
+          }]"
+        />
+      </template>
 
       <VForm
         size="sm"
@@ -52,14 +81,14 @@
           name="email"
           label="Email"
           :required="true"
-          :disabled="!canInviteUsers"
+          :disabled="!workspace.is_pro"
           placeholder="Add a new user by email"
         />
         <FlatSelectInput
           :form="inviteUserForm"
           name="role"
           :options="roleOptions"
-          :disabled="!canInviteUsers"
+          :disabled="!workspace.is_pro"
           placeholder="Select User Role"
           label="Role"
           :required="true"
@@ -67,7 +96,7 @@
         <div class="flex justify-center mt-4">
           <UButton
             type="submit"
-            :disabled="!canInviteUsers"
+            :disabled="!workspace.is_pro"
             :loading="inviteUserMutation.isPending.value"
             icon="i-heroicons-envelope"
           >
@@ -96,10 +125,8 @@ const hasActiveLicense = computed(() => {
 })
 const crisp = useCrisp()
 const { openSubscriptionModal: openModal } = useAppModals()
-const { currentId: workspaceId } = useCurrentWorkspace()
+const { current: workspace, currentId: workspaceId } = useCurrentWorkspace()
 const alert = useAlert()
-const { hasFeature } = usePlanFeatures()
-const canInviteUsers = computed(() => hasFeature('invite_user'))
 
 const emit = defineEmits(['update:modelValue', 'user-added'])
 
@@ -133,6 +160,11 @@ const inviteUserForm = useForm({
   email: '',
   role: 'user'
 })
+
+const openBilling = () => {
+  closeModal()
+  useAppModals().openUserSettings('billing')
+}
 
 const addUser = () => {
   if (!workspaceId.value) return

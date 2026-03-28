@@ -198,12 +198,11 @@ const markModalAsShown = () => {
 
 // Determine if user is eligible for the modal (without time check)
 const isSelfHosted = computed(() => useFeatureFlag('self_hosted'))
-const { workspaceIsPaid } = useBillingUpsell()
 const isEligibleForModal = computed(() => {
   return import.meta.client && 
     !isSelfHosted.value && 
     workspace.value?.is_admin &&
-    workspaceIsPaid.value &&
+    workspace.value?.is_pro && 
     !workspace.value?.is_yearly_plan
 })
 

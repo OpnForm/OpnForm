@@ -2,8 +2,6 @@
 
 namespace App\Http\Requests;
 
-use App\Service\Billing\Feature;
-use App\Service\Billing\PlanAccessService;
 use Illuminate\Foundation\Http\FormRequest;
 
 class AiGenerateFieldsRequest extends FormRequest
@@ -15,9 +13,7 @@ class AiGenerateFieldsRequest extends FormRequest
      */
     public function rules()
     {
-        $user = $this->user();
-        $hasExtendedAllowance = $user && app(PlanAccessService::class)->userHasFeature($user, Feature::AI_FORM_GENERATION);
-        $maxLength = $hasExtendedAllowance ? 10000 : 4000;
+        $maxLength = $this->user()?->is_pro ? 10000 : 4000;
 
         return [
             'fields_prompt' => 'required|string|max:' . $maxLength,

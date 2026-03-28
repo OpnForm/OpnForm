@@ -147,8 +147,7 @@ class PublicFormController extends Controller
 
         // Use raw data for partial submissions (don't validate all required fields)
         // Use validated data for complete submissions
-        $canPartialSubmit = $form->enable_partial_submissions && $form->workspace->hasFeature('partial_submissions');
-        $submissionData = ($isPartial && $canPartialSubmit)
+        $submissionData = ($isPartial && $form->enable_partial_submissions && $form->is_pro)
             ? $request->all()
             : $request->validated();
 
@@ -157,12 +156,12 @@ class PublicFormController extends Controller
 
         // Add IP address for tracking if enabled
         unset($submissionData['submitter_ip']);
-        if ($form->enable_ip_tracking && $form->workspace->hasFeature('enable_ip_tracking')) {
+        if ($form->enable_ip_tracking && $form->is_pro) {
             $submissionData['submitter_ip'] = $request->ip();
         }
 
         // Handle partial submissions
-        if ($isPartial && $canPartialSubmit) {
+        if ($isPartial && $form->enable_partial_submissions && $form->is_pro) {
             return $this->handlePartialSubmissions($submissionData, $form);
         }
 

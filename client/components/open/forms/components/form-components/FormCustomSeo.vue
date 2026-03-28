@@ -4,9 +4,8 @@
       <div class="flex flex-col flex-wrap items-start justify-between gap-4 sm:flex-row sm:items-center">
         <div>
           <h3 class="text-lg font-medium text-neutral-900">
-            SEO & Social Sharing - Meta <PlanTag
+            SEO & Social Sharing - Meta <ProTag
             class="ml-2"
-            required-tier="business"
             upgrade-modal-title="Upgrade to Enhance Your Form's SEO"
             upgrade-modal-description="Explore advanced SEO features in the editor on our Free plan. Upgrade to fully implement custom meta tags, Open Graph data, and improved search visibility. Boost your form's online presence and attract more respondents with our premium SEO toolkit."
           />
@@ -104,7 +103,7 @@
 
 <script setup>
 const crisp = useCrisp()
-import PlanTag from "~/components/app/PlanTag.vue"
+import ProTag from "~/components/app/ProTag.vue"
 import SeoPreview from "~/components/open/forms/components/SeoPreview.vue"
 
 const workingFormStore = useWorkingFormStore()

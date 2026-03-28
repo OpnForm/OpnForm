@@ -6,7 +6,7 @@ use App\Models\Version;
 
 describe('Form Versions', function () {
     it('can list form versions', function () {
-        $user = $this->actingAsBusinessUser();
+        $user = $this->actingAsProUser();
         $workspace = $this->createUserWorkspace($user);
         $form = $this->createForm($user, $workspace);
 
@@ -20,7 +20,7 @@ describe('Form Versions', function () {
     });
 
     it('cannot list form versions for another users form', function () {
-        $user = $this->actingAsBusinessUser();
+        $user = $this->actingAsProUser();
         $workspace = $this->createUserWorkspace($user);
         $form = $this->createForm($user, $workspace);
 
@@ -34,21 +34,21 @@ describe('Form Versions', function () {
     });
 
     it('returns 404 for invalid model type', function () {
-        $this->actingAsBusinessUser();
+        $this->actingAsProUser();
 
         $this->getJson('/versions/invalid/1')
             ->assertStatus(400); // Error response from controller
     });
 
     it('returns 404 for non-existent form', function () {
-        $this->actingAsBusinessUser();
+        $this->actingAsProUser();
 
         $this->getJson('/versions/form/999999')
             ->assertStatus(404);
     });
 
     it('filters out versions with empty diffs', function () {
-        $user = $this->actingAsBusinessUser();
+        $user = $this->actingAsProUser();
         $workspace = $this->createUserWorkspace($user);
         $form = $this->createForm($user, $workspace);
 
@@ -66,7 +66,7 @@ describe('Form Versions', function () {
 
 describe('Submission Versions', function () {
     it('can list submission versions', function () {
-        $user = $this->actingAsBusinessUser();
+        $user = $this->actingAsProUser();
         $workspace = $this->createUserWorkspace($user);
         $form = $this->createForm($user, $workspace);
 
@@ -91,7 +91,7 @@ describe('Submission Versions', function () {
     });
 
     it('cannot list submission versions for another users submission', function () {
-        $user = $this->actingAsBusinessUser();
+        $user = $this->actingAsProUser();
         $workspace = $this->createUserWorkspace($user);
         $form = $this->createForm($user, $workspace);
 
@@ -114,7 +114,7 @@ describe('Submission Versions', function () {
 
 describe('Form Version Preview', function () {
     it('can preview a form version as pro user', function () {
-        $user = $this->actingAsBusinessUser();
+        $user = $this->actingAsProUser();
         $workspace = $this->createUserWorkspace($user);
         $form = $this->createForm($user, $workspace);
         $originalTitle = $form->title;
@@ -136,7 +136,7 @@ describe('Form Version Preview', function () {
 
 describe('Submission Version Restore', function () {
     it('can restore a submission version as pro user', function () {
-        $user = $this->actingAsBusinessUser();
+        $user = $this->actingAsProUser();
         $workspace = $this->createUserWorkspace($user);
         $form = $this->createForm($user, $workspace);
 
@@ -166,7 +166,7 @@ describe('Submission Version Restore', function () {
             ]);
     });
 
-    it('cannot restore submission version as non-business user', function () {
+    it('cannot restore submission version as non-pro user', function () {
         $proUser = $this->actingAsProUser();
         $workspace = $this->createUserWorkspace($proUser);
         $form = $this->createForm($proUser, $workspace);
@@ -193,12 +193,14 @@ describe('Submission Version Restore', function () {
         $this->actingAsUser($nonProUser);
 
         $this->postJson("/versions/{$version->version_id}/restore")
-            ->assertStatus(402)
-            ->assertJson(['required_tier' => 'business']);
+            ->assertStatus(400)
+            ->assertJsonFragment([
+                'message' => 'You need to be a Pro user to restore this version',
+            ]);
     });
 
     it('returns 404 for non-existent version', function () {
-        $this->actingAsBusinessUser();
+        $this->actingAsProUser();
 
         $this->postJson('/versions/999999/restore')
             ->assertStatus(404);
@@ -207,7 +209,7 @@ describe('Submission Version Restore', function () {
 
 describe('Version Resource', function () {
     it('includes user information in version response', function () {
-        $user = $this->actingAsBusinessUser();
+        $user = $this->actingAsProUser();
         $workspace = $this->createUserWorkspace($user);
         $form = $this->createForm($user, $workspace);
 
@@ -228,7 +230,7 @@ describe('Version Resource', function () {
     });
 
     it('handles null user gracefully', function () {
-        $user = $this->actingAsBusinessUser();
+        $user = $this->actingAsProUser();
         $workspace = $this->createUserWorkspace($user);
         $form = $this->createForm($user, $workspace);
 
@@ -254,7 +256,7 @@ describe('Version Resource', function () {
 describe('Version Model', function () {
     describe('getModel', function () {
         it('correctly decodes JSON cast attributes', function () {
-            $user = $this->actingAsBusinessUser();
+            $user = $this->actingAsProUser();
             $workspace = $this->createUserWorkspace($user);
             $form = $this->createForm($user, $workspace);
 
@@ -271,7 +273,7 @@ describe('Version Model', function () {
         });
 
         it('handles null values in cast attributes', function () {
-            $user = $this->actingAsBusinessUser();
+            $user = $this->actingAsProUser();
             $workspace = $this->createUserWorkspace($user);
             $form = $this->createForm($user, $workspace);
 
@@ -288,7 +290,7 @@ describe('Version Model', function () {
 
     describe('user relationship', function () {
         it('belongs to a user', function () {
-            $user = $this->actingAsBusinessUser();
+            $user = $this->actingAsProUser();
             $workspace = $this->createUserWorkspace($user);
             $form = $this->createForm($user, $workspace);
 
@@ -305,7 +307,7 @@ describe('Version Model', function () {
 
     describe('diff', function () {
         it('returns differences between versions', function () {
-            $user = $this->actingAsBusinessUser();
+            $user = $this->actingAsProUser();
             $workspace = $this->createUserWorkspace($user);
             $form = $this->createForm($user, $workspace);
 
@@ -320,7 +322,7 @@ describe('Version Model', function () {
         });
 
         it('excludes timestamps from diff', function () {
-            $user = $this->actingAsBusinessUser();
+            $user = $this->actingAsProUser();
             $workspace = $this->createUserWorkspace($user);
             $form = $this->createForm($user, $workspace);
 
@@ -338,7 +340,7 @@ describe('Version Model', function () {
 
     describe('nested diff for FormSubmission', function () {
         it('provides nested diff for data field', function () {
-            $user = $this->actingAsBusinessUser();
+            $user = $this->actingAsProUser();
             $workspace = $this->createUserWorkspace($user);
             $form = $this->createForm($user, $workspace, ['properties' => [
                 ['id' => 'field1', 'name' => 'Field 1', 'type' => 'text'],

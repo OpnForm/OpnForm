@@ -14,48 +14,30 @@
       </p>
     </div>
 
-    <div class="relative mt-12 sm:mt-16 overflow-x-auto">
-      <div class="sticky top-0 z-20 bg-white">
-        <table class="w-full min-w-108.75 table-fixed border-collapse">
-          <colgroup>
-            <col class="w-[34%]">
-            <col class="w-[16.5%]">
-            <col class="w-[16.5%]">
-            <col class="w-[16.5%]">
-            <col class="w-[16.5%]">
-          </colgroup>
-          <thead>
-            <tr class="border-b border-neutral-200">
-              <th class="bg-white py-4 pr-6 text-left text-sm font-semibold text-gray-600 shadow-[0_1px_0_0_rgba(229,229,229,1)]">
-                &nbsp;
-              </th>
-              <th
-                v-for="(plan, planIndex) in plans"
-                :key="planIndex"
-                class="bg-white p-6 text-center shadow-[0_1px_0_0_rgba(229,229,229,1)]"
+    <div class="mt-12 sm:mt-16 overflow-x-auto">
+      <table class="w-full min-w-108.75border-collapse">
+        <thead>
+          <tr class="border-b border-neutral-200">
+            <th class="py-4 pr-6 text-left text-sm font-semibold text-gray-600">
+              &nbsp;
+            </th>
+            <th
+              v-for="(plan, planIndex) in plans"
+              :key="planIndex"
+              class="p-6 text-center"
+            >
+              <div class="text-xl leading-7 font-medium text-gray-950">
+                {{ plan.label }}
+              </div>
+              <div
+                class="mt-0.5 text-base leading-7 tracking-[-1.1%] font-medium text-gray-600"
               >
-                <div class="text-xl leading-7 font-medium text-gray-950">
-                  {{ plan.label }}
-                </div>
-                <div
-                  class="mt-0.5 text-base leading-7 tracking-[-1.1%] font-medium text-gray-600"
-                >
-                  ({{ plan.priceLabel }})
-                </div>
-              </th>
-            </tr>
-          </thead>
-        </table>
-      </div>
+                ({{ plan.priceLabel }})
+              </div>
+            </th>
+          </tr>
+        </thead>
 
-      <table class="w-full min-w-108.75 table-fixed border-collapse">
-        <colgroup>
-          <col class="w-[34%]">
-          <col class="w-[16.5%]">
-          <col class="w-[16.5%]">
-          <col class="w-[16.5%]">
-          <col class="w-[16.5%]">
-        </colgroup>
         <tbody>
           <template v-for="section in sections" :key="section.title">
             <tr class="bg-white border-b border-neutral-200">
@@ -124,36 +106,12 @@
 </template>
 
 <script setup>
-const { getPlanPrice, getTierDisplayName } = useBillingUpsell()
-
-const formatPlanPrice = (plan) => {
-  const price = getPlanPrice(plan, false)
-  if (price == null) return null
-  return `$${price}`
-}
-
-const plans = computed(() => [
-  {
-    key: 'free',
-    label: getTierDisplayName('free'),
-    priceLabel: formatPlanPrice('free'),
-  },
-  {
-    key: 'pro',
-    label: getTierDisplayName('pro'),
-    priceLabel: formatPlanPrice('pro'),
-  },
-  {
-    key: 'business',
-    label: getTierDisplayName('business'),
-    priceLabel: formatPlanPrice('business'),
-  },
-  {
-    key: 'enterprise',
-    label: getTierDisplayName('enterprise'),
-    priceLabel: formatPlanPrice('enterprise'),
-  },
-])
+const plans = [
+  { key: "free", label: "Free", priceLabel: "$0" },
+  { key: "pro", label: "Pro", priceLabel: "$29" },
+  { key: "business", label: "Business", priceLabel: "$79" },
+  { key: "enterprise", label: "Enterprise", priceLabel: "$250+" },
+]
 
 const sections = [
   {
@@ -165,7 +123,7 @@ const sections = [
       },
       {
         label: "File uploads",
-        values: ["10MB", "50MB", "1GB", "(configurable)"],
+        values: ["(10MB)", true, "(1GB)", "(configurable)"],
       },
       {
         label: "Form logic & validation",
@@ -251,7 +209,7 @@ const sections = [
       },
       {
         label: "Advanced integrations (HubSpot, Salesforce, Airtable)",
-        values: [false, false, "soon", "soon"],
+        values: [false, false, "soon", true],
       },
     ],
   },
@@ -260,11 +218,11 @@ const sections = [
     rows: [
       {
         label: "Analytics dashboard",
-        values: [false, false, true, true],
+        values: [false, false, "soon", true],
       },
       {
         label: "Partial submissions / draft saving",
-        values: [false, false, true, true],
+        values: [false, false, "soon", true],
       },
     ],
   },

@@ -269,8 +269,7 @@ const linkGroups = computed(() => [
       { label: "Features", to: { name: "index", hash: "#features" } },
       { label: "Integrations", to: { name: "integrations" } },
       { label: "Enterprise", to: { name: "enterprise" } },
-      { label: "Industry", to: { name: "industry" } },
-      { label: "Templates", to: { name: "templates" } },
+      // { label: "Industry", to: { name: "industry" } },
     ],
   },
   {
@@ -295,8 +294,11 @@ const linkGroups = computed(() => [
     title: "Company",
     links: [
       { label: "Blog", href: opnformConfig.links.changelog_url },
-      { label: "Privacy Policy", to: { name: "privacy-policy" } },
-      { label: "Terms & Conditions", to: { name: "terms-conditions" } },
+      { label: "Status", href: opnformConfig.links.changelog_url },
+      // { label: "Feature Requests", href: opnformConfig.links.feature_requests },
+      // { label: "Roadmap", href: opnformConfig.links.roadmap },
+      // { label: "Privacy Policy", to: { name: "privacy-policy" } },
+      // { label: "Terms & Conditions", to: { name: "terms-conditions" } },
     ],
   },
 ])

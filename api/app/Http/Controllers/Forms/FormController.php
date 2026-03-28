@@ -13,7 +13,6 @@ use App\Models\Forms\FormSubmission;
 use App\Models\Version;
 use App\Models\Workspace;
 use App\Notifications\Forms\MobileEditorEmail;
-use App\Service\Billing\Feature;
 use App\Service\Forms\FormCleaner;
 use App\Service\Storage\FileUploadPathService;
 use App\Service\Storage\StorageFileNameParser;
@@ -68,7 +67,8 @@ class FormController extends Controller
     {
         $this->authorize('view', $form);
 
-        if (request()->has('version_id') && $form->workspace->hasFeature('form_versioning')) {
+        // Use for restore form version
+        if (request()->has('version_id') && $form->is_pro) {
             // Verify that the version belongs to this form to prevent unauthorized access
             $version = Version::where('versionable_id', $form->id)
                 ->where('versionable_type', Form::class)
@@ -106,11 +106,12 @@ class FormController extends Controller
             $this->authorize('ownsWorkspace', $workspace);
             $this->authorize('viewAny', Form::class);
 
-            $workspaceHasBrandingRemoval = $workspace->hasFeature(Feature::BRANDING_REMOVAL);
-            $newForms = $workspace->forms()->get()->map(function (Form $form) use ($workspace, $workspaceHasBrandingRemoval) {
+            $workspaceIsPro = $workspace->is_pro;
+            $newForms = $workspace->forms()->get()->map(function (Form $form) use ($workspace, $workspaceIsPro) {
+                // Add attributes for faster loading
                 $form->extra = (object) [
                     'loadedWorkspace' => $workspace,
-                    'workspaceHasBrandingRemoval' => $workspaceHasBrandingRemoval,
+                    'workspaceIsPro' => $workspaceIsPro,
                     'userIsOwner' => true,
                 ];
 
@@ -180,15 +181,8 @@ class FormController extends Controller
         $form->update($formData);
 
         if ($this->formCleaner->hasCleaned()) {
-            $requiredUpgrade = collect($this->formCleaner->getCleaningKeys())
-                ->flatten()
-                ->map(fn (string $feature) => app(\App\Service\Billing\PlanAccessService::class)->getFormFeatureRequiredTier($feature))
-                ->filter()
-                ->sortBy(fn (string $tier) => \App\Service\Billing\PlanTier::ORDER[$tier] ?? 0)
-                ->last();
-
-            $requiredUpgrade ??= \App\Service\Billing\PlanTier::PRO;
-            $formStatus = $form->workspace->is_trialing ? 'Non-trial' : $requiredUpgrade;
+            $formSubscription = $form->is_pro ? 'Enterprise' : 'Pro';
+            $formStatus = $form->workspace->is_trialing ? 'Non-trial' : $formSubscription;
             $message = 'Form successfully updated, but the ' . $formStatus . ' features you used will be disabled when sharing your form.';
         } else {
             $message = 'Form updated.';

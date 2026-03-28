@@ -16,6 +16,7 @@ class FormTemplateRequest extends FormRequest
         'updated_at',
         'form_pending_submission_key',
         'is_closed',
+        'is_pro',
         'is_password_protected',
         'last_edited_human',
         'max_number_of_submissions_reached',

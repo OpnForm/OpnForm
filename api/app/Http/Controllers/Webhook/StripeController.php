@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Webhook;
 
 use App\Notifications\Subscription\FailedPaymentNotification;
-use App\Service\BillingHelper;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\App;
 use Laravel\Cashier\Http\Controllers\WebhookController;
 use Stripe\Subscription as StripeSubscription;
 
@@ -47,10 +47,10 @@ class StripeController extends WebhookController
             $isSinglePrice = count($data['items']['data']) === 1;
 
             // Price...
-            $subscription->stripe_price = $mainItem['price']['id'] ?? ($isSinglePrice ? $data['items']['data'][0]['price']['id'] ?? null : null);
+            $subscription->stripe_price = $isSinglePrice ? $mainItem['price']['id'] : null;
 
             // Type - previously (Name)
-            $subscription->type = $this->getSubscriptionName($mainItem['price']['product'] ?? null) ?? $subscription->type ?? $this->newSubscriptionName($payload);
+            $subscription->type = $this->getSubscriptionName($mainItem['price']['product']);
 
             // Quantity...
             $subscription->quantity = $isSinglePrice && isset($mainItem['quantity']) ? $mainItem['quantity'] : null;
@@ -120,12 +120,19 @@ class StripeController extends WebhookController
     private function getMainSubscriptionLineItem(array $items)
     {
         return collect($items)->first(function ($item) {
-            return $this->getSubscriptionName($item['price']['product'] ?? null) !== null;
-        }) ?? ($items[0] ?? []);
+            return in_array($this->getSubscriptionName($item['price']['product']), ['default']);
+        });
     }
 
-    private function getSubscriptionName(?string $stripeProductId): ?string
+    private function getSubscriptionName(string $stripeProductId)
     {
-        return BillingHelper::getSubscriptionNameByProductId($stripeProductId);
+        $config = App::environment() == 'production' ? config('pricing.production') : config('pricing.test');
+        foreach ($config as $plan => $data) {
+            if ($stripeProductId == $config[$plan]['product_id']) {
+                return $plan;
+            }
+        }
+
+        return 'default';
     }
 }

@@ -19,6 +19,7 @@
 
 
 <script setup>
+import { useBroadcastChannel } from '@vueuse/core'
 import { authApi } from "~/api"
 
 definePageMeta({
@@ -30,48 +31,22 @@ useOpnSeoMeta({
 })
 
 const confetti = useConfetti()
-const auth = useAuth()
-const workspaces = useWorkspaces()
-const alert = useAlert()
-const amplitude = useAmplitude()
-const crisp = useCrisp()
-const gtm = useGtm()
-const { data: user } = auth.user()
+const { data: user } = useAuth().user()
+const subscribeBroadcast = useBroadcastChannel('subscribe')
 
 const interval = ref(null)
-const hasHandledSuccess = ref(false)
 
-const handleSubscribed = async () => {
-  if (hasHandledSuccess.value || !user.value?.is_subscribed) return
-
-  hasHandledSuccess.value = true
-
-  try {
-    const eventData = {
-      plan: user.value?.plan_tier || 'pro'
-    }
-    amplitude.logEvent('subscribed', eventData)
-    crisp.pushEvent('subscribed', eventData)
-    gtm.trackEvent({ event: 'subscribed', ...eventData })
-    if (import.meta.client && window.rewardful) {
-      window.rewardful('convert', { email: user.value.email })
-    }
-  } catch (error) {
-    console.error('Failed to register subscription event', error)
+const redirectIfSubscribed = () => {
+  if (user.value.is_subscribed) {
+    subscribeBroadcast.post({ 'type': 'success' })
+    window.close()
   }
-
-  workspaces.invalidateAll()
-
-  alert.success('Your subscription is now active.')
-  confetti.play()
-  await navigateTo({ name: 'home' })
 }
-
 const checkSubscription = () => {
   // Fetch the user.
-  return authApi.user.get().then(() => {
-    auth.invalidateUser()
-    handleSubscribed()
+              return authApi.user.get().then((_data) => {
+     useAuth().invalidateUser()
+    redirectIfSubscribed()
   }).catch((error) => {
     console.error(error)
     clearInterval(interval.value)
@@ -79,11 +54,18 @@ const checkSubscription = () => {
 }
 
 onMounted(() => {
-  handleSubscribed()
+  redirectIfSubscribed()
   interval.value = setInterval(() => checkSubscription(), 5000)
 })
 
 onBeforeUnmount(() => {
   clearInterval(interval.value)
+})
+
+onUnmounted(() => {
+  // stop confettis after 2 sec
+  setTimeout(() => {
+    confetti.stop()
+  }, 2000)
 })
 </script>

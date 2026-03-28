@@ -157,7 +157,7 @@ abstract class AbstractIntegrationHandler
             'data' => $formattedData,
             'message' => 'Please do not use the `submission` field. It is deprecated and will be removed in the future.'
         ];
-        if ($form->workspace?->hasFeature('editable_submissions') && $form->editable_submissions && isset($submissionData['submission_id'])) {
+        if ($form->is_pro && $form->editable_submissions && isset($submissionData['submission_id'])) {
             $data['edit_link'] = SubmissionUrlService::buildEditUrl($form, $submissionData['submission_id']);
         }
 

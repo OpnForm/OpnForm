@@ -2,7 +2,6 @@
   <div
     v-if="!isFieldHidden"
     :id="'block-' + field.id"
-    :data-testid="`open-form-field-${field.id}`"
     ref="form-block"
     class="px-2"
     :class="[
@@ -177,4 +176,5 @@ function removeField() {
  */
 
 </script>
+
 

@@ -4,7 +4,6 @@
   "type": "module",
   "scripts": {
     "build": "NODE_OPTIONS='--max-old-space-size=8192' nuxt build",
-    "build:e2e": "E2E=1 NODE_OPTIONS='--max-old-space-size=8192' nuxt build",
     "dev": "export NODE_TLS_REJECT_UNAUTHORIZED=0; nuxt dev",
     "docker-dev": "export NODE_TLS_REJECT_UNAUTHORIZED=0; nuxt dev --host 0.0.0.0",
     "generate": "export NODE_TLS_REJECT_UNAUTHORIZED=0; nuxt generate",
@@ -13,13 +12,9 @@
     "lint": "eslint --ext .js,.vue .",
     "lint:fix": "eslint . --fix --ext .js,.vue",
     "test": "VITEST=true vitest",
-    "test:ui": "VITEST=true vitest --ui",
-    "test:e2e": "playwright test",
-    "test:e2e:headed": "playwright test --headed",
-    "test:e2e:dev": "PLAYWRIGHT_BASE_URL=${PLAYWRIGHT_BASE_URL:-http://127.0.0.1:3100} playwright test"
+    "test:ui": "VITEST=true vitest --ui"
   },
   "devDependencies": {
-    "@playwright/test": "^1.54.2",
     "@iconify-json/bxl": "^1.2.2",
     "@iconify-json/clarity": "^1.2.1",
     "@iconify-json/devicon": "^1.2.56",

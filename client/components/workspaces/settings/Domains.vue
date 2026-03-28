@@ -20,7 +20,7 @@
     </div>
 
     <UAlert
-      v-if="!canAccessDomains"
+      v-if="!workspace.is_pro"
       icon="i-heroicons-user-group-20-solid"
       class="mb-4"
       color="warning"
@@ -42,14 +42,14 @@
       <div class="flex max-w-sm items-center gap-2">
         <UInput
           v-model="newDomain"
-          :disabled="!canAccessDomains"
-          :variant="canAccessDomains ? 'outline' : 'subtle'"
+          :disabled="!workspace.is_pro"
+          :variant="workspace.is_pro ? 'outline' : 'subtle'"
           placeholder="yourdomain.com"
           class="flex-1"
           @keydown.enter.prevent="addDomain"
         />
         <UButton
-          :disabled="!canAccessDomains || !newDomain.trim()"
+          :disabled="!workspace.is_pro || !newDomain.trim()"
           icon="i-heroicons-plus"
           @click="addDomain"
         >
@@ -65,7 +65,7 @@
         >
           <span class="text-sm text-neutral-800">{{ domain }}</span>
           <UButton
-            :disabled="!canAccessDomains"
+            :disabled="!workspace.is_pro"
             icon="i-heroicons-x-mark"
             color="red"
             variant="ghost"
@@ -84,7 +84,7 @@
     <UButton
       type="submit"
       :loading="isLoading"
-      :disabled="!canAccessDomains || !isChanged"
+      :disabled="!workspace.is_pro || !isChanged"
       @click="saveChanges"
     >
       Save Domain(s)
@@ -100,8 +100,6 @@ const crisp = useCrisp()
 const { current: workspace } = useCurrentWorkspace()
 
 const { openSubscriptionModal } = useAppModals()
-const { hasFeature } = usePlanFeatures()
-const canAccessDomains = computed(() => hasFeature('custom_domain'))
 
 const newDomain = ref('')
 const domains = ref([])

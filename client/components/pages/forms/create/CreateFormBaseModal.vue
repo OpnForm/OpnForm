@@ -30,7 +30,6 @@
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div
                   role="button"
-                  data-testid="form-style-classic"
                   class="group rounded-md border p-6 flex flex-col items-center cursor-pointer hover:bg-neutral-50"
                   @click="selectStyle('classic')"
                 >
@@ -46,7 +45,6 @@
                 </div>
                 <div
                   role="button"
-                  data-testid="form-style-focused"
                   class="group rounded-md border p-6 flex flex-col items-center cursor-pointer hover:bg-neutral-50"
                   @click="selectStyle('focused')"
                 >
@@ -86,7 +84,6 @@
                 <TrackClick name="select_form_base" :properties="{ base: 'contact-form' }">
                   <div
                     role="button"
-                    data-testid="form-base-simple-contact"
                     class="rounded-md border p-6 flex flex-col items-center cursor-pointer hover:bg-neutral-50"
                     @click="$emit('close')"
                   >
@@ -105,7 +102,6 @@
                   <div
                     class="rounded-md border p-6 flex flex-col items-center cursor-pointer hover:bg-neutral-50"
                     role="button"
-                    data-testid="form-base-ai"
                     @click="currentStep = 3"
                   >
                     <div class="p-4">

@@ -70,7 +70,16 @@ class AdminController extends Controller
             ->withCount('forms')
             ->get()
             ->map(function ($workspace) {
-                $plan = $workspace->is_trialing ? 'trialing' : $workspace->plan_tier;
+                $plan = 'free';
+                if ($workspace->is_trialing) {
+                    $plan = 'trialing';
+                }
+                if ($workspace->is_pro) {
+                    $plan = 'pro';
+                }
+                if ($workspace->is_enterprise) {
+                    $plan = 'enterprise';
+                }
                 return [
                     'id' => $workspace->id,
                     'name' => $workspace->name,

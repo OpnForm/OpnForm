@@ -178,6 +178,7 @@ class Form extends Model implements CachableAttributes, VersionableNestedDiff
     ];
 
     protected $cachableAttributes = [
+        'is_pro',
         'views_count',
         'max_file_size',
         'submissions_count',
@@ -192,6 +193,13 @@ class Form extends Model implements CachableAttributes, VersionableNestedDiff
         'created' => FormCreated::class,
         'saved' => FormSaved::class,
     ];
+
+    public function getIsProAttribute()
+    {
+        return $this->remember('is_pro', 15 * 60, function (): ?bool {
+            return $this->workspace?->is_pro === true;
+        });
+    }
 
     public function getShareUrlAttribute()
     {

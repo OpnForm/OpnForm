@@ -10,7 +10,7 @@
     :actions="[
       {
         label: 'Upgrade now',
-        onClick: () => openSubscriptionModal({ plan: 'pro', modal_title: 'Upgrade to Pro plan' })
+        onClick: () => openSubscriptionModal({modal_title: 'Upgrade to Pro plan'})
       },
       {
         label: 'Close',
@@ -42,14 +42,11 @@ const dismissedCookie = useCookie(COOKIE_NAME, {
 const { current: workspace } = useCurrentWorkspace()
 const isSelfHosted = computed(() => useFeatureFlag('self_hosted'))
 
-// Get current tier from workspace
-const currentTier = computed(() => workspace.value?.plan_tier)
-
 const showBanner = computed(() => {
   return (
     !dismissedCookie.value &&
     workspace.value &&
-    currentTier.value === 'free' &&
+    !workspace.value.is_pro &&
     !isSelfHosted.value
   )
 })

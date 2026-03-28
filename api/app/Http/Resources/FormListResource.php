@@ -33,7 +33,7 @@ class FormListResource extends JsonResource
             'is_closed' => $this->is_closed,
             'max_submissions_count' => $this->max_submissions_count,
             'max_number_of_submissions_reached' => $this->max_number_of_submissions_reached,
-            'plan_tier' => $this->workspace->plan_tier ?? 'free',
+            'is_pro' => $this->workspace->is_pro ?? false,
             'workspace_id' => $this->workspace_id,
             'share_url' => $this->share_url,
         ];

@@ -155,7 +155,7 @@
             <span class="text-sm">
               Remove Branding
             </span>
-            <PlanTag
+            <ProTag
               upgrade-modal-title="Upgrade to remove PDF branding"
             />
           </template>
@@ -169,7 +169,7 @@
 import { formsApi } from '~/api/forms'
 import EditableTag from '~/components/app/EditableTag.vue'
 import TrackClick from '~/components/global/TrackClick.vue'
-import PlanTag from '~/components/app/PlanTag.vue'
+import ProTag from '~/components/app/ProTag.vue'
 import MentionInput from '~/components/forms/heavy/MentionInput.vue'
 
 const emit = defineEmits(['go-back', 'save-pdf-template'])
