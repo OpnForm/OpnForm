@@ -148,7 +148,7 @@
                 </div>
                 <span>{{ point }}</span>
               </div>
-            </Transition>
+            </div>
           </div>
 
           <div class="flex justify-center lg:justify-end">
