@@ -233,7 +233,7 @@
               <UButton
                 class="w-fit sm:w-full justify-center px-4 py-2.5 rounded-[12px] text-base leading-7 tracking-[-1.1%] font-medium"
                 variant="outline"
-                label="Request a quote"
+                label="Upgrade now"
                 color="neutral"
                 @click.prevent="contactUs"
               />
