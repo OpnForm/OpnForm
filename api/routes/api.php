@@ -51,15 +51,6 @@ if (config('app.self_hosted')) {
     Route::get('/healthcheck', [HealthCheckController::class, 'apiCheck']);
 }
 
-// Plan manifest — single source of truth for feature/tier mapping, consumed by frontend
-Route::get('/plan-manifest', function () {
-    return response()->json([
-        'features' => config('plans.features', []),
-        'limits' => config('plans.limits', []),
-        'tiers' => config('plans.tiers', []),
-    ]);
-})->name('plan.manifest');
-
 Route::group(['middleware' => 'auth.multi'], function () {
     Route::post('logout', [LoginController::class, 'logout'])->name('logout');
     Route::post('auth/oidc/link', [OidcLinkController::class, 'link'])->name('oidc.link');
