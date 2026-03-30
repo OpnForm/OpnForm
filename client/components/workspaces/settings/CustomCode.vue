@@ -135,14 +135,10 @@ import PlanTag from "~/components/app/PlanTag.vue"
 const alert = useAlert()
 const crisp = useCrisp()
 const { current: workspace } = useCurrentWorkspace()
-const { openSubscriptionModal } = useAppModals()
 const { invalidateAll } = useWorkspaces()
 const { hasFeature } = usePlanFeatures()
 const canAccessAdvancedBranding = computed(() => hasFeature('branding.advanced'))
 
-const openSubscriptionModal = () => {
-  openModal({ modal_title: 'Upgrade to use workspace level custom code' })
-}
 
 const customCodeForm = useForm({
   custom_code: '',
