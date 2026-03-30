@@ -138,7 +138,7 @@ const { current: workspace } = useCurrentWorkspace()
 const { invalidateAll } = useWorkspaces()
 const { hasFeature } = usePlanFeatures()
 const canAccessAdvancedBranding = computed(() => hasFeature('branding.advanced'))
-
+const isSelfHosted = computed(() => useFeatureFlag('self_hosted'))
 
 const customCodeForm = useForm({
   custom_code: '',
@@ -153,7 +153,7 @@ const allowSelfHosted = computed(() => !!useFeatureFlag('custom_code.enable_self
 
 const canUseCustomCode = computed(() => {
   if (!canAccessAdvancedBranding.value) return false
-  return hasCustomDomain.value || (selfHosted.value && allowSelfHosted.value)
+  return hasCustomDomain.value || (isSelfHosted.value && allowSelfHosted.value)
 })
 
 const customCodeHelp = computed(() => {

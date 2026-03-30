@@ -7,6 +7,7 @@ use App\Models\UserInvite;
 use App\Models\Workspace;
 use App\Models\UserWorkspace;
 use App\Service\Billing\PlanAccessService;
+use App\Service\License\LicenseService;
 use App\Service\UserHelper;
 use Illuminate\Auth\Access\HandlesAuthorization;
 use Illuminate\Auth\Access\Response;

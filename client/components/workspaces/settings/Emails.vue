@@ -127,6 +127,7 @@ const { openSubscriptionModal } = useAppModals()
 const crisp = useCrisp()
 const { hasFeature } = usePlanFeatures()
 const canAccessSmtp = computed(() => hasFeature('custom_smtp'))
+const isSelfHosted = computed(() => useFeatureFlag('self_hosted'))
 
 const openUpgradeModal = () => {
   openSubscriptionModal({
@@ -168,8 +169,7 @@ const clearEmailSettings = () => {
 
 const saveChanges = () => {
   if (isSelfHosted.value) {
-    const canAccessFeature = canAccessEnterprise.value && hasLicenseFeature('custom_smtp')
-    if (!canAccessFeature) {
+    if (!canAccessSmtp.value) {
       openUpgradeModal()
       return
     }
