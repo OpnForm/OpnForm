@@ -10,7 +10,6 @@ use Illuminate\Support\Facades\Notification;
 use App\Open\MentionParser;
 use App\Service\Billing\Feature;
 use App\Service\Forms\FormSubmissionFormatter;
-use App\Service\Plan\PlanService;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Auth;

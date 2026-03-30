@@ -56,7 +56,7 @@ class FormController extends Controller
                 'updated_at',
             ])
             ->with(['workspace'])
-            ->withCount(['submissions as submissions_count' => fn($q) => $q->where('status', FormSubmission::STATUS_COMPLETED)])
+            ->withCount(['submissions as submissions_count' => fn ($q) => $q->where('status', FormSubmission::STATUS_COMPLETED)])
             ->withTotalViews()
             ->orderByDesc('updated_at')
             ->paginate(10);
@@ -182,9 +182,9 @@ class FormController extends Controller
         if ($this->formCleaner->hasCleaned()) {
             $requiredUpgrade = collect($this->formCleaner->getCleaningKeys())
                 ->flatten()
-                ->map(fn(string $feature) => app(\App\Service\Billing\PlanAccessService::class)->getFormFeatureRequiredTier($feature))
+                ->map(fn (string $feature) => app(\App\Service\Billing\PlanAccessService::class)->getFormFeatureRequiredTier($feature))
                 ->filter()
-                ->sortBy(fn(string $tier) => \App\Service\Billing\PlanTier::ORDER[$tier] ?? 0)
+                ->sortBy(fn (string $tier) => \App\Service\Billing\PlanTier::ORDER[$tier] ?? 0)
                 ->last();
 
             $requiredUpgrade ??= \App\Service\Billing\PlanTier::PRO;

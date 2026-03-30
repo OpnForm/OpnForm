@@ -9,7 +9,9 @@ use Illuminate\Http\Request;
 
 class RequireFeature
 {
-    public function __construct(protected PlanAccessService $planAccessService) {}
+    public function __construct(protected PlanAccessService $planAccessService)
+    {
+    }
 
     /**
      * Handle an incoming request.

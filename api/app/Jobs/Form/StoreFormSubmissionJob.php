@@ -5,7 +5,6 @@ namespace App\Jobs\Form;
 use App\Events\Forms\FormSubmitted;
 use App\Http\Controllers\Forms\FormController;
 use App\Http\Requests\AnswerFormRequest;
-use App\Service\Plan\PlanService;
 use App\Service\Storage\FileUploadPathService;
 use App\Models\Forms\Form;
 use App\Models\Forms\FormSubmission;
@@ -62,7 +61,9 @@ class StoreFormSubmissionJob implements ShouldQueue
      * @param array $submissionData Form data including metadata fields (submission_id, completion_time, etc.)
      * @return void
      */
-    public function __construct(public Form $form, public array $submissionData) {}
+    public function __construct(public Form $form, public array $submissionData)
+    {
+    }
 
     /**
      * Execute the job.

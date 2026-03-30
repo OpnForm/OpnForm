@@ -51,7 +51,7 @@ describe('FormCleaner custom code policy', function () {
         expect($data['custom_css'])->toBe('body{color:red}');
 
         // nf-code removed entirely, nf-text sanitized, email remains
-        $types = array_map(fn($p) => $p['type'], $data['properties']);
+        $types = array_map(fn ($p) => $p['type'], $data['properties']);
         expect($types)->not->toContain('nf-code');
 
         $textBlock = collect($data['properties'])->firstWhere('id', 't1');
@@ -80,7 +80,7 @@ describe('FormCleaner custom code policy', function () {
         $data = $cleaner->getData();
 
         expect($data['custom_code'])->not->toBeNull();
-        $types = array_map(fn($p) => $p['type'], $data['properties']);
+        $types = array_map(fn ($p) => $p['type'], $data['properties']);
         expect($types)->toContain('nf-code');
     });
 
@@ -104,7 +104,7 @@ describe('FormCleaner custom code policy', function () {
         $data = $cleaner->getData();
 
         expect($data['custom_code'])->not->toBeNull();
-        $types = array_map(fn($p) => $p['type'], $data['properties']);
+        $types = array_map(fn ($p) => $p['type'], $data['properties']);
         expect($types)->toContain('nf-code');
     });
 });
