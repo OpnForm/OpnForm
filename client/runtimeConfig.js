@@ -29,6 +29,7 @@ export default {
 
     clarityProjectId: process.env.NUXT_PUBLIC_CLARITY_PROJECT_ID || null,
 
+    /** Cloud API base URL. Used for self-hosted license checkout from the client. */
     licenseApiEndpoint: 'https://api.opnform.com',
   },
 

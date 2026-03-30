@@ -13,7 +13,9 @@ use Illuminate\Support\Facades\Cache;
 
 class SubscriptionController extends Controller
 {
-    public function __construct(protected BillingStateResolver $billingStateResolver) {}
+    public function __construct(protected BillingStateResolver $billingStateResolver)
+    {
+    }
 
     public const SUBSCRIPTION_PLANS = ['monthly', 'yearly'];
 

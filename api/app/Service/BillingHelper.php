@@ -29,7 +29,7 @@ class BillingHelper
         $mapping = config('billing_state.product_tier_mapping', []);
 
         return array_values(array_filter(array_map(
-            fn(string $productName) => self::getProductId($productName),
+            fn (string $productName) => self::getProductId($productName),
             array_keys($mapping)
         )));
     }

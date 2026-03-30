@@ -139,6 +139,14 @@ const { invalidateAll } = useWorkspaces()
 const { hasFeature } = usePlanFeatures()
 const canAccessAdvancedBranding = computed(() => hasFeature('branding.advanced'))
 const isSelfHosted = computed(() => useFeatureFlag('self_hosted'))
+const { openSubscriptionModal } = useAppModals()
+
+const openUpgradeModal = () => {
+  openSubscriptionModal({
+    plan: isSelfHosted.value ? 'self_hosted' : 'pro',
+    modal_title: 'Upgrade to use workspace level custom code'
+  })
+}
 
 const customCodeForm = useForm({
   custom_code: '',

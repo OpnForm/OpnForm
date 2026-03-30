@@ -41,7 +41,6 @@ class LicenseController extends Controller
         } catch (\InvalidArgumentException $e) {
             return response()->json(['error' => $e->getMessage()], 422);
         } catch (\Exception $e) {
-            ray($e->getMessage());
             return response()->json(['error' => 'Failed to create checkout session.'], 500);
         }
     }
