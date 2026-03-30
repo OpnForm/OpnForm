@@ -1,6 +1,7 @@
 <template>
   <div
     id="public-form"
+    data-testid="public-form-page"
     class="flex flex-col min-h-screen"
   >
     <div class="w-full mx-auto flex flex-col grow h-full">
@@ -191,7 +192,7 @@ onBeforeRouteLeave(() => {
 })
 
 const pageMeta = computed(() => {
-  if (form.value && form.value.is_business && form.value.seo_meta) {
+  if (form.value?.seo_meta) {
     return form.value.seo_meta
   }
   return {}
@@ -282,6 +283,9 @@ const effectiveCustomCss = computed(() => {
   return (workspaceCss + '\n' + formCss).trim()
 })
 
+// Check if SDK should be loaded for custom code support
+const shouldLoadLocalSdk = computed(() => !!effectiveCustomCode.value)
+
 useHead({
   htmlAttrs: {
     dir: () => form.value?.layout_rtl ? 'rtl' : 'ltr',
@@ -306,7 +310,14 @@ useHead({
       content: 'black-translucent'
     },
   ] : {},
-  script: [{ src: '/widgets/iframeResizer.contentWindow.min.js' }],
+  script: computed(() => {
+    const scripts = [{ src: '/widgets/iframeResizer.contentWindow.min.js' }]
+    // Load local SDK stub before custom code if needed
+    if (shouldLoadLocalSdk.value) {
+      scripts.unshift({ src: '/widgets/opnform-local.js' })
+    }
+    return scripts
+  }),
   style: computed(() => effectiveCustomCss.value ? [
     { key: 'custom-css', textContent: effectiveCustomCss.value }
   ] : [])

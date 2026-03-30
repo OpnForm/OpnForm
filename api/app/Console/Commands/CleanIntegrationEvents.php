@@ -30,5 +30,7 @@ class CleanIntegrationEvents extends Command
     {
         $response = FormIntegrationsEvent::where('created_at', '<', now()->subDays(14))->delete();
         $this->line($response . ' Events Deleted');
+
+        return Command::SUCCESS;
     }
 }

@@ -63,6 +63,19 @@ it('can update user role in a workspace', function () {
         ]);
 });
 
+it('returns 404 when updating role for a user outside the workspace', function () {
+    $outsideUser = User::factory()->create();
+
+    $this->putJson(route('open.workspaces.users.update-role', [
+        'workspace' => $this->workspace,
+        'user' => $outsideUser
+    ]), [
+        'role' => 'admin',
+    ])->assertStatus(404);
+
+    expect($this->workspace->users()->whereKey($outsideUser->id)->exists())->toBeFalse();
+});
+
 it('can remove a user from a workspace', function () {
     $existingUser = User::factory()->create();
     $this->workspace->users()->attach($existingUser);
@@ -79,6 +92,17 @@ it('can remove a user from a workspace', function () {
     expect($this->workspace->users()->count())->toBe(1);
 });
 
+it('returns 404 when removing a user outside the workspace', function () {
+    $outsideUser = User::factory()->create();
+
+    $this->deleteJson(route('open.workspaces.users.remove', [
+        'workspace' => $this->workspace,
+        'user' => $outsideUser
+    ]))->assertStatus(404);
+
+    expect($this->workspace->users()->whereKey($outsideUser->id)->exists())->toBeFalse();
+});
+
 it('can leave a workspace', function () {
     $this->postJson(route('open.workspaces.leave', ['workspace' => $this->workspace]))
         ->assertSuccessful()
@@ -87,4 +111,50 @@ it('can leave a workspace', function () {
         ]);
 
     expect($this->workspace->users()->count())->toBe(0);
+});
+
+it('enforces appsumo license member limits when inviting users', function () {
+    $licensedOwner = $this->createAppSumoLicensedUser(1);
+    $this->actingAs($licensedOwner);
+    $workspace = Workspace::factory()->create();
+    $workspace->users()->attach($licensedOwner, ['role' => 'admin']);
+    $workspace->load('users');
+    $workspace->flush();
+
+    $newUser = User::factory()->create(['email' => 'licensed-limit@example.com']);
+
+    $this->postJson(route('open.workspaces.users.add', ['workspace' => $workspace]), [
+        'email' => $newUser->email,
+        'role' => 'user',
+    ])
+        ->assertStatus(403)
+        ->assertJson([
+            'message' => 'You have reached the maximum number of users allowed with your license.',
+        ]);
+
+    expect($workspace->fresh()->users()->count())->toBe(1);
+});
+
+it('allows inviting users when the workspace has an invite_user override', function () {
+    Mail::fake();
+
+    $owner = $this->createUser();
+    $this->actingAs($owner);
+    $workspace = Workspace::factory()->create([
+        'plan_overrides' => ['features' => ['invite_user']],
+    ]);
+    $workspace->users()->attach($owner, ['role' => 'admin']);
+    $workspace->flush();
+    $owner->flush();
+
+    $this->postJson(route('open.workspaces.users.add', ['workspace' => $workspace]), [
+        'email' => 'invite-override@example.com',
+        'role' => 'user',
+    ])
+        ->assertSuccessful()
+        ->assertJson([
+            'message' => 'Registration invitation email sent to user.',
+        ]);
+
+    Mail::assertQueued(UserInvitationEmail::class);
 });

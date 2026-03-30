@@ -13,6 +13,7 @@ use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\Http\Request;
 use App\Rules\CssOnlyRule;
+use Stevebauman\Purify\Facades\Purify;
 
 /**
  * Abstract class to validate create/update forms
@@ -35,8 +36,15 @@ abstract class UserFormRequest extends \Illuminate\Foundation\Http\FormRequest
 
         if (isset($data['properties']) && is_array($data['properties'])) {
             $data['properties'] = array_map(function ($property) {
-                if (isset($property['help']) && is_string($property['help']) && strip_tags($property['help']) === '') {
-                    $property['help'] = null;
+                if (isset($property['name']) && is_string($property['name'])) {
+                    $property['name'] = trim(strip_tags($property['name']));
+                }
+
+                if (isset($property['help']) && is_string($property['help'])) {
+                    $property['help'] = Purify::clean($property['help']);
+                    if (strip_tags($property['help']) === '') {
+                        $property['help'] = null;
+                    }
                 }
                 return $property;
             }, $data['properties']);
@@ -101,6 +109,17 @@ abstract class UserFormRequest extends \Illuminate\Foundation\Http\FormRequest
             $workspace = \App\Models\Workspace::find($this->get('workspace_id'));
         }
 
+        $pdfTemplateIdRules = [
+            Rule::excludeIf($this->form === null),
+            'nullable',
+            'integer',
+        ];
+
+        if ($this->form) {
+            $pdfTemplateIdRules[] = Rule::exists('pdf_templates', 'id')
+                ->where(fn ($query) => $query->where('form_id', $this->form->id));
+        }
+
         return [
             // Form Info
             'title' => 'required|string|max:60',
@@ -143,6 +162,9 @@ abstract class UserFormRequest extends \Illuminate\Foundation\Http\FormRequest
             'submit_button_text' => 'nullable|string|max:50',
             're_fillable' => 'boolean',
             're_fill_button_text' => 'nullable|string|max:50',
+            'pdf_download_enabled' => 'boolean',
+            'pdf_download_button_text' => 'nullable|string|max:50',
+            'pdf_template_id' => $pdfTemplateIdRules,
             'submitted_text' => 'string|max:10000',
             'redirect_url' => 'nullable|string',
             'database_fields_update' => 'nullable|array',

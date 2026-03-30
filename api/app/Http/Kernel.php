@@ -12,12 +12,10 @@ use App\Http\Middleware\IsAdmin;
 use App\Http\Middleware\IsModerator;
 use App\Http\Middleware\IsNotSubscribed;
 use App\Http\Middleware\IsSubscribed;
-use App\Http\Middleware\EnsureCloudInstance;
-use App\Http\Middleware\EnsureSelfHostedInstance;
 use App\Http\Middleware\RequireFeature;
-use App\Http\Middleware\RequirePlan;
-use App\Http\Middleware\RequireProPlan;
+use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Foundation\Http\Kernel as HttpKernel;
+use Illuminate\Routing\Router;
 use App\Http\Middleware\CheckUserIsBlocked;
 
 class Kernel extends HttpKernel
@@ -89,7 +87,6 @@ class Kernel extends HttpKernel
         ],
 
         'api' => [
-            'throttle:100,1',
             \App\Http\Middleware\EncryptCookies::class,
             \Illuminate\Session\Middleware\StartSession::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
@@ -119,11 +116,7 @@ class Kernel extends HttpKernel
         'moderator' => IsModerator::class,
         'subscribed' => IsSubscribed::class,
         'not-subscribed' => IsNotSubscribed::class,
-        'require-pro' => RequireProPlan::class, // Legacy - use 'plan' or 'feature' instead
-        'plan' => RequirePlan::class,           // Usage: ->middleware('plan:business')
         'feature' => RequireFeature::class,     // Usage: ->middleware('feature:custom_domain')
-        'cloud' => EnsureCloudInstance::class,  // Allow cloud instances only
-        'self-hosted' => EnsureSelfHostedInstance::class, // Allow self-hosted instances only
         'cache.headers' => \Illuminate\Http\Middleware\SetCacheHeaders::class,
         'can' => \Illuminate\Auth\Middleware\Authorize::class,
         'guest' => \App\Http\Middleware\RedirectIfAuthenticated::class,
@@ -132,11 +125,21 @@ class Kernel extends HttpKernel
         'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
 
-        'pro-form' => \App\Http\Middleware\Form\ProForm::class,
         'protected-form' => \App\Http\Middleware\Form\ProtectedForm::class,
 
         'abilities' => \Laravel\Sanctum\Http\Middleware\CheckAbilities::class,
         'ability' => \Laravel\Sanctum\Http\Middleware\CheckForAnyAbility::class,
         'auth.multi' => \App\Http\Middleware\AuthenticateWithJwtOrSanctum::class,
     ];
+
+    public function __construct(Application $app, Router $router)
+    {
+        parent::__construct($app, $router);
+
+        $appEnv = (string) ($_ENV['APP_ENV'] ?? $_SERVER['APP_ENV'] ?? 'production');
+
+        if (!in_array($appEnv, ['testing', 'e2e'], true)) {
+            array_unshift($this->middlewareGroups['api'], 'throttle:100,1');
+        }
+    }
 }

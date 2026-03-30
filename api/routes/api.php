@@ -3,6 +3,7 @@
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\OAuthController;
+use App\Http\Controllers\Auth\OidcLinkController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\Auth\UserController;
@@ -15,6 +16,8 @@ use App\Http\Controllers\Forms\Integration\FormIntegrationsController;
 use App\Http\Controllers\Forms\Integration\FormIntegrationsEventController;
 use App\Http\Controllers\Forms\Integration\FormZapierWebhookController;
 use App\Http\Controllers\Forms\PublicFormController;
+use App\Http\Controllers\Pdf\PdfTemplateController;
+use App\Http\Controllers\Pdf\PdfGenerateController;
 use App\Http\Controllers\Settings\OAuthProviderController;
 use App\Http\Controllers\Settings\PasswordController;
 use App\Http\Controllers\Settings\ProfileController;
@@ -26,10 +29,10 @@ use App\Http\Controllers\Forms\FormPaymentController;
 use App\Http\Controllers\WorkspaceController;
 use App\Http\Controllers\WorkspaceUserController;
 use App\Http\Controllers\VersionController;
+use App\Service\Storage\SafeFileResponseService;
 use Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Storage;
 use App\Http\Controllers\HealthCheckController;
 
 /*
@@ -49,6 +52,7 @@ if (config('app.self_hosted')) {
 
 Route::group(['middleware' => 'auth.multi'], function () {
     Route::post('logout', [LoginController::class, 'logout'])->name('logout');
+    Route::post('auth/oidc/link', [OidcLinkController::class, 'link'])->name('oidc.link');
 
     // Versions
     Route::prefix('versions')->name('versions.')->group(function () {
@@ -171,13 +175,13 @@ Route::group(['middleware' => 'auth.multi'], function () {
                     Route::delete('/{connection}', [\App\Http\Controllers\Settings\OidcConnectionController::class, 'destroy'])->name('destroy');
                 });
 
-                Route::middleware('pro-form')->group(function () {
+                Route::middleware('feature:form_analytics')->group(function () {
                     Route::get('form-stats/{form}', [FormStatsController::class, 'getFormStats'])->name('form.stats');
                     Route::get('form-stats-details/{form}', [FormStatsController::class, 'getFormStatsDetails'])->name('form.stats-details');
                 });
 
                 // Summary endpoints - Pro plan required, with rate limiting
-                Route::middleware(['plan:pro', 'throttle:summary'])->group(function () {
+                Route::middleware(['feature:form_summary', 'throttle:summary'])->group(function () {
                     Route::get('form-summary/{form}', [FormSummaryController::class, 'getSummary'])->name('form.summary');
                     Route::get('form-summary/{form}/field/{fieldId}/values', [FormSummaryController::class, 'getFieldValues'])->name('form.summary.field-values');
                 });
@@ -221,7 +225,7 @@ Route::group(['middleware' => 'auth.multi'], function () {
             Route::post(
                 '/assets/upload',
                 [FormController::class, 'uploadAsset']
-            )->withoutMiddleware(['auth.multi'])->name('assets.upload');
+            )->middleware(['throttle:10,1', 'throttle:30,60'])->withoutMiddleware(['auth.multi'])->name('assets.upload');
             Route::get(
                 '/{form}/uploaded-file/{filename}',
                 [FormController::class, 'viewFile']
@@ -256,6 +260,46 @@ Route::group(['middleware' => 'auth.multi'], function () {
                 '/{form}/integrations/{integrationid}/events',
                 [FormIntegrationsEventController::class, 'index']
             )->name('integrations.events');
+
+            // PDF Templates
+            Route::prefix('/{form}/pdf-templates')->name('pdf-templates.')->group(function () {
+                Route::get('/', [PdfTemplateController::class, 'index'])->name('index');
+                Route::post('/', [PdfTemplateController::class, 'store'])->name('store');
+                Route::get('/{pdfTemplate}', [PdfTemplateController::class, 'show'])->name('show');
+                Route::put('/{pdfTemplate}', [PdfTemplateController::class, 'update'])->name('update');
+                Route::delete('/{pdfTemplate}', [PdfTemplateController::class, 'destroy'])->name('destroy');
+                Route::get('/{pdfTemplate}/download', [PdfTemplateController::class, 'download'])->name('download');
+
+                // Get signed URL for submission PDF download
+                Route::get(
+                    '/{pdfTemplate}/submissions/{submission_id}/signed-url',
+                    [PdfGenerateController::class, 'getTemplateSignedUrl']
+                )->name('submission.signed-url');
+
+                // Get signed URL for preview PDF (admin)
+                Route::get(
+                    '/{pdfTemplate}/preview/signed-url',
+                    [PdfGenerateController::class, 'getPreviewSignedUrl']
+                )->name('preview.signed-url');
+            });
+
+            // Template-based PDF download (signed, no auth required)
+            Route::get(
+                '/{form}/pdf-templates/{pdfTemplate}/submissions/{submission_id}/download',
+                [PdfGenerateController::class, 'downloadByTemplate']
+            )
+                ->middleware('signed')
+                ->withoutMiddleware(['auth.multi'])
+                ->name('pdf-templates.download-submission');
+
+            // Template-based PDF preview (signed, no auth required)
+            Route::get(
+                '/{form}/pdf-templates/{pdfTemplate}/preview',
+                [PdfGenerateController::class, 'previewBySignature']
+            )
+                ->middleware('signed')
+                ->withoutMiddleware(['auth.multi'])
+                ->name('pdf-templates.preview-signed');
         });
     });
 
@@ -306,6 +350,11 @@ Route::group(['middleware' => 'auth.multi'], function () {
         Route::post(
             'disable-two-factor-authentication',
             [\App\Http\Controllers\Admin\AdminController::class, 'disableTwoFactorAuthentication']
+        );
+
+        Route::post(
+            'clear-user-cache',
+            [\App\Http\Controllers\Admin\AdminController::class, 'clearUserCache']
         );
 
         Route::group(['prefix'  => 'billing'], function () {
@@ -378,12 +427,12 @@ Route::prefix('forms')->name('forms.')->group(function () {
         )->name('users.index');
     });
 
+    // File uploads
+    Route::get('assets/{assetFileName}', [PublicFormController::class, 'showAsset'])->name('assets.show');
+
     // Get form and submit
     Route::get('{form}', [PublicFormController::class, 'show'])->name('show');
     Route::get('{form}/submissions/{submission_id}', [PublicFormController::class, 'fetchSubmission'])->name('fetchSubmission');
-
-    // File uploads
-    Route::get('assets/{assetFileName}', [PublicFormController::class, 'showAsset'])->name('assets.show');
 
     // AI
     Route::post('ai/generate', [\App\Http\Controllers\Forms\AiFormController::class, 'generateForm'])->name('ai.generate');
@@ -396,6 +445,7 @@ Route::prefix('forms')->name('forms.')->group(function () {
  */
 Route::prefix('content')->name('content.')->group(function () {
     Route::get('/feature-flags', [\App\Http\Controllers\Content\FeatureFlagsController::class, 'index'])->name('feature-flags');
+    Route::get('/plans', [\App\Http\Controllers\Content\PlansController::class, 'index'])->name('plans');
     Route::get('changelog/entries', [\App\Http\Controllers\Content\ChangelogController::class, 'index'])->name('changelog.entries');
 });
 
@@ -435,14 +485,14 @@ Route::post(
 Route::post(
     '/upload-file',
     [\App\Http\Controllers\Content\FileUploadController::class, 'upload']
-)->name('upload-file');
+)->middleware(['throttle:10,1', 'throttle:30,60'])->name('upload-file');
 
 Route::get('local/temp/{path}', function (Request $request, string $path) {
     if (!$request->hasValidSignature()) {
         abort(401);
     }
 
-    return response()->file(Storage::path($path), ['Content-Type' => Storage::mimeType($path)]);
+    return app(SafeFileResponseService::class)->serve($path, basename($path));
 })->where('path', '(.*)')->name('local.temp');
 
 Route::get('caddy/ask-certificate/{secret?}', [\App\Http\Controllers\CaddyController::class, 'ask'])

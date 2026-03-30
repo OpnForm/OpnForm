@@ -43,7 +43,7 @@ const { current: workspace } = useCurrentWorkspace()
 const isSelfHosted = computed(() => useFeatureFlag('self_hosted'))
 
 // Get current tier from workspace
-const currentTier = computed(() => workspace.value?.plan_tier || 'free')
+const currentTier = computed(() => workspace.value?.plan_tier)
 
 const showBanner = computed(() => {
   return (

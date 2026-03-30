@@ -167,9 +167,9 @@ describe('Submission Version Restore', function () {
     });
 
     it('cannot restore submission version as non-business user', function () {
-        $businessUser = $this->actingAsBusinessUser();
-        $workspace = $this->createUserWorkspace($businessUser);
-        $form = $this->createForm($businessUser, $workspace);
+        $proUser = $this->actingAsProUser();
+        $workspace = $this->createUserWorkspace($proUser);
+        $form = $this->createForm($proUser, $workspace);
 
         // Create a submission
         $formData = $this->generateFormSubmissionData($form);
@@ -194,9 +194,7 @@ describe('Submission Version Restore', function () {
 
         $this->postJson("/versions/{$version->version_id}/restore")
             ->assertStatus(402)
-            ->assertJsonFragment([
-                'message' => 'You need to be a Business user to restore this version',
-            ]);
+            ->assertJson(['required_tier' => 'business']);
     });
 
     it('returns 404 for non-existent version', function () {

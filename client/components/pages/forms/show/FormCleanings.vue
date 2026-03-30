@@ -56,6 +56,7 @@
 <script setup>
 import VTransition from '~/components/global/transitions/VTransition.vue'
 import TrackClick from '~/components/global/TrackClick.vue'
+import { escapeHtml } from '~/lib/utils'
 
 const props = defineProps({
   form: { type: Object, required: true },
@@ -107,10 +108,11 @@ const cleaningContent = computed(() => {
     if (fieldName !== 'Form') {
       fieldName = '"' + fieldName + '" field'
     }
-    let fieldInfo = '<br><span class="font-semibold">' + fieldName + '</span><br/><ul class=\'list-disc list-inside\'>'
+    const safeFieldName = escapeHtml(fieldName)
+    let fieldInfo = '<br><span class="font-semibold">' + safeFieldName + '</span><br/><ul class=\'list-disc list-inside\'>'
     cleanings.value[key].forEach((msg) => {
       if (!msg) return
-      fieldInfo = fieldInfo + '<li>' + msg + '</li>'
+      fieldInfo = fieldInfo + '<li>' + escapeHtml(msg) + '</li>'
     })
     if (fieldInfo) {
       message = message + fieldInfo + '</ul>'
@@ -124,7 +126,8 @@ const onUpgradeClick = () => {
   openSubscriptionModal({
     plan: 'business',
     modal_title: 'Upgrade to unlock all features for your form',
-    modal_description: 'Some features are disabled on the published form. Upgrade your plan to unlock these features and much more. Gain full access to all advanced features.'
+    modal_description: 'Some features are disabled on the published form. Upgrade your plan to unlock these features and much more. Gain full access to all advanced features.',
+    show_requirement_hints: false,
   })
 }
 

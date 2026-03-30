@@ -3,6 +3,7 @@
 namespace App\Enterprise\Oidc\Policies;
 
 use App\Enterprise\Oidc\Models\IdentityConnection;
+use App\Service\Billing\Feature;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Policies\WorkspacePolicy;
@@ -57,7 +58,7 @@ class IdentityConnectionPolicy
         }
 
         // For cloud (non-self-hosted), require Enterprise subscription for creation
-        return $this->hasEnterpriseAccess($workspace);
+        return $this->hasOidcAccess($workspace);
     }
 
     /**
@@ -92,15 +93,13 @@ class IdentityConnectionPolicy
         }
 
         // For cloud (non-self-hosted), require Enterprise subscription for modifications
-        return $this->hasEnterpriseAccess($identityConnection->workspace);
+        return $this->hasOidcAccess($identityConnection->workspace);
     }
 
     /**
-     * Check if workspace has Enterprise access.
-     * For self-hosted: requires a valid license with SSO feature.
-     * For cloud: requires an Enterprise subscription.
+     * Check if workspace has OIDC access (always true for self-hosted).
      */
-    protected function hasEnterpriseAccess(Workspace $workspace): bool
+    protected function hasOidcAccess(Workspace $workspace): bool
     {
         if (!pricing_enabled()) {
             if (config('app.self_hosted')) {
@@ -110,6 +109,6 @@ class IdentityConnectionPolicy
             return true;
         }
 
-        return $workspace->is_enterprise;
+        return $workspace->hasFeature(Feature::SSO_OIDC);
     }
 }

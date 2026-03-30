@@ -1,0 +1,442 @@
+---
+title: "JavaScript SDK"
+description: "Programmatically interact with embedded OpnForm forms using our JavaScript SDK"
+---
+
+The OpnForm JavaScript SDK enables you to programmatically control embedded forms, listen to events, and build dynamic integrations. It includes automatic iframe resizing and full backward compatibility with existing embeds.
+
+## Installation
+
+Include the SDK script after your form iframe:
+
+```html
+<iframe
+    id="my-form"
+    src="https://opnform.com/forms/my-form-slug"
+    style="border:none;width:100%;"
+></iframe>
+<script src="https://opnform.com/widgets/opnform-sdk.min.js"></script>
+```
+
+<Note>
+    The SDK automatically discovers OpnForm iframes on your page and initializes
+    them. No additional setup required.
+</Note>
+
+## Quick Start
+
+```javascript
+// Listen to form submission
+opnform.on("submit", function (data) {
+    console.log("Form submitted!", data);
+    console.log("Submission data:", data.data);
+});
+
+// Set a field value
+opnform.get("my-form").setField("email", "user@example.com");
+
+// Toggle dark mode
+opnform.get("my-form").toggleDarkMode();
+```
+
+---
+
+## Events
+
+Listen to form events to trigger custom actions, send data to analytics, or integrate with your application.
+
+### Available Events
+
+| Event          | Description                        | Payload                                                 |
+| -------------- | ---------------------------------- | ------------------------------------------------------- |
+| `ready`        | Form iframe loaded and ready       | `{ form, slug, id }`                                    |
+| `submit`       | Form submitted successfully        | `{ form, data, submissionId, completionTime }`          |
+| `submitStart`  | Submission started                 | `{ form }`                                              |
+| `submitError`  | Submission failed                  | `{ form, errors }`                                      |
+| `dataChange`   | Form data changed                  | `{ form, data, changedField, previousValue, newValue }` |
+| `error`        | Validation error occurred          | `{ form, errors }`                                      |
+| `pageChange`   | Page navigation (multi-page forms) | `{ form, fromPage, toPage, totalPages }`                |
+| `nextPage`     | User proceeded to next page        | `{ form, currentPage, totalPages }`                     |
+| `previousPage` | User went back                     | `{ form, currentPage, totalPages }`                     |
+| `reset`        | Form was reset                     | `{ form }`                                              |
+| `show`         | Popup form opened                  | `{ form }`                                              |
+| `hide`         | Popup form closed                  | `{ form }`                                              |
+
+### Listening to Events
+
+<CodeGroup>
+```javascript Single Event
+opnform.on('submit', function(data) {
+  console.log('Form submitted:', data);
+});
+```
+
+```javascript Multiple Events
+opnform.on(["nextPage", "previousPage"], function (data) {
+    console.log("Page changed to:", data.currentPage);
+});
+```
+
+```javascript Form-Specific Event
+opnform.get("contact-form").on("submit", function (data) {
+    console.log("Contact form submitted");
+});
+```
+
+```javascript One-Time Event
+opnform.once("ready", function (data) {
+    console.log("Form is ready");
+});
+```
+
+</CodeGroup>
+
+### Removing Event Listeners
+
+```javascript
+// Remove specific handler
+const handler = (data) => console.log(data);
+opnform.on("submit", handler);
+opnform.off("submit", handler);
+
+// Remove all listeners for an event
+opnform.off("submit");
+```
+
+---
+
+## Form Methods
+
+Access form instances using `opnform.get('form-slug')` and call methods to control the form.
+
+### Field Operations
+
+<AccordionGroup>
+<Accordion title="setField(fieldId, value)">
+Set the value of a specific field.
+
+```javascript
+opnform.get("my-form").setField("email", "user@example.com");
+opnform.get("my-form").setField("name", "John Doe");
+
+// Works for hidden fields too
+opnform.get("my-form").setField("utm_source", "google");
+```
+
+</Accordion>
+
+<Accordion title="setFields(data)">
+Set multiple field values at once.
+
+```javascript
+opnform.get("my-form").setFields({
+    name: "John Doe",
+    email: "john@example.com",
+    company: "Acme Inc",
+    utm_source: "landing_page",
+});
+```
+
+</Accordion>
+
+<Accordion title="getField(fieldId)">
+Get the current value of a field.
+
+```javascript
+const email = opnform.get("my-form").getField("email");
+console.log(email); // "user@example.com"
+```
+
+</Accordion>
+
+<Accordion title="getData()">
+Get all current form data.
+
+```javascript
+const formData = opnform.get("my-form").getData();
+console.log(formData);
+// { name: "John", email: "john@example.com", ... }
+```
+
+</Accordion>
+
+<Accordion title="clearField(fieldId) / clearAll()">
+Clear field values.
+
+```javascript
+// Clear single field
+opnform.get("my-form").clearField("email");
+
+// Clear all fields
+opnform.get("my-form").clearAll();
+```
+
+</Accordion>
+</AccordionGroup>
+
+### Error Handling
+
+```javascript
+// Check if a field has an error
+const hasError = opnform.get("my-form").hasError("email");
+
+// Get error message for a field
+const errorMsg = opnform.get("my-form").getError("email");
+
+// Get all errors
+const errors = opnform.get("my-form").getErrors();
+// { email: "Invalid email format", phone: "Required" }
+```
+
+### Theme Control
+
+```javascript
+// Toggle dark mode
+opnform.get("my-form").toggleDarkMode();
+
+// Set specific mode
+opnform.get("my-form").setDarkMode(true); // Dark
+opnform.get("my-form").setDarkMode(false); // Light
+opnform.get("my-form").setDarkMode("auto"); // Follow system
+
+// Check current mode
+const isDark = opnform.get("my-form").isDarkMode();
+```
+
+### Navigation (Multi-Page Forms)
+
+```javascript
+// Navigate to specific page
+opnform.get("my-form").goToPage(2);
+
+// Navigate forward/backward
+opnform.get("my-form").nextPage();
+opnform.get("my-form").previousPage();
+
+// Get current page info
+const page = opnform.get("my-form").getCurrentPage();
+// { index: 1, total: 4 }
+
+// Check navigation availability
+const canNext = opnform.get("my-form").canGoNext();
+const canPrev = opnform.get("my-form").canGoPrevious();
+```
+
+### Form Actions
+
+```javascript
+// Submit form programmatically
+opnform.get("my-form").submit();
+
+// Reset form to initial state
+opnform.get("my-form").reset();
+
+// Focus on first error field
+opnform.get("my-form").focusFirstError();
+```
+
+### Popup Control
+
+For forms embedded as popups:
+
+```javascript
+// Open popup
+opnform.get("my-form").open();
+
+// Close popup
+opnform.get("my-form").close();
+
+// Toggle popup
+opnform.get("my-form").toggle();
+
+// Check if open
+const isOpen = opnform.get("my-form").isOpen();
+```
+
+---
+
+## Global SDK Methods
+
+### Form Management
+
+```javascript
+// Get a specific form instance
+const form = opnform.get("my-form-slug");
+
+// Get all forms on the page
+const forms = opnform.getAll();
+
+// Check if a form is ready
+const isReady = opnform.isReady("my-form-slug");
+```
+
+### Initialization Options
+
+```javascript
+opnform.init({
+    autoResize: true, // Auto-resize iframes (default: true)
+    defaultDarkMode: "auto", // 'auto' | true | false
+    preventRedirect: false, // Prevent redirect after submission
+    onReady: function (forms) {
+        // Callback when all forms ready
+        console.log("All forms ready:", forms);
+    },
+});
+```
+
+### Programmatic Form Creation
+
+```javascript
+opnform.create("my-form-slug", {
+    container: "#form-container", // CSS selector or element
+    width: "100%",
+    height: "auto",
+    darkMode: false,
+    onSubmit: function (data) {
+        console.log("Submitted:", data);
+    },
+});
+```
+
+---
+
+## Integration Examples
+
+### Google Analytics 4
+
+```javascript
+opnform.on("submit", function (data) {
+    gtag("event", "form_submission", {
+        form_id: data.form.id,
+        form_name: data.form.slug,
+        completion_time: data.completionTime,
+    });
+});
+
+opnform.on("pageChange", function (data) {
+    gtag("event", "form_progress", {
+        form_id: data.form.id,
+        current_page: data.toPage,
+        total_pages: data.totalPages,
+    });
+});
+```
+
+### Send to Custom API
+
+```javascript
+opnform.on("submit", async function (data) {
+    await fetch("/api/leads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            email: data.data.email,
+            name: data.data.name,
+            source: "opnform",
+            formId: data.form.id,
+        }),
+    });
+});
+```
+
+### Error Tracking
+
+```javascript
+opnform.on("submitError", function (data) {
+    console.error("Form submission failed:", data.errors);
+
+    // Send to error tracking service
+    Sentry.captureMessage("Form submission failed", {
+        extra: { formId: data.form.id, errors: data.errors },
+    });
+});
+
+opnform.on("error", function (data) {
+    console.log("Validation errors:", data.errors);
+});
+```
+
+### Dynamic Field Population
+
+```javascript
+opnform.once("ready", function () {
+    // Get data from URL params
+    const params = new URLSearchParams(window.location.search);
+
+    opnform.get("my-form").setFields({
+        email: params.get("email") || "",
+        utm_source: params.get("utm_source") || "direct",
+        utm_campaign: params.get("utm_campaign") || "",
+    });
+});
+```
+
+---
+
+## Backward Compatibility
+
+<Info>
+    Existing embeds using `initEmbed()` continue to work without changes. The
+    SDK provides full backward compatibility.
+</Info>
+
+```html
+<!-- Old embed code still works -->
+<iframe id="my-form" src="https://opnform.com/forms/my-form"></iframe>
+<script src="https://opnform.com/widgets/iframe.min.js"></script>
+<script>
+    initEmbed("my-form", { autoResize: true });
+</script>
+```
+
+<Tip>
+    We recommend upgrading to the new SDK to access event callbacks and
+    programmatic control features.
+</Tip>
+
+---
+
+## Troubleshooting
+
+<AccordionGroup>
+<Accordion title="Form not found">
+Ensure the iframe has loaded and the `id` attribute matches the form slug:
+
+```html
+<iframe id="my-form-slug" src="https://opnform.com/forms/my-form-slug"></iframe>
+```
+
+Use `opnform.getAll()` to see discovered forms.
+
+</Accordion>
+
+<Accordion title="Events not firing">
+Make sure the SDK script is loaded after the iframe:
+
+```html
+<iframe ...></iframe>
+<script src="https://opnform.com/widgets/opnform-sdk.min.js"></script>
+<script>
+    // Your event handlers here
+</script>
+```
+
+</Accordion>
+
+<Accordion title="Commands not working">
+Commands require the form to be ready. Use the `ready` event:
+
+```javascript
+opnform.once("ready", function () {
+    opnform.get("my-form").setField("email", "test@example.com");
+});
+```
+
+</Accordion>
+
+<Accordion title="Auto-resize not working">
+The SDK includes iFrame Resizer. If resize isn't working, ensure:
+- No CSS `max-height` restricting the iframe
+- The form is not in `focused` presentation style (which has fixed height)
+</Accordion>
+</AccordionGroup>

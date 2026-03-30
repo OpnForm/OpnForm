@@ -2,11 +2,16 @@
 
 namespace App\Http\Middleware;
 
+use App\Service\Billing\BillingStateResolver;
 use Closure;
 use Illuminate\Http\Request;
 
 class IsSubscribed
 {
+    public function __construct(protected BillingStateResolver $billingStateResolver)
+    {
+    }
+
     /**
      * Handle an incoming request.
      *
@@ -14,7 +19,7 @@ class IsSubscribed
      */
     public function handle(Request $request, Closure $next)
     {
-        if ($request->user() && ! $request->user()->subscribed()) {
+        if ($request->user() && !$this->billingStateResolver->hasActivePaidSubscription($request->user())) {
             // This user is not a paying customer...
             if ($request->expectsJson()) {
                 return response([

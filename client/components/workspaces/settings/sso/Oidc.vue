@@ -101,17 +101,16 @@ const { openSubscriptionModal } = useAppModals()
 
 const workspaceId = computed(() => workspace.value?.id)
 
+const { hasFeature } = usePlanFeatures()
 const canManageConnections = computed(() => !!workspace.value && workspace.value.is_admin)
 
-// Check if feature is accessible (Enterprise required for cloud, license required for self-hosted)
+// Check if feature is accessible (Enterprise required for cloud, free for self-hosted)
 const isSelfHosted = computed(() => useFeatureFlag('self_hosted'))
 const billingEnabled = computed(() => useFeatureFlag('billing.enabled'))
 const { canAccessEnterprise, hasLicenseFeature } = useInstanceLicense()
 const canAccessFeature = computed(() => {
-  if (isSelfHosted.value) {
-    return canAccessEnterprise.value && hasLicenseFeature('sso')
-  }
-  return billingEnabled.value && workspace.value?.is_enterprise
+  if (isSelfHosted.value) return true
+  return billingEnabled.value && hasFeature('sso.oidc')
 })
 
 const { connections, create, update, remove } = useOidcConnections(workspaceId)
@@ -120,7 +119,6 @@ const { connections, create, update, remove } = useOidcConnections(workspaceId)
 const { data: connectionsData, isLoading: isConnectionsLoading } = connections()
 
 const alertConfig = computed(() => {
-  // Cloud: no access
   if (!isSelfHosted.value && !canAccessFeature.value) {
     return {
       icon: 'i-heroicons-information-circle',
@@ -136,19 +134,13 @@ const alertConfig = computed(() => {
     }
   }
 
-  // Self-hosted: no access
-  if (isSelfHosted.value && !canAccessFeature.value) {
+  if (!isSelfHosted.value && canAccessFeature.value) {
     return {
-      icon: 'i-heroicons-information-circle',
-      color: 'info',
-      title: 'Enterprise License Required',
-      description: 'OIDC SSO requires an active Enterprise license with the SSO feature. Purchase and activate a license to enable single sign-on.',
-      actions: [
-        {
-          label: 'Purchase License',
-          onClick: openUpgradeModal
-        }
-      ]
+      icon: 'i-heroicons-check-circle',
+      color: 'success',
+      title: 'OIDC SSO Enabled',
+      description: 'Configure OpenID Connect single sign-on connections for your workspace.',
+      actions: []
     }
   }
 
@@ -163,7 +155,7 @@ const alertConfig = computed(() => {
 
 const openUpgradeModal = () => {
   openSubscriptionModal({
-    plan: isSelfHosted.value ? 'self_hosted' : 'enterprise',
+    plan: 'enterprise',
     modal_title: 'Upgrade to Enterprise to use OIDC SSO',
     modal_description: 'OIDC SSO is an Enterprise feature. Upgrade your plan to configure single sign-on for your workspace.'
   })
@@ -268,4 +260,3 @@ const cancelEdit = () => {
   showCreateModal.value = false
 }
 </script>
-

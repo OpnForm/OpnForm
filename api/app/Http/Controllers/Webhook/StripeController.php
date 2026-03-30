@@ -80,6 +80,8 @@ class StripeController extends WebhookController
         if ($user = $this->getUserByStripeId($payload['data']['object']['customer'])) {
             $data = $payload['data']['object'];
 
+            // We keep one local row per Stripe subscription id. If duplicates exist for the same
+            // logical plan, application checks always resolve entitlement from the newest active/trialing row.
             $subscription = $user->subscriptions()->firstOrNew(['stripe_id' => $data['id']]);
 
             if (
@@ -98,10 +100,10 @@ class StripeController extends WebhookController
             $isSinglePrice = count($data['items']['data']) === 1;
 
             // Price...
-            $subscription->stripe_price = $isSinglePrice ? $mainItem['price']['id'] : null;
+            $subscription->stripe_price = $mainItem['price']['id'] ?? ($isSinglePrice ? $data['items']['data'][0]['price']['id'] ?? null : null);
 
             // Type - previously (Name)
-            $subscription->type = $this->getSubscriptionName($mainItem['price']['product']);
+            $subscription->type = $this->getSubscriptionName($mainItem['price']['product'] ?? null) ?? $subscription->type ?? $this->newSubscriptionName($payload);
 
             // Quantity...
             $subscription->quantity = $isSinglePrice && isset($mainItem['quantity']) ? $mainItem['quantity'] : null;

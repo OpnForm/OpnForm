@@ -19,17 +19,27 @@
           The code will be injected in the <b>head</b> section of all forms in this workspace. Workspace code is applied first, then form-specific code (if any).
         </p>
       </div>
-      <UButton
-        label="Help"
-        icon="i-heroicons-question-mark-circle"
-        variant="outline"
-        color="neutral"
-        @click="crisp.openHelpdeskArticle('how-do-i-add-custom-code-to-my-form-1amadj3')"
-      />
+      <div class="flex gap-2">
+        <UButton
+          label="SDK Docs"
+          icon="i-heroicons-code-bracket"
+          variant="outline"
+          color="neutral"
+          to="https://docs.opnform.com/embedding/javascript-sdk#custom-code-integration"
+          target="_blank"
+        />
+        <UButton
+          label="Help"
+          icon="i-heroicons-question-mark-circle"
+          variant="outline"
+          color="neutral"
+          @click="crisp.openHelpdeskArticle('how-do-i-add-custom-code-to-my-form-1amadj3')"
+        />
+      </div>
     </div>
 
     <UAlert
-      v-if="!workspace.is_pro"
+      v-if="!canAccessAdvancedBranding"
       icon="i-heroicons-user-group-20-solid"
       class="mb-4"
       color="warning"
@@ -96,7 +106,7 @@
               name="custom_css"
               class="mt-4"
               :form="customCodeForm"
-              :disabled="!workspace.is_pro"
+              :disabled="!canAccessAdvancedBranding"
               help="CSS only. Example: body { background: #f8fafc }"
               label="Custom CSS"
               placeholder="body { background: #f8fafc }"
@@ -108,7 +118,7 @@
           <UButton
             type="submit"
             :loading="customCodeForm.busy"
-            :disabled="!workspace.is_pro"
+            :disabled="!canAccessAdvancedBranding"
             color="primary"
           >
             Save Changes
@@ -127,14 +137,11 @@ const crisp = useCrisp()
 const { current: workspace } = useCurrentWorkspace()
 const { openSubscriptionModal } = useAppModals()
 const { invalidateAll } = useWorkspaces()
+const { hasFeature } = usePlanFeatures()
+const canAccessAdvancedBranding = computed(() => hasFeature('branding.advanced'))
 
-const isSelfHosted = computed(() => useFeatureFlag('self_hosted'))
-
-const openUpgradeModal = () => {
-  openSubscriptionModal({
-    plan: isSelfHosted.value ? 'self_hosted' : 'pro',
-    modal_title: 'Upgrade to use workspace level custom code'
-  })
+const openSubscriptionModal = () => {
+  openModal({ modal_title: 'Upgrade to use workspace level custom code' })
 }
 
 const customCodeForm = useForm({
@@ -149,8 +156,8 @@ const hasCustomDomain = computed(() => {
 const allowSelfHosted = computed(() => !!useFeatureFlag('custom_code.enable_self_hosted', false))
 
 const canUseCustomCode = computed(() => {
-  if (!workspace.value?.is_pro) return false
-  return hasCustomDomain.value || (isSelfHosted.value && allowSelfHosted.value)
+  if (!canAccessAdvancedBranding.value) return false
+  return hasCustomDomain.value || (selfHosted.value && allowSelfHosted.value)
 })
 
 const customCodeHelp = computed(() => {
@@ -164,7 +171,7 @@ const customCodeHelp = computed(() => {
 })
 
 const saveChanges = () => {
-  if (!workspace.value?.is_pro) return
+  if (!canAccessAdvancedBranding.value) return
 
   customCodeForm
     .put(`/open/workspaces/${workspace.value.id}/custom-code-settings`, {

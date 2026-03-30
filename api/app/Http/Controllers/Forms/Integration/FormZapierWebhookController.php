@@ -32,7 +32,7 @@ class FormZapierWebhookController extends Controller
     public function delete($id)
     {
         $hook = FormZapierWebhook::findOrFail($id);
-        $this->authorize('store', $hook);
+        $this->authorize('delete', $hook);
 
         $hook->delete();
 

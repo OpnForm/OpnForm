@@ -1,6 +1,9 @@
 <template>
-  <div class="p-4 space-y-8">
-    <div class="w-full max-w-4xl mx-auto flex flex-col gap-4">
+  <PageContainer spacing="sm">
+    <PageSection
+      title="Share"
+      description="Share your form and embed it on your website."
+    >
       <!-- Status Warning Alert -->
       <UAlert
         v-if="form.visibility === 'draft'"
@@ -10,7 +13,7 @@
         title="Draft Form"
         description="Only you can visit the form link while logged in. Visitors won't be able to access this form."
       />
-      
+
       <UAlert
         v-else-if="form.visibility === 'closed'"
         icon="i-heroicons-lock-closed"
@@ -21,10 +24,12 @@
       />
 
       <!-- Primary Section: Share Link -->
-      <UCard class="shadow">
+      <DashboardPanel padding="sm">
         <div class="space-y-4">
           <div class="flex flex-wrap items-center gap-2">
-            <h2 class="text-xl grow font-semibold">Share Your Form</h2>
+            <h2 class="text-xl grow font-semibold">
+              Share Your Form
+            </h2>
             <div class="flex gap-2">
               <AdvancedFormUrlSettingsPopover
                 v-model="shareFormConfig"
@@ -36,14 +41,14 @@
             Share your form with anyone by copying this link. You can use it on social media,
             in messages, or send it via email to reach your audience.
           </p>
-          
+
           <CopyContent
             :content="share_url"
             :is-draft="form.visibility == 'draft'"
             class="w-full"
           />
-          
-          <div class="flex gap-2 pt-2"> 
+
+          <div class="flex gap-2 pt-2">
             <SocialShareButton
               :form="props.form"
               :share-url="share_url"
@@ -55,9 +60,9 @@
             />
           </div>
         </div>
-      </UCard>
+      </DashboardPanel>
 
-      <div class="flex gap-2"> 
+      <div class="py-4 flex gap-2">
         <UrlFormPrefill
           :form="props.form"
           :extra-query-param="shareUrlForQueryParams"
@@ -68,10 +73,12 @@
       </div>
 
       <!-- Secondary Section: Embed -->
-      <UCard class="shadow-sm">        
+      <DashboardPanel padding="sm">
         <div class="space-y-4">
           <div class="flex flex-wrap items-center gap-2">
-            <h2 class="text-xl grow font-semibold">Embed Form</h2>
+            <h2 class="text-xl grow font-semibold">
+              Embed Form
+            </h2>
             <div class="flex gap-2">
               <UButton
                 label="SDK Docs"
@@ -91,18 +98,21 @@
             :form="props.form"
             :extra-query-param="shareUrlForQueryParams"
           />
-          
+
           <EmbedFormAsPopupModal
             :form="props.form"
             class="max-w-fit"
           />
         </div>
-      </UCard>
-    </div>
-  </div>
+      </DashboardPanel>
+    </PageSection>
+  </PageContainer>
 </template>
 
 <script setup>
+import PageContainer from "~/components/dashboard/PageContainer.vue"
+import PageSection from "~/components/dashboard/PageSection.vue"
+import DashboardPanel from "~/components/dashboard/DashboardPanel.vue"
 import EmbedCode from "~/components/pages/forms/show/EmbedCode.vue"
 import FormQrCode from "~/components/pages/forms/show/FormQrCode.vue"
 import UrlFormPrefill from "~/components/pages/forms/show/UrlFormPrefill.vue"

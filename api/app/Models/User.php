@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Billing\Subscription;
 use App\Models\Forms\Form;
 use App\Models\Traits\CachableAttributes;
 use App\Models\Traits\CachesAttributes;
 use App\Notifications\ResetPassword;
 use App\Notifications\VerifyEmail;
+use App\Service\Billing\BillingStateResolver;
+use App\Service\Billing\PlanAccessService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -95,8 +98,6 @@ class User extends Authenticatable implements JWTSubject, CachableAttributes, Tw
     protected $cachableAttributes = [
         'has_forms',
         'is_subscribed',
-        'is_pro',
-        'is_business',
         'active_license',
         'plan_tier',
     ];
@@ -160,9 +161,7 @@ class User extends Authenticatable implements JWTSubject, CachableAttributes, Tw
         }
 
         return $this->remember('is_subscribed', 5 * 60, function (): bool {
-            $hasActiveSubscription = $this->subscriptions->contains(fn ($sub) => $sub->valid());
-
-            return $hasActiveSubscription
+            return app(BillingStateResolver::class)->hasActivePaidSubscription($this)
                 || in_array($this->email, config('opnform.extra_pro_users_emails'))
                 || !is_null($this->activeLicense());
         });
@@ -188,38 +187,6 @@ class User extends Authenticatable implements JWTSubject, CachableAttributes, Tw
         return $this->admin || in_array($this->email, config('opnform.template_editor_emails'));
     }
 
-    public function getIsProAttribute()
-    {
-        return $this->remember('is_pro', 5 * 60, function (): bool {
-            // Use loaded relationship if available to avoid queries
-            if ($this->relationLoaded('workspaces')) {
-                return $this->workspaces->some(function ($workspace) {
-                    return $workspace->is_pro;
-                });
-            }
-
-            return $this->workspaces()->get()->some(function ($workspace) {
-                return $workspace->is_pro;
-            });
-        });
-    }
-
-    public function getIsBusinessAttribute()
-    {
-        return $this->remember('is_business', 5 * 60, function (): bool {
-            // Use loaded relationship if available to avoid queries
-            if ($this->relationLoaded('workspaces')) {
-                return $this->workspaces->some(function ($workspace) {
-                    return $workspace->is_business;
-                });
-            }
-
-            return $this->workspaces()->get()->some(function ($workspace) {
-                return $workspace->is_business;
-            });
-        });
-    }
-
     /**
      * Get the user's current plan tier.
      * This is the SINGLE source of truth for plan status.
@@ -228,7 +195,7 @@ class User extends Authenticatable implements JWTSubject, CachableAttributes, Tw
      */
     public function getPlanTierAttribute(): string
     {
-        return app(\App\Service\Plan\PlanService::class)->getUserTier($this);
+        return app(PlanAccessService::class)->getUserTier($this);
     }
 
     public function getIsBlockedAttribute()
@@ -345,6 +312,19 @@ class User extends Authenticatable implements JWTSubject, CachableAttributes, Tw
     }
 
     /**
+     * Whether the user has any active paid subscription (default, pro, business, enterprise).
+     */
+    public function hasActivePaidSubscription(): bool
+    {
+        return app(BillingStateResolver::class)->hasActivePaidSubscription($this);
+    }
+
+    public function activePaidSubscription(): ?Subscription
+    {
+        return app(BillingStateResolver::class)->resolveActiveSubscription($this);
+    }
+
+    /**
      * =================================
      *  Oauth Related
      * =================================
@@ -384,7 +364,6 @@ class User extends Authenticatable implements JWTSubject, CachableAttributes, Tw
     public function getJWTCustomClaims()
     {
         return [
-            'ip' => Hash::make(request()->ip()),
             'ua' => Hash::make(request()->userAgent()),
         ];
     }

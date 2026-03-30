@@ -12,11 +12,10 @@ return [
      * Tier definitions and ordering
      */
     'tiers' => [
-        'free' => ['order' => 0, 'name' => 'Free', 'price_monthly' => 0, 'price_yearly' => 0],
-        'pro' => ['order' => 1, 'name' => 'Pro', 'price_monthly' => 29, 'price_yearly' => 290],
-        'business' => ['order' => 2, 'name' => 'Business', 'price_monthly' => 79, 'price_yearly' => 790],
-        'enterprise' => ['order' => 3, 'name' => 'Enterprise', 'price_monthly' => 250, 'price_yearly' => 3000],
-        'self_hosted' => ['order' => 4, 'name' => 'Self-hosted', 'price_monthly' => 199, 'price_yearly' => 1990],
+        'free' => ['order' => 0, 'name' => 'Free', 'price_monthly' => 0, 'price_yearly' => 0, 'price_yearly_per_month' => 0],
+        'pro' => ['order' => 1, 'name' => 'Pro', 'price_monthly' => 29, 'price_yearly' => 299, 'price_yearly_per_month' => 25],
+        'business' => ['order' => 2, 'name' => 'Business', 'price_monthly' => 79, 'price_yearly' => 799, 'price_yearly_per_month' => 67],
+        'enterprise' => ['order' => 3, 'name' => 'Enterprise', 'price_monthly' => 250, 'price_yearly' => 2640, 'price_yearly_per_month' => 220],
     ],
 
     /**
@@ -27,7 +26,6 @@ return [
         'pro' => 'pro',
         'business' => 'business',
         'enterprise' => 'enterprise',
-        'self_hosted' => 'self_hosted',
     ],
 
     /**
@@ -35,47 +33,41 @@ return [
      * If a feature is not listed, it's available to all tiers (free)
      */
     'features' => [
-        // Branding
+        // Pro
         'branding.removal' => 'pro',
-        'branding.advanced' => 'business',  // CSS, fonts, favicons
-
-        // Workspaces
         'workspaces.multiple' => 'pro',
-
-        // Multi-user
-        'multi_user.roles' => 'business',
-
-        // Domains
+        'invite_user' => 'pro',
         'custom_domain' => 'pro',
-        'custom_domain.wildcard' => 'business',
-
-        // Analytics & Summary
         'form_summary' => 'pro',
-
-        // Email/SMTP
+        'form_analytics' => 'pro',
+        'ai.form_generation' => 'pro',
         'custom_smtp' => 'pro',
-
-        // Security
         'security.password_protection' => 'pro',
         'security.form_expiration' => 'pro',
         'security.captcha' => 'pro',
-
-        // Integrations (basic ones like email, webhook, zapier, google_sheets are free)
         'integrations.slack' => 'pro',
         'integrations.discord' => 'pro',
         'integrations.telegram' => 'pro',
+        'integrations.email.advanced' => 'pro',
+        'file_upload.allowed_types' => 'pro',
+        'editable_submissions' => 'pro',
+        'id_generation' => 'pro',
+
+
+        // Business
+        'branding.advanced' => 'business',  // CSS, fonts, favicons
+        'custom_domain.wildcard' => 'business',
+        'multi_user.roles' => 'business',
         'integrations.hubspot' => 'business',
         'integrations.salesforce' => 'business',
         'integrations.airtable' => 'business',
-
-        // Form Features
         'partial_submissions' => 'business',
         'enable_partial_submissions' => 'business',
         'form_versioning' => 'business',
         'google_address_autocomplete' => 'business',
-        'editable_submissions' => 'business',
         'database_fields_update' => 'business',
         'enable_ip_tracking' => 'business',
+
 
         // Enterprise
         'sso.oidc' => 'enterprise',
@@ -129,24 +121,7 @@ return [
         'database_fields_update' => 'business',
         'enable_ip_tracking' => 'business',
 
-        // Business tier features
-
-    ],
-
-    /**
-     * Self-hosted license configuration.
-     * Maps License API feature keys to application feature keys from the 'features' section above.
-     */
-    'self_hosted' => [
-        'license_features_mapping' => [
-            'sso' => ['sso.oidc', 'sso.saml', 'sso.ldap'],
-            'multiOrg' => ['workspaces.multiple', 'multi_user.roles'],
-            'whitelabel' => ['branding.removal', 'branding.advanced', 'white_label'],
-            'custom_smtp' => ['custom_smtp'],
-            'audit_logs' => ['audit_logs', 'compliance_features'],
-            'external_storage' => ['external_storage'],
-            'custom_code' => ['custom_code', 'custom_css'],
-        ],
+        // Enterprise tier features
     ],
 
     /**

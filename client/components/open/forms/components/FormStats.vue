@@ -11,14 +11,14 @@
         class="flex-1 !mb-0"
         :date-range="true"
         :disable-future-dates="true"
-        :disabled="!form.is_pro"
+        :disabled="!canAccessAnalytics"
       />
       </VForm>
       <UButton 
         class="self-stretch mt-1"
         color="neutral"
         variant="outline"
-        :disabled="!form.is_pro"
+        :disabled="!canAccessAnalytics"
         @click.prevent="refresh" 
         icon="i-heroicons-arrow-path" 
         :loading="isLoading"
@@ -28,7 +28,7 @@
       class="border border-neutral-300 rounded-lg shadow-xs p-4 mb-5 w-full mx-auto mt-2 select-all"
     >
       <div
-        v-if="!form.is_pro"
+        v-if="!canAccessAnalytics"
         class="relative"
       >
         <div class="absolute inset-0 z-10">
@@ -105,6 +105,8 @@ const props = defineProps({
 })
 
 const { openSubscriptionModal } = useAppModals()
+const { hasFeature } = usePlanFeatures()
+const canAccessAnalytics = computed(() => hasFeature('form_analytics'))
 
 const toDate = new Date()
 const fromDate = new Date(toDate)
@@ -137,13 +139,13 @@ const { data: statsData, isFetching: isQueryLoading } = stats(
   props.form.id,
   fromDateComputed,
   toDateComputed,
-  {enabled: computed(() => import.meta.client && props.form && props.form.is_pro)}
+  {enabled: computed(() => import.meta.client && props.form && canAccessAnalytics.value)}
 )
 
 // Handle loading state for SSR - show skeleton during SSR if query would run on client
 const isLoading = computed(() => {
   if (import.meta.server) {
-    return !!props.form && props.form.is_pro
+    return !!props.form && canAccessAnalytics.value
   }
   return isQueryLoading.value
 })

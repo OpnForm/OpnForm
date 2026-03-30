@@ -33,14 +33,6 @@ return [
             ],
         ],
 
-        'self_hosted' => [
-            'product_id' => env('STRIPE_PROD_SELF_HOSTED_PRODUCT_ID'),
-            'pricing' => [
-                'monthly' => env('STRIPE_PROD_SELF_HOSTED_PRICING_MONTHLY'),
-                'yearly' => env('STRIPE_PROD_SELF_HOSTED_PRICING_YEARLY'),
-            ],
-        ],
-
         // Legacy "default" subscription - maps to Pro tier
         'default' => [
             'product_id' => env('STRIPE_PROD_DEFAULT_PRODUCT_ID'),
@@ -81,14 +73,6 @@ return [
             'pricing' => [
                 'monthly' => env('STRIPE_TEST_ENTERPRISE_PRICING_MONTHLY'),
                 'yearly' => env('STRIPE_TEST_ENTERPRISE_PRICING_YEARLY'),
-            ],
-        ],
-
-        'self_hosted' => [
-            'product_id' => env('STRIPE_TEST_SELF_HOSTED_PRODUCT_ID'),
-            'pricing' => [
-                'monthly' => env('STRIPE_TEST_SELF_HOSTED_PRICING_MONTHLY'),
-                'yearly' => env('STRIPE_TEST_SELF_HOSTED_PRICING_YEARLY'),
             ],
         ],
 

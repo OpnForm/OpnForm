@@ -12,7 +12,8 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Cashier\Cashier;
-use Laravel\Dusk\DuskServiceProvider;
+use RuntimeException;
+use Stripe\StripeClient;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -37,7 +38,8 @@ class AppServiceProvider extends ServiceProvider
         Cashier::calculateTaxes();
         Cashier::useSubscriptionModel(Subscription::class);
 
-        if ($this->app->runningUnitTests()) {
+        if ($this->app->environment('testing')) {
+            $this->ensureSafeTestingDatabase();
             Schema::defaultStringLength(191);
         }
 
@@ -80,9 +82,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        if ($this->app->environment('local', 'testing') && class_exists(DuskServiceProvider::class)) {
-            $this->app->register(DuskServiceProvider::class);
-        }
+        $this->app->singleton(StripeClient::class, function () {
+            return new StripeClient(config('cashier.secret'));
+        });
 
         // OAuth Services
         $this->app->singleton(\App\Service\OAuth\OAuthContextService::class);
@@ -92,5 +94,34 @@ class AppServiceProvider extends ServiceProvider
 
         // Plan Service (singleton for caching efficiency)
         $this->app->singleton(\App\Service\Plan\PlanService::class);
+    }
+
+    private function ensureSafeTestingDatabase(): void
+    {
+        $connectionName = config('database.default');
+        $connections = config('database.connections', []);
+        $connection = $connections[$connectionName] ?? null;
+
+        if (!is_array($connection)) {
+            throw new RuntimeException('Missing database configuration for the active test connection.');
+        }
+
+        $driver = strtolower((string) ($connection['driver'] ?? ''));
+        $url = strtolower((string) ($connection['url'] ?? ''));
+        $database = strtolower((string) ($connection['database'] ?? ''));
+
+        if ($driver !== 'sqlite') {
+            throw new RuntimeException('Only sqlite is allowed while testing.');
+        }
+
+        $isInMemoryDatabase = $database === ':memory:';
+        $isTestingDatabase = str_contains($database, 'test');
+        $isSafeUrl = $url === '';
+
+        if ($isSafeUrl && ($isInMemoryDatabase || $isTestingDatabase)) {
+            return;
+        }
+
+        throw new RuntimeException('Unsafe testing sqlite configuration detected.');
     }
 }

@@ -68,6 +68,10 @@ it('check formstat chart data', function () {
 
 
 it('checks form stats details', function () {
+    if (config('database.default') === 'sqlite') {
+        $this->markTestSkipped('Skipped on sqlite because the stats query uses PostgreSQL JSON casting syntax.');
+    }
+
     $user = $this->actingAsProUser();
     $workspace = $this->createUserWorkspace($user);
     $form = $this->createForm($user, $workspace, []);
@@ -133,4 +137,17 @@ it('checks form stats details', function () {
                 ->where('meta_stats.os.Unknown', 5)
                 ->etc();
         });
+});
+
+it('returns 404 when workspace and form do not match on stats endpoints', function () {
+    $user = $this->actingAsProUser();
+    $workspaceA = $this->createUserWorkspace($user);
+    $workspaceB = $this->createUserWorkspace($user);
+    $formInWorkspaceA = $this->createForm($user, $workspaceA);
+
+    $this->getJson(route('open.workspaces.form.stats', [$workspaceB, $formInWorkspaceA]) . '?date_from=' . now()->subDays(7)->format('Y-m-d') . '&date_to=' . now()->format('Y-m-d'))
+        ->assertStatus(404);
+
+    $this->getJson(route('open.workspaces.form.stats-details', [$workspaceB, $formInWorkspaceA]))
+        ->assertStatus(404);
 });

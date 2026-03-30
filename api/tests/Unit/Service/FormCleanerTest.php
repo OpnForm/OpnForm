@@ -51,7 +51,7 @@ describe('FormCleaner custom code policy', function () {
         expect($data['custom_css'])->toBe('body{color:red}');
 
         // nf-code removed entirely, nf-text sanitized, email remains
-        $types = array_map(fn ($p) => $p['type'], $data['properties']);
+        $types = array_map(fn($p) => $p['type'], $data['properties']);
         expect($types)->not->toContain('nf-code');
 
         $textBlock = collect($data['properties'])->firstWhere('id', 't1');
@@ -80,7 +80,7 @@ describe('FormCleaner custom code policy', function () {
         $data = $cleaner->getData();
 
         expect($data['custom_code'])->not->toBeNull();
-        $types = array_map(fn ($p) => $p['type'], $data['properties']);
+        $types = array_map(fn($p) => $p['type'], $data['properties']);
         expect($types)->toContain('nf-code');
     });
 
@@ -104,7 +104,7 @@ describe('FormCleaner custom code policy', function () {
         $data = $cleaner->getData();
 
         expect($data['custom_code'])->not->toBeNull();
-        $types = array_map(fn ($p) => $p['type'], $data['properties']);
+        $types = array_map(fn($p) => $p['type'], $data['properties']);
         expect($types)->toContain('nf-code');
     });
 });
@@ -336,5 +336,39 @@ describe('FormCleaner tier-based cleaning', function () {
 
         // But cleanings should be recorded
         expect($cleaner->hasCleaned())->toBeTrue();
+    });
+
+    it('keeps overridden form features even when tier would normally clean them', function () {
+        $user = $this->actingAsUser(); // Free tier
+        $workspace = $this->createUserWorkspace($user);
+        $workspace->update([
+            'plan_overrides' => [
+                'features' => ['redirect_url', 'secret_input'],
+            ],
+        ]);
+        $workspace->flush();
+
+        $form = $this->createForm($user, $workspace, [
+            'redirect_url' => 'https://example.com/thanks',
+            'properties' => [
+                [
+                    'id' => 'field1',
+                    'name' => 'Secret',
+                    'type' => 'text',
+                    'secret_input' => true,
+                ],
+            ],
+        ]);
+
+        $request = Request::create('/', 'GET');
+        $cleaner = (new FormCleaner())->processForm($request, $form);
+        $cleaner->performCleaning($workspace);
+        $data = $cleaner->getData();
+
+        $secretField = collect($data['properties'])->firstWhere('id', 'field1');
+
+        expect($data['redirect_url'])->toBe('https://example.com/thanks');
+        expect($secretField['secret_input'])->toBeTrue();
+        expect($cleaner->hasCleaned())->toBeFalse();
     });
 });

@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Forms\Integration;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\FormIntegrationsEventResource;
 use App\Models\Forms\Form;
-use App\Models\Integration\FormIntegrationsEvent;
 
 class FormIntegrationsEventController extends Controller
 {
@@ -17,9 +16,10 @@ class FormIntegrationsEventController extends Controller
     public function index(Form $form, string $integrationid)
     {
         $this->authorize('manageIntegrations', $form);
+        $formIntegration = $form->integrations()->findOrFail((int) $integrationid);
 
         return FormIntegrationsEventResource::collection(
-            FormIntegrationsEvent::where('integration_id', (int)$integrationid)->orderByDesc('created_at')->get()
+            $formIntegration->events()->orderByDesc('created_at')->get()
         );
     }
 }

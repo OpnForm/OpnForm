@@ -13,12 +13,15 @@ use App\Models\Forms\FormSubmission;
 use App\Models\Version;
 use App\Models\Workspace;
 use App\Notifications\Forms\MobileEditorEmail;
+use App\Service\Billing\Feature;
 use App\Service\Forms\FormCleaner;
-use App\Service\Storage\StorageFileNameParser;
 use App\Service\Storage\FileUploadPathService;
+use App\Service\Storage\StorageFileNameParser;
+use App\Service\Storage\UploadSecurityService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class FormController extends Controller
 {
@@ -53,7 +56,7 @@ class FormController extends Controller
                 'updated_at',
             ])
             ->with(['workspace'])
-            ->withCount(['submissions as submissions_count' => fn ($q) => $q->where('status', FormSubmission::STATUS_COMPLETED)])
+            ->withCount(['submissions as submissions_count' => fn($q) => $q->where('status', FormSubmission::STATUS_COMPLETED)])
             ->withTotalViews()
             ->orderByDesc('updated_at')
             ->paginate(10);
@@ -65,8 +68,7 @@ class FormController extends Controller
     {
         $this->authorize('view', $form);
 
-        // Use for restore form version
-        if (request()->has('version_id') && $form->is_business) {
+        if (request()->has('version_id') && $form->workspace->hasFeature('form_versioning')) {
             // Verify that the version belongs to this form to prevent unauthorized access
             $version = Version::where('versionable_id', $form->id)
                 ->where('versionable_type', Form::class)
@@ -104,12 +106,11 @@ class FormController extends Controller
             $this->authorize('ownsWorkspace', $workspace);
             $this->authorize('viewAny', Form::class);
 
-            $workspaceIsPro = $workspace->is_pro;
-            $newForms = $workspace->forms()->get()->map(function (Form $form) use ($workspace, $workspaceIsPro) {
-                // Add attributes for faster loading
+            $workspaceHasBrandingRemoval = $workspace->hasFeature(Feature::BRANDING_REMOVAL);
+            $newForms = $workspace->forms()->get()->map(function (Form $form) use ($workspace, $workspaceHasBrandingRemoval) {
                 $form->extra = (object) [
                     'loadedWorkspace' => $workspace,
-                    'workspaceIsPro' => $workspaceIsPro,
+                    'workspaceHasBrandingRemoval' => $workspaceHasBrandingRemoval,
                     'userIsOwner' => true,
                 ];
 
@@ -179,8 +180,15 @@ class FormController extends Controller
         $form->update($formData);
 
         if ($this->formCleaner->hasCleaned()) {
-            $formSubscription = $form->is_pro ? 'Enterprise' : 'Pro';
-            $formStatus = $form->workspace->is_trialing ? 'Non-trial' : $formSubscription;
+            $requiredUpgrade = collect($this->formCleaner->getCleaningKeys())
+                ->flatten()
+                ->map(fn(string $feature) => app(\App\Service\Billing\PlanAccessService::class)->getFormFeatureRequiredTier($feature))
+                ->filter()
+                ->sortBy(fn(string $tier) => \App\Service\Billing\PlanTier::ORDER[$tier] ?? 0)
+                ->last();
+
+            $requiredUpgrade ??= \App\Service\Billing\PlanTier::PRO;
+            $formStatus = $form->workspace->is_trialing ? 'Non-trial' : $requiredUpgrade;
             $message = 'Form successfully updated, but the ' . $formStatus . ' features you used will be disabled when sharing your form.';
         } else {
             $message = 'Form updated.';
@@ -246,18 +254,43 @@ class FormController extends Controller
     /**
      * Upload a form asset
      */
-    public function uploadAsset(UploadAssetRequest $request)
+    public function uploadAsset(UploadAssetRequest $request, UploadSecurityService $uploadSecurityService)
     {
         $fileNameParser = StorageFileNameParser::parse($request->url);
+        if (!$fileNameParser->uuid || !$fileNameParser->getMovedFileName()) {
+            throw ValidationException::withMessages([
+                'url' => ['Invalid file.'],
+            ]);
+        }
 
         // Make sure we retrieve the file in tmp storage, move it to persistent
         $fileName = FileUploadPathService::getTmpFileUploadPath($fileNameParser->uuid);
         if (!Storage::exists($fileName)) {
-            // File not found, we skip
-            return null;
+            throw ValidationException::withMessages([
+                'url' => ['File not found.'],
+            ]);
         }
+        if (Storage::size($fileName) > UploadAssetRequest::FORM_ASSET_MAX_SIZE) {
+            throw ValidationException::withMessages([
+                'url' => ['File is too large.'],
+            ]);
+        }
+
+        try {
+            $inspection = $uploadSecurityService->inspectStoredFile($fileName, $request->url);
+        } catch (\App\Exceptions\UploadSecurityException $exception) {
+            throw ValidationException::withMessages([
+                'url' => [$exception->getMessage()],
+            ]);
+        }
+
         $newPath = self::ASSETS_UPLOAD_PATH . '/' . $fileNameParser->getMovedFileName();
-        Storage::move($fileName, $newPath);
+        if ($inspection->isSvg) {
+            Storage::put($newPath, $inspection->sanitizedContents);
+            Storage::delete($fileName);
+        } else {
+            Storage::move($fileName, $newPath);
+        }
 
         return $this->success([
             'message' => 'File uploaded.',

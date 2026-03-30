@@ -1,12 +1,9 @@
 <template>
   <div
     v-if="template"
-    class="relative group"
+    class="relative group border border-gray-200 rounded-[24px] overflow-hidden"
   >
-    <div
-      v-if="template.is_new"
-      class="absolute top-0 right-0 p-3 z-10"
-    >
+    <div v-if="template.is_new" class="absolute top-0 right-0 p-3 z-10">
       <span
         class="inline-flex items-center gap-1 rounded-full bg-blue-500 px-2 py-1 text-xs font-medium text-white"
       >
@@ -27,47 +24,49 @@
       </span>
     </div>
 
-    <div class="aspect-[4/3] rounded-lg shadow-xs overflow-hidden bg-neutral-50">
-      <img
+    <div class="w-full min-h-[260px] shadow-xs overflow-hidden bg-gray-100">
+      <!-- <img
         v-if="template.image_url && !imageError"
         class="group-hover:scale-110 transition-all duration-200 h-full object-cover w-full"
         :src="template.image_url"
         alt=""
         width="450px"
         @error="handleImageError"
-      >
+      /> -->
       <!-- Fallback when no image or image error -->
-      <div
+      <!-- <div
         v-else
-        class="h-full w-full flex items-center justify-center bg-neutral-100"
+        class="h-full w-full flex items-center justify-center bg-gray-100"
       >
         <UIcon
           name="i-heroicons-document-duplicate"
-          class="h-16 w-16 text-neutral-400"
+          class="h-16 w-16 text-gray-400"
         />
-      </div>
+      </div> -->
     </div>
-    <p
-      class="text-lg font-semibold leading-tight tracking-tight text-neutral-900 mt-4 group-hover:text-blue-500 transition-all duration-150"
-    >
-      {{ template.name }}
-    </p>
-    <p class="line-clamp-2 mt-2 text-sm font-normal text-neutral-600">
-      {{ cleanQuotes(template.short_description) }}
-    </p>
-    <template-tags
+    <div class="p-8">
+      <p
+        class="text-xl font-medium leading-7 text-gray-950s group-hover:text-gray-600 transition-all duration-150"
+      >
+        {{ template.name }}
+      </p>
+      <p
+        class="line-clamp-2 mt-2 text-base leading-7 tracking-[-1.1%] font-medium text-gray-600"
+      >
+        {{ cleanQuotes(template.short_description) }}
+      </p>
+    </div>
+
+    <!-- <template-tags
       :template="template"
       class="flex mt-4 items-center flex-wrap gap-3"
     />
     <NuxtLink
-      :to="{ params: { slug: template.slug }, name: 'templates-slug' }"
-      title=""
+      v-if="template.slug"
+      :to="{ name: 'templates-slug', params: { slug: template.slug } }"
     >
-      <span
-        class="absolute inset-0"
-        aria-hidden="true"
-      />
-    </NuxtLink>
+      <span class="absolute inset-0" aria-hidden="true" />
+    </NuxtLink> -->
   </div>
 </template>
 

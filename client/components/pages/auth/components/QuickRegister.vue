@@ -69,6 +69,11 @@ import LoginForm from "./LoginForm.vue"
 import RegisterForm from "./RegisterForm.vue"
 import { WindowMessageTypes } from "~/composables/useWindowMessage"
 
+const AUTH_COOKIE_NAME = "opnform_token"
+const LEGACY_AUTH_COOKIE_NAME = "token"
+const ADMIN_AUTH_COOKIE_NAME = "opnform_admin_token"
+const LEGACY_ADMIN_AUTH_COOKIE_NAME = "admin_token"
+
 const appStore = useAppStore()
 
 // Define emits for component interactions
@@ -115,8 +120,8 @@ onUnmounted(() => {
 const handleSocialLogin = () => {
   // This function is only called for social logins, so we refresh tokens
   const authStore = useAuthStore()
-  const tokenValue = useCookie("token").value
-  const adminTokenValue = useCookie("admin_token").value
+  const tokenValue = useCookie(AUTH_COOKIE_NAME).value ?? useCookie(LEGACY_AUTH_COOKIE_NAME).value
+  const adminTokenValue = useCookie(ADMIN_AUTH_COOKIE_NAME).value ?? useCookie(LEGACY_ADMIN_AUTH_COOKIE_NAME).value
   
   // Re-initialize the store with the latest tokens from cookies
   authStore.initStore(tokenValue, adminTokenValue)

@@ -46,6 +46,70 @@ it('can CRUD form integration', function () {
         ]);
 });
 
+it('prevents updating another form integration via mismatched form and integration ids', function () {
+    $victim = $this->actingAsProUser();
+    $victimWorkspace = $this->createUserWorkspace($victim);
+    $victimForm = $this->createForm($victim, $victimWorkspace);
+
+    $victimCreateResponse = $this->postJson(route('open.forms.integrations.create', $victimForm), [
+        'status' => 'active',
+        'integration_id' => 'webhook',
+        'logic' => null,
+        'data' => [
+            'webhook_url' => 'https://victim.example/webhook'
+        ]
+    ])->assertSuccessful();
+
+    $victimIntegrationId = $victimCreateResponse->json('form_integration.id');
+
+    $attacker = $this->createProUser();
+    $this->actingAs($attacker, 'api');
+    $attackerWorkspace = $this->createUserWorkspace($attacker);
+    $attackerForm = $this->createForm($attacker, $attackerWorkspace);
+
+    $this->putJson(route('open.forms.integrations.update', [$attackerForm, $victimIntegrationId]), [
+        'status' => 'active',
+        'integration_id' => 'webhook',
+        'logic' => null,
+        'data' => [
+            'webhook_url' => 'https://attacker.example/steal'
+        ]
+    ])->assertStatus(404);
+
+    $victimIntegration = \App\Models\Integration\FormIntegration::findOrFail((int) $victimIntegrationId);
+    expect($victimIntegration->data->webhook_url)->toBe('https://victim.example/webhook');
+});
+
+it('prevents deleting another form integration via mismatched form and integration ids', function () {
+    $victim = $this->actingAsProUser();
+    $victimWorkspace = $this->createUserWorkspace($victim);
+    $victimForm = $this->createForm($victim, $victimWorkspace);
+
+    $victimCreateResponse = $this->postJson(route('open.forms.integrations.create', $victimForm), [
+        'status' => 'active',
+        'integration_id' => 'webhook',
+        'logic' => null,
+        'data' => [
+            'webhook_url' => 'https://victim.example/webhook'
+        ]
+    ])->assertSuccessful();
+
+    $victimIntegrationId = $victimCreateResponse->json('form_integration.id');
+
+    $attacker = $this->createProUser();
+    $this->actingAs($attacker, 'api');
+    $attackerWorkspace = $this->createUserWorkspace($attacker);
+    $attackerForm = $this->createForm($attacker, $attackerWorkspace);
+
+    $this->deleteJson(route('open.forms.integrations.destroy', [$attackerForm, $victimIntegrationId]))
+        ->assertStatus(404);
+
+    $this->assertDatabaseHas('form_integrations', [
+        'id' => $victimIntegrationId,
+        'form_id' => $victimForm->id
+    ]);
+});
+
 it('forbids non-admin users from viewing integrations and events', function () {
     $owner = $this->actingAsProUser();
     $workspace = $this->createUserWorkspace($owner);
@@ -497,5 +561,33 @@ describe('Webhook Integration', function () {
         $headers = $updateResponse->json('form_integration.data.webhook_headers');
         expect($headers['X-API-Key'])->toBe('new-key');
         expect($headers['X-Request-ID'])->toBe('req-123');
+    });
+
+    it('rejects oauth provider from outside form workspace', function () {
+        $attacker = $this->actingAsProUser();
+        $attackerWorkspace = $this->createUserWorkspace($attacker);
+        $attackerForm = $this->createForm($attacker, $attackerWorkspace);
+
+        $victim = $this->createProUser();
+        $victimProvider = \App\Models\OAuthProvider::factory()->create([
+            'user_id' => $victim->id,
+            'provider' => 'telegram'
+        ]);
+
+        $this->postJson(route('open.forms.integrations.create', $attackerForm), [
+            'status' => 'active',
+            'integration_id' => 'telegram',
+            'oauth_id' => $victimProvider->id,
+            'logic' => null,
+            'data' => [
+                'include_submission_data' => true,
+                'include_hidden_fields_submission_data' => false,
+                'link_open_form' => true,
+                'link_edit_form' => true,
+                'views_submissions_count' => true,
+                'link_edit_submission' => true
+            ]
+        ])->assertStatus(422)
+            ->assertJsonValidationErrors(['oauth_id']);
     });
 });

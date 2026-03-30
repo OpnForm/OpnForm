@@ -3,17 +3,27 @@
 namespace App\Notifications\Forms;
 
 use App\Events\Forms\FormSubmitted;
+use App\Models\Forms\FormSubmission;
+use App\Models\PdfTemplate;
 use App\Open\MentionParser;
+use App\Service\Billing\Feature;
 use App\Service\Forms\FormSubmissionFormatter;
 use App\Service\Forms\SubmissionUrlService;
 use App\Service\Formulas\ComputedVariableEvaluator;
+use App\Service\Pdf\PdfCacheService;
+use App\Service\Pdf\PdfGeneratorService;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Symfony\Component\Mime\Email;
 
 class FormEmailNotification extends Notification
 {
+    private const MAX_PDF_ATTACHMENTS = 3;
+    private const MAX_TOTAL_ATTACHMENT_BYTES = 15 * 1024 * 1024;
+
     public FormSubmitted $event;
     private ?array $computedValues = null;
 
@@ -48,7 +58,7 @@ class FormEmailNotification extends Notification
         $allowCustomSmtp = (config('app.self_hosted') && $workspace->hasFeature('custom_smtp')) || $workspace->is_pro;
 
         if (
-            $allowCustomSmtp
+            $workspace->hasFeature(Feature::CUSTOM_SMTP)
             && $emailSettings
             && !empty($emailSettings['host'])
             && !empty($emailSettings['port'])
@@ -62,6 +72,11 @@ class FormEmailNotification extends Notification
                 'mail.mailers.custom_smtp.username' => $emailSettings['username'],
                 'mail.mailers.custom_smtp.password' => $emailSettings['password']
             ]);
+
+            // Laravel caches mailer instances (and their transport) in long-lived processes
+            // like queue workers (Horizon). If workspace SMTP settings change, we must purge
+            // the cached mailer so the next send uses the updated config.
+            Mail::purge('custom_smtp');
             return 'custom_smtp';
         }
 
@@ -87,7 +102,7 @@ class FormEmailNotification extends Notification
      */
     public function toMail($notifiable)
     {
-        return (new MailMessage())
+        $mail = (new MailMessage())
             ->mailer($this->getMailer())
             ->replyTo($this->getReplyToEmail($this->event->form->creator->email))
             ->from($this->getFromEmail(), $this->getSenderName())
@@ -96,6 +111,67 @@ class FormEmailNotification extends Notification
                 $this->addCustomHeaders($message);
             })
             ->markdown('mail.form.email-notification', $this->getMailData());
+
+        $this->attachPdfTemplatesIfRequested($mail);
+
+        return $mail;
+    }
+
+    /**
+     * Attach PDFs for selected templates when integration has pdf_template_ids.
+     */
+    private function attachPdfTemplatesIfRequested(MailMessage $mail): void
+    {
+        $form = $this->event->form;
+
+        $templateIds = $this->integrationData->pdf_template_ids ?? [];
+        if (! is_array($templateIds) || count($templateIds) === 0) {
+            return;
+        }
+        $templateIds = array_values(array_unique(array_slice($templateIds, 0, self::MAX_PDF_ATTACHMENTS)));
+
+        $submissionId = $this->event->data['submission_id'] ?? null;
+        if (! $submissionId) {
+            return;
+        }
+
+        $submission = FormSubmission::where('form_id', $form->id)->where('id', $submissionId)->first();
+        if (! $submission) {
+            return;
+        }
+
+        $cacheService = app(PdfCacheService::class);
+        $generator = app(PdfGeneratorService::class);
+        $totalBytes = 0;
+
+        foreach ($templateIds as $templateId) {
+            $template = PdfTemplate::where('form_id', $form->id)->find($templateId);
+            if (! $template) {
+                continue;
+            }
+            try {
+                $pdfPath = $cacheService->getOrGenerateFromTemplate($form, $submission, $template, $generator);
+                $content = Storage::get($pdfPath);
+                if ($content !== false) {
+                    $nextSize = strlen($content);
+                    if (($totalBytes + $nextSize) > self::MAX_TOTAL_ATTACHMENT_BYTES) {
+                        logger()->warning('Skipping PDF email attachment: total size limit exceeded', [
+                            'form_id' => $form->id,
+                            'submission_id' => $submission->id,
+                            'template_id' => $template->id,
+                            'limit_bytes' => self::MAX_TOTAL_ATTACHMENT_BYTES,
+                        ]);
+                        continue;
+                    }
+
+                    $filename = $template->resolveFilename($form, $submission);
+                    $mail->attachData($content, $filename, ['mime' => 'application/pdf']);
+                    $totalBytes += $nextSize;
+                }
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
     }
 
     private function formatSubmissionData($createLinks = true): array
@@ -120,7 +196,7 @@ class FormEmailNotification extends Notification
         $emailSettings = $workspace->settings['email_settings'] ?? [];
 
         if (
-            $workspace->is_pro
+            $workspace->hasFeature(Feature::CUSTOM_SMTP)
             && $emailSettings
             && !empty($emailSettings['sender_address'])
         ) {
@@ -211,13 +287,25 @@ class FormEmailNotification extends Notification
 
     private function getMailData(): array
     {
+        $form = $this->event->form;
+        $hasAdvancedEmailCustomization = $form->workspace?->hasFeature(Feature::EMAIL_ADVANCED) ?? false;
+
+        $emailAppearance = $hasAdvancedEmailCustomization ? [
+            'logoUrl' => $this->integrationData->logo_url ?? null,
+            'fontFamily' => $this->integrationData->font_family ?? null,
+            'fontColor' => $this->integrationData->font_color ?? null,
+            'outerBackgroundColor' => $this->integrationData->outer_background_color ?? null,
+            'innerBackgroundColor' => $this->integrationData->inner_background_color ?? null,
+        ] : [];
+
         return [
             'emailContent' => $this->getEmailContent(),
             'fields' => $this->formatSubmissionData(),
-            'form' => $this->event->form,
+            'form' => $form,
             'integrationData' => $this->integrationData,
-            'noBranding' => $this->event->form->no_branding,
+            'noBranding' => $form->no_branding,
             'submission_id' => $this->getEncodedSubmissionId(),
+            'emailAppearance' => $emailAppearance,
         ];
     }
 
@@ -228,7 +316,53 @@ class FormEmailNotification extends Notification
             $this->formatSubmissionData(),
             $this->getComputedValues()
         );
-        return $parser->parse();
+        $html = $parser->parse();
+
+        return $this->convertResizeAlignmentToInlineStyles($html);
+    }
+
+    /**
+     * Convert quill-resize-module CSS classes to inline styles for email client compatibility.
+     * Email clients often strip class-based styles; inline styles are required.
+     */
+    private function convertResizeAlignmentToInlineStyles(string $html): string
+    {
+        $alignments = [
+            'ql-resize-style-left' => 'float:left; margin:0 1em 1em 0;',
+            'ql-resize-style-right' => 'float:right; margin:0 0 1em 1em;',
+            'ql-resize-style-center' => 'display:block; margin:auto; text-align:center;',
+            'ql-resize-style-full' => 'width:100% !important;',
+        ];
+
+        foreach ($alignments as $class => $inlineStyle) {
+            $html = preg_replace_callback(
+                '/<([a-z]+)([^>]*\bclass\s*=\s*["\']([^"\']*' . preg_quote($class, '/') . '[^"\']*)["\'])([^>]*)>/i',
+                function ($m) use ($class, $inlineStyle) {
+                    $tagName = $m[1];
+                    $beforeClass = $m[2];
+                    $classes = $m[3];
+                    $after = $m[4];
+
+                    $newClasses = preg_replace('/\s*' . preg_quote($class, '/') . '\s*/', ' ', $classes);
+                    $newClasses = trim(preg_replace('/\s+/', ' ', $newClasses));
+
+                    $style = $inlineStyle;
+                    if (preg_match('/style\s*=\s*["\']([^"\']*)["\']/', $beforeClass . $after, $sm)) {
+                        $style = $inlineStyle . $sm[1];
+                        $beforeClass = preg_replace('/\s*style\s*=\s*["\'][^"\']*["\']/', '', $beforeClass);
+                        $after = preg_replace('/\s*style\s*=\s*["\'][^"\']*["\']/', '', $after);
+                    }
+
+                    $beforeClass = preg_replace('/\s*class\s*=\s*["\'][^"\']*["\']/', '', $beforeClass);
+                    $classAttr = $newClasses !== '' ? ' class="' . $newClasses . '"' : '';
+
+                    return '<' . $tagName . $beforeClass . $classAttr . ' style="' . $style . '"' . $after . '>';
+                },
+                $html
+            );
+        }
+
+        return $html;
     }
 
     private function getEncodedSubmissionId(): ?string

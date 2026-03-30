@@ -3,15 +3,13 @@
 namespace App\Http\Middleware;
 
 use App\Models\Workspace;
-use App\Service\Plan\PlanService;
+use App\Service\Billing\PlanAccessService;
 use Closure;
 use Illuminate\Http\Request;
 
 class RequireFeature
 {
-    public function __construct(protected PlanService $planService)
-    {
-    }
+    public function __construct(protected PlanAccessService $planAccessService) {}
 
     /**
      * Handle an incoming request.
@@ -40,8 +38,8 @@ class RequireFeature
         if (!$workspace) {
             $user = $request->user();
             if ($user) {
-                $userTier = $this->planService->getUserTier($user);
-                if (!$this->planService->tierHasFeature($userTier, $feature)) {
+                $userTier = $this->planAccessService->getUserTier($user);
+                if (!$this->planAccessService->userHasFeature($user, $feature)) {
                     return $this->denyAccess($feature, $userTier);
                 }
             }
@@ -50,8 +48,8 @@ class RequireFeature
         }
 
         // Check workspace feature access
-        if (!$this->planService->workspaceHasFeature($workspace, $feature)) {
-            $workspaceTier = $this->planService->getWorkspaceTier($workspace);
+        if (!$this->planAccessService->hasFeature($workspace, $feature)) {
+            $workspaceTier = $this->planAccessService->getTier($workspace);
 
             return $this->denyAccess($feature, $workspaceTier);
         }
@@ -64,8 +62,8 @@ class RequireFeature
      */
     protected function denyAccess(string $feature, string $currentTier)
     {
-        $requiredTier = $this->planService->getRequiredTier($feature) ?? 'pro';
-        $tierDisplayName = $this->planService->getTierDisplayName($requiredTier);
+        $requiredTier = $this->planAccessService->getRequiredTier($feature) ?? 'pro';
+        $tierDisplayName = $this->planAccessService->getTierDisplayName($requiredTier);
 
         return response()->json([
             'message' => "A {$tierDisplayName} plan is required to use this feature.",

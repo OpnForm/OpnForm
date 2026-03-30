@@ -4,13 +4,17 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\Subscriptions\UpdateStripeDetailsRequest;
 use App\Models\Workspace;
+use App\Service\Billing\BillingStateResolver;
 use App\Service\BillingHelper;
 use App\Service\UserHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 
 class SubscriptionController extends Controller
 {
+    public function __construct(protected BillingStateResolver $billingStateResolver) {}
+
     public const SUBSCRIPTION_PLANS = ['monthly', 'yearly'];
 
     public const SUBSCRIPTION_NAMES = [
@@ -30,47 +34,67 @@ class SubscriptionController extends Controller
     {
         $this->middleware('not-subscribed');
 
-        // Check User does not have a pending subscription
         $user = Auth::user();
-        if ($user->subscriptions()->where('stripe_status', 'past_due')->first()) {
+        $lockKey = "subscription_checkout:{$user->id}:{$pricing}";
+        $checkoutLock = Cache::lock($lockKey, 15);
+
+        if (!$checkoutLock->get()) {
             return $this->error([
-                'message' => 'You already have a past due subscription. Please verify your details in the billing page,
-                and contact us if the issue persists.',
-            ]);
+                'message' => 'A checkout session is already being created. Please retry in a few seconds.',
+            ], 429);
         }
 
-        // Get the pricing for this plan
-        $pricingConfig = BillingHelper::getPricing($pricing);
-        if (!$pricingConfig || !isset($pricingConfig[$plan])) {
-            return $this->error([
-                'message' => 'Invalid pricing plan selected.',
+        try {
+            // Check User does not already have an active/trialing subscription
+            if ($this->billingStateResolver->hasActivePaidSubscription($user)) {
+                return $this->error([
+                    'message' => 'You already have an active subscription.',
+                ]);
+            }
+
+            // Check User does not have a pending subscription
+            if ($user->subscriptions()->where('stripe_status', 'past_due')->first()) {
+                return $this->error([
+                    'message' => 'You already have a past due subscription. Please verify your details in the billing page, '
+                        . 'and contact us if the issue persists.',
+                ]);
+            }
+
+            // Get the pricing for this plan
+            $pricingConfig = BillingHelper::getPricing($pricing);
+            if (!$pricingConfig || !isset($pricingConfig[$plan])) {
+                return $this->error([
+                    'message' => 'Invalid pricing plan selected.',
+                ]);
+            }
+
+            $checkoutBuilder = $user
+                ->newSubscription($pricing, $pricingConfig[$plan])
+                ->allowPromotionCodes();
+
+            // Disable trial for now
+            // if ($trial != null) {
+            //     $checkoutBuilder->trialUntil(now()->addDays(3)->addHour());
+            // }
+
+            $checkout = $checkoutBuilder
+                ->collectTaxIds()
+                ->checkout([
+                    'success_url' => front_url('/subscriptions/success'),
+                    'cancel_url' => front_url('/subscriptions/error'),
+                    'billing_address_collection' => 'required',
+                    'customer_update' => [
+                        'address' => 'auto',
+                        'name' => 'never',
+                    ],
+                ]);
+
+            return $this->success([
+                'checkout_url' => $checkout->url,
             ]);
+        } finally {
+            $checkoutLock->release();
         }
-
-        $checkoutBuilder = $user
-            ->newSubscription($pricing, $pricingConfig[$plan])
-            ->allowPromotionCodes();
-
-        // Disable trial for now
-        // if ($trial != null) {
-        //     $checkoutBuilder->trialUntil(now()->addDays(3)->addHour());
-        // }
-
-        $checkout = $checkoutBuilder
-            ->collectTaxIds()
-            ->checkout([
-                'success_url' => front_url('/subscriptions/success'),
-                'cancel_url' => front_url('/subscriptions/error'),
-                'billing_address_collection' => 'required',
-                'customer_update' => [
-                    'address' => 'auto',
-                    'name' => 'never',
-                ],
-            ]);
-
-        return $this->success([
-            'checkout_url' => $checkout->url,
-        ]);
     }
 
     public function getUsersCount()
@@ -150,17 +174,20 @@ class SubscriptionController extends Controller
 
         // Upgrade the subscription to yearly plan
         try {
-            $subscription = $user->subscription();
+            $subscription = $this->billingStateResolver->resolveActiveSubscription($user);
+            if (!$subscription) {
+                return $this->error([
+                    "message" => "No active subscription found for this user.",
+                ]);
+            }
 
-            // Get the yearly price for the current subscription type
             $subscriptionType = $subscription->type ?? 'default';
             $yearlyPriceId = BillingHelper::getPricing($subscriptionType)['yearly']
                 ?? BillingHelper::getPricing('default')['yearly'];
 
             $subscription->swap($yearlyPriceId);
 
-            // Invalidate cached is_yearly_plan attribute
-            $workspace->forgetCachedAttribute('is_yearly_plan');
+            $workspace->flushWithOwners();
         } catch (\Exception $e) {
             return $this->error([
                 "message" => $e?->getMessage() ?? "Failed to upgrade the subscription to yearly plan.",

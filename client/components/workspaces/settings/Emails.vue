@@ -21,7 +21,7 @@
     </div>
 
     <UAlert
-      v-if="!workspace.is_pro"
+      v-if="!canAccessSmtp"
       icon="i-heroicons-user-group-20-solid"
       class="mb-4"
       color="warning"
@@ -45,7 +45,7 @@
             :form="emailSettingsForm"
             name="host"
             :required="true"
-            :disabled="!workspace.is_pro"
+            :disabled="!canAccessSmtp"
             label="Host/Server"
             class="mt-2"
             placeholder="smtp.example.com"
@@ -54,14 +54,14 @@
             :form="emailSettingsForm"
             name="port"
             :required="true"
-            :disabled="!workspace.is_pro"
+            :disabled="!canAccessSmtp"
             label="Port"
             placeholder="587"
           />
           <OptionSelectorInput
             :form="emailSettingsForm"
             name="encryption"
-            :disabled="!workspace.is_pro"
+            :disabled="!canAccessSmtp"
             label="Encryption"
             :options="encryptionOptions"
             :columns="3"
@@ -71,7 +71,7 @@
             :form="emailSettingsForm"
             name="username"
             :required="true"
-            :disabled="!workspace.is_pro"
+            :disabled="!canAccessSmtp"
             label="Username"
             placeholder="Username"
           />
@@ -80,14 +80,14 @@
             name="password"
             native-type="password"
             :required="true"
-            :disabled="!workspace.is_pro"
+            :disabled="!canAccessSmtp"
             label="Password"
             placeholder="Password"
           />
           <TextInput
             :form="emailSettingsForm"
             name="sender_address"
-            :disabled="!workspace.is_pro"
+            :disabled="!canAccessSmtp"
             label="Sender address"
             placeholder="sender@example.com"
           />
@@ -97,7 +97,7 @@
           <UButton
             type="submit"
             :loading="emailSettingsForm.busy"
-            :disabled="!workspace.is_pro"
+            :disabled="!canAccessSmtp"
           >
             Save Domain(s)
           </UButton>
@@ -105,7 +105,7 @@
             color="neutral"
             variant="outline"
             :loading="emailSettingsForm.busy"
-            :disabled="!workspace.is_pro"
+            :disabled="!canAccessSmtp"
             @click="clearEmailSettings"
           >
             Clear settings
@@ -125,8 +125,8 @@ const { current: workspace } = useCurrentWorkspace()
 
 const { openSubscriptionModal } = useAppModals()
 const crisp = useCrisp()
-const isSelfHosted = computed(() => useFeatureFlag('self_hosted'))
-const { canAccessEnterprise, hasLicenseFeature } = useInstanceLicense()
+const { hasFeature } = usePlanFeatures()
+const canAccessSmtp = computed(() => hasFeature('custom_smtp'))
 
 const openUpgradeModal = () => {
   openSubscriptionModal({

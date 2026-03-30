@@ -21,6 +21,7 @@ class FormStatsController extends Controller
 
     public function getFormStats(FormStatsRequest $request, Workspace $workspace, Form $form)
     {
+        $this->ensureFormBelongsToWorkspace($form, $workspace);
         $this->authorize('view', $form);
 
         $formStats = $form->statistics()->whereBetween('date', [$request->date_from, $request->date_to])->get();
@@ -43,6 +44,7 @@ class FormStatsController extends Controller
 
     public function getFormStatsDetails(Request $request, Workspace $workspace, Form $form)
     {
+        $this->ensureFormBelongsToWorkspace($form, $workspace);
         $this->authorize('view', $form);
 
         $totalViews = $form->views_count;
@@ -141,5 +143,12 @@ class FormStatsController extends Controller
         }
 
         return implode(' ', $parts);
+    }
+
+    private function ensureFormBelongsToWorkspace(Form $form, Workspace $workspace): void
+    {
+        if ($form->workspace_id !== $workspace->id) {
+            abort(404);
+        }
     }
 }

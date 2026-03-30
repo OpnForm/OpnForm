@@ -8,13 +8,16 @@ use App\Notifications\Forms\FormEmailNotification;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use App\Open\MentionParser;
+use App\Service\Billing\Feature;
 use App\Service\Forms\FormSubmissionFormatter;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Auth;
 
 class EmailIntegration extends AbstractIntegrationHandler
 {
     public const RISKY_USERS_LIMIT = 120;
+    public const MAX_PDF_ATTACHMENTS = 3;
 
     public static function getValidationRules(?Form $form): array
     {
@@ -27,10 +30,17 @@ class EmailIntegration extends AbstractIntegrationHandler
             'include_submission_data' => 'boolean',
             'include_hidden_fields_submission_data' => ['nullable', 'boolean'],
             'reply_to' => 'nullable',
-            'link_edit_submission' => ['nullable', 'boolean']
+            'link_edit_submission' => ['nullable', 'boolean'],
+            'logo_url' => ['nullable', 'url', 'starts_with:https://'],
+            'font_family' => ['nullable', 'string', 'max:255'],
+            'font_color' => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'outer_background_color' => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'inner_background_color' => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'pdf_template_ids' => ['nullable', 'array', 'max:' . self::MAX_PDF_ATTACHMENTS],
+            'pdf_template_ids.*' => ['integer', Rule::exists('pdf_templates', 'id')->where('form_id', $form->id)],
         ];
 
-        if ($form->is_pro || config('app.self_hosted')) {
+        if ($form->workspace?->hasFeature(Feature::EMAIL_ADVANCED) || config('app.self_hosted')) {
             return $rules;
         }
 
@@ -106,7 +116,7 @@ class EmailIntegration extends AbstractIntegrationHandler
             return;
         }
 
-        if ($this->form->is_pro) {  // For Send to field Mentions are Pro feature
+        if ($this->form->workspace?->hasFeature(Feature::EMAIL_ADVANCED)) {
             $formatter = (new FormSubmissionFormatter($this->form, $this->submissionData))->outputStringsOnly()->showHiddenFields();
             $parser = new MentionParser(
                 $this->integrationData?->send_to,

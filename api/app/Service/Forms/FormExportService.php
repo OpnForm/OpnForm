@@ -18,9 +18,11 @@ class FormExportService
     /**
      * Determine if export should be processed synchronously or asynchronously
      */
-    public function shouldExportAsync(Form $form): bool
+    public function shouldExportAsync(Form $form, ?int $submissionCount = null): bool
     {
-        return $form->submissions()->count() > self::SYNC_EXPORT_THRESHOLD;
+        $count = $submissionCount ?? $form->submissions()->count();
+
+        return $count > self::SYNC_EXPORT_THRESHOLD;
     }
 
     /**

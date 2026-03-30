@@ -70,16 +70,7 @@ class AdminController extends Controller
             ->withCount('forms')
             ->get()
             ->map(function ($workspace) {
-                $plan = 'free';
-                if ($workspace->is_trialing) {
-                    $plan = 'trialing';
-                }
-                if ($workspace->is_pro) {
-                    $plan = 'pro';
-                }
-                if ($workspace->is_enterprise) {
-                    $plan = 'enterprise';
-                }
+                $plan = $workspace->is_trialing ? 'trialing' : $workspace->plan_tier;
                 return [
                     'id' => $workspace->id,
                     'name' => $workspace->name,
@@ -348,6 +339,24 @@ class AdminController extends Controller
         return $this->success([
             'message' => "Two-factor authentication has been disabled successfully.",
             'user' => $user->makeVisible('meta')
+        ]);
+    }
+
+    public function clearUserCache(Request $request)
+    {
+        $request->validate([
+            'user_id' => 'required|integer|exists:users,id'
+        ]);
+
+        $user = User::findOrFail($request->get('user_id'));
+        $user->flushCache();
+
+        self::log('Clear user cache', [
+            'user_id' => $user->id,
+        ]);
+
+        return $this->success([
+            'message' => 'User cache cleared.',
         ]);
     }
 

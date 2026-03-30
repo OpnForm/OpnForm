@@ -106,14 +106,6 @@ return [
             'prefix_indexes' => true,
         ],
 
-        'dusk' => [
-            'driver' => 'sqlite',
-            'url' => env('DATABASE_URL'),
-            'database' => database_path('dusk.sqlite'),
-            'prefix' => '',
-            'foreign_key_constraints' => env('DB_FOREIGN_KEYS', true),
-        ],
-
     ],
 
     /*

@@ -106,6 +106,7 @@
             class="px-8 md:px-4 py-2"
             :loading="updateFormLoading"
             :class="saveButtonClass"
+            data-testid="save-form-button"
             icon="i-ic-outline-save"
             @click="emit('save-form')"
             :label="form.visibility === 'public' ? 'Publish Form' : 'Save Changes'"
