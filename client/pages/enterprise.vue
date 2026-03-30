@@ -144,7 +144,7 @@
                 class="h-5.5 w-5.5 text-red-600"
               />
             </span>
-            <span>GDPR SOC2</span>
+            <span>GDPR</span>
           </div>
 
           <div

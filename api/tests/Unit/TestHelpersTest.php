@@ -35,27 +35,26 @@ it('pro user workspace has pro plan tier', function () {
     $user = $this->createProUser();
     $workspace = $this->createUserWorkspace($user);
     expect($workspace->plan_tier)->toBe('pro');
-    expect($workspace->is_pro)->toBeTrue();
+    expect($workspace->hasFeature('branding.removal'))->toBeTrue();
 });
 
 it('business user workspace has business plan tier', function () {
     $user = $this->createBusinessUser();
     $workspace = $this->createUserWorkspace($user);
     expect($workspace->plan_tier)->toBe('business');
-    expect($workspace->is_pro)->toBeTrue();
+    expect($workspace->hasFeature('branding.removal'))->toBeTrue();
 });
 
 it('enterprise user workspace has enterprise plan tier', function () {
     $user = $this->createEnterpriseUser();
     $workspace = $this->createUserWorkspace($user);
     expect($workspace->plan_tier)->toBe('enterprise');
-    expect($workspace->is_pro)->toBeTrue();
-    expect($workspace->is_enterprise)->toBeTrue();
+    expect($workspace->hasFeature('branding.removal'))->toBeTrue();
 });
 
 it('free user workspace has free plan tier', function () {
     $user = $this->createUser();
     $workspace = $this->createUserWorkspace($user);
     expect($workspace->plan_tier)->toBe('free');
-    expect($workspace->is_pro)->toBeFalse();
+    expect($workspace->hasFeature('branding.removal'))->toBeFalse();
 });

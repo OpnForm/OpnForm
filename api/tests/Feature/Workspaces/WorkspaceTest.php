@@ -229,6 +229,17 @@ it('includes users_count attribute', function () {
     expect($workspace->fresh()->users_count)->toBe(2);
 });
 
+it('uses appsumo license limits for workspace file size and custom domains', function () {
+    $user = $this->createAppSumoLicensedUser(3);
+    $workspace = $this->createUserWorkspace($user);
+    $workspace->load('users');
+    $workspace->flush();
+
+    expect($workspace->fresh()->plan_tier)->toBe('pro');
+    expect($workspace->fresh()->max_file_size)->toBe(75000000);
+    expect($workspace->fresh()->custom_domain_count_limit)->toBeNull();
+});
+
 describe('Custom Code Settings', function () {
     it('can save custom code settings for workspace', function () {
         $user = $this->actingAsBusinessUser();

@@ -2,12 +2,12 @@ import { useQueryClient, useQuery, useMutation } from '@tanstack/vue-query'
 import { formsApi } from '~/api/forms'
 import integrationsList from '~/data/forms/integrations.json'
 import { unref } from 'vue'
-import { usePlanFeatures } from '~/composables/usePlanFeatures.js'
 import { useFeatureFlag } from '~/composables/useFeatureFlag.js'
+import { useWorkspaceAbilities } from '~/composables/useWorkspaceAbilities.js'
 
 export function useFormIntegrations() {
   const queryClient = useQueryClient()
-  const { currentWorkspaceTier, tierMeetsRequirement } = usePlanFeatures()
+  const { currentWorkspaceTier, tierMeetsRequirement } = useWorkspaceAbilities()
 
   // Static integrations data
   const integrations = ref(new Map())

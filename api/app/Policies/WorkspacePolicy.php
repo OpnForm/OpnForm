@@ -5,6 +5,7 @@ namespace App\Policies;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\UserWorkspace;
+use App\Service\Billing\PlanAccessService;
 use App\Service\UserHelper;
 use Illuminate\Auth\Access\HandlesAuthorization;
 use Illuminate\Auth\Access\Response;
@@ -51,15 +52,13 @@ class WorkspacePolicy
      */
     public function create(User $user)
     {
-        // Use tier-based workspace limits
-        $userTier = $user->plan_tier;
+        $userTier = app(PlanAccessService::class)->getUserTier($user);
         $workspaceLimit = config("plans.limits.workspace_count.{$userTier}");
         $currentCount = $user->workspaces()->count();
 
         // null limit = unlimited
         if ($workspaceLimit !== null && $currentCount >= $workspaceLimit) {
-            $planService = app(\App\Service\Plan\PlanService::class);
-            $tierName = $planService->getTierDisplayName($userTier);
+            $tierName = app(PlanAccessService::class)->getTierDisplayName($userTier);
 
             return Response::deny("You have reached the workspace limit for {$tierName} plan. Upgrade to create additional workspaces.");
         }
@@ -138,13 +137,13 @@ class WorkspacePolicy
             return Response::allow();
         }
 
-        if (!$workspace->hasFeature('workspaces.multiple')) {
+        if (!$workspace->hasFeature('invite_user')) {
             return Response::deny('A Pro plan is required to invite users.');
         }
 
         // In case of special license, check license limit
         $billingOwner = $workspace->billingOwners()->first();
-        if ($license = $billingOwner->activeLicense()) {
+        if ($billingOwner && ($license = $billingOwner->activeLicense())) {
             $userActiveMembers = (new UserHelper($billingOwner))->getActiveMembersCount();
             if ($userActiveMembers >= $license->max_users_limit_count) {
                 return Response::deny('You have reached the maximum number of users allowed with your license.');

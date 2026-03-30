@@ -259,4 +259,3 @@ const cancelEdit = () => {
   showCreateModal.value = false
 }
 </script>
-

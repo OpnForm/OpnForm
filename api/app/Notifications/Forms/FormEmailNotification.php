@@ -6,6 +6,7 @@ use App\Events\Forms\FormSubmitted;
 use App\Models\Forms\FormSubmission;
 use App\Models\PdfTemplate;
 use App\Open\MentionParser;
+use App\Service\Billing\Feature;
 use App\Service\Forms\FormSubmissionFormatter;
 use App\Service\Forms\SubmissionUrlService;
 use App\Service\Formulas\ComputedVariableEvaluator;
@@ -57,7 +58,7 @@ class FormEmailNotification extends Notification
         $emailSettings = $workspace->settings['email_settings'] ?? [];
 
         if (
-            $workspace->meetsTierRequirement(PlanService::TIER_PRO)
+            $workspace->hasFeature(Feature::CUSTOM_SMTP)
             && $emailSettings
             && !empty($emailSettings['host'])
             && !empty($emailSettings['port'])
@@ -195,7 +196,7 @@ class FormEmailNotification extends Notification
         $emailSettings = $workspace->settings['email_settings'] ?? [];
 
         if (
-            $workspace->meetsTierRequirement(PlanService::TIER_PRO)
+            $workspace->hasFeature(Feature::CUSTOM_SMTP)
             && $emailSettings
             && !empty($emailSettings['sender_address'])
         ) {
@@ -287,9 +288,9 @@ class FormEmailNotification extends Notification
     private function getMailData(): array
     {
         $form = $this->event->form;
-        $isPro = $form->is_pro ?? false;
+        $hasAdvancedEmailCustomization = $form->workspace?->hasFeature(Feature::EMAIL_ADVANCED) ?? false;
 
-        $emailAppearance = $isPro ? [
+        $emailAppearance = $hasAdvancedEmailCustomization ? [
             'logoUrl' => $this->integrationData->logo_url ?? null,
             'fontFamily' => $this->integrationData->font_family ?? null,
             'fontColor' => $this->integrationData->font_color ?? null,

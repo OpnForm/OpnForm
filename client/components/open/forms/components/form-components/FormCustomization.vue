@@ -182,7 +182,7 @@
         />
         <PlanTag
           upgrade-modal-title="Upgrade today to remove OpnForm branding"
-          class="-mt-1"
+          class="-mt-1 ml-2"
         />
       </template>
     </toggle-switch-input>

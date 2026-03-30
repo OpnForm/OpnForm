@@ -2,13 +2,16 @@
 import runtimeConfig from "./runtimeConfig"
 import sitemap from "./sitemap"
 
+const isUnitTestMode = !!process.env.VITEST
+const isE2EMode = process.env.E2E === '1'
+
 export default defineNuxtConfig({
   loglevel: process.env.NUXT_LOG_LEVEL || 'info',
   devtools: {enabled: true},
   css: ['~/css/app.css'],
 
   // Disable certain plugins during testing
-  modules: process.env.VITEST ? [] : [
+  modules: isUnitTestMode ? [] : [
       '@pinia/nuxt', 
       '@vueuse/nuxt', 
       '@vueuse/motion/nuxt', 
@@ -17,12 +20,12 @@ export default defineNuxtConfig({
       'nuxt-utm', 
       '@nuxtjs/i18n',
       '@nuxt/icon', 
-      '@sentry/nuxt/module',
+      ...(isE2EMode ? [] : ['@sentry/nuxt/module']),
       '@zadigetvoltaire/nuxt-gtm',
   ],
 
   // Skip plugin initialization during tests
-  plugins: process.env.VITEST ? [
+  plugins: isUnitTestMode ? [
       // Only include plugins safe for testing
   ] : [
       // Full plugin list for production/dev

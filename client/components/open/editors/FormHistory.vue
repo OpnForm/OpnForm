@@ -1,6 +1,6 @@
 <template>
   <UTooltip 
-    text="Form History" 
+    :text="tooltipText"
     :content="{ side: 'bottom' }" 
     arrow
   >
@@ -114,6 +114,12 @@ const { content: form } = storeToRefs(workingFormStore)
 const isHistoryModalOpen = ref(false)
 const versions = ref([])
 const isLoading = ref(false)
+
+const tooltipText = computed(() => {
+  if (isLoading.value) return 'Form History'
+  if (!versions.value.length) return 'No versions available'
+  return 'Form History'
+})
 
 onMounted(() => {
   if (form.value && form.value?.id) {

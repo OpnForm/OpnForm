@@ -44,9 +44,7 @@ class WorkspaceController extends Controller
     public function saveCustomDomain(CustomDomainRequest $request)
     {
         $this->authorize('adminAction', $request->workspace);
-        if (!$request->workspace->hasFeature('custom_domain')) {
-            return $this->featureDenied($request->workspace, 'custom_domain');
-        }
+        $request->workspace->requireFeature('custom_domain');
 
         $request->workspace->custom_domains = $request->customDomains;
         $request->workspace->save();
@@ -57,9 +55,7 @@ class WorkspaceController extends Controller
     public function saveEmailSettings(EmailSettingsRequest $request)
     {
         $this->authorize('adminAction', $request->workspace);
-        if (!$request->workspace->hasFeature('custom_smtp')) {
-            return $this->featureDenied($request->workspace, 'custom_smtp');
-        }
+        $request->workspace->requireFeature('custom_smtp');
 
         $request->workspace->update(['settings' => array_merge($request->workspace->settings, ['email_settings' => $request->validated()])]);
 
@@ -69,9 +65,7 @@ class WorkspaceController extends Controller
     public function saveCustomCodeSettings(CustomCodeSettingsRequest $request)
     {
         $this->authorize('adminAction', $request->workspace);
-        if (!$request->workspace->hasFeature('branding.advanced')) {
-            return $this->featureDenied($request->workspace, 'branding.advanced');
-        }
+        $request->workspace->requireFeature('branding.advanced');
 
         $validated = $request->validated();
         $request->workspace->update([

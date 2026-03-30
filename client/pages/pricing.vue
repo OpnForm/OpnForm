@@ -15,28 +15,10 @@
         <div class="w-full h-full bg-linear-to-b from-white from-20% via-blue-50 via-50% to-white to-80% absolute inset-0"></div>
       </div>
       <div class="px-8 lg:px-12">
-        <div class="flex items-center justify-center gap-3">
-          <!-- <span class="text-sm leading-5 tracking-[-0.6%] font-medium text-gray-700">
-            Monthly
-          </span> -->
-          <button
-            type="button"
-            class="relative inline-flex h-4 w-7 items-center rounded-full transition-colors"
-            :class="pricingIsYearly ? 'bg-blue-600' : 'bg-gray-200'"
-            @click="pricingIsYearly = !pricingIsYearly"
-            aria-label="Toggle yearly billing"
-          >
-            <span
-              class="inline-block h-3 w-3 transform rounded-full bg-white shadow transition-transform"
-              :class="pricingIsYearly ? 'translate-x-3' : 'translate-x-1'"
-            ></span>
-          </button>
-          <span class="text-sm leading-5 tracking-[-0.6%] font-medium text-gray-700">
-            Annually
-          </span>
-          <span class="hidden sm:inline-flex items-center ml-1 pl-2 py-1 pr-2.5 text-xs font-medium text-purple-600 bg-purple-50 rounded-[7px]">
-            Save 15% with yearly billing
-          </span>
+        <div class="flex justify-center">
+          <div class="w-full max-w-[240px]">
+            <MonthlyYearlySelector v-model="pricingIsYearly" />
+          </div>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6 max-w-266 mx-auto">
@@ -134,7 +116,8 @@
             <div class="mt-6 flex justify-center sm:block sm:justify-normal">
               <UButton
                 class="w-fit sm:w-full justify-center px-4 py-2.5 rounded-[12px] text-base leading-7 tracking-[-1.1%] font-medium"
-                label="Get started free"
+                :label="getPaidPlanCtaLabel()"
+                :loading="isPlanLoading('pro')"
                 @click.prevent="handleProCta"
               />
             </div>
@@ -192,8 +175,9 @@
               <UButton
                 class="w-fit sm:w-full justify-center px-4 py-2.5 rounded-[12px] text-base leading-7 tracking-[-1.1%] font-medium"
                 variant="outline"
-                label="Get started free"
+                :label="getPaidPlanCtaLabel()"
                 color="neutral"
+                :loading="isPlanLoading('business')"
                 @click.prevent="handleBusinessCta"
               />
             </div>
@@ -249,7 +233,7 @@
               <UButton
                 class="w-fit sm:w-full justify-center px-4 py-2.5 rounded-[12px] text-base leading-7 tracking-[-1.1%] font-medium"
                 variant="outline"
-                label="Request a quote"
+                label="Upgrade now"
                 color="neutral"
                 @click.prevent="contactUs"
               />
@@ -327,16 +311,6 @@
                   </p>
                 </div>
 
-                <div class="mt-6">
-                  <UButton
-                    size="lg"
-                    variant="outline"
-                    color="neutral"
-                    label="Request a quote"
-                    @click.prevent="contactUs"
-                    class="px-4 py-2.5 rounded-[12px] text-base leading-7 tracking-[-1.1%] font-medium"
-                  />
-                </div>
               </div>
 
               <div>
@@ -387,16 +361,6 @@
                   </p>
                 </div>
 
-                <div class="mt-6">
-                  <UButton
-                    size="lg"
-                    variant="outline"
-                    color="neutral"
-                    label="Request a quote"
-                    @click.prevent="contactUs"
-                    class="px-4 py-2.5 rounded-[12px] text-base leading-7 tracking-[-1.1%] font-medium"
-                  />
-                </div>
               </div>
 
               <div>
@@ -437,11 +401,11 @@
         </div>
 
         <div class="mt-12 sm:mt-16">
-          <div class="space-y-8">
+          <div class="space-y-4 sm:space-y-5">
             <div
               v-for="(q, i) in faqs"
               :key="q.question"
-              class="bg-gray-50 rounded-3xl"
+              class="bg-gray-50 rounded-3xl transition-colors duration-200"
             >
               <button
                 type="button"
@@ -449,14 +413,23 @@
                 @click="toggleFaq(i)"
               >
                 <div class="flex items-center gap-4 sm:gap-16">
-                  <span class="w-6 text-lg leading-8 tracking-[-1.5%] font-medium text-gray-400">
+                  <span
+                    class="w-6 text-lg leading-8 tracking-[-1.5%] font-medium transition-colors duration-200"
+                    :class="openFaqIndex === i ? 'text-gray-700' : 'text-gray-400'"
+                  >
                     {{ String(i + 1).padStart(2, "0") }}
                   </span>
                   <div class="flex items-center justify-between flex-1 gap-8 sm:gap-16">
-                    <p class="text-lg leading-8 tracking-[-1.5%] font-medium text-gray-600">
+                    <p
+                      class="text-lg leading-8 tracking-[-1.5%] font-medium transition-colors duration-200"
+                      :class="openFaqIndex === i ? 'text-gray-900' : 'text-gray-600'"
+                    >
                       {{ q.question }}
                     </p>
-                    <span class="inline-flex items-center justify-center w-6 h-6 rounded-full text-gray-400">
+                    <span
+                      class="inline-flex items-center justify-center w-6 h-6 rounded-full transition-colors duration-200"
+                      :class="openFaqIndex === i ? 'text-gray-700' : 'text-gray-400'"
+                    >
                       <Icon
                         v-if="openFaqIndex !== i"
                         class="w-6 h-6"
@@ -472,9 +445,13 @@
                 </div>
               </button>
 
-              <div v-if="openFaqIndex === i" class="px-6 pb-6">
-                <div class="pl-10 sm:pl-21">
-                  <p class="text-sm font-medium leading-6 text-gray-600">
+              <div
+                v-show="openFaqIndex === i"
+                class="faq-answer px-6"
+                :class="openFaqIndex === i ? 'faq-answer-open pb-6' : 'faq-answer-closed pb-0'"
+              >
+                <div class="pl-10 sm:pl-21 overflow-hidden">
+                  <p class="text-sm font-medium leading-6 text-gray-600 pt-0.5">
                     {{ q.answer }}
                   </p>
                 </div>
@@ -516,17 +493,16 @@ useOpnSeoMeta({
     "All of our core features are free, and there is no quantity limit. You can also created more advanced and customized forms with OpnForms Pro.",
 })
 
-const { openSubscriptionModal } = useAppModals()
 const { isAuthenticated: authenticated } = useIsAuthenticated()
-const { getPlanPrice } = usePlanFeatures()
+const { getPlanPrice } = useBillingUpsell()
+const { startCheckout, isPlanLoading } = useStripeCheckout()
 
 const pricingIsYearly = ref(true)
 
 const formatPlanPrice = (plan) => {
   const price = getPlanPrice(plan, pricingIsYearly.value)
   if (price == null) return null
-  const suffix = plan === 'enterprise' ? '+' : ''
-  return `$${price}${suffix}`
+  return `$${price}`
 }
 
 const planPriceDisplay = computed(() => ({
@@ -679,7 +655,11 @@ const handlePlanCta = (plan) => {
   if (!authenticated.value) {
     return navigateTo({ name: "register" })
   }
-  openSubscriptionModal({ plan, yearly: pricingIsYearly.value })
+  return startCheckout(plan, { yearly: pricingIsYearly.value })
+}
+
+function getPaidPlanCtaLabel() {
+  return authenticated.value ? "Upgrade now" : "Get started free"
 }
 
 const handleProCta = () => handlePlanCta("pro")
@@ -693,3 +673,20 @@ const toggleFaq = (index) => {
   openFaqIndex.value = openFaqIndex.value === index ? null : index
 }
 </script>
+
+<style scoped>
+.faq-answer {
+  display: grid;
+  transition: grid-template-rows 180ms ease, opacity 180ms ease, padding-bottom 180ms ease;
+}
+
+.faq-answer-open {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+.faq-answer-closed {
+  grid-template-rows: 0fr;
+  opacity: 0;
+}
+</style>
