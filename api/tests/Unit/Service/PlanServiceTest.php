@@ -439,7 +439,7 @@ describe('Cache Invalidation', function () {
 
         // Warm the cache
         $this->planService->getWorkspaceTier($workspace);
-        expect($workspace->is_pro)->toBeTrue();
+        expect($workspace->plan_tier)->toBe('pro');
 
         // Flush
         $workspace->flushWithOwners();
