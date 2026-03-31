@@ -25,16 +25,27 @@ class PlanAccessService
 
     /**
      * Check if a feature is available on self-hosted instances.
+     * License-gated features require the license; everything else is free.
      */
     public function selfHostedHasFeature(string $feature): bool
     {
-        $mapping = config('plans.self_hosted_features', []);
-
-        if (!$this->isKnownFeature($feature, $mapping)) {
-            return false;
+        if ($this->isLicenseGatedFeature($feature)) {
+            return app(LicenseService::class)->hasAppFeature($feature);
         }
 
-        return app(LicenseService::class)->hasAppFeature($feature);
+        return true;
+    }
+
+    private function isLicenseGatedFeature(string $feature): bool
+    {
+        $mapping = config('plans.self_hosted_features', []);
+        foreach ($mapping as $appFeatures) {
+            if (in_array($feature, (array) $appFeatures, true)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public function hasFeature(Workspace $workspace, string $feature): bool
@@ -68,8 +79,12 @@ class PlanAccessService
 
     public function requireFeature(?Workspace $workspace, string $feature): void
     {
-        if (config('app.self_hosted') && $this->selfHostedHasFeature($feature)) {
-            abort(403, 'A self-hosted license is required to use this feature.');
+        if (config('app.self_hosted')) {
+            if (!$this->selfHostedHasFeature($feature)) {
+                abort(403, 'A self-hosted license is required to use this feature.');
+            }
+
+            return;
         }
 
         $currentTier = $workspace ? $this->getTier($workspace) : PlanTier::FREE;

@@ -114,8 +114,15 @@ class LicenseService
         }
 
         $mapping = config('plans.self_hosted_features', []);
-        return in_array($appFeature, $mapping, true)
-            && !empty($result->features[$appFeature]);
+        foreach ($mapping as $licenseFeature => $appFeatures) {
+            if (in_array($appFeature, (array) $appFeatures, true)) {
+                if (!empty($result->features[$licenseFeature])) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     /**
