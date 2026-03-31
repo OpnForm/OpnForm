@@ -352,6 +352,7 @@ const isOpen = computed({
 })
 
 const normalizedPlan = computed(() => {
+  if (isSelfHosted.value) return 'self_hosted'
   if (!props.plan || props.plan === 'default') return 'pro'
   return props.plan
 })

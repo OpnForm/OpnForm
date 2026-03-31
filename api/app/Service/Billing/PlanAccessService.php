@@ -5,6 +5,7 @@ namespace App\Service\Billing;
 use App\Exceptions\FeatureAccessDeniedException;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Service\License\LicenseService;
 
 class PlanAccessService
 {
@@ -20,6 +21,20 @@ class PlanAccessService
     public function getUserTier(User $user): string
     {
         return $this->billingStateResolver->resolveUser($user)->tier;
+    }
+
+    /**
+     * Check if a feature is available on self-hosted instances.
+     */
+    public function selfHostedHasFeature(string $feature): bool
+    {
+        $mapping = config('plans.self_hosted_features', []);
+
+        if (!$this->isKnownFeature($feature, $mapping)) {
+            return false;
+        }
+
+        return app(LicenseService::class)->hasAppFeature($feature);
     }
 
     public function hasFeature(Workspace $workspace, string $feature): bool
@@ -53,6 +68,10 @@ class PlanAccessService
 
     public function requireFeature(?Workspace $workspace, string $feature): void
     {
+        if (config('app.self_hosted') && $this->selfHostedHasFeature($feature)) {
+            abort(403, 'A self-hosted license is required to use this feature.');
+        }
+
         $currentTier = $workspace ? $this->getTier($workspace) : PlanTier::FREE;
         if ($workspace && $this->hasFeature($workspace, $feature)) {
             return;
@@ -145,6 +164,9 @@ class PlanAccessService
     private function hasMappedFeature(Workspace $workspace, string $feature, array $featureMap): bool
     {
         if (!pricing_enabled()) {
+            if (config('app.self_hosted')) {
+                return $this->selfHostedHasFeature($feature);
+            }
             return true;
         }
 

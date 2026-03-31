@@ -225,7 +225,8 @@ class PlanService
 
     /**
      * Determine tier for self-hosted instances based on license status.
-     * Returns enterprise if license is active/grace, free if expired/invalid.
+     * With active license → Self-hosted (full features).
+     * Without license → Pro (basic self-hosted features).
      */
     private function getSelfHostedTier(): string
     {
@@ -233,10 +234,9 @@ class PlanService
             return self::TIER_ENTERPRISE;
         }
 
-        $licenseService = app(LicenseService::class);
-        $result = $licenseService->checkLicense();
+        $result = app(LicenseService::class)->checkLicense();
 
-        return $result->isActive() ? self::TIER_SELF_HOSTED : self::TIER_ENTERPRISE;
+        return $result->isActive() ? self::TIER_SELF_HOSTED : self::TIER_PRO;
     }
 
     /**

@@ -21,7 +21,7 @@
     </div>
 
     <UAlert
-      v-if="!canAccessSmtp"
+      v-if="!isSelfHosted && !canAccessSmtp"
       icon="i-heroicons-user-group-20-solid"
       class="mb-4"
       color="warning"

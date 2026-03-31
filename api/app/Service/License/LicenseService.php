@@ -104,7 +104,7 @@ class LicenseService
 
     /**
      * Check if the active license grants a specific application feature
-     * using the license_features_mapping config (e.g. 'sso.oidc', 'custom_smtp').
+     * using the self_hosted_features config (e.g. 'sso.oidc', 'custom_smtp').
      */
     public function hasAppFeature(string $appFeature): bool
     {
@@ -113,14 +113,9 @@ class LicenseService
             return false;
         }
 
-        $mapping = config('plans.self_hosted.license_features_mapping', []);
-        foreach ($mapping as $licenseKey => $appFeatures) {
-            if (in_array($appFeature, $appFeatures) && !empty($result->features[$licenseKey])) {
-                return true;
-            }
-        }
-
-        return false;
+        $mapping = config('plans.self_hosted_features', []);
+        return in_array($appFeature, $mapping, true)
+            && !empty($result->features[$appFeature]);
     }
 
     /**

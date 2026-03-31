@@ -39,7 +39,7 @@
     </div>
 
     <UAlert
-      v-if="!canAccessAdvancedBranding"
+      v-if="!isSelfHosted && !canAccessAdvancedBranding"
       icon="i-heroicons-user-group-20-solid"
       class="mb-4"
       color="warning"
