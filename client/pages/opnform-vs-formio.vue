@@ -11,7 +11,7 @@
     <template #hero-subtitle>
       Create beautiful, logic‑driven forms with <b>unlimited responses, full control, and zero limits</b> — all for free.
       <br/><br/>
-      Collect data the way you want. Whether you’re a big or small team, a startup, or a builder, OpnForm delivers everything Form.io does — without paywalls, usage caps, or per‑month submission limits.
+      While Form.io is a developer‑centric form + API platform requiring backend setup and engineering effort, OpnForm delivers both <b>a user‑friendly form builder and developer workflows</b> out of the box. You get all the power of modern forms without needing custom backend infrastructure.
     </template>
   </ComparisonPage>
 </template>
@@ -31,127 +31,108 @@ useOpnSeoMeta({
 
 const freePlanComparison = [
   {
-    label: "Monthly Responses",
-    cells: ["Unlimited submissions per month", "1,000 / month"],
+    label: "Unlimited submissions",
+    cells: ["Unlimited", "Yes (requires self-host deployment)"],
   },
   {
-    label: "Forms Allowed",
-    cells: ["Unlimited forms", "Unlimited forms"],
+    label: "Unlimited forms",
+    cells: ["Unlimited", "Yes (self-host)"],
   },
   {
-    label: "Branding Removal",
-    cells: ["Not available on free", "Not available"],
+    label: "Unlimited users / seats",
+    cells: ["Unlimited", "Depends on deployment"],
   },
   {
-    label: "Conditional Logic",
-    cells: ["Conditional logic included", "Basic conditional logic available"],
+    label: "Conditional logic",
+    cells: ["Included", "Requires custom logic"],
   },
   {
-    label: "File Uploads",
-    cells: ["File uploads available", "Not Included"],
+    label: "Multi-page forms",
+    cells: ["Included", "Requires custom setup"],
   },
   {
-    label: "Custom CSS",
-    cells: ["No direct custom CSS", "No custom CSS"],
+    label: "File uploads",
+    cells: ["Included", "Requires custom setup"],
   },
   {
-    label: "Integrations",
-    cells: [
-      "Webhooks and API access available",
-      "Only limited native integrations",
-    ],
+    label: "Drag-and-drop builder",
+    cells: ["Included", "Developer-oriented"],
   },
   {
-    label: "Self-hosting Option",
-    cells: ["Available", "No self-hosting"],
+    label: "No code required",
+    cells: ["Yes", "Developer required"],
   },
   {
-    label: "Price for 1,000 Responses",
-    cells: ["Free", "$10/month"],
+    label: "Hosted experience without infra",
+    cells: ["Yes", "Must self-host"],
   },
 ]
 
 const switchReasons = [
   {
+    icon: "i-heroicons-cloud-arrow-up",
+    title: "Hosted forms with no backend required",
+    description: "Start collecting data instantly.",
+  },
+  {
     icon: "i-ph-infinity-bold",
-    title: "No limits, no hidden costs",
-    description: "Unlimited forms and responses on every plan.",
+    title: "Unlimited responses and forms out of the box",
+    description: "No usage caps on submissions or forms.",
   },
   {
-    icon: "i-heroicons-paint-brush",
-    title: "Fully branded forms",
-    description: "Add your logo, colors, and even custom CSS.",
-  },
-  {
-    icon: "i-heroicons-command-line",
-    title: "Advanced logic & calculations",
-    description: "Create dynamic, intelligent forms easily.",
-  },
-  {
-    icon: "i-heroicons-circle-stack",
-    title: "Open source",
-    description: "Own your data, host it yourself, or use our managed version.",
+    icon: "i-heroicons-computer-desktop",
+    title: "Non-technical UI",
+    description: "Easy for marketers, creators, and teams.",
   },
   {
     icon: "i-heroicons-code-bracket-square",
-    title: "Developer-friendly",
-    description: "REST API, webhooks, and automation-ready.",
+    title: "Developer-friendly when needed",
+    description: "API and automation support.",
   },
   {
-    icon: "i-heroicons-user-group",
-    title: "Some title goes here...",
-    description: "Some text goes here...",
+    icon: "i-heroicons-puzzle-piece",
+    title: "Rich integrations without custom code",
+    description: "Zapier, Make, Sheets, Slack, and more.",
+  },
+  {
+    icon: "i-heroicons-globe-alt",
+    title: "Custom domains & branding",
+    description: "Manage form identity easily.",
   },
 ]
 
 const featureComparison = [
   {
-    label: "Unlimited responses",
+    label: "True unlimited responses (no ceilings)",
+    cells: ["Y", "Only via custom deployment"],
+  },
+  {
+    label: "Turnkey hosted form builder",
     cells: ["Y", "N"],
   },
   {
-    label: "Logic jumps & branching",
+    label: "Easy setup for non-devs",
+    cells: ["Y", "N"],
+  },
+  {
+    label: "Developer workflows (API + webhooks)",
     cells: ["Y", "Y"],
   },
   {
-    label: "File uploads",
-    cells: ["Y", "Y"],
+    label: "Native integrations ecosystem",
+    cells: ["Y", "Must build integrations"],
   },
   {
-    label: "Calculations",
-    cells: ["Y", "Paid"],
+    label: "Full control of styling without code",
+    cells: ["Yes", "Developer required"],
   },
   {
-    label: "Custom branding",
-    cells: ["Y", "N"],
+    label: "Custom domains out of the box",
+    cells: ["Y", "Custom deployment only"],
   },
   {
-    label: "Custom CSS",
-    cells: ["Y", "N"],
-  },
-  {
-    label: "Integrations",
-    cells: ["100+", "Limited"],
-  },
-  {
-    label: "Analytics dashboard",
-    cells: ["Y", "Paid"],
-  },
-  {
-    label: "Open source",
-    cells: ["Y", "N"],
-  },
-  {
-    label: "Self-hosting",
-    cells: ["Y", "N"],
-  },
-  {
-    label: "API access",
-    cells: ["Y", "Paid"],
-  },
-  {
-    label: "GDPR compliance",
-    cells: ["Y", "Y"],
+    label: "Intuitive UI for builders",
+    cells: ["Y", "Not provided natively"],
   },
 ]
 

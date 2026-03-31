@@ -31,66 +31,63 @@ useOpnSeoMeta({
 
 const freePlanComparison = [
   {
-    label: "Monthly Responses",
-    cells: ["Unlimited submissions per month", "1,000 / month"],
+    label: "Monthly submissions",
+    cells: ["Unlimited submissions", "Limited (100/month)"],
   },
   {
-    label: "Forms Allowed",
-    cells: ["Unlimited forms", "Unlimited forms"],
+    label: "Active forms",
+    cells: ["Unlimited forms", "Limited (5 forms)"],
   },
   {
-    label: "Branding Removal",
-    cells: ["Not available on free", "Not available"],
+    label: "Form views",
+    cells: ["Unlimited", "Limited (1000/month)"],
+  },
+  {
+    label: "File uploads",
+    cells: ["Included", "Included"],
   },
   {
     label: "Conditional Logic",
-    cells: ["Conditional logic included", "Basic conditional logic available"],
-  },
-  {
-    label: "File Uploads",
-    cells: ["File uploads available", "Not Included"],
+    cells: ["Included", "Included"],
   },
   {
     label: "Custom CSS",
-    cells: ["No direct custom CSS", "No custom CSS"],
+    cells: ["Included", "Not available"],
   },
   {
-    label: "Integrations",
-    cells: [
-      "Webhooks and API access available",
-      "Only limited native integrations",
-    ],
+    label: "API access",
+    cells: ["Included", "Basic"],
   },
   {
-    label: "Self-hosting Option",
-    cells: ["Available", "No self-hosting"],
+    label: "Webhooks",
+    cells: ["Not available", "Not available"],
   },
   {
-    label: "Price for 1,000 Responses",
-    cells: ["Free", "$10/month"],
-  },
+    label: "Storage space",
+    cells: ["Depends on plan", "Limited"],
+  }
 ]
 
 const switchReasons = [
   {
     icon: "i-ph-infinity-bold",
-    title: "No limits, no hidden costs",
-    description: "Unlimited forms and responses on every plan.",
+    title: "Unlimited responses & forms",
+    description: "No per‑month caps like Jotform’s free limits.",
   },
   {
     icon: "i-heroicons-paint-brush",
-    title: "Fully branded forms",
-    description: "Add your logo, colors, and even custom CSS.",
+    title: "Self‑hosting & open source",
+    description: "Full control of your deployment and data.",
   },
   {
     icon: "i-heroicons-command-line",
-    title: "Advanced logic & calculations",
-    description: "Create dynamic, intelligent forms easily.",
+    title: "No branding paywalls",
+    description: "Free plan without limits on usage.",
   },
   {
     icon: "i-heroicons-circle-stack",
-    title: "Open source",
-    description: "Own your data, host it yourself, or use our managed version.",
+    title: "Developer workflows",
+    description: "Full API + webhook support for automation.",
   },
   {
     icon: "i-heroicons-code-bracket-square",
@@ -99,55 +96,35 @@ const switchReasons = [
   },
   {
     icon: "i-heroicons-user-group",
-    title: "Some title goes here...",
-    description: "Some text goes here...",
+    title: "Scales with you",
+    description: "Build forms, workflows, and apps on one platform.",
   },
 ]
 
 const featureComparison = [
   {
-    label: "Unlimited responses",
-    cells: ["Y", "N"],
-  },
-  {
-    label: "Logic jumps & branching",
-    cells: ["Y", "Y"],
-  },
-  {
-    label: "File uploads",
-    cells: ["Y", "Y"],
-  },
-  {
-    label: "Calculations",
-    cells: ["Y", "Paid"],
-  },
-  {
-    label: "Custom branding",
-    cells: ["Y", "N"],
-  },
-  {
-    label: "Custom CSS",
-    cells: ["Y", "N"],
-  },
-  {
-    label: "Integrations",
-    cells: ["100+", "Limited"],
-  },
-  {
-    label: "Analytics dashboard",
-    cells: ["Y", "Paid"],
-  },
-  {
     label: "Open source",
     cells: ["Y", "N"],
   },
   {
-    label: "Self-hosting",
+    label: "Self‑hosting option",
     cells: ["Y", "N"],
   },
   {
-    label: "API access",
-    cells: ["Y", "Paid"],
+    label: "Unlimited responses",
+    cells: ["Y", "Only with paid plan"],
+  },
+  {
+    label: "Advanced workflow use cases",
+    cells: ["Lead forms, apps, workflows", "Form‑centric"],
+  },
+  {
+    label: "Developer extensibility",
+    cells: ["High", "Moderate"],
+  },
+  {
+    label: "Custom domains for forms",
+    cells: ["Y", "Only Enterprise"],
   },
   {
     label: "GDPR compliance",

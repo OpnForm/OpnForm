@@ -272,7 +272,7 @@
                       <Icon
                         :name="competitorIcon"
                         :class="competitorIconClass"
-                        class="h-8 w-8 text-black"
+                        class="h-8 w-8"
                       />
                       <span class="text-lg font-semibold text-gray-950">{{
                         competitorName

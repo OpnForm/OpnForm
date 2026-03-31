@@ -11,7 +11,7 @@
     <template #hero-subtitle>
       Create beautiful, logic‑driven forms with <b>unlimited responses, full control, and zero limits</b> — all for free.
       <br/><br/>
-      Collect data the way you want. Whether you’re a big or small team, a startup, or a builder, OpnForm delivers everything 123FormBuilder does — without paywalls, usage caps, or per‑month submission limits.
+      123FormBuilder is a well‑known form builder with paid plans behind many advanced features. Its free plan comes with meaningful limitations on submissions, forms, and fields. OpnForm removes those constraints and adds open‑source flexibility, self‑hosting options, and extensibility — making it ideal for builders, teams, and developers.
     </template>
   </ComparisonPage>
 </template>
@@ -31,90 +31,91 @@ useOpnSeoMeta({
 
 const freePlanComparison = [
   {
-    label: "Monthly Responses",
-    cells: ["Unlimited submissions per month", "1,000 / month"],
+    label: "Monthly submissions",
+    cells: ["Unlimited submissions", "Limited (100/month)"],
   },
   {
     label: "Forms Allowed",
-    cells: ["Unlimited forms", "Unlimited forms"],
+    cells: ["Unlimited forms", "Limited (5 forms)"],
   },
   {
-    label: "Branding Removal",
-    cells: ["Not available on free", "Not available"],
+    label: "Fields per form",
+    cells: ["Unlimited", "Limited (10 fields)"],
   },
   {
-    label: "Conditional Logic",
-    cells: ["Conditional logic included", "Basic conditional logic available"],
+    label: "Multi‑page forms",
+    cells: ["Included", "Included"],
+  },
+  {
+    label: "Conditional logic",
+    cells: ["Included", "Included"],
   },
   {
     label: "File Uploads",
-    cells: ["File uploads available", "Not Included"],
+    cells: ["Included", "Not Included"],
   },
   {
     label: "Custom CSS",
     cells: ["No direct custom CSS", "No custom CSS"],
   },
   {
-    label: "Integrations",
-    cells: [
-      "Webhooks and API access available",
-      "Only limited native integrations",
-    ],
-  },
-  {
-    label: "Self-hosting Option",
-    cells: ["Available", "No self-hosting"],
-  },
-  {
-    label: "Price for 1,000 Responses",
-    cells: ["Free", "$10/month"],
-  },
+    label: "API access",
+    cells: ["Included", "Not available"],
+  }
 ]
 
 const switchReasons = [
   {
     icon: "i-ph-infinity-bold",
-    title: "No limits, no hidden costs",
-    description: "Unlimited forms and responses on every plan.",
+    title: "Unlimited responses & forms",
+    description: "No submission or form count caps",
   },
   {
     icon: "i-heroicons-paint-brush",
-    title: "Fully branded forms",
-    description: "Add your logo, colors, and even custom CSS.",
+    title: "Self‑hosting & open source",
+    description: "Full control of deployment and data",
   },
   {
     icon: "i-heroicons-command-line",
-    title: "Advanced logic & calculations",
-    description: "Create dynamic, intelligent forms easily.",
+    title: "Developer‑friendly workflows",
+    description: "Full API, webhook, and automation support",
   },
   {
     icon: "i-heroicons-circle-stack",
-    title: "Open source",
-    description: "Own your data, host it yourself, or use our managed version.",
+    title: "Custom domains & white‑label",
+    description: "Brand your forms everywhere",
   },
   {
     icon: "i-heroicons-code-bracket-square",
-    title: "Developer-friendly",
-    description: "REST API, webhooks, and automation-ready.",
+    title: "Rich integrations",
+    description: "Hundreds of integrations for modern workflows",
   },
   {
     icon: "i-heroicons-user-group",
-    title: "Some title goes here...",
-    description: "Some text goes here...",
+    title: "Extensibility",
+    description: "Build complex experiences and embed anywhere",
   },
 ]
 
 const featureComparison = [
   {
+    label: "Open source",
+    cells: ["Y", "N"],
+  },
+  {
+    label: "Self‑hosting option",
+    cells: ["Y", "N"],
+  },
+  {
     label: "Unlimited responses",
     cells: ["Y", "N"],
   },
   {
-    label: "Logic jumps & branching",
-    cells: ["Y", "Y"],
+    label: "Custom domains for forms",
+    cells: ["Y", "Paid only"],
   },
   {
-    label: "File uploads",
+    label: "Advanced logic & branching",
     cells: ["Y", "Y"],
   },
   {
@@ -136,19 +137,7 @@ const featureComparison = [
   {
     label: "Analytics dashboard",
     cells: ["Y", "Paid"],
-  },
-  {
-    label: "Open source",
-    cells: ["Y", "N"],
-  },
-  {
-    label: "Self-hosting",
-    cells: ["Y", "N"],
-  },
-  {
-    label: "API access",
-    cells: ["Y", "Paid"],
-  },
+  },    
   {
     label: "GDPR compliance",
     cells: ["Y", "Y"],

@@ -44,7 +44,11 @@ const freePlanComparison = [
   },
   {
     label: "Conditional Logic",
-    cells: ["Conditional logic included", "Basic conditional logic available"],
+    cells: ["Included", "Included"],
+  },
+  {
+    label: "Multi‑page forms",
+    cells: ["Included", "Included"],
   },
   {
     label: "File Uploads",
@@ -55,52 +59,45 @@ const freePlanComparison = [
     cells: ["No direct custom CSS", "No custom CSS"],
   },
   {
-    label: "Integrations",
-    cells: [
-      "Webhooks and API access available",
-      "Only limited native integrations",
-    ],
-  },
-  {
     label: "Self-hosting Option",
     cells: ["Available", "No self-hosting"],
   },
   {
-    label: "Price for 1,000 Responses",
-    cells: ["Free", "$10/month"],
+    label: "API access",
+    cells: ["Included", "Included"],
   },
 ]
 
 const switchReasons = [
   {
     icon: "i-ph-infinity-bold",
-    title: "No limits, no hidden costs",
-    description: "Unlimited forms and responses on every plan.",
+    title: "No monthly submission caps",
+    description: "Freedom to scale without paywalls",
   },
   {
     icon: "i-heroicons-paint-brush",
-    title: "Fully branded forms",
-    description: "Add your logo, colors, and even custom CSS.",
+    title: "Flexible form types ",
+    description: "Lead capture, registrations, applications, workflows, surveys",
   },
   {
     icon: "i-heroicons-command-line",
-    title: "Advanced logic & calculations",
-    description: "Create dynamic, intelligent forms easily.",
+    title: "Advanced logic & branching",
+    description: "Create dynamic, intelligent forms",
   },
   {
     icon: "i-heroicons-circle-stack",
-    title: "Open source",
-    description: "Own your data, host it yourself, or use our managed version.",
+    title: "Open source & self-hosting",
+    description: "Full control over deployment and data",
   },
   {
     icon: "i-heroicons-code-bracket-square",
-    title: "Developer-friendly",
-    description: "REST API, webhooks, and automation-ready.",
+    title: "Developer-first workflows",
+    description: "API, webhooks, and automation-ready",
   },
   {
     icon: "i-heroicons-user-group",
-    title: "Some title goes here...",
-    description: "Some text goes here...",
+    title: "Full branding and styling control",
+    description: "White-label and custom CSS",
   },
 ]
 

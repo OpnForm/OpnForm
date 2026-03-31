@@ -11,7 +11,7 @@
     <template #hero-subtitle>
       Create beautiful, logic‑driven forms with <b>unlimited responses, full control, and zero limits</b> — all for free.
       <br/><br/>
-      Collect data the way you want. Whether you’re a big or small team, a startup, or a builder, OpnForm delivers everything HeyForm does — without paywalls, usage caps, or per‑month submission limits.
+      HeyForm is a popular form builder that lets users create conversational forms with logic and integrations. Its free plan, however, limits submissions and doesn’t focus on advanced customization. OpnForm delivers a <b>full form-building experience</b> with unlimited submissions, rich developer support, and self-hosting options.
     </template>
   </ComparisonPage>
 </template>
@@ -31,126 +31,103 @@ useOpnSeoMeta({
 
 const freePlanComparison = [
   {
-    label: "Monthly Responses",
-    cells: ["Unlimited submissions per month", "1,000 / month"],
+    label: "Unlimited submissions",
+    cells: ["Unlimited", "Limited to 250/month"],
   },
   {
-    label: "Forms Allowed",
-    cells: ["Unlimited forms", "Unlimited forms"],
+    label: "Unlimited forms",
+    cells: ["Unlimited", "Unlimited"],
   },
   {
-    label: "Branding Removal",
-    cells: ["Not available on free", "Not available"],
+    label: "Unlimited fields & questions",
+    cells: ["Unlimited", "Unlimited"],
   },
   {
-    label: "Conditional Logic",
-    cells: ["Conditional logic included", "Basic conditional logic available"],
+    label: "Conditional logic",
+    cells: ["Yes", "Yes"],
   },
   {
-    label: "File Uploads",
-    cells: ["File uploads available", "Not Included"],
+    label: "File uploads",
+    cells: ["Yes", "Yes"],
   },
   {
-    label: "Custom CSS",
-    cells: ["No direct custom CSS", "No custom CSS"],
+    label: "Multi-page / conversational forms",
+    cells: ["Yes", "Yes"],
   },
   {
-    label: "Integrations",
-    cells: [
-      "Webhooks and API access available",
-      "Only limited native integrations",
-    ],
+    label: "Drag-and-drop builder",
+    cells: ["Yes", "Yes"],
   },
   {
-    label: "Self-hosting Option",
-    cells: ["Available", "No self-hosting"],
+    label: "Embedded forms",
+    cells: ["Yes", "Yes"],
   },
   {
-    label: "Price for 1,000 Responses",
-    cells: ["Free", "$10/month"],
+    label: "No code required",
+    cells: ["Yes", "Yes"],
   },
 ]
 
 const switchReasons = [
   {
     icon: "i-ph-infinity-bold",
-    title: "No limits, no hidden costs",
-    description: "Unlimited forms and responses on every plan.",
+    title: "Unlimited submissions",
+    description: "No monthly caps.",
   },
   {
-    icon: "i-heroicons-paint-brush",
-    title: "Fully branded forms",
-    description: "Add your logo, colors, and even custom CSS.",
+    icon: "i-heroicons-sparkles",
+    title: "AI-powered form creation",
+    description: "Build complex forms instantly.",
   },
   {
-    icon: "i-heroicons-command-line",
-    title: "Advanced logic & calculations",
-    description: "Create dynamic, intelligent forms easily.",
-  },
-  {
-    icon: "i-heroicons-circle-stack",
-    title: "Open source",
-    description: "Own your data, host it yourself, or use our managed version.",
+    icon: "i-heroicons-adjustments-horizontal",
+    title: "Advanced customization & controls",
+    description: "Deep control over logic and exports.",
   },
   {
     icon: "i-heroicons-code-bracket-square",
-    title: "Developer-friendly",
-    description: "REST API, webhooks, and automation-ready.",
+    title: "Developer-friendly integrations",
+    description: "API, webhooks, automation ready.",
   },
   {
-    icon: "i-heroicons-user-group",
-    title: "Some title goes here...",
-    description: "Some text goes here...",
+    icon: "i-heroicons-server-stack",
+    title: "Flexible hosting options",
+    description: "Self-host or cloud, full data ownership.",
+  },
+  {
+    icon: "i-heroicons-globe-alt",
+    title: "Custom domains & branding",
+    description: "Manage form identity easily.",
   },
 ]
 
 const featureComparison = [
   {
-    label: "Unlimited responses",
+    label: "True unlimited responses",
     cells: ["Y", "N"],
-  },
-  {
-    label: "Logic jumps & branching",
-    cells: ["Y", "Y"],
-  },
-  {
-    label: "File uploads",
-    cells: ["Y", "Y"],
-  },
-  {
-    label: "Calculations",
-    cells: ["Y", "Paid"],
-  },
-  {
-    label: "Custom branding",
-    cells: ["Y", "N"],
-  },
-  {
-    label: "Custom CSS",
-    cells: ["Y", "N"],
-  },
-  {
-    label: "Integrations",
-    cells: ["100+", "Limited"],
-  },
-  {
-    label: "Analytics dashboard",
-    cells: ["Y", "Paid"],
   },
   {
     label: "Open source",
+    cells: ["Y", "Y"],
+  },
+  {
+    label: "Self-hosting available",
+    cells: ["Y", "Yes (complex)"],
+  },
+  {
+    label: "Developer workflows (API + webhooks)",
+    cells: ["Y", "Y"],
+  },
+  {
+    label: "AI-powered form generation",
     cells: ["Y", "N"],
   },
   {
-    label: "Self-hosting",
+    label: "Unique submission identifiers",
     cells: ["Y", "N"],
   },
   {
-    label: "API access",
-    cells: ["Y", "Paid"],
-  },
-  {
-    label: "GDPR compliance",
+    label: "Hidden fields & advanced logic",
     cells: ["Y", "Y"],
   },
 ]

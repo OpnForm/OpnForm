@@ -12,7 +12,9 @@
     <template #hero-subtitle>
       Create beautiful, logic‑driven forms with <b>unlimited responses, full control, and zero limits</b> — all for free.
       <br/><br/>
-      Collect data the way you want. Whether you’re a big or small team, a startup, or a builder, OpnForm delivers everything Formbricks does — without paywalls, usage caps, or per‑month submission limits.
+      While Formbricks focuses primarily on <b>surveys and in‑app feedback, OpnForm is built as a general‑purpose form platform</b> — ideal for lead capture, registrations, applications, workflows, embedded forms, and more.
+      <br/><br/>
+      Whether you're a creator, startup, agency, or enterprise team, OpnForm delivers a modern form‑building experience with <b>greater flexibility, extensibility, and scalability.</b>
     </template>
   </ComparisonPage>
 </template>
@@ -33,126 +35,99 @@ useOpnSeoMeta({
 const freePlanComparison = [
   {
     label: "Monthly Responses",
-    cells: ["Unlimited submissions per month", "1,000 / month"],
+    cells: ["Unlimited", "Unlimited surveys & feedback"],
   },
   {
-    label: "Forms Allowed",
-    cells: ["Unlimited forms", "Unlimited forms"],
+    label: "Unlimited forms / surveys",
+    cells: ["Yes", "Yes"],
   },
   {
-    label: "Branding Removal",
-    cells: ["Not available on free", "Not available"],
+    label: "File uploads",
+    cells: ["Included", "Limited"],
   },
   {
-    label: "Conditional Logic",
-    cells: ["Conditional logic included", "Basic conditional logic available"],
+    label: "Custom CSS / styling",
+    cells: ["Paid", "Limited"],
   },
   {
-    label: "File Uploads",
-    cells: ["File uploads available", "Not Included"],
+    label: "Native integrations",
+    cells: ["Basic", "API Integrations"],
   },
   {
-    label: "Custom CSS",
-    cells: ["No direct custom CSS", "No custom CSS"],
+    label: "Self-hosting",
+    cells: ["Yes", "Yes"],
   },
   {
-    label: "Integrations",
-    cells: [
-      "Webhooks and API access available",
-      "Only limited native integrations",
-    ],
-  },
-  {
-    label: "Self-hosting Option",
-    cells: ["Available", "No self-hosting"],
-  },
-  {
-    label: "Price for 1,000 Responses",
-    cells: ["Free", "$10/month"],
+    label: "API access",
+    cells: ["Yes", "Yes"],
   },
 ]
 
 const switchReasons = [
   {
+    icon: "i-heroicons-rectangle-stack",
+    title: "Flexible form capabilities",
+    description: "Build beyond surveys: lead capture, signup flows, workflows, applications.",
+  },
+  {
     icon: "i-ph-infinity-bold",
-    title: "No limits, no hidden costs",
-    description: "Unlimited forms and responses on every plan.",
-  },
-  {
-    icon: "i-heroicons-paint-brush",
-    title: "Fully branded forms",
-    description: "Add your logo, colors, and even custom CSS.",
-  },
-  {
-    icon: "i-heroicons-command-line",
-    title: "Advanced logic & calculations",
-    description: "Create dynamic, intelligent forms easily.",
-  },
-  {
-    icon: "i-heroicons-circle-stack",
-    title: "Open source",
-    description: "Own your data, host it yourself, or use our managed version.",
+    title: "Unlimited responses and forms",
+    description: "No usage ceilings.",
   },
   {
     icon: "i-heroicons-code-bracket-square",
-    title: "Developer-friendly",
-    description: "REST API, webhooks, and automation-ready.",
+    title: "Developer-friendly workflows",
+    description: "Full API, webhook support, and automation integration.",
   },
   {
-    icon: "i-heroicons-user-group",
-    title: "Some title goes here...",
-    description: "Some text goes here...",
+    icon: "i-heroicons-globe-alt",
+    title: "Custom domains & embeds",
+    description: "Fully brand your forms anywhere.",
+  },
+  {
+    icon: "i-heroicons-puzzle-piece",
+    title: "Rich integration ecosystem",
+    description: "Connect to modern workflows with ease.",
+  },
+  {
+    icon: "i-heroicons-arrow-trending-up",
+    title: "Scales with your business",
+    description: "From solo creator to enterprise teams.",
   },
 ]
 
 const featureComparison = [
   {
-    label: "Unlimited responses",
-    cells: ["Y", "N"],
-  },
-  {
-    label: "Logic jumps & branching",
+    label: "Open source platform",
     cells: ["Y", "Y"],
   },
   {
-    label: "File uploads",
+    label: "Self-hosting with cloud option",
     cells: ["Y", "Y"],
   },
   {
-    label: "Calculations",
-    cells: ["Y", "Paid"],
+    label: "Developer extensibility (API + webhooks)",
+    cells: ["Full support", "API only"],
   },
   {
-    label: "Custom branding",
+    label: "Custom domains for forms",
     cells: ["Y", "N"],
   },
   {
-    label: "Custom CSS",
-    cells: ["Y", "N"],
+    label: "Flexible form uses (lead capture, workflows, apps)",
+    cells: ["Y", "Survey-oriented"],
   },
   {
-    label: "Integrations",
-    cells: ["100+", "Limited"],
+    label: "Native ecosystem integrations",
+    cells: ["100+ available", "Limited via API"],
   },
   {
-    label: "Analytics dashboard",
-    cells: ["Y", "Paid"],
+    label: "Advanced analytics & dashboards",
+    cells: ["Enhanced options", "Survey metrics only"],
   },
   {
-    label: "Open source",
-    cells: ["Y", "N"],
-  },
-  {
-    label: "Self-hosting",
-    cells: ["Y", "N"],
-  },
-  {
-    label: "API access",
-    cells: ["Y", "Paid"],
-  },
-  {
-    label: "GDPR compliance",
-    cells: ["Y", "Y"],
+    label: "Branding removal & customization",
+    cells: ["White-label (Pro)", "Enterprise only"],
   },
 ]
 
