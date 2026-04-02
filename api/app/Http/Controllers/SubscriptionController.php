@@ -228,7 +228,7 @@ class SubscriptionController extends Controller
             $subscription = $this->billingStateResolver->resolveActiveSubscription($user);
             if (!$subscription) {
                 return $this->error([
-                    "message" => "No active subscription found for this user.",
+                    'message' => 'No active subscription found for this user.',
                 ]);
             }
 

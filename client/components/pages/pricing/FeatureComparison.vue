@@ -134,24 +134,24 @@ const formatPlanPrice = (plan) => {
 
 const plans = computed(() => [
   {
-    key: 'free',
-    label: getTierDisplayName('free'),
-    priceLabel: formatPlanPrice('free'),
+    key: "free",
+    label: getTierDisplayName("free"),
+    priceLabel: formatPlanPrice("free"),
   },
   {
-    key: 'pro',
-    label: getTierDisplayName('pro'),
-    priceLabel: formatPlanPrice('pro'),
+    key: "pro",
+    label: getTierDisplayName("pro"),
+    priceLabel: formatPlanPrice("pro"),
   },
   {
-    key: 'business',
-    label: getTierDisplayName('business'),
-    priceLabel: formatPlanPrice('business'),
+    key: "business",
+    label: getTierDisplayName("business"),
+    priceLabel: formatPlanPrice("business"),
   },
   {
-    key: 'enterprise',
-    label: getTierDisplayName('enterprise'),
-    priceLabel: formatPlanPrice('enterprise'),
+    key: "enterprise",
+    label: getTierDisplayName("enterprise"),
+    priceLabel: formatPlanPrice("enterprise"),
   },
 ])
 
@@ -195,7 +195,7 @@ const sections = [
       },
       {
         label: "Workspaces",
-        values: ["1", "1", "Multiple", "Multiple"],
+        values: ["1", "Unlimited", "Unlimited", "Unlimited"],
       },
     ],
   },
@@ -246,12 +246,16 @@ const sections = [
     title: "Integrations",
     rows: [
       {
-        label: "Basic integrations (Zapier, etc.)",
+        label: "Basic integrations (Email, Webhook, Zapier, Google Sheets)",
+        values: [true, true, true, true],
+      },
+      {
+        label: "Slack, Discord, Telegram notifications",
         values: [false, true, true, true],
       },
       {
         label: "Advanced integrations (HubSpot, Salesforce, Airtable)",
-        values: [false, false, "soon", "soon"],
+        values: [false, false, true, true],
       },
     ],
   },
