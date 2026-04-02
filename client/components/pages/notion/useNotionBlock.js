@@ -8,7 +8,7 @@ export default function useNotionBlock (props) {
   })
 
   const value = computed(() => {
-    return block.value?.value
+    return block.value?.value?.value || block.value?.value || block.value
   })
 
   const format = computed(() => {
