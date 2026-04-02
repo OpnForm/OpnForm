@@ -30,3 +30,5 @@ public/.DS_Store
 _ide_helper.php
 docker-compose.override.yml
 /.make.*
+/storage/app/stripe-export-datasets/*
+!/storage/app/stripe-export-datasets/.gitignore
