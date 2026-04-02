@@ -14,7 +14,10 @@
               <UIcon name="i-heroicons-lock-closed" class="h-4 w-4" />
               Account access
             </div>
-            <h2 class="mt-4 text-3xl font-semibold tracking-[-1%] text-neutral-950">
+            <h2
+              data-testid="login-page"
+              class="mt-4 text-3xl font-semibold tracking-[-1%] text-neutral-950"
+            >
               Log in to OpnForm
             </h2>
 

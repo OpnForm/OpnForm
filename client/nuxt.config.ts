@@ -4,10 +4,11 @@ import sitemap from "./sitemap"
 
 const isUnitTestMode = !!process.env.VITEST
 const isE2EMode = process.env.E2E === '1'
+const isDevtoolsEnabled = !isE2EMode && process.env.NODE_ENV !== 'production'
 
 export default defineNuxtConfig({
   loglevel: process.env.NUXT_LOG_LEVEL || 'info',
-  devtools: {enabled: true},
+  devtools: {enabled: isDevtoolsEnabled},
   css: ['~/css/app.css'],
 
   // Disable certain plugins during testing
