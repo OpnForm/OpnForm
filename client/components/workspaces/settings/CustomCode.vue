@@ -3,7 +3,7 @@
     <div class="flex flex-col flex-wrap items-start justify-between gap-4 sm:flex-row sm:items-center">
       <div class="flex-1">
         <h3 class="text-lg font-medium text-neutral-900">
-          Custom Code <PlanTag
+          Custom Code <PlanTag required-tier="business"
             class="mb-2 block"
             upgrade-modal-title="Upgrade to Unlock Custom Code Capabilities"
             upgrade-modal-description="On the Free plan, you can explore custom code features within the workspace settings. Upgrade your plan to implement custom scripts, styles, and advanced tracking in all your workspace forms. Elevate your forms' functionality and design with unlimited customization options."
@@ -38,10 +38,10 @@
       class="mb-4"
       color="warning"
       variant="subtle"
-      title="Pro plan required"
-      description="Please upgrade your account to use workspace-level custom code."
+      title="Business plan required"
+      description="Please upgrade your plan to unlock workspace-level custom code."
       :actions="[{
-        label: 'Try Pro plan',
+        label: 'Try Business plan',
         color: 'warning',
         variant: 'solid',
         onClick: () => openSubscriptionModal()
@@ -129,7 +129,7 @@ const { hasFeature } = usePlanFeatures()
 const canAccessAdvancedBranding = computed(() => hasFeature('branding.advanced'))
 
 const openSubscriptionModal = () => {
-  openModal({ modal_title: 'Upgrade to use workspace level custom code' })
+  openModal({ plan: 'business', modal_title: 'Upgrade to unlock workspace level custom code' })
 }
 
 const customCodeForm = useForm({

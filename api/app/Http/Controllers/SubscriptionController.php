@@ -141,6 +141,55 @@ class SubscriptionController extends Controller
         ]);
     }
 
+    /**
+     * Swap existing subscription to a different plan tier.
+     * Stripe handles proration automatically.
+     */
+    public function changePlan(Request $request)
+    {
+        $request->validate([
+            'plan' => 'required|string|in:pro,business,enterprise',
+            'interval' => 'required|string|in:monthly,yearly',
+        ]);
+
+        $user = Auth::user();
+        $subscription = $this->billingStateResolver->resolveActiveSubscription($user);
+        if (!$subscription) {
+            return $this->error([
+                'message' => 'No active subscription found. Please subscribe first.',
+            ]);
+        }
+
+        $targetPlan = $request->input('plan');
+        $targetInterval = $request->input('interval');
+
+        $pricingConfig = BillingHelper::getPricing($targetPlan);
+        if (!$pricingConfig || !isset($pricingConfig[$targetInterval])) {
+            return $this->error([
+                'message' => 'Invalid pricing plan selected.',
+            ]);
+        }
+
+        $newPriceId = $pricingConfig[$targetInterval];
+
+        try {
+            $subscription->swap($newPriceId);
+
+            $subscription->type = $targetPlan;
+            $subscription->save();
+
+            $user->flushCache();
+        } catch (\Exception $e) {
+            return $this->error([
+                'message' => $e->getMessage() ?: 'Failed to change plan. Please try again or contact support.',
+            ]);
+        }
+
+        return $this->success([
+            'message' => 'Your plan has been updated successfully.',
+        ]);
+    }
+
     public function upgradeToYearly(Request $request)
     {
         $request->validate([

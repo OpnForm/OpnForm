@@ -365,7 +365,11 @@ const planOptions = computed(() => {
       currentUserCanAccess,
       glowClass: PLAN_VISUALS[planKey].glowClass,
       accentClass: PLAN_VISUALS[planKey].accentClass,
-      buttonLabel: currentUserCanAccess ? 'Current access level' : isRequired ? `Continue with ${getTierDisplayName(planKey)}` : `Choose ${getTierDisplayName(planKey)}`,
+      buttonLabel: currentUserCanAccess
+        ? 'Current access level'
+        : isSubscribed.value
+          ? `Upgrade to ${getTierDisplayName(planKey)}`
+          : isRequired ? `Continue with ${getTierDisplayName(planKey)}` : `Choose ${getTierDisplayName(planKey)}`,
     }
   })
 })
@@ -410,8 +414,9 @@ const closeModal = () => {
   isOpen.value = false
 }
 
-const canSelectPlan = () => {
-  return !isSubscribed.value || currentUserTier.value === 'pro'
+const canSelectPlan = (planKey) => {
+  if (!isSubscribed.value) return true
+  return !tierMeetsRequirement(currentUserTier.value, planKey)
 }
 
 const getPlanCardClasses = (planOption) => {
@@ -431,6 +436,12 @@ const startCheckout = async (planName) => {
   if (!authenticated.value) {
     closeModal()
     router.push({ name: 'register' })
+    return
+  }
+
+  if(planName === 'enterprise') {
+    closeModal()
+    useCrisp().openAndShowChat()
     return
   }
 
