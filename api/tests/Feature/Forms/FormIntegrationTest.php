@@ -1,5 +1,7 @@
 <?php
 
+use Illuminate\Support\Facades\Http;
+
 it('can CRUD form integration', function () {
     $user = $this->actingAsProUser();
     $workspace = $this->createUserWorkspace($user);
@@ -205,6 +207,57 @@ it('can create form integration with checkbox logic', function () {
 });
 
 describe('Webhook Integration', function () {
+    it('includes form and submission ids in the webhook payload', function () {
+        Http::fake([
+            'https://example.com/*' => Http::response(['ok' => true], 200),
+        ]);
+
+        $user = $this->actingAsProUser();
+        $workspace = $this->createUserWorkspace($user);
+        $form = $this->createForm($user, $workspace, [
+            'properties' => [
+                [
+                    'id' => 'name',
+                    'name' => 'Name',
+                    'type' => 'text',
+                    'hidden' => false,
+                    'required' => true,
+                ],
+            ],
+        ]);
+
+        $this->postJson(route('open.forms.integrations.create', $form), [
+            'status' => 'active',
+            'integration_id' => 'webhook',
+            'logic' => null,
+            'data' => [
+                'webhook_url' => 'https://example.com/webhook',
+                'webhook_secret' => 'whsec_1234567890abcdefghijklmnop',
+            ],
+        ])->assertSuccessful();
+
+        $submissionData = $this->generateFormSubmissionData($form);
+
+        $this->postJson(route('forms.answer', $form->slug), $submissionData)
+            ->assertSuccessful();
+
+        Http::assertSent(function ($request) use ($form, $submissionData) {
+            $payload = json_decode($request->body(), true);
+            $expectedSignature = 'sha256=' . hash_hmac(
+                'sha256',
+                $request->body(),
+                'whsec_1234567890abcdefghijklmnop'
+            );
+
+            return $request->url() === 'https://example.com/webhook'
+                && $payload['form_id'] === $form->id
+                && is_int($payload['submission_id'])
+                && $payload['submission']['Name'] === $submissionData['name']
+                && $payload['data']['name']['value'] === $submissionData['name']
+                && $request->hasHeader('X-Webhook-Signature', $expectedSignature);
+        });
+    });
+
     it('can create webhook with secret and custom headers', function () {
         $user = $this->actingAsProUser();
         $workspace = $this->createUserWorkspace($user);

@@ -1,5 +1,5 @@
 <template>
-  <PageContainer>
+  <div class="p-4 sm:p-6 lg:p-8">
     <FormSummary v-if="canAccessSummary" :form="form" />
 
     <div v-else class="border border-neutral-300 rounded-lg shadow-xs p-4 relative overflow-hidden max-w-5xl mx-auto space-y-6">
@@ -24,11 +24,10 @@
         class="mx-auto w-full filter blur-md z-0 pointer-events-none"
       >
     </div>
-  </PageContainer>
+  </div>
 </template>
 
 <script setup>
-import PageContainer from "~/components/dashboard/PageContainer.vue"
 import PlanTag from "~/components/app/PlanTag.vue"
 import FormSummary from "~/components/open/forms/components/FormSummary.vue"
 

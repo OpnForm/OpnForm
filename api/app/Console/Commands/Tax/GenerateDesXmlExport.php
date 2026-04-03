@@ -2,6 +2,8 @@
 
 namespace App\Console\Commands\Tax;
 
+use App\Services\Tax\StripeExportDatasetService;
+use App\Services\Tax\StripeExportDatasetStore;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Laravel\Cashier\Cashier;
@@ -43,6 +45,7 @@ class GenerateDesXmlExport extends Command
     protected $signature = 'stripe:generate-des-xml
                             {--start-date= : Start date (YYYY-MM-DD)}
                             {--end-date= : End date (YYYY-MM-DD)}
+                            {--dataset= : Reuse a built dataset id}
                             {--full-month : Use the full month of the start date}
                             {--vat= : French VAT number (must start with FR)}';
 
@@ -56,7 +59,7 @@ class GenerateDesXmlExport extends Command
     private const DECLARATION_TYPE = 'DES';
     private const FLUX_TYPE = 'INTRODUCTION';
 
-    public function handle()
+    public function handle(StripeExportDatasetService $collector, StripeExportDatasetStore $store)
     {
         // Validate required options
         $vatNumber = $this->option('vat');
@@ -98,8 +101,25 @@ class GenerateDesXmlExport extends Command
         $this->info('Start date: ' . $startDate);
         $this->info('End date: ' . $endDate);
 
-        // Get invoices
-        $invoices = $this->getInvoices($startDate, $endDate);
+        $datasetId = $this->option('dataset');
+        if ($datasetId) {
+            $rows = $store->loadRows($datasetId);
+        } else {
+            $rows = $collector->collect($startDate, $endDate)['rows'];
+        }
+
+        $invoices = array_values(array_filter(array_map(function (array $row) {
+            if (!($row['des_eligible'] ?? false)) {
+                return null;
+            }
+
+            return [
+                'country_code' => $row['des_country_code'],
+                'vat_number' => $row['des_vat_number'],
+                'amount_eur' => $row['des_amount_eur'],
+                'created_at' => $row['created_ts'],
+            ];
+        }, $rows)));
 
         // Generate XML
         $xml = $this->generateXml($invoices);
@@ -166,6 +186,11 @@ class GenerateDesXmlExport extends Command
 
                 // Accept if invoice is paid OR payment_intent succeeded
                 if ($invoiceStatus !== 'paid' && $paymentIntentStatus !== 'succeeded') {
+                    continue;
+                }
+
+                $netInvoiceAmount = $this->getNetInvoiceAmount($invoice);
+                if (($invoice->total ?? 0) > 0 && $netInvoiceAmount <= 0) {
                     continue;
                 }
 
@@ -269,9 +294,11 @@ class GenerateDesXmlExport extends Command
 
     private function getInvoiceAmountInEur(Invoice $invoice): ?float
     {
+        $netInvoiceAmount = $this->getNetInvoiceAmount($invoice);
+
         // If the invoice is already in EUR, just convert from cents
         if ($invoice->currency === 'eur') {
-            return $invoice->amount_paid / 100;
+            return $netInvoiceAmount / 100;
         }
 
         // Try to get the converted amount from the balance transaction
@@ -282,7 +309,7 @@ class GenerateDesXmlExport extends Command
             $netEur = $bt->amount ?? 0;
             $feeEur = $bt->fee ?? 0;
             $totalEur = $netEur + $feeEur; // GROSS = NET + fees
-            return $totalEur / 100;
+            return $this->applyInvoiceAdjustmentsToGrossAmount($invoice, $totalEur / 100);
         }
 
         // Fallback: Stripe no longer embeds charge on invoice
@@ -302,7 +329,7 @@ class GenerateDesXmlExport extends Command
                 $netEur = $bt->amount ?? 0;
                 $feeEur = $bt->fee ?? 0;
                 $totalEur = $netEur + $feeEur; // GROSS = NET + fees
-                return $totalEur / 100;
+                return $this->applyInvoiceAdjustmentsToGrossAmount($invoice, $totalEur / 100);
             }
         } catch (\Exception $e) {
             // Silently continue if charge retrieval fails
@@ -316,7 +343,7 @@ class GenerateDesXmlExport extends Command
                     $netEur = $bt->amount ?? 0;
                     $feeEur = $bt->fee ?? 0;
                     $totalEur = $netEur + $feeEur;
-                    return $totalEur / 100;
+                    return $this->applyInvoiceAdjustmentsToGrossAmount($invoice, $totalEur / 100);
                 }
             }
         }
@@ -324,6 +351,44 @@ class GenerateDesXmlExport extends Command
         // If we can't find the EUR amount, log it and return null
         $this->warn("Could not find EUR amount for invoice {$invoice->id} in {$invoice->currency}");
         return null;
+    }
+
+    private function getInvoiceRefundAmount(Invoice $invoice): int
+    {
+        $invoiceRefundAmount = (int) ($invoice->amount_refunded ?? 0);
+        $chargeRefundAmount = 0;
+
+        if (isset($invoice->charge)) {
+            $chargeRefundAmount = (int) ($invoice->charge->amount_refunded ?? 0);
+
+            if ($chargeRefundAmount === 0 && isset($invoice->charge->refunded) && $invoice->charge->refunded) {
+                $chargeRefundAmount = (int) ($invoice->total ?? 0);
+            }
+        }
+
+        return max($invoiceRefundAmount, $chargeRefundAmount);
+    }
+
+    private function getInvoiceCreditNotesAmount(Invoice $invoice): int
+    {
+        return (int) (($invoice->post_payment_credit_notes_amount ?? 0) + ($invoice->pre_payment_credit_notes_amount ?? 0));
+    }
+
+    private function getNetInvoiceAmount(Invoice $invoice): int
+    {
+        return (int) (($invoice->total ?? 0) - $this->getInvoiceRefundAmount($invoice) - $this->getInvoiceCreditNotesAmount($invoice));
+    }
+
+    private function applyInvoiceAdjustmentsToGrossAmount(Invoice $invoice, float $grossAmount): float
+    {
+        $originalAmount = (int) ($invoice->total ?? 0);
+        $netAmount = $this->getNetInvoiceAmount($invoice);
+
+        if ($originalAmount === 0 || $grossAmount == 0.0 || $netAmount === $originalAmount) {
+            return $grossAmount;
+        }
+
+        return $grossAmount * ($netAmount / $originalAmount);
     }
 
     /**

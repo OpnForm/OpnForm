@@ -236,7 +236,7 @@ class PdfGeneratorService
     private function getFormattedSubmissionData(Form $form, FormSubmission $submission): array
     {
         $formatter = new FormSubmissionFormatter($form, $submission->data);
-        $formatted = $formatter->outputStringsOnly()->getFieldsWithValue();
+        $formatted = $formatter->outputStringsOnly()->showHiddenFields()->getFieldsWithValue();
         $rawData = $submission->data;
 
         $data = [];

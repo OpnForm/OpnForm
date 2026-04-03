@@ -122,6 +122,13 @@ export default {
   //     },
   //   },
   // },
+
+  mounted() {
+    this.$nextTick(() => {
+      this.setInfinite()
+    })
+  },
+
   // methods: {
   //   setInfinite() {
   //     const ul = this.$refs["templates-slider"];
