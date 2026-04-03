@@ -1,6 +1,7 @@
 <template>
   <div
     id="public-form"
+    data-testid="public-form-page"
     class="flex flex-col min-h-screen"
   >
     <div class="w-full mx-auto flex flex-col grow h-full">
@@ -13,6 +14,11 @@
         </p>
       </div>
       <template v-else>
+        <FormAnalyticsScript
+          v-if="form.analytics?.provider && form.analytics?.tracking_id"
+          ref="analyticsScriptRef"
+          :form="form"
+        />
         <OpenCompleteForm
           ref="openCompleteFormRef"
           :form="form"
@@ -20,6 +26,7 @@
           :dark-mode="darkMode"
           :mode="FormMode.LIVE"
           @password-entered="passwordEntered"
+          @submitted="onFormSubmitted"
         />
       </template>
     </div>
@@ -28,6 +35,7 @@
 
 <script setup>
 import OpenCompleteForm from "~/components/open/forms/OpenCompleteForm.vue"
+import FormAnalyticsScript from "~/components/open/forms/FormAnalyticsScript.vue"
 import sha256 from 'js-sha256'
 import { onBeforeRouteLeave } from 'vue-router'
 import {
@@ -63,6 +71,13 @@ const passwordError = ref(null)
 
 // Provide password error state for child component
 provide('passwordError', passwordError)
+const analyticsScriptRef = ref(null)
+
+const onFormSubmitted = () => {
+  if (analyticsScriptRef.value?.trackFormSubmit) {
+    analyticsScriptRef.value.trackFormSubmit()
+  }
+}
 
 const passwordEntered = function (password) {
   const cookie = useCookie('password-' + slug, {
@@ -177,7 +192,7 @@ onBeforeRouteLeave(() => {
 })
 
 const pageMeta = computed(() => {
-  if (form.value && form.value.is_pro && form.value.seo_meta) {
+  if (form.value?.seo_meta) {
     return form.value.seo_meta
   }
   return {}
@@ -268,6 +283,9 @@ const effectiveCustomCss = computed(() => {
   return (workspaceCss + '\n' + formCss).trim()
 })
 
+// Check if SDK should be loaded for custom code support
+const shouldLoadLocalSdk = computed(() => !!effectiveCustomCode.value)
+
 useHead({
   htmlAttrs: {
     dir: () => form.value?.layout_rtl ? 'rtl' : 'ltr',
@@ -292,7 +310,14 @@ useHead({
       content: 'black-translucent'
     },
   ] : {},
-  script: [{ src: '/widgets/iframeResizer.contentWindow.min.js' }],
+  script: computed(() => {
+    const scripts = [{ src: '/widgets/iframeResizer.contentWindow.min.js' }]
+    // Load local SDK stub before custom code if needed
+    if (shouldLoadLocalSdk.value) {
+      scripts.unshift({ src: '/widgets/opnform-local.js' })
+    }
+    return scripts
+  }),
   style: computed(() => effectiveCustomCss.value ? [
     { key: 'custom-css', textContent: effectiveCustomCss.value }
   ] : [])

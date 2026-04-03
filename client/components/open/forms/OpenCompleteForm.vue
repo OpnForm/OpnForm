@@ -82,22 +82,33 @@
             :form="form"
             :form-data="submittedData"
           />
-          <div class="flex w-full gap-2 items-center mt-4">
-            <open-form-button
-              v-if="form.re_fillable"
-              :form="form"
-              icon="i-lucide-rotate-ccw"
-              @click="restart"
-            >
-              {{ form.re_fill_button_text || t('forms.buttons.re_fill') }}
-            </open-form-button>
-            <open-form-button
-              v-if="form.editable_submissions && submissionId"
-              :form="form"
-              @click="editSubmission"
-            >
-              {{ form.editable_submissions_button_text }}
-            </open-form-button>
+          <div class="flex flex-col w-full gap-2 mt-4">
+            <div class="flex gap-2 items-center">
+              <open-form-button
+                v-if="pdfDownloadEnabled"
+                :form="form"
+                icon="i-heroicons-document-arrow-down"
+                :loading="pdfDownloading"
+                @click="downloadPdf"
+              >
+                {{ form.pdf_download_button_text || t('forms.buttons.download_pdf', 'Download PDF') }}
+              </open-form-button>
+              <open-form-button
+                v-if="form.re_fillable"
+                :form="form"
+                icon="i-lucide-rotate-ccw"
+                @click="restart"
+              >
+                {{ form.re_fill_button_text || t('forms.buttons.re_fill') }}
+              </open-form-button>
+              <open-form-button
+                v-if="form.editable_submissions && submissionId"
+                :form="form"
+                @click="editSubmission"
+              >
+                {{ form.editable_submissions_button_text }}
+              </open-form-button>
+            </div>
           </div>
         </template>
       </component>
@@ -129,6 +140,10 @@ import { useIsIframe } from '~/composables/useIsIframe'
 import Loader from '~/components/global/Loader.vue'
 import { tailwindcssPaletteGenerator } from '~/lib/colors.js'
 import { useRouter } from 'vue-router'
+import { useSdkBridge } from '~/lib/sdk/useSdkBridge'
+import { clearFormatterCache } from '~/components/forms/components/FormSubmissionFormatter.js'
+import { clearMentionCache } from '~/composables/components/useParseMention.js'
+import { formsApi } from '~/api'
 
 const props = defineProps({
   form: { type: Object, required: true },
@@ -176,6 +191,7 @@ provide('formBorderRadius', computed(() => props.form.border_radius || 'small'))
 provide('formPresentationStyle', computed(() => props.form.presentation_style || 'classic'))
 
 let formManager = null
+let sdkBridge = null
 if (props.form) {
   formManager = useFormManager(props.form, props.mode, {
     darkMode: darkModeRef,
@@ -186,6 +202,18 @@ if (props.form) {
   await formManager.initialize({
     submissionId: submissionId.value,
     urlParams: new URLSearchParams(queryString),
+  })
+
+  // Initialize SDK bridge for parent window communication
+  const formDataRef = computed(() => formManager.form.data())
+  const formErrorsRef = computed(() => formManager.form.errors?.all?.() || {})
+  
+  sdkBridge = useSdkBridge({
+    formConfig: computed(() => props.form),
+    formData: formDataRef,
+    formErrors: formErrorsRef,
+    formManager: formManager,
+    darkMode: darkModeRef
   })
 }
 
@@ -295,6 +323,9 @@ watch(() => props.form?.language, (newLanguage) => {
 
 onBeforeUnmount(() => {
   setLocale('en')
+  // Clear caches for this form to prevent memory leaks
+  clearFormatterCache(props.form?.slug)
+  clearMentionCache()
 })
 
 const handleScrollToError = () => {
@@ -318,6 +349,9 @@ const handleScrollToError = () => {
 const triggerSubmit = () => {
   if (!formManager || isProcessing.value) return
 
+  // Emit SDK submitStart event
+  sdkBridge?.onSubmitStart()
+
   formManager.submit({
     submissionId: submissionId.value
   }).then(result => {
@@ -327,6 +361,13 @@ const triggerSubmit = () => {
         if (result?.submission_id) {
           submissionId.value = result.submission_id
         }
+
+        // Emit SDK submit success event
+        sdkBridge?.onSubmitSuccess({
+          data: submittedData.value,
+          submissionId: result?.submission_id,
+          completionTime: result?.completion_time
+        })
 
         if (isFormOwner.value && !useIsIframe() && result?.is_first_submission) {
           showFirstSubmissionModal.value = true
@@ -345,6 +386,11 @@ const triggerSubmit = () => {
     })
     .catch(error => {
       console.error(error)
+      
+      // Emit SDK submit error event
+      const errors = error.data?.errors || error.data || { general: error.message }
+      sdkBridge?.onSubmitError(errors)
+      
       if (error.response && error.response.status === 422 && error.data) {
         alert.formValidationError(error.data)
       } else if (error.message) {
@@ -381,7 +427,45 @@ const restart = async () => {
     skipUrlParams: shouldClearUrl
   })
   
+  // Emit SDK reset event
+  sdkBridge?.onReset()
+  
   emit('restarted', true)
+}
+
+// PDF Download functionality
+const pdfDownloading = ref(false)
+const pdfDownloadEnabled = computed(() => {
+  // Check if PDF download is enabled and we have a submission ID
+  if (!props.form.pdf_download_enabled || !submissionId.value) return false
+  
+  // Check if we have a PDF template ID
+  const templateId = props.form.pdf_template_id
+  return !!templateId
+})
+
+const downloadPdf = async () => {
+  if (!pdfDownloadEnabled.value || pdfDownloading.value) return
+  
+  const templateId = props.form.pdf_template_id
+  if (!templateId) return
+  
+  pdfDownloading.value = true
+  try {
+    // Get signed URL from backend
+    const response = await formsApi.pdfTemplates.getSubmissionSignedUrl(
+      props.form.id,
+      templateId,
+      submissionId.value
+    )
+    // Open signed URL in new tab to trigger download
+    window.open(response.url, '_blank')
+  } catch (error) {
+    console.error('PDF download failed:', error)
+    alert.error('Failed to download PDF. Please try again.')
+  } finally {
+    pdfDownloading.value = false
+  }
 }
 
 const editSubmission = () => {

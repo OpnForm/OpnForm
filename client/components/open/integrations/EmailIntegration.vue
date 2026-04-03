@@ -16,15 +16,16 @@
     <MentionInput
       :form="integrationData"
       :mentions="form.properties"
-      :disable-mention="!form.is_pro"
-      :disabled="!form.is_pro"
+      :computed-variables="form.computed_variables"
+      :disable-mention="!canUseAdvancedEmail"
+      :disabled="!canUseAdvancedEmail"
       name="data.send_to"
       required
       label="Send To"
     >
       <template #help>
         <InputHelp>
-        <span v-if="form.is_pro">
+        <span v-if="canUseAdvancedEmail">
           Add one email per line
         </span>
         <span v-else>
@@ -41,6 +42,7 @@
       <MentionInput
         :form="integrationData"
         :mentions="form.properties"
+        :computed-variables="form.computed_variables"
         name="data.sender_name"
         label="Sender Name"
         class="flex-1"
@@ -57,6 +59,7 @@
     <MentionInput
       :form="integrationData"
       :mentions="form.properties"
+      :computed-variables="form.computed_variables"
       required
       name="data.subject"
       label="Subject"
@@ -66,6 +69,7 @@
       :enable-mentions="true"
       :enable-image="true"
       :mentions="form.properties"
+      :computed-variables="form.computed_variables"
       name="data.email_content"
       label="Email Content"
       class="mt-4"
@@ -91,7 +95,10 @@
           <div class="grow">
             <h4 class="font-semibold flex items-center gap-2">
               Email appearance
-              <ProTag upgrade-modal-title="Upgrade to customise email appearance" />
+              <PlanTag
+                feature="branding.advanced"
+                upgrade-modal-title="Upgrade to customise email appearance"
+              />
             </h4>
             <p class="text-gray-400 dark:text-neutral-500 text-xs">
               Logo, fonts and colors for your email notifications
@@ -101,21 +108,21 @@
       </template>
       <div class="border-t dark:border-neutral-700 p-4 space-y-4">
         <div
-          v-if="emailAppearanceLocked"
+          v-if="!canUseAdvancedBranding"
           class="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900 dark:border-blue-900/60 dark:bg-blue-950/40 dark:text-blue-100"
         >
-          Email appearance customisation is part of the Pro plan.
+          Email appearance customisation is part of the Business plan.
           <a
             class="underline cursor-pointer"
             @click="openSubscriptionModal"
           >
-            Upgrade to Pro
+            Upgrade to Business
           </a>
           to add your logo, custom fonts and colors.
         </div>
         <image-input
           :form="integrationData"
-          :disabled="emailAppearanceLocked"
+          :disabled="!canUseAdvancedBranding"
           name="data.logo_url"
           label="Logo"
           help="Display your logo in the email header (replaces app name)"
@@ -128,7 +135,7 @@
               block
               size="lg"
               variant="outline"
-              :disabled="emailAppearanceLocked"
+              :disabled="!canUseAdvancedBranding"
               @click="showGoogleFontPicker = true"
             >
               <span :style="{ 'font-family': (integrationData.data.font_family ? integrationData.data.font_family + ', sans-serif' : null) }">
@@ -144,7 +151,7 @@
           </div>
           <ColorInput
             :form="integrationData"
-            :disabled="emailAppearanceLocked"
+            :disabled="!canUseAdvancedBranding"
             name="data.font_color"
             label="Font color"
             help="Color of the text in the email"
@@ -153,14 +160,14 @@
         <div class="grid grid-cols-2 gap-4">
           <ColorInput
             :form="integrationData"
-            :disabled="emailAppearanceLocked"
+            :disabled="!canUseAdvancedBranding"
             name="data.outer_background_color"
             label="Outer background color"
             help="Background around the email content area"
           />
           <ColorInput
             :form="integrationData"
-            :disabled="emailAppearanceLocked"
+            :disabled="!canUseAdvancedBranding"
             name="data.inner_background_color"
             label="Inner background color"
             help="Background of the email content area"
@@ -191,9 +198,22 @@
       class="mt-4"
       label="Edit Submission Link"
     />
+     
+    <SelectInput
+      :form="integrationData"
+      name="data.pdf_template_ids"
+      :options="pdfTemplateOptions"
+      multiple
+      clearable
+      class="mt-4"
+      label="Attach PDF templates"
+      help="Generate PDFs from selected templates and attach them to the email. Leave empty to not attach any PDF."
+    />
+
     <MentionInput
       :form="integrationData"
       :mentions="form.properties"
+      :computed-variables="form.computed_variables"
       class="mt-4"
       name="data.reply_to"
       label="Reply To"
@@ -203,10 +223,11 @@
 </template>
 
 <script setup>
+import { usePdfTemplates } from '~/composables/query/forms/usePdfTemplates'
 import IntegrationWrapper from "./components/IntegrationWrapper.vue"
 import GoogleFontPicker from "~/components/open/editors/GoogleFontPicker.vue"
 import Collapse from "~/components/app/Collapse.vue"
-import ProTag from "~/components/app/ProTag.vue"
+import PlanTag from "~/components/app/PlanTag.vue"
 
 const props = defineProps({
   integration: { type: Object, required: true },
@@ -221,7 +242,9 @@ const { data: user } = useAuth().user()
 
 const showEmailAppearance = ref(false)
 const showGoogleFontPicker = ref(false)
-const emailAppearanceLocked = computed(() => !props.form.is_pro)
+const workspaceFeatures = computed(() => props.form?.workspace?.features ?? [])
+const canUseAdvancedEmail = computed(() => workspaceFeatures.value.includes('integrations.email.advanced'))
+const canUseAdvancedBranding = computed(() => workspaceFeatures.value.includes('branding.advanced'))
 
 function onApplyFont(val) {
   if (props.integrationData.data) {
@@ -230,14 +253,27 @@ function onApplyFont(val) {
   showGoogleFontPicker.value = false
 }
 
+const { list } = usePdfTemplates()
+const { data: pdfTemplates } = list(() => props.form?.id)
+
+const pdfTemplateOptions = computed(() => {
+  const list = pdfTemplates.value?.data ?? []
+  return list.map((t) => ({ name: t.name, value: t.id }))
+})
+
 function openEmailsModal () {
   openWorkspaceSettings('emails')
 }
 
 function openSubscriptionModal () {
   useAppModals().openSubscriptionModal({
-    modal_title: 'Upgrade to unlock powerful email integration',
-    modal_description: 'Upgrade to Pro to customize email notification recipients, send confirmation email to form respondents, and more: form customization, custom domain, collaboration, etc.'
+    plan: canUseAdvancedEmail.value ? 'business' : 'pro',
+    modal_title: canUseAdvancedEmail.value
+      ? 'Upgrade to unlock email appearance customisation'
+      : 'Upgrade to unlock powerful email integration',
+    modal_description: canUseAdvancedEmail.value
+      ? 'Upgrade to Business to add your logo, custom fonts, and colors to email notifications.'
+      : 'Upgrade to Pro to customize email notification recipients, send confirmation email to form respondents, and more: form customization, custom domain, collaboration, etc.'
   })
 }
 
@@ -254,6 +290,7 @@ onBeforeMount(() => {
     font_color: null,
     outer_background_color: '#f0f0f0',
     inner_background_color: '#ffffff',
+    pdf_template_ids: null,
   })) {
     if (props.integrationData.data[keyname] === undefined) {
       props.integrationData.data[keyname] = defaultValue

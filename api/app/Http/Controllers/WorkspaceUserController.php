@@ -52,6 +52,8 @@ class WorkspaceUserController extends Controller
                 'role' => $request->role,
             ],
         ], false);
+        $workspace->flushWithOwners();
+        $user->flush();
         WorkspaceUsersUpdated::dispatch($workspace);
 
         return $this->success([
@@ -61,11 +63,7 @@ class WorkspaceUserController extends Controller
 
     private function inviteUser(Workspace $workspace, string $email, string $role)
     {
-        if (!$workspace->is_pro) {
-            return $this->error([
-                'message' => 'A Pro plan is required to invite users.'
-            ], 403);
-        }
+        $workspace->requireFeature('invite_user');
 
         if (
             UserInvite::where('email', $email)
@@ -104,6 +102,8 @@ class WorkspaceUserController extends Controller
                 'role' => $request->role,
             ],
         ], false);
+        $workspace->flushWithOwners();
+        $user->flush();
 
         return $this->success([
             'message' => 'User role changed successfully.'
@@ -118,6 +118,8 @@ class WorkspaceUserController extends Controller
         }
 
         $workspace->users()->detach($user->id);
+        $workspace->flushWithOwners();
+        $user->flush();
         $this->ensureUserHasWorkspace($user);
         WorkspaceUsersUpdated::dispatch($workspace);
 
@@ -132,6 +134,8 @@ class WorkspaceUserController extends Controller
 
         $user = $request->user();
         $workspace->users()->detach($user->id);
+        $workspace->flushWithOwners();
+        $user->flush();
         $this->ensureUserHasWorkspace($user);
 
         return $this->success([

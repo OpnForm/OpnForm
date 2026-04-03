@@ -5,6 +5,7 @@ namespace App\Models\Forms;
 use App\Events\Models\FormCreated;
 use App\Models\Integration\FormIntegration;
 use App\Models\Integration\FormZapierWebhook;
+use App\Models\PdfTemplate;
 use App\Models\Traits\CachableAttributes;
 use App\Models\Traits\CachesAttributes;
 use App\Models\User;
@@ -22,14 +23,32 @@ use Spatie\Sluggable\SlugOptions;
 use Stevebauman\Purify\Facades\Purify;
 use Carbon\Carbon;
 use App\Events\Forms\FormSaved;
+use App\Models\Version;
+use Mpociot\Versionable\VersionableTrait;
+use App\Contracts\VersionableNestedDiff;
 
-class Form extends Model implements CachableAttributes
+class Form extends Model implements CachableAttributes, VersionableNestedDiff
 {
     use CachesAttributes;
 
     use HasFactory;
     use HasSlug;
     use SoftDeletes;
+    use VersionableTrait;
+
+    // Configure versioning
+    protected $versionClass = Version::class;
+    protected $keepOldVersions = 5;
+    protected $dontVersionFields = [
+        'created_at',
+        'updated_at',
+        'deleted_at',
+        'workspace_id',
+        'creator_id',
+        'removed_properties',
+        'share_url'
+    ];
+
 
     public const DARK_MODE_VALUES = ['auto', 'light', 'dark'];
 
@@ -51,6 +70,7 @@ class Form extends Model implements CachableAttributes
         'workspace_id',
         'creator_id',
         'properties',
+        'computed_variables',
         'removed_properties',
 
         'title',
@@ -100,6 +120,9 @@ class Form extends Model implements CachableAttributes
         'max_submissions_reached_text',
         'editable_submissions',
         'editable_submissions_button_text',
+        'pdf_download_enabled',
+        'pdf_download_button_text',
+        'pdf_template_id',
         'confetti_on_submission',
         'show_progress_bar',
         'auto_save',
@@ -113,12 +136,16 @@ class Form extends Model implements CachableAttributes
 
         // Custom SEO
         'seo_meta',
+
+        // Analytics
+        'analytics',
     ];
 
     protected function casts(): array
     {
         return [
             'properties' => 'array',
+            'computed_variables' => 'array',
             'database_fields_update' => 'array',
             'closes_at' => 'datetime',
             'tags' => 'array',
@@ -129,9 +156,11 @@ class Form extends Model implements CachableAttributes
             'enable_partial_submissions' => 'boolean',
             'enable_ip_tracking' => 'boolean',
             'auto_save' => 'boolean',
+            'pdf_download_enabled' => 'boolean',
             'clear_empty_fields_on_update' => 'boolean',
             'presentation_style' => 'string',
             'settings' => 'array',
+            'analytics' => 'array',
         ];
     }
 
@@ -149,7 +178,6 @@ class Form extends Model implements CachableAttributes
     ];
 
     protected $cachableAttributes = [
-        'is_pro',
         'views_count',
         'max_file_size',
         'submissions_count',
@@ -164,13 +192,6 @@ class Form extends Model implements CachableAttributes
         'created' => FormCreated::class,
         'saved' => FormSaved::class,
     ];
-
-    public function getIsProAttribute()
-    {
-        return $this->remember('is_pro', 15 * 60, function (): ?bool {
-            return $this->workspace?->is_pro === true;
-        });
-    }
 
     public function getShareUrlAttribute()
     {
@@ -377,6 +398,16 @@ class Form extends Model implements CachableAttributes
         return $this->hasMany(FormIntegration::class);
     }
 
+    public function pdfTemplates()
+    {
+        return $this->hasMany(PdfTemplate::class);
+    }
+
+    public function pdfDownloadTemplate()
+    {
+        return $this->belongsTo(PdfTemplate::class, 'pdf_template_id');
+    }
+
     /**
      * Config/options
      */
@@ -404,5 +435,15 @@ class Form extends Model implements CachableAttributes
                     $integration->delete();
                 });
         });
+    }
+
+    /**
+     * List of attribute names that should receive nested (deep) diffing for versions.
+     *
+     * @return array<int, string>
+     */
+    public function getVersionNestedDiffFields(): array
+    {
+        return ['properties'];
     }
 }

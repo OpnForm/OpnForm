@@ -115,10 +115,10 @@
             <p class="text-xs text-neutral-600 dark:text-neutral-400 mt-1.5 text-center font-medium truncate w-full">
               {{ integration.name }}
             </p>
-            <pro-tag
-              v-if="integration.is_pro"
+            <PlanTag
+              v-if="integration.required_tier && integration.required_tier !== 'free'"
+              :required-tier="integration.required_tier"
               class="absolute top-1 right-1"
-              size="xs"
             />
           </div>
         </div>
@@ -129,7 +129,7 @@
 
 <script setup>
 import ShareFormUrl from '~/components/open/forms/components/ShareFormUrl.vue'
-import ProTag from '~/components/app/ProTag.vue'
+import PlanTag from '~/components/app/PlanTag.vue'
 
 const props = defineProps({
   show: { type: Boolean, required: true },
@@ -171,25 +171,25 @@ const popularIntegrations = computed(() => [
     id: 'slack',
     name: 'Slack',
     icon: 'mdi:slack',
-    is_pro: true
+    required_tier: 'pro'
   },
   {
     id: 'google_sheets',
     name: 'Sheets',
     icon: 'mdi:google-spreadsheet',
-    is_pro: false
+    required_tier: 'free'
   },
   {
     id: 'zapier',
     name: 'Zapier',
     icon: 'cib:zapier',
-    is_pro: false
+    required_tier: 'free'
   },
   {
     id: 'webhook',
     name: 'Webhook',
     icon: 'material-symbols:webhook',
-    is_pro: false
+    required_tier: 'free'
   }
 ])
 

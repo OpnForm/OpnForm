@@ -352,7 +352,7 @@ it('executes custom validation before required field validation', function () {
 });
 
 it('can update form submission if database fields update is set', function () {
-    $user = $this->actingAsProUser();
+    $user = $this->actingAsBusinessUser();
     $workspace = $this->createUserWorkspace($user);
     $form = $this->createForm($user, $workspace);
 

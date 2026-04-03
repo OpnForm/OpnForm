@@ -12,5 +12,6 @@ export const billingApi = {
     const trialParam = trial ? `/${trial}` : ''
     return apiService.get(`${BASE_PATH}/new/${subscription}/${plan}/checkout${trialParam}`, options)
   },
-  getBillingPortal: (options) => apiService.get(`${BASE_PATH}/billing-portal`, options)
+  getBillingPortal: (options) => apiService.get(`${BASE_PATH}/billing-portal`, options),
+  changePlan: (data) => apiService.post(`${BASE_PATH}/change-plan`, data)
 }

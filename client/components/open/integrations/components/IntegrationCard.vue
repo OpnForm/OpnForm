@@ -1,5 +1,6 @@
 <template>
-  <div class="p-4 flex gap-4 items-center relative border rounded-lg shadow-xs">
+  <DashboardPanel padding="sm">
+    <div class="flex gap-4 items-center relative">
     <!-- Icon -->
     <div
       class="flex-shrink-0"
@@ -25,10 +26,10 @@
       <UBadge
           variant="subtle"
           size="sm"
-          :color="integration.status  ? 'success' : 'neutral'"
-          :icon="integration.status ? 'i-heroicons-play-solid' : 'i-heroicons-pause-solid'"
+          :color="integration.status === 'active'  ? 'success' : 'neutral'"
+          :icon="integration.status === 'active'? 'i-heroicons-play-solid' : 'i-heroicons-pause-solid'"
         >
-          {{ integration.status ? "Active" : "Paused" }}
+          {{ integration.status === 'active' ? "Active" : "Paused" }}
         </UBadge>
     </div>
 
@@ -86,11 +87,13 @@
       :show="showIntegrationEventsModal"
       @close="showIntegrationEventsModal = false"
     />
-  </div>
+    </div>
+  </DashboardPanel>
 </template>
 
 <script setup>
 import { computed } from "vue"
+import DashboardPanel from "~/components/dashboard/DashboardPanel.vue"
 import { useComponentRegistry } from "~/composables/components/useComponentRegistry"
 import IntegrationModal from "~/components/open/integrations/components/IntegrationModal.vue"
 import IntegrationEventsModal from "./IntegrationEventsModal.vue"

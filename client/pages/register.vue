@@ -1,132 +1,92 @@
 <template>
-  <div>
-    <div class="flex mt-6 mb-10">
-      <div
-        class="w-full md:max-w-6xl mx-auto px-4 flex items-center md:flex-row-reverse flex-wrap"
-      >
-        <div class="w-full max-w-lg lg:max-w-auto mx-auto lg:w-1/2 md:p-6">
-          <app-sumo-register class="mb-10 p-6 lg:hidden" />
-          <div class="border rounded-md p-6 shadow-md sticky top-4">
-            <h2 class="font-semibold text-2xl">
-              Create an account
+  <div class="bg-white">
+    <section class="relative overflow-hidden">
+      <div class="absolute inset-0">
+        <div class="absolute inset-0 bg-linear-to-b from-white via-blue-50 to-white" />
+        <div class="absolute left-0 top-12 h-80 w-80 rounded-full bg-blue-100/70 blur-3xl" />
+        <div class="absolute bottom-0 right-0 h-[28rem] w-[28rem] rounded-full bg-cyan-100/70 blur-3xl" />
+      </div>
+
+      <div class="relative px-6 py-10 sm:px-8 sm:py-14 lg:px-12 lg:py-16">
+        <div class="mx-auto max-w-xl">
+          <div class="rounded-[32px] border border-white/80 bg-white/90 p-6 shadow-[0_24px_80px_rgba(15,23,42,0.12)] backdrop-blur sm:p-8">
+            <div v-if="showAppSumoPanel" class="mb-6">
+              <AppSumoRegister />
+            </div>
+
+            <div class="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-sm font-medium text-blue-700">
+              <UIcon name="i-heroicons-user-plus" class="h-4 w-4" />
+              New account
+            </div>
+            <h2
+              data-testid="register-page"
+              class="mt-4 text-3xl font-semibold tracking-[-1%] text-neutral-950"
+            >
+              Create your account
             </h2>
-            <p class="text-neutral-500 text-sm">
-              Sign up in less than 2 minutes.
+            <p class="mt-3 text-base font-normal leading-7 tracking-[-1.1%] text-neutral-600">
+              Start in a few minutes and begin building forms right away.
             </p>
+
+            <div v-if="isInvited" class="mt-6 rounded-3xl border border-emerald-200 bg-emerald-50 p-4">
+              <div class="flex items-start gap-3">
+                <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-emerald-600 shadow-sm">
+                  <UIcon name="i-heroicons-envelope-open" class="h-5 w-5" />
+                </div>
+                <div>
+                  <p class="text-sm font-semibold text-neutral-950">
+                    Workspace invitation detected
+                  </p>
+                  <p class="mt-1 text-sm leading-6 text-neutral-600">
+                    Finish registration to accept your invite and join the shared workspace.
+                  </p>
+                </div>
+              </div>
+            </div>
+
             <template v-if="!useFeatureFlag('self_hosted') || isInvited">
-              <register-form />
+              <div class="mt-6">
+                <RegisterForm />
+              </div>
             </template>
             <div
               v-else
-              class="my-6 p-3 rounded-lg border border-yellow-600 bg-yellow-200 text-yellow-600"
+              class="mt-6 rounded-3xl border border-amber-300 bg-amber-50 p-4 text-sm leading-6 text-amber-700"
             >
               Registration is not allowed in self host mode.
             </div>
           </div>
         </div>
-        <div class="w-full hidden lg:block lg:w-1/2 md:p-6 mt-8 md:mt-0">
-          <app-sumo-register class="mb-10" />
-          <h1 class="font-bold">
-            Create beautiful forms and share them anywhere
-          </h1>
-          <p class="text-neutral-900 my-4 text-lg">
-            It takes seconds, you don't need to know how to code and it's free.
-          </p>
-          <div class="flex flex-wrap justify-center">
-            <p class="px-3 pb-3 text-sm text-neutral-500">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                class="h-4 w-4 inline"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M5 13l4 4L19 7"
-                />
-              </svg>
-              Unlimited forms
-            </p>
-            <p class="px-3 pb-3 text-sm text-neutral-500">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                class="h-4 w-4 inline"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M5 13l4 4L19 7"
-                />
-              </svg>
-              Unlimited fields
-            </p>
-            <p class="px-3 pb-3 text-sm text-neutral-500">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                class="h-4 w-4 inline"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M5 13l4 4L19 7"
-                />
-              </svg>
-              Unlimited submissions
-            </p>
-          </div>
-        </div>
       </div>
-    </div>
-    <open-form-footer />
+    </section>
+
+    <OpenFormFooter />
   </div>
 </template>
 
-<script>
+<script setup>
 import RegisterForm from "~/components/pages/auth/components/RegisterForm.vue"
 import AppSumoRegister from "~/components/vendor/appsumo/AppSumoRegister.vue"
 
-export default {
-  components: {
-    AppSumoRegister,
-    RegisterForm,
-  },
+definePageMeta({
+  middleware: ["self-hosted", "guest"],
+})
 
-  setup() {
-    useOpnSeoMeta({
-      title: "Register",
-    })
+defineRouteRules({
+  swr: 3600,
+})
 
-    definePageMeta({
-      middleware: ["self-hosted", "guest"]
-    })
+useOpnSeoMeta({
+  title: "Register",
+})
 
-    defineRouteRules({
-      swr: 3600,
-    })
-    return {
-      appStore: useAppStore(),
-    }
-  },
+const route = useRoute()
 
-  data: () => ({}),
+const isInvited = computed(() => {
+  return route.query?.email && route.query?.invite_token
+})
 
-  computed: {
-    isInvited() {
-      return this.$route.query?.email && this.$route.query?.invite_token
-    }
-  },
-
-  methods: {},
-}
+const showAppSumoPanel = computed(() => {
+  return Boolean(route.query.appsumo_license || route.query.appsumo_error)
+})
 </script>
