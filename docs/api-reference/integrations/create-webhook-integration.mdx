@@ -135,6 +135,7 @@ Each webhook request will include:
 
 -   **`X-Webhook-Signature` header**: Contains the signature in format `sha256=HEXADECIMAL_VALUE`
 -   **Custom headers**: Any headers you specified in `webhook_headers` (except blocked headers)
+-   **JSON body metadata**: The payload includes `form_id` and `submission_id` so you can correlate webhook deliveries with OpnForm API submission management endpoints
 
 ### Blocked Headers
 

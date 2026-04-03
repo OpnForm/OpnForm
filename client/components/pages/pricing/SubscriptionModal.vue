@@ -386,7 +386,7 @@ const planOptions = computed(() => {
       if (planKey === 'self_hosted') {
         return 'Purchase license'
       }
-      return currentUserCanAccess ? 'Current access level' : isRequired ? `Continue with ${getTierDisplayName(planKey)}` : `Choose ${getTierDisplayName(planKey)}`
+      return currentUserCanAccess ? 'Current access level' : isSubscribed.value ? `Upgrade to ${getTierDisplayName(planKey)}` : isRequired ? `Continue with ${getTierDisplayName(planKey)}` : `Choose ${getTierDisplayName(planKey)}`
     }
     return {
       key: planKey,
@@ -454,11 +454,10 @@ const closeModal = () => {
   isOpen.value = false
 }
 
-const canSelectPlan = () => {
-  if (isSelfHosted.value) {
-    return true
-  }
-  return !isSubscribed.value || currentUserTier.value === 'pro'
+const canSelectPlan = (planKey) => {
+  if (isSelfHosted.value) return true
+  if (!isSubscribed.value) return true
+  return !tierMeetsRequirement(currentUserTier.value, planKey)
 }
 
 const getPlanCardClasses = (planOption) => {
@@ -505,6 +504,12 @@ const startCheckout = async (planName) => {
 
   if (isSelfHosted.value) {
     startSelfHostedLicenseCheckout()
+    return
+  }
+
+  if(planName === 'enterprise') {
+    closeModal()
+    useCrisp().openAndShowChat()
     return
   }
 

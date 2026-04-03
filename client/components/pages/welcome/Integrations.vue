@@ -1,5 +1,5 @@
 <template>
-  <div class="px-8 pb-8 sm:pb-10 lg:px-12">
+  <div class="px-8 lg:px-12">
     <div
       class="mx-auto w-full max-w-336 rounded-4xl bg-linear-to-br from-neutral-950 via-neutral-900 to-neutral-950 shadow-2xl overflow-hidden"
     >
