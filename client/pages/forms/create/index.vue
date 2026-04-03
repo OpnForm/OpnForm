@@ -7,6 +7,7 @@
       <create-form-base-modal
         :show="showInitialFormModal"
         @form-generated="formGenerated"
+        @form-imported="formImported"
         @close="showInitialFormModal = false"
       />
 
@@ -109,6 +110,11 @@ onMounted(() => {
 // Methods
 const formGenerated = (newForm) => {
   form.value = useForm({ ...form.value.data(), ...newForm })
+}
+
+const formImported = (importedForm) => {
+  formInitialHash.value = null
+  useRouter().push({ name: 'forms-slug-show', params: { slug: importedForm.slug } })
 }
 
 const isDirty = () => {

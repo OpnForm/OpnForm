@@ -44,7 +44,7 @@ class OAuthController extends Controller
     public function handleWidgetCallback(Request $request, string $service)
     {
         $request->validate([
-            'intent' => 'required|in:auth,integration',
+            'intent' => 'required|in:' . implode(',', OAuthFlowOrchestrator::INTENTS),
             'invite_token' => 'sometimes|string',
             'utm_data' => 'sometimes|array',
         ]);
