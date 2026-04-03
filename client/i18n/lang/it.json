@@ -1,0 +1,77 @@
+{
+  "app": {
+    "name": "OpnForm"
+  },
+  "forms": {
+    "buttons": {
+      "submit": "Invia",
+      "next": "Avanti",
+      "previous": "Indietro",
+      "re_fill": "Invia un'altra risposta"
+    },
+    "powered_by": "Realizzato con",
+    "password_protected": "Questo modulo è protetto da password.",
+    "invalid_password": "Password non valida.",
+    "password_required": "La password è obbligatoria.",
+    "create_form_free": "Crea il tuo modulo gratuitamente con OpnForm",
+    "submit": "Invia",
+    "wrong_form_structure": "Qualcosa non va con la struttura di questo modulo. Se sei il proprietario del modulo, contattaci.",
+    "cannot_access_here": "Questo contenuto non può essere accesso qui. Clicca il link sottostante per accedervi.",
+    "open_form": "Apri Modulo",
+    "restricted_to_workspace": "Riservato ai membri dello Spazio di Lavoro di Notion. Accedi per accedere a questo contenuto.",
+    "select": {
+      "search": "Cerca",
+      "searchOrTypeToCreateNew": "Cerca o digita per aggiungere un'opzione",
+      "typeSomethingToAddAnOption": "Digita qualcosa per aggiungere un'opzione",
+      "noOptionAvailable": "Nessuna opzione disponibile",
+      "create": "Crea"
+    },
+    "fileInput": {
+      "chooseFiles": "Clicca per scegliere i file o trascina qui | Clicca per scegliere un file o trascina qui",
+      "sizeLimit": "Limite di dimensione: {count}MB per file",
+      "uploadingFile": "Caricamento del tuo file..."
+    },
+    "cameraUpload": {
+      "allowCameraPermission": "Consenti l'accesso alla fotocamera",
+      "allowCameraPermissionDescription": "Devi consentire l'accesso alla fotocamera prima di poter scattare foto. Vai nelle impostazioni del browser per abilitare la fotocamera su questa pagina.",
+      "gotIt": "Capito!",
+      "cameraDeviceError": "Errore dispositivo fotocamera",
+      "cameraDeviceErrorDescription": "Si è verificato un errore sconosciuto durante il tentativo di avviare la fotocamera.",
+      "goBack": "Torna indietro"
+    },
+    "signatureInput": {
+      "uploadFileInstead": "Carica invece un file",
+      "clear": "Cancella"
+    },
+    "barcodeInput": {
+      "clickToOpenCamera": "Clicca per aprire la fotocamera"
+    },
+    "payment": {
+      "amount_to_pay": "Importo da pagare",
+      "success": "Pagamento riuscito",
+      "name_on_card": "Nome sulla carta",
+      "billing_email": "Indirizzo email di fatturazione",
+      "payment_disclaimer": "La tua carta di credito sarà addebitata al clic di questo pulsante. I pagamenti sono elaborati in modo sicuro tramite Stripe.",
+      "errors": {
+        "missingFormOrProvider": "Manca lo slug del modulo o l'ID del provider.",
+        "failedAccountDetails": "Impossibile ottenere i dettagli dell'account Stripe.",
+        "setupError": "Si è verificato un errore durante la preparazione di Stripe.",
+        "systemNotReady": "Sistema di pagamento non pronto. Attendi un momento e riprova.",
+        "misconfigured": "Sistema di pagamento mal configurato. Aggiorna la pagina e riprova.",
+        "notFullyReady": "Sistema di pagamento non completamente pronto. Aggiorna la pagina e riprova.",
+        "paymentRequired": "Completa il pagamento prima di poter procedere.",
+        "nameRequired": "Il nome del titolare della carta è obbligatorio.",
+        "emailRequired": "L'indirizzo email di fatturazione è obbligatorio.",
+        "invalidEmail": "Indirizzo email di fatturazione non valido.",
+        "failedIntent": "Impossibile creare l'intent di pagamento.",
+        "processingFailed": "Elaborazione del pagamento fallita."
+      }
+    },
+    "validation_error": "Errore di validazione",
+    "validation_error_with_count": "Errore di validazione ({count} campi)",
+    "toggle": {
+      "yes": "Sì",
+      "no": "No"
+    }
+  }
+}
