@@ -95,7 +95,7 @@ const hasActiveLicense = computed(() => {
   return user.value !== null && user.value !== undefined && user.value.active_license !== null
 })
 const crisp = useCrisp()
-const { openSubscriptionModal: openModal } = useAppModals()
+const { openSubscriptionModal } = useAppModals()
 const { currentId: workspaceId } = useCurrentWorkspace()
 const alert = useAlert()
 const { hasFeature } = usePlanFeatures()
@@ -123,15 +123,7 @@ const closeModal = () => {
   isOpen.value = false
 }
 
-const openUpgradeModal = () => {
-  openSubscriptionModal({
-    plan: isSelfHosted.value ? 'self_hosted' : 'pro',
-    modal_title: 'Upgrade to invite users to your workspace'
-  })
-}
-
 const paidPlansEnabled = ref(useFeatureFlag('billing.enabled'))
-const isSelfHosted = computed(() => useFeatureFlag('self_hosted'))
 
 const inviteUserForm = useForm({
   email: '',

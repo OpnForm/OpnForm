@@ -107,7 +107,6 @@ const canManageConnections = computed(() => !!workspace.value && workspace.value
 // Check if feature is accessible (Enterprise required for cloud, free for self-hosted)
 const isSelfHosted = computed(() => useFeatureFlag('self_hosted'))
 const billingEnabled = computed(() => useFeatureFlag('billing.enabled'))
-const { canAccessEnterprise, hasLicenseFeature } = useInstanceLicense()
 const canAccessFeature = computed(() => {
   if (isSelfHosted.value) return true
   return billingEnabled.value && hasFeature('sso.oidc')
