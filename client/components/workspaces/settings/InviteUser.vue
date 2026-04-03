@@ -95,7 +95,7 @@ const hasActiveLicense = computed(() => {
   return user.value !== null && user.value !== undefined && user.value.active_license !== null
 })
 const crisp = useCrisp()
-const { openSubscriptionModal: openModal } = useAppModals()
+const { openSubscriptionModal } = useAppModals()
 const { currentId: workspaceId } = useCurrentWorkspace()
 const alert = useAlert()
 const { hasFeature } = usePlanFeatures()
@@ -123,10 +123,6 @@ const closeModal = () => {
   isOpen.value = false
 }
 
-const openSubscriptionModal = () => {
-  openModal({ modal_title: 'Upgrade to invite users to your workspace' })
-}
-
 const paidPlansEnabled = ref(useFeatureFlag('billing.enabled'))
 
 const inviteUserForm = useForm({
@@ -146,7 +142,7 @@ const addUser = () => {
     emit('user-added')
     closeModal()
   }).catch((error) => {
-    alert.error(error.response?.data?.message || "There was an error adding user")
+    alert.error(error?.data?.message || "There was an error adding user")
   })
 }
 </script>

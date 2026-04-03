@@ -60,6 +60,7 @@ const displayTier = computed(() => {
 
 // Check if we should display the tag
 const shouldDisplayTag = computed(() => {
+  if (props.requiredTier !== 'self_hosted' && useFeatureFlag('self_hosted')) return false
   if (!useFeatureFlag('billing.enabled')) return false
   if (!displayTier.value) return false
   if (!user.value || !workspace.value) return true

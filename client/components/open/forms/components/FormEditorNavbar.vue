@@ -38,7 +38,7 @@
 
     <GitHubStar
       v-if="isSelfHosted"
-      class="mt-2 ml-2"
+      class="ml-2"
     />
 
     <div class="flex-grow flex justify-center gap-2">

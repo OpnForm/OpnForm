@@ -16,6 +16,7 @@ return [
         'pro' => ['order' => 1, 'name' => 'Pro', 'price_monthly' => 29, 'price_yearly' => 299, 'price_yearly_per_month' => 25],
         'business' => ['order' => 2, 'name' => 'Business', 'price_monthly' => 79, 'price_yearly' => 799, 'price_yearly_per_month' => 67],
         'enterprise' => ['order' => 3, 'name' => 'Enterprise', 'price_monthly' => 250, 'price_yearly' => 2640, 'price_yearly_per_month' => 220],
+        'self_hosted' => ['order' => 4, 'name' => 'Self-hosted Enterprise', 'price_monthly' => 199, 'price_yearly' => 1990, 'price_yearly_per_month' => 166],
     ],
 
     /**
@@ -26,6 +27,7 @@ return [
         'pro' => 'pro',
         'business' => 'business',
         'enterprise' => 'enterprise',
+        'self_hosted' => 'self_hosted'
     ],
 
     /**
@@ -138,5 +140,19 @@ return [
         'database_fields_update' => null,
         'enable_ip_tracking' => false,
         'secret_input' => false,
+    ],
+
+    /**
+     * Self-hosted license configuration.
+     * Maps License API feature keys to application feature keys from the 'features' section above.
+     */
+    'self_hosted_features' => [
+        'sso' => ['sso.oidc', 'sso.saml', 'sso.ldap'],
+        'multiOrg' => ['workspaces.multiple', 'multi_user.roles'],
+        'whitelabel' => ['branding.removal', 'branding.advanced', 'white_label'],
+        'custom_smtp' => ['custom_smtp'],
+        'audit_logs' => ['audit_logs', 'compliance_features'],
+        'external_storage' => ['external_storage'],
+        'custom_code' => ['custom_code', 'custom_css', 'branding.advanced'],
     ],
 ];

@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Service\BillingHelper;
 use App\Service\Billing\Data\BillingState;
+use App\Service\License\LicenseService;
 
 class BillingStateResolver
 {
@@ -16,12 +17,7 @@ class BillingStateResolver
     public function resolveWorkspace(Workspace $workspace): BillingState
     {
         if (!pricing_enabled()) {
-            return new BillingState(
-                workspaceId: $workspace->id,
-                tier: PlanTier::ENTERPRISE,
-                isPaid: true,
-                hasOverrides: false,
-            );
+            return $this->selfHostedState($workspace->id);
         }
 
         $state = $workspace->remember('billing_state', 15 * 60, function () use ($workspace) {
@@ -72,11 +68,7 @@ class BillingStateResolver
     public function resolveUser(User $user, ?int $workspaceId = null): BillingState
     {
         if (!pricing_enabled()) {
-            return new BillingState(
-                workspaceId: $workspaceId,
-                tier: PlanTier::ENTERPRISE,
-                isPaid: true,
-            );
+            return $this->selfHostedState($workspaceId);
         }
 
         if (in_array($user->email, config('opnform.extra_pro_users_emails'), true)) {
@@ -159,6 +151,24 @@ class BillingStateResolver
             stripePriceId: $priceId,
             subscriptionType: $subscription->type,
             isGrandfathered: BillingHelper::isGrandfatheredPriceId($priceId),
+        );
+    }
+
+    /**
+     * Build a BillingState for self-hosted instances.
+     * With an active license → Self-hosted tier.
+     * Without a license → Pro tier (basic self-hosted features still work).
+     */
+    private function selfHostedState(?int $workspaceId): BillingState
+    {
+        $hasLicense = config('app.self_hosted')
+            && app(LicenseService::class)->checkLicense()->isActive();
+
+        return new BillingState(
+            workspaceId: $workspaceId,
+            tier: $hasLicense ? PlanTier::SELF_HOSTED : PlanTier::PRO,
+            isPaid: true,
+            hasLicense: $hasLicense,
         );
     }
 

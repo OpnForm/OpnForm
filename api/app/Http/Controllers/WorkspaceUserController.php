@@ -72,7 +72,7 @@ class WorkspaceUserController extends Controller
             ->pending()
             ->exists()
         ) {
-            return $this->success([
+            return $this->error([
                 'message' => 'User has already been invited.'
             ]);
         }
