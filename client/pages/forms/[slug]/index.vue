@@ -51,6 +51,7 @@ const { performRedirect } = useSubdomainRedirect()
 
 // Use TanStack Query to load the form
 const { data: form, isLoading: formLoading, error: formError, refetch: refetchForm, suspense } = useForms().detail(slug, {
+  usePrivate: true, // Allow view from authenticated users
   retry: false, // Don't auto-retry for 404s
   refetchOnWindowFocus: false,
 })
