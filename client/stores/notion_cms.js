@@ -15,6 +15,24 @@ function fetchNotionPageContent (pageId) {
   return notionApiFetch(pageId, 'page')
 }
 
+function normalizeNotionRecordMap (recordMap) {
+  if (!recordMap || typeof recordMap !== 'object') return recordMap
+
+  return Object.fromEntries(
+    Object.entries(recordMap).map(([id, record]) => {
+      if (!record || typeof record !== 'object') {
+        return [id, record]
+      }
+
+      if (record.value?.value) {
+        return [id, { ...record, value: record.value.value, role: record.value.role ?? record.role }]
+      }
+
+      return [id, record]
+    })
+  )
+}
+
 export const useNotionCmsStore = defineStore('notion_cms', () => {
 
   // State
@@ -57,7 +75,7 @@ export const useNotionCmsStore = defineStore('notion_cms', () => {
       if (pageContents.value[pageId]) return resolve('in already here')
       loading.value = true
       return fetchNotionPageContent(pageId).then((response) => {
-        pageContents.value[formatId(pageId)] = response.data.value
+        pageContents.value[formatId(pageId)] = normalizeNotionRecordMap(response.data.value)
         loading.value = false
         return resolve('in finishg')
       }).catch((error) => {
@@ -70,7 +88,7 @@ export const useNotionCmsStore = defineStore('notion_cms', () => {
 
   const loadPageBySlug = (slug) => {
     if (!slugToIdMap.value[slug.toLowerCase()]) return
-    loadPage(slugToIdMap.value[slug.toLowerCase()])
+    return loadPage(slugToIdMap.value[slug.toLowerCase()])
   }
 
   const formatId = (id) => id.replaceAll('-', '')
