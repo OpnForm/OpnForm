@@ -2,8 +2,12 @@
   <section class="relative px-8 lg:px-12">
     <div class="max-w-336 mx-auto">
       <div
-        class="footer-hero relative rounded-4xl overflow-hidden bg-linear-to-br from-blue-600 via-blue-700 to-blue-800 pt-8 sm:pt-10 lg:pt-14 xl:pt-24 pl-8 md:pl-10 lg:pl-14 xl:pl-35"
+        class="relative rounded-4xl overflow-hidden bg-linear-to-br from-blue-600 via-blue-700 to-blue-800 pt-8 sm:pt-10 lg:pt-14 xl:pt-24 pl-8 md:pl-10 lg:pl-14 xl:pl-35"
       >
+        <img
+          src="/img/pages/welcome/powerForm-bg.png"
+          class="absolute min-h-full inset-0 opacity-30"
+        />
         <div class="grid lg:grid-cols-2 relative z-10">
           <div
             class="text-white relative z-20 pr-8 sm:pr-10 md:pr-0 pb-8 sm:pb-10 lg:pb-14 xl:pb-24"
@@ -66,35 +70,35 @@
                 <img
                   src="/img/pages/welcome/vanguard-1.png"
                   alt="Trusted Teams"
-                  class="max-w-[94px]"
+                  class="w-full"
                 />
               </div>
               <div class="w-fit filter-[sepia(1)_brightness(2)_saturate(0)]">
                 <img
                   src="/img/pages/welcome/logo-berkeley-2.png"
                   alt="Trusted Teams"
-                  class="max-w-25"
+                  class="w-full"
                 />
               </div>
               <div class="w-fit filter-[sepia(1)_brightness(2)_saturate(0)]">
                 <img
                   src="/img/pages/welcome/Frame-47.png"
                   alt="Trusted Teams"
-                  class="max-w-[89px]"
+                  class="w-full"
                 />
               </div>
               <div class="w-fit filter-[sepia(1)_brightness(2)_saturate(0)]">
                 <img
                   src="/img/pages/welcome/Zomato_Logo-2.png"
                   alt="Trusted Teams"
-                  class="max-w-[93px]"
+                  class="w-full"
                 />
               </div>
               <div class="w-fit filter-[sepia(1)_brightness(2)_saturate(0)]">
                 <img
                   src="/img/pages/welcome/UN_emblem_blue-2.png"
                   alt="Trusted Teams"
-                  class="max-w-[47px]"
+                  class="w-full"
                 />
               </div>
             </div>
@@ -301,8 +305,11 @@ const linkGroups = computed(() => [
     title: "Company",
     links: [
       { label: "Blog", href: opnformConfig.links.changelog_url },
-      { label: "Privacy Policy", to: { name: "privacy-policy" } },
-      { label: "Terms & Conditions", to: { name: "terms-conditions" } },
+      { label: "Status", href: opnformConfig.links.changelog_url },
+      // { label: "Feature Requests", href: opnformConfig.links.feature_requests },
+      // { label: "Roadmap", href: opnformConfig.links.roadmap },
+      // { label: "Privacy Policy", to: { name: "privacy-policy" } },
+      // { label: "Terms & Conditions", to: { name: "terms-conditions" } },
     ],
   },
 ])

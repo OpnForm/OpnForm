@@ -71,10 +71,10 @@ export const useWorkingPdfStore = defineStore("working_pdf", {
     formFields() {
       if (!this.form?.properties) return []
       return this.form.properties
-        .filter(p => !p.hidden && !p.type.startsWith('nf-'))
+        .filter(p => !p.type.startsWith('nf-'))
         .map(p => ({
           id: p.id,
-          name: p.name,
+          name: p.name + (p.hidden ? ' (Hidden Field)' : ''),
           type: p.type
         }))
     },

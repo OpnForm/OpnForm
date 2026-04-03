@@ -1,5 +1,9 @@
 <template>
-  <div v-if="workspace" class="flex flex-col h-full bg-white" data-testid="home-page">
+  <div
+    v-if="workspace"
+    data-testid="home-page"
+    class="flex flex-col h-full bg-white"
+  >
     <div
       class="sticky top-0 z-50 bg-white h-[49px] border-b border-neutral-200 p-2 sm:px-4"
     >

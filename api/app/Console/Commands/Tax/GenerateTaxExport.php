@@ -3,6 +3,8 @@
 namespace App\Console\Commands\Tax;
 
 use App\Exports\Tax\ArrayExport;
+use App\Services\Tax\StripeExportDatasetService;
+use App\Services\Tax\StripeExportDatasetStore;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Laravel\Cashier\Cashier;
@@ -18,6 +20,7 @@ class GenerateTaxExport extends Command
     protected $signature = 'stripe:generate-stripe-export
                             {--start-date= : Start date (YYYY-MM-DD)}
                             {--end-date= : End date (YYYY-MM-DD)}
+                            {--dataset= : Reuse a built dataset id}
                             {--full-month : Use the full month of the start date}';
 
     /**
@@ -62,7 +65,7 @@ class GenerateTaxExport extends Command
      *
      * @return int
      */
-    public function handle()
+    public function handle(StripeExportDatasetService $collector, StripeExportDatasetStore $store)
     {
         // Start the processing timer
         $startTime = microtime(true);
@@ -94,133 +97,17 @@ class GenerateTaxExport extends Command
         $this->info('Start date: ' . $startDate);
         $this->info('End date: ' . $endDate);
 
-        $processedInvoices = [];
-
-        // Create a progress bar
-        $queryOptions = [
-            'limit' => 100, // Maximum allowed by Stripe API
-            'expand' => [
-                'data.customer',
-                'data.customer.address',
-                'data.customer.tax_ids',
-                'data.payment_intent',
-                'data.payment_intent.payment_method',
-                'data.charge.balance_transaction',
-                'data.automatic_tax',
-                'data.total_tax_amounts'
-            ],
-            'status' => 'paid',
-        ];
-        if ($startDate) {
-            $queryOptions['created']['gte'] = Carbon::parse($startDate)->startOfDay()->timestamp;
-        }
-        if ($endDate) {
-            $queryOptions['created']['lte'] = Carbon::createFromFormat('Y-m-d', $endDate)->endOfDay()->timestamp;
+        $datasetId = $this->option('dataset');
+        if ($datasetId) {
+            $datasetRows = $store->loadRows($datasetId);
+            $stats = $store->readMetadata($datasetId);
+        } else {
+            $payload = $collector->collect($startDate, $endDate);
+            $datasetRows = $payload['rows'];
+            $stats = $payload['stats'];
         }
 
-        $this->info('Fetching invoices from Stripe...');
-        $invoices = Cashier::stripe()->invoices->all($queryOptions);
-        $totalResults = $invoices->count();
-        $this->info("Initial batch contains {$totalResults} invoices");
-
-        $bar = $this->output->createProgressBar();
-        $bar->start();
-
-        // Improved counters for better tracking
-        $paymentNotSuccessfulCount = 0;
-        $refundedInvoicesCount = 0;
-        $missingDataInvoicesCount = 0;
-        $totalInvoice = 0;
-        $processedInvoiceCount = 0;
-        $defaultedToFranceCount = 0;
-
-        // Volume metrics
-        $grossVolumeUsd = 0;
-        $netVolumeUsd = 0;
-        $taxTotalUsd = 0;
-        $grossVolumeEur = 0;
-        $netVolumeEur = 0;
-        $taxTotalEur = 0;
-
-        do {
-            if (empty($invoices->data)) {
-                $this->line('No invoices found in this batch.');
-                break;
-            }
-
-            foreach ($invoices as $invoice) {
-                $totalInvoice++;
-
-                // Check for payment status
-                // Since we query with status='paid', check invoice status first
-                // payment_intent->status may not always be available/expanded
-                $invoiceStatus = $invoice->status ?? null;
-                $paymentIntentStatus = $invoice->payment_intent->status ?? null;
-
-                // Accept if invoice is paid OR payment_intent succeeded
-                if ($invoiceStatus !== 'paid' && $paymentIntentStatus !== 'succeeded') {
-                    $paymentNotSuccessfulCount++;
-                    continue;
-                }
-
-                // Check if invoice was refunded
-                if (isset($invoice->charge) && isset($invoice->charge->refunded) && $invoice->charge->refunded) {
-                    $refundedInvoicesCount++;
-                    continue;
-                }
-
-                try {
-                    $formattedInvoice = $this->formatInvoice($invoice);
-
-                    // Check if we defaulted to France
-                    if ($formattedInvoice['cust_country'] === 'FR' && $formattedInvoice['_defaulted_to_fr'] === true) {
-                        $defaultedToFranceCount++;
-                    }
-
-                    // Remove the internal tracking field
-                    unset($formattedInvoice['_defaulted_to_fr']);
-
-                    $processedInvoices[] = $formattedInvoice;
-                    $processedInvoiceCount++;
-
-                    // Track volume metrics
-                    $grossVolumeUsd += $formattedInvoice['total_usd'];
-                    $netVolumeUsd += $formattedInvoice['total_after_tax_usd'];
-                    $taxTotalUsd += $formattedInvoice['tax_total_usd'];
-                    $grossVolumeEur += $formattedInvoice['total_eur'];
-                    $netVolumeEur += $formattedInvoice['total_after_tax_eur'];
-                    $taxTotalEur += $formattedInvoice['tax_total_eur'];
-                } catch (\Exception $e) {
-                    $this->warn("Error processing invoice {$invoice->id}: {$e->getMessage()}");
-                    $missingDataInvoicesCount++;
-                    continue;
-                }
-
-                // Advance the progress bar
-                $bar->advance();
-            }
-
-            // Safe pagination
-            try {
-                $lastInvoice = end($invoices->data);
-                if ($lastInvoice) {
-                    $queryOptions['starting_after'] = $lastInvoice->id;
-                } else {
-                    break;
-                }
-
-                // No need for sleep - Stripe API can handle the request rate
-                $invoices = Cashier::stripe()->invoices->all($queryOptions);
-                $batchSize = count($invoices->data);
-                $totalResults += $batchSize;
-            } catch (\Exception $e) {
-                $this->error("Error fetching next batch of invoices: {$e->getMessage()}");
-                break;
-            }
-        } while ($invoices->has_more);
-
-        $bar->finish();
-        $this->line('');
+        $processedInvoices = array_map(fn (array $row) => $collector->toTaxExportRow($row), $datasetRows);
 
         $aggregatedReport = $this->aggregateReport($processedInvoices);
 
@@ -236,15 +123,22 @@ class GenerateTaxExport extends Command
 
         // Display the results with improved statistics
         $this->info('Processing completed in ' . $executionTime . ' seconds');
-        $this->info('Total invoices found: ' . $totalInvoice);
-        $this->info('Processed invoices: ' . $processedInvoiceCount);
+        $this->info('Total invoices found: ' . ($stats['total_invoice'] ?? count($datasetRows)));
+        $this->info('Processed invoices: ' . ($stats['processed_invoice_count'] ?? count($processedInvoices)));
         $this->info('Excluded invoices:');
-        $this->info(' - Payment not successful: ' . $paymentNotSuccessfulCount);
-        $this->info(' - Refunded: ' . $refundedInvoicesCount);
-        $this->info(' - Missing required data: ' . $missingDataInvoicesCount);
-        $this->info(' - Defaulted to France: ' . $defaultedToFranceCount);
+        $this->info(' - Payment not successful: ' . ($stats['payment_not_successful_count'] ?? 0));
+        $this->info(' - Refunded / fully credited: ' . ($stats['refunded_invoices_count'] ?? 0));
+        $this->info(' - Missing required data: ' . ($stats['missing_data_invoices_count'] ?? 0));
+        $this->info(' - Defaulted to France: ' . ($stats['defaulted_to_fr_count'] ?? 0));
 
         // Display volume metrics
+        $grossVolumeUsd = array_sum(array_column($processedInvoices, 'total_usd'));
+        $netVolumeUsd = array_sum(array_column($processedInvoices, 'total_after_tax_usd'));
+        $taxTotalUsd = array_sum(array_column($processedInvoices, 'tax_total_usd'));
+        $grossVolumeEur = array_sum(array_column($processedInvoices, 'total_eur'));
+        $netVolumeEur = array_sum(array_column($processedInvoices, 'total_after_tax_eur'));
+        $taxTotalEur = array_sum(array_column($processedInvoices, 'tax_total_eur'));
+
         $this->line('');
         $this->info('Volume Metrics (USD):');
         $this->info(' - Gross volume: $' . number_format($grossVolumeUsd, 2));
@@ -279,6 +173,7 @@ class GenerateTaxExport extends Command
                     'total_eur' => 0,
                     'tax_total_eur' => 0,
                     'total_after_tax_eur' => 0,
+                    'stripe_fee_eur' => 0,
                 ];
                 $aggregatedReport[$country] = [
                     'individual' => $defaultVal,
@@ -289,6 +184,7 @@ class GenerateTaxExport extends Command
             $aggregatedReport[$country][$customerType]['total_usd'] = ($aggregatedReport[$country][$customerType]['total_usd'] ?? 0) + $invoice['total_usd'];
             $aggregatedReport[$country][$customerType]['tax_total_usd'] = ($aggregatedReport[$country][$customerType]['tax_total_usd'] ?? 0) + $invoice['tax_total_usd'];
             $aggregatedReport[$country][$customerType]['total_after_tax_usd'] = ($aggregatedReport[$country][$customerType]['total_after_tax_usd'] ?? 0) + $invoice['total_after_tax_usd'];
+            $aggregatedReport[$country][$customerType]['stripe_fee_eur'] = ($aggregatedReport[$country][$customerType]['stripe_fee_eur'] ?? 0) + $invoice['stripe_fee_eur'];
             $aggregatedReport[$country][$customerType]['total_eur'] = ($aggregatedReport[$country][$customerType]['total_eur'] ?? 0) + $invoice['total_eur'];
             $aggregatedReport[$country][$customerType]['tax_total_eur'] = ($aggregatedReport[$country][$customerType]['tax_total_eur'] ?? 0) + $invoice['tax_total_eur'];
             $aggregatedReport[$country][$customerType]['total_after_tax_eur'] = ($aggregatedReport[$country][$customerType]['total_after_tax_eur'] ?? 0) + $invoice['total_after_tax_eur'];
@@ -361,18 +257,22 @@ class GenerateTaxExport extends Command
 
         $taxRate = $this->computeTaxRate($country, $vatId);
 
-        // Safely calculate tax amounts
-        $total = $invoice->total ?? 0;
-        $taxAmountCollectedUsd = $taxRate > 0 ? $total * $taxRate / ($taxRate + 100) : 0;
+        $grossAmountUsd = (int) ($invoice->total ?? 0);
+        $refundAmountUsd = $this->getInvoiceRefundAmount($invoice);
+        $creditNotesAmountUsd = $this->getInvoiceCreditNotesAmount($invoice);
+        $caNetUsd = $this->getNetInvoiceAmount($invoice);
+        $taxAmountCollectedUsd = $taxRate > 0 ? $caNetUsd * $taxRate / ($taxRate + 100) : 0;
 
-        $totalEur = 0;
+        $grossAmountEur = 0;
+        $stripeFeeEur = 0;
         if (isset($invoice->charge) && isset($invoice->charge->balance_transaction)) {
             // Fast path: invoice has embedded charge (OpnForm-style accounts)
             $bt = $invoice->charge->balance_transaction;
             // balance_transaction->amount is NET (after fees), add fees back to get GROSS
             $netEur = $bt->amount ?? 0;
             $feeEur = $bt->fee ?? 0;
-            $totalEur = $netEur + $feeEur; // GROSS = NET + fees
+            $grossAmountEur = $netEur + $feeEur; // GROSS = NET + fees
+            $stripeFeeEur = $feeEur;
         } else {
             // Fallback: Stripe no longer embeds charge on invoice
             // Fetch the Charge explicitly by invoice ID, then read its balance_transaction
@@ -390,18 +290,23 @@ class GenerateTaxExport extends Command
                     // balance_transaction->amount is NET (after fees), add fees back to get GROSS
                     $netEur = $bt->amount ?? 0;
                     $feeEur = $bt->fee ?? 0;
-                    $totalEur = $netEur + $feeEur; // GROSS = NET + fees
+                    $grossAmountEur = $netEur + $feeEur; // GROSS = NET + fees
+                    $stripeFeeEur = $feeEur;
                 }
             } catch (\Exception $e) {
                 // Silently continue if charge retrieval fails - EUR will remain 0
             }
         }
 
+        $caNetEur = $this->applyInvoiceAdjustmentsToGrossAmount($invoice, $grossAmountEur);
+        $refundAmountEur = $this->applyPartialInvoiceAdjustmentsToGrossAmount($invoice, $grossAmountEur, $refundAmountUsd);
+        $creditNotesAmountEur = $this->applyPartialInvoiceAdjustmentsToGrossAmount($invoice, $grossAmountEur, $creditNotesAmountUsd);
+        $stripeFeeNetEur = $this->applyPartialInvoiceAdjustmentsToGrossAmount($invoice, $grossAmountEur, $stripeFeeEur);
+
         // Note: We calculate GROSS EUR (NET + fees) to match Stripe Dashboard
         // balance_transaction->amount = NET, balance_transaction->fee = Stripe fees
 
-        $taxAmountCollectedEur = $taxRate > 0 ? $totalEur * $taxRate / ($taxRate + 100) : 0;
-
+        $taxAmountCollectedEur = $taxRate > 0 ? $caNetEur * $taxRate / ($taxRate + 100) : 0;
         return [
             'invoice_id' => $invoice->id,
             'created_at' => Carbon::createFromTimestamp($invoice->created)->format('Y-m-d H:i:s'),
@@ -409,12 +314,13 @@ class GenerateTaxExport extends Command
             'cust_vat_id' => $vatId,
             'cust_country' => $country,
             'tax_rate' => $taxRate,
-            'total_usd' => $total / 100,
+            'total_usd' => $caNetUsd / 100,
             'tax_total_usd' => $taxAmountCollectedUsd / 100,
-            'total_after_tax_usd' => ($total - $taxAmountCollectedUsd) / 100,
-            'total_eur' => $totalEur / 100,
+            'total_after_tax_usd' => ($caNetUsd - $taxAmountCollectedUsd) / 100,
+            'total_eur' => $caNetEur / 100,
             'tax_total_eur' => $taxAmountCollectedEur / 100,
-            'total_after_tax_eur' => ($totalEur - $taxAmountCollectedEur) / 100,
+            'total_after_tax_eur' => ($caNetEur - $taxAmountCollectedEur) / 100,
+            'stripe_fee_eur' => $stripeFeeNetEur / 100,
             '_defaulted_to_fr' => $defaultedToFrance,
         ];
     }
@@ -438,6 +344,179 @@ class GenerateTaxExport extends Command
         }
 
         return 0;
+    }
+
+    private function getInvoiceRefundAmount(Invoice $invoice): int
+    {
+        $invoiceRefundAmount = (int) ($invoice->amount_refunded ?? 0);
+        $chargeRefundAmount = 0;
+
+        if (isset($invoice->charge)) {
+            $chargeRefundAmount = (int) ($invoice->charge->amount_refunded ?? 0);
+
+            if ($chargeRefundAmount === 0 && isset($invoice->charge->refunded) && $invoice->charge->refunded) {
+                $chargeRefundAmount = (int) ($invoice->total ?? 0);
+            }
+        }
+
+        return max($invoiceRefundAmount, $chargeRefundAmount);
+    }
+
+    private function getInvoiceCreditNotesAmount(Invoice $invoice): int
+    {
+        return (int) (($invoice->post_payment_credit_notes_amount ?? 0) + ($invoice->pre_payment_credit_notes_amount ?? 0));
+    }
+
+    private function getNetInvoiceAmount(Invoice $invoice): int
+    {
+        return (int) (($invoice->total ?? 0) - $this->getInvoiceRefundAmount($invoice) - $this->getInvoiceCreditNotesAmount($invoice));
+    }
+
+    private function applyInvoiceAdjustmentsToGrossAmount(Invoice $invoice, int $grossAmount): int
+    {
+        $originalAmount = (int) ($invoice->total ?? 0);
+        $netAmount = $this->getNetInvoiceAmount($invoice);
+
+        if ($originalAmount === 0 || $grossAmount === 0 || $netAmount === $originalAmount) {
+            return $grossAmount;
+        }
+
+        return (int) round($grossAmount * ($netAmount / $originalAmount));
+    }
+
+    private function applyPartialInvoiceAdjustmentsToGrossAmount(Invoice $invoice, int $grossAmount, int $partialAmount): int
+    {
+        $originalAmount = (int) ($invoice->total ?? 0);
+
+        if ($originalAmount === 0 || $grossAmount === 0 || $partialAmount === 0) {
+            return 0;
+        }
+
+        return (int) round($grossAmount * ($partialAmount / $originalAmount));
+    }
+
+    private function getBalanceTransactionSummary(string $startDate, string $endDate): array
+    {
+        $queryOptions = [
+            'limit' => 100,
+            'created' => [
+                'gte' => Carbon::parse($startDate)->startOfDay()->timestamp,
+                'lte' => Carbon::parse($endDate)->endOfDay()->timestamp,
+            ],
+        ];
+
+        $transactions = Cashier::stripe()->balanceTransactions->all($queryOptions);
+        $rows = [];
+
+        do {
+            foreach ($transactions as $transaction) {
+                $rows[] = $transaction;
+            }
+
+            if (empty($transactions->data) || !$transactions->has_more) {
+                break;
+            }
+
+            $queryOptions['starting_after'] = end($transactions->data)->id;
+            $transactions = Cashier::stripe()->balanceTransactions->all($queryOptions);
+        } while (true);
+
+        $grossCollected = 0;
+        $refunds = 0;
+        $stripeFees = 0;
+        $adjustments = 0;
+        $netMovement = 0;
+        $payouts = 0;
+
+        foreach ($rows as $transaction) {
+            $type = $transaction->type ?? '';
+            $amount = (int) ($transaction->amount ?? 0);
+            $fee = (int) ($transaction->fee ?? 0);
+            $net = (int) ($transaction->net ?? 0);
+
+            if (in_array($type, ['charge', 'payment'], true)) {
+                $grossCollected += max(0, $amount);
+                $stripeFees += $fee;
+                $netMovement += $net;
+                continue;
+            }
+
+            if (in_array($type, ['refund', 'payment_refund'], true)) {
+                $refunds += abs($amount);
+                $stripeFees += $fee;
+                $netMovement += $net;
+                continue;
+            }
+
+            if ($type === 'stripe_fee') {
+                $stripeFees += abs($amount);
+                $netMovement += $net;
+                continue;
+            }
+
+            if ($type === 'adjustment') {
+                $adjustments += $net;
+                $stripeFees += $fee;
+                $netMovement += $net;
+                continue;
+            }
+
+            if ($type === 'payout') {
+                $payouts += abs($amount);
+            }
+        }
+
+        return [
+            'cash_gross_collected_eur' => $grossCollected / 100,
+            'cash_refunds_eur' => $refunds / 100,
+            'cash_stripe_fees_eur' => $stripeFees / 100,
+            'cash_adjustments_eur' => $adjustments / 100,
+            'cash_net_movement_eur' => $netMovement / 100,
+            'payouts_eur' => $payouts / 100,
+        ];
+    }
+
+    private function appendReconciliationRows(array $aggregatedReport, array $summary): array
+    {
+        foreach ([
+            'cash_gross_collected' => 'cash_gross_collected_eur',
+            'cash_refunds' => 'cash_refunds_eur',
+            'cash_stripe_fees' => 'cash_stripe_fees_eur',
+            'cash_adjustments' => 'cash_adjustments_eur',
+            'cash_net_movement' => 'cash_net_movement_eur',
+            'payouts' => 'payouts_eur',
+        ] as $label => $targetColumn) {
+            $aggregatedReport[] = [
+                'country' => '__RECONCILIATION__',
+                'customer_type' => $label,
+                'count' => 0,
+                'gross_total_usd' => 0,
+                'refund_amount_usd' => 0,
+                'credit_notes_amount_usd' => 0,
+                'ca_net_usd' => 0,
+                'total_usd' => 0,
+                'tax_total_usd' => 0,
+                'total_after_tax_usd' => 0,
+                'gross_total_eur' => 0,
+                'refund_amount_eur' => 0,
+                'credit_notes_amount_eur' => 0,
+                'ca_net_eur' => 0,
+                'stripe_fee_eur' => 0,
+                'ca_net_after_stripe_fees_eur' => 0,
+                'cash_gross_collected_eur' => 0,
+                'cash_refunds_eur' => 0,
+                'cash_stripe_fees_eur' => 0,
+                'cash_adjustments_eur' => 0,
+                'cash_net_movement_eur' => 0,
+                'payouts_eur' => 0,
+                'total_eur' => 0,
+                'tax_total_eur' => 0,
+                'total_after_tax_eur' => 0,
+                $targetColumn => $summary[$targetColumn],
+            ];
+        }
+
+        return $aggregatedReport;
     }
 
     private function isEuropeanCountry($countryCode)

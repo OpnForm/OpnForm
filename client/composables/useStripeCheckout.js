@@ -4,6 +4,9 @@ export function useStripeCheckout() {
   const router = useRouter()
   const route = useRoute()
   const { isAuthenticated } = useIsAuthenticated()
+  const { userIsSubscribed } = useBillingUpsell()
+  const { invalidateUser } = useAuth()
+  const { invalidateAll: invalidateWorkspaces } = useWorkspaces()
 
   const loadingPlan = ref(null)
 
@@ -34,6 +37,10 @@ export function useStripeCheckout() {
         await router.push({ name: 'register' })
       }
       return null
+    }
+
+    if (userIsSubscribed.value) {
+      return changePlan(plan, { yearly, closeModal })
     }
 
     loadingPlan.value = plan
@@ -72,6 +79,30 @@ export function useStripeCheckout() {
       loadingPlan.value = null
       useAlert().error(error.response?._data?.message || 'Unable to start checkout process. Please try again or contact support.')
       throw error
+    }
+  }
+
+  const changePlan = async (plan, { yearly = true, closeModal = null } = {}) => {
+    loadingPlan.value = plan
+
+    try {
+      const { message } = await billingApi.changePlan({
+        plan,
+        interval: yearly ? 'yearly' : 'monthly',
+      })
+
+      useAlert().success(message || 'Your plan has been updated successfully.')
+      invalidateUser()
+      invalidateWorkspaces()
+
+      if (typeof closeModal === 'function') {
+        closeModal()
+      }
+    } catch (error) {
+      useAlert().error(error.response?._data?.message || 'Unable to change plan. Please try again or contact support.')
+      throw error
+    } finally {
+      loadingPlan.value = null
     }
   }
 

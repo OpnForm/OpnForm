@@ -30,7 +30,7 @@
             </template>
           </WorkspaceDropdown>
         </div>
-        <div class="hidden md:flex gap-x-1 lg:gap-x-2 ml-auto">
+        <div class="hidden md:flex gap-x-2 ml-auto">
           <NuxtLink
             v-if="user"
             :to="{ name: 'home' }"
@@ -39,7 +39,7 @@
           >
             My Forms
           </NuxtLink>
-          <!-- <div class="relative z-20" @mouseleave="isOpen = false">
+          <div class="relative z-20" @mouseleave="isOpen = false">
             <button
               :class="navLinkClasses"
               class="flex items-center gap-1"
@@ -65,7 +65,7 @@
                 Some links
               </NuxtLink>
             </div>
-          </div> -->
+          </div>
           <NuxtLink
             v-if="$route.name !== 'enterprise'"
             :to="{ name: 'enterprise' }"
@@ -81,6 +81,13 @@
             class="hidden lg:block xl:block"
           >
             Integrations
+          </NuxtLink>
+          <NuxtLink
+            v-if="$route.name !== 'pricing'"
+            :to="{ name: 'pricing' }"
+            :class="navLinkClasses"
+          >
+            Pricing
           </NuxtLink>
           <NuxtLink
             v-if="
@@ -121,8 +128,7 @@
             Documentation
           </NuxtLink>
 
-
-          <template v-if="appStore.featureBaseEnabled">
+          <!-- <template v-if="appStore.featureBaseEnabled">
             <button
               v-if="user"
               :class="navLinkClasses"
@@ -145,12 +151,12 @@
             >
               What's new?
             </a>
-          </template>
+          </template> -->
         </div>
 
         <div class="block">
           <div class="flex items-center">
-            <div class="ml-4 lg:ml-8 xl:ml-12 relative">
+            <div class="ml-12 relative">
               <div class="relative inline-block text-left">
                 <UserDropdown v-if="user">
                   <template #default="{ user }">
@@ -172,7 +178,7 @@
                   <UButton
                     v-if="$route.name !== 'login'"
                     :to="{ name: 'login' }"
-                    class="bg-gray-100 text-gray-600 text-sm leading-5 tracking-[-0.6%] font-medium border border-transparent hover:border-gray-200 hover:text-gray-950 dark:hover:text-white hover:bg-gray-50"
+                    class="bg-gray-100! text-gray-950! text-sm leading-5 tracking-[-0.6%] font-medium"
                     label="Login"
                   />
 
@@ -209,30 +215,17 @@ import UserDropdown from "../dashboard/UserDropdown.vue"
 import opnformConfig from "~/opnform.config.js"
 import { useFeatureFlag } from "~/composables/useFeatureFlag"
 import TrackClick from "~/components/global/TrackClick.vue"
+import { ref } from "vue"
 
-// const isOpen = ref(false)
+const isOpen = ref(false)
 
 // Stores & composables
 const { current: workspace } = useCurrentWorkspace()
-const appStore = useAppStore()
 
 const { data: user } = useAuth().user()
 const isIframe = useIsIframe()
 const isSelfHosted = computed(() => useFeatureFlag("self_hosted"))
-const { workspaceIsPaid } = useBillingUpsell()
 const route = useRoute()
-const hasNewChanges = computed(() => {
-  if (import.meta.server || !window.Featurebase || !appStore.featureBaseEnabled) {
-    return false
-  }
-
-  return window.Featurebase("unviewed_changelog_count") > 0
-})
-
-function openChangelog() {
-  if (import.meta.server || !window.Featurebase) return
-  window.Featurebase("manually_open_changelog_popup")
-}
 
 // Get current form for forms-slug routes
 const isFormSlugRoute = computed(
