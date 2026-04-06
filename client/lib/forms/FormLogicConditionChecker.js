@@ -1,5 +1,54 @@
 import { default as _isEqual } from "lodash/isEqual"
 
+function resolveConditionValue(value, formData) {
+  if (typeof value !== 'string' || !value.includes('mention-field-id')) {
+    return value
+  }
+
+  if (typeof window === 'undefined' || typeof DOMParser === 'undefined') {
+    return value
+  }
+
+  const parser = new DOMParser()
+  const doc = parser.parseFromString(value, 'text/html')
+  const mentions = doc.querySelectorAll('[mention]')
+
+  if (mentions.length === 0) return value
+
+  if (mentions.length === 1) {
+    const fieldId = mentions[0].getAttribute('mention-field-id')
+    const fallback = mentions[0].getAttribute('mention-fallback')
+
+    const clone = doc.body.cloneNode(true)
+    clone.querySelector('[mention]').remove()
+    const remainingText = clone.textContent.trim()
+
+    // Single mention with no surrounding text — return the raw field value to preserve type
+    if (remainingText === '') {
+      const resolved = formData[fieldId]
+      if (resolved !== undefined && resolved !== null) return resolved
+      if (fallback) return fallback
+      return null
+    }
+  }
+
+  // Multiple mentions or mixed content — resolve to string
+  mentions.forEach(el => {
+    const fieldId = el.getAttribute('mention-field-id')
+    const fallback = el.getAttribute('mention-fallback')
+    const fieldValue = formData[fieldId]
+    if (fieldValue !== undefined && fieldValue !== null) {
+      el.textContent = Array.isArray(fieldValue) ? fieldValue.join(', ') : String(fieldValue)
+    } else if (fallback) {
+      el.textContent = fallback
+    } else {
+      el.textContent = ''
+    }
+  })
+
+  return doc.body.textContent.trim()
+}
+
 export function conditionsMet(conditions, formData) {
   if (conditions === undefined || conditions === null) {
     return false
@@ -7,9 +56,17 @@ export function conditionsMet(conditions, formData) {
 
   // If it's not a group, just a single condition
   if (conditions.operatorIdentifier === undefined) {
+    const condition = conditions.value
+    if (!condition) return false
+
+    const resolvedCondition = { ...condition }
+    if (resolvedCondition.value !== undefined && resolvedCondition.value !== null) {
+      resolvedCondition.value = resolveConditionValue(resolvedCondition.value, formData)
+    }
+
     return propertyConditionMet(
-      conditions.value,
-      conditions.value ? formData[conditions.value.property_meta.id] : null,
+      resolvedCondition,
+      formData[condition.property_meta.id],
     )
   }
 

@@ -62,6 +62,49 @@ class FormLogicConditionChecker
         return null;
     }
 
+    /**
+     * Resolve mention references in a condition value.
+     * Single mention with no surrounding text returns the raw field value (preserving type).
+     * Mixed content or multiple mentions resolves to a plain-text string.
+     */
+    private function resolveConditionValue($value)
+    {
+        if (!is_string($value) || !str_contains($value, 'mention-field-id')) {
+            return $value;
+        }
+
+        preg_match_all('/mention-field-id="([^"]+)"/', $value, $matches);
+        $mentionCount = count($matches[1] ?? []);
+
+        if ($mentionCount === 1) {
+            $withoutSpan = preg_replace('/<span[^>]*mention[^>]*>.*?<\/span>/s', '', $value);
+
+            if (trim($withoutSpan) === '') {
+                $fieldId = $matches[1][0];
+                $resolvedValue = $this->getValue($fieldId);
+
+                if ($resolvedValue !== null) {
+                    return $resolvedValue;
+                }
+
+                if (preg_match('/mention-fallback="([^"]*)"/', $value, $fb) && !empty($fb[1])) {
+                    return $fb[1];
+                }
+
+                return null;
+            }
+        }
+
+        $data = collect($this->formData)
+            ->map(fn ($val, $id) => ['id' => $id, 'value' => $val])
+            ->values()
+            ->toArray();
+
+        $parser = new \App\Open\MentionParser($value, $data, $this->computedValues ?? []);
+
+        return $parser->parseAsText();
+    }
+
     private function conditionsAreMet(?array $conditions, array $formData): bool
     {
         if (!$conditions) {
@@ -72,7 +115,13 @@ class FormLogicConditionChecker
         if (!isset($conditions['operatorIdentifier'])) {
             $fieldId = $conditions['value']['property_meta']['id'] ?? null;
             $value = $fieldId ? $this->getValue($fieldId) : null;
-            return $this->propertyConditionMet($conditions['value'], $value);
+
+            $condition = $conditions['value'];
+            if (isset($condition['value'])) {
+                $condition['value'] = $this->resolveConditionValue($condition['value']);
+            }
+
+            return $this->propertyConditionMet($condition, $value);
         }
 
         if ($conditions['operatorIdentifier'] === 'and') {

@@ -45,7 +45,8 @@ export default {
     DateInput: defineAsyncComponent(() => import('~/components/forms/heavy/DateInput.vue')),
     FileInput: defineAsyncComponent(() => import('~/components/forms/heavy/FileInput.vue')),
     MatrixInput: defineAsyncComponent(() => import('~/components/forms/heavy/MatrixInput.vue')),
-    PhoneInput: defineAsyncComponent(() => import('~/components/forms/heavy/PhoneInput.vue'))
+    PhoneInput: defineAsyncComponent(() => import('~/components/forms/heavy/PhoneInput.vue')),
+    MentionInput: defineAsyncComponent(() => import('~/components/forms/heavy/MentionInput.vue')),
   },
   props: {
     modelValue: { type: Object, required: false, default: null },
@@ -59,20 +60,20 @@ export default {
       available_filters: OpenFilters,
       hasInput: false,
       inputComponent: {
-        text: "TextInput",
-        rich_text: "TextInput",
-        number: "TextInput",
-        rating: "TextInput",
-        scale: "TextInput",
-        slider: "TextInput",
+        text: "MentionInput",
+        rich_text: "MentionInput",
+        number: "MentionInput",
+        rating: "MentionInput",
+        scale: "MentionInput",
+        slider: "MentionInput",
         select: "SelectInput",
         multi_select: "SelectInput",
         date: "DateInput",
         files: "FileInput",
         checkbox: "CheckboxInput",
-        url: "TextInput",
-        email: "TextInput",
-        phone_number: "TextInput",
+        url: "MentionInput",
+        email: "MentionInput",
+        phone_number: "MentionInput",
         matrix: "MatrixInput",
         computed: "TextInput", // Computed variables use text input
       }
@@ -80,7 +81,15 @@ export default {
   },
 
   computed: {
-    // Return type of input, and props for that input
+    formProperties() {
+      return []
+    },
+    formComputedVariables() {
+      return []
+    },
+    mentionFields() {
+      return this.formProperties.filter(p => p.id !== this.property?.id)
+    },
     inputComponentData() {
       const componentData = {
         component: this.inputComponent[this.property.type],
@@ -120,6 +129,12 @@ export default {
       else if (this.property.type === "matrix"){
         componentData.rows = this.property.rows
         componentData.columns = this.property.columns
+      }
+
+      // Pass mention props for MentionInput
+      if (componentData.component === 'MentionInput') {
+        componentData.mentions = this.mentionFields
+        componentData.computedVariables = this.formComputedVariables
       }
 
       return componentData
@@ -180,6 +195,9 @@ export default {
 
   methods: {
     castContent(content) {
+      if (typeof content.value === 'string' && content.value.includes('mention-field-id')) {
+        return content
+      }
       if (
         ["number", "rating", "scale", "slider"].includes(this.property.type) &&
         content.value

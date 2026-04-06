@@ -112,6 +112,9 @@ class FormPropertyLogicRule {
   }
 
   valueHasCorrectType(type, value) {
+    if (typeof value === 'string' && value.includes('mention-field-id')) {
+      return true
+    }
     if (
       (type === "string" && typeof value !== "string") ||
       (type === "boolean" && typeof value !== "boolean") ||
