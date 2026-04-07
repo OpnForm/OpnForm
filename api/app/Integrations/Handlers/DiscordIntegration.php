@@ -57,7 +57,7 @@ class DiscordIntegration extends AbstractIntegrationHandler
             if (Arr::get($settings, 'include_hidden_fields_submission_data', false)) {
                 $formatter->showHiddenFields();
             }
-            $formattedData = $formatter->getFieldsWithValue();
+            $formattedData = $this->escapeFormattedDataForDiscord($formatter->getFieldsWithValue());
 
             $submissionString = '';
             foreach ($formattedData as $field) {
@@ -89,7 +89,9 @@ class DiscordIntegration extends AbstractIntegrationHandler
             ];
         }
 
-        $formattedData = (new FormSubmissionFormatter($this->form, $this->submissionData))->outputStringsOnly()->showHiddenFields()->getFieldsWithValue();
+        $formattedData = $this->escapeFormattedDataForDiscord(
+            (new FormSubmissionFormatter($this->form, $this->submissionData))->outputStringsOnly()->showHiddenFields()->getFieldsWithValue()
+        );
         $message = Arr::get($settings, 'message', 'New form submission');
         return [
             'content' => (new MentionParser($message, $formattedData))->parse(),
@@ -98,5 +100,24 @@ class DiscordIntegration extends AbstractIntegrationHandler
             'avatar_url' => asset('img/logo.png'),
             'embeds' => $blocks,
         ];
+    }
+
+    private function escapeFormattedDataForDiscord(array $fields): array
+    {
+        return array_map(function (array $field) {
+            $field['value'] = is_array($field['value'] ?? null)
+                ? array_map([$this, 'escapeDiscordMarkdownText'], $field['value'])
+                : $this->escapeDiscordMarkdownText((string) ($field['value'] ?? ''));
+
+            return $field;
+        }, $fields);
+    }
+
+    private function escapeDiscordMarkdownText(string $text): string
+    {
+        $text = str_replace('\\', '\\\\', $text);
+        $text = preg_replace('/([*_~`>|\\[\\]()])/u', '\\\\$1', $text);
+
+        return str_replace('@', "@\u{200B}", $text);
     }
 }

@@ -1,6 +1,8 @@
 <?php
 
 use App\Models\Integration\FormIntegration;
+use App\Notifications\Forms\FormEmailNotification;
+use Illuminate\Notifications\AnonymousNotifiable;
 
 test('free user can create one email integration to their own email', function () {
     $user = $this->actingAsUser();
@@ -383,4 +385,39 @@ test('pro user can update email integration with email appearance settings', fun
     expect($integration->data->font_color)->toBe('#333333');
     expect($integration->data->outer_background_color)->toBe('#e0e0e0');
     expect($integration->data->inner_background_color)->toBe('#fafafa');
+});
+
+test('email notification escapes submission html while keeping generated links clickable', function () {
+    $user = $this->actingAsProUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace);
+
+    $textField = collect($form->properties)->firstWhere('name', 'Name');
+    $urlField = collect($form->properties)->firstWhere('name', 'URL');
+
+    $submissionData = [
+        $textField['id'] => 'normal <b>bold</b> <img src="https://evil.test/pixel.png">',
+        $urlField['id'] => 'https://example.com/path',
+    ];
+
+    $integrationData = (object) [
+        'sender_name' => 'Test Sender',
+        'subject' => 'Test Subject',
+        'email_content' => '<p>Body: <span mention="true" mention-field-id="' . $textField['id'] . '"></span></p>',
+        'include_submission_data' => true,
+    ];
+
+    $notification = new FormEmailNotification(
+        new \App\Events\Forms\FormSubmitted($form, $submissionData),
+        $integrationData
+    );
+
+    $html = (string) $notification->toMail(new AnonymousNotifiable())->render();
+
+    expect($html)->toContain('normal &lt;b&gt;bold&lt;/b&gt;');
+    expect($html)->toContain('evil.test/pixel.png');
+    expect($html)->not->toContain('normal <b>bold</b>');
+    expect($html)->not->toContain('<img src="https://evil.test/pixel.png">');
+    expect($html)->toContain('href="https://example.com/path"');
+    expect($html)->toContain('>https://example.com/path<');
 });

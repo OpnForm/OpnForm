@@ -50,7 +50,9 @@ class SlackIntegration extends AbstractIntegrationHandler
             $externalLinks[] = '*<' . $editUrl . '|✍️ ' . $this->form->editable_submissions_button_text . '>*';
         }
 
-        $formattedData = (new FormSubmissionFormatter($this->form, $this->submissionData))->outputStringsOnly()->showHiddenFields()->getFieldsWithValue();
+        $formattedData = $this->escapeFormattedDataForSlack(
+            (new FormSubmissionFormatter($this->form, $this->submissionData))->outputStringsOnly()->showHiddenFields()->getFieldsWithValue()
+        );
         $message = Arr::get($settings, 'message', 'New form submission');
         $blocks = [
             [
@@ -67,7 +69,7 @@ class SlackIntegration extends AbstractIntegrationHandler
             if (Arr::get($settings, 'include_hidden_fields_submission_data', false)) {
                 $formatter->showHiddenFields();
             }
-            $formattedData = $formatter->getFieldsWithValue();
+            $formattedData = $this->escapeFormattedDataForSlack($formatter->getFieldsWithValue());
 
             $submissionString = '';
             foreach ($formattedData as $field) {
@@ -108,5 +110,25 @@ class SlackIntegration extends AbstractIntegrationHandler
         return [
             'blocks' => $blocks,
         ];
+    }
+
+    private function escapeFormattedDataForSlack(array $fields): array
+    {
+        return array_map(function (array $field) {
+            $field['value'] = is_array($field['value'] ?? null)
+                ? array_map([$this, 'escapeSlackMrkdwnText'], $field['value'])
+                : $this->escapeSlackMrkdwnText((string) ($field['value'] ?? ''));
+
+            return $field;
+        }, $fields);
+    }
+
+    private function escapeSlackMrkdwnText(string $text): string
+    {
+        return str_replace(
+            ['&', '<', '>'],
+            ['&amp;', '&lt;', '&gt;'],
+            $text
+        );
     }
 }
