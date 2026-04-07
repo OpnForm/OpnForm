@@ -1,7 +1,7 @@
 <template>
   <ComparisonPage
     competitor-name="Youform"
-    competitor-icon="i-simple-icons-youform"
+    competitor-icon="opnform:youform"
     :hero-title="'OpnForm — The Open-Source Youform Alternative'"
     :free-plan-comparison="freePlanComparison"
     :switch-reasons="switchReasons"

@@ -1,7 +1,7 @@
 <template>
   <ComparisonPage
     competitor-name="Form.io"
-    competitor-icon="i-simple-icons-formio"
+    competitor-icon="opnform:formio"
     :hero-title="'OpnForm — The Open-Source Form.io Alternative'"
     :free-plan-comparison="freePlanComparison"
     :switch-reasons="switchReasons"

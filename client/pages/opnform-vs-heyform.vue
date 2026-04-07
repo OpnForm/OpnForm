@@ -1,7 +1,7 @@
 <template>
   <ComparisonPage
     competitor-name="HeyForm"
-    competitor-icon="i-simple-icons-heyform"
+    competitor-icon="opnform:heyform"
     :hero-title="'OpnForm — The Open-Source HeyForm Alternative'"
     :free-plan-comparison="freePlanComparison"
     :switch-reasons="switchReasons"

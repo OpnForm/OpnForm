@@ -1,7 +1,7 @@
 <template>
   <ComparisonPage
     competitor-name="123FormBuilder"
-    competitor-icon="i-simple-icons-123formbuilder"
+    competitor-icon="opnform:123formbuilder"
     :hero-title="'OpnForm — The Open-Source 123FormBuilder Alternative'"
     :free-plan-comparison="freePlanComparison"
     :switch-reasons="switchReasons"
