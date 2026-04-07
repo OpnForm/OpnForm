@@ -10,9 +10,9 @@
     :get-competitor-price="getPrice"
   >
     <template #hero-subtitle>
-      Create beautiful, logic‑driven forms with <b>unlimited responses, full control, and zero limits</b> — all for free.
+      Build powerful forms with <b>unlimited responses, deep customization, and full control over your data</b> — without limitations.
       <br/><br/>
-      Collect data the way you want. Whether you’re a big or small team, a startup, or a builder, OpnForm delivers everything Google Forms does — without paywalls, usage caps, or per‑month submission limits.
+      Google Forms is a simple and reliable tool for basic data collection. It’s widely used for surveys and internal workflows, especially within the Google ecosystem. However, it has limitations when it comes to customization, advanced workflows, and developer flexibility. OpnForm provides a modern form-building experience with <b>greater flexibility, customization, and scalability.</b>
     </template>
   </ComparisonPage>
 </template>
@@ -32,127 +32,108 @@ useOpnSeoMeta({
 
 const freePlanComparison = [
   {
-    label: "Monthly Responses",
-    cells: ["Unlimited submissions per month", "1,000 / month"],
+    label: "Unlimited submissions",
+    cells: ["Yes", "Yes"],
   },
   {
-    label: "Forms Allowed",
-    cells: ["Unlimited forms", "Unlimited forms"],
+    label: "Unlimited forms",
+    cells: ["Yes", "Yes"],
   },
   {
-    label: "Branding Removal",
-    cells: ["Not available on free", "Not available"],
+    label: "Conditional logic",
+    cells: ["Yes", "Yes (basic logic jumps)"],
   },
   {
-    label: "Conditional Logic",
-    cells: ["Conditional logic included", "Basic conditional logic available"],
+    label: "Multi-page forms",
+    cells: ["Yes", "Yes"],
   },
   {
-    label: "File Uploads",
-    cells: ["File uploads available", "Not Included"],
+    label: "File uploads",
+    cells: ["Yes", "Yes (requires Google account)"],
+  },
+  {
+    label: "Custom branding",
+    cells: ["No", "No"],
   },
   {
     label: "Custom CSS",
-    cells: ["No direct custom CSS", "No custom CSS"],
+    cells: ["No", "No"],
+  },
+  {
+    label: "Analytics dashboard",
+    cells: ["Basic / Pro", "Basic summaries"],
   },
   {
     label: "Integrations",
-    cells: [
-      "Webhooks and API access available",
-      "Only limited native integrations",
-    ],
-  },
-  {
-    label: "Self-hosting Option",
-    cells: ["Available", "No self-hosting"],
-  },
-  {
-    label: "Price for 1,000 Responses",
-    cells: ["Free", "$10/month"],
+    cells: ["Via integrations", "Google ecosystem + Apps Script"],
   },
 ]
 
 const switchReasons = [
   {
-    icon: "i-ph-infinity-bold",
-    title: "No limits, no hidden costs",
-    description: "Unlimited forms and responses on every plan.",
+    icon: "i-heroicons-rectangle-stack",
+    title: "More advanced workflows",
+    description: "Go beyond simple surveys with logic-driven forms.",
   },
   {
-    icon: "i-heroicons-paint-brush",
-    title: "Fully branded forms",
-    description: "Add your logo, colors, and even custom CSS.",
-  },
-  {
-    icon: "i-heroicons-command-line",
-    title: "Advanced logic & calculations",
-    description: "Create dynamic, intelligent forms easily.",
-  },
-  {
-    icon: "i-heroicons-circle-stack",
-    title: "Open source",
-    description: "Own your data, host it yourself, or use our managed version.",
+    icon: "i-heroicons-adjustments-horizontal",
+    title: "Greater customization",
+    description: "Control form design and user experience.",
   },
   {
     icon: "i-heroicons-code-bracket-square",
     title: "Developer-friendly",
-    description: "REST API, webhooks, and automation-ready.",
+    description: "API, webhooks, and automation support.",
   },
   {
-    icon: "i-heroicons-user-group",
-    title: "Some title goes here...",
-    description: "Some text goes here...",
+    icon: "i-heroicons-server-stack",
+    title: "Open-source option",
+    description: "Self-host and control your infrastructure.",
+  },
+  {
+    icon: "i-heroicons-puzzle-piece",
+    title: "Flexible integrations",
+    description: "Connect beyond a single ecosystem.",
+  },
+  {
+    icon: "i-heroicons-arrow-trending-up",
+    title: "Scales with your business",
+    description: "From solo creator to enterprise teams.",
   },
 ]
 
 const featureComparison = [
   {
-    label: "Unlimited responses",
-    cells: ["Y", "N"],
-  },
-  {
-    label: "Logic jumps & branching",
-    cells: ["Y", "Y"],
-  },
-  {
-    label: "File uploads",
-    cells: ["Y", "Y"],
-  },
-  {
-    label: "Calculations",
-    cells: ["Y", "Paid"],
-  },
-  {
-    label: "Custom branding",
-    cells: ["Y", "N"],
-  },
-  {
-    label: "Custom CSS",
-    cells: ["Y", "N"],
-  },
-  {
-    label: "Integrations",
-    cells: ["100+", "Limited"],
-  },
-  {
-    label: "Analytics dashboard",
-    cells: ["Y", "Paid"],
-  },
-  {
     label: "Open source",
     cells: ["Y", "N"],
   },
   {
-    label: "Self-hosting",
+    label: "Self-hosting option",
     cells: ["Y", "N"],
   },
   {
-    label: "API access",
-    cells: ["Y", "Paid"],
+    label: "API + webhooks",
+    cells: ["Y", "N"],
   },
   {
-    label: "GDPR compliance",
-    cells: ["Y", "Y"],
+    label: "Custom domains",
+    cells: ["Y", "N"],
+  },
+  {
+    label: "Advanced logic & workflows",
+    cells: ["Y", "Basic logic only"],
+  },
+  {
+    label: "Full design customization",
+    cells: ["Y", "N"],
+  },
+  {
+    label: "Data ownership (self-hosting control)",
+    cells: ["Y", "N"],
+  },
+  {
+    label: "Ecosystem integrations",
+    cells: ["Integrations", "Google ecosystem"],
   },
 ]
 
