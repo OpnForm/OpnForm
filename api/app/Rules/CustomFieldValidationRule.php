@@ -53,9 +53,10 @@ class CustomFieldValidationRule implements ValidationRule
                 ]);
             }
 
-            return FormLogicConditionChecker::conditionsMet(
+            return FormLogicConditionChecker::conditionsMetWithForm(
                 $logicConditions,
-                $formDataWithContext
+                $formDataWithContext,
+                $this->form
             );
         } catch (\Exception $e) {
             $this->errorOccurred = true;

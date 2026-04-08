@@ -240,6 +240,12 @@ class FormLogicConditionChecker
         if (is_array($fieldValue)) {
             return in_array($condition['value'], $fieldValue);
         }
+        if (!is_string($fieldValue)) {
+            return false;
+        }
+        if (!is_string($condition['value'])) {
+            return false;
+        }
         return \Illuminate\Support\Str::contains($fieldValue, $condition['value']);
     }
 
@@ -310,12 +316,18 @@ class FormLogicConditionChecker
         if (!isset($condition['value'])) {
             return false;
         }
+        if (!is_string($fieldValue) || !is_string($condition['value'])) {
+            return false;
+        }
         return str_starts_with($fieldValue, $condition['value']);
     }
 
     private function checkEndsWith($condition, $fieldValue): bool
     {
         if (!isset($condition['value'])) {
+            return false;
+        }
+        if (!is_string($fieldValue) || !is_string($condition['value'])) {
             return false;
         }
         return str_ends_with($fieldValue, $condition['value']);
@@ -570,10 +582,10 @@ class FormLogicConditionChecker
 
     private function checkLength($condition, $fieldValue, $operator = '==='): bool
     {
-        if (!$fieldValue || strlen($fieldValue) === 0) {
+        if (!$fieldValue || !is_string($fieldValue) || strlen($fieldValue) === 0) {
             return false;
         }
-        if (!isset($condition['value'])) {
+        if (!isset($condition['value']) || !is_numeric($condition['value'])) {
             return false;
         }
         switch ($operator) {
@@ -703,12 +715,18 @@ class FormLogicConditionChecker
                 return $this->checkLength($propertyCondition, $value, '<=');
             case 'matches_regex':
                 try {
+                    if (!is_string($propertyCondition['value']) || !is_string($value)) {
+                        return false;
+                    }
                     return (bool) preg_match('/' . $propertyCondition['value'] . '/', $value);
                 } catch (\Exception $e) {
                     return false;
                 }
             case 'does_not_match_regex':
                 try {
+                    if (!is_string($propertyCondition['value']) || !is_string($value)) {
+                        return true;
+                    }
                     return !(bool) preg_match('/' . $propertyCondition['value'] . '/', $value);
                 } catch (\Exception $e) {
                     return true;

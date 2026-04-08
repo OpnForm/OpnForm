@@ -168,7 +168,9 @@ function checkMatrixContains(condition, fieldValue)
 }
 
 function checkContains(condition, fieldValue) {
-  return fieldValue ? fieldValue.includes(condition.value) : false
+  if (!fieldValue || typeof fieldValue !== 'string') return false
+  if (typeof condition.value !== 'string') return false
+  return fieldValue.includes(condition.value)
 }
 
 function checkListContains(condition, fieldValue) {
@@ -182,10 +184,12 @@ function checkListContains(condition, fieldValue) {
 }
 
 function checkStartsWith(condition, fieldValue) {
+  if (typeof fieldValue !== 'string' || typeof condition.value !== 'string') return false
   return fieldValue?.startsWith(condition.value)
 }
 
 function checkendsWith(condition, fieldValue) {
+  if (typeof fieldValue !== 'string' || typeof condition.value !== 'string') return false
   return fieldValue?.endsWith(condition.value)
 }
 
@@ -400,6 +404,7 @@ function textConditionMet(propertyCondition, value) {
       return checkLength(propertyCondition, value, "<=")
     case 'matches_regex':
       try {
+        if (typeof propertyCondition.value !== 'string' || typeof value !== 'string') return false
         const regex = new RegExp(propertyCondition.value)
         return regex.test(value)
       } catch {
@@ -407,8 +412,9 @@ function textConditionMet(propertyCondition, value) {
       }
     case 'does_not_match_regex':
       try {
-        const regex = new RegExp(propertyCondition.value)
-        return !regex.test(value)
+        if (typeof propertyCondition.value !== 'string' || typeof value !== 'string') return true
+        const regex2 = new RegExp(propertyCondition.value)
+        return !regex2.test(value)
       } catch {
         return true
       }

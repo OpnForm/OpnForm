@@ -192,6 +192,112 @@ describe('LogicPropertyValidator condition validation', function () {
     });
 });
 
+describe('LogicPropertyValidator mention values', function () {
+    function mentionValue(string $fieldId, string $fieldName): string
+    {
+        return '<span mention mention-field-id="' . $fieldId . '" mention-field-name="' . $fieldName . '" mention-fallback="">@' . $fieldName . '</span>';
+    }
+
+    it('accepts mention HTML as valid string condition value', function () {
+        $validator = new LogicPropertyValidator();
+        $context = ['properties' => []];
+        $property = [
+            'id' => 'title',
+            'name' => 'Name',
+            'type' => 'text',
+            'hidden' => false,
+            'required' => false,
+            'logic' => [
+                'conditions' => [
+                    'operatorIdentifier' => 'and',
+                    'children' => [
+                        [
+                            'identifier' => 'title',
+                            'value' => [
+                                'operator' => 'equals',
+                                'property_meta' => [
+                                    'id' => 'title',
+                                    'type' => 'text',
+                                ],
+                                'value' => mentionValue('other_field', 'Other Field'),
+                            ],
+                        ],
+                    ],
+                ],
+                'actions' => ['hide-block'],
+            ],
+        ];
+        $errors = $validator->validate($property, 0, $context);
+        expect($errors)->toBeEmpty();
+    });
+
+    it('accepts mention HTML as valid number condition value', function () {
+        $validator = new LogicPropertyValidator();
+        $context = ['properties' => []];
+        $property = [
+            'id' => 'num',
+            'name' => 'Number',
+            'type' => 'number',
+            'hidden' => false,
+            'required' => false,
+            'logic' => [
+                'conditions' => [
+                    'operatorIdentifier' => 'and',
+                    'children' => [
+                        [
+                            'identifier' => 'num',
+                            'value' => [
+                                'operator' => 'greater_than',
+                                'property_meta' => [
+                                    'id' => 'num',
+                                    'type' => 'number',
+                                ],
+                                'value' => mentionValue('threshold', 'Threshold'),
+                            ],
+                        ],
+                    ],
+                ],
+                'actions' => ['hide-block'],
+            ],
+        ];
+        $errors = $validator->validate($property, 0, $context);
+        expect($errors)->toBeEmpty();
+    });
+
+    it('accepts mention HTML for starts_with operator', function () {
+        $validator = new LogicPropertyValidator();
+        $context = ['properties' => []];
+        $property = [
+            'id' => 'title',
+            'name' => 'Name',
+            'type' => 'text',
+            'hidden' => false,
+            'required' => false,
+            'logic' => [
+                'conditions' => [
+                    'operatorIdentifier' => 'and',
+                    'children' => [
+                        [
+                            'identifier' => 'title',
+                            'value' => [
+                                'operator' => 'starts_with',
+                                'property_meta' => [
+                                    'id' => 'title',
+                                    'type' => 'text',
+                                ],
+                                'value' => mentionValue('prefix_field', 'Prefix'),
+                            ],
+                        ],
+                    ],
+                ],
+                'actions' => ['hide-block'],
+            ],
+        ];
+        $errors = $validator->validate($property, 0, $context);
+        expect($errors)->toBeEmpty();
+    });
+});
+
 describe('LogicPropertyValidator operators without values', function () {
     it('passes for checkbox is_checked without value', function () {
         $validator = new LogicPropertyValidator();
