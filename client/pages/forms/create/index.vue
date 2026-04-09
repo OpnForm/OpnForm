@@ -29,6 +29,7 @@ import { watch } from "vue"
 import { initForm } from "~/composables/forms/initForm.js"
 import FormEditor from "~/components/open/forms/components/FormEditor.vue"
 import CreateFormBaseModal from "../../../components/pages/forms/create/CreateFormBaseModal.vue"
+import { resolveCreateFormState } from "~/lib/forms/resolve-create-form-state.js"
 import { hash } from "~/lib/utils.js"
 import { onBeforeRouteLeave } from "vue-router"
 
@@ -97,31 +98,32 @@ onMounted(() => {
   }
 
   const { hasFeature } = usePlanFeatures()
-  form.value = initForm({ workspace_id: workspace.value?.id, no_branding: hasFeature('branding.removal') }, true)
-  formInitialHash.value = hash(JSON.stringify(form.value.data()))
+  const baseForm = initForm({ workspace_id: workspace.value?.id, no_branding: hasFeature('branding.removal') }, true)
+  const initialState = resolveCreateFormState(baseForm.data(), {
+    importedFormData: localStorage.getItem('importedFormData'),
+    templateStructure: template?.structure,
+  })
 
-  // Check for imported form data passed via localStorage (e.g. comparison pages)
-  const pendingImport = localStorage.getItem('importedFormData')
-  if (pendingImport) {
+  if (import.meta.client && localStorage.getItem('importedFormData')) {
     localStorage.removeItem('importedFormData')
-    try {
-      const importedData = JSON.parse(pendingImport)
-      form.value = useForm({ ...form.value.data(), ...importedData })
-    } catch { /* ignore malformed data */ }
-  } else if (template && template.structure) {
-    form.value = useForm({ ...form.value.data(), ...template.structure })
-  } else {
-    showInitialFormModal.value = true
   }
+
+  setFormAsClean(initialState.formData)
+  showInitialFormModal.value = initialState.showInitialModal
 })
 
 // Methods
+const setFormAsClean = (formData) => {
+  form.value = useForm(formData)
+  formInitialHash.value = hash(JSON.stringify(form.value.data()))
+}
+
 const formGenerated = (newForm) => {
-  form.value = useForm({ ...form.value.data(), ...newForm })
+  setFormAsClean({ ...form.value.data(), ...newForm })
 }
 
 const formImported = (importedForm) => {
-  form.value = useForm({ ...form.value.data(), ...importedForm })
+  setFormAsClean({ ...form.value.data(), ...importedForm })
 }
 
 const isDirty = () => {

@@ -3,6 +3,8 @@
 use App\Models\OAuthProvider;
 use Illuminate\Support\Facades\Http;
 
+uses(\Tests\TestCase::class);
+
 // ---------------------------------------------------------------------------
 // Controller-level import tests
 // ---------------------------------------------------------------------------
@@ -22,10 +24,13 @@ it('returns prefill data for a valid import request', function () {
     ])
         ->assertSuccessful()
         ->assertJsonStructure([
-            'form' => ['title', 'properties'],
+            'form' => ['title', 'properties', 'presentation_style', 'size', 'settings'],
             'source',
             'fields_count',
         ])
+        ->assertJsonPath('form.presentation_style', 'focused')
+        ->assertJsonPath('form.size', 'lg')
+        ->assertJsonPath('form.settings.navigation_arrows', true)
         ->assertJsonPath('source', 'typeform');
 });
 
@@ -93,6 +98,9 @@ describe('TypeformImporter', function () {
 
         expect($result['title'])->toBe('Test Contact Form');
         expect($result['properties'])->toHaveCount(4);
+        expect($result['presentation_style'])->toBe('focused');
+        expect($result['size'])->toBe('lg');
+        expect($result['settings']['navigation_arrows'])->toBeTrue();
 
         $types = array_column($result['properties'], 'type');
         expect($types)->toBe(['text', 'email', 'text', 'select']);
@@ -121,6 +129,31 @@ describe('TypeformImporter', function () {
         $types = array_column($result['properties'], 'type');
         expect($types)->not->toContain('nf-page-break');
         expect($types)->toContain('email');
+    });
+
+    it('does not add page breaks for group composite fields', function () {
+        $fixture = typeformFixture();
+        $fixture['fields'][] = [
+            'type' => 'group',
+            'title' => 'Grouped Questions',
+            'properties' => [
+                'fields' => [
+                    ['type' => 'short_text', 'title' => 'Company', 'validations' => ['required' => true]],
+                    ['type' => 'number', 'title' => 'Team Size', 'validations' => ['required' => false]],
+                ],
+            ],
+        ];
+
+        Http::fake([
+            'api.typeform.com/forms/*' => Http::response($fixture, 200),
+        ]);
+
+        $importer = app(\App\Service\FormImport\Importers\TypeformImporter::class);
+        $result = $importer->import(['url' => 'https://example.typeform.com/to/abc123']);
+
+        $types = array_column($result['properties'], 'type');
+        expect($types)->not->toContain('nf-page-break');
+        expect($types)->toContain('number');
     });
 
     it('maps multiple choice with allow_multiple_selection', function () {

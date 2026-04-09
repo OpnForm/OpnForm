@@ -46,6 +46,11 @@ class TypeformImporter extends AbstractImporter
         return [
             'title' => $title,
             'properties' => $properties,
+            'presentation_style' => 'focused',
+            'size' => 'lg',
+            'settings' => [
+                'navigation_arrows' => true,
+            ],
         ];
     }
 
@@ -117,10 +122,6 @@ class TypeformImporter extends AbstractImporter
         $type = $field['type'];
         $subFields = $field['properties']['fields'] ?? [];
         $properties = [];
-
-        if ($type === 'group') {
-            $properties[] = $this->preparePageBreak();
-        }
 
         foreach ($subFields as $subField) {
             $subType = $subField['type'] ?? 'short_text';
@@ -237,14 +238,5 @@ class TypeformImporter extends AbstractImporter
         }
 
         return $property;
-    }
-
-    private function preparePageBreak(): array
-    {
-        return [
-            'id' => $this->generateFieldId(),
-            'name' => 'Page Break',
-            'type' => 'nf-page-break',
-        ];
     }
 }
