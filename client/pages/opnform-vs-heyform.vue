@@ -133,14 +133,10 @@ const featureComparison = [
 ]
 
 function getPrice(submissions) {
-  if (submissions <= 100) return 0
-  if (submissions <= 1000) return 29
-  if (submissions <= 2500) return 59
-  if (submissions <= 5000) return 99
-  if (submissions <= 10000) return 149
-  if (submissions <= 15000) return 249
-  if (submissions <= 20000) return 399
-  return 499
+  if (submissions <= 5000) return 15
+  if (submissions <= 20000) return 24
+  if (submissions <= 150000) return 40
+  return 40
 }
 
 </script>

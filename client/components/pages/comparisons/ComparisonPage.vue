@@ -343,7 +343,7 @@
       </div>
     </section>
 
-    <section class="py-14 sm:py-28 px-8 lg:px-12 bg-white">
+    <section v-if="displayCompetitorPrice" class="py-14 sm:py-28 px-8 lg:px-12 bg-white">
       <div class="max-w-266 mx-auto">
         <div class="max-w-2xl mx-auto text-center">
           <h2
@@ -591,7 +591,7 @@ const props = defineProps({
   },
   getCompetitorPrice: {
     type: Function,
-    required: true,
+    default: null,
   }
 })
 
@@ -647,6 +647,10 @@ const privacyFeatures = [
   },
 ]
 
+
+const displayCompetitorPrice = computed(() => {
+  return (props.getCompetitorPrice) ? true : false
+})
 
 const submissionOptions = [
   100, 250, 500, 1000, 2500, 5000, 7500, 10000, 15000, 20000, 25000,

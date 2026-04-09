@@ -6,7 +6,6 @@
     :free-plan-comparison="freePlanComparison"
     :switch-reasons="switchReasons"
     :feature-comparison="featureComparison"
-    :get-competitor-price="getPrice"
   >
     <template #hero-subtitle>
       Create beautiful, logic‑driven forms with <b>unlimited responses, full customization, and complete control over your data.</b>
@@ -143,16 +142,5 @@ const featureComparison = [
     cells: ["Y", "Y"],
   },
 ]
-
-function getPrice(submissions) {
-  if (submissions <= 100) return 0
-  if (submissions <= 1000) return 29
-  if (submissions <= 2500) return 59
-  if (submissions <= 5000) return 99
-  if (submissions <= 10000) return 149
-  if (submissions <= 15000) return 249
-  if (submissions <= 20000) return 399
-  return 499
-}
 
 </script>
