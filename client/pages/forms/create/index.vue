@@ -99,10 +99,18 @@ onMounted(() => {
   const { hasFeature } = usePlanFeatures()
   form.value = initForm({ workspace_id: workspace.value?.id, no_branding: hasFeature('branding.removal') }, true)
   formInitialHash.value = hash(JSON.stringify(form.value.data()))
-  if (template && template.structure) {
+
+  // Check for imported form data passed via localStorage (e.g. comparison pages)
+  const pendingImport = localStorage.getItem('importedFormData')
+  if (pendingImport) {
+    localStorage.removeItem('importedFormData')
+    try {
+      const importedData = JSON.parse(pendingImport)
+      form.value = useForm({ ...form.value.data(), ...importedData })
+    } catch { /* ignore malformed data */ }
+  } else if (template && template.structure) {
     form.value = useForm({ ...form.value.data(), ...template.structure })
   } else {
-    // No template loaded, ask how to start
     showInitialFormModal.value = true
   }
 })
@@ -113,8 +121,7 @@ const formGenerated = (newForm) => {
 }
 
 const formImported = (importedForm) => {
-  formInitialHash.value = null
-  useRouter().push({ name: 'forms-slug-show', params: { slug: importedForm.slug } })
+  form.value = useForm({ ...form.value.data(), ...importedForm })
 }
 
 const isDirty = () => {

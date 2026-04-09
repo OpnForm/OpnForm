@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Forms;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\FormImportRequest;
-use App\Http\Resources\FormResource;
 use App\Models\Forms\Form;
 use App\Models\Workspace;
 use App\Service\FormImport\FormImportException;
@@ -41,17 +40,9 @@ class FormImportController extends Controller
             ], 500);
         }
 
-        $formData = array_merge($result, [
-            'workspace_id' => $workspace->id,
-            'creator_id' => $request->user()->id,
-            'visibility' => 'draft',
-        ]);
-
-        $form = Form::create($formData);
-
         return $this->success([
-            'message' => 'Form imported successfully.',
-            'form' => new FormResource($form),
+            'message' => 'Form imported successfully! Feel free to customize it to your needs before publishing.',
+            'form' => $result,
             'source' => $request->get('source'),
             'fields_count' => count($result['properties'] ?? []),
         ]);

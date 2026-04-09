@@ -579,7 +579,8 @@ const openFormImportModal = () => {
 }
 const handleFormImported = (formData) => {
   showImportModal.value = false
-  useRouter().push({ name: 'forms-slug-show', params: { slug: formData.slug } })
+  localStorage.setItem('importedFormData', JSON.stringify(formData))
+  useRouter().push({ name: 'forms-create' })
 }
 
 const freePlanComparison = [

@@ -96,10 +96,7 @@ class TypeformImporter extends AbstractImporter
             $type = $field['type'] ?? 'short_text';
 
             if (in_array($type, self::COMPOSITE_TYPES)) {
-                $flattened = $this->flattenCompositeField($field);
-                array_push($properties, ...$flattened);
-                // Add a page break before each nested composite field
-                $properties[] = $this->preparePageBreak();
+                array_push($properties, ...$this->flattenCompositeField($field));
             } else {
                 $mapped = $this->mapSingleField($field);
                 if ($mapped) {
@@ -129,10 +126,7 @@ class TypeformImporter extends AbstractImporter
             $subType = $subField['type'] ?? 'short_text';
 
             if (in_array($subType, self::COMPOSITE_TYPES)) {
-                $nested = $this->flattenCompositeField($subField);
-                array_push($properties, ...$nested);
-                // Add a page break before each nested composite field
-                $properties[] = $this->preparePageBreak();
+                array_push($properties, ...$this->flattenCompositeField($subField));
             } else {
                 $mapped = $this->mapSingleField($subField);
                 if ($mapped) {

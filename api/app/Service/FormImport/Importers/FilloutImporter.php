@@ -17,7 +17,7 @@ class FilloutImporter extends AbstractImporter
         'DateRange' => 'date',
         'Dropdown' => 'select',
         'MultiSelect' => 'multi_select',
-        'MultipleChoice' => 'multi_select',
+        'MultipleChoice' => 'select',
         'Rating' => 'rating',
         'StarRating' => 'rating',
         'Slider' => 'slider',
