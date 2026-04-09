@@ -83,13 +83,6 @@
             Integrations
           </NuxtLink>
           <NuxtLink
-            v-if="$route.name !== 'pricing'"
-            :to="{ name: 'pricing' }"
-            :class="navLinkClasses"
-          >
-            Pricing
-          </NuxtLink>
-          <NuxtLink
             v-if="
               $route.name !== 'ai-form-builder' &&
               user === null &&
@@ -225,6 +218,7 @@ const { current: workspace } = useCurrentWorkspace()
 const { data: user } = useAuth().user()
 const isIframe = useIsIframe()
 const isSelfHosted = computed(() => useFeatureFlag("self_hosted"))
+const { workspaceIsPaid } = useBillingUpsell()
 const route = useRoute()
 
 // Get current form for forms-slug routes
