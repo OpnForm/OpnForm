@@ -122,8 +122,37 @@ function propertyConditionMet(propertyCondition, value) {
       return matrixConditionMet(propertyCondition, value)
     case "payment":
       return paymentConditionMet(propertyCondition, value)
+    case "computed":
+      return computedConditionMet(propertyCondition, value)
   }
   return false
+}
+
+function isComputedNumberCondition(propertyCondition, value) {
+  const resultType = propertyCondition?.property_meta?.result_type
+  if (['number', 'numeric', 'integer', 'float'].includes(resultType)) {
+    return true
+  }
+  return typeof value === 'number'
+}
+
+function computedConditionMet(propertyCondition, value) {
+  if (isComputedNumberCondition(propertyCondition, value)) {
+    switch (propertyCondition.operator) {
+      case "equals":
+        return safeParseFloat(propertyCondition.value) !== null &&
+          safeParseFloat(value) !== null &&
+          parseFloat(propertyCondition.value) === parseFloat(value)
+      case "does_not_equal":
+        return safeParseFloat(propertyCondition.value) === null ||
+          safeParseFloat(value) === null ||
+          parseFloat(propertyCondition.value) !== parseFloat(value)
+      default:
+        return numberConditionMet(propertyCondition, value)
+    }
+  }
+
+  return textConditionMet(propertyCondition, value)
 }
 
 // Helper function to safely parse numeric values

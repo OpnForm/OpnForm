@@ -198,14 +198,17 @@ export default {
       if (typeof content.value === 'string' && content.value.includes('mention-field-id')) {
         return content
       }
+      const operator = this.selectedOperator()
       if (
-        ["number", "rating", "scale", "slider"].includes(this.property.type) &&
+        (["number", "rating", "scale", "slider"].includes(this.property.type) ||
+        (this.property.type === 'computed' &&
+          ['number', 'numeric', 'integer', 'float'].includes(this.property.result_type)) ||
+        operator?.expected_type === "number") &&
         content.value
       ) {
         content.value = Number(content.value)
       }
 
-      const operator = this.selectedOperator()
       if (operator.expected_type === "boolean") {
         content.value = Boolean(content.value)
       }

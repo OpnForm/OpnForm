@@ -108,7 +108,9 @@ export default {
         
         return {
           identifier: variable.id,
-          name: `📊 ${variable.name}`,
+          name: variable.name,
+          icon: 'i-heroicons-variable',
+          iconClass: 'text-purple-600',
           component: (function () {
             return defineComponent({
               extends: ColumnCondition,
@@ -190,4 +192,3 @@ export default {
   }
 }
 </script>
-

@@ -9,10 +9,13 @@ import FormLogicPropertyResolver from '~/lib/forms/FormLogicPropertyResolver.js'
  * Unified state shape:
  * { hidden, required, disabled, effectiveDisabled, hiddenIndicator }
  */
-export function useFieldState(formDataRef, formRef, strategyRef) {
+export function useFieldState(formDataRef, formRef, strategyRef, computedValuesRef = null) {
   function resolveRawState(field) {
     try {
-      const currentData = toValue(formDataRef) || {}
+      const currentData = {
+        ...(toValue(formDataRef) || {}),
+        ...(toValue(computedValuesRef) || {})
+      }
       const resolver = new FormLogicPropertyResolver(field, currentData)
       return {
         hidden: !!resolver.isHidden(),
