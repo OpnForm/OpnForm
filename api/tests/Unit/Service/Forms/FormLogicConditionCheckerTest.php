@@ -897,5 +897,58 @@ describe('FormLogicConditionChecker', function () {
             ];
             expect(fn () => FormLogicConditionChecker::conditionsMet($condition, []))->toThrow(\Exception::class);
         });
+
+        it('preserves computed variable support inside nested groups', function () {
+            $form = new \App\Models\Forms\Form();
+            $form->computed_variables = [
+                [
+                    'id' => 'cv_total',
+                    'name' => 'Total',
+                    'formula' => '{price} * {quantity}',
+                    'type' => 'number',
+                ],
+            ];
+
+            $condition = [
+                'operatorIdentifier' => 'and',
+                'children' => [
+                    [
+                        'operatorIdentifier' => 'or',
+                        'children' => [
+                            [
+                                'value' => [
+                                    'property_meta' => [
+                                        'id' => 'cv_total',
+                                        'type' => 'computed',
+                                    ],
+                                    'operator' => 'greater_than',
+                                    'value' => 100,
+                                ],
+                            ],
+                        ],
+                    ],
+                    [
+                        'value' => [
+                            'property_meta' => [
+                                'id' => 'price',
+                                'type' => 'number',
+                            ],
+                            'operator' => 'greater_than',
+                            'value' => 0,
+                        ],
+                    ],
+                ],
+            ];
+
+            expect(FormLogicConditionChecker::conditionsMetWithForm($condition, [
+                'price' => 50,
+                'quantity' => 3,
+            ], $form))->toBeTrue();
+
+            expect(FormLogicConditionChecker::conditionsMetWithForm($condition, [
+                'price' => 10,
+                'quantity' => 5,
+            ], $form))->toBeFalse();
+        });
     });
 });

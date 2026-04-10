@@ -127,7 +127,7 @@ class FormLogicConditionChecker
         if ($conditions['operatorIdentifier'] === 'and') {
             $isvalid = true;
             foreach ($conditions['children'] as $childrenCondition) {
-                if (!$this->conditionsMet($childrenCondition, $formData)) {
+                if (!$this->conditionsAreMet($childrenCondition, $formData)) {
                     $isvalid = false;
                     break;
                 }
@@ -137,7 +137,7 @@ class FormLogicConditionChecker
         } elseif ($conditions['operatorIdentifier'] === 'or') {
             $isvalid = false;
             foreach ($conditions['children'] as $childrenCondition) {
-                if ($this->conditionsMet($childrenCondition, $formData)) {
+                if ($this->conditionsAreMet($childrenCondition, $formData)) {
                     $isvalid = true;
                     break;
                 }
