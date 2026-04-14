@@ -57,7 +57,12 @@ class AppServiceProvider extends ServiceProvider
 
         Route::bind('form', function ($value) {
             // Support both numeric ID and slug resolution (compact, common part outside ternary)
-            $query = \App\Models\Forms\Form::with(['workspace.users' => fn ($q) => $q->withPivot('role')]);
+            $query = \App\Models\Forms\Form::query();
+            // Signed file downloads only need the form id for storage path — skip eager loads.
+            $route = request()->route();
+            if (! $route?->named('open.forms.submissions.file')) {
+                $query->with(['workspace.users' => fn ($q) => $q->withPivot('role')]);
+            }
             return is_numeric($value)
                 ? $query->findOrFail((int) $value)
                 : $query->where('slug', $value)->firstOrFail();
