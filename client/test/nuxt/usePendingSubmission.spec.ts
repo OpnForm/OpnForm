@@ -29,7 +29,7 @@ describe('usePendingSubmission', () => {
   beforeEach(() => {
     vi.useFakeTimers()
     storageRefs.clear()
-    window.history.replaceState({}, '', 'https://example.com/forms/test')
+    window.history.replaceState({}, '', '/forms/test')
   })
 
   afterEach(() => {
