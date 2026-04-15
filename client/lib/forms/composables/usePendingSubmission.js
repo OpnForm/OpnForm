@@ -2,6 +2,22 @@ import { hash } from "~/lib/utils.js"
 import { useStorage, watchThrottled } from "@vueuse/core"
 import { computed, toValue } from 'vue'
 
+const PENDING_SUBMISSION_METADATA_KEYS = ['submission_hash']
+
+function pickPendingSubmissionMetadata(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return {}
+  }
+
+  return PENDING_SUBMISSION_METADATA_KEYS.reduce((metadata, key) => {
+    if (Object.prototype.hasOwnProperty.call(value, key)) {
+      metadata[key] = value[key]
+    }
+
+    return metadata
+  }, {})
+}
+
 /**
  * Composable for managing pending form submission data and timer in localStorage.
  * Includes throttled auto-saving of form data.
@@ -59,13 +75,20 @@ export function usePendingSubmission(formConfig, formDataRef) {
     }
   }
 
+  const mergeStoredMetadata = (value = {}) => {
+    return {
+      ...value,
+      ...pickPendingSubmissionMetadata(retrieveData({}))
+    }
+  }
+
   // Watch formDataRef with throttling
   watchThrottled(
     formDataRef,
     (newData) => {
       // Only persist full draft when auto-save is on (not only partial-submission metadata)
       if (import.meta.client && enabled.value) {
-        saveData(newData)
+        saveData(mergeStoredMetadata(newData))
       }
     },
     { deep: true, throttle: 1000 } // Throttle saving to once per second
