@@ -28,9 +28,15 @@ export function usePendingSubmission(formConfig, formDataRef) {
     return config.value?.auto_save ?? false
   })
 
+  // Draft + submission_hash share the same storage key; allow reads/writes when either
+  // auto-save or partial submissions need metadata (hash) persisted without full draft sync.
+  const canUsePendingStorage = computed(() => {
+    return enabled.value || (config.value?.enable_partial_submissions ?? false)
+  })
+
   // Internal function to save data to localStorage
   const saveData = (value) => {
-    if (import.meta.server || !enabled.value || !formPendingSubmissionKey.value) return
+    if (import.meta.server || !canUsePendingStorage.value || !formPendingSubmissionKey.value) return
     try {
       useStorage(formPendingSubmissionKey.value).value =
         value === null ? null : JSON.stringify(value)
@@ -41,7 +47,7 @@ export function usePendingSubmission(formConfig, formDataRef) {
 
   // Internal function to retrieve data from localStorage
   const retrieveData = (defaultValue = {}) => {
-    if (import.meta.server || !enabled.value || !formPendingSubmissionKey.value) return defaultValue
+    if (import.meta.server || !canUsePendingStorage.value || !formPendingSubmissionKey.value) return defaultValue
     try {
       const storageValue = useStorage(formPendingSubmissionKey.value).value
       return storageValue ? JSON.parse(storageValue) : defaultValue
@@ -57,7 +63,7 @@ export function usePendingSubmission(formConfig, formDataRef) {
   watchThrottled(
     formDataRef,
     (newData) => {
-      // Only save if enabled and on client
+      // Only persist full draft when auto-save is on (not only partial-submission metadata)
       if (import.meta.client && enabled.value) {
         saveData(newData)
       }
@@ -78,7 +84,7 @@ export function usePendingSubmission(formConfig, formDataRef) {
   }
 
   const setSubmissionHash = (hash) => {
-    if (!enabled.value) return
+    if (!canUsePendingStorage.value) return
     const currentData = retrieveData()
     saveData({
       ...currentData,
