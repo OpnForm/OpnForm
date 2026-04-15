@@ -10,17 +10,35 @@ class ArrayExport implements FromArray, WithHeadings
 {
     use Exportable;
 
+    private array $headingsList;
+
     public function __construct(public array $data)
     {
+        $this->headingsList = [];
+
+        foreach ($this->data as $row) {
+            foreach (array_keys($row) as $key) {
+                if (!in_array($key, $this->headingsList, true)) {
+                    $this->headingsList[] = $key;
+                }
+            }
+        }
     }
 
     public function array(): array
     {
-        return $this->data;
+        return array_map(function (array $row) {
+            $normalized = [];
+            foreach ($this->headingsList as $heading) {
+                $normalized[$heading] = $row[$heading] ?? null;
+            }
+
+            return $normalized;
+        }, $this->data);
     }
 
     public function headings(): array
     {
-        return array_keys($this->data[0]);
+        return $this->headingsList;
     }
 }

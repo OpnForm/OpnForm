@@ -117,7 +117,7 @@ class GenerateDesXmlExport extends Command
                 'country_code' => $row['des_country_code'],
                 'vat_number' => $row['des_vat_number'],
                 'amount_eur' => $row['des_amount_eur'],
-                'created_at' => $row['created_ts'],
+                'created_at' => $row['accounting_ts'] ?? $row['created_ts'],
             ];
         }, $rows)));
 
