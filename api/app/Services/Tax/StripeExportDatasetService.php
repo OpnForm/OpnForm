@@ -63,7 +63,6 @@ class StripeExportDatasetService
             ],
             'status' => 'paid',
             'created' => [
-                'gte' => Carbon::parse($startDate)->subDays($this->getAccountingLookbackDays())->startOfDay()->timestamp,
                 'lte' => Carbon::parse($endDate)->endOfDay()->timestamp,
             ],
         ];
@@ -208,7 +207,7 @@ class StripeExportDatasetService
             'created_ts' => $invoice->created,
             'accounting_at' => $accountingAt->format('Y-m-d H:i:s'),
             'accounting_ts' => $accountingTs,
-            'cust_id' => $invoice->customer->id ?? 'unknown',
+            'cust_id' => $this->resolveCustomerId($invoice),
             'cust_vat_id' => $cleanVatId,
             'cust_country' => $country,
             'customer_type' => $customerType,
@@ -600,7 +599,6 @@ class StripeExportDatasetService
         $queryOptions = [
             'limit' => 100,
             'created' => [
-                'gte' => Carbon::parse($startDate)->subDays($this->getAccountingLookbackDays())->startOfDay()->timestamp,
                 'lte' => Carbon::parse($endDate)->endOfDay()->timestamp,
             ],
             'expand' => [
@@ -683,8 +681,20 @@ class StripeExportDatasetService
         return [];
     }
 
-    private function getAccountingLookbackDays(): int
+    private function resolveCustomerId(Invoice $invoice): string
     {
-        return max(0, (int) env('STRIPE_EXPORT_LOOKBACK_DAYS', 14));
+        if (isset($invoice->customer) && is_string($invoice->customer) && $invoice->customer !== '') {
+            return $invoice->customer;
+        }
+
+        if (isset($invoice->customer->id) && is_string($invoice->customer->id) && $invoice->customer->id !== '') {
+            return $invoice->customer->id;
+        }
+
+        if (isset($invoice->customer_id) && is_string($invoice->customer_id) && $invoice->customer_id !== '') {
+            return $invoice->customer_id;
+        }
+
+        return 'unknown';
     }
 }
