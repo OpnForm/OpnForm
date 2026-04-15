@@ -3,8 +3,6 @@
 use App\Models\OAuthProvider;
 use Illuminate\Support\Facades\Http;
 
-uses(\Tests\TestCase::class);
-
 // ---------------------------------------------------------------------------
 // Controller-level import tests
 // ---------------------------------------------------------------------------
