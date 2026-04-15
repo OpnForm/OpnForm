@@ -101,7 +101,7 @@
         >
           <img
             src="/img/pages/welcome/Graphic.svg"
-            class="absolute top-[45%] left-0 right-0 min-w-full object-cover min-h-[55%]"
+            class="pointer-events-none absolute top-[45%] left-0 right-0 min-w-full object-cover min-h-[55%]"
           />
           <div
             class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 relative z-10"

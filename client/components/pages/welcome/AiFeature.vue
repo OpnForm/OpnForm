@@ -5,9 +5,9 @@
         <div
           class="relative px-4 py-8 overflow-hidden bg-blue-100 ring-blue-100 ring-1 sm:shadow-lg isolate sm:rounded-2xl sm:px-16 md:pt-20 lg:flex lg:gap-x-20 lg:px-16 lg:py-0 sm:shadow-neutral-600/10"
         >
-          <div class="absolute inset-0">
+          <div class="pointer-events-none absolute inset-0">
             <img
-              class="object-cover object-top w-full h-full"
+              class="pointer-events-none object-cover object-top w-full h-full"
               src="/img/pages/ai_form_builder/background-pattern-ai.svg"
               alt=""
             >

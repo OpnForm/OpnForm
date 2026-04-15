@@ -1,52 +1,57 @@
 <template>
-  <div class="relative px-6 sm:px-8">
-    <div class="pointer-events-none absolute left-1/2 top-0 h-[28rem] w-[72rem] max-w-[140%] -translate-x-1/2 rounded-full bg-blue-100/70 blur-3xl"></div>
+  <div class="relative px-6 py-8 sm:px-8 sm:py-10">
+    <div
+      class="pointer-events-none absolute left-1/2 top-8 h-[21.75rem] w-[72rem] max-w-[145%] -translate-x-1/2 rounded-full bg-blue-100/70 blur-3xl"
+      aria-hidden="true"
+    ></div>
 
-    <div class="mt-12 sm:mt-16 grid gap-6 lg:grid-cols-3">
-      <div
-        v-for="item in testimonials"
-        :key="item.name"
-        class="relative rounded-3xl border border-gray-200 bg-white p-6 sm:p-8 shadow-sm flex flex-col justify-between"
-      >
+    <div class="relative z-10 mx-auto max-w-266">
+      <div class="mt-12 sm:mt-16 grid gap-6 lg:grid-cols-3">
         <div
-          class="absolute left-0 top-10 h-10 w-0.5 bg-blue-600 rounded-r-full"
-          aria-hidden="true"
-        ></div>
-        <div class="text-2xl leading-8 font-medium text-gray-950">
-          “{{ item.quote }}”
-        </div>
-
-        <div class="mt-10 flex items-center gap-4">
+          v-for="item in testimonials"
+          :key="item.name"
+          class="relative rounded-3xl border border-gray-200 bg-white p-6 sm:p-8 shadow-sm flex flex-col justify-between"
+        >
           <div
-            class="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center"
-          >
-            <span
-              class="text-base leading-7 traking-[-1.1%] font-medium text-blue-700"
-            >
-              {{ getInitial(item.name) }}
-            </span>
+            class="absolute left-0 top-10 h-10 w-0.5 bg-blue-600 rounded-r-full"
+            aria-hidden="true"
+          ></div>
+          <div class="text-2xl leading-8 font-medium text-gray-950">
+            “{{ item.quote }}”
           </div>
-          <div>
+
+          <div class="mt-10 flex items-center gap-4">
             <div
-              class="text-base leading-7 traking-[-1.1%] font-medium text-gray-950"
+              class="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center"
             >
-              {{ item.name }}
+              <span
+                class="text-base leading-7 traking-[-1.1%] font-medium text-blue-700"
+              >
+                {{ getInitial(item.name) }}
+              </span>
             </div>
-            <div
-              class="mt-1 text-sm leading-5 tracking-[-0.6%] font-medium text-gray-600"
-            >
-              {{ item.role }}
+            <div>
+              <div
+                class="text-base leading-7 traking-[-1.1%] font-medium text-gray-950"
+              >
+                {{ item.name }}
+              </div>
+              <div
+                class="mt-1 text-sm leading-5 tracking-[-0.6%] font-medium text-gray-600"
+              >
+                {{ item.role }}
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div class="mt-8 text-center">
+      <div class="mt-8 flex justify-center">
         <a
           href="https://www.trustpilot.com/review/opnform.com"
           target="_blank"
           rel="noopener noreferrer"
-          class="text-sm font-medium text-gray-500 hover:text-gray-700 hover:underline"
+          class="inline-flex items-center text-sm font-medium text-gray-600 hover:text-gray-800 hover:underline"
         >
           More reviews on Trustpilot
         </a>

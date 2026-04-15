@@ -91,46 +91,50 @@
                 aria-hidden="true"
               ></span>
 
-              <div class="flex items-center gap-2">
-                <UIcon
-                  name="i-heroicons-star-solid"
-                  class="h-5 w-5 text-green-500"
-                />
-                <span
-                  class="text-base leading-7 tracking-[-1.1%] font-medium text-gray-600"
-                  >Trustpilot grade</span
-                >
-              </div>
+              <NuxtLink
+                to="https://www.trustpilot.com/review/opnform.com"
+                target="_blank"
+                class="flex items-center gap-2"
+              >
+                <div class="flex items-center gap-1">
+                  <UIcon
+                    name="i-heroicons-star-solid"
+                    class="h-5 w-5 text-green-500"
+                  />
+                  <UIcon
+                    name="i-heroicons-star-solid"
+                    class="h-5 w-5 text-green-500"
+                  />
+                  <UIcon
+                    name="i-heroicons-star-solid"
+                    class="h-5 w-5 text-green-500"
+                  />
+                  <UIcon
+                    name="i-heroicons-star-solid"
+                    class="h-5 w-5 text-green-500"
+                  />
+                  <div class="relative h-5 w-5">
+                    <UIcon
+                      name="i-heroicons-star"
+                      class="absolute inset-0 h-5 w-5 text-green-500"
+                    />
+                    <div class="absolute inset-y-0 left-0 w-1/2 overflow-hidden">
+                      <UIcon
+                        name="i-heroicons-star-solid"
+                        class="h-5 w-5 text-green-500"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </NuxtLink>
             </div>
           </div>
         </div>
       </div>
       <div class="relative pt-12 pb-12 sm:pb-24 px-8 lg:px-12">
-        <div class="absolute inset-0">
+        <div class="pointer-events-none absolute inset-0">
           <img
-            class="w-full h-full object-cover object-top opacity-[0.20] relative z-1"
-            src="/img/pages/ai_form_builder/background-pattern.svg"
-            alt="Page abstract background"
-          />
-          <div
-            class="w-full h-full bg-linear-to-b from-white from-35% via-blue-100 via-60% to-white to-85% absolute inset-0"
-          ></div>
-          <div
-            class="min-h-3/5 absolute bottom-0 left-0 right-0 bg-linear-to-b from-transparent to-white z-2"
-          ></div>
-          <div
-            class="w-[15%] min-h-full bg-linear-to-r from-[#fff8] to-transparent z-3 absolute top-0 left-0"
-          ></div>
-          <div
-            class="w-[15%] min-h-full bg-linear-to-l from-[#fff8] to-transparent z-3 absolute top-0 right-0"
-          ></div>
-        </div>
-        <LiveDemo />
-      </div>
-      <div class="relative pt-12 pb-12 sm:pb-24 px-8 lg:px-12">
-        <div class="absolute inset-0">
-          <img
-            class="w-full h-full object-cover object-top opacity-[0.20] relative z-1"
+            class="pointer-events-none w-full h-full object-cover object-top opacity-[0.20] relative z-1"
             src="/img/pages/ai_form_builder/background-pattern.svg"
             alt="Page abstract background"
           />

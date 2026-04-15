@@ -85,7 +85,7 @@
         </div>
       </div>
       <div
-        class="w-full h-full bg-linear-to-b from-white from-35% via-blue-50 via-60% to-white to-85% absolute inset-0"
+        class="pointer-events-none w-full h-full bg-linear-to-b from-white from-35% via-blue-50 via-60% to-white to-85% absolute inset-0"
       ></div>
     </section>
 

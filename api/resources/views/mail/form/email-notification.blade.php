@@ -16,7 +16,11 @@
 @if(isset($field['value']))
 <p style="white-space: pre-wrap; border-top: 1px solid #9ca3af;">
     <b>{{$field['name']}}</b>
-    {!! is_array($field['value'])?implode(',',$field['value']):$field['value']!!}
+    @if(!empty($field['value_is_html']))
+    {!! $field['value'] !!}
+    @else
+    {{ is_array($field['value']) ? implode(',', $field['value']) : $field['value'] }}
+    @endif
 </p>
 @endif
 @endforeach

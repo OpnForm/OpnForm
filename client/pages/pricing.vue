@@ -17,36 +17,12 @@
           </p>
         </div>
         <div
-          class="w-full h-full bg-linear-to-b from-white from-20% via-blue-50 via-50% to-white to-80% absolute inset-0"
+          class="pointer-events-none w-full h-full bg-linear-to-b from-white from-20% via-blue-50 via-50% to-white to-80% absolute inset-0"
         ></div>
       </div>
       <div class="px-8 lg:px-12">
-        <div class="flex items-center justify-center gap-3">
-          <!-- <span class="text-sm font-semibold text-gray-700">
-              Monthly
-            </span> -->
-          <button
-            type="button"
-            class="relative inline-flex h-4 w-7 items-center rounded-full transition-colors"
-            :class="pricingIsYearly ? 'bg-blue-600' : 'bg-gray-200'"
-            @click="pricingIsYearly = !pricingIsYearly"
-            aria-label="Toggle yearly billing"
-          >
-            <span
-              class="inline-block h-3 w-3 transform rounded-full bg-white shadow transition-transform"
-              :class="pricingIsYearly ? 'translate-x-3' : 'translate-x-1'"
-            ></span>
-          </button>
-          <span
-            class="text-sm leading-5 tracking-[-0.6%] font-medium text-gray-700"
-          >
-            Annually
-          </span>
-          <span
-            class="hidden sm:inline-flex items-center ml-1 pl-2 py-1 pr-2.5 text-xs font-medium text-purple-600 bg-purple-50 rounded-[7px]"
-          >
-            Save 15% with yearly billing
-          </span>
+        <div class="flex justify-center">
+          <MonthlyYearlySelector v-model="pricingIsYearly" />
         </div>
 
         <div
@@ -222,7 +198,7 @@
                 <span
                   class="text-3xl sm:text-[40px] sm:leading-12 font-medium tracking-[-1%] text-gray-950"
                 >
-                  {{ planPriceDisplay.pro }}
+                  {{ formatAnimatedPlanPrice("pro") }}
                 </span>
                 <span
                   class="text-base leading-7 tracking-[-1.1%] font-medium text-gray-600"
@@ -335,7 +311,7 @@
                 <span
                   class="text-3xl sm:text-[40px] sm:leading-12 font-medium tracking-[-1%] text-gray-950"
                 >
-                  {{ planPriceDisplay.business }}
+                  {{ formatAnimatedPlanPrice("business") }}
                 </span>
                 <span
                   class="text-base leading-7 tracking-[-1.1%] font-medium text-gray-600"
@@ -450,7 +426,7 @@
                 <span
                   class="text-3xl sm:text-[40px] sm:leading-12 font-medium tracking-[-1%] text-gray-950"
                 >
-                  {{ planPriceDisplay.enterprise }}
+                  {{ formatAnimatedPlanPrice("enterprise") }}
                 </span>
                 <span
                   class="text-base leading-7 tracking-[-1.1%] font-medium text-gray-600"
@@ -550,11 +526,11 @@
       <FeatureComparison />
     </section>
 
-    <section class="py-14 sm:py-28 px-8 lg:px-12 bg-white">
+    <section class="pt-10 pb-4 sm:pt-12 sm:pb-6 px-8 lg:px-12 bg-white">
       <Testimonials />
     </section>
 
-    <section class="py-14 sm:py-28 px-8 lg:px-12 bg-white">
+    <section class="pt-4 pb-14 sm:pt-6 sm:pb-28 px-8 lg:px-12 bg-white">
       <div class="mx-auto max-w-266">
         <div class="text-center">
           <h2
@@ -827,19 +803,82 @@ const { isAuthenticated: authenticated } = useIsAuthenticated()
 const { getPlanPrice } = useBillingUpsell()
 
 const pricingIsYearly = ref(true)
+const displayedPlanPrices = ref({
+  pro: 0,
+  business: 0,
+  enterprise: 0,
+})
+const activePriceAnimationFrame = ref(null)
+let hasInitializedDisplayedPrices = false
 
-const formatPlanPrice = (plan) => {
-  const price = getPlanPrice(plan, pricingIsYearly.value)
-  if (price == null) return null
-  return `$${price}`
+const planPriceValues = computed(() => ({
+  pro: getPlanPrice("pro", pricingIsYearly.value) ?? 0,
+  business: getPlanPrice("business", pricingIsYearly.value) ?? 0,
+  enterprise: getPlanPrice("enterprise", pricingIsYearly.value) ?? 0,
+}))
+
+function easeOutCubic(progress) {
+  return 1 - (1 - progress) ** 3
 }
 
-const planPriceDisplay = computed(() => ({
-  free: formatPlanPrice("free"),
-  pro: formatPlanPrice("pro"),
-  business: formatPlanPrice("business"),
-  enterprise: formatPlanPrice("enterprise"),
-}))
+function formatAnimatedPlanPrice(plan) {
+  const price = displayedPlanPrices.value[plan]
+  if (price == null) return null
+  return `$${Math.round(price)}`
+}
+
+function animatePlanPrices(nextPrices) {
+  if (activePriceAnimationFrame.value) {
+    cancelAnimationFrame(activePriceAnimationFrame.value)
+  }
+
+  const startPrices = { ...displayedPlanPrices.value }
+  const duration = 450
+  const startTime = performance.now()
+
+  const tick = (currentTime) => {
+    const progress = Math.min((currentTime - startTime) / duration, 1)
+    const easedProgress = easeOutCubic(progress)
+
+    displayedPlanPrices.value = Object.keys(nextPrices).reduce((prices, plan) => {
+      const startPrice = startPrices[plan] ?? 0
+      const endPrice = nextPrices[plan] ?? 0
+
+      prices[plan] = startPrice + (endPrice - startPrice) * easedProgress
+      return prices
+    }, {})
+
+    if (progress < 1) {
+      activePriceAnimationFrame.value = requestAnimationFrame(tick)
+      return
+    }
+
+    displayedPlanPrices.value = { ...nextPrices }
+    activePriceAnimationFrame.value = null
+  }
+
+  activePriceAnimationFrame.value = requestAnimationFrame(tick)
+}
+
+watch(
+  planPriceValues,
+  (nextPrices) => {
+    if (!import.meta.client || !hasInitializedDisplayedPrices) {
+      displayedPlanPrices.value = { ...nextPrices }
+      hasInitializedDisplayedPrices = true
+      return
+    }
+
+    animatePlanPrices(nextPrices)
+  },
+  { immediate: true },
+)
+
+onBeforeUnmount(() => {
+  if (activePriceAnimationFrame.value) {
+    cancelAnimationFrame(activePriceAnimationFrame.value)
+  }
+})
 
 const communityEditionFeatures = [
   "Unlimited forms & submissions",
