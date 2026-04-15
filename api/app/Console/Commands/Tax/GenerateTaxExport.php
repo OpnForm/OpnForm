@@ -69,8 +69,7 @@ class GenerateTaxExport extends Command
         StripeExportDatasetService $collector,
         StripeExportDatasetStore $store,
         StripeBalanceSummaryService $balanceSummaryService
-    )
-    {
+    ) {
         // Start the processing timer
         $startTime = microtime(true);
 
@@ -449,8 +448,7 @@ class GenerateTaxExport extends Command
         array $metadata,
         StripeExportDatasetStore $store,
         StripeBalanceSummaryService $balanceSummaryService
-    ): array
-    {
+    ): array {
         if (!$datasetId) {
             return $balanceSummaryService->summarize($startDate, $endDate);
         }

@@ -21,8 +21,7 @@ class CollectStripeExportDatasetChunk extends Command
         StripeExportDatasetService $collector,
         StripeExportDatasetStore $store,
         StripeBalanceSummaryService $balanceSummaryService
-    ): int
-    {
+    ): int {
         $datasetId = (string) $this->option('dataset');
         $startDate = (string) $this->option('start-date');
         $endDate = (string) $this->option('end-date');
