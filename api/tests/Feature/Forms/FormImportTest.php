@@ -356,6 +356,7 @@ describe('GoogleFormsImporter', function () {
         $provider = OAuthProvider::factory()->create([
             'user_id' => $user->id,
             'access_token' => 'expired-token',
+            'refresh_token' => '',
         ]);
 
         Http::fake([

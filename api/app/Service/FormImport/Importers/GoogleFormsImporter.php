@@ -2,6 +2,7 @@
 
 namespace App\Service\FormImport\Importers;
 
+use App\Integrations\Google\GoogleOAuthClient;
 use App\Models\OAuthProvider;
 use App\Service\FormImport\FormImportException;
 use Illuminate\Support\Facades\Auth;
@@ -13,19 +14,19 @@ class GoogleFormsImporter extends AbstractImporter
 
     public function import(array $importData): array
     {
-        $accessToken = $this->resolveAccessToken($importData);
+        $provider = $this->resolveGoogleProvider($importData);
 
         $formId = $this->extractFormId($importData['url'] ?? '');
         if (! $formId) {
             throw new FormImportException('Could not extract a form ID from the URL. Please use the edit URL (docs.google.com/forms/d/FORM_ID/edit).');
         }
 
-        $formData = $this->fetchForm($formId, $accessToken);
+        $formData = $this->fetchForm($formId, $provider);
 
         return $this->parseFormData($formData);
     }
 
-    private function resolveAccessToken(array $importData): string
+    private function resolveGoogleProvider(array $importData): OAuthProvider
     {
         $oauthProviderId = $importData['oauth_provider_id'] ?? null;
         if (! $oauthProviderId) {
@@ -36,11 +37,25 @@ class GoogleFormsImporter extends AbstractImporter
             ->where('user_id', Auth::id())
             ->first();
 
-        if (!$provider || !$provider->access_token) {
+        if (! $provider || ! $provider->access_token) {
             throw new FormImportException('Google account not found or token expired. Please reconnect your Google account.');
         }
 
-        return $provider->access_token;
+        return $provider;
+    }
+
+    /**
+     * Uses the same Google OAuth refresh path as Sheets integrations so stale access tokens are renewed.
+     *
+     * @throws FormImportException
+     */
+    private function googleAccessToken(OAuthProvider $provider): string
+    {
+        try {
+            return (new GoogleOAuthClient($provider))->getAccessTokenString();
+        } catch (\RuntimeException) {
+            throw new FormImportException('Google account not found or token expired. Please reconnect your Google account.');
+        }
     }
 
     public function allowedDomains(): array
@@ -63,11 +78,30 @@ class GoogleFormsImporter extends AbstractImporter
         return null;
     }
 
-    private function fetchForm(string $formId, string $accessToken): array
+    private function requestGoogleForm(string $formId, string $accessToken)
     {
-        $response = Http::timeout(15)
+        return Http::timeout(15)
             ->withToken($accessToken)
             ->get(self::GOOGLE_FORMS_API . $formId);
+    }
+
+    private function fetchForm(string $formId, OAuthProvider $provider): array
+    {
+        $accessToken = $this->googleAccessToken($provider);
+        $response = $this->requestGoogleForm($formId, $accessToken);
+
+        if ($response->status() === 401 && $provider->refresh_token) {
+            $oauth = new GoogleOAuthClient($provider->fresh());
+            $oauth->refreshToken();
+            try {
+                $accessToken = $oauth->getAccessTokenString();
+            } catch (\RuntimeException) {
+                throw new FormImportException(
+                    'Google authentication expired or insufficient permissions. Please reconnect your Google account.'
+                );
+            }
+            $response = $this->requestGoogleForm($formId, $accessToken);
+        }
 
         if ($response->status() === 401 || $response->status() === 403) {
             throw new FormImportException(
