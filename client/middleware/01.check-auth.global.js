@@ -47,6 +47,7 @@ export default defineNuxtRouteMiddleware(async (_to, _from) => {
       if (error?.status === 401) {
         if (import.meta.client) {
           authStore.clearToken()
+          authStore.user = null
           queryClient.clear()
         }
       }

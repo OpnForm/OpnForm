@@ -16,10 +16,15 @@ export const useIsAuthenticated = () => {
 }
 
 /**
- * Initialize service clients without requiring Vue Query context
- * Safe to call from middleware or anywhere outside setup context
+ * Mirror user into the auth store and initialize vendor clients (Amplitude, Crisp).
+ * Safe to call from middleware or anywhere outside setup context.
  */
 export const initServiceClients = (userData) => {
+  const authStore = useAuthStore()
+  if (userData !== undefined) {
+    authStore.updateUser(userData ?? null)
+  }
+
   if (import.meta.server) return
   if (!userData) return
   
