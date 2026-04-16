@@ -47,7 +47,7 @@ export default defineNuxtRouteMiddleware(async (_to, _from) => {
       if (error?.status === 401) {
         if (import.meta.client) {
           authStore.clearToken()
-          authStore.user = null
+          authStore.updateUser(null)
           queryClient.clear()
         }
       }
@@ -57,6 +57,7 @@ export default defineNuxtRouteMiddleware(async (_to, _from) => {
 
   // Initialize service clients on client side (no-op on server)
   if (userData) {
+    authStore.updateUser(userData)
     initServiceClients(userData)
   }
 })
