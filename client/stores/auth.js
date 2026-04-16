@@ -1,6 +1,5 @@
 import { defineStore } from "pinia"
 import { authApi } from "~/api"
-import { initServiceClients } from '~/composables/useAuthFlow'
 
 const AUTH_COOKIE_NAME = "opnform_token"
 const LEGACY_AUTH_COOKIE_NAME = "token"
@@ -79,19 +78,11 @@ export const useAuthStore = defineStore("auth", {
     },
 
     setUser(user) {
-      if (!user) {
-        console.error("No user, logging out.")
-        // When logging out due to no user, clear the token with maxAge 0
-        this.setToken(null, 0)
-      }
-
       this.user = user
-      initServiceClients(user)
     },
 
     updateUser(payload) {
       this.user = payload
-      initServiceClients(payload)
     },
 
     logout() {

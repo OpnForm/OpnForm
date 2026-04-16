@@ -37,15 +37,12 @@ Sentry.init({
       }
     }
 
-    const { isAuthenticated } = useIsAuthenticated()
-    const { user } = useAuth()
-    const { data: userData } = user()
-    
-    if (isAuthenticated.value) {
-      const userValue = userData.value as { id?: string; email?: string } | null
+    // Avoid useAuth()/vue-query here: beforeSend runs outside Vue injection context.
+    const authStore = useAuthStore()
+    if (authStore.token && authStore.user) {
       Sentry.setUser({
-        id: userValue?.id,
-        email: userValue?.email
+        id: authStore.user?.id,
+        email: authStore.user?.email
       })
     }
     return event
