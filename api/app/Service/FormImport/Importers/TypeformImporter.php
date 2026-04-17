@@ -3,12 +3,9 @@
 namespace App\Service\FormImport\Importers;
 
 use App\Service\FormImport\FormImportException;
-use Illuminate\Support\Facades\Http;
 
 class TypeformImporter extends AbstractImporter
 {
-    private const API_BASE = 'https://api.typeform.com/forms/';
-
     private const FIELD_MAP = [
         'short_text' => 'text',
         'long_text' => 'text',
@@ -37,8 +34,11 @@ class TypeformImporter extends AbstractImporter
 
     public function import(array $importData): array
     {
-        $formId = $this->extractFormId($importData['url']);
-        $formData = $this->fetchFormData($formId);
+        $url = $importData['url'];
+        $this->validateFormUrl($url);
+
+        $html = $this->fetchHtml($url);
+        $formData = $this->extractFormData($html);
 
         $title = $this->sanitizeText($formData['title'] ?? 'Imported Typeform', 60);
         $properties = $this->mapFields($formData['fields'] ?? []);
@@ -59,38 +59,107 @@ class TypeformImporter extends AbstractImporter
         return ['*.typeform.com'];
     }
 
-    protected function extractFormId(string $url): string
+    private function validateFormUrl(string $url): void
     {
-        if (preg_match('#typeform\.com/to/([a-zA-Z0-9]+)#', $url, $matches)) {
-            return $matches[1];
+        if (! preg_match('#typeform\.com/to/[a-zA-Z0-9]+#', $url)) {
+            throw new FormImportException(
+                'Could not extract form ID from Typeform URL. Expected format: https://yourname.typeform.com/to/FORM_ID'
+            );
+        }
+    }
+
+    /**
+     * Typeform embeds form data in window.rendererData.form on public pages.
+     */
+    private function extractFormData(string $html): array
+    {
+        $rdPos = strpos($html, 'window.rendererData');
+        if ($rdPos === false) {
+            throw new FormImportException(
+                'Could not find form data in the page. Make sure the Typeform URL is public and the form is published.'
+            );
+        }
+
+        return $this->extractRendererFormData($html, $rdPos);
+    }
+
+    private function extractRendererFormData(string $html, int $rdPos): array
+    {
+        $searchRegion = substr($html, $rdPos, 100_000);
+
+        if (! preg_match('/\bform\s*:\s*\{/', $searchRegion, $match, PREG_OFFSET_CAPTURE)) {
+            throw new FormImportException(
+                'Found renderer data but could not locate form definition.'
+            );
+        }
+
+        $braceOffset = strpos($searchRegion, '{', $match[0][1]);
+        $braceStart = $rdPos + $braceOffset;
+        $json = $this->extractBracedBlock($html, $braceStart);
+
+        $data = json_decode($json, true);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            throw new FormImportException('Failed to parse Typeform form data from page.');
+        }
+
+        return $data;
+    }
+
+    /**
+     * Extract a balanced { … } block from $html starting at $start,
+     * respecting single- and double-quoted strings.
+     */
+    private function extractBracedBlock(string $html, int $start): string
+    {
+        $depth = 0;
+        $len = strlen($html);
+        $inString = false;
+        $stringChar = null;
+        $escape = false;
+
+        for ($i = $start; $i < $len; $i++) {
+            $c = $html[$i];
+
+            if ($escape) {
+                $escape = false;
+
+                continue;
+            }
+
+            if ($c === '\\' && $inString) {
+                $escape = true;
+
+                continue;
+            }
+
+            if (! $inString && ($c === '"' || $c === "'")) {
+                $inString = true;
+                $stringChar = $c;
+
+                continue;
+            }
+
+            if ($inString && $c === $stringChar) {
+                $inString = false;
+
+                continue;
+            }
+
+            if (! $inString) {
+                if ($c === '{') {
+                    $depth++;
+                } elseif ($c === '}') {
+                    $depth--;
+                    if ($depth === 0) {
+                        return substr($html, $start, $i - $start + 1);
+                    }
+                }
+            }
         }
 
         throw new FormImportException(
-            'Could not extract form ID from Typeform URL. Expected format: https://yourname.typeform.com/to/FORM_ID'
+            'Could not find form data in the page. Make sure the Typeform URL is public and the form is published.'
         );
-    }
-
-    private function fetchFormData(string $formId): array
-    {
-        $response = Http::timeout(15)
-            ->withHeaders([
-                'User-Agent' => 'Mozilla/5.0 (compatible; OpnFormImporter/1.0)',
-            ])
-            ->get(self::API_BASE . $formId);
-
-        if ($response->status() === 404 || $response->status() === 403) {
-            throw new FormImportException(
-                'Form not found or not publicly accessible. Make sure the Typeform is published and public.'
-            );
-        }
-
-        if (!$response->successful()) {
-            throw new FormImportException(
-                'Failed to fetch Typeform data. HTTP status: ' . $response->status()
-            );
-        }
-
-        return $response->json();
     }
 
     private function mapFields(array $fields): array

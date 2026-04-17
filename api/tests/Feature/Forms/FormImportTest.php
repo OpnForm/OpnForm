@@ -12,7 +12,7 @@ it('returns prefill data for a valid import request', function () {
     $workspace = $this->createUserWorkspace($user);
 
     Http::fake([
-        'api.typeform.com/forms/*' => Http::response(typeformFixture(), 200),
+        '*.typeform.com/*' => Http::response(typeformHtmlFixture(), 200),
     ]);
 
     $this->postJson(route('open.forms.import'), [
@@ -37,7 +37,7 @@ it('does not persist a form record on import', function () {
     $workspace = $this->createUserWorkspace($user);
 
     Http::fake([
-        'api.typeform.com/forms/*' => Http::response(typeformFixture(), 200),
+        '*.typeform.com/*' => Http::response(typeformHtmlFixture(), 200),
     ]);
 
     $countBefore = \App\Models\Forms\Form::count();
@@ -88,7 +88,7 @@ it('rejects unauthenticated import requests', function () {
 describe('TypeformImporter', function () {
     it('maps basic Typeform fields correctly', function () {
         Http::fake([
-            'api.typeform.com/forms/*' => Http::response(typeformFixture(), 200),
+            '*.typeform.com/*' => Http::response(typeformHtmlFixture(), 200),
         ]);
 
         $importer = app(\App\Service\FormImport\Importers\TypeformImporter::class);
@@ -105,7 +105,7 @@ describe('TypeformImporter', function () {
     });
 
     it('flattens composite fields without adding page breaks', function () {
-        $fixture = typeformFixture();
+        $fixture = typeformFormData();
         $fixture['fields'][] = [
             'type' => 'contact_info',
             'title' => 'Contact',
@@ -118,7 +118,7 @@ describe('TypeformImporter', function () {
         ];
 
         Http::fake([
-            'api.typeform.com/forms/*' => Http::response($fixture, 200),
+            '*.typeform.com/*' => Http::response(wrapTypeformHtml($fixture), 200),
         ]);
 
         $importer = app(\App\Service\FormImport\Importers\TypeformImporter::class);
@@ -130,7 +130,7 @@ describe('TypeformImporter', function () {
     });
 
     it('does not add page breaks for group composite fields', function () {
-        $fixture = typeformFixture();
+        $fixture = typeformFormData();
         $fixture['fields'][] = [
             'type' => 'group',
             'title' => 'Grouped Questions',
@@ -143,7 +143,7 @@ describe('TypeformImporter', function () {
         ];
 
         Http::fake([
-            'api.typeform.com/forms/*' => Http::response($fixture, 200),
+            '*.typeform.com/*' => Http::response(wrapTypeformHtml($fixture), 200),
         ]);
 
         $importer = app(\App\Service\FormImport\Importers\TypeformImporter::class);
@@ -155,7 +155,7 @@ describe('TypeformImporter', function () {
     });
 
     it('maps multiple choice with allow_multiple_selection', function () {
-        $fixture = typeformFixture();
+        $fixture = typeformFormData();
         $fixture['fields'][] = [
             'type' => 'multiple_choice',
             'title' => 'Colors',
@@ -170,7 +170,7 @@ describe('TypeformImporter', function () {
         ];
 
         Http::fake([
-            'api.typeform.com/forms/*' => Http::response($fixture, 200),
+            '*.typeform.com/*' => Http::response(wrapTypeformHtml($fixture), 200),
         ]);
 
         $importer = app(\App\Service\FormImport\Importers\TypeformImporter::class);
@@ -181,13 +181,18 @@ describe('TypeformImporter', function () {
         expect($multi['multi_select']['options'])->toHaveCount(2);
     });
 
-    it('throws on 404 from Typeform API', function () {
+    it('throws on 404 from Typeform page', function () {
         Http::fake([
-            'api.typeform.com/forms/*' => Http::response('Not found', 404),
+            '*.typeform.com/*' => Http::response('Not found', 404),
         ]);
 
         $importer = app(\App\Service\FormImport\Importers\TypeformImporter::class);
         $importer->import(['url' => 'https://example.typeform.com/to/bad']);
+    })->throws(\App\Service\FormImport\FormImportException::class);
+
+    it('throws on invalid Typeform URL format', function () {
+        $importer = app(\App\Service\FormImport\Importers\TypeformImporter::class);
+        $importer->import(['url' => 'https://example.typeform.com/signup']);
     })->throws(\App\Service\FormImport\FormImportException::class);
 });
 
@@ -444,7 +449,7 @@ describe('Google Forms controller flow', function () {
 // Test fixtures
 // ---------------------------------------------------------------------------
 
-function typeformFixture(): array
+function typeformFormData(): array
 {
     return [
         'title' => 'Test Contact Form',
@@ -466,6 +471,22 @@ function typeformFixture(): array
             ],
         ],
     ];
+}
+
+function wrapTypeformHtml(array $formData): string
+{
+    $formJson = json_encode($formData, JSON_UNESCAPED_UNICODE);
+
+    return '<html><head></head><body><div id="root"></div>'
+        . '<script data-csp-hash="">'
+        . "window.rendererData={rootDomNode:'root',form:" . $formJson
+        . ",messages:{},trackingInfo:{}};"
+        . '</script></body></html>';
+}
+
+function typeformHtmlFixture(): string
+{
+    return wrapTypeformHtml(typeformFormData());
 }
 
 function tallyBlocks(): array
