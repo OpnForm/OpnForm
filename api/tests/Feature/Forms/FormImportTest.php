@@ -371,6 +371,171 @@ describe('FilloutImporter', function () {
         $types = array_column($result['properties'], 'type');
         expect($types)->toContain('text');
     });
+
+    it('imports the real Fillout registration form cleanly', function () {
+        Http::fake([
+            'fillout.com/*' => Http::response(filloutRegistrationHtmlFixture(), 200),
+        ]);
+
+        $importer = app(\App\Service\FormImport\Importers\FilloutImporter::class);
+        $result = $importer->import(['url' => 'https://example.fillout.com/t/88efTSDCqTus']);
+
+        expect($result['title'])->toBe('Online Registration Form Template 510');
+
+        // Step order follows firstStep → nextStep (button or step-level),
+        // not the insertion order of the steps dictionary.
+        $names = array_column($result['properties'], 'name');
+        $orderedFieldNames = array_values(array_filter($names, fn ($n) => $n !== 'Page Break' && $n !== 'Register with us online!'));
+        expect($orderedFieldNames[0])->toBe("What's your full name?");
+        expect($orderedFieldNames[1])->toBe("What's your primary email address?");
+        expect($orderedFieldNames[2])->toBe("Anything else you'd like to share?");
+
+        // Focused presentation paginates one field at a time, so we drop the
+        // explicit nf-page-break blocks that would otherwise produce empty
+        // intermediate pages.
+        expect(array_count_values(array_column($result['properties'], 'type'))['nf-page-break'] ?? 0)->toBe(0);
+
+        // Cover welcome screen survives as an nf-text block.
+        $cover = collect($result['properties'])->firstWhere('type', 'nf-text');
+        expect($cover)->not->toBeNull();
+        expect($cover['content'])->toContain('Register with us online!');
+
+        // Thank-you screen is mapped to submitted_text with placeholder
+        // reference tokens stripped out so the copy reads cleanly.
+        expect($result)->toHaveKey('submitted_text');
+        expect($result['submitted_text'])->toContain("You're officially registered");
+        expect($result['submitted_text'])->not->toMatch('/\{\{[^}]+\}\}/');
+
+        // Nice-to-have: page-per-question flow → focused layout hint.
+        expect($result['presentation_style'] ?? null)->toBe('focused');
+        expect($result['size'] ?? null)->toBe('lg');
+
+        // No leftover Button widgets or blank nf-text banners.
+        expect($names)->not->toContain('Untitled button field');
+        foreach ($result['properties'] as $p) {
+            if (($p['type'] ?? '') === 'nf-text') {
+                expect(trim(strip_tags($p['content'] ?? '')))->not->toBe('');
+            }
+        }
+    });
+
+    it('keeps page breaks when the layout stays classic (non-focused)', function () {
+        $pageProps = [
+            'flow' => ['name' => 'Classic Form'],
+            'flowSnapshot' => [
+                'template' => [
+                    'firstStep' => 's1',
+                    'steps' => [
+                        's1' => [
+                            'id' => 's1', 'type' => 'form',
+                            'nextStep' => ['defaultNextStep' => 's2'],
+                            'template' => ['widgets' => [
+                                ['type' => 'ShortAnswer', 'position' => ['row' => 0], 'template' => ['label' => 'A']],
+                                ['type' => 'ShortAnswer', 'position' => ['row' => 1], 'template' => ['label' => 'B']],
+                                ['type' => 'ShortAnswer', 'position' => ['row' => 2], 'template' => ['label' => 'C']],
+                            ]],
+                        ],
+                        's2' => [
+                            'id' => 's2', 'type' => 'form',
+                            'nextStep' => ['defaultNextStep' => ''],
+                            'template' => ['widgets' => [
+                                ['type' => 'EmailInput', 'position' => ['row' => 0], 'template' => ['label' => 'Email']],
+                                ['type' => 'ShortAnswer', 'position' => ['row' => 1], 'template' => ['label' => 'Phone']],
+                            ]],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        Http::fake([
+            'fillout.com/*' => Http::response(wrapFilloutPageProps($pageProps), 200),
+        ]);
+
+        $importer = app(\App\Service\FormImport\Importers\FilloutImporter::class);
+        $result = $importer->import(['url' => 'https://example.fillout.com/t/classic']);
+
+        $types = array_column($result['properties'], 'type');
+        expect(array_count_values($types)['nf-page-break'] ?? 0)->toBe(1);
+    });
+
+    it('drops page breaks when focused layout is inferred', function () {
+        $pageProps = [
+            'flow' => ['name' => 'Focused Form'],
+            'flowSnapshot' => [
+                'template' => [
+                    'firstStep' => 's1',
+                    'steps' => [
+                        's1' => [
+                            'id' => 's1', 'type' => 'form',
+                            'nextStep' => ['defaultNextStep' => 's2'],
+                            'template' => ['widgets' => [
+                                ['type' => 'ShortAnswer', 'position' => ['row' => 0], 'template' => ['label' => 'Name']],
+                            ]],
+                        ],
+                        's2' => [
+                            'id' => 's2', 'type' => 'form',
+                            'nextStep' => ['defaultNextStep' => ''],
+                            'template' => ['widgets' => [
+                                ['type' => 'EmailInput', 'position' => ['row' => 0], 'template' => ['label' => 'Email']],
+                            ]],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        Http::fake([
+            'fillout.com/*' => Http::response(wrapFilloutPageProps($pageProps), 200),
+        ]);
+
+        $importer = app(\App\Service\FormImport\Importers\FilloutImporter::class);
+        $result = $importer->import(['url' => 'https://example.fillout.com/t/focused']);
+
+        expect($result['presentation_style'] ?? null)->toBe('focused');
+        $types = array_column($result['properties'], 'type');
+        expect(array_count_values($types)['nf-page-break'] ?? 0)->toBe(0);
+    });
+
+    it('does not infer focused layout when steps have multiple fields', function () {
+        $pageProps = [
+            'flow' => ['name' => 'Wide Form'],
+            'flowSnapshot' => [
+                'template' => [
+                    'firstStep' => 's1',
+                    'steps' => [
+                        's1' => [
+                            'id' => 's1', 'type' => 'form',
+                            'nextStep' => ['defaultNextStep' => 's2'],
+                            'template' => ['widgets' => [
+                                ['type' => 'ShortAnswer', 'position' => ['row' => 0], 'template' => ['label' => 'A']],
+                                ['type' => 'ShortAnswer', 'position' => ['row' => 1], 'template' => ['label' => 'B']],
+                                ['type' => 'ShortAnswer', 'position' => ['row' => 2], 'template' => ['label' => 'C']],
+                            ]],
+                        ],
+                        's2' => [
+                            'id' => 's2', 'type' => 'form',
+                            'nextStep' => ['defaultNextStep' => ''],
+                            'template' => ['widgets' => [
+                                ['type' => 'EmailInput', 'position' => ['row' => 0], 'template' => ['label' => 'Email']],
+                                ['type' => 'ShortAnswer', 'position' => ['row' => 1], 'template' => ['label' => 'Phone']],
+                            ]],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        Http::fake([
+            'fillout.com/*' => Http::response(wrapFilloutPageProps($pageProps), 200),
+        ]);
+
+        $importer = app(\App\Service\FormImport\Importers\FilloutImporter::class);
+        $result = $importer->import(['url' => 'https://example.fillout.com/t/wide']);
+
+        expect($result)->not->toHaveKey('presentation_style');
+        expect($result)->not->toHaveKey('size');
+    });
 });
 
 // ---------------------------------------------------------------------------
@@ -632,6 +797,20 @@ function filloutHtmlFixture(): string
     ]);
 
     return '<html><body><script id="__NEXT_DATA__" type="application/json">' . $nextData . '</script></body></html>';
+}
+
+function wrapFilloutPageProps(array $pageProps): string
+{
+    $nextData = json_encode(['props' => ['pageProps' => $pageProps]], JSON_UNESCAPED_UNICODE);
+
+    return '<html><body><script id="__NEXT_DATA__" type="application/json">' . $nextData . '</script></body></html>';
+}
+
+function filloutRegistrationHtmlFixture(): string
+{
+    $json = file_get_contents(__DIR__ . '/../../fixtures/fillout-registration.json');
+
+    return '<html><body><script id="__NEXT_DATA__" type="application/json">' . $json . '</script></body></html>';
 }
 
 function googleFormsFixture(): array

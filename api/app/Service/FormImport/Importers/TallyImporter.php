@@ -107,7 +107,7 @@ class TallyImporter extends AbstractImporter
     {
         return array_filter(
             $settings,
-            fn($value) => ! ($value === null || $value === '' || $value === [])
+            fn ($value) => ! ($value === null || $value === '' || $value === [])
         );
     }
 
@@ -472,7 +472,7 @@ class TallyImporter extends AbstractImporter
         }
 
         foreach ($index as &$opts) {
-            usort($opts, fn($a, $b) => ($a['payload']['index'] ?? 0) <=> ($b['payload']['index'] ?? 0));
+            usort($opts, fn ($a, $b) => ($a['payload']['index'] ?? 0) <=> ($b['payload']['index'] ?? 0));
         }
 
         return $index;
@@ -544,8 +544,8 @@ class TallyImporter extends AbstractImporter
     private function extractOptionLabels(array $optionBlocks): array
     {
         return array_values(array_filter(
-            array_map(fn($opt) => $this->extractOptionText($opt), $optionBlocks),
-            fn($s) => $s !== ''
+            array_map(fn ($opt) => $this->extractOptionText($opt), $optionBlocks),
+            fn ($s) => $s !== ''
         ));
     }
 
@@ -677,7 +677,7 @@ class TallyImporter extends AbstractImporter
     {
         if ($options !== []) {
             $property[$property['type']]['options'] = array_map(
-                fn($label) => ['id' => $this->generateFieldId(), 'name' => $label],
+                fn ($label) => ['id' => $this->generateFieldId(), 'name' => $label],
                 array_values($options)
             );
         }
