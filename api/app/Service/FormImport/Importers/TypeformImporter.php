@@ -32,6 +32,14 @@ class TypeformImporter extends AbstractImporter
 
     private const COMPOSITE_TYPES = ['contact_info', 'address', 'group', 'inline_group'];
 
+    /**
+     * Typeform appends a generic "Thanks for completing this typeform…"
+     * screen to every form. We don't want that in imported submitted_text.
+     */
+    private const DEFAULT_THANKYOU_REFS = ['default_tys'];
+
+    private const DEFAULT_THANKYOU_IDS = ['DefaultTyScreen'];
+
     public function import(array $importData): array
     {
         $url = $importData['url'];
@@ -41,17 +49,22 @@ class TypeformImporter extends AbstractImporter
         $formData = $this->extractFormData($html);
 
         $title = $this->sanitizeText($formData['title'] ?? 'Imported Typeform', 60);
-        $properties = $this->mapFields($formData['fields'] ?? []);
+        $properties = [];
+        if ($welcome = $this->renderWelcomeScreen($formData['welcome_screens'] ?? [])) {
+            $properties[] = $welcome;
+        }
+        array_push($properties, ...$this->mapFields($formData['fields'] ?? []));
 
-        return [
+        return array_filter([
             'title' => $title,
             'properties' => $properties,
             'presentation_style' => 'focused',
             'size' => 'lg',
+            'submitted_text' => $this->renderThankYouScreens($formData['thankyou_screens'] ?? []),
             'settings' => [
                 'navigation_arrows' => true,
             ],
-        ];
+        ], fn ($v) => $v !== null && $v !== '' && $v !== []);
     }
 
     public function allowedDomains(): array
@@ -160,6 +173,63 @@ class TypeformImporter extends AbstractImporter
         throw new FormImportException(
             'Could not find form data in the page. Make sure the Typeform URL is public and the form is published.'
         );
+    }
+
+    /**
+     * Turn the first welcome screen into an nf-text block that users can edit
+     * or remove. We only emit the first screen because OpnForm currently
+     * supports a single cover block.
+     *
+     * @param  array<int, array>  $screens
+     */
+    private function renderWelcomeScreen(array $screens): ?array
+    {
+        $screen = $screens[0] ?? null;
+        if (! is_array($screen)) {
+            return null;
+        }
+
+        $title = $this->sanitizeText($screen['title'] ?? '', 2000);
+        if ($title === '') {
+            return null;
+        }
+
+        return [
+            'id' => $this->generateFieldId(),
+            'name' => $this->sanitizeText(strip_tags($title), 255) ?: 'Welcome',
+            'type' => 'nf-text',
+            'content' => '<p>' . nl2br(e($title)) . '</p>',
+        ];
+    }
+
+    /**
+     * Combine author-defined thank-you screens into a single submitted_text
+     * blob. The default screen appended by Typeform (ref: default_tys) is
+     * skipped so imports don't inherit generic copy.
+     *
+     * @param  array<int, array>  $screens
+     */
+    private function renderThankYouScreens(array $screens): string
+    {
+        $parts = [];
+        foreach ($screens as $screen) {
+            if (! is_array($screen)) {
+                continue;
+            }
+            if (
+                in_array($screen['ref'] ?? '', self::DEFAULT_THANKYOU_REFS, true)
+                || in_array($screen['id'] ?? '', self::DEFAULT_THANKYOU_IDS, true)
+            ) {
+                continue;
+            }
+            $title = $this->sanitizeText($screen['title'] ?? '', 2000);
+            if ($title === '') {
+                continue;
+            }
+            $parts[] = '<p>' . nl2br(e($title)) . '</p>';
+        }
+
+        return implode('', $parts);
     }
 
     private function mapFields(array $fields): array

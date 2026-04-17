@@ -181,6 +181,118 @@ describe('TypeformImporter', function () {
         expect($multi['multi_select']['options'])->toHaveCount(2);
     });
 
+    it('imports welcome screen as an nf-text block', function () {
+        $fixture = typeformFormData();
+        $fixture['welcome_screens'] = [[
+            'id' => 'w1',
+            'ref' => 'welcome-ref',
+            'title' => "Welcome!\nThanks for stopping by.",
+            'properties' => ['show_button' => true, 'button_text' => 'Start'],
+        ]];
+
+        Http::fake([
+            '*.typeform.com/*' => Http::response(wrapTypeformHtml($fixture), 200),
+        ]);
+
+        $importer = app(\App\Service\FormImport\Importers\TypeformImporter::class);
+        $result = $importer->import(['url' => 'https://example.typeform.com/to/abc123']);
+
+        $welcome = $result['properties'][0];
+        expect($welcome['type'])->toBe('nf-text');
+        expect($welcome['content'])->toContain('Welcome!');
+        // Newlines in the title should survive as <br>.
+        expect($welcome['content'])->toContain('<br');
+    });
+
+    it('imports thank-you screens into submitted_text and skips the default one', function () {
+        $fixture = typeformFormData();
+        $fixture['thankyou_screens'] = [
+            [
+                'id' => 'ty1',
+                'ref' => 'author-defined',
+                'type' => 'thankyou_screen',
+                'title' => 'Thanks — we will reach out soon!',
+                'properties' => [],
+            ],
+            // Generic screen Typeform appends to every form; must be dropped.
+            [
+                'id' => 'DefaultTyScreen',
+                'ref' => 'default_tys',
+                'type' => 'thankyou_screen',
+                'title' => "Thanks for completing this typeform\nNow *create your own*",
+                'properties' => [],
+            ],
+        ];
+
+        Http::fake([
+            '*.typeform.com/*' => Http::response(wrapTypeformHtml($fixture), 200),
+        ]);
+
+        $importer = app(\App\Service\FormImport\Importers\TypeformImporter::class);
+        $result = $importer->import(['url' => 'https://example.typeform.com/to/abc123']);
+
+        expect($result)->toHaveKey('submitted_text');
+        expect($result['submitted_text'])->toContain('Thanks — we will reach out soon!');
+        expect($result['submitted_text'])->not->toContain('create your own');
+    });
+
+    it('keeps long Typeform dropdowns as a real dropdown (not a flat list)', function () {
+        $choices = array_map(
+            fn ($i) => ['label' => "Option {$i}"],
+            range(1, 16)
+        );
+
+        $fixture = typeformFormData();
+        $fixture['fields'] = [[
+            'type' => 'dropdown',
+            'title' => 'Country',
+            'validations' => ['required' => true],
+            'properties' => ['choices' => $choices],
+        ]];
+
+        Http::fake([
+            '*.typeform.com/*' => Http::response(wrapTypeformHtml($fixture), 200),
+        ]);
+
+        $importer = app(\App\Service\FormImport\Importers\TypeformImporter::class);
+        $result = $importer->import(['url' => 'https://example.typeform.com/to/abc123']);
+
+        $dropdown = collect($result['properties'])->firstWhere('name', 'Country');
+        expect($dropdown['type'])->toBe('select');
+        expect($dropdown['select']['options'])->toHaveCount(16);
+        // Crucial: do NOT expand a 16-option list into radio buttons — that
+        // would make the imported form unusable.
+        expect($dropdown)->not->toHaveKey('without_dropdown');
+    });
+
+    it('imports the real Typeform CSAT form cleanly', function () {
+        Http::fake([
+            '*.typeform.com/*' => Http::response(typeformCsatHtmlFixture(), 200),
+        ]);
+
+        $importer = app(\App\Service\FormImport\Importers\TypeformImporter::class);
+        $result = $importer->import(['url' => 'https://3xxbbppenpx.typeform.com/to/DHTu6yrw']);
+
+        expect($result['title'])->toBe('Customer Satisfaction Feedback Form');
+        expect($result['presentation_style'])->toBe('focused');
+
+        // Welcome screen is the first property.
+        $first = $result['properties'][0];
+        expect($first['type'])->toBe('nf-text');
+        expect($first['content'])->toContain('Thank you for choosing our product/service');
+
+        // Author's thank-you text survives; the default Typeform blurb does not.
+        expect($result['submitted_text'])->toContain('Thank you for providing feedback');
+        expect($result['submitted_text'])->not->toContain('create your own');
+
+        // 16-option country dropdown stays as a proper dropdown.
+        $country = collect($result['properties'])
+            ->firstWhere(fn ($p) => str_contains($p['name'] ?? '', 'country'));
+        expect($country['type'])->toBe('select');
+        expect($country['select']['options'])->toHaveCount(16);
+        expect($country)->not->toHaveKey('without_dropdown');
+    });
+
     it('throws on 404 from Typeform page', function () {
         Http::fake([
             '*.typeform.com/*' => Http::response('Not found', 404),
@@ -735,6 +847,16 @@ function wrapTypeformHtml(array $formData): string
 function typeformHtmlFixture(): string
 {
     return wrapTypeformHtml(typeformFormData());
+}
+
+function typeformCsatHtmlFixture(): string
+{
+    $form = json_decode(
+        file_get_contents(__DIR__ . '/../../fixtures/typeform-csat.json'),
+        true
+    );
+
+    return wrapTypeformHtml($form);
 }
 
 function tallyBlocks(): array

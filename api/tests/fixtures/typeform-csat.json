@@ -1,0 +1,207 @@
+{
+  "id": "DHTu6yrw",
+  "title": "Customer Satisfaction Feedback Form",
+  "welcome_screens": [
+    {
+      "id": "G2yamqDe3h7Z",
+      "ref": "0766527d-129f-4e40-8aca-a94298f09e92",
+      "title": "Thank you for choosing our product/service. We would appreciate it if you could take a few minutes to provide feedback on your experience. Your input is valuable to us!",
+      "properties": {
+        "show_button": true,
+        "button_text": "Start"
+      }
+    }
+  ],
+  "thankyou_screens": [
+    {
+      "id": "fvccoImFD381",
+      "ref": "4bd757a9-b674-474a-9df4-fd96bec25d6d",
+      "title": "Thank you for providing feedback! Your input is greatly appreciated.",
+      "type": "thankyou_screen",
+      "properties": {
+        "show_button": true,
+        "share_icons": true,
+        "button_mode": "default_redirect",
+        "button_text": "Create a typeform"
+      }
+    },
+    {
+      "id": "DefaultTyScreen",
+      "ref": "default_tys",
+      "title": "Thanks for completing this typeform\nNow *create your own* — it's free, easy, & beautiful",
+      "type": "thankyou_screen",
+      "properties": {
+        "show_button": true,
+        "share_icons": false,
+        "button_mode": "default_redirect",
+        "button_text": "Create a *typeform*"
+      },
+      "attachment": {
+        "type": "image",
+        "href": "https://public-assets.typeform.com/public/admin/2dpnUBBkz2VN.gif"
+      }
+    }
+  ],
+  "fields": [
+    {
+      "id": "Jv7DZUnWAkWs",
+      "title": "Please rate your overall satisfaction with our product/service.",
+      "ref": "3f0fea6b-a84b-41a0-951f-9349c4dc88ef",
+      "properties": {
+        "start_at_one": false,
+        "steps": 11
+      },
+      "validations": {
+        "required": false
+      },
+      "type": "opinion_scale"
+    },
+    {
+      "id": "KlTDnS0MwxY8",
+      "title": "What specific features or aspects of our product/service did you like the most?",
+      "ref": "4d7ffd04-8eb9-4daa-bf42-a47e060a5f86",
+      "properties": {},
+      "validations": {
+        "required": false
+      },
+      "type": "long_text"
+    },
+    {
+      "id": "ZFUqG1zjaHZR",
+      "title": "What specific features or aspects of our product/service do you think need improvement?",
+      "ref": "cdeccd42-1c77-4b9e-a692-b51b0f2ad6e6",
+      "properties": {},
+      "validations": {
+        "required": false
+      },
+      "type": "long_text"
+    },
+    {
+      "id": "h1928O20WIDH",
+      "title": "How likely are you to recommend our product/service to others?",
+      "ref": "ab7c237c-1de7-4df4-afe1-c6e34e98b361",
+      "properties": {
+        "steps": 11
+      },
+      "validations": {
+        "required": false
+      },
+      "type": "nps"
+    },
+    {
+      "id": "uELGixEP8SiW",
+      "title": "Please provide any additional comments or suggestions you have for improving our product/service.",
+      "ref": "4a200afe-9ee5-4e44-af18-8bdc02022a01",
+      "properties": {},
+      "validations": {
+        "required": false
+      },
+      "type": "long_text"
+    },
+    {
+      "id": "t2B1oVom1H9y",
+      "title": "Please select your country of residence.",
+      "ref": "bd80649e-1ea4-4f54-a597-095a6a5ad6d1",
+      "properties": {
+        "randomize": false,
+        "alphabetical_order": false,
+        "choices": [
+          {
+            "id": "ZLYuNAMHuZSp",
+            "ref": "c6ad58ca-58a8-47b3-bee5-b40550c5a244",
+            "label": "United States"
+          },
+          {
+            "id": "PAMs7lNnJf4s",
+            "ref": "3c639d4a-cb4b-4805-b3ef-7ccee32358b8",
+            "label": "Canada"
+          },
+          {
+            "id": "KbIi7bBAdlQn",
+            "ref": "2b7aeebf-0594-4aef-848f-525a9feee078",
+            "label": "United Kingdom"
+          },
+          {
+            "id": "XBhCMwbcoJPu",
+            "ref": "ec35c4be-2886-493c-aa4c-f74636c91020",
+            "label": "Australia"
+          },
+          {
+            "id": "vmYRfaAGCGMN",
+            "ref": "de5a80bc-9cfb-4e65-aa97-a3f59b6377e9",
+            "label": "Germany"
+          },
+          {
+            "id": "YbP4LTxYOQ9D",
+            "ref": "4c3c96b8-c58b-4239-b584-6235edc7e46c",
+            "label": "France"
+          },
+          {
+            "id": "AJiUTa5ginSM",
+            "ref": "c262daf3-5e8e-4343-8431-a7801fb492a6",
+            "label": "Italy"
+          },
+          {
+            "id": "TfilpLlqaylm",
+            "ref": "292289fb-64f5-4cfc-83a5-551e9c00282b",
+            "label": "Spain"
+          },
+          {
+            "id": "ChnxwhL3BDaV",
+            "ref": "3d3d0d1b-53f4-4835-9a40-ca4c1010a27b",
+            "label": "Japan"
+          },
+          {
+            "id": "sIdsEta7VDWv",
+            "ref": "57d57b3e-1ecb-455c-9c8d-d5285649ef4c",
+            "label": "China"
+          },
+          {
+            "id": "1ImTIzDryVIu",
+            "ref": "a47ea81c-f9f5-49db-8efe-d6fa6563fa0e",
+            "label": "India"
+          },
+          {
+            "id": "Lxd2rAy2qPfi",
+            "ref": "5a42f6c8-8880-4e99-b9fa-247f7e466a2b",
+            "label": "Brazil"
+          },
+          {
+            "id": "eiWXjc3eDFC2",
+            "ref": "2eaa5184-3738-4bc4-9183-885d8b1a42ab",
+            "label": "Mexico"
+          },
+          {
+            "id": "M5DBw8540G6o",
+            "ref": "65b1da3a-83fd-4dbe-a0b7-6c846e979d2f",
+            "label": "South Korea"
+          },
+          {
+            "id": "wGE33avuzng9",
+            "ref": "3a9af1d6-6a9f-4fda-abc7-53e74101b451",
+            "label": "Netherlands"
+          },
+          {
+            "id": "ufvYRbTq9lcZ",
+            "ref": "b021b77c-9247-4ef0-9dc9-a4d3a7e42a3e",
+            "label": "Other"
+          }
+        ]
+      },
+      "validations": {
+        "required": false
+      },
+      "type": "dropdown"
+    },
+    {
+      "id": "IlLjrxUhXwsy",
+      "title": "Please provide your email address.",
+      "ref": "ca727a12-0ddd-4479-b05c-144a093007c5",
+      "properties": {},
+      "validations": {
+        "required": false
+      },
+      "type": "email"
+    }
+  ]
+}
