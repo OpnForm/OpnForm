@@ -252,6 +252,89 @@ describe('TallyImporter', function () {
         expect($matrices)->toHaveCount(1);
     });
 
+    it('imports the real Tally lead-generation form cleanly', function () {
+        Http::fake([
+            'tally.so/*' => Http::response(tallyLeadGenHtmlFixture(), 200),
+        ]);
+
+        $importer = app(\App\Service\FormImport\Importers\TallyImporter::class);
+        $result = $importer->import(['url' => 'https://tally.so/r/wMGppm']);
+
+        expect($result['title'])->toBe('Lead generation form');
+
+        $names = array_column($result['properties'], 'name');
+        $types = array_column($result['properties'], 'type');
+
+        // Standalone LABEL widgets are consumed by the following input
+        // instead of leaking through as nf-text / Untitled.
+        expect($names)->not->toContain('Untitled');
+        expect(array_count_values($types)['nf-text'] ?? 0)->toBe(0);
+
+        $byName = collect($result['properties'])->keyBy('name');
+        expect($byName->has('Company name'))->toBeTrue();
+        expect($byName->get('Company name')['type'])->toBe('text');
+        expect($byName->has('Company size'))->toBeTrue();
+        expect($byName->get('Company size')['type'])->toBe('select');
+        expect($byName->get('Company size')['select']['options'])->toHaveCount(4);
+
+        // Standalone CHECKBOX block (newsletter opt-in) → real boolean checkbox
+        $checkbox = collect($result['properties'])->firstWhere('type', 'checkbox');
+        expect($checkbox)->not->toBeNull();
+        expect($checkbox['name'])->toContain('newsletter');
+        expect($checkbox)->not->toHaveKey('multi_select');
+
+        // Thank-you page content ends up as submitted_text, not as properties
+        expect($result)->toHaveKey('submitted_text');
+        expect($result['submitted_text'])->toContain('Thanks for downloading');
+        expect($result['submitted_text'])->toContain('<a href="https://tally.so/"');
+
+        expect(
+            collect($result['properties'])->contains(fn ($p) => str_contains($p['name'] ?? '', 'Thanks for downloading'))
+        )->toBeFalse();
+    });
+
+    it('maps a standalone CHECKBOX block to a real checkbox field', function () {
+        $blocks = tallyBlocks();
+        $blocks[] = [
+            'uuid' => 'c1',
+            'type' => 'CHECKBOX',
+            'groupUuid' => 'cg1',
+            'groupType' => 'CHECKBOXES',
+            'payload' => ['index' => 0, 'isFirst' => true, 'isLast' => true, 'text' => 'I agree to the terms'],
+        ];
+
+        Http::fake([
+            'tally.so/*' => Http::response(wrapTallyBlocks('Consent Form', $blocks), 200),
+        ]);
+
+        $importer = app(\App\Service\FormImport\Importers\TallyImporter::class);
+        $result = $importer->import(['url' => 'https://tally.so/r/consent']);
+
+        $checkbox = collect($result['properties'])->firstWhere('type', 'checkbox');
+        expect($checkbox)->not->toBeNull();
+        expect($checkbox['name'])->toBe('I agree to the terms');
+    });
+
+    it('uses standalone LABEL widgets as the next input name', function () {
+        $blocks = tallyBlocks();
+        $blocks[] = ['uuid' => 'l1', 'type' => 'LABEL', 'groupUuid' => 'lg1', 'groupType' => 'LABEL', 'payload' => ['safeHTMLSchema' => [['Company name']]]];
+        $blocks[] = ['uuid' => 'i1', 'type' => 'INPUT_TEXT', 'groupUuid' => 'ig1', 'groupType' => 'INPUT_TEXT', 'payload' => ['placeholder' => '']];
+
+        Http::fake([
+            'tally.so/*' => Http::response(wrapTallyBlocks('Label Form', $blocks), 200),
+        ]);
+
+        $importer = app(\App\Service\FormImport\Importers\TallyImporter::class);
+        $result = $importer->import(['url' => 'https://tally.so/r/lbl']);
+
+        $types = array_column($result['properties'], 'type');
+        expect($types)->not->toContain('nf-text');
+
+        $named = collect($result['properties'])->firstWhere('name', 'Company name');
+        expect($named)->not->toBeNull();
+        expect($named['type'])->toBe('text');
+    });
+
     it('stops at thank-you page break', function () {
         $blocks = tallyBlocks();
         $blocks[] = ['uuid' => 'pb1', 'type' => 'PAGE_BREAK', 'groupUuid' => 'pg1', 'groupType' => 'PAGE_BREAK', 'payload' => ['isThankYouPage' => true]];
@@ -515,6 +598,13 @@ function wrapTallyBlocks(string $title, array $blocks): string
 function tallyHtmlFixture(): string
 {
     return wrapTallyBlocks('Tally Test Form', tallyBlocks());
+}
+
+function tallyLeadGenHtmlFixture(): string
+{
+    $json = file_get_contents(__DIR__ . '/../../fixtures/tally-lead-generation.json');
+
+    return '<html><body><script id="__NEXT_DATA__" type="application/json">' . $json . '</script></body></html>';
 }
 
 function filloutHtmlFixture(): string

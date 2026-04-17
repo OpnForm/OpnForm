@@ -1,0 +1,362 @@
+{
+  "props": {
+    "pageProps": {
+      "name": "Lead generation form",
+      "blocks": [
+        {
+          "uuid": "1903c7b7-ee65-42fb-9025-a5614d169de1",
+          "type": "FORM_TITLE",
+          "groupUuid": "7b44bc49-03e6-4baa-bf01-656bf1450da7",
+          "groupType": "FORM_TITLE",
+          "payload": {
+            "button": {
+              "label": "Submit"
+            },
+            "mentions": [
+              {
+                "uuid": "0d1499bc-cd70-4de9-9498-64aeb4caf7fc",
+                "field": {
+                  "uuid": "44d1d8be-ff9d-4a74-a1dc-d55027674c4e",
+                  "type": "INPUT_FIELD",
+                  "questionType": "INPUT_TEXT",
+                  "blockGroupUuid": "44d1d8be-ff9d-4a74-a1dc-d55027674c4e",
+                  "title": "First name"
+                }
+              }
+            ],
+            "safeHTMLSchema": [
+              [
+                "Lead generation form"
+              ]
+            ],
+            "title": "Lead generation form"
+          }
+        },
+        {
+          "uuid": "de118642-061b-4f72-8211-5818fee83415",
+          "type": "INPUT_TEXT",
+          "groupUuid": "44d1d8be-ff9d-4a74-a1dc-d55027674c4e",
+          "groupType": "INPUT_TEXT",
+          "payload": {
+            "isRequired": false,
+            "placeholder": "First name"
+          }
+        },
+        {
+          "uuid": "8ff16e1a-63d7-4036-a716-10039f4b61e0",
+          "type": "INPUT_TEXT",
+          "groupUuid": "3988152f-8817-4d4c-8d80-c6241f8a5b3b",
+          "groupType": "INPUT_TEXT",
+          "payload": {
+            "isRequired": false,
+            "placeholder": "Last name"
+          }
+        },
+        {
+          "uuid": "07da14fe-1428-4254-b8e0-9dd63faec13a",
+          "type": "INPUT_EMAIL",
+          "groupUuid": "612291e2-f9dc-4f73-a72a-ecae557d3faa",
+          "groupType": "INPUT_EMAIL",
+          "payload": {
+            "isRequired": false,
+            "placeholder": "Email"
+          }
+        },
+        {
+          "uuid": "5236cd26-3f49-4349-adc3-81f65adb4e50",
+          "type": "LABEL",
+          "groupUuid": "652b9f7f-ef11-4e2b-8daf-bf93a00305f7",
+          "groupType": "LABEL",
+          "payload": {
+            "safeHTMLSchema": [
+              [
+                "Company name"
+              ]
+            ]
+          }
+        },
+        {
+          "uuid": "28addd69-f527-4327-912d-59afc920b0b9",
+          "type": "INPUT_TEXT",
+          "groupUuid": "05f7b4ee-84da-4a0d-b76b-9e86f0944c10",
+          "groupType": "INPUT_TEXT",
+          "payload": {
+            "isRequired": false,
+            "placeholder": ""
+          }
+        },
+        {
+          "uuid": "340fb7c2-8bc5-4762-bbe4-13a8667ea86f",
+          "type": "LABEL",
+          "groupUuid": "14a23d0d-5685-4e0a-b475-1e78e5785a57",
+          "groupType": "LABEL",
+          "payload": {
+            "safeHTMLSchema": [
+              [
+                "Company size"
+              ]
+            ]
+          }
+        },
+        {
+          "uuid": "811886ba-45a0-4363-8a4a-1e9dcb0c965c",
+          "type": "DROPDOWN_OPTION",
+          "groupUuid": "d55c42f3-d376-4865-b1e4-6d251f577199",
+          "groupType": "DROPDOWN",
+          "payload": {
+            "index": 0,
+            "isRequired": false,
+            "isFirst": true,
+            "isLast": false,
+            "text": "1-10"
+          }
+        },
+        {
+          "uuid": "4778439c-1beb-445a-8741-b3a7162b6fa1",
+          "type": "DROPDOWN_OPTION",
+          "groupUuid": "d55c42f3-d376-4865-b1e4-6d251f577199",
+          "groupType": "DROPDOWN",
+          "payload": {
+            "isRequired": false,
+            "index": 1,
+            "isFirst": false,
+            "isLast": false,
+            "text": "10-100"
+          }
+        },
+        {
+          "uuid": "8a91f060-8837-4e12-8781-10f92320b69a",
+          "type": "DROPDOWN_OPTION",
+          "groupUuid": "d55c42f3-d376-4865-b1e4-6d251f577199",
+          "groupType": "DROPDOWN",
+          "payload": {
+            "isRequired": false,
+            "index": 2,
+            "isFirst": false,
+            "isLast": false,
+            "text": "100-1000"
+          }
+        },
+        {
+          "uuid": "ee914b8f-6113-475f-9070-66d836125f2c",
+          "type": "DROPDOWN_OPTION",
+          "groupUuid": "d55c42f3-d376-4865-b1e4-6d251f577199",
+          "groupType": "DROPDOWN",
+          "payload": {
+            "isRequired": false,
+            "index": 3,
+            "isFirst": false,
+            "isLast": true,
+            "text": "1000 +"
+          }
+        },
+        {
+          "uuid": "ee288753-771c-4a91-a7c2-331f750769ed",
+          "type": "PAGE_BREAK",
+          "groupUuid": "e7918536-0c93-419e-b937-b6a8a83de3f3",
+          "groupType": "PAGE_BREAK",
+          "payload": {
+            "index": 0,
+            "isQualifiedForThankYouPage": false,
+            "isThankYouPage": false,
+            "isFirst": true,
+            "isLast": false
+          }
+        },
+        {
+          "uuid": "6503e313-2a08-401b-b3c4-06c1925d11ac",
+          "type": "LABEL",
+          "groupUuid": "91e6b159-b75d-45e6-8705-15bd7a9075de",
+          "groupType": "LABEL",
+          "payload": {
+            "safeHTMLSchema": [
+              [
+                "Job level"
+              ]
+            ]
+          }
+        },
+        {
+          "uuid": "e56c3832-1737-4497-992f-053805241307",
+          "type": "DROPDOWN_OPTION",
+          "groupUuid": "a77ca963-6457-473e-bde4-71ea41a7bbba",
+          "groupType": "DROPDOWN",
+          "payload": {
+            "index": 0,
+            "isRequired": true,
+            "isFirst": true,
+            "isLast": false,
+            "text": "C-level"
+          }
+        },
+        {
+          "uuid": "d18a5f3d-8d04-47a8-bed5-b15a116d8324",
+          "type": "DROPDOWN_OPTION",
+          "groupUuid": "a77ca963-6457-473e-bde4-71ea41a7bbba",
+          "groupType": "DROPDOWN",
+          "payload": {
+            "isRequired": true,
+            "index": 1,
+            "isFirst": false,
+            "isLast": false,
+            "text": "VP"
+          }
+        },
+        {
+          "uuid": "801053c0-6302-4493-b451-cc3f21365de4",
+          "type": "DROPDOWN_OPTION",
+          "groupUuid": "a77ca963-6457-473e-bde4-71ea41a7bbba",
+          "groupType": "DROPDOWN",
+          "payload": {
+            "isRequired": true,
+            "index": 2,
+            "isFirst": false,
+            "isLast": false,
+            "text": "Director"
+          }
+        },
+        {
+          "uuid": "ba0b445a-ecfc-4c23-9c02-ef84f404f339",
+          "type": "DROPDOWN_OPTION",
+          "groupUuid": "a77ca963-6457-473e-bde4-71ea41a7bbba",
+          "groupType": "DROPDOWN",
+          "payload": {
+            "isRequired": true,
+            "index": 3,
+            "isFirst": false,
+            "isLast": false,
+            "text": "Manager"
+          }
+        },
+        {
+          "uuid": "1bd5fe17-9dc7-446a-a8d1-0f94fc040b39",
+          "type": "DROPDOWN_OPTION",
+          "groupUuid": "a77ca963-6457-473e-bde4-71ea41a7bbba",
+          "groupType": "DROPDOWN",
+          "payload": {
+            "isRequired": true,
+            "index": 4,
+            "isFirst": false,
+            "isLast": false,
+            "text": "Senior"
+          }
+        },
+        {
+          "uuid": "1c17fefe-851e-4719-a587-8c28533903da",
+          "type": "DROPDOWN_OPTION",
+          "groupUuid": "a77ca963-6457-473e-bde4-71ea41a7bbba",
+          "groupType": "DROPDOWN",
+          "payload": {
+            "isRequired": true,
+            "index": 5,
+            "isFirst": false,
+            "isLast": false,
+            "text": "Entry level"
+          }
+        },
+        {
+          "uuid": "27cb3f96-c760-489c-abee-aa7ea91637a9",
+          "type": "DROPDOWN_OPTION",
+          "groupUuid": "a77ca963-6457-473e-bde4-71ea41a7bbba",
+          "groupType": "DROPDOWN",
+          "payload": {
+            "isRequired": true,
+            "index": 6,
+            "isFirst": false,
+            "isLast": true,
+            "text": "Student/intern"
+          }
+        },
+        {
+          "uuid": "407945e5-0d71-4490-b5ea-441d19e28346",
+          "type": "TEXT",
+          "groupUuid": "e7918536-0c93-419e-b937-b6a8a83de3f3",
+          "groupType": "PAGE_BREAK",
+          "payload": {
+            "safeHTMLSchema": []
+          }
+        },
+        {
+          "uuid": "4ffbeccb-7b4c-4a5b-906f-823f432656cf",
+          "type": "CHECKBOX",
+          "groupUuid": "4537ae1e-8e7a-4e34-ae7f-4c0ff5ee4d00",
+          "groupType": "CHECKBOXES",
+          "payload": {
+            "index": 0,
+            "isRequired": false,
+            "isFirst": true,
+            "isLast": true,
+            "text": "The latest news about our company in your inbox? Subscribe to our newsletter and we'll make it happen!"
+          }
+        },
+        {
+          "uuid": "b08b32fa-1acf-43b7-87ee-b3c25630f9bc",
+          "type": "PAGE_BREAK",
+          "groupUuid": "80bc4141-87b7-41e5-9061-7b716db765a7",
+          "groupType": "PAGE_BREAK",
+          "payload": {
+            "index": 1,
+            "isQualifiedForThankYouPage": true,
+            "isThankYouPage": true,
+            "isFirst": false,
+            "isLast": true
+          }
+        },
+        {
+          "uuid": "19ca882a-7ba6-4b97-a07c-1bbd08c0a284",
+          "type": "TITLE",
+          "groupUuid": "58f60835-aeb3-41b6-858a-82060b3e130a",
+          "groupType": "TITLE",
+          "payload": {
+            "safeHTMLSchema": [
+              [
+                "Thanks for downloading our eBook "
+              ],
+              [
+                "@First name",
+                [
+                  [
+                    "tag",
+                    "span"
+                  ],
+                  [
+                    "mention",
+                    "0d1499bc-cd70-4de9-9498-64aeb4caf7fc"
+                  ]
+                ]
+              ],
+              [
+                "!"
+              ]
+            ]
+          }
+        },
+        {
+          "uuid": "03cd8835-8316-42a8-bf50-ac598fa621a1",
+          "type": "TEXT",
+          "groupUuid": "fcc1e559-6838-4e47-88f0-ec80bc8cb292",
+          "groupType": "TEXT",
+          "payload": {
+            "safeHTMLSchema": [
+              [
+                "Check your inbox or click "
+              ],
+              [
+                "this link",
+                [
+                  [
+                    "href",
+                    "https://tally.so/"
+                  ]
+                ]
+              ],
+              [
+                " to access it anytime."
+              ]
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

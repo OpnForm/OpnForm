@@ -91,12 +91,24 @@ class TallyImporter extends AbstractImporter
         }
 
         $title = $this->sanitizeText($pageProps['name'] ?? $pageProps['title'] ?? 'Imported Tally Form', 60);
-        $properties = $this->mapBlocks($blocks);
+        ['properties' => $properties, 'settings' => $settings] = $this->mapBlocks($blocks);
 
         return [
             'title' => $title,
             'properties' => $properties,
+            ...$this->compactSettings($settings),
         ];
+    }
+
+    /**
+     * Drop empty form-level attributes (submitted_text, …)
+     */
+    private function compactSettings(array $settings): array
+    {
+        return array_filter(
+            $settings,
+            fn($value) => ! ($value === null || $value === '' || $value === [])
+        );
     }
 
     private function mapBlocks(array $blocks): array
@@ -104,15 +116,43 @@ class TallyImporter extends AbstractImporter
         $optionIndex = $this->indexOptionBlocks($blocks);
         $properties = [];
         $processedGroups = [];
+        $pendingLabel = null;
 
-        foreach ($blocks as $i => $block) {
+        // Form-level attributes that we collect while iterating blocks.
+        $settings = [
+            'submitted_text' => '',
+        ];
+
+        $inThankYouPage = false;
+
+        foreach ($blocks as $block) {
             $type = $block['type'] ?? '';
 
+            if ($inThankYouPage) {
+                $settings['submitted_text'] .= $this->renderThankYouBlock($block);
+
+                continue;
+            }
+
             if ($this->isThankYouPageBreak($block)) {
-                break;
+                $inThankYouPage = true;
+
+                continue;
             }
 
             if (! $type || in_array($type, self::SKIP_TYPES, true)) {
+                continue;
+            }
+
+            // Standalone label blocks (Tally's "Question label" widget) describe
+            // the next input instead of being standalone content; hold the text
+            // so the next mapped field can adopt it as its name.
+            if ($this->isQuestionLabelBlock($block)) {
+                $labelText = trim($this->flattenSafeHTMLSchema($block['payload']['safeHTMLSchema'] ?? null));
+                if ($labelText !== '') {
+                    $pendingLabel = $this->sanitizeText($labelText, 255);
+                }
+
                 continue;
             }
 
@@ -125,7 +165,9 @@ class TallyImporter extends AbstractImporter
                     continue;
                 }
                 $processedGroups[$groupUuid] = true;
-                $this->synthesizeParentField($block, $blocks, $i, $optionIndex, $properties);
+                $this->synthesizeParentField($block, $optionIndex, $pendingLabel, $properties);
+                $pendingLabel = null;
+
                 continue;
             }
 
@@ -136,7 +178,11 @@ class TallyImporter extends AbstractImporter
 
             $mapped = $this->mapBlock($block, $optionIndex);
             if ($mapped !== null) {
+                if ($pendingLabel !== null && $this->hasDefaultName($mapped)) {
+                    $mapped['name'] = $pendingLabel;
+                }
                 $properties[] = $mapped;
+                $pendingLabel = null;
             }
 
             foreach ($block['groupBlocks'] ?? [] as $child) {
@@ -151,7 +197,34 @@ class TallyImporter extends AbstractImporter
             }
         }
 
-        return $properties;
+        return [
+            'properties' => $properties,
+            'settings' => $settings,
+        ];
+    }
+
+    /**
+     * Standalone label widgets are either a TEXT_TYPES block whose group is
+     * explicitly LABEL or a question heading that Tally groups under QUESTION.
+     */
+    private function isQuestionLabelBlock(array $block): bool
+    {
+        $type = $block['type'] ?? '';
+        $groupType = $block['groupType'] ?? '';
+
+        return in_array($type, self::TEXT_TYPES, true)
+            && in_array($groupType, ['LABEL', 'QUESTION'], true);
+    }
+
+    private function hasDefaultName(array $property): bool
+    {
+        $name = $property['name'] ?? '';
+        $placeholder = $property['placeholder'] ?? null;
+
+        return $name === ''
+            || $name === 'Untitled'
+            || $name === 'Checkbox'
+            || ($placeholder !== null && $name === $placeholder);
     }
 
     /**
@@ -160,37 +233,62 @@ class TallyImporter extends AbstractImporter
      */
     private function synthesizeParentField(
         array $childBlock,
-        array $blocks,
-        int $index,
         array $optionIndex,
+        ?string $pendingLabel,
         array &$properties,
     ): void {
-        $label = $this->findPrecedingQuestionLabel($blocks, $index);
+        $groupUuid = $childBlock['groupUuid'] ?? '';
+        $groupType = $childBlock['groupType'] ?? '';
+        $siblingOptions = $optionIndex[$groupUuid] ?? [];
 
-        // Remove the nf-text we already emitted for this question label
-        if ($label !== '' && $properties !== []) {
-            $last = end($properties);
-            if (($last['type'] ?? '') === 'nf-text'
-                && trim(strip_tags($last['content'] ?? '')) === $label
-            ) {
-                array_pop($properties);
-            }
+        // Tally "CHECKBOX" blocks can appear on their own (terms & conditions,
+        // newsletter opt-in) — map those to OpnForm's boolean checkbox instead
+        // of a single-option multi_select.
+        if ($groupType === 'CHECKBOXES' && count($siblingOptions) <= 1) {
+            $properties[] = $this->buildStandaloneCheckbox($childBlock, $pendingLabel);
+
+            return;
         }
 
-        $groupUuid = $childBlock['groupUuid'] ?? '';
+        $payload = array_merge(
+            $childBlock['payload'] ?? [],
+            $pendingLabel !== null && $pendingLabel !== '' ? ['name' => $pendingLabel] : []
+        );
+
         $mapped = $this->mapBlock([
             'uuid' => $groupUuid,
             'groupUuid' => $groupUuid,
-            'type' => $childBlock['groupType'] ?? '',
-            'payload' => array_merge(
-                $childBlock['payload'] ?? [],
-                $label !== '' ? ['name' => $label] : []
-            ),
+            'type' => $groupType,
+            'payload' => $payload,
         ], $optionIndex);
 
         if ($mapped !== null) {
             $properties[] = $mapped;
         }
+    }
+
+    private function buildStandaloneCheckbox(array $childBlock, ?string $pendingLabel): array
+    {
+        $optionText = $this->extractOptionText($childBlock);
+        $name = $pendingLabel !== null && $pendingLabel !== ''
+            ? $pendingLabel
+            : ($optionText !== '' ? $optionText : 'Checkbox');
+
+        $payload = $childBlock['payload'] ?? [];
+
+        $property = [
+            'id' => $this->generateFieldId(),
+            'name' => $name,
+            'type' => 'checkbox',
+            'required' => (bool) ($payload['isRequired'] ?? false),
+            'hidden' => (bool) ($payload['isHidden'] ?? false),
+        ];
+
+        if ($pendingLabel !== null && $pendingLabel !== '' && $optionText !== '' && $optionText !== $pendingLabel) {
+            $property['help'] = $this->sanitizeText($optionText, 1000);
+        }
+
+        return $property;
     }
 
     // Block → property routing
@@ -374,7 +472,7 @@ class TallyImporter extends AbstractImporter
         }
 
         foreach ($index as &$opts) {
-            usort($opts, fn ($a, $b) => ($a['payload']['index'] ?? 0) <=> ($b['payload']['index'] ?? 0));
+            usort($opts, fn($a, $b) => ($a['payload']['index'] ?? 0) <=> ($b['payload']['index'] ?? 0));
         }
 
         return $index;
@@ -446,8 +544,8 @@ class TallyImporter extends AbstractImporter
     private function extractOptionLabels(array $optionBlocks): array
     {
         return array_values(array_filter(
-            array_map(fn ($opt) => $this->extractOptionText($opt), $optionBlocks),
-            fn ($s) => $s !== ''
+            array_map(fn($opt) => $this->extractOptionText($opt), $optionBlocks),
+            fn($s) => $s !== ''
         ));
     }
 
@@ -475,30 +573,76 @@ class TallyImporter extends AbstractImporter
         return ! empty($payload['isThankYouPage']) || ! empty($payload['isQualifiedForThankYouPage']);
     }
 
-    private function findPrecedingQuestionLabel(array $blocks, int $currentIndex): string
+    private function renderThankYouBlock(array $block): string
     {
-        for ($i = $currentIndex - 1; $i >= 0; $i--) {
-            $type = $blocks[$i]['type'] ?? '';
-            $groupType = $blocks[$i]['groupType'] ?? '';
-
-            if (in_array($type, self::TEXT_TYPES, true) && $groupType === 'QUESTION') {
-                $text = trim($this->flattenSafeHTMLSchema($blocks[$i]['payload']['safeHTMLSchema'] ?? null));
-                if ($text !== '') {
-                    return $text;
-                }
-            }
-
-            if (
-                ! in_array($type, self::CHILD_OPTION_TYPES, true)
-                && ! in_array($type, self::SKIP_TYPES, true)
-                && $type !== 'TEXT'
-                && ! (in_array($type, self::TEXT_TYPES, true) && $groupType === 'QUESTION')
-            ) {
-                break;
-            }
+        $type = $block['type'] ?? '';
+        if (! in_array($type, self::TEXT_TYPES, true)) {
+            return '';
         }
 
-        return '';
+        $inner = $this->renderSchemaHtml($block['payload']['safeHTMLSchema'] ?? null);
+        if ($inner === '') {
+            return '';
+        }
+
+        $tag = match ($type) {
+            'TITLE', 'HEADING_1' => 'h2',
+            'HEADING_2' => 'h3',
+            'HEADING_3' => 'h4',
+            default => 'p',
+        };
+
+        return "<{$tag}>{$inner}</{$tag}>";
+    }
+
+    private function renderSchemaHtml(mixed $schema): string
+    {
+        if (! is_array($schema) || $schema === []) {
+            return '';
+        }
+
+        $out = '';
+        foreach ($schema as $item) {
+            $out .= $this->renderSchemaInline($item);
+        }
+
+        return $out;
+    }
+
+    private function renderSchemaInline(mixed $item): string
+    {
+        if (is_string($item)) {
+            return e($item);
+        }
+
+        if (! is_array($item)) {
+            return '';
+        }
+
+        $first = $item[0] ?? null;
+        if (is_string($first)) {
+            $text = e($first);
+            $attrs = is_array($item[1] ?? null) ? $item[1] : [];
+            $href = null;
+            foreach ($attrs as $attr) {
+                if (is_array($attr) && count($attr) >= 2 && $attr[0] === 'href' && is_string($attr[1])) {
+                    $href = $attr[1];
+                    break;
+                }
+            }
+            if ($href !== null && $text !== '') {
+                return '<a href="' . e($href) . '" target="_blank" rel="noopener">' . $text . '</a>';
+            }
+
+            return $text;
+        }
+
+        $out = '';
+        foreach ($item as $sub) {
+            $out .= $this->renderSchemaInline($sub);
+        }
+
+        return $out;
     }
 
     private function flattenSafeHTMLSchema(mixed $node): string
@@ -533,7 +677,7 @@ class TallyImporter extends AbstractImporter
     {
         if ($options !== []) {
             $property[$property['type']]['options'] = array_map(
-                fn ($label) => ['id' => $this->generateFieldId(), 'name' => $label],
+                fn($label) => ['id' => $this->generateFieldId(), 'name' => $label],
                 array_values($options)
             );
         }
