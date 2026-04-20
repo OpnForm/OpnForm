@@ -303,9 +303,10 @@ class TypeformImporter extends AbstractImporter
 
                 $property['type'] = $allowMultiple ? 'multi_select' : 'select';
                 $property = $this->addSelectOptions($property, $choices);
-
                 if (count($choices) <= 5) {
                     $property['without_dropdown'] = true;
+                } else {
+                    $property['use_focused_selector'] = false;
                 }
                 break;
 
@@ -313,6 +314,11 @@ class TypeformImporter extends AbstractImporter
             case 'ranking':
                 $choices = $this->extractChoices($field);
                 $property = $this->addSelectOptions($property, $choices);
+                if (count($choices) <= 5) {
+                    $property['without_dropdown'] = true;
+                } else {
+                    $property['use_focused_selector'] = false;
+                }
                 break;
 
             case 'rating':

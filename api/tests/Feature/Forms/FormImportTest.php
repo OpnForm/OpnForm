@@ -447,6 +447,74 @@ describe('TallyImporter', function () {
         expect($named['type'])->toBe('text');
     });
 
+    it('keeps a Tally dropdown as a dropdown even with few options', function () {
+        $blocks = tallyBlocks();
+        // A 3-option DROPDOWN — pre-fix this would have been flattened into a
+        // radio list because count <= 5, discarding the author's intent.
+        $blocks[] = ['uuid' => 'd1', 'type' => 'DROPDOWN', 'groupUuid' => 'dg1', 'groupType' => 'DROPDOWN', 'payload' => ['name' => 'Priority', 'isRequired' => false]];
+        $blocks[] = ['uuid' => 'do1', 'type' => 'DROPDOWN_OPTION', 'groupUuid' => 'dg1', 'groupType' => 'DROPDOWN', 'payload' => ['index' => 0, 'text' => 'Low']];
+        $blocks[] = ['uuid' => 'do2', 'type' => 'DROPDOWN_OPTION', 'groupUuid' => 'dg1', 'groupType' => 'DROPDOWN', 'payload' => ['index' => 1, 'text' => 'Medium']];
+        $blocks[] = ['uuid' => 'do3', 'type' => 'DROPDOWN_OPTION', 'groupUuid' => 'dg1', 'groupType' => 'DROPDOWN', 'payload' => ['index' => 2, 'text' => 'High']];
+
+        Http::fake([
+            'tally.so/*' => Http::response(wrapTallyBlocks('Dropdown Form', $blocks), 200),
+        ]);
+
+        $importer = app(\App\Service\FormImport\Importers\TallyImporter::class);
+        $result = $importer->import(['url' => 'https://tally.so/r/dd']);
+
+        $priority = collect($result['properties'])->firstWhere('name', 'Priority');
+        expect($priority['type'])->toBe('select');
+        expect($priority['select']['options'])->toHaveCount(3);
+        expect($priority)->not->toHaveKey('without_dropdown');
+    });
+
+    it('keeps long Tally dropdowns as a real dropdown', function () {
+        $blocks = tallyBlocks();
+        $blocks[] = ['uuid' => 'd1', 'type' => 'DROPDOWN', 'groupUuid' => 'dg1', 'groupType' => 'DROPDOWN', 'payload' => ['name' => 'Country', 'isRequired' => true]];
+        foreach (range(1, 16) as $i) {
+            $blocks[] = ['uuid' => "do{$i}", 'type' => 'DROPDOWN_OPTION', 'groupUuid' => 'dg1', 'groupType' => 'DROPDOWN', 'payload' => ['index' => $i - 1, 'text' => "Country {$i}"]];
+        }
+
+        Http::fake([
+            'tally.so/*' => Http::response(wrapTallyBlocks('Long Dropdown Form', $blocks), 200),
+        ]);
+
+        $importer = app(\App\Service\FormImport\Importers\TallyImporter::class);
+        $result = $importer->import(['url' => 'https://tally.so/r/long']);
+
+        $country = collect($result['properties'])->firstWhere('name', 'Country');
+        expect($country['type'])->toBe('select');
+        expect($country['select']['options'])->toHaveCount(16);
+        expect($country)->not->toHaveKey('without_dropdown');
+    });
+
+    it('imports a leading Tally TEXT block as nf-text intro content', function () {
+        // A TEXT block that is NOT a LABEL/QUESTION heading is the form's
+        // intro copy — it must survive as editable nf-text, not be consumed
+        // into the next input's name.
+        $blocks = [
+            ['uuid' => 'intro', 'type' => 'TEXT', 'groupUuid' => 'intro', 'groupType' => 'TEXT', 'payload' => ['safeHTMLSchema' => [['Welcome to our beta program — please introduce yourself.']]]],
+            ['uuid' => 'f1', 'type' => 'INPUT_TEXT', 'groupUuid' => 'f1', 'groupType' => 'INPUT_TEXT', 'payload' => ['placeholder' => 'Name']],
+        ];
+
+        Http::fake([
+            'tally.so/*' => Http::response(wrapTallyBlocks('Intro Form', $blocks), 200),
+        ]);
+
+        $importer = app(\App\Service\FormImport\Importers\TallyImporter::class);
+        $result = $importer->import(['url' => 'https://tally.so/r/intro']);
+
+        $first = $result['properties'][0];
+        expect($first['type'])->toBe('nf-text');
+        expect($first['content'])->toContain('Welcome to our beta program');
+
+        // The INPUT_TEXT still comes through with its own name (not consumed).
+        $name = collect($result['properties'])->firstWhere('type', 'text');
+        expect($name)->not->toBeNull();
+        expect($name['name'])->toBe('Name');
+    });
+
     it('stops at thank-you page break', function () {
         $blocks = tallyBlocks();
         $blocks[] = ['uuid' => 'pb1', 'type' => 'PAGE_BREAK', 'groupUuid' => 'pg1', 'groupType' => 'PAGE_BREAK', 'payload' => ['isThankYouPage' => true]];
@@ -482,6 +550,49 @@ describe('FilloutImporter', function () {
 
         $types = array_column($result['properties'], 'type');
         expect($types)->toContain('text');
+    });
+
+    it('keeps long Fillout dropdowns as a real dropdown', function () {
+        $options = array_map(
+            fn ($i) => ['label' => "Country {$i}"],
+            range(1, 16)
+        );
+        $pageProps = [
+            'flow' => ['name' => 'Country Form'],
+            'flowSnapshot' => [
+                'template' => [
+                    'firstStep' => 's1',
+                    'steps' => [
+                        's1' => [
+                            'id' => 's1', 'type' => 'form',
+                            'nextStep' => ['defaultNextStep' => ''],
+                            'template' => ['widgets' => [
+                                [
+                                    'type' => 'Dropdown',
+                                    'position' => ['row' => 0],
+                                    'template' => [
+                                        'label' => 'Country',
+                                        'options' => ['staticOptions' => $options],
+                                    ],
+                                ],
+                            ]],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        Http::fake([
+            'fillout.com/*' => Http::response(wrapFilloutPageProps($pageProps), 200),
+        ]);
+
+        $importer = app(\App\Service\FormImport\Importers\FilloutImporter::class);
+        $result = $importer->import(['url' => 'https://example.fillout.com/t/dd']);
+
+        $country = collect($result['properties'])->firstWhere('name', 'Country');
+        expect($country['type'])->toBe('select');
+        expect($country['select']['options'])->toHaveCount(16);
+        expect($country)->not->toHaveKey('without_dropdown');
     });
 
     it('imports the real Fillout registration form cleanly', function () {
@@ -679,6 +790,114 @@ describe('GoogleFormsImporter', function () {
         expect($types)->toContain('text');
         expect($types)->toContain('select');
         expect($types)->toContain('date');
+    });
+
+    it('renders Google Forms description as an intro nf-text block', function () {
+        $user = $this->actingAsUser();
+        $provider = OAuthProvider::factory()->create([
+            'user_id' => $user->id,
+            'access_token' => 'test-token',
+        ]);
+
+        $fixture = googleFormsFixture();
+        $fixture['info']['description'] = 'Please answer honestly — your feedback improves the product.';
+
+        Http::fake([
+            'forms.googleapis.com/v1/forms/*' => Http::response($fixture, 200),
+        ]);
+
+        $importer = app(\App\Service\FormImport\Importers\GoogleFormsImporter::class);
+        $result = $importer->import([
+            'url' => 'https://docs.google.com/forms/d/1abc123/edit',
+            'oauth_provider_id' => $provider->id,
+        ]);
+
+        // Description shows up first, as an editable nf-text block.
+        $first = $result['properties'][0];
+        expect($first['type'])->toBe('nf-text');
+        expect($first['content'])->toContain('Please answer honestly');
+    });
+
+    it('keeps long Google Forms DROP_DOWN questions as a real dropdown', function () {
+        $user = $this->actingAsUser();
+        $provider = OAuthProvider::factory()->create([
+            'user_id' => $user->id,
+            'access_token' => 'test-token',
+        ]);
+
+        $fixture = googleFormsFixture();
+        $fixture['items'][] = [
+            'title' => 'Country',
+            'questionItem' => [
+                'question' => [
+                    'required' => true,
+                    'choiceQuestion' => [
+                        'type' => 'DROP_DOWN',
+                        'options' => array_map(
+                            fn ($i) => ['value' => "Country {$i}"],
+                            range(1, 16)
+                        ),
+                    ],
+                ],
+            ],
+        ];
+
+        Http::fake([
+            'forms.googleapis.com/v1/forms/*' => Http::response($fixture, 200),
+        ]);
+
+        $importer = app(\App\Service\FormImport\Importers\GoogleFormsImporter::class);
+        $result = $importer->import([
+            'url' => 'https://docs.google.com/forms/d/1abc123/edit',
+            'oauth_provider_id' => $provider->id,
+        ]);
+
+        $country = collect($result['properties'])->firstWhere('name', 'Country');
+        expect($country['type'])->toBe('select');
+        expect($country['select']['options'])->toHaveCount(16);
+        expect($country)->not->toHaveKey('without_dropdown');
+    });
+
+    it('keeps short Google Forms DROP_DOWN questions as a real dropdown', function () {
+        // Author explicitly picked a dropdown — pre-fix the ≤5 rule would
+        // have flattened this into a radio list.
+        $user = $this->actingAsUser();
+        $provider = OAuthProvider::factory()->create([
+            'user_id' => $user->id,
+            'access_token' => 'test-token',
+        ]);
+
+        $fixture = googleFormsFixture();
+        $fixture['items'][] = [
+            'title' => 'Priority',
+            'questionItem' => [
+                'question' => [
+                    'required' => false,
+                    'choiceQuestion' => [
+                        'type' => 'DROP_DOWN',
+                        'options' => [
+                            ['value' => 'Low'],
+                            ['value' => 'Medium'],
+                            ['value' => 'High'],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        Http::fake([
+            'forms.googleapis.com/v1/forms/*' => Http::response($fixture, 200),
+        ]);
+
+        $importer = app(\App\Service\FormImport\Importers\GoogleFormsImporter::class);
+        $result = $importer->import([
+            'url' => 'https://docs.google.com/forms/d/1abc123/edit',
+            'oauth_provider_id' => $provider->id,
+        ]);
+
+        $priority = collect($result['properties'])->firstWhere('name', 'Priority');
+        expect($priority['type'])->toBe('select');
+        expect($priority)->not->toHaveKey('without_dropdown');
     });
 
     it('maps grid questions to matrix', function () {

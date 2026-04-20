@@ -334,7 +334,7 @@ class TallyImporter extends AbstractImporter
         $property = $this->baseProperty($block, $opnType);
         $property = $this->addSelectOptions($property, $labels);
 
-        if ($type === 'CHECKBOXES' || count($labels) <= 5) {
+        if ($type !== 'DROPDOWN' && ($type === 'CHECKBOXES' || count($labels) <= 5)) {
             $property['without_dropdown'] = true;
         }
 

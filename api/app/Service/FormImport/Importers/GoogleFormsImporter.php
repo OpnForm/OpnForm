@@ -247,7 +247,7 @@ class GoogleFormsImporter extends AbstractImporter
             );
         }
 
-        if ($choiceType === 'CHECKBOX' || count($labels) <= 5) {
+        if ($choiceType !== 'DROP_DOWN' && ($choiceType === 'CHECKBOX' || count($labels) <= 5)) {
             $property['without_dropdown'] = true;
         }
 
