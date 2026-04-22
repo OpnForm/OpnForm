@@ -104,7 +104,9 @@ export default {
   },
 
   mounted() {
-    this.compVal = !!this.compVal
+    if (typeof this.compVal !== 'boolean') {
+      this.compVal = !!this.compVal
+    }
   },
 }
 </script>

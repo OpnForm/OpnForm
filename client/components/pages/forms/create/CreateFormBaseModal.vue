@@ -261,6 +261,8 @@ function selectStyle(style) {
       ensureSettingsObject(workingFormStore.content)
       // Enable navigation arrows by default in focused mode
       workingFormStore.content.settings.navigation_arrows = true
+      // Enable auto-next by default in focused mode
+      workingFormStore.content.settings.auto_next = true
       // Seed first block image to highlight focused mode
       seedFocusedFirstBlockImage(workingFormStore.content)
     }

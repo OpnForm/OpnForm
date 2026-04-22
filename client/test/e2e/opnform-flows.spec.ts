@@ -88,7 +88,7 @@ function buildFormPayload(workspaceId: number, title: string, presentationStyle:
     use_captcha: false,
     captcha_provider: "recaptcha",
     seo_meta: {},
-    settings: presentationStyle === "focused" ? { navigation_arrows: true } : {},
+    settings: presentationStyle === "focused" ? { navigation_arrows: true, auto_next: true } : {},
     analytics: [],
     tags: [],
     computed_variables: [],

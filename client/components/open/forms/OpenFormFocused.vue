@@ -173,6 +173,11 @@ const handleNextClick = () => {
 }
 
 const onInputFilled = () => {
+  // Respect the auto-next setting (defaults to true for backward compatibility)
+  if (form.value?.settings?.auto_next === false) {
+    return
+  }
+
   // On last page, submit the form instead of advancing
   if (isLast.value) {
     // Don't submit if already processing
