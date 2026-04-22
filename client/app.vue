@@ -2,9 +2,9 @@
   <AppProvider>
     <div
       id="app"
-      class="bg-white dark:bg-notion-dark"
+      class="bg-of-surface dark:bg-notion-dark"
     >
-      <NuxtLoadingIndicator color="#2563eb" />
+      <NuxtLoadingIndicator color="var(--of-accent)" />
       <NuxtLayout>
         <NuxtPage />
       </NuxtLayout>

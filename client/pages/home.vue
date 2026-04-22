@@ -1,7 +1,7 @@
 <template>
-  <div v-if="workspace" class="flex flex-col h-full bg-white">
+  <div v-if="workspace" class="of-page flex flex-col h-full bg-of-surface">
     <div
-      class="sticky top-0 z-50 bg-white h-[49px] border-b border-neutral-200 p-2 sm:px-4"
+      class="sticky top-0 z-50 bg-of-surface h-[49px] border-b border-of-border p-2 sm:px-4"
     >
       <div
         class="max-w-4xl mx-auto flex items-center justify-between flex-shrink-0 gap-2 px-2 sm:px-0"
@@ -59,12 +59,12 @@
             >
               <UIcon
                 name="i-heroicons-document-plus"
-                class="h-12 w-12 text-neutral-400 mx-auto"
+                class="h-12 w-12 text-of-subtle mx-auto"
               />
-              <h3 class="mt-4 text-lg font-semibold text-neutral-900">
+              <h3 class="mt-4 text-lg font-semibold text-of-ink">
                 Create your first form
               </h3>
-              <p class="mt-1 text-sm text-neutral-500">
+              <p class="mt-1 text-sm text-of-subtle">
                 Get started by creating a new form to collect responses.
               </p>
               <UButton
@@ -87,12 +87,12 @@
             >
               <UIcon
                 name="i-heroicons-magnifying-glass"
-                class="h-12 w-12 text-neutral-400 mx-auto"
+                class="h-12 w-12 text-of-subtle mx-auto"
               />
-              <h3 class="mt-4 text-lg font-semibold text-neutral-900">
+              <h3 class="mt-4 text-lg font-semibold text-of-ink">
                 No forms found
               </h3>
-              <p class="mt-1 text-sm text-neutral-500">
+              <p class="mt-1 text-sm text-of-subtle">
                 Your search and filter criteria did not match any forms.
               </p>
               <UButton
@@ -123,7 +123,7 @@
                 v-else-if="!isComplete && totalPages > 1"
                 class="flex justify-center items-center py-4"
               >
-                <div class="text-sm text-neutral-500">
+                <div class="text-sm text-of-subtle">
                   Loaded {{ currentPage }} of {{ totalPages }} pages
                 </div>
               </div>

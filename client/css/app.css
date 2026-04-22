@@ -17,6 +17,82 @@
 @source inline("grid-cols-{1,2,3,4,5,6}");
 
 @theme {
+    /* App design tokens: single source of truth for global branding */
+    --of-bg: #f8fafc;
+    --of-surface: #ffffff;
+    --of-surface-muted: #f5f7fb;
+    --of-surface-strong: #ffffff;
+    --of-ink: #0f172a;
+    --of-muted: #475569;
+    --of-subtle: #64748b;
+    --of-border: #e2e8f0;
+    --of-border-strong: #cbd5e1;
+    --of-accent: #2563eb;
+    --of-accent-contrast: #ffffff;
+    --of-accent-soft: #dbeafe;
+    --of-accent-hover: #1d4ed8;
+    --of-accent-active: #1e40af;
+    --of-success: #15803d;
+    --of-success-soft: #dcfce7;
+    --of-warning: #b45309;
+    --of-warning-soft: #fef3c7;
+    --of-danger: #b91c1c;
+    --of-danger-soft: #fee2e2;
+    --of-overlay: #0f172a;
+    --of-overlay-text: #f8fafc;
+    --of-overlay-muted: #cbd5e1;
+    --of-overlay-border: #334155;
+    --of-overlay-scrim: rgb(15 23 42 / 0.72);
+    --of-image-gradient: linear-gradient(
+        180deg,
+        rgb(15 23 42 / 0.02) 0%,
+        rgb(15 23 42 / 0.38) 100%
+    );
+    --of-radius-xs: 6px;
+    --of-radius-sm: 8px;
+    --of-radius-md: 12px;
+    --of-radius-lg: 16px;
+    --of-radius-xl: 24px;
+    --of-shadow-soft: 0 4px 16px rgb(15 23 42 / 0.06);
+    --of-shadow-card: 0 10px 30px rgb(15 23 42 / 0.08);
+    --of-shadow-elevated: 0 18px 48px rgb(15 23 42 / 0.16);
+    --of-ring: 0 0 0 3px rgb(37 99 235 / 0.25);
+    --of-header-height: 49px;
+    --of-sticky-gap: 8px;
+
+    /* Tailwind color aliases powered by tokens */
+    --color-of-bg: var(--of-bg);
+    --color-of-surface: var(--of-surface);
+    --color-of-surface-muted: var(--of-surface-muted);
+    --color-of-surface-strong: var(--of-surface-strong);
+    --color-of-ink: var(--of-ink);
+    --color-of-muted: var(--of-muted);
+    --color-of-subtle: var(--of-subtle);
+    --color-of-border: var(--of-border);
+    --color-of-border-strong: var(--of-border-strong);
+    --color-of-accent: var(--of-accent);
+    --color-of-accent-soft: var(--of-accent-soft);
+    --color-of-accent-contrast: var(--of-accent-contrast);
+    --color-of-success: var(--of-success);
+    --color-of-success-soft: var(--of-success-soft);
+    --color-of-warning: var(--of-warning);
+    --color-of-warning-soft: var(--of-warning-soft);
+    --color-of-danger: var(--of-danger);
+    --color-of-danger-soft: var(--of-danger-soft);
+    --color-of-overlay: var(--of-overlay);
+    --color-of-overlay-text: var(--of-overlay-text);
+    --color-of-overlay-muted: var(--of-overlay-muted);
+    --color-of-overlay-border: var(--of-overlay-border);
+
+    --radius-of-xs: var(--of-radius-xs);
+    --radius-of-sm: var(--of-radius-sm);
+    --radius-of-md: var(--of-radius-md);
+    --radius-of-lg: var(--of-radius-lg);
+    --radius-of-xl: var(--of-radius-xl);
+    --shadow-of-soft: var(--of-shadow-soft);
+    --shadow-of-card: var(--of-shadow-card);
+    --shadow-of-elevated: var(--of-shadow-elevated);
+
     --color-notion-dark: #191919;
     --color-notion-dark-light: #2e2e2e;
 
@@ -93,6 +169,40 @@
     --transition-property-max-width: max-width;
     --transition-property-spacing: margin, padding;
     --border-radius-custom-lg: 10px;
+}
+
+@layer components {
+    .of-page {
+        @apply bg-of-bg text-of-ink;
+    }
+
+    .of-surface {
+        @apply bg-of-surface border border-of-border;
+    }
+
+    .of-panel {
+        @apply bg-of-surface rounded-of-lg border border-of-border shadow-of-soft;
+    }
+
+    .of-card {
+        @apply bg-of-surface-strong rounded-of-md border border-of-border shadow-of-soft;
+    }
+
+    .of-heading {
+        @apply text-of-ink;
+    }
+
+    .of-copy {
+        @apply text-of-muted;
+    }
+
+    .of-eyebrow {
+        @apply text-of-accent font-semibold;
+    }
+
+    .of-step-badge {
+        @apply inline-flex items-center justify-center w-10 h-10 text-base font-bold rounded-full shadow-xs ring ring-inset bg-of-surface-strong text-of-accent ring-of-border shrink-0;
+    }
 }
 
 @layer utilities {

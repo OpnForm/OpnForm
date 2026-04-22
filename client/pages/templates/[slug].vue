@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col min-h-full">
+  <div class="of-page flex flex-col min-h-full">
     <Breadcrumb
       v-if="template"
       :path="breadcrumbs"
@@ -57,7 +57,7 @@
       We could not find this template.
     </p>
     <template v-else>
-      <section class="pt-12 bg-neutral-50 sm:pt-16 border-b pb-[250px] relative">
+      <section class="pt-12 bg-of-surface-muted sm:pt-16 border-b border-of-border pb-[250px] relative">
         <div class="px-4 mx-auto sm:px-6 lg:px-8 max-w-7xl">
           <div
             class="flex flex-col items-center justify-center max-w-5xl gap-8 mx-auto md:gap-12 md:flex-row"
@@ -74,11 +74,11 @@
 
             <div class="flex-1 text-center md:text-left relative">
               <h1
-                class="text-3xl font-bold tracking-tight text-neutral-900 sm:text-4xl"
+                class="of-heading text-3xl font-bold tracking-tight sm:text-4xl"
               >
                 {{ template.name }}
               </h1>
-              <p class="mt-2 text-lg font-normal text-neutral-600">
+              <p class="of-copy mt-2 text-lg font-normal">
                 {{ cleanQuotes(template.short_description) }}
               </p>
               <template-tags
@@ -93,15 +93,15 @@
 
       <section class="w-full max-w-5xl relative px-4 mx-auto sm:px-6 lg:px-8 -mt-[210px]">
         <div
-          class="p-4 mx-auto bg-white shadow-lg sm:p-6 lg:p-8 rounded-xl ring ring-inset ring-neutral-200 isolate"
+          class="p-4 mx-auto bg-of-surface-strong shadow-lg sm:p-6 lg:p-8 rounded-xl ring ring-inset ring-of-border isolate"
         >
-          <p class="text-sm font-medium text-center text-neutral-500 -mt-2 mb-2">
+          <p class="text-sm font-medium text-center text-of-subtle -mt-2 mb-2">
             Template Preview
           </p>
           <div class="mb-4">
             <div
               ref="templatePreviewParent"
-              class="border rounded-lg bg-white dark:bg-notion-dark w-full shadow-xs transition-all overflow-y-auto flex flex-col"
+                class="border border-of-border rounded-lg bg-of-surface-strong dark:bg-notion-dark w-full shadow-xs transition-all overflow-y-auto flex flex-col"
             >
               <div
                 :class="[
@@ -138,7 +138,7 @@
               </TrackClick>
             </div>
             <div class="flex items-center justify-center">
-              <div class="text-left mx-auto text-neutral-500 text-xs mt-4">
+              <div class="text-left mx-auto text-of-subtle text-xs mt-4">
                 ✓ Core features 100% free<br>
                 ✓ No credit card required<br>
                 ✓ No submissions limit on Free plan
@@ -148,7 +148,7 @@
         </div>
       </section>
 
-      <section class="pt-20 pb-12 bg-white sm:pb-16">
+      <section class="pt-20 pb-12 bg-of-surface sm:pb-16">
         <div class="px-4 mx-auto sm:px-6 lg:px-8 max-w-7xl">
           <div
             class="max-w-4xl mx-auto mt-16 space-y-12 sm:mt-16 sm:space-y-16"
@@ -159,15 +159,15 @@
             />
 
             <template v-if="template.questions?.length > 0">
-              <hr class="mt-12 border-neutral-200">
+              <hr class="mt-12 border-of-border">
               <div>
                 <div class="text-center">
                   <h3
-                    class="text-xl font-bold tracking-tight text-neutral-900 sm:text-2xl"
+                    class="of-heading text-xl font-bold tracking-tight sm:text-2xl"
                   >
                     Frequently asked questions
                   </h3>
-                  <p class="mt-2 text-base font-normal text-neutral-600">
+                  <p class="of-copy mt-2 text-base font-normal">
                     Everything you need to know about this template.
                   </p>
                 </div>
@@ -177,11 +177,11 @@
                     :key="ques_key"
                     class="space-y-4"
                   >
-                    <dt class="font-semibold text-neutral-900 dark:text-neutral-100">
+                    <dt class="font-semibold text-of-ink dark:text-neutral-100">
                       {{ ques.question }}
                     </dt>
                     <dd
-                      class="mt-2 leading-6 text-neutral-600 dark:text-neutral-400"
+                      class="mt-2 leading-6 text-of-muted dark:text-neutral-400"
                       v-html="ques.answer"
                     />
                   </div>
@@ -194,12 +194,12 @@
 
       <section
         v-if="relatedTemplates && relatedTemplates.length > 0"
-        class="py-12 bg-white border-t border-neutral-200 sm:py-16"
+        class="py-12 bg-of-surface border-t border-of-border sm:py-16"
       >
         <div class="px-4 mx-auto sm:px-6 lg:px-8 max-w-7xl">
           <div class="flex items-center justify-between">
             <h4
-              class="text-xl font-bold tracking-tight text-neutral-900 sm:text-2xl"
+              class="of-heading text-xl font-bold tracking-tight sm:text-2xl"
             >
               Related templates
             </h4>
@@ -224,11 +224,11 @@
         </div>
       </section>
 
-      <section class="py-12 bg-white border-t border-neutral-200 sm:py-16">
+      <section class="py-12 bg-of-surface border-t border-of-border sm:py-16">
         <div class="px-4 mx-auto sm:px-6 lg:px-8 max-w-7xl">
           <div class="text-center">
             <h4
-              class="text-xl font-bold tracking-tight text-neutral-900 sm:text-2xl"
+              class="of-heading text-xl font-bold tracking-tight sm:text-2xl"
             >
               How OpnForm works
             </h4>
@@ -239,15 +239,15 @@
               class="flex flex-col items-center gap-4 text-center lg:items-start sm:text-left sm:items-start xl:flex-row"
             >
               <div
-                class="inline-flex items-center justify-center w-10 h-10 text-base font-bold bg-white rounded-full shadow-xs ring ring-inset ring-neutral-200 text-blue-500 shrink-0"
+                class="of-step-badge"
               >
                 1
               </div>
               <div>
-                <h5 class="text-base font-bold leading-tight text-neutral-900">
+                <h5 class="text-base font-bold leading-tight text-of-ink">
                   Copy the template and change it the way you like
                 </h5>
-                <p class="mt-2 text-sm font-normal text-neutral-600">
+                <p class="mt-2 text-sm font-normal text-of-muted">
                   <NuxtLink :to="createFormWithTemplateUrl">
                     Click here to copy this template
                   </NuxtLink>
@@ -261,15 +261,15 @@
               class="flex flex-col items-center gap-4 text-center lg:items-start sm:text-left sm:items-start xl:flex-row"
             >
               <div
-                class="inline-flex items-center justify-center w-10 h-10 text-base font-bold bg-white rounded-full shadow-xs ring ring-inset ring-neutral-200 text-blue-500 shrink-0"
+                class="of-step-badge"
               >
                 2
               </div>
               <div>
-                <h5 class="text-base font-bold leading-tight text-neutral-900">
+                <h5 class="text-base font-bold leading-tight text-of-ink">
                   Embed the form or share it via a link
                 </h5>
-                <p class="mt-2 text-sm font-normal text-neutral-600">
+                <p class="mt-2 text-sm font-normal text-of-muted">
                   You can directly share your form link, or embed the form on
                   your website. It's magic! 🪄
                 </p>
@@ -283,7 +283,7 @@
       </section>
     </template>
 
-    <open-form-footer class="mt-8 border-t" />
+    <open-form-footer class="mt-8 border-t border-of-border" />
   </div>
 </template>
 
@@ -393,11 +393,11 @@ useOpnSeoMeta(
 .nf-text {
   @apply space-y-4;
   h2 {
-    @apply text-sm font-normal tracking-widest text-neutral-500 uppercase;
+    @apply text-sm font-normal tracking-widest text-of-subtle uppercase;
   }
 
   p {
-    @apply font-normal leading-7 text-neutral-900 dark:text-neutral-100;
+    @apply font-normal leading-7 text-of-ink dark:text-neutral-100;
   }
 
   ol {

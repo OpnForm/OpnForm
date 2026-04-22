@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col min-h-full">
+  <div class="of-page flex flex-col min-h-full">
     <Breadcrumb :path="breadcrumbs" />
 
     <p
@@ -9,18 +9,18 @@
       We could not find this industry.
     </p>
     <template v-else>
-      <section class="py-12 sm:py-16 bg-neutral-50 border-b border-neutral-200">
+      <section class="py-12 sm:py-16 bg-of-surface-muted border-b border-of-border">
         <div class="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
           <div class="text-center mx-auto">
-            <div class="font-semibold sm:w-full text-blue-500 mb-3">
+            <div class="of-eyebrow sm:w-full mb-3">
               {{ industry.name }}
             </div>
             <h1
-              class="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-neutral-900"
+              class="of-heading text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight"
             >
               {{ industry.meta_title }}
             </h1>
-            <p class="max-w-xl mx-auto text-neutral-600 mt-4 text-lg font-normal">
+            <p class="of-copy max-w-xl mx-auto mt-4 text-lg font-normal">
               {{ industry.meta_description }}
             </p>
           </div>
@@ -34,9 +34,9 @@
         :show-industries="false"
       >
         <template #before-lists>
-          <section class="py-12 bg-white border-t border-neutral-200 sm:py-16">
+          <section class="py-12 bg-of-surface border-t border-of-border sm:py-16">
             <div class="px-4 mx-auto sm:px-6 lg:px-8 max-w-7xl">
-              <p class="text-neutral-600 font-normal">
+              <p class="of-copy font-normal">
                 {{ industry.description }}
               </p>
             </div>
@@ -45,7 +45,7 @@
       </templates-list>
     </template>
 
-    <open-form-footer class="mt-8 border-t" />
+    <open-form-footer class="mt-8 border-t border-of-border" />
   </div>
 </template>
 
@@ -119,11 +119,11 @@ useHead({
 .nf-text {
   @apply space-y-4;
   h2 {
-    @apply text-sm font-normal tracking-widest text-neutral-500 uppercase;
+    @apply text-sm font-normal tracking-widest text-of-subtle uppercase;
   }
 
   p {
-    @apply font-normal leading-7 text-neutral-900 dark:text-neutral-100;
+    @apply font-normal leading-7 text-of-ink dark:text-neutral-100;
   }
 
   ol {

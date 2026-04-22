@@ -73,3 +73,19 @@ bun run preview
 ```
 
 Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
+
+## Design tokens and theming
+
+Global design tokens now live in `client/css/app.css` inside the `@theme` block (`--of-*` variables).
+
+- Update colors (surface, text, accent, semantic states) by changing `--of-*` variables only.
+- Use Tailwind token aliases in templates: `bg-of-surface`, `text-of-ink`, `border-of-border`, `text-of-accent`, etc.
+- Prefer shared semantic classes for layout primitives:
+  - `of-page`
+  - `of-panel`
+  - `of-card`
+  - `of-heading`
+  - `of-copy`
+  - `of-eyebrow`
+
+This contract is intended to keep UI changes centralized so broad restyling can be done without chasing hardcoded page colors.

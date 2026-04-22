@@ -1,11 +1,11 @@
 <template>
   <div>
-    <section class="bg-white relative">
+    <section class="bg-of-surface relative">
       <div class="px-8 lg:px-12 py-14 sm:py-28 relative z-2">
         <div class="max-w-266 mx-auto">
           <div class="max-w-3xl mx-auto text-center">
             <div class="flex items-center justify-center gap-4">
-              <div class="flex items-center gap-0.5 text-amber-500">
+              <div class="flex items-center gap-0.5 text-of-warning">
                 <UIcon name="i-heroicons-star-solid" class="h-4 w-4" />
                 <UIcon name="i-heroicons-star-solid" class="h-4 w-4" />
                 <UIcon name="i-heroicons-star-solid" class="h-4 w-4" />
@@ -13,7 +13,7 @@
                 <UIcon name="i-heroicons-star-solid" class="h-4 w-4" />
               </div>
               <div
-                class="text-base leading-7 tracking-[-1.1%] font-medium text-gray-600"
+                class="text-base leading-7 tracking-[-1.1%] font-medium text-of-muted"
               >
                 4.9/5 — Trusted by 10,000+ teams in finance, fintech, and
                 consulting
@@ -21,7 +21,7 @@
             </div>
 
             <h1
-              class="mt-8 text-4xl sm:text-[56px] sm:leading-16 tracking-[-1%] font-semibold text-gray-950 lg:px-1"
+              class="mt-8 text-4xl sm:text-[56px] sm:leading-16 tracking-[-1%] font-semibold text-of-ink lg:px-1"
             >
               Transform financial
               <!-- <br class="hidden sm:block" /> -->
@@ -31,7 +31,7 @@
             </h1>
 
             <p
-              class="mt-4 text-lg sm:text-xl leading-7 tracking-[-1.5%] sm:leading-8 font-normal text-gray-600"
+              class="mt-4 text-lg sm:text-xl leading-7 tracking-[-1.5%] sm:leading-8 font-normal text-of-muted"
             >
               Streamline client onboarding, compliance checks, and data
               collection with OpnForm — the open-source form builder built for
@@ -42,7 +42,7 @@
 
           <div class="mt-12 sm:mt-16 relative">
             <h2
-              class="text-center text-xl leading-7 tracking-[-0.6%] font-semibold text-gray-950"
+              class="text-center text-xl leading-7 tracking-[-0.6%] font-semibold text-of-ink"
             >
               Key Features for financial institutions
             </h2>
@@ -52,7 +52,7 @@
               <div
                 v-for="feature in keyFeatures"
                 :key="feature.label"
-                class="flex items-center gap-2.5 mx-auto md:mx-0 w-fit rounded-full bg-white border border-neutral-200/80 py-1.5 pl-1.5 pr-4 text-sm leading-5 tracking-[-0.6%] font-medium text-gray-950 shadow-sm"
+                class="flex items-center gap-2.5 mx-auto md:mx-0 w-fit rounded-full bg-of-surface border border-of-border py-1.5 pl-1.5 pr-4 text-sm leading-5 tracking-[-0.6%] font-medium text-of-ink shadow-sm"
               >
                 <div
                   class="h-8 w-8 shrink-0 rounded-full flex items-center justify-center"
@@ -73,22 +73,22 @@
         </div>
       </div>
       <div
-        class="w-full h-full bg-linear-to-b from-white from-55% via-blue-50 via-75% to-white to-95% absolute inset-0"
+        class="w-full h-full bg-linear-to-b from-of-surface from-55% via-of-accent-soft via-75% to-of-surface to-95% absolute inset-0"
       ></div>
     </section>
 
-    <section class="px-8 lg:px-12 py-14 sm:py28 bg-white">
+    <section class="px-8 lg:px-12 py-14 sm:py28 bg-of-surface">
       <div class="max-w-266 mx-auto">
         <div class="max-w-lg mx-auto text-center">
           <h2
-            class="text-3xl sm:text-5xl sm:leading-14 font-semibold text-gray-950 tracking-[-1%]"
+            class="text-3xl sm:text-5xl sm:leading-14 font-semibold text-of-ink tracking-[-1%]"
           >
             How financial teams
             <br class="hidden sm:block" />
             use OpnForm
           </h2>
           <p
-            class="mt-4 text-base font-normal text-gray-600 leading-7 tracking-[-1.1%]"
+            class="mt-4 text-base font-normal text-of-muted leading-7 tracking-[-1.1%]"
           >
             Choose how and where you host your forms – without compromising on
             enterprise-grade security.
@@ -101,19 +101,19 @@
           <div
             v-for="useCase in financialUseCases"
             :key="useCase.title"
-            class="rounded-3xl border border-gray-200 bg-gray-50 p-8"
+            class="rounded-3xl border border-of-border bg-of-surface-muted p-8"
           >
             <div
-              class="h-16 w-16 rounded-[20px] flex items-center justify-center bg-white shadow-xs"
+              class="h-16 w-16 rounded-[20px] flex items-center justify-center bg-of-surface shadow-xs"
             >
-              <UIcon :name="useCase.icon" class="h-8 w-8 text-blue-600" />
+              <UIcon :name="useCase.icon" class="h-8 w-8 text-of-accent" />
             </div>
 
-            <h3 class="mt-8 text-xl leading-7 font-medium text-gray-950">
+            <h3 class="mt-8 text-xl leading-7 font-medium text-of-ink">
               {{ useCase.title }}
             </h3>
             <p
-              class="mt-4 text-base font-normal text-gray-600 leading-7 tracking-[-1.1%]"
+              class="mt-4 text-base font-normal text-of-muted leading-7 tracking-[-1.1%]"
             >
               {{ useCase.description }}
             </p>
@@ -122,18 +122,18 @@
       </div>
     </section>
 
-    <section class="px-8 lg:px-12 py-14 sm:py-28 bg-white">
+    <section class="px-8 lg:px-12 py-14 sm:py-28 bg-of-surface">
       <TemplatesSlider class="max-w-266 mx-auto" />
     </section>
 
-    <section class="bg-white">
+    <section class="bg-of-surface">
       <div class="px-8 lg:px-12">
         <div
-          class="mx-auto w-full max-w-336 rounded-4xl bg-gray-950 shadow-2xl overflow-hidden py-8 sm:py-10 lg:py-14 xl:py-24 px-8 md:px-10 lg:px-14 xl:px-35"
+          class="mx-auto w-full max-w-336 rounded-4xl bg-of-overlay shadow-2xl overflow-hidden py-8 sm:py-10 lg:py-14 xl:py-24 px-8 md:px-10 lg:px-14 xl:px-35"
         >
           <div class="text-center max-w-3xl mx-auto">
             <div
-              class="text-blue-400 text-base tracking-[-1.1%] font-medium leading-7"
+              class="text-of-accent-soft text-base tracking-[-1.1%] font-medium leading-7"
             >
               Integrations
             </div>
@@ -143,7 +143,7 @@
               Connect OpnForm with the tools your team already uses
             </h3>
             <p
-              class="text-base tracking-[-1.1%] font-medium leading-7 text-gray-400"
+              class="text-base tracking-[-1.1%] font-medium leading-7 text-of-overlay-muted"
             >
               OpnForm fits into your workflow — connect to tools your team
               already uses.
@@ -156,7 +156,7 @@
               <div
                 v-for="app in integrationApps"
                 :key="app.icon"
-                class="h-14 sm:h-22 md:h-30 w-14 sm:w-22 md:w-30 rounded-2xl bg-gray-800 flex items-center justify-center"
+                class="h-14 sm:h-22 md:h-30 w-14 sm:w-22 md:w-30 rounded-2xl bg-of-overlay-border flex items-center justify-center"
               >
                 <UIcon
                   :name="app.icon"
@@ -178,18 +178,18 @@
       </div>
     </section>
 
-    <section class="py-14 sm:py-28 px-8 lg:px-12 bg-white">
+    <section class="py-14 sm:py-28 px-8 lg:px-12 bg-of-surface">
       <div class="max-w-266 mx-auto">
         <div class="max-w-157.25 mx-auto text-center">
           <h2
-            class="text-3xl sm:text-5xl sm:leading-14 font-semibold text-gray-950 tracking-[-1%]"
+            class="text-3xl sm:text-5xl sm:leading-14 font-semibold text-of-ink tracking-[-1%]"
           >
             How OpnForm improves
             <br />
             financial processes
           </h2>
           <p
-            class="mt-4 text-base font-normal text-gray-600 leading-7 tracking-[-1.1%]"
+            class="mt-4 text-base font-normal text-of-muted leading-7 tracking-[-1.1%]"
           >
             Choose how and where you host your forms – without compromising on
             enterprise-
@@ -202,21 +202,21 @@
           <div
             v-for="item in financialImprovements"
             :key="item.title"
-            class="rounded-3xl border border-gray-200 bg-gray-50 p-8"
+            class="rounded-3xl border border-of-border bg-of-surface-muted p-8"
           >
             <div class="flex items-start gap-8">
               <div
-                class="h-12 w-12 rounded-[12px] flex items-center justify-center bg-white shadow-xs shrink-0"
+                class="h-12 w-12 rounded-[12px] flex items-center justify-center bg-of-surface shadow-xs shrink-0"
               >
-                <UIcon :name="item.icon" class="h-6 w-6 text-blue-500" />
+                <UIcon :name="item.icon" class="h-6 w-6 text-of-accent" />
               </div>
 
               <div>
-                <h3 class="text-xl leading-7 font-medium text-gray-950">
+                <h3 class="text-xl leading-7 font-medium text-of-ink">
                   {{ item.title }}
                 </h3>
                 <p
-                  class="mt-4 text-base font-medium text-gray-600 leading-7 tracking-[-1.1%]"
+                  class="mt-4 text-base font-medium text-of-muted leading-7 tracking-[-1.1%]"
                 >
                   {{ item.description }}
                 </p>
@@ -324,14 +324,14 @@ const keyFeatures = [
   {
     label: "Advanced permissions and access rules",
     icon: "i-heroicons-check-badge",
-    iconWrapClass: "bg-blue-50 ring-1 ring-blue-100",
-    iconClass: "text-blue-600",
+    iconWrapClass: "bg-of-accent-soft ring-1 ring-of-border",
+    iconClass: "text-of-accent",
   },
   {
     label: "Custom form logic and conditional workflows",
     icon: "i-heroicons-arrows-right-left",
-    iconWrapClass: "bg-red-50 ring-1 ring-red-100",
-    iconClass: "text-red-600",
+    iconWrapClass: "bg-of-danger-soft ring-1 ring-of-danger-soft",
+    iconClass: "text-of-danger",
   },
   {
     label: "Encrypted data storage and SSL by default",
