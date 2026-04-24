@@ -100,7 +100,9 @@ const ruleComponent = computed(() => {
 const availableFields = computed(() => {
   return props.config.rules.map(rule => ({
     label: rule.name,
-    value: rule.identifier
+    value: rule.identifier,
+    icon: rule.icon,
+    iconClass: rule.iconClass
   }))
 })
 

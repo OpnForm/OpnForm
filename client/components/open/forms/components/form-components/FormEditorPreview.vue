@@ -57,6 +57,7 @@
         <!-- The transform creates a containing block so descendants with position: fixed
              are anchored to this preview container instead of the page viewport. -->
         <open-complete-form
+          v-if="previewReady"
           ref="formPreview"
           class="w-full grow min-h-0"
           :form="form"
@@ -65,6 +66,16 @@
           @restarted="previewFormSubmitted=false"
           @submitted="previewFormSubmitted=true"
         />
+        <div
+          v-else
+          class="w-full grow min-h-0 p-6 flex flex-col gap-4"
+        >
+          <USkeleton class="h-8 w-40" />
+          <USkeleton class="h-4 w-72" />
+          <USkeleton class="h-24 w-full" />
+          <USkeleton class="h-24 w-full" />
+          <USkeleton class="h-10 w-28 self-center" />
+        </div>
         <!-- Quick actions for focused presentation (only when not expanded) -->
          
         <VTransition name="fade">
@@ -125,12 +136,14 @@ import { useFormEditorPreviewData } from '~/composables/useFormEditorPreviewData
 const { hideChat, showChat } = useCrisp()
 
 const workingFormStore = useWorkingFormStore()
-const { setPreviewData, setPreviewFormManager, clearData: clearPreviewData } = useFormEditorPreviewData()
+const { setPreviewFormManager, clearData: clearPreviewData } = useFormEditorPreviewData()
 
 const parent = ref(null)
 const formPreview = ref(null)
 const previewFormSubmitted = ref(false)
 const isExpanded = ref(false)
+const previewReady = ref(false)
+let previewIdleHandle = null
 
 watch(isExpanded, (expanded) => {
   if (expanded)
@@ -169,18 +182,32 @@ watch(formMode, () => {
 
 onMounted(() => {
   handleDarkModeChange()
+
+  const schedulePreviewMount = () => {
+    previewReady.value = true
+    previewIdleHandle = null
+  }
+
+  if (import.meta.client && typeof window.requestIdleCallback === 'function') {
+    previewIdleHandle = window.requestIdleCallback(schedulePreviewMount, { timeout: 120 })
+  } else if (import.meta.client) {
+    previewIdleHandle = window.setTimeout(schedulePreviewMount, 16)
+  } else {
+    previewReady.value = true
+  }
+
 })
 
 onUnmounted(() => {
+  if (import.meta.client && previewIdleHandle !== null) {
+    if (typeof window.cancelIdleCallback === 'function') {
+      window.cancelIdleCallback(previewIdleHandle)
+    } else {
+      window.clearTimeout(previewIdleHandle)
+    }
+  }
   clearPreviewData()
 })
-
-// Watch for preview form data changes and share them
-watch(() => formPreview.value?.formManager?.form?.data?.(), (newData) => {
-  if (newData) {
-    setPreviewData(newData)
-  }
-}, { deep: true })
 
 // Also share the form manager reference
 watch(() => formPreview.value?.formManager, (manager) => {

@@ -15,6 +15,7 @@ import { useAmplitude } from '~/composables/useAmplitude'
 import { useConfetti } from '~/composables/useConfetti'
 import { cloneDeep } from 'lodash'
 import { useFieldState } from './useFieldState'
+import { useComputedVariables } from '~/composables/forms/useComputedVariables'
 
 /**
  * @fileoverview Main orchestrator composable for form operations.
@@ -47,9 +48,15 @@ export function useFormManager(initialFormConfig, initialMode = FormMode.LIVE, o
   // --- Initialize services that depend on config and form data ---
   // Create a reactive reference to the form data for dependent composables to watch
   const formDataRef = computed(() => form.data())
+  const computedVariables = useComputedVariables(computed(() => config.value), formDataRef)
 
   // Centralized field state (single instance per manager)
-  const fieldState = useFieldState(formDataRef, computed(() => config.value), computed(() => strategy.value))
+  const fieldState = useFieldState(
+    formDataRef,
+    computed(() => config.value),
+    computed(() => strategy.value),
+    computed(() => computedVariables.values.value)
+  )
 
   // Instantiate pending submission service (handles localStorage saving)
   const pendingSubmissionService = usePendingSubmission(config, formDataRef)
@@ -399,6 +406,7 @@ export function useFormManager(initialFormConfig, initialMode = FormMode.LIVE, o
     // Composables (Expose if direct access needed, often not necessary)
     structure,
     fieldState,     // Expose centralized field state service
+    computedValues: computed(() => computedVariables.values.value),
     payment,        // Expose payment service
 
     // Core Methods

@@ -379,10 +379,14 @@ body.dark * {
 
 /* Global mention styles for consistency across components */
 .rich-editor span[mention],
-.rich-editor span[mention="true"],
+.rich-editor span[mention="true"] {
+    @apply inline-flex items-center align-baseline leading-tight text-sm relative bg-blue-100 text-blue-800 border border-blue-200 rounded-md px-1 py-0.5 mx-0.5 max-w-[200px] whitespace-nowrap overflow-hidden truncate;
+}
+
+/* MentionInput (compact one-line fields): avoid tall line box vs adjacent inputs */
 .mention-input span[mention],
 .mention-input span[mention="true"] {
-    @apply inline-flex items-center align-baseline leading-tight text-sm relative bg-blue-100 text-blue-800 border border-blue-200 rounded-md px-1 py-0.5 mx-0.5 max-w-[200px] whitespace-nowrap overflow-hidden truncate;
+    @apply inline-flex items-center align-middle leading-none text-[0.92em] text-blue-800 relative bg-blue-100 border border-blue-200 rounded px-0.5 py-px mx-0.5 max-w-[200px] whitespace-nowrap overflow-hidden text-ellipsis;
 }
 
 .crisp-client {

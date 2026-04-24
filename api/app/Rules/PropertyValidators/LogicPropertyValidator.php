@@ -150,6 +150,10 @@ class LogicPropertyValidator implements PropertyValidatorInterface
 
     private function valueHasCorrectType(?string $type, mixed $value): bool
     {
+        if (is_string($value) && str_contains($value, 'mention-field-id')) {
+            return true;
+        }
+
         if ($type === 'string') {
             $mapping = self::getConditionMapping();
             $fieldType = $this->field['type'] ?? null;

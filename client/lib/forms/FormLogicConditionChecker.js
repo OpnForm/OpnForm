@@ -1,5 +1,54 @@
 import { default as _isEqual } from "lodash/isEqual"
 
+function resolveConditionValue(value, formData) {
+  if (typeof value !== 'string' || !value.includes('mention-field-id')) {
+    return value
+  }
+
+  if (typeof window === 'undefined' || typeof DOMParser === 'undefined') {
+    return value
+  }
+
+  const parser = new DOMParser()
+  const doc = parser.parseFromString(value, 'text/html')
+  const mentions = doc.querySelectorAll('[mention]')
+
+  if (mentions.length === 0) return value
+
+  if (mentions.length === 1) {
+    const fieldId = mentions[0].getAttribute('mention-field-id')
+    const fallback = mentions[0].getAttribute('mention-fallback')
+
+    const clone = doc.body.cloneNode(true)
+    clone.querySelector('[mention]').remove()
+    const remainingText = clone.textContent.trim()
+
+    // Single mention with no surrounding text — return the raw field value to preserve type
+    if (remainingText === '') {
+      const resolved = formData[fieldId]
+      if (resolved !== undefined && resolved !== null) return resolved
+      if (fallback) return fallback
+      return null
+    }
+  }
+
+  // Multiple mentions or mixed content — resolve to string
+  mentions.forEach(el => {
+    const fieldId = el.getAttribute('mention-field-id')
+    const fallback = el.getAttribute('mention-fallback')
+    const fieldValue = formData[fieldId]
+    if (fieldValue !== undefined && fieldValue !== null) {
+      el.textContent = Array.isArray(fieldValue) ? fieldValue.join(', ') : String(fieldValue)
+    } else if (fallback) {
+      el.textContent = fallback
+    } else {
+      el.textContent = ''
+    }
+  })
+
+  return doc.body.textContent.trim()
+}
+
 export function conditionsMet(conditions, formData) {
   if (conditions === undefined || conditions === null) {
     return false
@@ -7,9 +56,17 @@ export function conditionsMet(conditions, formData) {
 
   // If it's not a group, just a single condition
   if (conditions.operatorIdentifier === undefined) {
+    const condition = conditions.value
+    if (!condition) return false
+
+    const resolvedCondition = { ...condition }
+    if (resolvedCondition.value !== undefined && resolvedCondition.value !== null) {
+      resolvedCondition.value = resolveConditionValue(resolvedCondition.value, formData)
+    }
+
     return propertyConditionMet(
-      conditions.value,
-      conditions.value ? formData[conditions.value.property_meta.id] : null,
+      resolvedCondition,
+      formData[condition.property_meta.id],
     )
   }
 
@@ -65,8 +122,37 @@ function propertyConditionMet(propertyCondition, value) {
       return matrixConditionMet(propertyCondition, value)
     case "payment":
       return paymentConditionMet(propertyCondition, value)
+    case "computed":
+      return computedConditionMet(propertyCondition, value)
   }
   return false
+}
+
+function isComputedNumberCondition(propertyCondition, value) {
+  const resultType = propertyCondition?.property_meta?.result_type
+  if (['number', 'numeric', 'integer', 'float'].includes(resultType)) {
+    return true
+  }
+  return typeof value === 'number'
+}
+
+function computedConditionMet(propertyCondition, value) {
+  if (isComputedNumberCondition(propertyCondition, value)) {
+    switch (propertyCondition.operator) {
+      case "equals":
+        return safeParseFloat(propertyCondition.value) !== null &&
+          safeParseFloat(value) !== null &&
+          parseFloat(propertyCondition.value) === parseFloat(value)
+      case "does_not_equal":
+        return safeParseFloat(propertyCondition.value) === null ||
+          safeParseFloat(value) === null ||
+          parseFloat(propertyCondition.value) !== parseFloat(value)
+      default:
+        return numberConditionMet(propertyCondition, value)
+    }
+  }
+
+  return textConditionMet(propertyCondition, value)
 }
 
 // Helper function to safely parse numeric values
@@ -111,7 +197,9 @@ function checkMatrixContains(condition, fieldValue)
 }
 
 function checkContains(condition, fieldValue) {
-  return fieldValue ? fieldValue.includes(condition.value) : false
+  if (!fieldValue || typeof fieldValue !== 'string') return false
+  if (typeof condition.value !== 'string') return false
+  return fieldValue.includes(condition.value)
 }
 
 function checkListContains(condition, fieldValue) {
@@ -125,10 +213,12 @@ function checkListContains(condition, fieldValue) {
 }
 
 function checkStartsWith(condition, fieldValue) {
+  if (typeof fieldValue !== 'string' || typeof condition.value !== 'string') return false
   return fieldValue?.startsWith(condition.value)
 }
 
 function checkendsWith(condition, fieldValue) {
+  if (typeof fieldValue !== 'string' || typeof condition.value !== 'string') return false
   return fieldValue?.endsWith(condition.value)
 }
 
@@ -343,6 +433,7 @@ function textConditionMet(propertyCondition, value) {
       return checkLength(propertyCondition, value, "<=")
     case 'matches_regex':
       try {
+        if (typeof propertyCondition.value !== 'string' || typeof value !== 'string') return false
         const regex = new RegExp(propertyCondition.value)
         return regex.test(value)
       } catch {
@@ -350,8 +441,9 @@ function textConditionMet(propertyCondition, value) {
       }
     case 'does_not_match_regex':
       try {
-        const regex = new RegExp(propertyCondition.value)
-        return !regex.test(value)
+        if (typeof propertyCondition.value !== 'string' || typeof value !== 'string') return true
+        const regex2 = new RegExp(propertyCondition.value)
+        return !regex2.test(value)
       } catch {
         return true
       }

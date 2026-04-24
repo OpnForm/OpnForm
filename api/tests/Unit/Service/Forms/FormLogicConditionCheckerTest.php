@@ -508,6 +508,305 @@ describe('FormLogicConditionChecker', function () {
         });
     });
 
+    describe('mention value resolution', function () {
+        function mentionHtml(string $fieldId, string $fieldName, string $fallback = ''): string
+        {
+            return '<span mention mention-field-id="' . $fieldId . '" mention-field-name="' . $fieldName . '" mention-fallback="' . $fallback . '">@' . $fieldName . '</span>';
+        }
+
+        it('resolves single bare mention to raw scalar value for text equals', function () {
+            $condition = [
+                'value' => [
+                    'property_meta' => [
+                        'id' => 'text_field',
+                        'type' => 'text',
+                    ],
+                    'operator' => 'equals',
+                    'value' => mentionHtml('other_field', 'Other Field'),
+                ],
+            ];
+
+            $formData = ['text_field' => 'hello', 'other_field' => 'hello'];
+            expect(FormLogicConditionChecker::conditionsMet($condition, $formData))->toBeTrue();
+
+            $formData = ['text_field' => 'hello', 'other_field' => 'world'];
+            expect(FormLogicConditionChecker::conditionsMet($condition, $formData))->toBeFalse();
+        });
+
+        it('resolves single bare mention to raw numeric value for number comparison', function () {
+            $condition = [
+                'value' => [
+                    'property_meta' => [
+                        'id' => 'number_field',
+                        'type' => 'number',
+                    ],
+                    'operator' => 'greater_than',
+                    'value' => mentionHtml('threshold_field', 'Threshold'),
+                ],
+            ];
+
+            $formData = ['number_field' => 50, 'threshold_field' => 40];
+            expect(FormLogicConditionChecker::conditionsMet($condition, $formData))->toBeTrue();
+
+            $formData = ['number_field' => 30, 'threshold_field' => 40];
+            expect(FormLogicConditionChecker::conditionsMet($condition, $formData))->toBeFalse();
+        });
+
+        it('resolves single bare mention with fallback when field is missing', function () {
+            $condition = [
+                'value' => [
+                    'property_meta' => [
+                        'id' => 'text_field',
+                        'type' => 'text',
+                    ],
+                    'operator' => 'equals',
+                    'value' => mentionHtml('missing_field', 'Missing', 'default_val'),
+                ],
+            ];
+
+            $formData = ['text_field' => 'default_val'];
+            expect(FormLogicConditionChecker::conditionsMet($condition, $formData))->toBeTrue();
+        });
+
+        it('resolves single bare mention to null when field missing and no fallback', function () {
+            $condition = [
+                'value' => [
+                    'property_meta' => [
+                        'id' => 'text_field',
+                        'type' => 'text',
+                    ],
+                    'operator' => 'equals',
+                    'value' => mentionHtml('missing_field', 'Missing'),
+                ],
+            ];
+
+            $formData = ['text_field' => 'anything'];
+            expect(FormLogicConditionChecker::conditionsMet($condition, $formData))->toBeFalse();
+        });
+
+        it('resolves mixed content with text and mention to plain string', function () {
+            $condition = [
+                'value' => [
+                    'property_meta' => [
+                        'id' => 'text_field',
+                        'type' => 'text',
+                    ],
+                    'operator' => 'equals',
+                    'value' => 'Hello ' . mentionHtml('name_field', 'Name'),
+                ],
+            ];
+
+            $formData = ['text_field' => 'Hello Alice', 'name_field' => 'Alice'];
+            expect(FormLogicConditionChecker::conditionsMet($condition, $formData))->toBeTrue();
+
+            $formData = ['text_field' => 'Hello Bob', 'name_field' => 'Alice'];
+            expect(FormLogicConditionChecker::conditionsMet($condition, $formData))->toBeFalse();
+        });
+
+        it('resolves multiple mentions to combined plain string', function () {
+            $condition = [
+                'value' => [
+                    'property_meta' => [
+                        'id' => 'text_field',
+                        'type' => 'text',
+                    ],
+                    'operator' => 'equals',
+                    'value' => mentionHtml('first', 'First') . ' ' . mentionHtml('last', 'Last'),
+                ],
+            ];
+
+            $formData = [
+                'text_field' => 'John Doe',
+                'first' => 'John',
+                'last' => 'Doe',
+            ];
+            expect(FormLogicConditionChecker::conditionsMet($condition, $formData))->toBeTrue();
+        });
+
+        it('does not crash text contains when mention resolves to array', function () {
+            $condition = [
+                'value' => [
+                    'property_meta' => [
+                        'id' => 'text_field',
+                        'type' => 'text',
+                    ],
+                    'operator' => 'contains',
+                    'value' => mentionHtml('multi_field', 'Multi'),
+                ],
+            ];
+
+            $formData = ['text_field' => 'option1 option2', 'multi_field' => ['option1', 'option2']];
+            expect(FormLogicConditionChecker::conditionsMet($condition, $formData))->toBeFalse();
+        });
+
+        it('does not crash starts_with when mention resolves to array', function () {
+            $condition = [
+                'value' => [
+                    'property_meta' => [
+                        'id' => 'text_field',
+                        'type' => 'text',
+                    ],
+                    'operator' => 'starts_with',
+                    'value' => mentionHtml('multi_field', 'Multi'),
+                ],
+            ];
+
+            $formData = ['text_field' => 'hello', 'multi_field' => ['opt1', 'opt2']];
+            expect(FormLogicConditionChecker::conditionsMet($condition, $formData))->toBeFalse();
+        });
+
+        it('does not crash ends_with when mention resolves to array', function () {
+            $condition = [
+                'value' => [
+                    'property_meta' => [
+                        'id' => 'text_field',
+                        'type' => 'text',
+                    ],
+                    'operator' => 'ends_with',
+                    'value' => mentionHtml('multi_field', 'Multi'),
+                ],
+            ];
+
+            $formData = ['text_field' => 'hello', 'multi_field' => ['opt1', 'opt2']];
+            expect(FormLogicConditionChecker::conditionsMet($condition, $formData))->toBeFalse();
+        });
+
+        it('does not crash matches_regex when mention resolves to array', function () {
+            $condition = [
+                'value' => [
+                    'property_meta' => [
+                        'id' => 'text_field',
+                        'type' => 'text',
+                    ],
+                    'operator' => 'matches_regex',
+                    'value' => mentionHtml('multi_field', 'Multi'),
+                ],
+            ];
+
+            $formData = ['text_field' => 'hello', 'multi_field' => ['opt1', 'opt2']];
+            expect(FormLogicConditionChecker::conditionsMet($condition, $formData))->toBeFalse();
+        });
+
+        it('does not crash does_not_match_regex when mention resolves to array', function () {
+            $condition = [
+                'value' => [
+                    'property_meta' => [
+                        'id' => 'text_field',
+                        'type' => 'text',
+                    ],
+                    'operator' => 'does_not_match_regex',
+                    'value' => mentionHtml('multi_field', 'Multi'),
+                ],
+            ];
+
+            $formData = ['text_field' => 'hello', 'multi_field' => ['opt1', 'opt2']];
+            expect(FormLogicConditionChecker::conditionsMet($condition, $formData))->toBeTrue();
+        });
+
+        it('does not crash when mention resolves to associative array (matrix)', function () {
+            $condition = [
+                'value' => [
+                    'property_meta' => [
+                        'id' => 'text_field',
+                        'type' => 'text',
+                    ],
+                    'operator' => 'equals',
+                    'value' => mentionHtml('matrix_field', 'Matrix'),
+                ],
+            ];
+
+            $formData = ['text_field' => 'hello', 'matrix_field' => ['row1' => 'col1']];
+            expect(FormLogicConditionChecker::conditionsMet($condition, $formData))->toBeFalse();
+        });
+
+        it('handles mention in number equals with matching numeric values', function () {
+            $condition = [
+                'value' => [
+                    'property_meta' => [
+                        'id' => 'number_field',
+                        'type' => 'number',
+                    ],
+                    'operator' => 'equals',
+                    'value' => mentionHtml('other_number', 'Other Number'),
+                ],
+            ];
+
+            $formData = ['number_field' => 42, 'other_number' => 42];
+            expect(FormLogicConditionChecker::conditionsMet($condition, $formData))->toBeTrue();
+
+            $formData = ['number_field' => 42, 'other_number' => 43];
+            expect(FormLogicConditionChecker::conditionsMet($condition, $formData))->toBeFalse();
+        });
+
+        it('passes through non-mention values unchanged', function () {
+            $condition = [
+                'value' => [
+                    'property_meta' => [
+                        'id' => 'text_field',
+                        'type' => 'text',
+                    ],
+                    'operator' => 'equals',
+                    'value' => 'plain text value',
+                ],
+            ];
+
+            $formData = ['text_field' => 'plain text value'];
+            expect(FormLogicConditionChecker::conditionsMet($condition, $formData))->toBeTrue();
+        });
+    });
+
+    describe('computed variable mention resolution', function () {
+        function cvMentionHtml(string $cvId, string $cvName, string $fallback = ''): string
+        {
+            return '<span mention mention-field-id="' . $cvId . '" mention-field-name="' . $cvName . '" mention-fallback="' . $fallback . '">@' . $cvName . '</span>';
+        }
+
+        it('resolves mention referencing computed variable via conditionsMetWithForm', function () {
+            $form = new \App\Models\Forms\Form();
+            $form->computed_variables = [
+                [
+                    'id' => 'cv_total',
+                    'name' => 'Total',
+                    'formula' => '10',
+                    'type' => 'number',
+                ],
+            ];
+
+            $condition = [
+                'value' => [
+                    'property_meta' => [
+                        'id' => 'number_field',
+                        'type' => 'number',
+                    ],
+                    'operator' => 'equals',
+                    'value' => cvMentionHtml('cv_total', 'Total'),
+                ],
+            ];
+
+            $formData = ['number_field' => 10];
+            expect(FormLogicConditionChecker::conditionsMetWithForm($condition, $formData, $form))->toBeTrue();
+
+            $formData = ['number_field' => 5];
+            expect(FormLogicConditionChecker::conditionsMetWithForm($condition, $formData, $form))->toBeFalse();
+        });
+
+        it('falls back when computed variable not resolved via conditionsMet', function () {
+            $condition = [
+                'value' => [
+                    'property_meta' => [
+                        'id' => 'number_field',
+                        'type' => 'number',
+                    ],
+                    'operator' => 'equals',
+                    'value' => cvMentionHtml('cv_missing', 'Missing CV', '99'),
+                ],
+            ];
+
+            $formData = ['number_field' => '99'];
+            expect(FormLogicConditionChecker::conditionsMet($condition, $formData))->toBeTrue();
+        });
+    });
+
     describe('group conditions', function () {
         it('handles nested AND/OR conditions correctly', function () {
             $condition = [
@@ -597,6 +896,59 @@ describe('FormLogicConditionChecker', function () {
                 'children' => []
             ];
             expect(fn () => FormLogicConditionChecker::conditionsMet($condition, []))->toThrow(\Exception::class);
+        });
+
+        it('preserves computed variable support inside nested groups', function () {
+            $form = new \App\Models\Forms\Form();
+            $form->computed_variables = [
+                [
+                    'id' => 'cv_total',
+                    'name' => 'Total',
+                    'formula' => '{price} * {quantity}',
+                    'type' => 'number',
+                ],
+            ];
+
+            $condition = [
+                'operatorIdentifier' => 'and',
+                'children' => [
+                    [
+                        'operatorIdentifier' => 'or',
+                        'children' => [
+                            [
+                                'value' => [
+                                    'property_meta' => [
+                                        'id' => 'cv_total',
+                                        'type' => 'computed',
+                                    ],
+                                    'operator' => 'greater_than',
+                                    'value' => 100,
+                                ],
+                            ],
+                        ],
+                    ],
+                    [
+                        'value' => [
+                            'property_meta' => [
+                                'id' => 'price',
+                                'type' => 'number',
+                            ],
+                            'operator' => 'greater_than',
+                            'value' => 0,
+                        ],
+                    ],
+                ],
+            ];
+
+            expect(FormLogicConditionChecker::conditionsMetWithForm($condition, [
+                'price' => 50,
+                'quantity' => 3,
+            ], $form))->toBeTrue();
+
+            expect(FormLogicConditionChecker::conditionsMetWithForm($condition, [
+                'price' => 10,
+                'quantity' => 5,
+            ], $form))->toBeFalse();
         });
     });
 });
