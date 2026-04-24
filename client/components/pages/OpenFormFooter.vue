@@ -280,10 +280,16 @@ const linkGroups = computed(() => [
   {
     title: "Comparisons",
     links: [
-      { label: "Typeform Alternative", to: { name: "opnform-vs-typeform" } },
-      { label: "Jotform Alternative", to: { name: "index" } },
-      { label: "Tally Alternative", to: { name: "index" } },
-      // { label: "Formbricks Alternative", to: { name: "index" } },
+      { label: "vs Google Forms", to: { name: "opnform-vs-googleforms" } },
+      { label: "vs Typeform", to: { name: "opnform-vs-typeform" } },
+      { label: "vs Fillout", to: { name: "opnform-vs-fillout" } },
+      { label: "vs Jotform", to: { name: "opnform-vs-jotform" } },
+      { label: "vs Tally", to: { name: "opnform-vs-tally" } },
+      { label: "vs Youform", to: { name: "opnform-vs-youform" } },
+      { label: "vs HeyForm", to: { name: "opnform-vs-heyform" } },
+      { label: "vs Form.io", to: { name: "opnform-vs-formio" } },
+      { label: "vs Formbricks", to: { name: "opnform-vs-formbricks" } },
+      { label: "vs 123FormBuilder", to: { name: "opnform-vs-123formbuilder" } },
     ],
   },
   {
