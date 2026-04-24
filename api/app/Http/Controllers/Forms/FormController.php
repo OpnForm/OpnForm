@@ -10,8 +10,10 @@ use App\Http\Resources\FormListResource;
 use App\Http\Resources\FormResource;
 use App\Models\Forms\Form;
 use App\Models\Forms\FormSubmission;
+use App\Models\Version;
 use App\Models\Workspace;
 use App\Notifications\Forms\MobileEditorEmail;
+use App\Service\Billing\Feature;
 use App\Service\Forms\FormCleaner;
 use App\Service\Storage\FileUploadPathService;
 use App\Service\Storage\StorageFileNameParser;
@@ -66,6 +68,27 @@ class FormController extends Controller
     {
         $this->authorize('view', $form);
 
+        if (request()->has('version_id') && $form->workspace->hasFeature('form_versioning')) {
+            // Verify that the version belongs to this form to prevent unauthorized access
+            $version = Version::where('versionable_id', $form->id)
+                ->where('versionable_type', Form::class)
+                ->findOrFail(request()->get('version_id'));
+            $versionedForm = $version->getModel();
+
+            // Fill any attributes missing from the version snapshot with values from the live form
+            $missingAttributes = array_diff_key($form->getAttributes(), $versionedForm->getAttributes());
+            foreach ($missingAttributes as $key => $value) {
+                $versionedForm->setAttribute($key, $value);
+            }
+
+            // Preserve already loaded relationships from the current form
+            foreach ($form->getRelations() as $relationName => $relationValue) {
+                $versionedForm->setRelation($relationName, $relationValue);
+            }
+
+            $form = $versionedForm;
+        }
+
         return (new FormResource($form))->setCleanings(
             $this->formCleaner->processForm(request(), $form)->simulateCleaning($form->workspace)->getPerformedCleanings()
         );
@@ -83,12 +106,11 @@ class FormController extends Controller
             $this->authorize('ownsWorkspace', $workspace);
             $this->authorize('viewAny', Form::class);
 
-            $workspaceIsPro = $workspace->is_pro;
-            $newForms = $workspace->forms()->get()->map(function (Form $form) use ($workspace, $workspaceIsPro) {
-                // Add attributes for faster loading
+            $workspaceHasBrandingRemoval = $workspace->hasFeature(Feature::BRANDING_REMOVAL);
+            $newForms = $workspace->forms()->get()->map(function (Form $form) use ($workspace, $workspaceHasBrandingRemoval) {
                 $form->extra = (object) [
                     'loadedWorkspace' => $workspace,
-                    'workspaceIsPro' => $workspaceIsPro,
+                    'workspaceHasBrandingRemoval' => $workspaceHasBrandingRemoval,
                     'userIsOwner' => true,
                 ];
 
@@ -158,8 +180,15 @@ class FormController extends Controller
         $form->update($formData);
 
         if ($this->formCleaner->hasCleaned()) {
-            $formSubscription = $form->is_pro ? 'Enterprise' : 'Pro';
-            $formStatus = $form->workspace->is_trialing ? 'Non-trial' : $formSubscription;
+            $requiredUpgrade = collect($this->formCleaner->getCleaningKeys())
+                ->flatten()
+                ->map(fn (string $feature) => app(\App\Service\Billing\PlanAccessService::class)->getFormFeatureRequiredTier($feature))
+                ->filter()
+                ->sortBy(fn (string $tier) => \App\Service\Billing\PlanTier::ORDER[$tier] ?? 0)
+                ->last();
+
+            $requiredUpgrade ??= \App\Service\Billing\PlanTier::PRO;
+            $formStatus = $form->workspace->is_trialing ? 'Non-trial' : $requiredUpgrade;
             $message = 'Form successfully updated, but the ' . $formStatus . ' features you used will be disabled when sharing your form.';
         } else {
             $message = 'Form updated.';

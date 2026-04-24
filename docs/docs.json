@@ -21,6 +21,12 @@
             ]
           },
           {
+            "group": "Features",
+            "pages": [
+              "features/computed-variables"
+            ]
+          },
+          {
             "group": "Deployment",
             "pages": [
               "deployment/docker",
@@ -40,6 +46,12 @@
               "configuration/subdomain-redirect",
               "configuration/oidc-sso",
               "configuration/disable-2fa"
+            ]
+          },
+          {
+            "group": "Embedding",
+            "pages": [
+              "embedding/javascript-sdk"
             ]
           }
         ]
@@ -136,7 +148,8 @@
             "group": "Front-end",
             "pages": [
               "front-end/data-fetching",
-              "front-end/forms"
+              "front-end/forms",
+              "front-end/javascript-sdk"
             ]
           }
         ]

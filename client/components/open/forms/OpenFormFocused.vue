@@ -165,6 +165,7 @@ const layoutConfig = {
 // Single dynamic component + props for active layout
 const currentLayoutComponent = computed(() => layoutConfig[layoutName.value]?.component || CenteredStep)
 const currentLayoutProps = computed(() => layoutConfig[layoutName.value]?.props() || { background: null })
+const autoNextFieldTypes = new Set(['checkbox', 'date', 'multi_select', 'rating', 'scale', 'select'])
 
 const handleNextClick = () => {
   props.formManager.nextPage().then((moved) => {
@@ -173,6 +174,11 @@ const handleNextClick = () => {
 }
 
 const onInputFilled = () => {
+  // Only disable auto-advance for selection-based inputs.
+  if (currentBlock.value?.type && autoNextFieldTypes.has(currentBlock.value.type) && form.value?.settings?.auto_next === false) {
+    return
+  }
+
   // On last page, submit the form instead of advancing
   if (isLast.value) {
     // Don't submit if already processing

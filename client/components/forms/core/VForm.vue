@@ -1,5 +1,5 @@
 <template>
-  <form class="flex flex-col">
+  <form :class="formClass">
     <slot />
   </form>
 </template>
@@ -10,6 +10,7 @@
  */
 
 const props = defineProps({
+  formClass: { type: String, default: 'flex flex-col' },
   theme: { type: String, default: 'default' },
   size: { type: String, default: "md" },
   borderRadius: { type: String, default: "small" },

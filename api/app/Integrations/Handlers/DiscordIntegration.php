@@ -30,7 +30,9 @@ class DiscordIntegration extends AbstractIntegrationHandler
 
     protected function shouldRun(): bool
     {
-        return !is_null($this->getWebhookUrl()) && $this->form->is_pro && parent::shouldRun();
+        return !is_null($this->getWebhookUrl())
+            && $this->form->workspace?->hasFeature('integrations.discord')
+            && parent::shouldRun();
     }
 
     protected function getWebhookData(): array

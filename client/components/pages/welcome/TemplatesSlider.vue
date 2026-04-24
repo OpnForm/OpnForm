@@ -1,19 +1,22 @@
 <template>
-  <div class="mx-auto mb-12 max-w-7xl px-6 lg:px-8">
-    <div class="mx-auto max-w-2xl text-center">
-      <h2 class="text-lg font-semibold leading-8 tracking-tight text-blue-500">
+  <div class="mx-auto max-w-266">
+    <div class="max-w-lg mx-auto text-center md:px-1">
+      <!-- <p class="text-lg font-semibold leading-8 tracking-tight text-blue-500">
         Single or multi-page forms
+      </p> -->
+      <h2
+        class="text-3xl sm:text-5xl sm:leading-14 font-semibold text-gray-950 tracking-[-1%]"
+      >
+        Templates for financial services
       </h2>
       <p
-        class="mt-2 text-3xl font-semibold tracking-tight text-neutral-900 sm:text-4xl"
+        class="mt-4 text-base font-normal text-gray-600 leading-7 tracking-[-1.1%]"
       >
-        Discover our beautiful templates
-      </p>
-      <p class="mt-3 px-8 text-center text-lg text-neutral-400">
-        If you need inspiration, checkout our templates.
+        All templates are fully customizable — adapt them to your compliance and
+        brand requirements in minutes.
       </p>
     </div>
-    <div class="my-3 flex justify-center">
+    <!-- <div class="my-3 flex justify-center">
       <NuxtLink :to="{ name: 'templates' }">
         See all templates
         <svg
@@ -30,24 +33,30 @@
           />
         </svg>
       </NuxtLink>
-    </div>
+    </div> -->
 
     <div
-      v-if="sliderTemplates.length > 0"
-      class="w-full inline-flex flex-nowrap overflow-hidden [mask-image:_linear-gradient(to_right,transparent_0,_black_128px,_black_calc(100%-128px),transparent_100%)]"
+      v-if="sliderTemplates && sliderTemplates.length"
+      class="mt-12 grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
     >
-      <ul
+      <!-- <ul
         ref="templates-slider"
         class="flex justify-center md:justify-start animate-infinite-scroll"
       >
         <li
-          v-for="(template) in sliderTemplates"
-          :key="template.id"
+          v-for="template in sliderTemplates"
+          :key="template.name"
           class="mx-4 w-72 h-auto"
         >
           <single-template :template="template" />
         </li>
-      </ul>
+      </ul> -->
+
+      <single-template
+        v-for="template in sliderTemplates"
+        :key="template.slug"
+        :template="template"
+      />
     </div>
   </div>
 </template>
@@ -62,29 +71,72 @@ export default {
     const { data: templates } = list({ limit: 10 })
 
     return {
-      sliderTemplates: computed(() => templates.value ?? []),
+      sliderTemplates: computed(() => {
+        if (templates.value && templates.value.length) {
+          return templates.value
+        }
+
+        return [
+          {
+            name: "KYC / Client Onboarding Form",
+            slug: "kyc-client-onboarding-1",
+            short_description: "Some text goes here...",
+          },
+          {
+            name: "Loan Application Form",
+            slug: "loan-application-form",
+            short_description: "Some text goes here...",
+          },
+          {
+            name: "Internal Audit Checklist",
+            slug: "internal-audit-checklist",
+            short_description: "Some text goes here...",
+          },
+          {
+            name: "Expense Reimbursement Form",
+            slug: "expense-reimbursement-form",
+            short_description: "Some text goes here...",
+          },
+          {
+            name: "Client Feedback Form",
+            slug: "client-feedback-form",
+            short_description: "Some text goes here...",
+          },
+          {
+            name: "Some title",
+            slug: "some-title",
+            short_description: "Some text goes here...",
+          },
+        ]
+      }),
     }
   },
 
-  watch: {
-    sliderTemplates: {
-      deep: true,
-      handler() {
-        this.$nextTick(() => {
-          this.setInfinite()
-        })
-      },
-    },
+  // watch: {
+  //   sliderTemplates: {
+  //     deep: true,
+  //     handler() {
+  //       this.$nextTick(() => {
+  //         this.setInfinite();
+  //       });
+  //     },
+  //   },
+  // },
+
+  mounted() {
+    this.$nextTick(() => {
+      this.setInfinite()
+    })
   },
 
-  methods: {
-    setInfinite() {
-      const ul = this.$refs["templates-slider"]
-      if (ul) {
-        ul.insertAdjacentHTML("afterend", ul.outerHTML)
-        ul.nextSibling.setAttribute("aria-hidden", "true")
-      }
-    },
-  },
+  // methods: {
+  //   setInfinite() {
+  //     const ul = this.$refs["templates-slider"];
+  //     if (!ul || ul.nextSibling) return;
+
+  //     ul.insertAdjacentHTML("afterend", ul.outerHTML);
+  //     ul.nextSibling.setAttribute("aria-hidden", "true");
+  //   },
+  // },
 }
 </script>

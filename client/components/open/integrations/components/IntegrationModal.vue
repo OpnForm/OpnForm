@@ -2,7 +2,7 @@
   <UModal 
     v-model:open="isOpen" 
     :dismissible="false" 
-    :ui="{ content: 'sm:max-w-2xl' }"
+    :ui="modalUi"
   >
     <template #header>
       <div class="flex items-center w-full gap-4 px-2">
@@ -13,7 +13,10 @@
         />
         <h2 class="text-lg font-semibold">
           {{ integration?.name }}
-          <pro-tag v-if="integration?.is_pro === true" />
+          <PlanTag
+            v-if="integration?.required_tier && integration.required_tier !== 'free'"
+            :required-tier="integration.required_tier"
+          />
         </h2>
       </div>
       <UButton
@@ -73,7 +76,7 @@
 <script setup>
 import { computed, toValue } from "vue"
 import { useComponentRegistry } from "~/composables/components/useComponentRegistry"
-import ProTag from "~/components/app/ProTag.vue"
+import PlanTag from "~/components/app/PlanTag.vue"
 
 const props = defineProps({
   show: { type: Boolean, required: true },
@@ -109,6 +112,11 @@ const isOpen = computed({
       emit('close')
     }
   }
+})
+
+// Modal size based on integration type
+const modalUi = computed(() => {
+  return { content: 'sm:max-w-2xl' }
 })
 
 const crisp = useCrisp()

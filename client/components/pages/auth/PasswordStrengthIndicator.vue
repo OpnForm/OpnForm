@@ -66,7 +66,7 @@ const passwordRulesConfig = [
   {
     key: 'hasSpecial',
     message: '1 special character',
-    validator: (password) => /[@$!%*#?&]/.test(password)
+    validator: (password) => /[@$!%*#?&\-_+=.,:;<>^()[\]{}|~]/.test(password)
   }
 ]
 

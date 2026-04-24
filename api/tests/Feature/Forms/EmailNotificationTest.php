@@ -327,7 +327,7 @@ it('send email with hidden field as mention to send email', function () {
 });
 
 it('send email with the edit submission link', function () {
-    $user = $this->actingAsProUser();
+    $user = $this->actingAsBusinessUser();
     $workspace = $this->createUserWorkspace($user);
     $form = $this->createForm($user, $workspace, [
         'editable_submissions' => true,
@@ -358,7 +358,7 @@ it('send email with the edit submission link', function () {
 });
 
 it('send email without the edit submission link', function () {
-    $user = $this->actingAsProUser();
+    $user = $this->actingAsBusinessUser();
     $workspace = $this->createUserWorkspace($user);
     $form = $this->createForm($user, $workspace, [
         'editable_submissions' => true,

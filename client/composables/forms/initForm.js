@@ -1,4 +1,5 @@
 import clonedeep from 'clone-deep'
+import { isReadonly } from 'vue'
 import { generateUUID } from "~/lib/utils.js"
 export const DEFAULT_COLOR = '#3B82F6'
 
@@ -155,7 +156,7 @@ export function ensureSettingsObject(formData) {
   const s = formData.settings
   if (!s || typeof s !== 'object' || Array.isArray(s)) {
     formData.settings = {}
-  } else if (Object.isFrozen(s) || !Object.isExtensible(s)) {
+  } else if (Object.isFrozen(s) || !Object.isExtensible(s) || isReadonly(s)) {
     // If settings is readonly/frozen, create a new writable copy
     formData.settings = { ...s }
   }

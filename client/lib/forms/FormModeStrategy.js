@@ -98,6 +98,7 @@ export function createFormModeStrategy(mode) {
       // This ensures edit mode behaves like live mode for validation
       strategy.display.showHiddenFields = true
       strategy.display.forceClassicPresentation = true
+      strategy.display.showBranding = false
       strategy.submission.enablePartialSubmissions = false
       break
 
@@ -124,6 +125,7 @@ export function createFormModeStrategy(mode) {
       strategy.validation.performActualSubmission = false
       strategy.display.disableFields = true
       strategy.display.forceClassicPresentation = true
+      strategy.display.showBranding = false
       strategy.submission.enablePartialSubmissions = false
       break
     

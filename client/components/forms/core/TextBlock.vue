@@ -28,14 +28,25 @@ const props = defineProps({
   mentionsAllowed: { type: Boolean, default: false },
   form: { type: Object, default: null },
   formData: { type: Object, default: null },
+  computedValues: { type: Object, default: null },
   size: { type: String, default: null },
   media: { type: Object, default: null },
   borderRadius: { type: String, default: null },
   ui: { type: Object, default: () => ({}) }
 })
 
-const processedContent = computed(() => {
-  return useParseMention(props.content, props.mentionsAllowed, props.form, props.formData)
+// Compute initial value inline to avoid flash of unprocessed content
+const computeProcessedContent = () => {
+  if (props.mentionsAllowed && props.form && props.formData) {
+    return useParseMention(props.content, props.mentionsAllowed, props.form, props.formData, props.computedValues)
+  }
+  return props.content
+}
+
+const processedContent = ref(computeProcessedContent())
+
+watch(() => [props.content, props.mentionsAllowed, props.form, props.formData, props.computedValues], () => {
+  processedContent.value = computeProcessedContent()
 })
 
 const injectedSize = inject('formSize', null)

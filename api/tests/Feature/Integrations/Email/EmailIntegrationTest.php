@@ -3,6 +3,7 @@
 use App\Models\Integration\FormIntegration;
 use App\Notifications\Forms\FormEmailNotification;
 use Illuminate\Notifications\AnonymousNotifiable;
+use App\Models\PdfTemplate;
 
 test('free user can create one email integration to their own email', function () {
     $user = $this->actingAsUser();
@@ -157,6 +158,39 @@ test('pro user can add multiple emails', function () {
     expect($integration->data->send_to)->toContain('test@example.com');
     expect($integration->data->send_to)->toContain('another@example.com');
     expect($integration->data->send_to)->toContain('third@example.com');
+});
+
+test('pro user cannot attach more than allowed pdf templates', function () {
+    $user = $this->actingAsProUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace);
+
+    $templateIds = collect(range(1, 4))->map(function ($i) use ($form) {
+        return PdfTemplate::create([
+            'form_id' => $form->id,
+            'name' => "T{$i}",
+            'filename' => "t{$i}.pdf",
+            'original_filename' => "T{$i}.pdf",
+            'file_path' => "pdf-templates/{$form->id}/t{$i}.pdf",
+            'file_size' => 100,
+            'page_count' => 1,
+        ])->id;
+    })->all();
+
+    $response = $this->postJson(route('open.forms.integrations.create', $form), [
+        'integration_id' => 'email',
+        'status' => 'active',
+        'data' => [
+            'send_to' => 'test@example.com',
+            'sender_name' => 'Test Sender',
+            'subject' => 'Test Subject',
+            'email_content' => 'Test Content',
+            'include_submission_data' => true,
+            'pdf_template_ids' => $templateIds,
+        ],
+    ]);
+
+    $response->assertStatus(422)->assertJsonValidationErrors(['data.pdf_template_ids']);
 });
 
 test('free user can update their single email integration to their own email', function () {

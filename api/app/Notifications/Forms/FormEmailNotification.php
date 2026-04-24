@@ -3,18 +3,29 @@
 namespace App\Notifications\Forms;
 
 use App\Events\Forms\FormSubmitted;
+use App\Models\Forms\FormSubmission;
+use App\Models\PdfTemplate;
 use App\Open\MentionParser;
+use App\Service\Billing\Feature;
 use App\Service\Forms\FormSubmissionFormatter;
 use App\Service\Forms\SubmissionUrlService;
+use App\Service\Formulas\ComputedVariableEvaluator;
+use App\Service\Pdf\PdfCacheService;
+use App\Service\Pdf\PdfGeneratorService;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Symfony\Component\Mime\Email;
 
 class FormEmailNotification extends Notification
 {
+    private const MAX_PDF_ATTACHMENTS = 3;
+    private const MAX_TOTAL_ATTACHMENT_BYTES = 15 * 1024 * 1024;
+
     public FormSubmitted $event;
+    private ?array $computedValues = null;
 
     /**
      * Create a new notification instance.
@@ -26,13 +37,27 @@ class FormEmailNotification extends Notification
         $this->event = $event;
     }
 
+    /**
+     * Get computed variable values for this submission
+     */
+    private function getComputedValues(): array
+    {
+        if ($this->computedValues === null) {
+            $this->computedValues = ComputedVariableEvaluator::evaluateForSubmission(
+                $this->event->form,
+                $this->event->data
+            );
+        }
+        return $this->computedValues;
+    }
+
     private function getMailer(): string
     {
         $workspace = $this->event->form->workspace;
         $emailSettings = $workspace->settings['email_settings'] ?? [];
 
         if (
-            $workspace->is_pro
+            $workspace->hasFeature(Feature::CUSTOM_SMTP)
             && $emailSettings
             && !empty($emailSettings['host'])
             && !empty($emailSettings['port'])
@@ -76,7 +101,7 @@ class FormEmailNotification extends Notification
      */
     public function toMail($notifiable)
     {
-        return (new MailMessage())
+        $mail = (new MailMessage())
             ->mailer($this->getMailer())
             ->replyTo($this->getReplyToEmail($this->event->form->creator->email))
             ->from($this->getFromEmail(), $this->getSenderName())
@@ -85,6 +110,67 @@ class FormEmailNotification extends Notification
                 $this->addCustomHeaders($message);
             })
             ->markdown('mail.form.email-notification', $this->getMailData());
+
+        $this->attachPdfTemplatesIfRequested($mail);
+
+        return $mail;
+    }
+
+    /**
+     * Attach PDFs for selected templates when integration has pdf_template_ids.
+     */
+    private function attachPdfTemplatesIfRequested(MailMessage $mail): void
+    {
+        $form = $this->event->form;
+
+        $templateIds = $this->integrationData->pdf_template_ids ?? [];
+        if (! is_array($templateIds) || count($templateIds) === 0) {
+            return;
+        }
+        $templateIds = array_values(array_unique(array_slice($templateIds, 0, self::MAX_PDF_ATTACHMENTS)));
+
+        $submissionId = $this->event->data['submission_id'] ?? null;
+        if (! $submissionId) {
+            return;
+        }
+
+        $submission = FormSubmission::where('form_id', $form->id)->where('id', $submissionId)->first();
+        if (! $submission) {
+            return;
+        }
+
+        $cacheService = app(PdfCacheService::class);
+        $generator = app(PdfGeneratorService::class);
+        $totalBytes = 0;
+
+        foreach ($templateIds as $templateId) {
+            $template = PdfTemplate::where('form_id', $form->id)->find($templateId);
+            if (! $template) {
+                continue;
+            }
+            try {
+                $pdfPath = $cacheService->getOrGenerateFromTemplate($form, $submission, $template, $generator);
+                $content = Storage::get($pdfPath);
+                if ($content !== false) {
+                    $nextSize = strlen($content);
+                    if (($totalBytes + $nextSize) > self::MAX_TOTAL_ATTACHMENT_BYTES) {
+                        logger()->warning('Skipping PDF email attachment: total size limit exceeded', [
+                            'form_id' => $form->id,
+                            'submission_id' => $submission->id,
+                            'template_id' => $template->id,
+                            'limit_bytes' => self::MAX_TOTAL_ATTACHMENT_BYTES,
+                        ]);
+                        continue;
+                    }
+
+                    $filename = $template->resolveFilename($form, $submission);
+                    $mail->attachData($content, $filename, ['mime' => 'application/pdf']);
+                    $totalBytes += $nextSize;
+                }
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
     }
 
     private function formatSubmissionData($createLinks = true): array
@@ -109,7 +195,7 @@ class FormEmailNotification extends Notification
         $emailSettings = $workspace->settings['email_settings'] ?? [];
 
         if (
-            $workspace->is_pro
+            $workspace->hasFeature(Feature::CUSTOM_SMTP)
             && $emailSettings
             && !empty($emailSettings['sender_address'])
         ) {
@@ -136,7 +222,11 @@ class FormEmailNotification extends Notification
 
     private function getSenderName(): string
     {
-        $parser = new MentionParser($this->integrationData->sender_name ?? config('app.name'), $this->formatSubmissionData(false));
+        $parser = new MentionParser(
+            $this->integrationData->sender_name ?? config('app.name'),
+            $this->formatSubmissionData(false),
+            $this->getComputedValues()
+        );
         return $parser->parseAsText();
     }
 
@@ -154,14 +244,18 @@ class FormEmailNotification extends Notification
 
     private function parseReplyTo(string $replyTo): ?string
     {
-        $parser = new MentionParser($replyTo, $this->formatSubmissionData(false));
+        $parser = new MentionParser($replyTo, $this->formatSubmissionData(false), $this->getComputedValues());
         return $parser->parseAsText();
     }
 
     private function getSubject(): string
     {
         $defaultSubject = 'New form submission';
-        $parser = new MentionParser($this->integrationData->subject ?? $defaultSubject, $this->formatSubmissionData(false));
+        $parser = new MentionParser(
+            $this->integrationData->subject ?? $defaultSubject,
+            $this->formatSubmissionData(false),
+            $this->getComputedValues()
+        );
         return $parser->parseAsText();
     }
 
@@ -193,9 +287,9 @@ class FormEmailNotification extends Notification
     private function getMailData(): array
     {
         $form = $this->event->form;
-        $isPro = $form->is_pro ?? false;
+        $hasAdvancedEmailCustomization = $form->workspace?->hasFeature(Feature::EMAIL_ADVANCED) ?? false;
 
-        $emailAppearance = $isPro ? [
+        $emailAppearance = $hasAdvancedEmailCustomization ? [
             'logoUrl' => $this->integrationData->logo_url ?? null,
             'fontFamily' => $this->integrationData->font_family ?? null,
             'fontColor' => $this->integrationData->font_color ?? null,
@@ -216,7 +310,11 @@ class FormEmailNotification extends Notification
 
     private function getEmailContent(): string
     {
-        $parser = new MentionParser($this->integrationData->email_content ?? '', $this->formatSubmissionData());
+        $parser = new MentionParser(
+            $this->integrationData->email_content ?? '',
+            $this->formatSubmissionData(),
+            $this->getComputedValues()
+        );
         $html = $parser->parse();
 
         return $this->convertResizeAlignmentToInlineStyles($html);

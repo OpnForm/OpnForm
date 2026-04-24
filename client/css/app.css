@@ -173,7 +173,7 @@
     }
 
     #app {
-        font-family: Inter, sans-serif;
+        font-family: euclid-circular-b, sans-serif !important;
         min-height: 100vh;
         color: var(--color-neutral-800);
     }

@@ -92,7 +92,7 @@
       <!-- Advanced Submission Settings -->
       <div class="mb-8">
         <h4 class="font-semibold mt-4 border-t pt-4">
-          Advanced Submission Options <ProTag  class="ml-1"/>
+          Advanced Submission Options
         </h4>
         <p class="text-gray-500 text-sm mb-4">
           Configure advanced options for form submissions and data collection.
@@ -107,7 +107,8 @@
             <span class="text-sm">
               Collect partial submissions
             </span>
-            <ProTag
+            <PlanTag
+              required-tier="business"
               class="ml-1"
               upgrade-modal-title="Upgrade to collect partial submissions"
               upgrade-modal-description="Capture valuable data from incomplete form submissions. Analyze where users drop off and collect partial information even when they don't complete the entire form."
@@ -126,8 +127,9 @@
           <span class="text-sm">
             Collect IP addresses
           </span>
-          <ProTag
+          <PlanTag
             class="ml-1"
+            required-tier="business"
             upgrade-modal-title="Upgrade to collect IP addresses"
             upgrade-modal-description="Automatically capture submitter IP addresses to gain valuable insights into your form traffic. Analyze geographic patterns, detect suspicious activity, and enhance your form security with detailed submission analytics."
           />
@@ -146,7 +148,7 @@
       <!-- Post-Submission Behavior -->
       <div class="mb-8">
         <h4 class="font-semibold mt-4 border-t pt-4">
-          After Submission <pro-tag
+          After Submission <PlanTag
             upgrade-modal-title="Upgrade to customize post-submission behavior"
             upgrade-modal-description="Customize post-submission behavior: redirect users, show custom messages, or trigger actions. Upgrade to unlock advanced options for a seamless user experience. We have plenty of other pro features to enhance your form functionality and user engagement."
           />
@@ -177,6 +179,7 @@
                 name="redirect_url"
                 :form="form"
                 :mentions="form.properties"
+                :computed-variables="form.computed_variables"
                 class="w-full max-w-xs"
                 label="Redirect URL"
                 placeholder="https://www.google.com"
@@ -187,6 +190,7 @@
               <rich-text-area-input
                 enable-mentions
                 :mentions="form.properties"
+                :computed-variables="form.computed_variables"
                 :allow-fullscreen="true"
                 name="submitted_text"
                 class="w-full"
@@ -211,6 +215,37 @@
                   label="Text of re-start button"
                 />
               </div>
+
+              <!-- PDF Download on Success Page -->
+              <div
+                v-if="pdfTemplates.length > 0"
+                class="flex items-center flex-wrap gap-x-4 mt-4"
+              >
+                <toggle-switch-input
+                  name="pdf_download_enabled"
+                  class="w-full max-w-xs"
+                  :form="form"
+                  label="Show PDF download button"
+                  help="Allow respondents to download a PDF on the success page"
+                />
+                <template v-if="form.pdf_download_enabled">
+                  <text-input
+                    name="pdf_download_button_text"
+                    :form="form"
+                    label="Text of download button"
+                    placeholder="Download PDF"
+                  />
+                  <select-input
+                    name="pdf_template_id"
+                    class="w-full mt-4"
+                    :form="form"
+                    label="PDF template"
+                    :options="pdfTemplateOptions"
+                    :required="true"
+                    help="Select the PDF template to use for the download button"
+                  />
+                </template>
+              </div>
             </template>
           </div>
         </div>
@@ -219,7 +254,7 @@
       <!-- Editable Submissions Settings -->
       <div class="mb-8">
         <h4 class="font-semibold mt-4 border-t pt-4">
-          Editable Submissions <ProTag
+          Editable Submissions <PlanTag
               class="ml-1"
               upgrade-modal-title="Upgrade to use Editable Submissions"
               upgrade-modal-description="On the Free plan, you can try out all paid features only within the form editor. Upgrade your plan to allow users to update their submissions via a unique URL, and much more. Gain full access to all advanced features."
@@ -249,11 +284,31 @@
 </template>
 
 <script setup>
-import ProTag from "~/components/app/ProTag.vue"
+import PlanTag from "~/components/app/PlanTag.vue"
 
 const workingFormStore = useWorkingFormStore()
 const { content: form } = storeToRefs(workingFormStore)
 const crisp = useCrisp()
+
+// PDF Templates for success page download
+const { list } = usePdfTemplates()
+const { data: templatesData } = list(() => form.value?.id)
+
+const pdfTemplates = computed(() => templatesData.value?.data || [])
+
+const pdfTemplateOptions = computed(() => {
+  return pdfTemplates.value.map(t => ({
+    name: t.name || t.original_filename,
+    value: t.id
+  }))
+})
+
+// Auto-select first PDF template if only one exists
+watch(pdfTemplates, (templates) => {
+  if (templates.length > 0 && form.value?.pdf_download_enabled && !form.value?.pdf_template_id) {
+    form.value.pdf_template_id = templates[0].id
+  }
+}, { immediate: true })
 
 const submissionOptions = ref({})
 

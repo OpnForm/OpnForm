@@ -13,7 +13,7 @@ it('can not save custom SMTP settings if not pro user', function () {
         'port' => '587',
         'username' => 'custom_username',
         'password' => 'custom_password',
-    ])->assertStatus(403);
+    ])->assertStatus(402);
 });
 
 it('send email with custom SMTP settings', function () {
