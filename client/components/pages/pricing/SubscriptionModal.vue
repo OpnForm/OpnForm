@@ -30,12 +30,15 @@
               <MonthlyYearlySelector v-model="isYearly" />
             </div>
 
-            <div class="mt-8 grid gap-4 lg:grid-cols-3">
+            <div
+              class="mt-8 gap-4 grid"
+              :class="isSingleVisiblePlan ? 'grid-cols-1 justify-items-center' : 'lg:grid-cols-3'"
+            >
               <article
                 v-for="planOption in visiblePlanOptions"
                 :key="planOption.key"
                 class="group relative flex h-full flex-col overflow-hidden rounded-[1.9rem] border p-5 transition-all duration-200 sm:p-6"
-                :class="getPlanCardClasses(planOption)"
+                :class="[isSingleVisiblePlan ? 'max-w-lg' : '', getPlanCardClasses(planOption)]"
               >
                 <div
                   class="pointer-events-none absolute inset-x-4 top-0 h-40 opacity-90 blur-2xl"
@@ -109,7 +112,7 @@
                     </li>
                   </ul>
 
-                  <div class="mt-auto pt-6 text-sm leading-6 text-slate-500">
+                  <div v-if="!isSelfHosted" class="mt-auto pt-6 text-sm leading-6 text-slate-500">
                     And more on the
                     <ULink
                       to="/pricing"
@@ -156,7 +159,10 @@
               </article>
             </div>
 
-            <div class="mt-7 flex justify-center">
+            <div
+              v-if="!isSelfHosted"
+              class="mt-7 flex justify-center"
+            >
               <UButton
                 class="font-semibold"
                 :to="{ name: 'pricing' }"
@@ -240,6 +246,14 @@ const PLAN_VISUALS = {
     confirmationClass: 'bg-fuchsia-50 border-fuchsia-200',
     confirmationTextClass: 'text-fuchsia-700',
   },
+  self_hosted: {
+    accentClass: 'text-fuchsia-700',
+    glowClass: 'bg-[radial-gradient(circle_at_top,_rgba(168,85,247,0.18),_transparent_72%)]',
+    cardClass: 'border-fuchsia-200 bg-[linear-gradient(180deg,_rgba(250,245,255,0.96)_0%,_rgba(255,255,255,0.96)_100%)]',
+    selectedCardClass: 'border-fuchsia-400 shadow-[0_18px_50px_rgba(168,85,247,0.18)] ring-1 ring-fuchsia-200',
+    confirmationClass: 'bg-fuchsia-50 border-fuchsia-200',
+    confirmationTextClass: 'text-fuchsia-700',
+  },
 }
 
 const PLAN_DETAILS = {
@@ -285,6 +299,21 @@ const PLAN_DETAILS = {
       { icon: 'heroicons:server-stack', title: 'External storage', description: 'Route storage to your own infrastructure when you need tighter operational ownership.' },
     ],
   },
+  self_hosted: {
+    subtitle: 'Security, compliance, and identity controls for teams that need centralized governance.',
+    highlights: [
+      'Branding removal',
+      'Custom domains and SMTP',
+      'Invite unlimited users',
+      'SSO and enterprise identity controls',
+    ],
+    summaryLine: 'Best when security, compliance, and centralized access control are non-negotiable.',
+    features: [
+      { icon: 'heroicons:globe-alt', title: 'Remove OpnForm branding', description: 'Publish forms without the OpnForm watermark and make the experience feel truly yours.' },
+      { icon: 'heroicons:shield-check', title: 'Enterprise SSO', description: 'Connect OIDC, SAML, or LDAP so access is controlled from your identity provider.' },
+      { icon: 'heroicons:document-text', title: 'Audit logs & compliance', description: 'Track important activity and support teams that need stronger internal controls.' },
+    ],
+  },
 }
 
 const props = defineProps({
@@ -323,18 +352,21 @@ const isOpen = computed({
 })
 
 const normalizedPlan = computed(() => {
+  if (isSelfHosted.value) return 'self_hosted'
   if (!props.plan || props.plan === 'default') return 'pro'
   return props.plan
 })
 
 const showRequirementHints = computed(() => props.show_requirement_hints)
 
-const paidPlans = ['pro', 'business', 'enterprise']
+const isSelfHosted = computed(() => useFeatureFlag('self_hosted'))
+const paidPlans = ['pro', 'business', 'enterprise', 'self_hosted']
 const currentPlan = ref(normalizedPlan.value)
 const isYearly = ref(props.yearly)
 const loading = ref(false)
 const billingLoading = ref(false)
 const { isAuthenticated: authenticated } = useIsAuthenticated()
+const { data: user } = useAuth().user()
 const { getPlanPrice, userIsSubscribed, currentUserTier, tierMeetsRequirement, getTierDisplayName } = useBillingUpsell()
 const { startCheckout: openStripeCheckout, isLoading: checkoutLoading, isPlanLoading } = useStripeCheckout()
 const isSubscribed = computed(() => userIsSubscribed.value)
@@ -350,6 +382,12 @@ const planOptions = computed(() => {
     const isSelected = currentPlan.value === planKey
     const currentUserCanAccess = tierMeetsRequirement(currentUserTier.value, planKey)
 
+    function prepareButtonLabel() {
+      if (planKey === 'self_hosted') {
+        return 'Purchase license'
+      }
+      return currentUserCanAccess ? 'Current access level' : isSubscribed.value ? `Upgrade to ${getTierDisplayName(planKey)}` : isRequired ? `Continue with ${getTierDisplayName(planKey)}` : `Choose ${getTierDisplayName(planKey)}`
+    }
     return {
       key: planKey,
       label: getTierDisplayName(planKey),
@@ -365,20 +403,21 @@ const planOptions = computed(() => {
       currentUserCanAccess,
       glowClass: PLAN_VISUALS[planKey].glowClass,
       accentClass: PLAN_VISUALS[planKey].accentClass,
-      buttonLabel: currentUserCanAccess
-        ? 'Current access level'
-        : isSubscribed.value
-          ? `Upgrade to ${getTierDisplayName(planKey)}`
-          : isRequired ? `Continue with ${getTierDisplayName(planKey)}` : `Choose ${getTierDisplayName(planKey)}`,
+      buttonLabel: prepareButtonLabel(),
     }
   })
 })
 
 const visiblePlanOptions = computed(() => {
+  if (isSelfHosted.value) {
+    return [...planOptions.value].filter((option) => option.key === 'self_hosted')
+  }
   return [...planOptions.value].sort((left, right) => {
     return paidPlans.indexOf(left.key) - paidPlans.indexOf(right.key)
   })
 })
+
+const isSingleVisiblePlan = computed(() => visiblePlanOptions.value.length === 1)
 
 const modalTitle = computed(() => {
   if (props.modal_title && props.modal_title !== 'Choose your plan') {
@@ -396,6 +435,7 @@ const modalDescription = computed(() => {
     pro: 'Remove branding, use custom domains, and unlock all Pro features.',
     business: 'Unlock the collaboration, branding, and analytics features built for teams.',
     enterprise: 'Unlock enterprise-grade security, identity, and compliance controls.',
+    self_hosted: 'Unlock all features and get the most out of OpnForm.',
   }
 
   return descriptions[requiredPlanKey.value] || descriptions.pro
@@ -415,6 +455,7 @@ const closeModal = () => {
 }
 
 const canSelectPlan = (planKey) => {
+  if (isSelfHosted.value) return true
   if (!isSubscribed.value) return true
   return !tierMeetsRequirement(currentUserTier.value, planKey)
 }
@@ -432,10 +473,37 @@ const getPlanCardClasses = (planOption) => {
   ]
 }
 
+const startSelfHostedLicenseCheckout = () => {
+  loading.value = true
+  const cloudApiUrl = useRuntimeConfig().public.licenseApiEndpoint
+  $fetch(`${cloudApiUrl}/licenses/create`, {
+    method: 'POST',
+    body: {
+      billingEmail: user.value?.email,
+      plan: 'self_hosted',
+      period: isYearly.value ? 'yearly' : 'monthly',
+      successUrl: 'https://opnform.com/self-hosted/checkout/success',
+      cancelUrl: 'https://opnform.com/self-hosted/checkout/canceled',
+    },
+  }).then((response) => {
+    window.open(response.checkoutUrl, '_blank')
+  }).catch(() => {
+    useAlert().error('Failed to start checkout. Please try again.')
+  }).finally(() => {
+    loading.value = false
+  })
+  return
+}
+
 const startCheckout = async (planName) => {
   if (!authenticated.value) {
     closeModal()
     router.push({ name: 'register' })
+    return
+  }
+
+  if (isSelfHosted.value) {
+    startSelfHostedLicenseCheckout()
     return
   }
 

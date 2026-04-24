@@ -3,9 +3,11 @@
 namespace App\Policies;
 
 use App\Models\User;
+use App\Models\UserInvite;
 use App\Models\Workspace;
 use App\Models\UserWorkspace;
 use App\Service\Billing\PlanAccessService;
+use App\Service\License\LicenseService;
 use App\Service\UserHelper;
 use Illuminate\Auth\Access\HandlesAuthorization;
 use Illuminate\Auth\Access\Response;
@@ -132,8 +134,12 @@ class WorkspacePolicy
             return Response::deny('You need to be an admin of this workspace to do this.');
         }
 
-        // If self-hosted, allow
+        // Self-hosted: allow up to 2 users without a license; beyond that require valid license
         if (!pricing_enabled()) {
+            $inviteCount = UserInvite::where('workspace_id', $workspace->id)->count();
+            if ($inviteCount >= 2 && !$this->hasValidSelfHostedLicense()) {
+                return Response::deny('Enterprise license is required to invite more than 2 users.');
+            }
             return Response::allow();
         }
 
@@ -183,5 +189,17 @@ class WorkspacePolicy
     public function ownsWorkspace(User $user, Workspace $workspace)
     {
         return $user->ownsWorkspace($workspace);
+    }
+
+    /**
+     * Check if the self-hosted instance has a valid (active or grace) license.
+     */
+    protected function hasValidSelfHostedLicense(): bool
+    {
+        if (!config('app.self_hosted')) {
+            return true;
+        }
+
+        return app(LicenseService::class)->checkLicense()->isActive();
     }
 }
