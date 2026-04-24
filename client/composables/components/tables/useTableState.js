@@ -71,6 +71,38 @@ export function useTableState(form, withActions = false) {
          })
        }
 
+       const { hasFeature } = usePlanFeatures()
+
+       if (hasFeature('enable_partial_submissions') && (form.value?.enable_partial_submissions ?? false)) {
+         if (!baseColumns.find(property => property.id === 'status')) {
+           baseColumns.push({
+            id: 'status',
+            accessorKey: 'status',
+            header: 'Status',
+            type: 'status',
+            enableColumnFilter: true,
+            filterFn: 'equals',
+            enableResizing: true,
+            minSize: 100,
+            maxSize: 500,
+           })
+         }
+       }
+
+       if (hasFeature('enable_ip_tracking') && (form.value?.enable_ip_tracking ?? false)) {
+         if (!baseColumns.find(property => property.id === 'ip_address')) {
+           baseColumns.push({
+            id: 'ip_address',
+            accessorKey: 'ip_address',
+            header: 'IP Address',
+            type: 'ip_address',
+            enableResizing: true,
+            minSize: 100,
+            maxSize: 500,
+           })
+         }
+       }
+
        return baseColumns
     } catch (error) {
       console.error('Error in columnConfigurations computed:', error)
@@ -304,34 +336,6 @@ export function useTableState(form, withActions = false) {
     try {
       // Ensure we have a valid array to work with  
       const cols = orderedColumns.value && Array.isArray(orderedColumns.value) ? [...orderedColumns.value] : []
-
-      // Add status column if needed
-      if (form.value?.is_pro && (form.value.enable_partial_submissions ?? false)) {
-        cols.push({
-          id: 'status',
-          accessorKey: 'status',
-          header: 'Status',
-          type: 'status',
-          enableColumnFilter: true,
-          filterFn: 'equals',
-          enableResizing: true,
-          minSize: 100,
-          maxSize: 500,
-        })
-      }
-
-      // Add IP address column if needed
-      if (form.value?.is_pro && (form.value.enable_ip_tracking ?? false)) {
-        cols.push({
-          id: 'ip_address',
-          accessorKey: 'ip_address',
-          header: 'IP Address',
-          type: 'ip_address',
-          enableResizing: true,
-          minSize: 100,
-          maxSize: 500,
-        })
-      }
 
       // Add actions columns
       if (import.meta.client && withActions) {
