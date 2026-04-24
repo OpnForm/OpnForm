@@ -6,7 +6,8 @@ describe('OAuthFlowOrchestrator', function () {
     it('defines correct intent constants', function () {
         expect(OAuthFlowOrchestrator::INTENT_AUTH)->toBe('auth');
         expect(OAuthFlowOrchestrator::INTENT_INTEGRATION)->toBe('integration');
-        expect(OAuthFlowOrchestrator::INTENTS)->toBe(['auth', 'integration']);
+        expect(OAuthFlowOrchestrator::INTENT_FORMS_IMPORT)->toBe('forms_import');
+        expect(OAuthFlowOrchestrator::INTENTS)->toBe(['auth', 'integration', 'forms_import']);
     });
 
     it('has proper class structure', function () {
@@ -25,7 +26,7 @@ describe('OAuthFlowOrchestrator', function () {
 
 describe('OAuth constants validation', function () {
     it('validates intent values', function () {
-        $validIntents = ['auth', 'integration'];
+        $validIntents = ['auth', 'integration', 'forms_import'];
 
         foreach ($validIntents as $intent) {
             expect(in_array($intent, OAuthFlowOrchestrator::INTENTS))->toBeTrue(

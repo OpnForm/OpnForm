@@ -49,6 +49,9 @@ export const formsApi = {
     view: (formId, filename, options) => apiService.get(`/open/forms/${formId}/uploaded-file/${filename}`, options)
   },
 
+  // Form import
+  import: (data) => apiService.post('/open/forms/import', data),
+
   // AI form generation
   ai: {
     generate: (data) => apiService.post('/forms/ai/generate', data),
