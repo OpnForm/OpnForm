@@ -9,21 +9,30 @@ export function useForms() {
   const { isAuthenticated } = useIsAuthenticated()
   const formsListCache = useFormsListCache()
 
+  const detailKey = (scope, slug) => ['forms', scope, 'slug', slug]
+  const detailByIdKey = (scope, id) => ['forms', scope, id]
+  const scopeFor = (usePrivate) => usePrivate ? 'private' : 'public'
+  const isQueryEnabled = (id, optionEnabled, usePrivate) => computed(() => {
+    return !!toValue(id) && !!toValue(optionEnabled) && (!usePrivate || isAuthenticated.value)
+  })
+
   const detail = (slug, options = {}) => {
-    const { usePrivate = false, ...queryOptions } = options
+    const { usePrivate = false, enabled = true, ...queryOptions } = options
+    const scope = scopeFor(usePrivate)
     
     return useQuery({
-      queryKey: ['forms', 'slug', slug],
+      queryKey: detailKey(scope, slug),
       queryFn: () => {
-        if (usePrivate && isAuthenticated.value) {
-          return formsApi.get(slug, options)
+        if (usePrivate) {
+          return formsApi.get(slug, queryOptions)
         }
-        return formsApi.publicGet(slug, options)
+        return formsApi.publicGet(slug, queryOptions)
       },
-      enabled: !!slug,
+      enabled: isQueryEnabled(slug, enabled, usePrivate),
       onSuccess: (form) => {
         if (form) {
           queryClient.setQueryData(['forms', form.id], form)
+          queryClient.setQueryData(detailKey(scope, form.slug), form)
         }
       },
       ...queryOptions,
@@ -31,20 +40,23 @@ export function useForms() {
   }
 
   const detailById = (id, options = {}) => {
-    const { usePrivate = false, ...queryOptions } = options
+    const { usePrivate = false, enabled = true, ...queryOptions } = options
+    const scope = scopeFor(usePrivate)
     
     return useQuery({
-      queryKey: ['forms', id],
+      queryKey: detailByIdKey(scope, id),
       queryFn: () => {
-        if (usePrivate && isAuthenticated.value) {
-          return formsApi.getById(id, options)
+        if (usePrivate) {
+          return formsApi.getById(id, queryOptions)
         }
-        return formsApi.publicGetById(id, options)
+        return formsApi.publicGetById(id, queryOptions)
       },
-      enabled: !!id,
+      enabled: isQueryEnabled(id, enabled, usePrivate),
       onSuccess: (form) => {
         if (form) {
-          queryClient.setQueryData(['forms', 'slug', form.slug], form)
+          queryClient.setQueryData(['forms', form.id], form)
+          queryClient.setQueryData(detailByIdKey(scope, form.id), form)
+          queryClient.setQueryData(detailKey(scope, form.slug), form)
         }
       },
       ...queryOptions,
@@ -60,7 +72,7 @@ export function useForms() {
         formsListCache.add(newForm.workspace_id, newForm)
         // Cache the new form
         queryClient.setQueryData(['forms', newForm.id], newForm)
-        queryClient.setQueryData(['forms', 'slug', newForm.slug], newForm)
+        queryClient.setQueryData(detailKey('private', newForm.slug), newForm)
       },
       ...options
     })
@@ -76,7 +88,7 @@ export function useForms() {
       // Update individual form cache
       queryClient.setQueryData(['forms', currentFormId], form)
       if (form.slug) {
-        queryClient.setQueryData(['forms', 'slug', form.slug], form)
+        queryClient.setQueryData(detailKey('private', form.slug), form)
       }
       
       // Update in workspace lists
@@ -111,7 +123,7 @@ export function useForms() {
       formsListCache.add(duplicatedForm.workspace_id, duplicatedForm)
       // Cache the duplicated form
       queryClient.setQueryData(['forms', duplicatedForm.id], duplicatedForm)
-      queryClient.setQueryData(['forms', 'slug', duplicatedForm.slug], duplicatedForm)
+      queryClient.setQueryData(detailKey('private', duplicatedForm.slug), duplicatedForm)
       },
       ...options
     })
@@ -125,7 +137,7 @@ export function useForms() {
         return old ? { ...old, ...updatedForm } : updatedForm
       })
       if (updatedForm.slug) {
-        queryClient.setQueryData(['forms', 'slug', updatedForm.slug], (old) => {
+        queryClient.setQueryData(detailKey('private', updatedForm.slug), (old) => {
           return old ? { ...old, ...updatedForm } : updatedForm
         })
       }
@@ -144,7 +156,7 @@ export function useForms() {
       // Update form cache
       queryClient.setQueryData(['forms', id], updatedForm)
       if (updatedForm.slug) {
-        queryClient.setQueryData(['forms', 'slug', updatedForm.slug], updatedForm)
+        queryClient.setQueryData(detailKey('private', updatedForm.slug), updatedForm)
       }
       
       // Remove from old workspace list
@@ -189,9 +201,12 @@ export function useForms() {
   const invalidateDetail = (form) => {
     if (form.id) {
       queryClient.removeQueries({ queryKey: ['forms', form.id] })
+      queryClient.removeQueries({ queryKey: detailByIdKey('public', form.id) })
+      queryClient.removeQueries({ queryKey: detailByIdKey('private', form.id) })
     }
     if (form.slug) {
-      queryClient.removeQueries({ queryKey: ['forms', 'slug', form.slug] })
+      queryClient.removeQueries({ queryKey: detailKey('public', form.slug) })
+      queryClient.removeQueries({ queryKey: detailKey('private', form.slug) })
     }
   }
 
@@ -217,4 +232,4 @@ export function useForms() {
     invalidateAll,
     invalidateDetail
   }
-} 
+}
