@@ -32,6 +32,7 @@
             :label="label"
             :required="required"
             :theme="theme"
+            :native-for="id ? id : name"
           />
         </slot>
         <slot
