@@ -2,6 +2,18 @@ import { computed } from 'vue'
 import { useTableColumnPreferences } from './useTableColumnPreferences'
 import debounce from 'debounce'
 
+const normalizeColumnList = (columns) => {
+  if (Array.isArray(columns)) {
+    return columns
+  }
+
+  if (columns && typeof columns === 'object') {
+    return Object.values(columns)
+  }
+
+  return []
+}
+
 // Provides a composable for managing the state of a table component, including column visibility, pinning, sizing, and wrapping.
 // It synchronizes table state with user preferences (such as column order and visibility) and supports dynamic updates based on form structure and workspace context.
 
@@ -20,9 +32,11 @@ export function useTableState(form, withActions = false) {
   // Computed column configurations (base definition for every column)
   const columnConfigurations = computed(() => {
     try {
-      if (!form.value?.properties || !Array.isArray(form.value.properties)) return []
+      const properties = normalizeColumnList(form.value?.properties)
+      const removedProperties = normalizeColumnList(form.value?.removed_properties)
+      if (properties.length === 0) return []
 
-      const baseColumns = form.value.properties
+      const baseColumns = properties
         .filter((field) => {
           return field.type && typeof field.type === 'string' && !field.type.startsWith('nf-')
         })
@@ -42,8 +56,8 @@ export function useTableState(form, withActions = false) {
         })
 
        // Add removed properties
-       if (form.value?.removed_properties) {
-         form.value.removed_properties.forEach(property => {
+       if (removedProperties.length > 0) {
+         removedProperties.forEach(property => {
            const { columns: matrixColumns, ...rest } = property
            baseColumns.push({
              ...(property.type === 'matrix' ? { ...rest, matrix_columns: matrixColumns } : { ...rest }),
@@ -441,4 +455,4 @@ export function useTableState(form, withActions = false) {
     toggleColumnPin: toggleColumnPin,
     handleColumnResize,
   }
-} 
+}
