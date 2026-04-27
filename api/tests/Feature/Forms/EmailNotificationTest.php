@@ -387,3 +387,42 @@ it('send email without the edit submission link', function () {
     expect(trim($renderedMail->render()))->toContain('Test body');
     expect(trim($renderedMail->render()))->not->toContain('Edit submission');
 });
+
+it('resolves mentions for hidden fields in email content when hidden submission data is excluded', function () {
+    $user = $this->actingAsUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace);
+
+    $hiddenField = [];
+    $form->properties = collect($form->properties)->map(function ($property) use (&$hiddenField) {
+        if ($property['type'] == 'email') {
+            $property['hidden'] = true;
+            $property['required'] = false;
+            $hiddenField = $property;
+        }
+        return $property;
+    })->toArray();
+    $form->update();
+
+    $integrationData = $this->createFormIntegration('email', $form->id, [
+        'send_to' => $user->email,
+        'sender_name' => 'OpnForm',
+        'subject' => 'New form submission',
+        'email_content' => '<p>Token: <span mention="true" mention-field-id="' . $hiddenField['id'] . '" mention-field-name="Secret token" mention-fallback=""></span></p>',
+        'include_submission_data' => true,
+        'include_hidden_fields_submission_data' => false,
+        'reply_to' => null,
+    ]);
+
+    $formData = [
+        $hiddenField['id'] => 'hidden-value-xyz'
+    ];
+
+    $event = new \App\Events\Forms\FormSubmitted($form, $formData);
+    $mailable = new FormEmailNotification($event, $integrationData, 'mail');
+    $notifiable = new AnonymousNotifiable();
+    $notifiable->route('mail', $user->email);
+    $renderedMail = $mailable->toMail($notifiable);
+
+    expect(trim($renderedMail->render()))->toContain('hidden-value-xyz');
+});
