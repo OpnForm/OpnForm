@@ -232,6 +232,15 @@ export function useFormManager(initialFormConfig, initialMode = FormMode.LIVE, o
     state.isProcessing = true
 
     try {
+      // Capture submission hash BEFORE stopSync: stopSync clears the in-memory hash map.
+      // When auto_save is off, the hash is only in memory (not localStorage), so reading
+      // after stopSync would lose it and the server would create a new completed row
+      // instead of upgrading the partial submission.
+      let submissionHash = null
+      if (!import.meta.server && toValue(config).enable_partial_submissions && strategy.value.submission.enablePartialSubmissions) {
+        submissionHash = partialSubmissionService.getSubmissionHash()
+      }
+
       // Stop partial submission sync during submission if enabled
       // Use skipFinalSync: true to prevent a race condition where the partial submission
       // (with is_partial: true) arrives at the server after the final submission,
@@ -262,14 +271,8 @@ export function useFormManager(initialFormConfig, initialMode = FormMode.LIVE, o
           }
         }
       }
-      
-      // 3. Get submission hash from partialSubmission if enabled
-      let submissionHash = null
-      if (!import.meta.server && toValue(config).enable_partial_submissions && strategy.value.submission.enablePartialSubmissions) {
-        submissionHash = partialSubmissionService.getSubmissionHash()
-      }
 
-      // 4. Perform Submission (using submission composable)
+      // 3. Perform Submission (using submission composable)
       const submissionResult = await submission.submit({
         formModeStrategy: strategy.value,
         completionTime: completionTime,
