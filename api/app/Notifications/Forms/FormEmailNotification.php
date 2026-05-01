@@ -173,7 +173,7 @@ class FormEmailNotification extends Notification
         }
     }
 
-    private function formatSubmissionData($createLinks = true): array
+    private function formatSubmissionData(bool $createLinks = true, bool $forMentionParsing = false): array
     {
         $formatter = (new FormSubmissionFormatter($this->event->form, $this->event->data))
             ->outputStringsOnly()
@@ -182,7 +182,7 @@ class FormEmailNotification extends Notification
         if ($createLinks) {
             $formatter->createLinks();
         }
-        if ($this->integrationData->include_hidden_fields_submission_data ?? false) {
+        if ($forMentionParsing || ($this->integrationData->include_hidden_fields_submission_data ?? false)) {
             $formatter->showHiddenFields();
         }
 
@@ -224,7 +224,7 @@ class FormEmailNotification extends Notification
     {
         $parser = new MentionParser(
             $this->integrationData->sender_name ?? config('app.name'),
-            $this->formatSubmissionData(false),
+            $this->formatSubmissionData(false, true),
             $this->getComputedValues()
         );
         return $parser->parseAsText();
@@ -244,7 +244,7 @@ class FormEmailNotification extends Notification
 
     private function parseReplyTo(string $replyTo): ?string
     {
-        $parser = new MentionParser($replyTo, $this->formatSubmissionData(false), $this->getComputedValues());
+        $parser = new MentionParser($replyTo, $this->formatSubmissionData(false, true), $this->getComputedValues());
         return $parser->parseAsText();
     }
 
@@ -253,7 +253,7 @@ class FormEmailNotification extends Notification
         $defaultSubject = 'New form submission';
         $parser = new MentionParser(
             $this->integrationData->subject ?? $defaultSubject,
-            $this->formatSubmissionData(false),
+            $this->formatSubmissionData(false, true),
             $this->getComputedValues()
         );
         return $parser->parseAsText();
@@ -312,7 +312,7 @@ class FormEmailNotification extends Notification
     {
         $parser = new MentionParser(
             $this->integrationData->email_content ?? '',
-            $this->formatSubmissionData(),
+            $this->formatSubmissionData(true, true),
             $this->getComputedValues()
         );
         $html = $parser->parse();

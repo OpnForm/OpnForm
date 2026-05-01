@@ -16,8 +16,8 @@ export const useIsAuthenticated = () => {
 }
 
 /**
- * Initialize service clients without requiring Vue Query context
- * Safe to call from middleware or anywhere outside setup context
+ * Initialize vendor clients (Amplitude, Crisp) from the current user.
+ * Safe to call from middleware or anywhere outside setup context.
  */
 export const initServiceClients = (userData) => {
   if (import.meta.server) return
@@ -62,8 +62,9 @@ export const useAuthFlow = () => {
     // 1. Set token in store
     authStore.setToken(tokenData.token, tokenData.expires_in)
 
-    // 2. Initialize service clients if user data is provided
+    // 2. Sync user context if user data is provided
     if (tokenData.user) {
+      authStore.updateUser(tokenData.user)
       initServiceClients(tokenData.user)
     }
 
@@ -182,7 +183,7 @@ export const useAuthFlow = () => {
     authStore.clearToken()
     
     // Clear user data
-    authStore.user = null
+    authStore.updateUser(null)
     
     // Navigate to login page
     await router.push({ name: 'login' })

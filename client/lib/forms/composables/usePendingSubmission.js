@@ -2,6 +2,22 @@ import { hash } from "~/lib/utils.js"
 import { useStorage, watchThrottled } from "@vueuse/core"
 import { computed, toValue } from 'vue'
 
+const PENDING_SUBMISSION_METADATA_KEYS = ['submission_hash']
+
+function pickPendingSubmissionMetadata(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return {}
+  }
+
+  return PENDING_SUBMISSION_METADATA_KEYS.reduce((metadata, key) => {
+    if (Object.prototype.hasOwnProperty.call(value, key)) {
+      metadata[key] = value[key]
+    }
+
+    return metadata
+  }, {})
+}
+
 /**
  * Composable for managing pending form submission data and timer in localStorage.
  * Includes throttled auto-saving of form data.
@@ -28,9 +44,15 @@ export function usePendingSubmission(formConfig, formDataRef) {
     return config.value?.auto_save ?? false
   })
 
+  // Draft + submission_hash share the same storage key; allow reads/writes when either
+  // auto-save or partial submissions need metadata (hash) persisted without full draft sync.
+  const canUsePendingStorage = computed(() => {
+    return enabled.value || (config.value?.enable_partial_submissions ?? false)
+  })
+
   // Internal function to save data to localStorage
   const saveData = (value) => {
-    if (import.meta.server || !enabled.value || !formPendingSubmissionKey.value) return
+    if (import.meta.server || !canUsePendingStorage.value || !formPendingSubmissionKey.value) return
     try {
       useStorage(formPendingSubmissionKey.value).value =
         value === null ? null : JSON.stringify(value)
@@ -41,7 +63,7 @@ export function usePendingSubmission(formConfig, formDataRef) {
 
   // Internal function to retrieve data from localStorage
   const retrieveData = (defaultValue = {}) => {
-    if (import.meta.server || !enabled.value || !formPendingSubmissionKey.value) return defaultValue
+    if (import.meta.server || !canUsePendingStorage.value || !formPendingSubmissionKey.value) return defaultValue
     try {
       const storageValue = useStorage(formPendingSubmissionKey.value).value
       return storageValue ? JSON.parse(storageValue) : defaultValue
@@ -53,13 +75,20 @@ export function usePendingSubmission(formConfig, formDataRef) {
     }
   }
 
+  const mergeStoredMetadata = (value = {}) => {
+    return {
+      ...value,
+      ...pickPendingSubmissionMetadata(retrieveData({}))
+    }
+  }
+
   // Watch formDataRef with throttling
   watchThrottled(
     formDataRef,
     (newData) => {
-      // Only save if enabled and on client
+      // Only persist full draft when auto-save is on (not only partial-submission metadata)
       if (import.meta.client && enabled.value) {
-        saveData(newData)
+        saveData(mergeStoredMetadata(newData))
       }
     },
     { deep: true, throttle: 1000 } // Throttle saving to once per second
@@ -78,7 +107,7 @@ export function usePendingSubmission(formConfig, formDataRef) {
   }
 
   const setSubmissionHash = (hash) => {
-    if (!enabled.value) return
+    if (!canUsePendingStorage.value) return
     const currentData = retrieveData()
     saveData({
       ...currentData,

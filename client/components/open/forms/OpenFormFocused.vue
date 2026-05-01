@@ -82,7 +82,7 @@
     </div>
 
     <!-- Bottom right controls: arrows and branding -->
-    <div class="hidden sm:flex gap-2 fixed bottom-8 right-8 z-10" aria-label="Form controls">
+    <div class="flex gap-2 fixed bottom-8 right-8 z-10" aria-label="Form controls">
       <!-- Focused nav arrows with fade transition -->
       <Transition name="fade" mode="out-in">
         <div v-if="shouldShowArrows && showArrowsOnCurrentPage" class="flex gap-2">
