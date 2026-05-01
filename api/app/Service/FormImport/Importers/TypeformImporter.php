@@ -190,15 +190,22 @@ class TypeformImporter extends AbstractImporter
         }
 
         $title = $this->sanitizeText($screen['title'] ?? '', 2000);
-        if ($title === '') {
+        $description = $this->sanitizeText($screen['properties']['description'] ?? '', 2000);
+
+        if ($title === '' && $description === '') {
             return null;
         }
 
+        $content = implode('', array_filter([
+            $title !== '' ? '<p>' . nl2br(e($title)) . '</p>' : null,
+            $description !== '' ? '<p>' . nl2br(e($description)) . '</p>' : null,
+        ]));
+
         return [
             'id' => $this->generateFieldId(),
-            'name' => $this->sanitizeText(strip_tags($title), 255) ?: 'Welcome',
+            'name' => $this->sanitizeText(strip_tags($title ?: $description), 255) ?: 'Welcome',
             'type' => 'nf-text',
-            'content' => '<p>' . nl2br(e($title)) . '</p>',
+            'content' => $content,
         ];
     }
 
@@ -223,10 +230,17 @@ class TypeformImporter extends AbstractImporter
                 continue;
             }
             $title = $this->sanitizeText($screen['title'] ?? '', 2000);
-            if ($title === '') {
+            $description = $this->sanitizeText($screen['properties']['description'] ?? '', 2000);
+
+            if ($title === '' && $description === '') {
                 continue;
             }
-            $parts[] = '<p>' . nl2br(e($title)) . '</p>';
+            if ($title !== '') {
+                $parts[] = '<p>' . nl2br(e($title)) . '</p>';
+            }
+            if ($description !== '') {
+                $parts[] = '<p>' . nl2br(e($description)) . '</p>';
+            }
         }
 
         return implode('', $parts);
@@ -311,6 +325,11 @@ class TypeformImporter extends AbstractImporter
                 break;
 
             case 'dropdown':
+                $choices = $this->extractChoices($field);
+                $property = $this->addSelectOptions($property, $choices);
+                $property['use_focused_selector'] = false;
+                break;
+
             case 'ranking':
                 $choices = $this->extractChoices($field);
                 $property = $this->addSelectOptions($property, $choices);

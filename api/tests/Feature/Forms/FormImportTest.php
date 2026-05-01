@@ -187,7 +187,11 @@ describe('TypeformImporter', function () {
             'id' => 'w1',
             'ref' => 'welcome-ref',
             'title' => "Welcome!\nThanks for stopping by.",
-            'properties' => ['show_button' => true, 'button_text' => 'Start'],
+            'properties' => [
+                'show_button' => true,
+                'button_text' => 'Start',
+                'description' => 'Please read this before starting.',
+            ],
         ]];
 
         Http::fake([
@@ -200,6 +204,7 @@ describe('TypeformImporter', function () {
         $welcome = $result['properties'][0];
         expect($welcome['type'])->toBe('nf-text');
         expect($welcome['content'])->toContain('Welcome!');
+        expect($welcome['content'])->toContain('Please read this before starting.');
         // Newlines in the title should survive as <br>.
         expect($welcome['content'])->toContain('<br');
     });
@@ -212,7 +217,9 @@ describe('TypeformImporter', function () {
                 'ref' => 'author-defined',
                 'type' => 'thankyou_screen',
                 'title' => 'Thanks — we will reach out soon!',
-                'properties' => [],
+                'properties' => [
+                    'description' => 'Expect a reply within 2 business days.',
+                ],
             ],
             // Generic screen Typeform appends to every form; must be dropped.
             [
@@ -233,6 +240,7 @@ describe('TypeformImporter', function () {
 
         expect($result)->toHaveKey('submitted_text');
         expect($result['submitted_text'])->toContain('Thanks — we will reach out soon!');
+        expect($result['submitted_text'])->toContain('Expect a reply within 2 business days.');
         expect($result['submitted_text'])->not->toContain('create your own');
     });
 
@@ -263,6 +271,36 @@ describe('TypeformImporter', function () {
         // Crucial: do NOT expand a 16-option list into radio buttons — that
         // would make the imported form unusable.
         expect($dropdown)->not->toHaveKey('without_dropdown');
+        expect($dropdown['use_focused_selector'])->toBeFalse();
+    });
+
+    it('keeps short Typeform dropdowns as a real dropdown', function () {
+        $fixture = typeformFormData();
+        $fixture['fields'] = [[
+            'type' => 'dropdown',
+            'title' => 'Priority',
+            'validations' => ['required' => false],
+            'properties' => [
+                'choices' => [
+                    ['label' => 'Low'],
+                    ['label' => 'Medium'],
+                    ['label' => 'High'],
+                ],
+            ],
+        ]];
+
+        Http::fake([
+            '*.typeform.com/*' => Http::response(wrapTypeformHtml($fixture), 200),
+        ]);
+
+        $importer = app(\App\Service\FormImport\Importers\TypeformImporter::class);
+        $result = $importer->import(['url' => 'https://example.typeform.com/to/abc123']);
+
+        $dropdown = collect($result['properties'])->firstWhere('name', 'Priority');
+        expect($dropdown['type'])->toBe('select');
+        expect($dropdown['select']['options'])->toHaveCount(3);
+        expect($dropdown)->not->toHaveKey('without_dropdown');
+        expect($dropdown['use_focused_selector'])->toBeFalse();
     });
 
     it('imports the real Typeform CSAT form cleanly', function () {
