@@ -117,7 +117,7 @@ return [
         'custom_css' => 'business',
         'seo_meta' => 'business',
         'enable_partial_submissions' => 'business',
-        'editable_submissions' => 'business',
+        'editable_submissions' => 'pro',
         'database_fields_update' => 'business',
         'enable_ip_tracking' => 'business',
 

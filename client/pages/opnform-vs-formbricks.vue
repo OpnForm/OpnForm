@@ -35,7 +35,7 @@ useOpnSeoMeta({
 const freePlanComparison = [
   {
     label: "Monthly Responses",
-    cells: ["Unlimited", "Unlimited surveys & feedback"],
+    cells: ["Unlimited", "250/month on Cloud Hobby"],
   },
   {
     label: "Unlimited forms / surveys",
@@ -43,15 +43,15 @@ const freePlanComparison = [
   },
   {
     label: "File uploads",
-    cells: ["Included", "Limited"],
+    cells: ["Free basic quota", "Limited"],
   },
   {
     label: "Custom CSS / styling",
-    cells: ["Paid", "Limited"],
+    cells: ["Business+", "Included self-host"],
   },
   {
     label: "Native integrations",
-    cells: ["Basic", "API Integrations"],
+    cells: ["Basic", "Pro cloud / self-host"],
   },
   {
     label: "Self-hosting",
@@ -59,7 +59,7 @@ const freePlanComparison = [
   },
   {
     label: "API access",
-    cells: ["Yes", "Yes"],
+    cells: ["Free", "Scale cloud / self-host"],
   },
 ]
 
@@ -77,12 +77,12 @@ const switchReasons = [
   {
     icon: "i-heroicons-code-bracket-square",
     title: "Developer-friendly workflows",
-    description: "Full API, webhook support, and automation integration.",
+    description: "API, webhook support, and automation integration.",
   },
   {
     icon: "i-heroicons-globe-alt",
     title: "Custom domains & embeds",
-    description: "Fully brand your forms anywhere.",
+    description: "Use custom domains and branding controls on paid plans.",
   },
   {
     icon: "i-heroicons-puzzle-piece",
@@ -107,11 +107,11 @@ const featureComparison = [
   },
   {
     label: "Developer extensibility (API + webhooks)",
-    cells: ["Full support", "API only"],
+    cells: ["Free API + webhooks", "Cloud tiers / self-host"],
   },
   {
     label: "Custom domains for forms",
-    cells: ["Y", "N"],
+    cells: ["Pro+", "Custom URL self-host"],
   },
   {
     label: "Flexible form uses (lead capture, workflows, apps)",
@@ -119,15 +119,15 @@ const featureComparison = [
   },
   {
     label: "Native ecosystem integrations",
-    cells: ["100+ available", "Limited via API"],
+    cells: ["Basic free; advanced paid", "Pro cloud / self-host"],
   },
   {
     label: "Advanced analytics & dashboards",
-    cells: ["Enhanced options", "Survey metrics only"],
+    cells: ["Pro+", "Survey metrics only"],
   },
   {
     label: "Branding removal & customization",
-    cells: ["White-label (Pro)", "Enterprise only"],
+    cells: ["Branding Pro+; CSS Business+", "Pro cloud / Enterprise self-host"],
   },
 ]
 

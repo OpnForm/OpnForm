@@ -44,7 +44,7 @@ const freePlanComparison = [
   },
   {
     label: "File uploads",
-    cells: ["Included", "Included"],
+    cells: ["Free basic quota", "Included"],
   },
   {
     label: "Conditional Logic",
@@ -52,15 +52,15 @@ const freePlanComparison = [
   },
   {
     label: "Custom CSS",
-    cells: ["Included", "Not available"],
+    cells: ["Business+", "Not available"],
   },
   {
     label: "API access",
-    cells: ["Included", "Basic"],
+    cells: ["Free", "Basic"],
   },
   {
     label: "Webhooks",
-    cells: ["Not available", "Not available"],
+    cells: ["Free", "Available"],
   },
   {
     label: "Storage space",
@@ -82,7 +82,7 @@ const switchReasons = [
   {
     icon: "i-heroicons-command-line",
     title: "No branding paywalls",
-    description: "Free plan without limits on usage.",
+    description: "Unlimited usage on Free, with branding controls on paid plans.",
   },
   {
     icon: "i-heroicons-circle-stack",
@@ -120,11 +120,11 @@ const featureComparison = [
   },
   {
     label: "Developer extensibility",
-    cells: ["High", "Moderate"],
+    cells: ["Free API + webhooks", "Moderate"],
   },
   {
     label: "Custom domains for forms",
-    cells: ["Y", "Only Enterprise"],
+    cells: ["Pro+", "Paid / Enterprise options"],
   },
   {
     label: "GDPR compliance",

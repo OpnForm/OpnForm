@@ -48,7 +48,7 @@ const freePlanComparison = [
   },
   {
     label: "File uploads",
-    cells: ["Yes", "Yes (requires Google account)"],
+    cells: ["Free basic quota", "Yes (requires Google account)"],
   },
   {
     label: "Custom branding",
@@ -60,7 +60,7 @@ const freePlanComparison = [
   },
   {
     label: "Analytics dashboard",
-    cells: ["Basic / Pro", "Basic summaries"],
+    cells: ["Pro+", "Basic summaries"],
   },
   {
     label: "Integrations",
@@ -112,11 +112,11 @@ const featureComparison = [
   },
   {
     label: "API + webhooks",
-    cells: ["Y", "N"],
+    cells: ["Free API + webhooks", "API + Apps Script"],
   },
   {
     label: "Custom domains",
-    cells: ["Y", "N"],
+    cells: ["Pro+", "N"],
   },
   {
     label: "Advanced logic & workflows",
@@ -124,7 +124,7 @@ const featureComparison = [
   },
   {
     label: "Full design customization",
-    cells: ["Y", "N"],
+    cells: ["Business+", "N"],
   },
   {
     label: "Data ownership (self-hosting control)",
@@ -132,7 +132,7 @@ const featureComparison = [
   },
   {
     label: "Ecosystem integrations",
-    cells: ["Integrations", "Google ecosystem"],
+    cells: ["Basic free; advanced paid", "Google ecosystem"],
   },
 ]
 </script>

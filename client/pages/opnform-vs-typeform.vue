@@ -36,19 +36,19 @@ const freePlanComparison = [
   },
   {
     label: "Forms allowed",
-    cells: ["Unlimited", "Limited"],
+    cells: ["Unlimited", "Unlimited"],
   },
   {
     label: "Questions per form",
-    cells: ["Unlimited", "Limited per plan"],
+    cells: ["Unlimited", "Many question types"],
   },
   {
     label: "File uploads",
-    cells: ["Paid / Pro", "Paid"],
+    cells: ["Free basic quota", "Paid"],
   },
   {
     label: "Conditional logic",
-    cells: ["Yes", "Paid"],
+    cells: ["Yes", "Included"],
   },
   {
     label: "Custom branding",
@@ -56,19 +56,19 @@ const freePlanComparison = [
   },
   {
     label: "Custom CSS / styling",
-    cells: ["Paid / Pro", "Not supported"],
+    cells: ["Business+", "Not supported"],
   },
   {
     label: "Native integrations",
-    cells: ["Basic", "Limited"],
+    cells: ["Basic", "Some integrations"],
   },
   {
     label: "API access",
-    cells: ["Basic", "Paid"],
+    cells: ["Basic", "Developer tools included"],
   },
   {
     label: "Webhooks",
-    cells: ["No", "Paid"],
+    cells: ["Free", "Available via API"],
   },
 ]
 
@@ -91,7 +91,7 @@ const switchReasons = [
   {
     icon: "i-heroicons-globe-alt",
     title: "Custom domains & branding",
-    description: "Fully brandable forms.",
+    description: "Branding removal and custom domains are available on paid plans.",
   },
   {
     icon: "i-heroicons-rectangle-stack",
@@ -112,7 +112,7 @@ const featureComparison = [
   },
   {
     label: "Unlimited forms",
-    cells: ["Y", "Restricted"],
+    cells: ["Y", "Y"],
   },
   {
     label: "Open source",
@@ -124,19 +124,19 @@ const featureComparison = [
   },
   {
     label: "Custom domains for forms",
-    cells: ["Y", "N"],
+    cells: ["Pro+", "N"],
   },
   {
     label: "Developer extensibility (API + webhooks)",
-    cells: ["Full support", "Limited / paid"],
+    cells: ["Free API + webhooks", "APIs + webhooks"],
   },
   {
     label: "Native integrations ecosystem",
-    cells: ["100+", "Some"],
+    cells: ["Basic free; advanced paid", "Many apps"],
   },
   {
     label: "Advanced logic & branching",
-    cells: ["Y", "Paid"],
+    cells: ["Y", "Included"],
   },
   {
     label: "Reusable form blocks / modular UI",
@@ -144,7 +144,7 @@ const featureComparison = [
   },
   {
     label: "Analytics dashboard",
-    cells: ["Only Pro", "Some reporting"],
+    cells: ["Pro+", "Some reporting"],
   },
   {
     label: "Payments & workflows",

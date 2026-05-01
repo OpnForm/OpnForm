@@ -51,7 +51,7 @@ const freePlanComparison = [
   },
   {
     label: "File uploads",
-    cells: ["No", "No"],
+    cells: ["Free basic quota", "Yes"],
   },
   {
     label: "Custom CSS",
@@ -63,7 +63,7 @@ const freePlanComparison = [
   },
   {
     label: "Webhooks",
-    cells: ["No", "No"],
+    cells: ["Free", "Free"],
   },
 ]
 
@@ -111,27 +111,27 @@ const featureComparison = [
   },
   {
     label: "Full API access",
-    cells: ["Y", "Limited"],
+    cells: ["Free API + webhooks", "Available"],
   },
   {
     label: "Custom domains for forms",
-    cells: ["Y", "N"],
+    cells: ["Pro+", "N"],
   },
   {
     label: "Advanced analytics / dashboard",
-    cells: ["Y", "Basic"],
+    cells: ["Pro+", "Basic"],
   },
   {
     label: "Native integrations ecosystem",
-    cells: ["100+", "Primarily via Zapier/Make"],
+    cells: ["Basic free; advanced paid", "Zapier, Make, webhooks"],
   },
   {
     label: "Developer-first workflows",
-    cells: ["Full support", "Limited"],
+    cells: ["Free API + webhooks", "API + webhooks"],
   },
   {
     label: "Flexible form use cases",
-    cells: ["Lead, apps, workflows", "Simple forms only"],
+    cells: ["Lead, apps, workflows", "Forms and surveys"],
   },
   {
     label: "Universal embedding (sites/apps)",

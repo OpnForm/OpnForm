@@ -52,15 +52,15 @@ const freePlanComparison = [
   },
   {
     label: "File Uploads",
-    cells: ["Included", "Not Included"],
+    cells: ["Free basic quota", "Not Included"],
   },
   {
     label: "Custom CSS",
-    cells: ["No direct custom CSS", "No custom CSS"],
+    cells: ["No direct custom CSS", "CSS editor"],
   },
   {
     label: "API access",
-    cells: ["Included", "Not available"],
+    cells: ["Free", "100 calls/day"],
   }
 ]
 
@@ -78,12 +78,12 @@ const switchReasons = [
   {
     icon: "i-heroicons-command-line",
     title: "Developer‑friendly workflows",
-    description: "Full API, webhook, and automation support",
+    description: "API, webhooks, and automation support",
   },
   {
     icon: "i-heroicons-circle-stack",
-    title: "Custom domains & white‑label",
-    description: "Brand your forms everywhere",
+    title: "Custom domains & branding",
+    description: "Use custom domains and branding controls on paid plans",
   },
   {
     icon: "i-heroicons-code-bracket-square",
@@ -112,7 +112,7 @@ const featureComparison = [
   },
   {
     label: "Custom domains for forms",
-    cells: ["Y", "Paid only"],
+    cells: ["Pro+", "Paid only"],
   },
   {
     label: "Advanced logic & branching",
@@ -124,19 +124,19 @@ const featureComparison = [
   },
   {
     label: "Custom branding",
-    cells: ["Y", "N"],
+    cells: ["Pro+", "Paid"],
   },
   {
     label: "Custom CSS",
-    cells: ["Y", "N"],
+    cells: ["Business+", "Available"],
   },
   {
     label: "Integrations",
-    cells: ["100+", "Limited"],
+    cells: ["Basic free; advanced paid", "Limited"],
   },
   {
     label: "Analytics dashboard",
-    cells: ["Y", "Paid"],
+    cells: ["Pro+", "1 report on free"],
   },    
   {
     label: "GDPR compliance",

@@ -47,7 +47,7 @@ const freePlanComparison = [
   },
   {
     label: "File uploads",
-    cells: ["Paid / Pro", "Paid"],
+    cells: ["Free basic quota", "Free up to 10MB"],
   },
   {
     label: "Custom branding",
@@ -55,7 +55,7 @@ const freePlanComparison = [
   },
   {
     label: "Custom CSS / styling",
-    cells: ["Paid / Pro", "Paid"],
+    cells: ["Business+", "Paid"],
   },
   {
     label: "Native integrations",
@@ -63,11 +63,11 @@ const freePlanComparison = [
   },
   {
     label: "API access",
-    cells: ["Basic", "Not yet"],
+    cells: ["Basic", "Not listed"],
   },
   {
     label: "Webhooks",
-    cells: ["No", "No"],
+    cells: ["Free", "Free"],
   },
 ]
 
@@ -84,8 +84,8 @@ const switchReasons = [
   },
   {
     icon: "i-heroicons-globe-alt",
-    title: "Custom domains included",
-    description: "Brand your forms at no extra cost.",
+    title: "Custom domains available",
+    description: "Use custom domains on paid plans.",
   },
   {
     icon: "i-heroicons-rectangle-stack",
@@ -111,7 +111,7 @@ const featureComparison = [
   },
   {
     label: "Custom domains for forms",
-    cells: ["Y", "N"],
+    cells: ["Pro+", "Pro"],
   },
   {
     label: "Open source platform",
@@ -123,11 +123,11 @@ const featureComparison = [
   },
   {
     label: "Developer extensibility (API + webhooks)",
-    cells: ["Full", "Limited"],
+    cells: ["Free API + webhooks", "Webhooks; API not listed"],
   },
   {
     label: "Native integration ecosystem",
-    cells: ["100+", "Limited"],
+    cells: ["Basic free; advanced paid", "Selected integrations"],
   },
   {
     label: "Advanced logic & branching",
@@ -135,7 +135,7 @@ const featureComparison = [
   },
   {
     label: "Advanced analytics dashboard",
-    cells: ["Built-in options", "Basic"],
+    cells: ["Pro+", "Basic"],
   },
   {
     label: "Reusable form components",

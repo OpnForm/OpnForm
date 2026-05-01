@@ -11,7 +11,7 @@
     <template #hero-subtitle>
       Create beautiful, logic‑driven forms with <b>unlimited responses, full control, and zero limits</b> — all for free.
       <br/><br/>
-      HeyForm is a popular form builder that lets users create conversational forms with logic and integrations. Its free plan, however, limits submissions and doesn’t focus on advanced customization. OpnForm delivers a <b>full form-building experience</b> with unlimited submissions, rich developer support, and self-hosting options.
+      HeyForm is a popular form builder that lets users create conversational forms with logic and integrations. Its public pricing starts with capped paid plans, while OpnForm delivers a <b>full form-building experience</b> with unlimited submissions, rich developer support, and self-hosting options.
     </template>
   </ComparisonPage>
 </template>
@@ -32,7 +32,7 @@ useOpnSeoMeta({
 const freePlanComparison = [
   {
     label: "Unlimited submissions",
-    cells: ["Unlimited", "Limited to 250/month"],
+    cells: ["Unlimited", "5k/month on Basic"],
   },
   {
     label: "Unlimited forms",
@@ -48,7 +48,7 @@ const freePlanComparison = [
   },
   {
     label: "File uploads",
-    cells: ["Yes", "Yes"],
+    cells: ["Free basic quota", "Yes, capped by storage"],
   },
   {
     label: "Multi-page / conversational forms",
@@ -77,7 +77,7 @@ const switchReasons = [
   {
     icon: "i-heroicons-sparkles",
     title: "AI-powered form creation",
-    description: "Build complex forms instantly.",
+    description: "Generate forms faster on paid plans.",
   },
   {
     icon: "i-heroicons-adjustments-horizontal",
@@ -104,7 +104,7 @@ const switchReasons = [
 const featureComparison = [
   {
     label: "True unlimited responses",
-    cells: ["Y", "N"],
+    cells: ["Y", "Business cap / Enterprise custom"],
   },
   {
     label: "Open source",
@@ -116,19 +116,19 @@ const featureComparison = [
   },
   {
     label: "Developer workflows (API + webhooks)",
-    cells: ["Y", "Y"],
+    cells: ["Free API + webhooks", "Integrations listed"],
   },
   {
     label: "AI-powered form generation",
-    cells: ["Y", "N"],
+    cells: ["Pro+", "N"],
   },
   {
     label: "Unique submission identifiers",
-    cells: ["Y", "N"],
+    cells: ["Pro+", "N"],
   },
   {
     label: "Hidden fields & advanced logic",
-    cells: ["Y", "Y"],
+    cells: ["Logic free; secret fields Pro+", "Y"],
   },
 ]
 

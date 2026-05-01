@@ -43,15 +43,15 @@ const freePlanComparison = [
   },
   {
     label: "Conditional logic",
-    cells: ["Included", "Requires custom logic"],
+    cells: ["Included", "Included in builder"],
   },
   {
     label: "Multi-page forms",
-    cells: ["Included", "Requires custom setup"],
+    cells: ["Included", "Included"],
   },
   {
     label: "File uploads",
-    cells: ["Included", "Requires custom setup"],
+    cells: ["Free basic quota", "Included with file storage setup"],
   },
   {
     label: "Drag-and-drop builder",
@@ -59,7 +59,7 @@ const freePlanComparison = [
   },
   {
     label: "No code required",
-    cells: ["Yes", "Developer required"],
+    cells: ["Yes", "Low-code / developer-oriented"],
   },
   {
     label: "Hosted experience without infra",
@@ -86,7 +86,7 @@ const switchReasons = [
   {
     icon: "i-heroicons-code-bracket-square",
     title: "Developer-friendly when needed",
-    description: "API and automation support.",
+    description: "API, webhooks, and automation support.",
   },
   {
     icon: "i-heroicons-puzzle-piece",
@@ -96,7 +96,7 @@ const switchReasons = [
   {
     icon: "i-heroicons-globe-alt",
     title: "Custom domains & branding",
-    description: "Manage form identity easily.",
+    description: "Manage form identity on paid plans.",
   },
 ]
 
@@ -115,23 +115,23 @@ const featureComparison = [
   },
   {
     label: "Developer workflows (API + webhooks)",
-    cells: ["Y", "Y"],
+    cells: ["Free API + webhooks", "Y"],
   },
   {
     label: "Native integrations ecosystem",
-    cells: ["Y", "Must build integrations"],
+    cells: ["Basic free; advanced paid", "Must build integrations"],
   },
   {
     label: "Full control of styling without code",
-    cells: ["Yes", "Developer required"],
+    cells: ["Business+", "Code-level control"],
   },
   {
     label: "Custom domains out of the box",
-    cells: ["Y", "Custom deployment only"],
+    cells: ["Pro+", "Custom deployment only"],
   },
   {
     label: "Intuitive UI for builders",
-    cells: ["Y", "Not provided natively"],
+    cells: ["Y", "Developer-oriented builder"],
   },
 ]
 

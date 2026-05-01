@@ -52,11 +52,11 @@ const freePlanComparison = [
   },
   {
     label: "File Uploads",
-    cells: ["File uploads available", "Not Included"],
+    cells: ["Free basic quota", "Included"],
   },
   {
     label: "Custom CSS",
-    cells: ["No direct custom CSS", "No custom CSS"],
+    cells: ["No direct custom CSS", "Pro+"],
   },
   {
     label: "Self-hosting Option",
@@ -64,7 +64,7 @@ const freePlanComparison = [
   },
   {
     label: "API access",
-    cells: ["Included", "Included"],
+    cells: ["Free", "Included"],
   },
 ]
 
@@ -96,8 +96,8 @@ const switchReasons = [
   },
   {
     icon: "i-heroicons-user-group",
-    title: "Full branding and styling control",
-    description: "White-label and custom CSS",
+    title: "Branding and styling controls",
+    description: "Remove branding on Pro and use advanced styling on Business.",
   },
 ]
 
@@ -116,23 +116,23 @@ const featureComparison = [
   },
   {
     label: "Calculations",
-    cells: ["Y", "Paid"],
+    cells: ["Y", "Y"],
   },
   {
     label: "Custom branding",
-    cells: ["Y", "N"],
+    cells: ["Pro+", "Paid"],
   },
   {
     label: "Custom CSS",
-    cells: ["Y", "N"],
+    cells: ["Business+", "Pro+"],
   },
   {
     label: "Integrations",
-    cells: ["100+", "Limited"],
+    cells: ["Basic free; advanced paid", "50+ included"],
   },
   {
     label: "Analytics dashboard",
-    cells: ["Y", "Paid"],
+    cells: ["Pro+", "Summary free; analytics Business"],
   },
   {
     label: "Open source",
@@ -144,7 +144,7 @@ const featureComparison = [
   },
   {
     label: "API access",
-    cells: ["Y", "Paid"],
+    cells: ["Free", "Y"],
   },
   {
     label: "GDPR compliance",

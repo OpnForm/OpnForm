@@ -110,7 +110,47 @@
         </div>
 
         <div class="mt-12 sm:mt-16">
-          <div class="grid grid-cols-12 items-start">
+          <div class="grid gap-4 md:hidden">
+            <div
+              v-for="row in freePlanComparison"
+              :key="row.label"
+              class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm"
+            >
+              <div class="border-b border-gray-100 bg-gray-50 px-5 py-4 text-sm font-semibold leading-5 text-gray-950">
+                {{ row.label }}
+              </div>
+              <div class="divide-y divide-gray-100">
+                <div class="flex items-start justify-between gap-4 px-5 py-4">
+                  <div class="flex min-w-0 items-center gap-2">
+                    <img src="/img/logo.svg" alt="OpnForm" class="h-6 w-6 shrink-0" />
+                    <span class="text-sm font-semibold leading-5 text-gray-950">
+                      OpnForm
+                    </span>
+                  </div>
+                  <div class="text-right text-sm font-medium leading-5 text-gray-700">
+                    {{ row.cells[0] }}
+                  </div>
+                </div>
+                <div class="flex items-start justify-between gap-4 px-5 py-4">
+                  <div class="flex min-w-0 items-center gap-2">
+                    <Icon
+                      :name="competitorIcon"
+                      :class="competitorIconClass"
+                      class="h-6 w-6 shrink-0"
+                    />
+                    <span class="text-sm font-semibold leading-5 text-gray-950">
+                      {{ competitorName }}
+                    </span>
+                  </div>
+                  <div class="text-right text-sm font-medium leading-5 text-gray-700">
+                    {{ row.cells[1] }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="hidden grid-cols-12 items-start md:grid">
             <div class="col-span-12 md:col-span-4 pb-8">
               <div class="h-20 hidden md:block" />
               <div
@@ -244,8 +284,72 @@
         </div>
 
         <div class="mt-12 sm:mt-16">
+          <div class="grid gap-4 md:hidden">
+            <div
+              v-for="row in featureComparison"
+              :key="row.label"
+              class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm"
+            >
+              <div class="border-b border-gray-100 bg-gray-50 px-5 py-4 text-sm font-semibold leading-5 text-gray-950">
+                {{ row.label }}
+              </div>
+              <div class="divide-y divide-gray-100">
+                <div class="flex items-start justify-between gap-4 px-5 py-4">
+                  <div class="flex min-w-0 items-center gap-2">
+                    <img src="/img/logo.svg" alt="OpnForm" class="h-6 w-6 shrink-0" />
+                    <span class="text-sm font-semibold leading-5 text-gray-950">
+                      OpnForm
+                    </span>
+                  </div>
+                  <div class="flex justify-end text-right text-sm font-medium leading-5 text-gray-700">
+                    <UIcon
+                      v-if="row.cells[0] === 'Y'"
+                      name="i-heroicons-check"
+                      class="h-5 w-5 text-green-500"
+                    />
+                    <UIcon
+                      v-else-if="row.cells[0] === 'N'"
+                      name="i-heroicons-x-mark"
+                      class="h-5 w-5 text-red-500"
+                    />
+                    <span v-else>
+                      {{ row.cells[0] }}
+                    </span>
+                  </div>
+                </div>
+                <div class="flex items-start justify-between gap-4 px-5 py-4">
+                  <div class="flex min-w-0 items-center gap-2">
+                    <Icon
+                      :name="competitorIcon"
+                      :class="competitorIconClass"
+                      class="h-6 w-6 shrink-0"
+                    />
+                    <span class="text-sm font-semibold leading-5 text-gray-950">
+                      {{ competitorName }}
+                    </span>
+                  </div>
+                  <div class="flex justify-end text-right text-sm font-medium leading-5 text-gray-700">
+                    <UIcon
+                      v-if="row.cells[1] === 'Y'"
+                      name="i-heroicons-check"
+                      class="h-5 w-5 text-green-500"
+                    />
+                    <UIcon
+                      v-else-if="row.cells[1] === 'N'"
+                      name="i-heroicons-x-mark"
+                      class="h-5 w-5 text-red-500"
+                    />
+                    <span v-else>
+                      {{ row.cells[1] }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div
-            class="rounded-[24px] border border-gray-200 overflow-hidden bg-white"
+            class="hidden rounded-[24px] border border-gray-200 overflow-hidden bg-white md:block"
           >
             <table class="w-full border-collapse">
               <thead>
