@@ -39,6 +39,11 @@
 <script>
 import { defineAsyncComponent } from 'vue'
 import OpenFilters from "../../../../../data/open_filters.json"
+import {
+  getConditionInputComponent,
+  getMentionComputedVariables,
+  getMentionFields,
+} from '~/lib/forms/conditionInputConfig.js'
 
 export default {
   components: {
@@ -59,24 +64,6 @@ export default {
       content: this.modelValue ? { ...this.modelValue } : {},
       available_filters: OpenFilters,
       hasInput: false,
-      inputComponent: {
-        text: "MentionInput",
-        rich_text: "MentionInput",
-        number: "MentionInput",
-        rating: "MentionInput",
-        scale: "MentionInput",
-        slider: "MentionInput",
-        select: "SelectInput",
-        multi_select: "SelectInput",
-        date: "DateInput",
-        files: "FileInput",
-        checkbox: "CheckboxInput",
-        url: "MentionInput",
-        email: "MentionInput",
-        phone_number: "MentionInput",
-        matrix: "MatrixInput",
-        computed: "TextInput", // Computed variables use text input
-      }
     }
   },
 
@@ -88,11 +75,14 @@ export default {
       return []
     },
     mentionFields() {
-      return this.formProperties.filter(p => p.id !== this.property?.id)
+      return getMentionFields(this.formProperties, this.property)
+    },
+    mentionComputedVariables() {
+      return getMentionComputedVariables(this.formComputedVariables, this.property)
     },
     inputComponentData() {
       const componentData = {
-        component: this.inputComponent[this.property.type],
+        component: getConditionInputComponent(this.property),
         name: this.property.id,
         required: true,
         size: 'xs',
@@ -134,7 +124,7 @@ export default {
       // Pass mention props for MentionInput
       if (componentData.component === 'MentionInput') {
         componentData.mentions = this.mentionFields
-        componentData.computedVariables = this.formComputedVariables
+        componentData.computedVariables = this.mentionComputedVariables
       }
 
       return componentData

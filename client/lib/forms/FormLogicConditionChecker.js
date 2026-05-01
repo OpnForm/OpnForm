@@ -1,27 +1,36 @@
 import { default as _isEqual } from "lodash/isEqual"
 
+const mentionSpanRegex = /<span\b(?=[^>]*\bmention\b)[^>]*>.*?<\/span>/gis
+
+function getAttributeValue(html, attribute) {
+  const match = html.match(new RegExp(`${attribute}=(["'])(.*?)\\1`, 'i'))
+  return match?.[2] ?? null
+}
+
+function getMentionText(fieldValue, fallback = '') {
+  if (fieldValue !== undefined && fieldValue !== null) {
+    return Array.isArray(fieldValue) ? fieldValue.join(', ') : String(fieldValue)
+  }
+  return fallback || ''
+}
+
+function stripHtml(value) {
+  return value.replace(/<[^>]+>/g, '').trim()
+}
+
 function resolveConditionValue(value, formData) {
   if (typeof value !== 'string' || !value.includes('mention-field-id')) {
     return value
   }
 
-  if (typeof window === 'undefined' || typeof DOMParser === 'undefined') {
-    return value
-  }
-
-  const parser = new DOMParser()
-  const doc = parser.parseFromString(value, 'text/html')
-  const mentions = doc.querySelectorAll('[mention]')
-
+  const mentions = [...value.matchAll(mentionSpanRegex)].map(match => match[0])
   if (mentions.length === 0) return value
 
   if (mentions.length === 1) {
-    const fieldId = mentions[0].getAttribute('mention-field-id')
-    const fallback = mentions[0].getAttribute('mention-fallback')
-
-    const clone = doc.body.cloneNode(true)
-    clone.querySelector('[mention]').remove()
-    const remainingText = clone.textContent.trim()
+    const mention = mentions[0]
+    const fieldId = getAttributeValue(mention, 'mention-field-id')
+    const fallback = getAttributeValue(mention, 'mention-fallback')
+    const remainingText = stripHtml(value.replace(mentionSpanRegex, ''))
 
     // Single mention with no surrounding text — return the raw field value to preserve type
     if (remainingText === '') {
@@ -33,20 +42,14 @@ function resolveConditionValue(value, formData) {
   }
 
   // Multiple mentions or mixed content — resolve to string
-  mentions.forEach(el => {
-    const fieldId = el.getAttribute('mention-field-id')
-    const fallback = el.getAttribute('mention-fallback')
+  const resolvedValue = value.replace(mentionSpanRegex, mention => {
+    const fieldId = getAttributeValue(mention, 'mention-field-id')
+    const fallback = getAttributeValue(mention, 'mention-fallback')
     const fieldValue = formData[fieldId]
-    if (fieldValue !== undefined && fieldValue !== null) {
-      el.textContent = Array.isArray(fieldValue) ? fieldValue.join(', ') : String(fieldValue)
-    } else if (fallback) {
-      el.textContent = fallback
-    } else {
-      el.textContent = ''
-    }
+    return getMentionText(fieldValue, fallback)
   })
 
-  return doc.body.textContent.trim()
+  return stripHtml(resolvedValue)
 }
 
 export function conditionsMet(conditions, formData) {
