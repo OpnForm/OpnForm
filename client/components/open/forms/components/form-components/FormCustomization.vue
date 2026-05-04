@@ -200,6 +200,13 @@
       label="Show navigation arrows"
     />
     <toggle-switch-input
+      v-if="isFocused"
+      name="settings.auto_next"
+      :form="form"
+      label="Auto-next on selection"
+      help="Automatically move to the next page after selecting an option (checkbox, dropdown, etc.)"
+    />
+    <toggle-switch-input
       name="show_progress_bar"
       :form="form"
       label="Show progress bar"
@@ -268,6 +275,11 @@ onMounted(() => {
   // Set default value for navigation_arrows in focused mode if not defined
   if (isFocused.value && form.value.settings.navigation_arrows === undefined) {
     form.value.settings.navigation_arrows = true
+  }
+
+  // Set default value for auto_next in focused mode if not defined
+  if (isFocused.value && form.value.settings.auto_next === undefined) {
+    form.value.settings.auto_next = true
   }
 })
 

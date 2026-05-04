@@ -132,6 +132,25 @@ const animationFrame = ref(null)
 const lastApiCall = ref(null)
 const progressStartTime = ref(null)
 
+const normalizeColumnList = (columns) => {
+  if (Array.isArray(columns)) return columns
+  if (columns && typeof columns === 'object') return Object.values(columns)
+  return []
+}
+
+const exportColumns = computed(() => {
+  if (props.columns && Object.keys(props.columns).length > 0) {
+    return props.columns
+  }
+
+  return normalizeColumnList(props.form?.properties).reduce((columns, property) => {
+    if (property?.id) {
+      columns[property.id] = true
+    }
+    return columns
+  }, { created_at: true })
+})
+
 const startExport = () => {
   if (isExporting.value) return
 
@@ -145,7 +164,7 @@ const startExport = () => {
   progressStartTime.value = Date.now()
   
   const payload = {
-    columns: props.columns
+    columns: exportColumns.value
   }
 
   if (props.selectedIds.length > 0) {
