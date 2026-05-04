@@ -31,7 +31,7 @@
     </template>
 
     <template #body>
-      <div class="overflow-y-scroll px-2">
+      <OverlayScrollbarsComponent defer class="px-2">
         <VForm size="sm">
           <Suspense v-if="integration">
             <component
@@ -48,7 +48,7 @@
             </template>
           </Suspense>
         </VForm>
-      </div>
+      </OverlayScrollbarsComponent>
     </template>
 
     <template #footer>
