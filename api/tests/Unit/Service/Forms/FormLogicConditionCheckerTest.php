@@ -600,6 +600,22 @@ describe('FormLogicConditionChecker', function () {
             expect(FormLogicConditionChecker::conditionsMet($condition, $formData))->toBeTrue();
         });
 
+        it('preserves zero fallback for numeric mention condition values', function () {
+            $condition = [
+                'value' => [
+                    'property_meta' => [
+                        'id' => 'number_field',
+                        'type' => 'number',
+                    ],
+                    'operator' => 'equals',
+                    'value' => mentionHtml('missing_field', 'Missing', '0'),
+                ],
+            ];
+
+            $formData = ['number_field' => 0];
+            expect(FormLogicConditionChecker::conditionsMet($condition, $formData))->toBeTrue();
+        });
+
         it('resolves single bare mention to null when field missing and no fallback', function () {
             $condition = [
                 'value' => [

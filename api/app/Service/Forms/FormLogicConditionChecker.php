@@ -87,7 +87,7 @@ class FormLogicConditionChecker
                     return $resolvedValue;
                 }
 
-                if (preg_match('/mention-fallback="([^"]*)"/', $value, $fb) && !empty($fb[1])) {
+                if (preg_match('/mention-fallback="([^"]*)"/', $value, $fb) && $fb[1] !== '') {
                     return $fb[1];
                 }
 
