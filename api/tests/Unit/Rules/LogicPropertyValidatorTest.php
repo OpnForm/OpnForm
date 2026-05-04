@@ -125,6 +125,40 @@ describe('LogicPropertyValidator condition validation', function () {
         expect($errors)->toBeEmpty();
     });
 
+    it('passes with computed variable conditions', function () {
+        $validator = new LogicPropertyValidator();
+        $context = ['properties' => []];
+        $property = [
+            'id' => 'target',
+            'name' => 'Target',
+            'type' => 'text',
+            'hidden' => false,
+            'required' => false,
+            'logic' => [
+                'conditions' => [
+                    'operatorIdentifier' => 'and',
+                    'children' => [
+                        [
+                            'identifier' => 'cv_total',
+                            'value' => [
+                                'operator' => 'greater_than',
+                                'property_meta' => [
+                                    'id' => 'cv_total',
+                                    'type' => 'computed',
+                                ],
+                                'value' => 100,
+                            ],
+                        ],
+                    ],
+                ],
+                'actions' => ['hide-block'],
+            ],
+        ];
+
+        $errors = $validator->validate($property, 0, $context);
+        expect($errors)->toBeEmpty();
+    });
+
     it('fails when condition value is missing', function () {
         $validator = new LogicPropertyValidator();
         $context = ['properties' => []];

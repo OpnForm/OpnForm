@@ -347,7 +347,11 @@ class FormLogicConditionChecker
      */
     private function areValidNumbers($condition, $fieldValue): bool
     {
-        return isset($condition['value']) && $fieldValue !== null && $fieldValue !== '';
+        return isset($condition['value']) &&
+            $fieldValue !== null &&
+            $fieldValue !== '' &&
+            is_numeric($condition['value']) &&
+            is_numeric($fieldValue);
     }
 
     private function checkGreaterThan($condition, $fieldValue): bool

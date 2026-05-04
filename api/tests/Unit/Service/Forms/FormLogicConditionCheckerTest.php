@@ -552,6 +552,38 @@ describe('FormLogicConditionChecker', function () {
             expect(FormLogicConditionChecker::conditionsMet($condition, $formData))->toBeFalse();
         });
 
+        it('keeps numeric mention strings valid for number comparisons', function () {
+            $condition = [
+                'value' => [
+                    'property_meta' => [
+                        'id' => 'number_field',
+                        'type' => 'number',
+                    ],
+                    'operator' => 'greater_than',
+                    'value' => mentionHtml('threshold_field', 'Threshold'),
+                ],
+            ];
+
+            $formData = ['number_field' => '50', 'threshold_field' => '40'];
+            expect(FormLogicConditionChecker::conditionsMet($condition, $formData))->toBeTrue();
+        });
+
+        it('rejects non-numeric mention values for number comparisons', function () {
+            $condition = [
+                'value' => [
+                    'property_meta' => [
+                        'id' => 'number_field',
+                        'type' => 'number',
+                    ],
+                    'operator' => 'greater_than',
+                    'value' => mentionHtml('text_field', 'Text Field'),
+                ],
+            ];
+
+            $formData = ['number_field' => 50, 'text_field' => 'abc'];
+            expect(FormLogicConditionChecker::conditionsMet($condition, $formData))->toBeFalse();
+        });
+
         it('resolves single bare mention with fallback when field is missing', function () {
             $condition = [
                 'value' => [
