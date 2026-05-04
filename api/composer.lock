@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "da92420ac840f60ed83fe78c66ccf9af",
+    "content-hash": "a084f340f8a0b5b761b21d70fee1c94d",
     "packages": [
         {
             "name": "aws/aws-crt-php",
@@ -3648,32 +3648,32 @@
         },
         {
             "name": "laravel/vapor-cli",
-            "version": "v1.65.7",
+            "version": "v1.70.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/laravel/vapor-cli.git",
-                "reference": "b2dfaa121d7b9d0b56553f5a2d05df525516cc4f"
+                "reference": "db53ee9a5be3cc474a33bc905274bfd0a147f7e2"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/laravel/vapor-cli/zipball/b2dfaa121d7b9d0b56553f5a2d05df525516cc4f",
-                "reference": "b2dfaa121d7b9d0b56553f5a2d05df525516cc4f",
+                "url": "https://api.github.com/repos/laravel/vapor-cli/zipball/db53ee9a5be3cc474a33bc905274bfd0a147f7e2",
+                "reference": "db53ee9a5be3cc474a33bc905274bfd0a147f7e2",
                 "shasum": ""
             },
             "require": {
                 "ext-zip": "*",
                 "guzzlehttp/guzzle": "^6.3|^7.0",
-                "illuminate/container": "^6.0|^7.0|^8.0|^9.0|^10.0|^11.0|^12.0",
-                "illuminate/filesystem": "^6.0|^7.0|^8.0|^9.0|^10.0|^11.0|^12.0",
-                "illuminate/support": "^6.0|^7.0|^8.0|^9.0|^10.0|^11.0|^12.0",
+                "illuminate/container": "^6.0|^7.0|^8.0|^9.0|^10.0|^11.0|^12.0|^13.0",
+                "illuminate/filesystem": "^6.0|^7.0|^8.0|^9.0|^10.0|^11.0|^12.0|^13.0",
+                "illuminate/support": "^6.0|^7.0|^8.0|^9.0|^10.0|^11.0|^12.0|^13.0",
                 "league/flysystem": "^1.0|^3.0",
                 "league/flysystem-aws-s3-v3": "^1.0|^3.0",
                 "php": "^7.2|^8.0",
                 "ramsey/uuid": "^3.8|^4.0",
-                "symfony/console": "^4.2|^5.0|^6.0|^7.0",
-                "symfony/process": "^4.2|^5.0|^6.0|^7.0",
-                "symfony/var-dumper": "^4.2|^5.0|^6.0|^7.0",
-                "symfony/yaml": "^4.2|^5.0|^6.0|^7.0",
+                "symfony/console": "^4.2|^5.0|^6.0|^7.0|^8.0",
+                "symfony/process": "^4.2|^5.0|^6.0|^7.0|^8.0",
+                "symfony/var-dumper": "^4.2|^5.0|^6.0|^7.0|^8.0",
+                "symfony/yaml": "^4.2|^5.0|^6.0|^7.0|^8.0",
                 "vlucas/phpdotenv": "^3.0|^4.0|^5.0"
             },
             "require-dev": {
@@ -3711,22 +3711,22 @@
                 "vapor"
             ],
             "support": {
-                "source": "https://github.com/laravel/vapor-cli/tree/v1.65.7"
+                "source": "https://github.com/laravel/vapor-cli/tree/v1.70.1"
             },
-            "time": "2025-05-15T15:10:35+00:00"
+            "time": "2026-03-24T23:33:49+00:00"
         },
         {
             "name": "laravel/vapor-core",
-            "version": "v2.41.0",
+            "version": "v2.43.4",
             "source": {
                 "type": "git",
                 "url": "https://github.com/laravel/vapor-core.git",
-                "reference": "80faabfd88b6b93316e600ade54c5e97bab974fe"
+                "reference": "a13f6c80dbbc65466e0022f4393e337ff51862f0"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/laravel/vapor-core/zipball/80faabfd88b6b93316e600ade54c5e97bab974fe",
-                "reference": "80faabfd88b6b93316e600ade54c5e97bab974fe",
+                "url": "https://api.github.com/repos/laravel/vapor-core/zipball/a13f6c80dbbc65466e0022f4393e337ff51862f0",
+                "reference": "a13f6c80dbbc65466e0022f4393e337ff51862f0",
                 "shasum": ""
             },
             "require": {
@@ -3734,10 +3734,10 @@
                 "guzzlehttp/guzzle": "^6.3|^7.0",
                 "guzzlehttp/promises": "^1.4|^2.0",
                 "hollodotme/fast-cgi-client": "^3.0",
-                "illuminate/container": "^6.0|^7.0|^8.0|^9.0|^10.0|^11.0|^12.0",
-                "illuminate/http": "^6.0|^7.0|^8.0|^9.0|^10.0|^11.0|^12.0",
-                "illuminate/queue": "^6.0|^7.0|^8.0|^9.0|^10.0|^11.0|^12.0",
-                "illuminate/support": "^6.0|^7.0|^8.0|^9.0|^10.0|^11.0|^12.0",
+                "illuminate/container": "^6.0|^7.0|^8.0|^9.0|^10.0|^11.0|^12.0|^13.0",
+                "illuminate/http": "^6.0|^7.0|^8.0|^9.0|^10.0|^11.0|^12.0|^13.0",
+                "illuminate/queue": "^6.0|^7.0|^8.0|^9.0|^10.0|^11.0|^12.0|^13.0",
+                "illuminate/support": "^6.0|^7.0|^8.0|^9.0|^10.0|^11.0|^12.0|^13.0",
                 "monolog/monolog": "^1.12|^2.0|^3.2",
                 "nyholm/psr7": "^1.0",
                 "php": "^7.2|^8.0",
@@ -3748,9 +3748,9 @@
             "require-dev": {
                 "laravel/octane": "*",
                 "mockery/mockery": "^1.2",
-                "orchestra/testbench": "^4.0|^5.0|^6.0|^7.0|^8.0|^9.0|^10.0",
+                "orchestra/testbench": "^4.0|^5.0|^6.0|^7.0|^8.0|^9.0|^10.0|^11.0",
                 "phpstan/phpstan": "^1.10|^2.1",
-                "phpunit/phpunit": "^8.0|^9.0|^10.4|^11.5.3"
+                "phpunit/phpunit": "^8.0|^9.0|^10.4|^11.5.3|^12.5.12"
             },
             "type": "library",
             "extra": {
@@ -3791,9 +3791,9 @@
                 "vapor"
             ],
             "support": {
-                "source": "https://github.com/laravel/vapor-core/tree/v2.41.0"
+                "source": "https://github.com/laravel/vapor-core/tree/v2.43.4"
             },
-            "time": "2025-09-10T14:36:21+00:00"
+            "time": "2026-04-22T22:05:52+00:00"
         },
         {
             "name": "lcobucci/clock",
@@ -16479,7 +16479,7 @@
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {
-        "php": "^8.2",
+        "php": "^8.3",
         "ext-json": "*"
     },
     "platform-dev": {},
@@ -16487,5 +16487,5 @@
         "ext-pcntl": "8.0",
         "ext-posix": "8.0"
     },
-    "plugin-api-version": "2.6.0"
+    "plugin-api-version": "2.9.0"
 }

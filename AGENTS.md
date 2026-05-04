@@ -10,7 +10,7 @@ Instructions for AI coding agents working in this repository.
 ## Repository Overview
 
 - Monorepo with:
-- `api/`: Laravel 11+ / PHP 8.2 backend.
+- `api/`: Laravel 11+ / PHP 8.3 backend.
 - `client/`: Nuxt 3 / Vue frontend (JavaScript, not TypeScript by default).
 - `docs/`: Mintlify documentation.
 

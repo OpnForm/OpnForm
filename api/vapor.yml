@@ -15,7 +15,7 @@ environments:
     cli-timeout: 900
     queue-memory: 4096
     queue-timeout: 900
-    runtime: "php-8.2:al2-arm"
+    runtime: "php-8.3:al2023-arm"
     storage: opnforms-prod
     database: OpnForm
     domain: api.opnform.com
@@ -32,7 +32,7 @@ environments:
     memory: 1024
     cli-memory: 512
     cli-timeout: 900
-    runtime: "php-8.2:al2-arm"
+    runtime: "php-8.3:al2023-arm"
     storage: opnforms-staging
     database: OpnForm
     domain: api.stg.opnform.com
