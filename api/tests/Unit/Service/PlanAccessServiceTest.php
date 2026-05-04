@@ -29,12 +29,12 @@ it('grants overridden features even on a free workspace', function () {
     expect($this->service->hasFeature($workspace->fresh(), Feature::FORM_VERSIONING))->toBeTrue();
 });
 
-it('distinguishes workspace features from form features when names overlap', function () {
+it('grants editable_submissions as both workspace and form feature for pro users', function () {
     $user = $this->createProUser();
     $workspace = $this->createUserWorkspace($user);
 
     expect($this->service->hasFeature($workspace, Feature::EDITABLE_SUBMISSIONS))->toBeTrue();
-    expect($this->service->hasFormFeature($workspace, Feature::EDITABLE_SUBMISSIONS))->toBeFalse();
+    expect($this->service->hasFormFeature($workspace, Feature::EDITABLE_SUBMISSIONS))->toBeTrue();
 });
 
 it('does not leak paid workspace or form features into a free workspace payload', function () {
