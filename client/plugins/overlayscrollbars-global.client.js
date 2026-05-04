@@ -1,14 +1,13 @@
 import 'overlayscrollbars/overlayscrollbars.css'
-import { OverlayScrollbars } from 'overlayscrollbars'
 import { OverlayScrollbarsComponent } from 'overlayscrollbars-vue'
 import { h, mergeProps } from 'vue'
 
 const scrollbarOptions = {
   overflow: { x: 'hidden', y: 'scroll' },
   scrollbars: {
-    theme: 'os-theme-light',
+    theme: 'os-theme-dark',
     visibility: 'auto',
-    autoHide: 'move',
+    autoHide: 'never',
     autoHideDelay: 800,
     autoHideSuspend: true,
   },
@@ -34,28 +33,6 @@ const OverlayScrollbarsWithDefaults = {
   },
 }
 
-let bodyInitialized = false
-
-function initBodyScrollbar () {
-  if (bodyInitialized) return
-  const existing = OverlayScrollbars(document.body)
-  if (OverlayScrollbars.valid(existing)) {
-    bodyInitialized = true
-    return
-  }
-  OverlayScrollbars(
-    { target: document.body, cancel: { body: null } },
-    scrollbarOptions,
-  )
-  bodyInitialized = true
-}
-
 export default defineNuxtPlugin((nuxtApp) => {
-  if (useIsIframe()) return
-
   nuxtApp.vueApp.component('OverlayScrollbarsComponent', OverlayScrollbarsWithDefaults)
-
-  onNuxtReady(() => {
-    initBodyScrollbar()
-  })
 })
