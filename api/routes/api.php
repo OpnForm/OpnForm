@@ -15,6 +15,7 @@ use App\Http\Controllers\Forms\FormSubmissionController;
 use App\Http\Controllers\Forms\Integration\FormIntegrationsController;
 use App\Http\Controllers\Forms\Integration\FormIntegrationsEventController;
 use App\Http\Controllers\Forms\Integration\FormZapierWebhookController;
+use App\Http\Controllers\Forms\FormImportController;
 use App\Http\Controllers\Forms\PublicFormController;
 use App\Http\Controllers\Pdf\PdfTemplateController;
 use App\Http\Controllers\Pdf\PdfGenerateController;
@@ -49,6 +50,14 @@ use App\Http\Controllers\HealthCheckController;
 if (config('app.self_hosted')) {
     Route::get('/healthcheck', [HealthCheckController::class, 'apiCheck']);
 }
+
+Route::prefix('open')->name('open.')->group(function () {
+    Route::prefix('forms')->name('forms.')->group(function () {
+        Route::post('/import', [FormImportController::class, 'import'])
+            ->middleware('throttle:10,1')
+            ->name('import');
+    });
+});
 
 Route::group(['middleware' => 'auth.multi'], function () {
     Route::post('logout', [LoginController::class, 'logout'])->name('logout');

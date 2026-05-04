@@ -2,7 +2,9 @@
   <div class="flex flex-wrap flex-col flex-grow">
     <create-form-base-modal
       :show="showInitialFormModal"
+      :default-import-source="defaultImportSource"
       @form-generated="formGenerated"
+      @form-imported="formImported"
       @close="showInitialFormModal = false"
     />
     <VTransition name="fade">
@@ -65,6 +67,11 @@ const showInitialFormModal = ref(false)
 const editorBootstrapped = ref(false)
 const hasInitialTemplate = computed(() => !!(template && template.structure))
 const editorReady = computed(() => stateReady.value && (editorBootstrapped.value || hasInitialTemplate.value))
+const supportedGuestImportSources = ['typeform', 'tally', 'fillout']
+const defaultImportSource = computed(() => {
+  const source = route.query.import
+  return supportedGuestImportSources.includes(source) ? source : null
+})
 
 // Component ref
 const editor = ref(null)
@@ -123,5 +130,9 @@ const afterLogin = () => {
 
 const formGenerated = (newForm) => {
   form.value = useForm({ ...form.value.data(), ...newForm })
+}
+
+const formImported = (importedForm) => {
+  form.value = useForm({ ...form.value.data(), ...importedForm })
 }
 </script>

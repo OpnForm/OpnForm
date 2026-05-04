@@ -210,9 +210,11 @@ class FormSubmissionFormatter
             }
 
             if ($this->createLinks && $field['type'] == 'url') {
-                $field['value'] = '<a href="' . $data[$field['id']] . '">' . $data[$field['id']] . '</a>';
+                $field['value'] = $this->formatUrlLink($data[$field['id']]);
+                $field['value_is_html'] = true;
             } elseif ($this->createLinks && $field['type'] == 'email') {
-                $field['value'] = '<a href="mailto:' . $data[$field['id']] . '">' . $data[$field['id']] . '</a>';
+                $field['value'] = $this->formatEmailLink($data[$field['id']]);
+                $field['value_is_html'] = true;
             } elseif ($field['type'] == 'checkbox') {
                 $field['value'] = $data[$field['id']] ? trans('validation.yes') : trans('validation.no');
             } elseif ($field['type'] == 'date') {
@@ -243,8 +245,9 @@ class FormSubmissionFormatter
                     })->toArray();
                     if ($this->createLinks) {
                         $field['value'] = implode(', ', collect($files)->map(function ($file) {
-                            return '<a href="' . $file . '">' . $file . '</a>';
+                            return $this->buildSafeHtmlLink($file, $file);
                         })->toArray());
+                        $field['value_is_html'] = true;
                     } else {
                         $field['value'] = implode(', ', $files);
                     }
@@ -274,10 +277,55 @@ class FormSubmissionFormatter
                     $field['value'] = $data[$field['id']];
                 }
             }
+
+            if ($this->createLinks && empty($field['value_is_html'])) {
+                $field['value'] = $this->escapeHtmlValue($field['value']);
+            }
+
             $transformedFields[] = $field;
         }
 
         return $transformedFields;
+    }
+
+    private function formatUrlLink(mixed $value): string
+    {
+        $url = is_scalar($value) ? (string) $value : '';
+
+        if (!filter_var($url, FILTER_VALIDATE_URL)) {
+            return $this->escapeHtmlValue($value);
+        }
+
+        return $this->buildSafeHtmlLink($url, $url);
+    }
+
+    private function formatEmailLink(mixed $value): string
+    {
+        $email = is_scalar($value) ? (string) $value : '';
+
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return $this->escapeHtmlValue($value);
+        }
+
+        return $this->buildSafeHtmlLink('mailto:' . $email, $email);
+    }
+
+    private function buildSafeHtmlLink(string $href, string $label): string
+    {
+        return '<a href="' . e($href) . '">' . e($label) . '</a>';
+    }
+
+    private function escapeHtmlValue(mixed $value): string
+    {
+        if (is_array($value)) {
+            $value = implode(', ', $value);
+        } elseif (is_bool($value)) {
+            $value = $value ? '1' : '0';
+        } elseif ($value === null) {
+            $value = '';
+        }
+
+        return e((string) $value);
     }
 
     private function initIdFormData()

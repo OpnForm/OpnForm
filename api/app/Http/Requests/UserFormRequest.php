@@ -200,6 +200,7 @@ abstract class UserFormRequest extends \Illuminate\Foundation\Http\FormRequest
             // Settings
             'settings' => 'nullable|array',
             'settings.navigation_arrows' => 'sometimes|boolean',
+            'settings.auto_next' => 'sometimes|boolean',
 
             // Analytics
             'analytics' => 'nullable|array',

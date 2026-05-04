@@ -3,14 +3,16 @@
     class="w-full mx-auto max-w-266 flex items-center justify-center relative z-10"
   >
     <div
-      class="rounded-[12px] bg-[#D5E2FF] border border-gray-200 shadow-xl overflow-visible relative p-2.5 w-full"
+      class="rounded-[22px] bg-[#D5E2FF] border border-gray-200 shadow-xl overflow-visible relative p-2.5 w-full"
     >
       <!-- <iframe
         class="min-h-150 sm:min-h-137.5 lg:min-h-175 bg-white rounded-[12px]"
         style="border: none; width: 100%"
         :src="url"
       /> -->
-      <div class="min-h-[90vh] w-full overflow-hidden bg-white rounded-[12px]">
+      <div
+        class="min-h-[58vh] sm:min-h-[62vh] lg:min-h-[68vh] w-full overflow-hidden bg-white rounded-[14px]"
+      >
         <div
           class="flex items-center gap-3 justify-between border-b-[0.5px] border-gray-100 px-6 py-1"
         >

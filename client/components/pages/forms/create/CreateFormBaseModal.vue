@@ -1,7 +1,7 @@
 <template>
   <UModal
     v-model:open="isOpen"
-    :ui="{ content: 'sm:max-w-3xl' }"
+    :ui="{ content: 'sm:max-w-2xl' }"
     :dismissible="!aiForm.busy"
   >
     <template #content>
@@ -82,7 +82,7 @@
                   label="Back to styles"
                 />
               </div>
-              <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <TrackClick name="select_form_base" :properties="{ base: 'contact-form' }">
                   <div
                     role="button"
@@ -138,6 +138,23 @@
                     />
                   </TrackClick>
                 </div>
+                <TrackClick name="select_form_base" :properties="{ base: 'import' }">
+                  <div
+                    role="button"
+                    class="rounded-md border p-6 flex flex-col items-center cursor-pointer hover:bg-neutral-50"
+                    @click="showImportModal = true"
+                  >
+                    <div class="p-4">
+                      <UIcon
+                        name="i-heroicons-arrow-down-tray"
+                        class="w-8 h-8 text-blue-500"
+                      />
+                    </div>
+                    <p class="font-medium">
+                      Import form
+                    </p>
+                  </div>
+                </TrackClick>
               </div>
             </div>
 
@@ -190,11 +207,19 @@
       </div>
     </template>
   </UModal>
+
+  <FormImportModal
+    :show="showImportModal"
+    :default-source="defaultImportSource"
+    @close="showImportModal = false"
+    @imported="handleFormImported"
+  />
 </template>
 
 <script setup>
 import SlidingTransition from '~/components/global/transitions/SlidingTransition.vue'
 import AIFormLoadingMessages from "~/components/open/forms/components/AIFormLoadingMessages.vue"
+import FormImportModal from "~/components/forms/import/FormImportModal.vue"
 import { formsApi } from "~/api/forms"
 import { useElementSize } from '@vueuse/core'
 import TrackClick from '~/components/global/TrackClick.vue'
@@ -203,9 +228,10 @@ import { ensureSettingsObject } from '~/composables/forms/initForm'
 
 const props = defineProps({
   show: { type: Boolean, required: true },
+  defaultImportSource: { type: String, default: null },
 })
 
-const emit = defineEmits(["close", "form-generated"])
+const emit = defineEmits(["close", "form-generated", "form-imported"])
 
 // Modal state
 const isOpen = computed({
@@ -227,6 +253,7 @@ const aiForm = useForm({
   form_prompt: "",
 })
 const loading = ref(false)
+const showImportModal = ref(false)
 
 const transitionDurationMs = 300
 const step1Ref = ref(null)
@@ -246,6 +273,7 @@ watch(() => props.show, (open) => {
   if (open) {
     currentStep.value = 1
     selectedStyle.value = 'classic'
+    showImportModal.value = !!props.defaultImportSource
   }
 })
 
@@ -261,6 +289,8 @@ function selectStyle(style) {
       ensureSettingsObject(workingFormStore.content)
       // Enable navigation arrows by default in focused mode
       workingFormStore.content.settings.navigation_arrows = true
+      // Enable auto-next by default in focused mode
+      workingFormStore.content.settings.auto_next = true
       // Seed first block image to highlight focused mode
       seedFocusedFirstBlockImage(workingFormStore.content)
     }
@@ -270,6 +300,12 @@ function selectStyle(style) {
 
 function goBackToStep1() {
   currentStep.value = 1
+}
+
+const handleFormImported = (formData) => {
+  showImportModal.value = false
+  emit('form-imported', formData)
+  emit('close')
 }
 
 const generateForm = () => {
