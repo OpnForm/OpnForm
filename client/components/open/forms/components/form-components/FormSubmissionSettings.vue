@@ -285,6 +285,7 @@
 
 <script setup>
 import PlanTag from "~/components/app/PlanTag.vue"
+import { usePdfTemplates } from '~/composables/query/forms/usePdfTemplates'
 
 const workingFormStore = useWorkingFormStore()
 const { content: form } = storeToRefs(workingFormStore)
