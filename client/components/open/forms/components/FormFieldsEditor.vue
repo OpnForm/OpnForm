@@ -1,5 +1,5 @@
 <template>
-  <div class="relative h-[calc(100vh-55px)] overflow-y-auto">
+  <div class="relative min-h-0">
     <div class="flex gap-2 sticky top-0 bg-white border-b z-10 p-4">
       <UTooltip
         text="Shortcut"
