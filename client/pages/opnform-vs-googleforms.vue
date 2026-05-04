@@ -1,9 +1,10 @@
 <template>
   <ComparisonPage
-    default-import-source="google_forms"
     competitor-name="Google Forms"
     competitor-icon="i-simple-icons-googleforms"
     competitor-icon-class="text-[#7248B9]"
+    hero-import-source="google_forms"
+    hero-secondary-cta-label="Have a Google Form? Import it now"
     :hero-title="'OpnForm — The Open-Source Google Forms Alternative'"
     :free-plan-comparison="freePlanComparison"
     :switch-reasons="switchReasons"

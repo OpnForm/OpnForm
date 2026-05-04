@@ -1,8 +1,8 @@
 <template>
   <ComparisonPage
-    default-import-source="typeform"
     competitor-name="Typeform"
     competitor-icon="opnform:typeform"
+    hero-import-source="typeform"
     :hero-title="'OpnForm — the powerful Typeform alternative'"
     :free-plan-comparison="freePlanComparison"
     :switch-reasons="switchReasons"

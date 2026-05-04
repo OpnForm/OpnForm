@@ -1,8 +1,8 @@
 <template>
   <ComparisonPage
-    default-import-source="fillout"
     competitor-name="Fillout"
     competitor-icon="opnform:fillout"
+    hero-import-source="fillout"
     :hero-title="'OpnForm — The Open-Source Fillout Alternative'"
     :free-plan-comparison="freePlanComparison"
     :switch-reasons="switchReasons"

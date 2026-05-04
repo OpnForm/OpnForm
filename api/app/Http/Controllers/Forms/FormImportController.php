@@ -4,24 +4,25 @@ namespace App\Http\Controllers\Forms;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\FormImportRequest;
-use App\Models\Forms\Form;
-use App\Models\Workspace;
 use App\Service\FormImport\FormImportException;
 use App\Service\FormImport\FormImportService;
+use Illuminate\Auth\AuthenticationException;
+use Illuminate\Support\Facades\Auth;
 
 class FormImportController extends Controller
 {
     public function __construct(
         private FormImportService $importService,
     ) {
-        $this->middleware('auth');
     }
 
     public function import(FormImportRequest $request)
     {
-        $workspace = Workspace::findOrFail($request->get('workspace_id'));
-        $this->authorize('ownsWorkspace', $workspace);
-        $this->authorize('create', [Form::class, $workspace]);
+        $this->hydrateAuthenticatedUserIfPresent();
+
+        if ($request->get('source') === 'google_forms' && ! Auth::check()) {
+            throw new AuthenticationException('Please log in to import from Google Forms.');
+        }
 
         try {
             $result = $this->importService->import(
@@ -46,5 +47,21 @@ class FormImportController extends Controller
             'source' => $request->get('source'),
             'fields_count' => count($result['properties'] ?? []),
         ]);
+    }
+
+    private function hydrateAuthenticatedUserIfPresent(): void
+    {
+        if (Auth::check()) {
+            return;
+        }
+
+        if (Auth::guard('api')->check()) {
+            Auth::shouldUse('api');
+            return;
+        }
+
+        if (Auth::guard('sanctum')->check()) {
+            Auth::setUser(Auth::guard('sanctum')->user());
+        }
     }
 }

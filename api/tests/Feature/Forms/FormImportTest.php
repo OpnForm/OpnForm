@@ -8,9 +8,6 @@ use Illuminate\Support\Facades\Http;
 // ---------------------------------------------------------------------------
 
 it('returns prefill data for a valid import request', function () {
-    $user = $this->actingAsUser();
-    $workspace = $this->createUserWorkspace($user);
-
     Http::fake([
         '*.typeform.com/*' => Http::response(typeformHtmlFixture(), 200),
     ]);
@@ -18,7 +15,6 @@ it('returns prefill data for a valid import request', function () {
     $this->postJson(route('open.forms.import'), [
         'source' => 'typeform',
         'import_data' => ['url' => 'https://example.typeform.com/to/abc123'],
-        'workspace_id' => $workspace->id,
     ])
         ->assertSuccessful()
         ->assertJsonStructure([
@@ -33,9 +29,6 @@ it('returns prefill data for a valid import request', function () {
 });
 
 it('does not persist a form record on import', function () {
-    $user = $this->actingAsUser();
-    $workspace = $this->createUserWorkspace($user);
-
     Http::fake([
         '*.typeform.com/*' => Http::response(typeformHtmlFixture(), 200),
     ]);
@@ -45,39 +38,46 @@ it('does not persist a form record on import', function () {
     $this->postJson(route('open.forms.import'), [
         'source' => 'typeform',
         'import_data' => ['url' => 'https://example.typeform.com/to/abc123'],
-        'workspace_id' => $workspace->id,
     ])->assertSuccessful();
 
     expect(\App\Models\Forms\Form::count())->toBe($countBefore);
 });
 
 it('rejects import with missing URL', function () {
-    $user = $this->actingAsUser();
-    $workspace = $this->createUserWorkspace($user);
-
     $this->postJson(route('open.forms.import'), [
         'source' => 'typeform',
         'import_data' => [],
-        'workspace_id' => $workspace->id,
     ])->assertStatus(422);
 });
 
 it('rejects import with unsupported source', function () {
-    $user = $this->actingAsUser();
-    $workspace = $this->createUserWorkspace($user);
-
     $this->postJson(route('open.forms.import'), [
         'source' => 'notion',
         'import_data' => ['url' => 'https://notion.so/form/abc'],
-        'workspace_id' => $workspace->id,
     ])->assertStatus(422);
 });
 
-it('rejects unauthenticated import requests', function () {
+it('allows unauthenticated URL-based import requests', function () {
+    Http::fake([
+        '*.typeform.com/*' => Http::response(typeformHtmlFixture(), 200),
+    ]);
+
     $this->postJson(route('open.forms.import'), [
         'source' => 'typeform',
         'import_data' => ['url' => 'https://example.typeform.com/to/abc123'],
-        'workspace_id' => 1,
+    ])->assertSuccessful();
+});
+
+it('rejects unauthenticated Google Forms import requests', function () {
+    $user = $this->createUser();
+    $provider = OAuthProvider::factory()->create(['user_id' => $user->id]);
+
+    $this->postJson(route('open.forms.import'), [
+        'source' => 'google_forms',
+        'import_data' => [
+            'url' => 'https://docs.google.com/forms/d/1abc123/edit',
+            'oauth_provider_id' => $provider->id,
+        ],
     ])->assertStatus(401);
 });
 
@@ -1021,7 +1021,6 @@ describe('GoogleFormsImporter', function () {
 describe('Google Forms controller flow', function () {
     it('resolves Google token via oauth_provider_id', function () {
         $user = $this->actingAsUser();
-        $workspace = $this->createUserWorkspace($user);
 
         $provider = OAuthProvider::factory()->create([
             'user_id' => $user->id,
@@ -1039,7 +1038,6 @@ describe('Google Forms controller flow', function () {
                 'url' => 'https://docs.google.com/forms/d/1abc123/edit',
                 'oauth_provider_id' => $provider->id,
             ],
-            'workspace_id' => $workspace->id,
         ])
             ->assertSuccessful()
             ->assertJsonPath('form.title', 'Google Test Form');
@@ -1051,13 +1049,11 @@ describe('Google Forms controller flow', function () {
     });
 
     it('returns error when oauth_provider_id is missing', function () {
-        $user = $this->actingAsUser();
-        $workspace = $this->createUserWorkspace($user);
+        $this->actingAsUser();
 
         $this->postJson(route('open.forms.import'), [
             'source' => 'google_forms',
             'import_data' => ['url' => 'https://docs.google.com/forms/d/1abc123/edit'],
-            'workspace_id' => $workspace->id,
         ])->assertStatus(422);
     });
 });

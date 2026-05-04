@@ -1,8 +1,8 @@
 <template>
   <ComparisonPage
-    default-import-source="tally"
     competitor-name="Tally"
     competitor-icon="opnform:tally"
+    hero-import-source="tally"
     :hero-title="'OpnForm — The Open-Source Tally Alternative'"
     :free-plan-comparison="freePlanComparison"
     :switch-reasons="switchReasons"

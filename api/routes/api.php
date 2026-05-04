@@ -51,6 +51,14 @@ if (config('app.self_hosted')) {
     Route::get('/healthcheck', [HealthCheckController::class, 'apiCheck']);
 }
 
+Route::prefix('open')->name('open.')->group(function () {
+    Route::prefix('forms')->name('forms.')->group(function () {
+        Route::post('/import', [FormImportController::class, 'import'])
+            ->middleware('throttle:10,1')
+            ->name('import');
+    });
+});
+
 Route::group(['middleware' => 'auth.multi'], function () {
     Route::post('logout', [LoginController::class, 'logout'])->name('logout');
     Route::post('auth/oidc/link', [OidcLinkController::class, 'link'])->name('oidc.link');
@@ -187,9 +195,6 @@ Route::group(['middleware' => 'auth.multi'], function () {
         });
 
         Route::prefix('forms')->name('forms.')->group(function () {
-            Route::post('/import', [FormImportController::class, 'import'])
-                ->middleware('throttle:10,1')
-                ->name('import');
             Route::post('/', [FormController::class, 'store'])->name('store');
             Route::post('/{form}/workspace/{workspace}', [FormController::class, 'updateWorkspace'])->name('workspace.update');
             Route::put('/{form}', [FormController::class, 'update'])->name('update');
