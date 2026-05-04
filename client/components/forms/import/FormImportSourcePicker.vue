@@ -2,6 +2,7 @@
   <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
     <div
       v-for="source in sources"
+      :key="source.id"
       role="button"
       class="rounded-md border p-4 flex h-full flex-col items-center cursor-pointer hover:bg-neutral-50"
       @click="$emit('select', source.id)"
@@ -22,7 +23,11 @@
 <script setup>
 defineEmits(['select'])
 
-const sources = [
+const props = defineProps({
+  allowGoogleForms: { type: Boolean, default: true },
+})
+
+const allSources = [
   {
     id: 'typeform',
     label: 'Typeform',
@@ -48,4 +53,8 @@ const sources = [
     iconClass: 'w-10 h-10 text-[#7248B9]',
   },
 ]
+
+const sources = computed(() => allSources.filter((source) => {
+  return props.allowGoogleForms || source.id !== 'google_forms'
+}))
 </script>

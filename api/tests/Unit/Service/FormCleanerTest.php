@@ -159,7 +159,7 @@ describe('FormCleaner tier-based cleaning', function () {
 
         $form = $this->createForm($user, $workspace, [
             'enable_partial_submissions' => true,
-            'editable_submissions' => true,
+            'enable_ip_tracking' => true,
             'no_branding' => true,
         ]);
 
@@ -170,7 +170,7 @@ describe('FormCleaner tier-based cleaning', function () {
 
         // Business features should be cleaned for pro tier
         expect($data['enable_partial_submissions'])->toBeFalse();
-        expect($data['editable_submissions'])->toBeFalse();
+        expect($data['enable_ip_tracking'])->toBeFalse();
 
         // Pro features should remain
         expect($data['no_branding'])->toBeTrue();

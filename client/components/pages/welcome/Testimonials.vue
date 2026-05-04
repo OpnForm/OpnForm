@@ -6,14 +6,15 @@
     ></div>
 
     <div class="relative z-10 mx-auto max-w-266">
-      <div class="mt-12 sm:mt-16 grid gap-6 lg:grid-cols-3">
+      <div class="grid gap-6 lg:grid-cols-3">
         <div
           v-for="item in testimonials"
           :key="item.name"
           class="relative rounded-3xl border border-gray-200 bg-white p-6 sm:p-8 shadow-sm flex flex-col justify-between"
         >
           <div
-            class="absolute left-0 top-10 h-10 w-0.5 bg-blue-600 rounded-r-full"
+            :class="item.accentClass"
+            class="absolute left-0 top-10 h-10 w-0.5 rounded-r-full"
             aria-hidden="true"
           ></div>
           <div class="text-2xl leading-8 font-medium text-gray-950">
@@ -22,24 +23,40 @@
 
           <div class="mt-10 flex items-center gap-4">
             <div
-              class="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center"
+              :class="item.avatarClass"
+              class="flex h-10 w-10 items-center justify-center rounded-full ring-1"
             >
               <span
-                class="text-base leading-7 traking-[-1.1%] font-medium text-blue-700"
+                :class="item.avatarTextClass"
+                class="text-sm leading-7 tracking-[-1.1%] font-medium"
               >
-                {{ getInitial(item.name) }}
+                {{ getInitials(item.name) }}
               </span>
             </div>
             <div>
-              <div
-                class="text-base leading-7 traking-[-1.1%] font-medium text-gray-950"
-              >
-                {{ item.name }}
+              <div class="flex items-baseline justify-between gap-3">
+                <div
+                  class="text-base leading-7 traking-[-1.1%] font-medium text-gray-950"
+                >
+                  {{ item.name }}
+                </div>
+                <span
+                  class="shrink-0 text-sm leading-7 tracking-[-0.6%] font-medium text-gray-600 whitespace-nowrap"
+                >
+                  {{ item.date }}
+                </span>
               </div>
               <div
                 class="mt-1 text-sm leading-5 tracking-[-0.6%] font-medium text-gray-600"
               >
-                {{ item.role }}
+                <div class="flex items-center gap-0.5">
+                  <Icon
+                    v-for="starIndex in item.rating"
+                    :key="`${item.name}-star-${starIndex}`"
+                    name="i-heroicons-star-solid"
+                    class="h-4 w-4 text-amber-400"
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -72,25 +89,50 @@ defineProps({
 const testimonials = [
   {
     quote:
-      "We switched from Typeform in under 10 minutes — and instantly saved hundreds per month.",
-    name: "Lena C.",
-    role: "Marketing Manager",
+      "Easy integrations, lots of flexibility, a responsive team, fast product updates, and the bonus of being open source.",
+    name: "kristelle F.",
+    rating: 5,
+    date: "Mar 2026",
+    accentClass: "bg-blue-600",
+    avatarClass: "bg-blue-50 ring-blue-100",
+    avatarTextClass: "text-blue-700",
   },
   {
     quote:
-      "OpnForm gives us complete control over design and data. It's everything Typeform does — without limits.",
-    name: "Andre M.",
-    role: "Developer",
+      "A strong fit for workflow tools: field management, conditional logic, and webhooks are already there and save serious build time.",
+    name: "Alexandre N.",
+    rating: 5,
+    date: "Nov 2025",
+    accentClass: "bg-emerald-600",
+    avatarClass: "bg-emerald-50 ring-emerald-100",
+    avatarTextClass: "text-emerald-700",
   },
   {
     quote:
-      "I love that it’s open source. We self-hosted and customized the UX completely.",
-    name: "Ravi P.",
-    role: "CTO",
+      "Setup felt easy from day one, and Focused mode makes it feel like the best of classic forms and Typeform-style experiences.",
+    name: "Axel A.",
+    rating: 5,
+    date: "Oct 2025",
+    accentClass: "bg-violet-600",
+    avatarClass: "bg-violet-50 ring-violet-100",
+    avatarTextClass: "text-violet-700",
   },
 ]
 
-function getInitial(name) {
-  return (name || "?").trim().charAt(0).toUpperCase() || "?"
+function getInitials(name) {
+  const parts = (name || "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+
+  if (parts.length === 0) {
+    return "??"
+  }
+
+  if (parts.length === 1) {
+    return parts[0].slice(0, 2).toUpperCase()
+  }
+
+  return `${parts[0].charAt(0)}${parts[parts.length - 1].charAt(0)}`.toUpperCase()
 }
 </script>

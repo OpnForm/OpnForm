@@ -293,6 +293,14 @@ const redirect = () => {
     const afterLoginMessage = useWindowMessage(WindowMessageTypes.AFTER_LOGIN)
     afterLoginMessage.send(window)
   } else {
+    const intendedUrlCookie = useCookie("intended_url")
+
+    if (intendedUrlCookie.value) {
+      router.push(intendedUrlCookie.value)
+      intendedUrlCookie.value = null
+      return
+    }
+
     // If is invite just redirect to home
     if (form.invite_token) {
       useAlert().success("You have successfully accepted the invite and joined this workspace.")

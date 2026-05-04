@@ -152,14 +152,14 @@
                     class="w-4 h-5 text-emerald-600"
                     name="heroicons:check-20-solid"
                   />
-                  API
+                  API access
                 </li>
                 <li class="flex items-center gap-2.5">
                   <Icon
                     class="w-4 h-5 text-emerald-600"
                     name="heroicons:check-20-solid"
                   />
-                  Basic integrations
+                  Basic integrations & webhooks
                 </li>
               </ul>
             </div>
@@ -278,6 +278,34 @@
                     class="w-4 h-5 text-emerald-600"
                     name="heroicons:check-20-solid"
                   />
+                  Analytics dashboard
+                </li>
+                <li class="flex items-center gap-2.5">
+                  <Icon
+                    class="w-4 h-5 text-emerald-600"
+                    name="heroicons:check-20-solid"
+                  />
+                  AI form generation
+                </li>
+                <li class="flex items-center gap-2.5">
+                  <Icon
+                    class="w-4 h-5 text-emerald-600"
+                    name="heroicons:check-20-solid"
+                  />
+                  Editable submissions
+                </li>
+                <li class="flex items-center gap-2.5">
+                  <Icon
+                    class="w-4 h-5 text-emerald-600"
+                    name="heroicons:check-20-solid"
+                  />
+                  Unique submission IDs
+                </li>
+                <li class="flex items-center gap-2.5">
+                  <Icon
+                    class="w-4 h-5 text-emerald-600"
+                    name="heroicons:check-20-solid"
+                  />
                   Multiple workspaces
                 </li>
               </ul>
@@ -380,13 +408,6 @@
                     name="heroicons:check-20-solid"
                   />
                   Versioning
-                </li>
-                <li class="flex items-center gap-2.5">
-                  <Icon
-                    class="w-4 h-5 text-emerald-600"
-                    name="heroicons:check-20-solid"
-                  />
-                  Analytics dashboard
                 </li>
                 <li class="flex items-center gap-2.5">
                   <Icon

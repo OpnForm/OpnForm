@@ -6,6 +6,11 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class FormImportRequest extends FormRequest
 {
+    public function authorize(): bool
+    {
+        return true;
+    }
+
     public function rules(): array
     {
         return [
@@ -13,7 +18,6 @@ class FormImportRequest extends FormRequest
             'import_data' => 'required|array',
             'import_data.url' => 'required|url',
             'import_data.oauth_provider_id' => 'nullable|integer|exists:oauth_providers,id|required_if:source,google_forms',
-            'workspace_id' => 'required|integer|exists:workspaces,id',
         ];
     }
 
