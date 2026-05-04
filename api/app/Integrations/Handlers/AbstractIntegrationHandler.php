@@ -57,9 +57,10 @@ abstract class AbstractIntegrationHandler
         if (!$this->formIntegration->logic || empty((array) $this->formIntegration->logic)) {
             return true;
         }
-        return FormLogicConditionChecker::conditionsMet(
+        return FormLogicConditionChecker::conditionsMetWithForm(
             json_decode(json_encode($this->formIntegration->logic), true),
-            $this->submissionData
+            $this->submissionData,
+            $this->form
         );
     }
 

@@ -63,7 +63,7 @@ class MentionParser
                 if ($value !== null) {
                     $textNode = $doc->createTextNode(is_array($value) ? implode($this->urlFriendly ? ',+' : ', ', $value) : $value);
                     $element->parentNode->replaceChild($textNode, $element);
-                } elseif ($fallback) {
+                } elseif ($fallback !== '') {
                     $textNode = $doc->createTextNode($fallback);
                     $element->parentNode->replaceChild($textNode, $element);
                 } else {

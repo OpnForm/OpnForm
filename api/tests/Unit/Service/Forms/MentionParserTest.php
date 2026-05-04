@@ -25,6 +25,16 @@ describe('MentionParser', function () {
         expect($result)->toBe('Guest');
     });
 
+    it('uses zero fallback when value is not found', function () {
+        $content = '<span mention mention-field-id="456" mention-fallback="0">Name</span>';
+        $data = [];
+
+        $parser = new MentionParser($content, $data);
+        $result = $parser->parse();
+
+        expect($result)->toBe('0');
+    });
+
     it('removes the element when no value and no fallback is provided', function () {
         $content = '<div>Hello <span mention mention-field-id="789" mention-fallback="">Name</span>!</div>';
         $data = [];

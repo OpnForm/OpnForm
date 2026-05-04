@@ -9,7 +9,7 @@
     />
     <VTransition name="fade">
       <FormEditor
-        v-if="stateReady"
+        v-if="editorReady"
         ref="editor"
         class="w-full flex flex-grow"
         :error="error"
@@ -64,6 +64,9 @@ const stateReady = ref(false)
 const error = ref("")
 const isGuest = ref(true)
 const showInitialFormModal = ref(false)
+const editorBootstrapped = ref(false)
+const hasInitialTemplate = computed(() => !!(template && template.structure))
+const editorReady = computed(() => stateReady.value && (editorBootstrapped.value || hasInitialTemplate.value))
 const supportedGuestImportSources = ['typeform', 'tally', 'fillout']
 const defaultImportSource = computed(() => {
   const source = route.query.import
@@ -95,6 +98,18 @@ onMounted(() => {
     showInitialFormModal.value = true
   }
   stateReady.value = true
+
+  const scheduleEditorBootstrap = () => {
+    editorBootstrapped.value = true
+  }
+
+  if (import.meta.client && typeof window.requestIdleCallback === 'function') {
+    window.requestIdleCallback(scheduleEditorBootstrap, { timeout: 120 })
+  } else if (import.meta.client) {
+    window.setTimeout(scheduleEditorBootstrap, 16)
+  } else {
+    editorBootstrapped.value = true
+  }
 
   // Set up window message listener for after-login
   const afterLoginMessage = useWindowMessage(WindowMessageTypes.AFTER_LOGIN)

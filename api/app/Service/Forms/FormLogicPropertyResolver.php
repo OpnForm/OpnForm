@@ -2,6 +2,8 @@
 
 namespace App\Service\Forms;
 
+use App\Models\Forms\Form;
+
 class FormLogicPropertyResolver
 {
     private $property = [];
@@ -10,21 +12,34 @@ class FormLogicPropertyResolver
 
     private $logic = false;
 
-    public function __construct(private array $prop, private array $values)
+    public function __construct(private array $prop, private array $values, private ?Form $form = null)
     {
         $this->property = $prop;
         $this->formData = $values;
         $this->logic = isset($this->property['logic']) ? $this->property['logic'] : false;
     }
 
-    public static function isRequired(array $property, array $values): bool
+    public static function isRequired(array $property, array $values, ?Form $form = null): bool
     {
-        return (new self($property, $values))->shouldBeRequired();
+        return (new self($property, $values, $form))->shouldBeRequired();
     }
 
-    public static function isHidden(array $property, array $values): bool
+    public static function isHidden(array $property, array $values, ?Form $form = null): bool
     {
-        return (new self($property, $values))->shouldBeHidden();
+        return (new self($property, $values, $form))->shouldBeHidden();
+    }
+
+    private function evaluateConditions(): bool
+    {
+        if ($this->form) {
+            return FormLogicConditionChecker::conditionsMetWithForm(
+                $this->logic['conditions'],
+                $this->formData,
+                $this->form
+            );
+        }
+
+        return FormLogicConditionChecker::conditionsMet($this->logic['conditions'], $this->formData);
     }
 
     public function shouldBeRequired(): bool
@@ -36,7 +51,7 @@ class FormLogicPropertyResolver
             return $isRequired;
         }
 
-        $conditionsMet = FormLogicConditionChecker::conditionsMet($this->logic['conditions'], $this->formData);
+        $conditionsMet = $this->evaluateConditions();
 
         // If conditions are met and we have actions
         if ($conditionsMet && !empty($this->logic['actions'])) {
@@ -63,7 +78,7 @@ class FormLogicPropertyResolver
             return $this->property['hidden'];
         }
 
-        $conditionsMet = FormLogicConditionChecker::conditionsMet($this->logic['conditions'], $this->formData);
+        $conditionsMet = $this->evaluateConditions();
         if ($conditionsMet && $this->property['hidden'] && count($this->logic['actions']) > 0 && in_array('show-block', $this->logic['actions'])) {
             return false;
         } elseif ($conditionsMet && ! $this->property['hidden'] && count($this->logic['actions']) > 0 && in_array('hide-block', $this->logic['actions'])) {

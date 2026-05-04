@@ -121,7 +121,7 @@ import FormEditorPreview from "./form-components/FormEditorPreview.vue"
 import { useFormLogic } from "~/composables/forms/useFormLogic.js"
 import { captureException } from "@sentry/core"
 import FormEditorErrorHandler from '~/components/open/forms/components/FormEditorErrorHandler.vue'
-import { setFormDefaults } from '~/composables/forms/initForm.js'
+import { setFormDefaults, ensureSettingsObject } from '~/composables/forms/initForm.js'
 import { breakpointsTailwind, useBreakpoints } from '@vueuse/core'
 import LogicConfirmationModal from '~/components/forms/heavy/LogicConfirmationModal.vue'
 import { formsApi } from "~/api"
@@ -191,6 +191,18 @@ watch(isVisible, (newValue) => {
 
 // Composables
 const { content: form } = storeToRefs(useWorkingFormStore())
+
+watch(
+  () => form.value,
+  (f) => {
+    if (!f || typeof f.data !== 'function') {
+      return
+    }
+    ensureSettingsObject(f)
+  },
+  { flush: 'sync', immediate: true },
+)
+
 const { current: workspace } = useCurrentWorkspace()
 
 // Initialize TanStack Query mutations for forms
