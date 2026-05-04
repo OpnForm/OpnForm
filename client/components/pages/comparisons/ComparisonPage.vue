@@ -53,9 +53,10 @@
                 class="w-fit pl-4 pr-3.5 py-2.5 rounded-[12px] text-base leading-7 tracking-[-1.1%] font-medium"
               />
               <UButton
+                v-if="defaultImportSource"
                 size="lg"
                 variant="outline"
-                :to="heroSecondaryCtaTo"
+                @click="openFormImportModal"
                 :label="resolvedHeroSecondaryCtaLabel"
                 class="w-fit px-4 py-2.5 rounded-[12px] text-base leading-7 tracking-[-1.1%] font-medium"
               />
@@ -643,14 +644,27 @@
 
     <OpenFormFooter />
   </div>
+
+  <FormImportModal
+    :default-source="defaultImportSource"
+    :show="showImportModal"
+    :workspace-id="workspace?.id"
+    @close="showImportModal = false"
+    @imported="handleFormImported"
+  />
 </template>
 
 <script setup>
 import LiveDemo from "~/components/pages/welcome/LiveDemo.vue"
 import Testimonials from "~/components/pages/welcome/Testimonials.vue"
 import { useIsAuthenticated } from "~/composables/useAuthFlow"
+import FormImportModal from "~/components/forms/import/FormImportModal.vue"
 
 const props = defineProps({
+  defaultImportSource: {
+    type: String, 
+    default: null,
+  },
   competitorName: {
     type: String,
     required: true,
@@ -671,10 +685,6 @@ const props = defineProps({
   heroSecondaryCtaLabel: {
     type: String,
     default: null,
-  },
-  heroSecondaryCtaTo: {
-    type: [String, Object],
-    default: "#",
   },
   featureSectionSubtitle: {
     type: String,
@@ -700,6 +710,17 @@ const props = defineProps({
 })
 
 const { isAuthenticated: authenticated } = useIsAuthenticated()
+const { current: workspace } = useCurrentWorkspace()
+
+const showImportModal = ref(false)
+const openFormImportModal = () => {
+  showImportModal.value = true
+}
+const handleFormImported = (formData) => {
+  showImportModal.value = false
+  localStorage.setItem('importedFormData', JSON.stringify(formData))
+  useRouter().push({ name: 'forms-create' })
+}
 
 const switchSectionTitle = computed(
   () => `Why Users Switch from ${props.competitorName} to OpnForm`,

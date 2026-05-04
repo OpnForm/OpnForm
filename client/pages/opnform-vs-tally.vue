@@ -1,5 +1,6 @@
 <template>
   <ComparisonPage
+    default-import-source="tally"
     competitor-name="Tally"
     competitor-icon="opnform:tally"
     :hero-title="'OpnForm — The Open-Source Tally Alternative'"

@@ -1,5 +1,6 @@
 <template>
   <ComparisonPage
+    default-import-source="google_forms"
     competitor-name="Google Forms"
     competitor-icon="i-simple-icons-googleforms"
     competitor-icon-class="text-[#7248B9]"

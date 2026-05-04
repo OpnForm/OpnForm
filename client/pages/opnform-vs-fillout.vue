@@ -1,5 +1,6 @@
 <template>
   <ComparisonPage
+    default-import-source="fillout"
     competitor-name="Fillout"
     competitor-icon="opnform:fillout"
     :hero-title="'OpnForm — The Open-Source Fillout Alternative'"
