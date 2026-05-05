@@ -36,7 +36,7 @@ class OAuthRedirectRequest extends FormRequest
     {
         return [
             'intent.required' => 'The intent field is required.',
-            'intent.in' => 'The intent must be either `auth` or `integration`.',
+            'intent.in' => 'The intent must be `auth`, `integration`, or `forms_import`.',
         ];
     }
 }

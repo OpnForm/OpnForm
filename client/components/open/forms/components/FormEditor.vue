@@ -52,7 +52,7 @@
         <div class="w-full flex grow min-h-0 overflow-hidden relative bg-white">
           <div 
             ref="elementRef"
-            class="relative shrink-0 min-h-0 overflow-y-auto border-r"
+            class="relative shrink-0 min-h-0 overflow-hidden border-r"
             :class="isResizable ? '' : 'w-full md:w-1/2 md:max-w-xs lg:w-2/5'"
             :style="isResizable ? dynamicStyles : {}"
           >
@@ -63,21 +63,23 @@
               class="z-20"
             />
             
-            <VForm
-              size="sm"
-              @submit.prevent=""
-            >
-              <div
-                v-show="activeTab === 'build'"
+            <OverlayScrollbarsComponent defer class="h-full">
+              <VForm
+                size="sm"
+                @submit.prevent=""
               >
-                <FormFieldsEditor />
-              </div>
-              <div
-                v-show="activeTab === 'design'"
-              >
-                <FormCustomization />
-              </div>
-            </VForm>
+                <div
+                  v-show="activeTab === 'build'"
+                >
+                  <FormFieldsEditor />
+                </div>
+                <div
+                  v-show="activeTab === 'design'"
+                >
+                  <FormCustomization />
+                </div>
+              </VForm>
+            </OverlayScrollbarsComponent>
           </div>
 
           <FormEditorPreview />
@@ -121,7 +123,7 @@ import FormEditorPreview from "./form-components/FormEditorPreview.vue"
 import { useFormLogic } from "~/composables/forms/useFormLogic.js"
 import { captureException } from "@sentry/core"
 import FormEditorErrorHandler from '~/components/open/forms/components/FormEditorErrorHandler.vue'
-import { setFormDefaults } from '~/composables/forms/initForm.js'
+import { setFormDefaults, ensureSettingsObject } from '~/composables/forms/initForm.js'
 import { breakpointsTailwind, useBreakpoints } from '@vueuse/core'
 import LogicConfirmationModal from '~/components/forms/heavy/LogicConfirmationModal.vue'
 import { formsApi } from "~/api"
@@ -191,6 +193,18 @@ watch(isVisible, (newValue) => {
 
 // Composables
 const { content: form } = storeToRefs(useWorkingFormStore())
+
+watch(
+  () => form.value,
+  (f) => {
+    if (!f || typeof f.data !== 'function') {
+      return
+    }
+    ensureSettingsObject(f)
+  },
+  { flush: 'sync', immediate: true },
+)
+
 const { current: workspace } = useCurrentWorkspace()
 
 // Initialize TanStack Query mutations for forms

@@ -210,7 +210,7 @@
 
   <FormImportModal
     :show="showImportModal"
-    :workspace-id="workspace?.id"
+    :default-source="defaultImportSource"
     @close="showImportModal = false"
     @imported="handleFormImported"
   />
@@ -228,6 +228,7 @@ import { ensureSettingsObject } from '~/composables/forms/initForm'
 
 const props = defineProps({
   show: { type: Boolean, required: true },
+  defaultImportSource: { type: String, default: null },
 })
 
 const emit = defineEmits(["close", "form-generated", "form-imported"])
@@ -253,7 +254,6 @@ const aiForm = useForm({
 })
 const loading = ref(false)
 const showImportModal = ref(false)
-const { current: workspace } = useCurrentWorkspace()
 
 const transitionDurationMs = 300
 const step1Ref = ref(null)
@@ -273,6 +273,7 @@ watch(() => props.show, (open) => {
   if (open) {
     currentStep.value = 1
     selectedStyle.value = 'classic'
+    showImportModal.value = !!props.defaultImportSource
   }
 })
 

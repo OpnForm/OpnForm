@@ -52,9 +52,11 @@ export default {
       const workspaceId = this.form.workspace_id
       const formSlug = this.form.slug
       const customValidation = this.customValidation
+      const allFormProperties = this.form.properties
+      const allComputedVariables = this.form.computed_variables || []
       
       // Form field rules
-      const fieldRules = this.form.properties
+      const fieldRules = allFormProperties
         .filter((property) => {
           return property.type && typeof property.type === 'string' && !property.type.startsWith("nf-")
         })
@@ -75,6 +77,12 @@ export default {
                   property() {
                     return property
                   },
+                  formProperties() {
+                    return allFormProperties
+                  },
+                  formComputedVariables() {
+                    return allComputedVariables
+                  },
                   viewContext() {
                     return {
                       form_slug: formSlug,
@@ -88,8 +96,7 @@ export default {
         })
       
       // Computed variable rules
-      const computedVariables = this.form.computed_variables || []
-      const variableRules = computedVariables.map((variable) => {
+      const variableRules = allComputedVariables.map((variable) => {
         // Create a pseudo-property for computed variables
         // We'll treat them as text by default, but number conditions will also work
         const pseudoProperty = {
@@ -101,7 +108,9 @@ export default {
         
         return {
           identifier: variable.id,
-          name: `📊 ${variable.name}`,
+          name: variable.name,
+          icon: 'i-heroicons-variable',
+          iconClass: 'text-purple-600',
           component: (function () {
             return defineComponent({
               extends: ColumnCondition,
@@ -114,6 +123,12 @@ export default {
               computed: {
                 property() {
                   return pseudoProperty
+                },
+                formProperties() {
+                  return allFormProperties
+                },
+                formComputedVariables() {
+                  return allComputedVariables
                 },
                 viewContext() {
                   return {
@@ -177,4 +192,3 @@ export default {
   }
 }
 </script>
-

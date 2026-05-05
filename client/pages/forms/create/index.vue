@@ -6,6 +6,7 @@
     >
       <create-form-base-modal
         :show="showInitialFormModal"
+        :default-import-source="defaultImportSource"
         @form-generated="formGenerated"
         @form-imported="formImported"
         @close="showInitialFormModal = false"
@@ -78,6 +79,11 @@ const loading = ref(false)
 const error = ref("")
 const showInitialFormModal = ref(false)
 const formInitialHash = ref(null)
+const supportedImportSources = ['typeform', 'tally', 'fillout', 'google_forms']
+const defaultImportSource = computed(() => {
+  const source = route.query.import
+  return supportedImportSources.includes(source) ? source : null
+})
 
 watch(
   () => workspace,

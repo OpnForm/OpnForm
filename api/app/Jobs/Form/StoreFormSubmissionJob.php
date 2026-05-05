@@ -389,7 +389,7 @@ class StoreFormSubmissionJob implements ShouldQueue
     private function addHiddenPrefills(array &$formData): void
     {
         collect($this->form->properties)->filter(function ($property) {
-            return FormLogicPropertyResolver::isHidden($property, $this->submissionData);
+            return FormLogicPropertyResolver::isHidden($property, $this->submissionData, $this->form);
         })->each(function (array $property) use (&$formData) {
             // If a value is already set, we don't do anything for this property
             if (array_key_exists($property['id'], $formData) && $formData[$property['id']] !== '' && $formData[$property['id']] !== [] && !is_null($formData[$property['id']])) {

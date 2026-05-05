@@ -16,9 +16,12 @@
         @start-resize="startResize"
       />
       
-      <div class="h-full min-h-0 overflow-y-auto">
+      <OverlayScrollbarsComponent
+        defer
+        class="h-full min-h-0"
+      >
         <slot />
-      </div>
+      </OverlayScrollbarsComponent>
     </div>
   </transition>
 </template>

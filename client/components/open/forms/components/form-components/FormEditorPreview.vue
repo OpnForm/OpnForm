@@ -16,7 +16,7 @@
     }"
   >
     <div 
-      class="border rounded-lg bg-white dark:bg-notion-dark w-full grow shadow-xs transition-all overflow-y-auto flex flex-col min-h-0"
+      class="border rounded-lg bg-white dark:bg-notion-dark w-full grow shadow-xs transition-all overflow-hidden flex flex-col min-h-0"
       :class="{ 'h-full': isExpanded }"
     >
       <div class="w-full bg-white dark:bg-neutral-950 border-b border-neutral-300 dark:border-blue-900 dark:border-neutral-700 rounded-t-lg p-1.5 pl-4 pr-1.5 flex items-center gap-x-1.5">
@@ -53,10 +53,15 @@
         </UTooltip>
       </TrackClick>
       </div>
-      <div class="flex-grow overflow-y-auto relative flex flex-col transform-gpu">
+      <OverlayScrollbarsComponent
+        ref="previewScrollInnerRef"
+        defer
+        class="flex-grow min-h-0 relative flex flex-col transform-gpu"
+      >
         <!-- The transform creates a containing block so descendants with position: fixed
              are anchored to this preview container instead of the page viewport. -->
         <open-complete-form
+          v-if="previewReady"
           ref="formPreview"
           class="w-full grow min-h-0"
           :form="form"
@@ -65,6 +70,16 @@
           @restarted="previewFormSubmitted=false"
           @submitted="previewFormSubmitted=true"
         />
+        <div
+          v-else
+          class="w-full grow min-h-0 p-6 flex flex-col gap-4"
+        >
+          <USkeleton class="h-8 w-40" />
+          <USkeleton class="h-4 w-72" />
+          <USkeleton class="h-24 w-full" />
+          <USkeleton class="h-24 w-full" />
+          <USkeleton class="h-10 w-28 self-center" />
+        </div>
         <!-- Quick actions for focused presentation (only when not expanded) -->
          
         <VTransition name="fade">
@@ -106,7 +121,7 @@
             </UButtonGroup>
           </div>
         </VTransition>
-      </div>
+      </OverlayScrollbarsComponent>
     </div>
   </div>
 </template>
@@ -125,18 +140,22 @@ import { useFormEditorPreviewData } from '~/composables/useFormEditorPreviewData
 const { hideChat, showChat } = useCrisp()
 
 const workingFormStore = useWorkingFormStore()
-const { setPreviewData, setPreviewFormManager, clearData: clearPreviewData } = useFormEditorPreviewData()
+const { setPreviewFormManager, clearData: clearPreviewData } = useFormEditorPreviewData()
 
 const parent = ref(null)
+const previewScrollInnerRef = ref(null)
 const formPreview = ref(null)
 const previewFormSubmitted = ref(false)
 const isExpanded = ref(false)
+const previewReady = ref(false)
+let previewIdleHandle = null
 
 watch(isExpanded, (expanded) => {
   if (expanded)
     hideChat()
   else
     showChat()
+  nextTick(() => previewScrollInnerRef.value?.osInstance()?.update(true))
 })
 
 const { content: form } = storeToRefs(workingFormStore)
@@ -169,18 +188,32 @@ watch(formMode, () => {
 
 onMounted(() => {
   handleDarkModeChange()
+
+  const schedulePreviewMount = () => {
+    previewReady.value = true
+    previewIdleHandle = null
+  }
+
+  if (import.meta.client && typeof window.requestIdleCallback === 'function') {
+    previewIdleHandle = window.requestIdleCallback(schedulePreviewMount, { timeout: 120 })
+  } else if (import.meta.client) {
+    previewIdleHandle = window.setTimeout(schedulePreviewMount, 16)
+  } else {
+    previewReady.value = true
+  }
+
 })
 
 onUnmounted(() => {
+  if (import.meta.client && previewIdleHandle !== null) {
+    if (typeof window.cancelIdleCallback === 'function') {
+      window.cancelIdleCallback(previewIdleHandle)
+    } else {
+      window.clearTimeout(previewIdleHandle)
+    }
+  }
   clearPreviewData()
 })
-
-// Watch for preview form data changes and share them
-watch(() => formPreview.value?.formManager?.form?.data?.(), (newData) => {
-  if (newData) {
-    setPreviewData(newData)
-  }
-}, { deep: true })
 
 // Also share the form manager reference
 watch(() => formPreview.value?.formManager, (manager) => {

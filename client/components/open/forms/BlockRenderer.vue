@@ -105,7 +105,6 @@ import TextBlock from '~/components/forms/core/TextBlock.vue'
 import { shuffleArray } from '~/lib/utils.js'
 import { useWorkingFormStore } from '~/stores/working_form'
 import { useParseMention } from '@/composables/components/useParseMention'
-import { useComputedVariables } from '@/composables/forms/useComputedVariables'
 
 const props = defineProps({
   block: { type: Object, required: false, default: null },
@@ -123,9 +122,7 @@ const isAdminPreview = computed(() => strategy.value?.admin?.showAdminControls |
 // Debounce form data changes to avoid excessive re-renders when user types
 const formDataForMentions = computed(() => dataForm.value?.data?.() || {})
 const debouncedFormData = refDebounced(formDataForMentions, 300)
-
-// Initialize computed variables evaluation
-const { values: computedValues } = useComputedVariables(form, debouncedFormData)
+const computedValues = computed(() => props.formManager?.computedValues?.value || {})
 
 // Use centralized fieldState from manager
 const fieldState = computed(() => props.formManager?.fieldState)
@@ -243,7 +240,7 @@ const processMention = (content, { asText = false } = {}) => {
 const processedPlaceholder = ref('')
 const processedHelp = ref('')
 
-watch(() => [props.block?.placeholder, props.block?.help, form.value, debouncedFormData.value], () => {
+watch(() => [props.block?.placeholder, props.block?.help, debouncedFormData.value, computedValues.value], () => {
   const field = props.block
   if (!field) {
     processedPlaceholder.value = ''
@@ -367,4 +364,3 @@ const editFieldOptions = () => {
   workingFormStore.openSettingsForField(props.block, true)
 }
 </script>
-

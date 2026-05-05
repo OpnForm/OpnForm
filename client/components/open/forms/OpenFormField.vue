@@ -99,7 +99,6 @@
 </template>
 
 <script setup>
-import FormLogicPropertyResolver from "~/lib/forms/FormLogicPropertyResolver.js"
 import { FormMode, createFormModeStrategy } from "~/lib/forms/FormModeStrategy.js"
 import { useWorkingFormStore } from '~/stores/working_form'
 import BlockRenderer from './BlockRenderer.vue'
@@ -118,7 +117,6 @@ const props = defineProps({
 
 // Derive everything from formManager
 const form = computed(() => props.formManager?.config?.value || {})
-const dataForm = computed(() => props.formManager?.form || {})
 const showHidden = computed(() => props.formManager?.strategy?.value?.display?.showHiddenFields || false)
 
 // Setup stores and reactive state
@@ -131,11 +129,9 @@ const isAdminPreview = computed(() => strategy.value?.admin?.showAdminControls |
 // Computed properties
 // Field rendering is delegated to BlockRenderer
 
+const fieldState = computed(() => props.formManager?.fieldState)
+const shouldBeHidden = computed(() => fieldState.value?.getState?.(props.field)?.hidden ?? false)
 const isFieldHidden = computed(() => !showHidden.value && shouldBeHidden.value)
-
-const shouldBeHidden = computed(() => 
-  (new FormLogicPropertyResolver(props.field, dataForm.value)).isHidden()
-)
 
 // Required/props now handled inside BlockRenderer
 /* noop */
@@ -177,4 +173,3 @@ function removeField() {
  */
 
 </script>
-

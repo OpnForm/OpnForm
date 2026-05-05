@@ -21,6 +21,7 @@
       <!-- Choose source -->
       <FormImportSourcePicker
         v-if="step === 'source'"
+        :allow-google-forms="authenticated"
         @select="selectSource"
       />
 
@@ -68,7 +69,6 @@ import { formsApi } from '~/api/forms'
 
 const props = defineProps({
   show: { type: Boolean, required: true },
-  workspaceId: { type: [Number, String], default: null },
   defaultSource: { type: String, default: null },
 })
 
@@ -114,22 +114,30 @@ const sourceConfigs = {
 const sourceLabel = computed(() => sourceConfigs[selectedSource.value]?.label ?? '')
 const urlPlaceholder = computed(() => sourceConfigs[selectedSource.value]?.placeholder ?? '')
 const oauthConfig = computed(() => sourceConfigs[selectedSource.value]?.oauth ?? {})
+const guestAllowedSources = ['typeform', 'tally', 'fillout']
 
 const appStore = useAppStore()
 const { isAuthenticated: authenticated } = useIsAuthenticated()
 
 watch(() => props.show, (open) => {
   if (open) {
-    if (!authenticated.value) {
+    const defaultSource = props.defaultSource ?? null
+    if (!authenticated.value && defaultSource && !guestAllowedSources.includes(defaultSource)) {
       appStore.quickRegisterModal = true
       emit('close')
       return
     }
-    selectSource(props.defaultSource ?? null)
+    selectSource(defaultSource)
   }
 })
 
 const selectSource = (source) => {
+  if (!authenticated.value && sourceConfigs[source]?.oauth) {
+    appStore.quickRegisterModal = true
+    emit('close')
+    return
+  }
+
   selectedSource.value = source
   importForm.url = ''
   importForm.oauth_provider_id = null
@@ -156,7 +164,6 @@ const submitImport = () => {
   formsApi.import({
     source: selectedSource.value,
     import_data: importForm.data(),
-    workspace_id: props.workspaceId,
   })
     .then((response) => {
       useAlert().success(response.message || 'Form imported successfully!')

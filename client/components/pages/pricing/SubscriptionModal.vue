@@ -272,17 +272,17 @@ const PLAN_DETAILS = {
     ],
   },
   business: {
-    subtitle: 'Collaboration, advanced branding, richer analytics, and operational controls for a real team.',
+    subtitle: 'Collaboration, advanced branding, and operational controls for a real team.',
     highlights: [
       'Multiple users, multiple workspaces',
       'Advanced branding with custom CSS and fonts',
-      'Business-only analytics and submission flows',
+      'Business-only partial submissions and operational controls',
     ],
     summaryLine: 'Best when multiple teammates need to operate forms together.',
     features: [
       { icon: 'heroicons:users', title: 'Roles for your team', description: 'Invite teammates with the right level of access instead of giving everyone the same permissions.' },
       { icon: 'heroicons:paint-brush', title: 'Advanced branding', description: 'Use custom CSS, fonts, and richer styling controls to match your product or campaign.' },
-      { icon: 'heroicons:chart-bar-square', title: 'Deeper form insights', description: 'Unlock business-tier analytics and advanced submission workflows to optimize conversion.' },
+      { icon: 'heroicons:clipboard-document-check', title: 'Operational submission flows', description: 'Unlock partial submissions and team-oriented controls for more complex forms.' },
     ],
   },
   enterprise: {
@@ -433,7 +433,7 @@ const modalDescription = computed(() => {
 
   const descriptions = {
     pro: 'Remove branding, use custom domains, and unlock all Pro features.',
-    business: 'Unlock the collaboration, branding, and analytics features built for teams.',
+    business: 'Unlock the collaboration, advanced branding, and operational controls built for teams.',
     enterprise: 'Unlock enterprise-grade security, identity, and compliance controls.',
     self_hosted: 'Unlock all features and get the most out of OpnForm.',
   }

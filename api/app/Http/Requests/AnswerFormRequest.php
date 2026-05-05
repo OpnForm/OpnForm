@@ -83,8 +83,8 @@ class AnswerFormRequest extends FormRequest
                 }
             }
             if (
-                FormLogicPropertyResolver::isRequired($property, $data) &&
-                !FormLogicPropertyResolver::isHidden($property, $data)
+                FormLogicPropertyResolver::isRequired($property, $data, $this->form) &&
+                !FormLogicPropertyResolver::isHidden($property, $data, $this->form)
             ) {
                 $rules[] = 'required';
 

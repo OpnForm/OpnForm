@@ -11,9 +11,10 @@
         placeholder="Search fonts"
       />
 
-      <div
+      <OverlayScrollbarsComponent
         ref="scrollContainer"
-        class="grid grid-cols-3 gap-2 p-5 mb-5 overflow-y-scroll max-h-[24rem] border rounded-md bg-neutral-50 mt-3"
+        defer
+        class="grid grid-cols-3 gap-2 p-5 mb-5 max-h-[24rem] border rounded-md bg-neutral-50 mt-3"
       >
         <template v-if="loading">
           <div
@@ -39,7 +40,7 @@
             @select-font="selectedFont = fontName"
           />
         </template>
-      </div>
+      </OverlayScrollbarsComponent>
     </template>
 
     <template #footer>
@@ -135,7 +136,7 @@ const initializeVisibilityTracking = async () => {
   await nextTick() // Ensure DOM has been fully updated
   fontRefs.forEach((el, index) => {
     const visibility = useElementVisibility(el, {
-      root: scrollContainer.value,
+      root: scrollContainer.value?.getElement(),
       threshold: 0.1
     })
     watch(
