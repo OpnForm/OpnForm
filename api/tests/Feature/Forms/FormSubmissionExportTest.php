@@ -2,6 +2,8 @@
 
 use App\Models\User;
 use App\Models\Forms\FormSubmission;
+use App\Service\Storage\FileUploadPathService;
+use Illuminate\Support\Facades\Storage;
 
 function parseCsvRows(string $content): array
 {
@@ -319,4 +321,54 @@ it('does not include status column when partial submissions are disabled', funct
     $response->sendContent();
     $content = ob_get_clean();
     expect(str_contains($content, 'status'))->toBeFalse();
+});
+
+it('exports file urls with expiration and a valid signature', function () {
+    $user = $this->actingAsProUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace, [
+        'properties' => [
+            [
+                'id' => 'file_field',
+                'name' => 'Upload',
+                'type' => 'files',
+                'required' => false,
+            ],
+        ],
+    ]);
+
+    Storage::fake();
+    $fileName = 'test-signature.png';
+    Storage::put(FileUploadPathService::getFileUploadPath($form->id, $fileName), 'signed file content');
+
+    $form->submissions()->create([
+        'form_id' => $form->id,
+        'data' => [
+            'file_field' => [$fileName],
+        ],
+        'status' => FormSubmission::STATUS_COMPLETED,
+    ]);
+
+    $response = $this->postJson(route('open.forms.submissions.export', [
+        'form' => $form,
+    ]), [
+        'columns' => [
+            'file_field' => true,
+        ],
+    ]);
+
+    $response->assertSuccessful();
+
+    ob_start();
+    $response->sendContent();
+    $content = ob_get_clean();
+    $rows = parseCsvRows($content);
+    $fileColumnIndex = array_search('Upload', $rows[0], true);
+    $exportedFileUrl = $rows[1][$fileColumnIndex];
+
+    parse_str(parse_url($exportedFileUrl, PHP_URL_QUERY), $queryParameters);
+
+    expect($queryParameters)->toHaveKeys(['expires', 'signature']);
+
+    $this->get($exportedFileUrl)->assertOk();
 });

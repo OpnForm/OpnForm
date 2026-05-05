@@ -348,8 +348,9 @@ class FormSubmissionFormatter
             // See: https://github.com/OpnForm/OpnForm/issues/1024
             $encodedFilename = FilenameUrlEncoder::encode($file);
 
-            return $this->useSignedUrlForFiles ? URL::signedRoute(
+            return $this->useSignedUrlForFiles ? URL::temporarySignedRoute(
                 'open.forms.submissions.file',
+                now()->addMinutes(config('vapor.signed_storage_url_expires_after', 5)),
                 [$formId, $encodedFilename]
             ) : route('open.forms.submissions.file', [$formId, $encodedFilename]);
         } catch (\Exception $e) {
