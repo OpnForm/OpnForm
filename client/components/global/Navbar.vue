@@ -39,33 +39,6 @@
           >
             My Forms
           </NuxtLink>
-          <div class="relative z-20" @mouseleave="isOpen = false">
-            <button
-              :class="navLinkClasses"
-              class="flex items-center gap-1"
-              @mouseenter="isOpen = true"
-            >
-              <span>Features</span>
-              <Icon name="heroicons:chevron-down" class="w-2.5 h-4" />
-            </button>
-
-            <div
-              v-if="isOpen"
-              @mouseenter="isOpen = true"
-              @mouseleave="isOpen = false"
-              class="absolute left-0 top-full pt-2 w-56 bg-white shadow-lg rounded-md transition-all duration-150"
-            >
-              <NuxtLink to="#" :class="navLinkClasses" class="block px-4 py-2">
-                Some links
-              </NuxtLink>
-              <NuxtLink to="#" :class="navLinkClasses" class="block px-4 py-2">
-                Some links
-              </NuxtLink>
-              <NuxtLink to="#" :class="navLinkClasses" class="block px-4 py-2">
-                Some links
-              </NuxtLink>
-            </div>
-          </div>
           <NuxtLink
             v-if="$route.name !== 'enterprise'"
             :to="{ name: 'enterprise' }"
@@ -208,9 +181,6 @@ import UserDropdown from "../dashboard/UserDropdown.vue"
 import opnformConfig from "~/opnform.config.js"
 import { useFeatureFlag } from "~/composables/useFeatureFlag"
 import TrackClick from "~/components/global/TrackClick.vue"
-import { ref } from "vue"
-
-const isOpen = ref(false)
 
 // Stores & composables
 const { current: workspace } = useCurrentWorkspace()

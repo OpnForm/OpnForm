@@ -24,34 +24,32 @@
       </span>
     </div>
 
-    <div class="w-full min-h-[260px] shadow-xs overflow-hidden bg-gray-100">
-      <!-- <img
+    <div class="w-full aspect-[4/3] overflow-hidden bg-gray-100">
+      <img
         v-if="template.image_url && !imageError"
-        class="group-hover:scale-110 transition-all duration-200 h-full object-cover w-full"
+        class="group-hover:scale-105 transition-transform duration-300 h-full object-cover w-full"
         :src="template.image_url"
         alt=""
-        width="450px"
         @error="handleImageError"
-      /> -->
-      <!-- Fallback when no image or image error -->
-      <!-- <div
+      />
+      <div
         v-else
-        class="h-full w-full flex items-center justify-center bg-gray-100"
+        class="h-full w-full flex items-center justify-center"
       >
         <UIcon
           name="i-heroicons-document-duplicate"
           class="h-16 w-16 text-gray-400"
         />
-      </div> -->
+      </div>
     </div>
-    <div class="p-8">
+    <div class="px-5 pt-5 pb-4">
       <p
-        class="text-xl font-medium leading-7 text-gray-950s group-hover:text-gray-600 transition-all duration-150"
+        class="text-lg font-semibold leading-snug text-gray-900 group-hover:text-gray-600 transition-colors duration-150"
       >
         {{ template.name }}
       </p>
       <p
-        class="line-clamp-2 mt-2 text-base leading-7 tracking-[-1.1%] font-medium text-gray-600"
+        class="line-clamp-2 mt-1.5 text-sm leading-relaxed text-gray-500"
       >
         {{ cleanQuotes(template.short_description) }}
       </p>
@@ -59,7 +57,7 @@
 
     <template-tags
       :template="template"
-      class="flex mt-4 items-center flex-wrap gap-3"
+      class="flex mt-2 items-center flex-wrap gap-2 px-5 pb-5"
     />
     <NuxtLink
       v-if="template.slug"
