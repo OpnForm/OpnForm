@@ -1,5 +1,5 @@
 <template>
-  <section class="relative px-8 lg:px-12">
+  <section v-if="showCta" class="relative px-8 lg:px-12">
     <div class="max-w-336 mx-auto">
       <div
         class="relative rounded-4xl overflow-hidden bg-linear-to-br from-blue-600 via-blue-700 to-blue-800 pt-8 sm:pt-10 lg:pt-14 xl:pt-24 pl-8 md:pl-10 lg:pl-14 xl:pl-35"
@@ -166,35 +166,41 @@
   </section>
 
   <footer class="bg-white">
-    <div class="px-8 lg:px-12 pt-12 sm:pt-16 pb-14 sm:pb-28">
-      <div class="max-w-266 mx-auto grid gap-12 lg:gap-24 lg:grid-cols-12">
-        <div class="lg:col-span-4">
-          <NuxtLink
-            :to="{ name: user ? 'home' : 'index' }"
-            class="inline-flex items-center gap-2 hover:no-underline"
-          >
-            <img src="/img/logo.svg" alt="OpnForm" class="h-10 w-10" />
-            <span class="text-2xl font-semibold tracking-tight text-gray-950"
-              >OpnForm</span
+    <div class="px-5 sm:px-8 lg:px-12 pt-10 sm:pt-14 lg:pt-16 pb-12 sm:pb-16 lg:pb-24">
+      <div
+        class="max-w-266 mx-auto grid gap-10 lg:grid-cols-[minmax(220px,0.8fr)_minmax(0,2.2fr)] lg:gap-14 xl:gap-20"
+      >
+        <div
+          class="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between lg:flex-col lg:justify-start lg:gap-0"
+        >
+          <div>
+            <NuxtLink
+              :to="{ name: user ? 'home' : 'index' }"
+              class="inline-flex items-center gap-2 hover:no-underline"
             >
-          </NuxtLink>
+              <img src="/img/logo.svg" alt="OpnForm" class="h-10 w-10" />
+              <span class="text-2xl font-semibold tracking-tight text-neutral-950"
+                >OpnForm</span
+              >
+            </NuxtLink>
 
-          <div class="mt-8 flex items-center gap-3">
-            <a
-              v-for="social in socialLinks"
-              :key="social.label"
-              :href="social.href"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="h-8 w-8 rounded-full flex items-center justify-center transition-colors border border-gray-200"
-              :aria-label="social.label"
-            >
-              <UIcon :name="social.icon" class="h-4 w-4 text-gray-600" />
-            </a>
+            <div class="mt-6 flex items-center gap-3 lg:mt-8">
+              <a
+                v-for="social in socialLinks"
+                :key="social.label"
+                :href="social.href"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="h-11 w-11 sm:h-10 sm:w-10 rounded-full flex items-center justify-center transition-colors border border-neutral-200 hover:border-neutral-300 hover:bg-neutral-50"
+                :aria-label="social.label"
+              >
+                <UIcon :name="social.icon" class="h-4 w-4 text-neutral-600" />
+              </a>
+            </div>
           </div>
 
           <div
-            class="mt-8 text-sm leading-5 tracking-[0.6%] font-medium text-gray-600"
+            class="text-sm leading-5 tracking-[0.6%] font-medium text-neutral-600 sm:text-right lg:mt-8 lg:text-left"
           >
             {{ currYear }} OpnForm — All rights reserved
             <span v-if="version" class="block mt-1">
@@ -203,21 +209,32 @@
           </div>
         </div>
 
-        <div class="lg:col-span-8">
-          <div class="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-            <div v-for="group in linkGroups" :key="group.title">
+        <nav aria-label="Footer navigation" class="lg:pt-1">
+          <div class="grid grid-cols-2 gap-x-6 gap-y-9 sm:grid-cols-4 md:grid-cols-5 md:gap-x-8 lg:gap-x-10 xl:gap-x-12">
+            <div
+              v-for="group in linkGroups"
+              :key="group.title"
+              :class="group.wide ? 'min-[480px]:col-span-2 md:col-span-2' : ''"
+            >
               <div
-                class="text-sm leaing-5 tracking-[0.6%] font-medium text-gray-950"
+                class="text-sm leading-5 tracking-[0.6%] font-medium text-neutral-950"
               >
                 {{ group.title }}
               </div>
 
-              <div class="mt-4 space-y-4">
+              <div
+                :class="[
+                  'mt-3 gap-2.5 sm:gap-3',
+                  group.wide
+                    ? 'grid grid-cols-1 min-[480px]:grid-cols-2 min-[480px]:gap-x-6 md:gap-x-8'
+                    : 'flex flex-col items-start',
+                ]"
+              >
                 <template v-for="link in group.links" :key="link.label">
                   <NuxtLink
                     v-if="link.to"
                     :to="link.to"
-                    class="block text-sm leading-5 tracking-[-0.6%] font-medium transition-colors hover:no-underline text-gray-600 hover:text-gray-950"
+                    class="flex min-h-7 w-fit items-center whitespace-nowrap text-sm leading-5 tracking-[-0.6%] font-medium transition-colors hover:no-underline text-neutral-600 hover:text-neutral-950"
                   >
                     {{ link.label }}
                   </NuxtLink>
@@ -227,7 +244,7 @@
                     :href="link.href"
                     target="_blank"
                     rel="noopener noreferrer"
-                    class="block text-sm leading-5 tracking-[-0.6%] font-medium transition-colors hover:no-underline text-gray-600 hover:text-gray-950"
+                    class="flex min-h-7 w-fit items-center whitespace-nowrap text-sm leading-5 tracking-[-0.6%] font-medium transition-colors hover:no-underline text-neutral-600 hover:text-neutral-950"
                   >
                     {{ link.label }}
                   </a>
@@ -235,7 +252,7 @@
               </div>
             </div>
           </div>
-        </div>
+        </nav>
       </div>
     </div>
   </footer>
@@ -243,6 +260,13 @@
 
 <script setup>
 import opnformConfig from "~/opnform.config.js"
+
+defineProps({
+  showCta: {
+    type: Boolean,
+    default: true,
+  },
+})
 
 const { isAuthenticated: authenticated } = useIsAuthenticated()
 const { data: user } = useAuth().user()
@@ -279,6 +303,7 @@ const linkGroups = computed(() => [
   },
   {
     title: "Comparisons",
+    wide: true,
     links: [
       { label: "vs Google Forms", to: { name: "opnform-vs-googleforms" } },
       { label: "vs Typeform", to: { name: "opnform-vs-typeform" } },
@@ -302,12 +327,10 @@ const linkGroups = computed(() => [
     ],
   },
   {
-    title: "Company",
+    title: "Updates",
     links: [
-      { label: "Blog", href: opnformConfig.links.changelog_url },
-      { label: "Status", href: opnformConfig.links.changelog_url },
-      // { label: "Feature Requests", href: opnformConfig.links.feature_requests },
-      // { label: "Roadmap", href: opnformConfig.links.roadmap },
+      { label: "Feedback", href: "https://feedback.opnform.com/" },
+      { label: "Changelog", href: "https://feedback.opnform.com/changelog" },
       // { label: "Privacy Policy", to: { name: "privacy-policy" } },
       // { label: "Terms & Conditions", to: { name: "terms-conditions" } },
     ],

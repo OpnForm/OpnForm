@@ -19,16 +19,16 @@
           <h1
             class="text-4xl sm:text-[56px] sm:leading-16 tracking-[-1%] font-semibold text-gray-950 my-4"
           >
-            Build beautiful forms,
-            <span class="text-blue-600">fast.</span>
+            Beautiful forms. Unlimited responses.
+            <span class="text-blue-600 whitespace-nowrap">Full control.</span>
           </h1>
 
           <p
             class="text-lg sm:text-xl leading-7 tracking-[-1.5%] sm:leading-8 font-normal text-gray-600"
           >
-            Create powerful forms in minutes with a clean, modern builder that
-            works the way you do. Unlimited submissions, AI-powered creation,
-            and full customization. All without complexity.
+            OpnForm helps you create forms, surveys, and workflows fast, without
+            response caps or platform lock-in. Use our cloud, EU hosting, or
+            self-host when you need full ownership.
           </p>
 
           <div class="relative mt-8">
@@ -41,7 +41,7 @@
                   name: authenticated ? 'forms-create' : 'forms-create-guest',
                 }"
                 trailing-icon="i-heroicons-arrow-up-right-20-solid"
-                label="Get started. It's FREE!"
+                label="Create a free form"
                 class="pl-4 pr-3.5 py-2.5 rounded-[12px] text-base leading-7 tracking-[-1.1%] font-medium"
               />
               <UButton
@@ -176,6 +176,12 @@ import { useIsAuthenticated } from "~/composables/useAuthFlow"
 definePageMeta({
   layout: "default",
   middleware: ["root-redirect"],
+})
+
+useOpnSeoMeta({
+  title: "Free Online Form Builder with Unlimited Responses",
+  description:
+    "Build beautiful online forms with OpnForm. Create forms, surveys, and workflows for free, collect unlimited responses, and keep control of your data.",
 })
 
 const { isAuthenticated: authenticated } = useIsAuthenticated()

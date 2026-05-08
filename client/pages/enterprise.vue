@@ -6,14 +6,14 @@
           <h1
             class="text-4xl sm:text-[56px] sm:leading-16 tracking-[-1%] font-semibold text-gray-950"
           >
-            Powerful and secure form builder for all your teams
+            Secure forms for teams that need control
           </h1>
           <p
             class="mt-4 text-lg sm:text-xl leading-7 tracking-[-1.5%] sm:leading-8 font-normal text-gray-600"
           >
-            OpnForm Enterprise gives your organization full control over your
-            data and infrastructure — whether you self-host or use our managed
-            cloud.
+            Create forms, surveys, and internal workflows without giving up
+            control of access, infrastructure, or submission data. Use OpnForm
+            Cloud, hosting in France, or self-hosted deployment.
           </p>
 
           <div
@@ -48,38 +48,69 @@
               <div class="w-fit">
                 <img
                   src="/img/pages/welcome/vanguard-1.png"
-                  alt="Trusted Teams"
+                  alt="Vanguard logo"
                   class="w-full"
                 />
               </div>
               <div class="w-fit">
                 <img
                   src="/img/pages/welcome/logo-berkeley-2.png"
-                  alt="Trusted Teams"
+                  alt="UC Berkeley logo"
                   class="w-full"
                 />
               </div>
               <div class="w-fit">
                 <img
                   src="/img/pages/welcome/UN_emblem_blue-2.png"
-                  alt="Trusted Teams"
+                  alt="United Nations logo"
                   class="w-full"
                 />
               </div>
               <div class="w-fit">
                 <img
                   src="/img/pages/welcome/Frame-47.png"
-                  alt="Trusted Teams"
+                  alt="American Red Cross logo"
                   class="w-full"
                 />
               </div>
               <div class="w-fit">
                 <img
                   src="/img/pages/welcome/Zomato_Logo-2.png"
-                  alt="Trusted Teams"
+                  alt="Zomato logo"
                   class="w-full"
                 />
               </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-12 sm:mt-16 max-w-266 mx-auto">
+          <div class="grid gap-4 sm:grid-cols-3">
+            <div
+              v-for="item in controlHighlights"
+              :key="item.title"
+              class="rounded-3xl bg-white border border-gray-200 p-6 shadow-sm"
+            >
+              <div
+                class="h-12 w-12 rounded-[16px] flex items-center justify-center"
+                :class="item.iconWrapClass"
+              >
+                <UIcon
+                  :name="item.icon"
+                  class="h-6 w-6"
+                  :class="item.iconClass"
+                />
+              </div>
+              <div
+                class="mt-6 text-xl leading-7 tracking-[-0.6%] font-semibold text-gray-950"
+              >
+                {{ item.title }}
+              </div>
+              <p
+                class="mt-3 text-sm leading-6 tracking-[-0.6%] font-medium text-gray-600"
+              >
+                {{ item.description }}
+              </p>
             </div>
           </div>
         </div>
@@ -158,7 +189,7 @@
                 class="h-5.5 w-5.5 text-blue-500"
               />
             </span>
-            <span>Hosted in Europe</span>
+            <span>Hosted in France</span>
           </div>
         </div>
 
@@ -201,6 +232,72 @@
 
     <section class="py-14 sm:py-28 px-8 sm:px-12 bg-white">
       <div class="max-w-266 mx-auto">
+        <div class="max-w-2xl mx-auto text-center">
+          <div
+            class="text-base leading-7 tracking-[-1.1%] font-medium text-blue-600"
+          >
+            Deployment Options
+          </div>
+
+          <h2
+            class="my-4 text-4xl sm:text-5xl sm:leading-14 tracking-[-1%] font-semibold text-gray-950"
+          >
+            Choose where your
+            <br class="hidden sm:block" />
+            form data lives
+          </h2>
+
+          <p
+            class="text-base leading-7 tracking-[-1.1%] font-normal text-gray-600"
+          >
+            Start with managed cloud, keep hosted data in France, or run
+            OpnForm on your own infrastructure when policy requires it.
+          </p>
+        </div>
+
+        <div class="mt-12 sm:mt-16 grid gap-6 lg:grid-cols-3">
+          <div
+            v-for="option in deploymentOptions"
+            :key="option.title"
+            class="rounded-3xl bg-gray-50 border border-gray-200 p-8 shadow-sm"
+          >
+            <div
+              class="h-16 w-16 rounded-[20px] bg-white shadow-sm flex items-center justify-center"
+            >
+              <UIcon :name="option.icon" class="h-8 w-8 text-blue-600" />
+            </div>
+            <h3
+              class="mt-8 text-xl leading-7 tracking-[-0.6%] font-semibold text-gray-950"
+            >
+              {{ option.title }}
+            </h3>
+            <p
+              class="mt-4 text-base font-normal text-gray-600 leading-7 tracking-[-1.1%]"
+            >
+              {{ option.description }}
+            </p>
+            <ul
+              class="mt-6 space-y-3 text-sm leading-5 tracking-[-0.6%] font-medium text-gray-700"
+            >
+              <li
+                v-for="feature in option.features"
+                :key="feature"
+                class="flex items-center gap-2.5"
+              >
+                <UIcon
+                  name="i-heroicons-check-20-solid"
+                  class="h-5 w-5 shrink-0 text-emerald-600"
+                />
+                <span>{{ feature }}</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="py-14 sm:py-28 px-8 sm:px-12 bg-white">
+      <div class="max-w-266 mx-auto">
         <div class="text-center">
           <div
             class="text-base leading-7 tracking-[-1.1%] font-medium text-blue-600"
@@ -211,15 +308,16 @@
           <h2
             class="my-4 text-4xl sm:text-5xl sm:leading-14 tracking-[-1%] font-semibold text-gray-950"
           >
-            Forms that adapt <br />
-            to all your needs
+            Forms business teams can use,
+            <br class="hidden sm:block" />
+            with controls IT can trust
           </h2>
 
           <p
             class="max-w-lg mx-auto text-base leading-7 tracking-[-1.1%] font-normal text-gray-600"
           >
-            Build, automate, and integrate secure forms at scale — all without
-            writing a single line of code.
+            Build, automate, and integrate secure forms across departments -
+            all without writing a single line of code.
           </p>
         </div>
 
@@ -366,108 +464,133 @@
     </section>
 
     <section class="px-8 sm:px-12 py-14 sm:py-28 bg-white">
-      <div class="max-w-4xl mx-auto">
-        <div class="text-center">
+      <div class="max-w-266 mx-auto">
+        <div class="max-w-2xl mx-auto text-center">
           <div
-            class="text-blue-400 text-base tracking-[-1.1%] font-medium leading-7"
+            class="text-base leading-7 tracking-[-1.1%] font-medium text-blue-600"
           >
-            Case Studies
+            Why Enterprise
           </div>
-          <h3
-            class="mt-4 text-4xl sm:text-5xl font-semibold text-gray-950 tracking-[-1%] leading-14"
+          <h2
+            class="my-4 text-4xl sm:text-5xl sm:leading-14 tracking-[-1%] font-semibold text-gray-950"
           >
-            See how teams use <br class="hidden sm:block" />
-            OpnForm at scale
-          </h3>
+            Control without slowing
+            <br class="hidden sm:block" />
+            teams down
+          </h2>
+          <p
+            class="text-base leading-7 tracking-[-1.1%] font-normal text-gray-600"
+          >
+            Keep the builder simple for every team while giving IT the controls
+            needed for access, data, and deployment.
+          </p>
         </div>
-        <div
-          class="grid grid-cols-1 md:grid-cols-7 gap-y-12 md:gap-12 my-12 sm:my-16"
-        >
+
+        <div class="mt-12 sm:mt-16 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           <div
-            class="col-span-3 max-h-70 md:max-h-50 max-w-100 mx-auto rounded-[12px] overflow-hidden flex items-center justify-centers"
+            v-for="item in enterpriseProofBlocks"
+            :key="item.title"
+            class="rounded-3xl bg-gray-50 border border-gray-200 p-8 shadow-sm"
           >
-            <img src="/img/pages/enterprise/enterprise-7.png" alt="John Doe" />
-          </div>
-          <div class="col-span-4">
-            <h3 class="text-xl leading-7 font-medium text-gray-950">
-              “Scaled internal workflows without adding complexity”
+            <div
+              class="h-12 w-12 rounded-[16px] bg-white shadow-sm flex items-center justify-center"
+            >
+              <UIcon :name="item.icon" class="h-6 w-6 text-blue-600" />
+            </div>
+            <h3
+              class="mt-6 text-xl leading-7 tracking-[-0.6%] font-semibold text-gray-950"
+            >
+              {{ item.title }}
             </h3>
             <p
-              class="mt-3 text-base leading-7 font-normal tracking-[-1.1%] text-gray-600"
+              class="mt-3 text-base font-normal text-gray-600 leading-7 tracking-[-1.1%]"
             >
-              We use OpnForm across multiple teams for internal requests,
-              approvals, and data collection. Having unlimited forms with clear
-              access controls made it easy to standardize workflows without
-              slowing teams down.
+              {{ item.description }}
             </p>
-            <div class="mt-8">
-              <h4
-                class="text-base leading-7 tracking-[-1.1%] font-medium text-gray-950"
-              >
-                John Doe
-              </h4>
-              <p
-                class="mt-1.5 text-sm leading-5 tracking-[-0.6%] font-medium text-gray-600"
-              >
-                Head of Engineering, Vercel
-              </p>
-            </div>
           </div>
-        </div>
-        <div
-          class="grid grid-cols-1 md:grid-cols-7 gap-y-12 md:gap-12 my-12 sm:my16"
-        >
-          <div
-            class="col-span-3 max-h-70 md:max-h-50 max-w-100 mx-auto rounded-[12px] overflow-hidden flex items-center justify-centers"
-          >
-            <img
-              src="/img/pages/enterprise/enterprise-8.png"
-              alt="James Smith"
-            />
-          </div>
-          <div class="col-span-4">
-            <h3 class="text-xl leading-7 font-medium text-gray-950">
-              “Finally had one system that worked for every team.”
-            </h3>
-            <p
-              class="mt-3 text-base leading-7 font-normal tracking-[-1.1%] text-gray-600"
-            >
-              Marketing, HR, and Support were all using different tools. OpnForm
-              gave us a single, flexible platform that everyone could adapt to
-              their needs, while still keeping data centralized and secure.
-            </p>
-            <div class="mt-8">
-              <h4
-                class="text-base leading-7 tracking-[-1.1%] font-medium text-gray-950"
-              >
-                James Smith
-              </h4>
-              <p
-                class="mt-1.5 text-sm leading-5 tracking-[-0.6%] font-medium text-gray-600"
-              >
-                Operations Lead, Airtable
-              </p>
-            </div>
-          </div>
-        </div>
-        <div class="flex justify-center items-center">
-          <UButton
-            to="#"
-            target="_blank"
-            label="Read More Customer Stories"
-            variant="outline"
-            size="lg"
-            class="px-4 py-2.5 rounded-[12px] text-base leading-7 tracking-[-1.1%] font-medium"
-          />
         </div>
       </div>
     </section>
 
-    <OpenFormFooter />
+    <FaqSection
+      :faqs="enterpriseFaqs"
+      :title-lines="['Enterprise forms, security,', 'and deployment']"
+      description="Clear answers for teams evaluating OpnForm for secure forms, data control, and managed or self-hosted deployment."
+      id-prefix="enterprise-faq-answer"
+      @contact="contactUs"
+    />
+
+    <section class="bg-white px-8 lg:px-12 pb-14 sm:pb-28">
+      <div
+        class="mx-auto w-full max-w-336 rounded-4xl bg-gray-950 shadow-2xl overflow-hidden py-8 sm:py-10 lg:py-14 px-8 md:px-10 lg:px-14"
+      >
+        <div class="grid gap-8 lg:grid-cols-12 lg:items-center">
+          <div class="lg:col-span-7">
+            <div
+              class="text-blue-400 text-base tracking-[-1.1%] font-medium leading-7"
+            >
+              Enterprise
+            </div>
+            <h2
+              class="mt-4 text-3xl sm:text-5xl sm:leading-14 font-semibold text-white tracking-[-1%]"
+            >
+              Bring secure forms to every team.
+            </h2>
+            <p
+              class="mt-4 max-w-2xl text-base sm:text-lg leading-7 tracking-[-1.1%] font-normal text-gray-400"
+            >
+              Talk with us about SSO, data residency, self-hosting, and the
+              rollout path that fits your organization.
+            </p>
+          </div>
+
+          <div class="lg:col-span-5">
+            <div class="flex flex-col sm:flex-row lg:justify-end gap-4">
+              <UButton
+                :to="opnformConfig.links.book_onboarding"
+                target="_blank"
+                label="Book a Demo"
+                trailing-icon="i-heroicons-arrow-up-right-20-solid"
+                size="lg"
+                class="w-fit pl-4 pr-3.5 py-2.5 rounded-[12px] text-base leading-7 tracking-[-1.1%] font-medium"
+              />
+              <UButton
+                :to="opnformConfig.links.self_hosting"
+                target="_blank"
+                label="Explore Self-Hosting"
+                variant="outline"
+                color="neutral"
+                size="lg"
+                class="w-fit px-4 py-2.5 rounded-[12px] text-base leading-7 tracking-[-1.1%] font-medium bg-white text-gray-950 hover:bg-white/95"
+              />
+            </div>
+
+            <div
+              class="mt-8 flex flex-wrap gap-x-6 gap-y-3 text-sm leading-5 tracking-[-0.6%] font-medium text-gray-300 lg:justify-end"
+            >
+              <span
+                v-for="item in finalCtaProofs"
+                :key="item"
+                class="inline-flex items-center gap-2"
+              >
+                <UIcon
+                  name="i-heroicons-check-20-solid"
+                  class="h-5 w-5 text-emerald-400"
+                />
+                {{ item }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <OpenFormFooter :show-cta="false" />
   </div>
 </template>
 
 <script setup>
+import FaqSection from "~/components/pages/FaqSection.vue"
 import opnformConfig from "~/opnform.config.js"
 
 definePageMeta({
@@ -475,10 +598,34 @@ definePageMeta({
 })
 
 useOpnSeoMeta({
-  title: "Enterprise",
-  description:
-    "Powerful and secure form builder for teams that need full control over data, security, and deployment.",
+  title: "Secure Form Builder for Teams and Enterprises",
+      description:
+    "Build secure forms, surveys, and workflows with OpnForm Enterprise. Manage access, automate data collection, and choose cloud, France hosting, or self-hosted deployment.",
 })
+
+const controlHighlights = [
+  {
+    icon: "i-heroicons-lock-closed",
+    iconWrapClass: "bg-violet-50",
+    iconClass: "text-violet-600",
+    title: "Access control",
+    description: "Manage SSO, roles, permissions, and audit visibility.",
+  },
+  {
+    icon: "i-heroicons-server-stack",
+    iconWrapClass: "bg-blue-50",
+    iconClass: "text-blue-600",
+    title: "Data ownership",
+    description: "Choose cloud, hosting in France, or self-hosted deployment.",
+  },
+  {
+    icon: "i-heroicons-arrows-right-left",
+    iconWrapClass: "bg-emerald-50",
+    iconClass: "text-emerald-600",
+    title: "Team workflows",
+    description: "Automate forms, surveys, approvals, and integrations.",
+  },
+]
 
 const securityFeatures = [
   {
@@ -489,9 +636,9 @@ const securityFeatures = [
   },
   {
     icon: "i-heroicons-circle-stack",
-    title: "Data Residency Options",
+    title: "France Data Residency",
     description:
-      "Keep data in your own servers or select EU/US data centers for compliance.",
+      "Keep hosted form data in France, or on your own servers when you self-host.",
   },
   {
     icon: "i-heroicons-lock-closed",
@@ -502,6 +649,30 @@ const securityFeatures = [
     icon: "i-heroicons-document-text",
     title: "Audit Logs & Security SLAs",
     description: "Get visibility and accountability at every step.",
+  },
+]
+
+const deploymentOptions = [
+  {
+    icon: "i-heroicons-cloud",
+    title: "Managed Cloud",
+    description:
+      "Let OpnForm handle hosting, updates, monitoring, and backups for your team.",
+    features: ["Fastest setup", "Managed updates", "Live chat support"],
+  },
+  {
+    icon: "i-heroicons-globe-europe-africa",
+    title: "France Hosting",
+    description:
+      "Keep hosted form data in France while your team keeps the simplicity of cloud.",
+    features: ["Hosted in France", "GDPR-friendly architecture", "No infrastructure work"],
+  },
+  {
+    icon: "i-heroicons-server-stack",
+    title: "Self-hosted / On-premise",
+    description:
+      "Run OpnForm on your own infrastructure when policy or compliance requires it.",
+    features: ["Full infrastructure control", "Custom builds", "Self-hosting support"],
   },
 ]
 
@@ -583,4 +754,100 @@ const integrationApps = [
   // { icon: "i-simple-icons-airtable", iconClass: "text-[#18BFFF]" },
   // { icon: "i-simple-icons-meta", iconClass: "text-[#0668E1]" },
 ]
+
+const enterpriseProofBlocks = [
+  {
+    icon: "i-heroicons-arrows-pointing-out",
+    title: "No response caps",
+    description:
+      "Collect unlimited submissions without turning every successful form into a pricing problem.",
+  },
+  {
+    icon: "i-heroicons-code-bracket-square",
+    title: "Open-source and auditable",
+    description:
+      "Review the product, inspect the code, and avoid relying on a black box for critical forms.",
+  },
+  {
+    icon: "i-heroicons-lock-closed",
+    title: "SSO and permissions",
+    description:
+      "Use enterprise identity controls and workspace roles to keep access aligned with your team.",
+  },
+  {
+    icon: "i-heroicons-circle-stack",
+    title: "Own your data path",
+    description:
+      "Choose managed cloud, hosting in France, or self-hosting depending on your internal requirements.",
+  },
+  {
+    icon: "i-heroicons-paint-brush",
+    title: "Brand control",
+    description:
+      "Use custom domains, branding removal, white-labeling, and themes for a polished experience.",
+  },
+  {
+    icon: "i-heroicons-user-circle",
+    title: "Migration support",
+    description:
+      "Get help with deployment, migration, and self-hosted technical questions as your rollout grows.",
+  },
+]
+
+const enterpriseFaqs = [
+  {
+    question: "Can OpnForm be self-hosted?",
+    answer:
+      "Yes. OpnForm can be deployed on your own infrastructure, and Enterprise support can help with self-hosting questions, migration, and deployment planning.",
+  },
+  {
+    question: "Does OpnForm support SSO?",
+    answer:
+      "Yes. OpnForm supports enterprise identity controls including SSO options such as SAML and OIDC, depending on your setup and plan.",
+  },
+  {
+    question: "Where is form data hosted?",
+    answer:
+      "Hosted OpnForm data is stored in France. You can also self-host OpnForm when your organization needs direct control over infrastructure and data residency.",
+  },
+  {
+    question: "Can teams manage roles and permissions?",
+    answer:
+      "Yes. Enterprise is designed for multi-user workspaces with roles, permissions, and audit visibility for teams managing forms at scale.",
+  },
+  {
+    question: "What support is included with Enterprise?",
+    answer:
+      "Enterprise includes priority support for rollout, migration, and self-hosting needs, with dedicated help for teams that need stronger operational guidance.",
+  },
+]
+
+const enterpriseFaqSchema = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: enterpriseFaqs.map((faq) => ({
+    "@type": "Question",
+    name: faq.question,
+    acceptedAnswer: {
+      "@type": "Answer",
+      text: faq.answer,
+    },
+  })),
+}
+
+useHead({
+  script: [
+    {
+      key: "enterprise-faq-schema",
+      type: "application/ld+json",
+      textContent: JSON.stringify(enterpriseFaqSchema),
+    },
+  ],
+})
+
+const finalCtaProofs = ["SSO/SAML", "France hosting", "Self-hosting support"]
+
+const contactUs = () => {
+  useCrisp().openAndShowChat()
+}
 </script>

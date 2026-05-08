@@ -706,99 +706,14 @@
       </div>
     </section>
 
-    <section class="py-14 sm:py-28 px-8 lg:px-12 bg-white">
-      <div class="mx-auto max-w-266">
-        <div class="text-center">
-          <p
-            class="text-base leading-7 tracking-[-1.1%] font-semibold text-blue-600"
-          >
-            Frequently Asked Questions
-          </p>
-          <h2
-            class="my-4 text-4xl sm:text-5xl sm:leading-14 tracking-[-1%] font-semibold text-gray-950"
-          >
-            Everything you need to
-            <br class="hidden sm:block" />
-            know
-          </h2>
-          <p
-            class="text-base leading-7 font-normal tracking-[-1.1%] text-gray-600"
-          >
-            Find answers about plans, onboarding, roles, and how teams use our
-            tool every day.
-          </p>
-        </div>
-
-        <div class="mt-12 sm:mt-16">
-          <div class="space-y-8">
-            <div
-              v-for="(q, i) in faqs"
-              :key="q.question"
-              class="bg-gray-50 rounded-3xl"
-            >
-              <button
-                type="button"
-                class="w-full p-6 text-left rounded-3xl focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-                @click="toggleFaq(i)"
-              >
-                <div class="flex items-center gap-4 sm:gap-16">
-                  <span
-                    class="w-6 text-lg leading-8 tracking-[-1.5%] font-medium text-gray-400"
-                  >
-                    {{ String(i + 1).padStart(2, "0") }}
-                  </span>
-                  <div
-                    class="flex items-center justify-between flex-1 gap-8 sm:gap-16"
-                  >
-                    <p
-                      class="text-lg leading-8 tracking-[-1.5%] font-medium text-gray-600"
-                    >
-                      {{ q.question }}
-                    </p>
-                    <span
-                      class="inline-flex items-center justify-center w-6 h-6 rounded-full text-gray-400"
-                    >
-                      <Icon
-                        v-if="openFaqIndex !== i"
-                        class="w-6 h-6"
-                        name="heroicons:plus-20-solid"
-                      />
-                      <Icon
-                        v-else
-                        class="w-6 h-6"
-                        name="heroicons:x-mark-20-solid"
-                      />
-                    </span>
-                  </div>
-                </div>
-              </button>
-
-              <div v-if="openFaqIndex === i" class="px-6 pb-6">
-                <div class="pl-10 sm:pl-21">
-                  <p class="text-sm font-medium leading-6 text-gray-600">
-                    {{ q.answer }}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="mt-12 text-center sm:mt-16">
-            <p
-              class="text-base leading-7 tracking-[-1.1%] font-medium text-gray-600"
-            >
-              Didn't find the answer?
-              <a
-                href="#"
-                class="text-blue-600 hover:underline"
-                @click.prevent="contactUs"
-                >Contact Us</a
-              >
-            </p>
-          </div>
-        </div>
-      </div>
-    </section>
+    <FaqSection
+      :faqs="faqs"
+      :title-lines="['Everything you need to', 'know']"
+      description="Find answers about plans, onboarding, roles, and how teams use our tool every day."
+      :default-open-index="2"
+      id-prefix="pricing-faq-answer"
+      @contact="contactUs"
+    />
 
     <OpenFormFooter />
   </div>
@@ -806,6 +721,7 @@
 
 <script setup>
 import FeatureComparison from "~/components/pages/pricing/FeatureComparison.vue"
+import FaqSection from "~/components/pages/FaqSection.vue"
 import { useIsAuthenticated } from "~/composables/useAuthFlow"
 
 definePageMeta({
@@ -923,7 +839,6 @@ const enterpriseLicenseFeatures = [
   "Priority support",
 ]
 
-const openFaqIndex = ref(2)
 const faqs = [
   {
     question: "Is there any submission limit?",
@@ -1005,25 +920,4 @@ const handleBusinessCta = () => handlePlanCta("business")
 const contactUs = () => {
   useCrisp().openAndShowChat()
 }
-
-const toggleFaq = (index) => {
-  openFaqIndex.value = openFaqIndex.value === index ? null : index
-}
 </script>
-
-<style scoped>
-.faq-answer {
-  display: grid;
-  transition: grid-template-rows 180ms ease, opacity 180ms ease, padding-bottom 180ms ease;
-}
-
-.faq-answer-open {
-  grid-template-rows: 1fr;
-  opacity: 1;
-}
-
-.faq-answer-closed {
-  grid-template-rows: 0fr;
-  opacity: 0;
-}
-</style>

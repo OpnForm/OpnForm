@@ -29,7 +29,7 @@
       </div>
     </section>
 
-    <OpenFormFooter />
+    <OpenFormFooter :show-cta="false" />
   </div>
 </template>
 

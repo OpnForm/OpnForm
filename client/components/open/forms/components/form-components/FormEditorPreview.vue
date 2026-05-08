@@ -53,33 +53,35 @@
         </UTooltip>
       </TrackClick>
       </div>
-      <OverlayScrollbarsComponent
-        ref="previewScrollInnerRef"
-        defer
-        class="flex-grow min-h-0 relative flex flex-col transform-gpu"
-      >
-        <!-- The transform creates a containing block so descendants with position: fixed
-             are anchored to this preview container instead of the page viewport. -->
-        <open-complete-form
-          v-if="previewReady"
-          ref="formPreview"
-          class="w-full grow min-h-0"
-          :form="form"
-          :dark-mode="darkMode"
-          :mode="formMode"
-          @restarted="previewFormSubmitted=false"
-          @submitted="previewFormSubmitted=true"
-        />
-        <div
-          v-else
-          class="w-full grow min-h-0 p-6 flex flex-col gap-4"
+      <div class="relative flex-grow min-h-0">
+        <OverlayScrollbarsComponent
+          ref="previewScrollInnerRef"
+          defer
+          class="h-full min-h-0 relative flex flex-col transform-gpu"
         >
-          <USkeleton class="h-8 w-40" />
-          <USkeleton class="h-4 w-72" />
-          <USkeleton class="h-24 w-full" />
-          <USkeleton class="h-24 w-full" />
-          <USkeleton class="h-10 w-28 self-center" />
-        </div>
+          <!-- The transform creates a containing block so descendants with position: fixed
+               are anchored to this preview container instead of the page viewport. -->
+          <open-complete-form
+            v-if="previewReady"
+            ref="formPreview"
+            class="w-full grow min-h-0"
+            :form="form"
+            :dark-mode="darkMode"
+            :mode="formMode"
+            @restarted="previewFormSubmitted=false"
+            @submitted="previewFormSubmitted=true"
+          />
+          <div
+            v-else
+            class="w-full grow min-h-0 p-6 flex flex-col gap-4"
+          >
+            <USkeleton class="h-8 w-40" />
+            <USkeleton class="h-4 w-72" />
+            <USkeleton class="h-24 w-full" />
+            <USkeleton class="h-24 w-full" />
+            <USkeleton class="h-10 w-28 self-center" />
+          </div>
+        </OverlayScrollbarsComponent>
         <!-- Quick actions for focused presentation (only when not expanded) -->
          
         <VTransition name="fade">
@@ -121,7 +123,7 @@
             </UButtonGroup>
           </div>
         </VTransition>
-      </OverlayScrollbarsComponent>
+      </div>
     </div>
   </div>
 </template>

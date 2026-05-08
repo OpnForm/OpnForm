@@ -2,7 +2,7 @@
   <nav v-if="hasNavbar" class="bg-white dark:bg-notion-dark">
     <div class="max-w-7xl mx-auto px-8">
       <div class="flex items-center justify-between h-14">
-        <div class="flex items-center gap-2">
+        <div class="flex min-w-0 items-center gap-2">
           <NuxtLink
             :to="{ name: user ? 'home' : 'index' }"
             class="shrink-0 font-semibold hover:no-underline flex items-center"
@@ -30,7 +30,7 @@
             </template>
           </WorkspaceDropdown>
         </div>
-        <div class="hidden md:flex gap-x-2 ml-auto">
+        <div class="hidden md:flex items-center gap-x-1 lg:gap-x-2 ml-auto">
           <NuxtLink
             v-if="user"
             :to="{ name: 'home' }"
@@ -43,7 +43,7 @@
             v-if="$route.name !== 'enterprise'"
             :to="{ name: 'enterprise' }"
             :class="navLinkClasses"
-            class="hidden xl:block"
+            class="hidden lg:block"
           >
             Enterprise
           </NuxtLink>
@@ -51,7 +51,7 @@
             v-if="$route.name !== 'integrations'"
             :to="{ name: 'integrations' }"
             :class="navLinkClasses"
-            class="hidden lg:block xl:block"
+            class="hidden md:block"
           >
             Integrations
           </NuxtLink>
@@ -122,7 +122,7 @@
 
         <div class="block">
           <div class="flex items-center">
-            <div class="ml-12 relative">
+            <div class="ml-4 md:ml-6 lg:ml-8 xl:ml-12 relative">
               <div class="relative inline-block text-left">
                 <UserDropdown v-if="user">
                   <template #default="{ user }">
