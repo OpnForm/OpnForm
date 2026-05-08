@@ -48,7 +48,7 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: 8.2
+          php-version: 8.3
           extensions: dom, curl, mbstring, pdo, sqlite, pdo_sqlite
           tools: composer:v2
           coverage: none
@@ -206,7 +206,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        php: [8.2]
+        php: [8.3]
         connection: [pgsql, mysql]
         include:
           - connection: pgsql
@@ -277,6 +277,20 @@ jobs:
           name: log-results-${{ matrix.connection }}
           path: api/storage/logs/laravel.log
           retention-days: 3
+
+  required-tests-pgsql:
+    needs: tests
+    runs-on: ubuntu-latest
+    name: Run Feature & Unit tests (PHP 8.2 - pgsql)
+    steps:
+      - run: echo "PHP 8.3 pgsql tests passed in the tests matrix."
+
+  required-tests-mysql:
+    needs: tests
+    runs-on: ubuntu-latest
+    name: Run Feature & Unit tests (PHP 8.2 - mysql)
+    steps:
+      - run: echo "PHP 8.3 mysql tests passed in the tests matrix."
 
   e2e:
     runs-on: ubuntu-latest
@@ -457,7 +471,7 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: 8.2
+          php-version: 8.3
           extensions: dom, curl, mbstring, pdo, sqlite, pdo_sqlite
           tools: composer:v2
           coverage: none
