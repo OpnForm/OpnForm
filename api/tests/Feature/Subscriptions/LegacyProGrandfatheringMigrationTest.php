@@ -112,6 +112,22 @@ it('does not grandfather ended legacy default subscriptions', function () {
     expect($workspace->fresh()->plan_overrides_subscription_id)->toBeNull();
 });
 
+it('grandfathers extra pro users as permanent plan overrides', function () {
+    $user = $this->createUser(['email' => 'extra-pro@example.com']);
+    config(['opnform.extra_pro_users_emails' => [$user->email]]);
+    $workspace = $this->createUserWorkspace($user);
+
+    legacyProGrandfatheringMigration()->up();
+
+    $workspace = $workspace->fresh();
+    $service = app(PlanAccessService::class);
+
+    expect($workspace->plan_overrides_subscription_id)->toBeNull();
+    expect($workspace->plan_tier)->toBe('pro');
+    expect($service->hasFeature($workspace, Feature::BRANDING_ADVANCED))->toBeTrue();
+    expect($service->hasFormFeature($workspace, 'custom_css'))->toBeTrue();
+});
+
 it('keeps moved pro form features available after legacy grandfathering', function () {
     $user = $this->createProUser();
     $this->actingAsUser($user);
@@ -157,6 +173,39 @@ it('grandfathers active lifetime licenses as permanent plan overrides', function
     expect($service->hasFormFeature($workspace, 'custom_css'))->toBeTrue();
 });
 
+it('preserves existing permanent overrides when subscription-scoped grandfathering expires', function () {
+    $user = $this->createProUser();
+    $subscription = $user->subscriptions()->first();
+    $workspace = $this->createUserWorkspace($user);
+    $workspace->update([
+        'plan_overrides' => [
+            'features' => [
+                Feature::SSO_OIDC,
+                'custom_domain.wildcard',
+            ],
+            'limits' => [
+                'custom_domain_count' => 25,
+            ],
+        ],
+    ]);
+
+    legacyProGrandfatheringMigration()->up();
+
+    $subscription->update([
+        'stripe_status' => 'canceled',
+        'ends_at' => now()->subDay(),
+    ]);
+    $workspace->flush();
+    $workspace = $workspace->fresh();
+    $service = app(PlanAccessService::class);
+
+    expect($workspace->plan_overrides['permanent']['features'])->toContain(Feature::SSO_OIDC);
+    expect($service->hasFeature($workspace, Feature::SSO_OIDC))->toBeTrue();
+    expect($service->hasFeature($workspace, 'custom_domain.wildcard'))->toBeTrue();
+    expect($service->hasFeature($workspace, Feature::BRANDING_ADVANCED))->toBeFalse();
+    expect($service->getLimits($workspace)['custom_domain_count'])->toBe(25);
+});
+
 it('rolls back only features added by the grandfathering migration and clears the linked subscription', function () {
     $user = $this->createProUser();
     $workspace = $this->createUserWorkspace($user);
@@ -180,10 +229,10 @@ it('rolls back only features added by the grandfathering migration and clears th
     $overrides = $workspace->plan_overrides;
 
     expect($workspace->plan_overrides_subscription_id)->toBeNull();
-    expect($overrides['features'])->toContain(Feature::SSO_OIDC);
-    expect($overrides['features'])->toContain('custom_domain.wildcard');
-    expect($overrides['features'])->not->toContain(Feature::BRANDING_ADVANCED);
-    expect($overrides['features'])->not->toContain('custom_css');
-    expect($overrides['limits'])->toBe(['custom_domain_count' => 25]);
+    expect($overrides['permanent']['features'])->toContain(Feature::SSO_OIDC);
+    expect($overrides['permanent']['features'])->toContain('custom_domain.wildcard');
+    expect($overrides['permanent']['features'])->not->toContain(Feature::BRANDING_ADVANCED);
+    expect($overrides['permanent']['features'])->not->toContain('custom_css');
+    expect($overrides['permanent']['limits'])->toBe(['custom_domain_count' => 25]);
     expect($overrides)->not->toHaveKey('legacy_pro_grandfathering');
 });

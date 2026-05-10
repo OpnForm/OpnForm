@@ -103,3 +103,31 @@ it('ignores linked plan overrides when the subscription owner is not a workspace
 
     expect(app(PlanAccessService::class)->hasFeature($workspace->fresh(), Feature::FORM_VERSIONING))->toBeFalse();
 });
+
+it('preserves permanent overrides when linked plan overrides are inactive', function () {
+    $user = $this->createUser();
+    $subscription = createSubscriptionForPlanOverrideTest($user, 'canceled');
+    $workspace = $this->createUserWorkspace($user);
+    $workspace->update([
+        'plan_overrides' => [
+            'permanent' => [
+                'features' => [Feature::SSO_OIDC],
+                'limits' => ['custom_domain_count' => 25],
+                'tier' => PlanTier::PRO,
+            ],
+            'features' => [Feature::FORM_VERSIONING],
+            'limits' => ['custom_domain_count' => 5],
+            'tier' => PlanTier::BUSINESS,
+        ],
+        'plan_overrides_subscription_id' => $subscription->id,
+    ]);
+
+    $workspace = $workspace->fresh();
+    $access = app(PlanAccessService::class);
+    $state = app(BillingStateResolver::class)->resolveWorkspace($workspace);
+
+    expect($state->tier)->toBe(PlanTier::PRO);
+    expect($access->hasFeature($workspace, Feature::SSO_OIDC))->toBeTrue();
+    expect($access->hasFeature($workspace, Feature::FORM_VERSIONING))->toBeFalse();
+    expect($access->getLimits($workspace)['custom_domain_count'])->toBe(25);
+});
