@@ -271,7 +271,7 @@ async function createFormThroughUi(page: Page, options: { title: string, style: 
   await expect(page.getByText("Choose a form style")).toBeVisible()
 
   await page.getByTestId(options.style === "classic" ? "form-style-classic" : "form-style-focused").click()
-  await expect(page.getByText("Choose a base for your form")).toBeVisible()
+  await expect(page.getByText("How do you want to start?")).toBeVisible()
   await page.getByTestId("form-base-simple-contact").click()
 
   await expect(page.locator("#form-editor")).toBeVisible()

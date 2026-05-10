@@ -269,7 +269,6 @@ const selectedProviderId = ref(null)
 const appStore = useAppStore()
 const oAuth = useOAuth()
 const { isAuthenticated: authenticated } = useIsAuthenticated()
-const { data: providersData, isLoading: loadingProviders } = oAuth.providers()
 const isGoogleImportConfigured = computed(() => {
   return !!useFeatureFlag('services.google.auth', false) && !useFeatureFlag('self_hosted', false)
 })
@@ -334,6 +333,12 @@ const sourceIssue = computed(() => {
   }
 
   return importDetection.value.reason
+})
+const shouldFetchGoogleProviders = computed(() => {
+  return props.show && authenticated.value && isGoogleImportConfigured.value && isGoogleSource.value
+})
+const { data: providersData, isLoading: loadingProviders } = oAuth.providers({
+  enabled: shouldFetchGoogleProviders,
 })
 
 const filteredProviders = computed(() =>
