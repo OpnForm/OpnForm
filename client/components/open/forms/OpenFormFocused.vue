@@ -1,5 +1,5 @@
 <template>
-  <form ref="formElement" v-if="form" @submit.prevent="" class="@container w-full relative overflow-hidden flex flex-col min-h-full">
+  <form ref="formElement" v-if="form" @submit.prevent="" class="@container w-full relative overflow-hidden flex flex-col min-h-full" :style="focusedFormStyle">
     <!-- Fixed fullscreen background from form cover -->
     <div v-if="form.cover_picture" class="absolute inset-0 pointer-events-none">
       <BlockMediaLayout :image="coverMedia" alt="Form cover image" />
@@ -120,6 +120,9 @@ const form = computed(() => props.formManager.config.value)
 const structure = props.formManager.structure
 const state = computed(() => props.formManager.state)
 const isTemplateMode = computed(() => props.formManager?.mode?.value === FormMode.TEMPLATE)
+const focusedFormStyle = {
+  minHeight: 'var(--form-focused-step-height, 100svh)'
+}
 
 const currentIndex = computed(() => state.value.currentPage)
 const currentFields = computed(() => structure?.value?.getPageFields

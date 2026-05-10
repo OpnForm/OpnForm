@@ -1,15 +1,15 @@
 <template>
   <div>
     <!-- Loading providers -->
-    <div v-if="loadingProviders" class="text-center py-8">
+    <div v-if="loadingProviders" class="rounded-lg border border-neutral-200 bg-white py-8 text-center shadow-sm">
       <Loader class="h-6 w-6 mx-auto mb-3" />
-      <p class="text-sm text-gray-500">
+      <p class="text-sm text-neutral-500">
         Checking connection...
       </p>
     </div>
 
     <!-- Has accounts: show account selector -->
-    <div v-else-if="filteredProviders.length">
+    <div v-else-if="filteredProviders.length" class="rounded-lg border border-neutral-200 bg-white p-4 shadow-sm">
       <FlatSelectInput
         v-model="selectedProviderId"
         :form="form"
@@ -50,14 +50,20 @@
     </div>
 
     <!-- No accounts: show connect prompt -->
-    <div v-else class="text-center py-6">
+    <div v-else class="rounded-lg border border-neutral-200 bg-white px-4 py-7 text-center shadow-sm">
+      <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg border border-blue-100 bg-blue-50 text-blue-600">
+        <Icon
+          :name="connectIcon || 'i-heroicons-link'"
+          class="h-5 w-5"
+        />
+      </div>
       <UButton
         :loading="connecting"
         :label="'Connect ' + providerLabel"
         :icon="connectIcon"
         @click="connectProvider"
       />
-      <p class="text-sm text-gray-400 mt-2">
+      <p class="mx-auto mt-3 max-w-sm text-sm leading-6 text-neutral-500">
         {{ connectHelpText }}
       </p>
     </div>
