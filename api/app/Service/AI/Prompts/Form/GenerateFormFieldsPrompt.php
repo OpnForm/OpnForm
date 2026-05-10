@@ -10,7 +10,7 @@ class GenerateFormFieldsPrompt extends Prompt
 
     protected ?int $maxTokens = null;
 
-    protected string $model = 'o4-mini';
+    protected string $model = 'gpt-5.4-mini';
 
     /**
      * The prompt template for generating forms

@@ -14,8 +14,6 @@ use OpenAI\Exceptions\ErrorException;
  */
 class GptCompleter
 {
-    public const AI_MODEL = 'gpt-4o';
-
     protected Client $openAi;
 
     protected mixed $result;
@@ -31,7 +29,7 @@ class GptCompleter
 
     protected bool $useStreaming = false;
 
-    public function __construct(?string $apiKey = null, protected int $retries = 2, protected string $model = self::AI_MODEL)
+    public function __construct(protected string $model, ?string $apiKey = null, protected int $retries = 2)
     {
         $this->openAi = \OpenAI::client($apiKey ?? config('services.openai.api_key'));
     }
