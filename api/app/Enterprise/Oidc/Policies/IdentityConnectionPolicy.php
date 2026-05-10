@@ -7,6 +7,7 @@ use App\Service\Billing\Feature;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Policies\WorkspacePolicy;
+use App\Service\License\LicenseService;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
 class IdentityConnectionPolicy
@@ -101,6 +102,10 @@ class IdentityConnectionPolicy
     protected function hasOidcAccess(Workspace $workspace): bool
     {
         if (!pricing_enabled()) {
+            if (config('app.self_hosted')) {
+                return app(LicenseService::class)->hasFeature('sso');
+            }
+
             return true;
         }
 

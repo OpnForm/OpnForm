@@ -40,7 +40,16 @@
     </SettingsModalPage>
 
     <SettingsModalPage
-      v-if="user && (user.has_customer_id || user.active_license)"
+      v-if="isSelfHosted"
+      id="license"
+      label="License"
+      icon="i-heroicons-check-circle"
+    >
+      <LazyUsersSettingsLicense />
+    </SettingsModalPage>
+
+    <SettingsModalPage
+      v-if="!isSelfHosted && user && (user.has_customer_id || user.active_license)"
       id="billing"
       label="Billing"
       icon="i-heroicons-credit-card"
@@ -66,6 +75,7 @@ const props = defineProps({
 
 const { current: workspace } = useCurrentWorkspace()
 const { data: user } = useAuth().user()
+const isSelfHosted = computed(() => useFeatureFlag('self_hosted'))
 
 // Modal state is now derived from the presence of an active tab
 const isOpen = computed({
