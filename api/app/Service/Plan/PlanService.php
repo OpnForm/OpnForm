@@ -5,6 +5,7 @@ namespace App\Service\Plan;
 use App\Models\License;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Service\Billing\PlanOverrideResolver;
 
 class PlanService
 {
@@ -92,7 +93,8 @@ class PlanService
     public function computeWorkspaceTier(Workspace $workspace): string
     {
         // 1. Check for workspace-level tier override (admin-granted)
-        $overrideTier = $workspace->plan_overrides['tier'] ?? null;
+        $overrides = $this->getEffectiveOverrides($workspace);
+        $overrideTier = $overrides['tier'] ?? null;
         if ($overrideTier !== null && isset(self::TIER_ORDER[$overrideTier])) {
             return $overrideTier;
         }
@@ -216,7 +218,7 @@ class PlanService
     public function workspaceHasFeature(Workspace $workspace, string $feature): bool
     {
         // 1. Check workspace-level feature override
-        $overrideFeatures = $workspace->plan_overrides['features'] ?? [];
+        $overrideFeatures = $this->getEffectiveOverrides($workspace)['features'] ?? [];
         if (in_array($feature, $overrideFeatures)) {
             return true;
         }
@@ -233,7 +235,7 @@ class PlanService
     public function getWorkspaceLimit(Workspace $workspace, string $limitKey): mixed
     {
         // 1. Check workspace-level override
-        $overrideLimit = $workspace->plan_overrides['limits'][$limitKey] ?? null;
+        $overrideLimit = $this->getEffectiveOverrides($workspace)['limits'][$limitKey] ?? null;
         if ($overrideLimit !== null) {
             return $overrideLimit;
         }
@@ -245,5 +247,10 @@ class PlanService
         $tier = $this->getWorkspaceTier($workspace);
 
         return $this->getTierLimit($tier, $limitKey);
+    }
+
+    private function getEffectiveOverrides(Workspace $workspace): array
+    {
+        return app(PlanOverrideResolver::class)->getEffectiveOverrides($workspace);
     }
 }

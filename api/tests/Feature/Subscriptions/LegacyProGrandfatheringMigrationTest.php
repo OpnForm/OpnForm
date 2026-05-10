@@ -11,8 +11,9 @@ function legacyProGrandfatheringMigration()
     return include database_path('migrations/2026_02_14_000000_grandfather_legacy_pro_workspaces.php');
 }
 
-it('grandfathers active legacy default subscriptions with moved pro features', function () {
+it('grandfathers active legacy default subscriptions with moved pro features linked to the subscription', function () {
     $user = $this->createProUser();
+    $subscription = $user->subscriptions()->first();
     $workspace = $this->createUserWorkspace($user);
 
     legacyProGrandfatheringMigration()->up();
@@ -20,6 +21,7 @@ it('grandfathers active legacy default subscriptions with moved pro features', f
     $workspace = $workspace->fresh();
     $service = app(PlanAccessService::class);
 
+    expect($workspace->plan_overrides_subscription_id)->toBe($subscription->id);
     expect($workspace->plan_tier)->toBe('pro');
     expect($service->hasFeature($workspace, Feature::BRANDING_ADVANCED))->toBeTrue();
     expect($service->hasFeature($workspace, Feature::PARTIAL_SUBMISSIONS))->toBeTrue();
@@ -28,6 +30,24 @@ it('grandfathers active legacy default subscriptions with moved pro features', f
     expect($service->hasFormFeature($workspace, 'custom_css'))->toBeTrue();
     expect($service->hasFormFeature($workspace, 'seo_meta'))->toBeTrue();
     expect($service->hasFormFeature($workspace, 'enable_ip_tracking'))->toBeTrue();
+});
+
+it('drops grandfathered features when the linked legacy subscription stops being active', function () {
+    $user = $this->createProUser();
+    $subscription = $user->subscriptions()->first();
+    $workspace = $this->createUserWorkspace($user);
+
+    legacyProGrandfatheringMigration()->up();
+    expect(app(PlanAccessService::class)->hasFeature($workspace->fresh(), Feature::BRANDING_ADVANCED))->toBeTrue();
+
+    $subscription->update([
+        'stripe_status' => 'canceled',
+        'ends_at' => now()->subDay(),
+    ]);
+    $user->flushCache();
+    $workspace->flush();
+
+    expect(app(PlanAccessService::class)->hasFeature($workspace->fresh(), Feature::BRANDING_ADVANCED))->toBeFalse();
 });
 
 it('does not grandfather new named pro subscriptions', function () {
@@ -47,6 +67,7 @@ it('does not grandfather new named pro subscriptions', function () {
     $service = app(PlanAccessService::class);
 
     expect($workspace->plan_overrides)->toBeNull();
+    expect($workspace->plan_overrides_subscription_id)->toBeNull();
     expect($workspace->plan_tier)->toBe('pro');
     expect($service->hasFeature($workspace, Feature::BRANDING_ADVANCED))->toBeFalse();
     expect($service->hasFormFeature($workspace, 'custom_css'))->toBeFalse();
@@ -54,7 +75,7 @@ it('does not grandfather new named pro subscriptions', function () {
 
 it('grandfathers trialing legacy default subscriptions', function () {
     $user = $this->createUser();
-    $user->subscriptions()->create([
+    $subscription = $user->subscriptions()->create([
         'type' => 'default',
         'stripe_id' => (string) Str::uuid(),
         'stripe_status' => 'trialing',
@@ -66,9 +87,11 @@ it('grandfathers trialing legacy default subscriptions', function () {
 
     legacyProGrandfatheringMigration()->up();
 
+    $workspace = $workspace->fresh();
     $service = app(PlanAccessService::class);
 
-    expect($service->hasFeature($workspace->fresh(), Feature::BRANDING_ADVANCED))->toBeTrue();
+    expect($workspace->plan_overrides_subscription_id)->toBe($subscription->id);
+    expect($service->hasFeature($workspace, Feature::BRANDING_ADVANCED))->toBeTrue();
 });
 
 it('does not grandfather ended legacy default subscriptions', function () {
@@ -86,6 +109,7 @@ it('does not grandfather ended legacy default subscriptions', function () {
     legacyProGrandfatheringMigration()->up();
 
     expect($workspace->fresh()->plan_overrides)->toBeNull();
+    expect($workspace->fresh()->plan_overrides_subscription_id)->toBeNull();
 });
 
 it('keeps moved pro form features available after legacy grandfathering', function () {
@@ -118,7 +142,7 @@ it('keeps moved pro form features available after legacy grandfathering', functi
     expect($cleaner->hasCleaned())->toBeFalse();
 });
 
-it('grandfathers active lifetime licenses too', function () {
+it('grandfathers active lifetime licenses as permanent plan overrides', function () {
     $user = $this->createAppSumoLicensedUser(2);
     $workspace = $this->createUserWorkspace($user);
 
@@ -127,12 +151,13 @@ it('grandfathers active lifetime licenses too', function () {
     $workspace = $workspace->fresh();
     $service = app(PlanAccessService::class);
 
+    expect($workspace->plan_overrides_subscription_id)->toBeNull();
     expect($workspace->plan_tier)->toBe('pro');
     expect($service->hasFeature($workspace, Feature::BRANDING_ADVANCED))->toBeTrue();
     expect($service->hasFormFeature($workspace, 'custom_css'))->toBeTrue();
 });
 
-it('rolls back only features added by the grandfathering migration', function () {
+it('rolls back only features added by the grandfathering migration and clears the linked subscription', function () {
     $user = $this->createProUser();
     $workspace = $this->createUserWorkspace($user);
     $workspace->update([
@@ -151,8 +176,10 @@ it('rolls back only features added by the grandfathering migration', function ()
     $migration->up();
     $migration->down();
 
-    $overrides = $workspace->fresh()->plan_overrides;
+    $workspace = $workspace->fresh();
+    $overrides = $workspace->plan_overrides;
 
+    expect($workspace->plan_overrides_subscription_id)->toBeNull();
     expect($overrides['features'])->toContain(Feature::SSO_OIDC);
     expect($overrides['features'])->toContain('custom_domain.wildcard');
     expect($overrides['features'])->not->toContain(Feature::BRANDING_ADVANCED);

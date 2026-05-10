@@ -8,8 +8,10 @@ use App\Models\Workspace;
 
 class PlanAccessService
 {
-    public function __construct(protected BillingStateResolver $billingStateResolver)
-    {
+    public function __construct(
+        protected BillingStateResolver $billingStateResolver,
+        protected PlanOverrideResolver $planOverrideResolver,
+    ) {
     }
 
     public function getTier(Workspace $workspace): string
@@ -38,7 +40,7 @@ class PlanAccessService
     public function hasFormFeature(Workspace $workspace, string $feature): bool
     {
         $featureMap = config('plans.form_features', []);
-        $overrideFeatures = $workspace->plan_overrides['features'] ?? [];
+        $overrideFeatures = $this->planOverrideResolver->getEffectiveOverrides($workspace)['features'] ?? [];
 
         if (!array_key_exists($feature, $featureMap) && !in_array($feature, $overrideFeatures, true)) {
             return false;
@@ -111,7 +113,8 @@ class PlanAccessService
             $resolved[$limitKey] = config("plans.limits.{$limitKey}." . $this->getTier($workspace));
         }
 
-        foreach (($workspace->plan_overrides['limits'] ?? []) as $limitKey => $value) {
+        $overrides = $this->planOverrideResolver->getEffectiveOverrides($workspace);
+        foreach (($overrides['limits'] ?? []) as $limitKey => $value) {
             $resolved[$limitKey] = $value;
         }
 
@@ -148,7 +151,7 @@ class PlanAccessService
             return true;
         }
 
-        $overrideFeatures = $workspace->plan_overrides['features'] ?? [];
+        $overrideFeatures = $this->planOverrideResolver->getEffectiveOverrides($workspace)['features'] ?? [];
         if (in_array($feature, $overrideFeatures, true)) {
             return true;
         }

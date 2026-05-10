@@ -30,7 +30,7 @@ return new class () extends Migration {
     public function up(): void
     {
         DB::table('workspaces')
-            ->select(['id', 'plan_overrides'])
+            ->select(['id', 'plan_overrides', 'plan_overrides_subscription_id'])
             ->where(function ($query) {
                 $query
                     ->whereExists(function ($exists) {
@@ -67,7 +67,7 @@ return new class () extends Migration {
     public function down(): void
     {
         DB::table('workspaces')
-            ->select(['id', 'plan_overrides'])
+            ->select(['id', 'plan_overrides', 'plan_overrides_subscription_id'])
             ->whereNotNull('plan_overrides')
             ->orderBy('id')
             ->chunkById(100, function ($workspaces) {
@@ -79,6 +79,13 @@ return new class () extends Migration {
 
     private function grandfatherWorkspace(object $workspace): void
     {
+        $hasActiveLifetimeLicense = $this->hasActiveLifetimeLicense($workspace->id);
+        $subscriptionId = $hasActiveLifetimeLicense ? null : $this->getActiveLegacySubscriptionId($workspace->id);
+
+        if (!$hasActiveLifetimeLicense && !$subscriptionId) {
+            return;
+        }
+
         $overrides = $this->decodeOverrides($workspace->plan_overrides ?? null);
         $existingFeatures = $this->normalizeStringList($overrides['features'] ?? []);
         $featuresToAdd = array_values(array_diff(self::LEGACY_PRO_FEATURES, $existingFeatures));
@@ -93,7 +100,8 @@ return new class () extends Migration {
 
         $overrides['features'] = array_values(array_unique(array_merge($existingFeatures, $featuresToAdd)));
         $overrides[self::MARKER_KEY] = [
-            'source' => 'legacy_default_pro',
+            'source' => $hasActiveLifetimeLicense ? 'lifetime_license' : 'legacy_default_pro',
+            'subscription_id' => $subscriptionId,
             'features' => array_values(array_unique(array_merge(
                 $this->normalizeStringList($marker['features'] ?? []),
                 $featuresToAdd,
@@ -104,6 +112,7 @@ return new class () extends Migration {
             ->where('id', $workspace->id)
             ->update([
                 'plan_overrides' => json_encode($overrides),
+                'plan_overrides_subscription_id' => $hasActiveLifetimeLicense ? null : $subscriptionId,
             ]);
     }
 
@@ -126,13 +135,46 @@ return new class () extends Migration {
             $overrides['features'] = $remainingFeatures;
         }
 
+        $subscriptionId = $marker['subscription_id'] ?? null;
         unset($overrides[self::MARKER_KEY]);
+
+        $updates = [
+            'plan_overrides' => $overrides === [] ? null : json_encode($overrides),
+        ];
+
+        if ($workspace->plan_overrides_subscription_id === $subscriptionId) {
+            $updates['plan_overrides_subscription_id'] = null;
+        }
 
         DB::table('workspaces')
             ->where('id', $workspace->id)
-            ->update([
-                'plan_overrides' => $overrides === [] ? null : json_encode($overrides),
-            ]);
+            ->update($updates);
+    }
+
+    private function getActiveLegacySubscriptionId(int $workspaceId): ?int
+    {
+        $subscription = DB::table('subscriptions')
+            ->select('subscriptions.id')
+            ->join('user_workspace', 'user_workspace.user_id', '=', 'subscriptions.user_id')
+            ->where('user_workspace.workspace_id', $workspaceId)
+            ->where('user_workspace.role', 'admin')
+            ->where('subscriptions.type', 'default')
+            ->whereIn('subscriptions.stripe_status', self::ACTIVE_STATUSES)
+            ->orderByDesc('subscriptions.created_at')
+            ->orderByDesc('subscriptions.id')
+            ->first();
+
+        return $subscription ? (int) $subscription->id : null;
+    }
+
+    private function hasActiveLifetimeLicense(int $workspaceId): bool
+    {
+        return DB::table('licenses')
+            ->join('user_workspace', 'user_workspace.user_id', '=', 'licenses.user_id')
+            ->where('user_workspace.workspace_id', $workspaceId)
+            ->where('user_workspace.role', 'admin')
+            ->where('licenses.status', 'active')
+            ->exists();
     }
 
     private function decodeOverrides(mixed $value): array
