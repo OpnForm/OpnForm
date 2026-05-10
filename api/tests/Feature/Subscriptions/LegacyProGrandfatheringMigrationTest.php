@@ -229,10 +229,11 @@ it('rolls back only features added by the grandfathering migration and clears th
     $overrides = $workspace->plan_overrides;
 
     expect($workspace->plan_overrides_subscription_id)->toBeNull();
-    expect($overrides['permanent']['features'])->toContain(Feature::SSO_OIDC);
-    expect($overrides['permanent']['features'])->toContain('custom_domain.wildcard');
-    expect($overrides['permanent']['features'])->not->toContain(Feature::BRANDING_ADVANCED);
-    expect($overrides['permanent']['features'])->not->toContain('custom_css');
-    expect($overrides['permanent']['limits'])->toBe(['custom_domain_count' => 25]);
+    expect($overrides)->not->toHaveKey('permanent');
+    expect($overrides['features'])->toContain(Feature::SSO_OIDC);
+    expect($overrides['features'])->toContain('custom_domain.wildcard');
+    expect($overrides['features'])->not->toContain(Feature::BRANDING_ADVANCED);
+    expect($overrides['features'])->not->toContain('custom_css');
+    expect($overrides['limits'])->toBe(['custom_domain_count' => 25]);
     expect($overrides)->not->toHaveKey('legacy_pro_grandfathering');
 });

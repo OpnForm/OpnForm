@@ -161,6 +161,7 @@ return new class () extends Migration {
 
         $subscriptionId = $marker['subscription_id'] ?? null;
         unset($overrides[self::MARKER_KEY]);
+        $overrides = $this->restorePermanentOverrides($overrides);
 
         $updates = [
             'plan_overrides' => $overrides === [] ? null : json_encode($overrides),
@@ -230,6 +231,24 @@ return new class () extends Migration {
         );
 
         return $overrides;
+    }
+
+    private function restorePermanentOverrides(array $overrides): array
+    {
+        $permanentOverrides = $this->extractOverridePayload($overrides['permanent'] ?? []);
+        unset($overrides['permanent']);
+
+        if ($permanentOverrides === []) {
+            return $overrides;
+        }
+
+        $topLevelOverrides = $this->extractOverridePayload($overrides);
+        unset($overrides['tier'], $overrides['features'], $overrides['limits']);
+
+        return array_merge(
+            $overrides,
+            $this->mergeOverridePayloads($permanentOverrides, $topLevelOverrides),
+        );
     }
 
     private function extractOverridePayload(mixed $overrides): array
