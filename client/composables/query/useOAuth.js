@@ -84,15 +84,17 @@ export function useOAuth() {
 
   // Queries
   const providers = (options = {}) => {
+    const { requestOptions = {}, ...queryOptions } = options
+
     return useQuery({
       queryKey: ['oauth', 'providers'],
-      queryFn: () => oauthApi.list(options),
+      queryFn: () => oauthApi.list(requestOptions),
       onSuccess: (data) => {
         data?.forEach(provider => {
           queryClient.setQueryData(['oauth', 'providers', provider.id], provider)
         })
       },
-      ...options
+      ...queryOptions
     })
   }
 

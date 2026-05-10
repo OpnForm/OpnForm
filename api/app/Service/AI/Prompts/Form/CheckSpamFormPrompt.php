@@ -10,7 +10,7 @@ class CheckSpamFormPrompt extends Prompt
 {
     protected ?float $temperature = 0.2;
     protected ?int $maxTokens = 500;
-    protected string $model = 'gpt-4.1-mini';
+    protected string $model = 'gpt-5.4-nano';
 
     public const PROMPT_TEMPLATE = <<<'EOD'
         {blockingConsiderations}

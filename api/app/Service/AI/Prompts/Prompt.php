@@ -36,7 +36,7 @@ abstract class Prompt
 
     public function __construct()
     {
-        $this->completer = new GptCompleter(null, 2, $this->model);
+        $this->completer = new GptCompleter($this->model);
     }
 
     protected function initialize(): void

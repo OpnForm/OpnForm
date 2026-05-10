@@ -276,11 +276,14 @@ const showFormCleanings = computed(() => formManager?.strategy.value.display.sho
 const showFontLink = computed(() => formManager?.strategy.value.display.showFontLink ?? false)
 
 const formStyle = computed(() => {
+  const shouldUseContainerHeight = [FormMode.PREVIEW, FormMode.TEST, FormMode.TEMPLATE].includes(props.mode)
+
   const baseStyle = {
     '--font-family': props.form.font_family,
     'direction': props.form?.layout_rtl ? 'rtl' : 'ltr',
     '--form-color': props.form.color,
-    '--color-form': props.form.color
+    '--color-form': props.form.color,
+    '--form-focused-step-height': shouldUseContainerHeight ? '100%' : '100svh'
   }
 
   // Generate color palette variants

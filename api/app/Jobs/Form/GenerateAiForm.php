@@ -17,8 +17,6 @@ class GenerateAiForm implements ShouldQueue
     use Queueable;
     use SerializesModels;
 
-    protected string $model = 'o4-mini';
-
     /**
      * Create a new job instance.
      *
