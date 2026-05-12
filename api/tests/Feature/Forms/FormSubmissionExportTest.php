@@ -138,6 +138,31 @@ it('rejects submission ids that do not belong to the form', function () {
         ->assertJsonValidationErrors(['submissionIds.0']);
 });
 
+it('accepts status as a valid export column', function () {
+    $user = $this->actingAsProUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace);
+
+    $textField = collect($form->properties)->firstWhere('type', 'text');
+    $submissionData = $this->generateFormSubmissionData($form, [
+        $textField['id'] => 'John Doe',
+    ]);
+    $this->postJson(route('forms.answer', $form->slug), $submissionData)
+        ->assertSuccessful();
+
+    $response = $this->postJson(route('open.forms.submissions.export', [
+        'form' => $form,
+    ]), [
+        'columns' => [
+            $textField['id'] => true,
+            'status' => true,
+        ],
+    ]);
+
+    $response->assertSuccessful()
+        ->assertHeader('content-disposition', 'attachment; filename=' . $form->slug . '-submission-data.csv');
+});
+
 it('cannot export form submissions with invalid columns', function () {
     $user = $this->actingAsProUser();
     $workspace = $this->createUserWorkspace($user);
