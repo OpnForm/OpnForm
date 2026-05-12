@@ -2,6 +2,7 @@
 
 use App\Models\User;
 use App\Models\Forms\FormSubmission;
+use App\Service\Forms\FormSubmissionFormatter;
 use App\Service\Storage\FileUploadPathService;
 use Illuminate\Support\Facades\Storage;
 
@@ -323,7 +324,7 @@ it('does not include status column when partial submissions are disabled', funct
     expect(str_contains($content, 'status'))->toBeFalse();
 });
 
-it('exports file urls with expiration and a valid signature', function () {
+it('exports file urls with a durable expiration and a valid signature', function () {
     $user = $this->actingAsProUser();
     $workspace = $this->createUserWorkspace($user);
     $form = $this->createForm($user, $workspace, [
@@ -369,6 +370,13 @@ it('exports file urls with expiration and a valid signature', function () {
     parse_str(parse_url($exportedFileUrl, PHP_URL_QUERY), $queryParameters);
 
     expect($queryParameters)->toHaveKeys(['expires', 'signature']);
+    expect((int) $queryParameters['expires'])->toBeGreaterThan(now()->addMinutes(FormSubmissionFormatter::SIGNED_FILE_URL_EXPIRATION_MINUTES - 1)->timestamp);
 
     $this->get($exportedFileUrl)->assertOk();
+
+    $this->travel(6)->minutes();
+
+    $this->get($exportedFileUrl)->assertOk();
+
+    $this->travelBack();
 });

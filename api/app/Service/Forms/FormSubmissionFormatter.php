@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\URL;
 
 class FormSubmissionFormatter
 {
+    public const SIGNED_FILE_URL_EXPIRATION_MINUTES = 60 * 24;
+
     /**
      * If true, creates html <a> links for emails and urls
      *
@@ -350,7 +352,7 @@ class FormSubmissionFormatter
 
             return $this->useSignedUrlForFiles ? URL::temporarySignedRoute(
                 'open.forms.submissions.file',
-                now()->addMinutes(config('vapor.signed_storage_url_expires_after', 5)),
+                now()->addMinutes(self::SIGNED_FILE_URL_EXPIRATION_MINUTES),
                 [$formId, $encodedFilename]
             ) : route('open.forms.submissions.file', [$formId, $encodedFilename]);
         } catch (\Exception $e) {
