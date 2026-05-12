@@ -23,6 +23,7 @@ class FormSubmissionExportRequest extends FormRequest
             $this->form->removed_properties ?? []
         ))->pluck('id')->toArray();
         $validColumns[] = 'created_at';
+        $validColumns[] = 'status';
 
         return [
             'columns' => [
