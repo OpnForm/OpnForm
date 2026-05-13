@@ -39,6 +39,7 @@ class ImpersonationMiddleware
         'open.forms.regenerate-link',
         'open.forms.submissions.index',
         'open.forms.submissions.file',
+        'open.forms.submissions.export',
         'open.providers',
         'open.forms.integrations.index',
         'open.forms.integrations.events',
