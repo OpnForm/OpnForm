@@ -291,26 +291,6 @@ class AnswerFormRequest extends FormRequest
         collect($this->form->properties)->each(function ($property) use ($countryCodeMapper, $receivedData, &$mergeData) {
             $receivedValue = $receivedData[$property['id']] ?? null;
 
-            // Escape all '\' in select options
-            if (in_array($property['type'], ['select', 'multi_select']) && !is_null($receivedValue)) {
-                if (is_array($receivedValue)) {
-                    $mergeData[$property['id']] = collect($receivedValue)->map(function ($value) {
-                        $value = Str::of($value);
-
-                        return $value->replace(
-                            ["\e", "\f", "\n", "\r", "\t", "\v", '\\'],
-                            ['\\e', '\\f', '\\n', '\\r', '\\t', '\\v', '\\\\']
-                        )->toString();
-                    })->toArray();
-                } else {
-                    $receivedValue = Str::of($receivedValue);
-                    $mergeData[$property['id']] = $receivedValue->replace(
-                        ["\e", "\f", "\n", "\r", "\t", "\v", '\\'],
-                        ['\\e', '\\f', '\\n', '\\r', '\\t', '\\v', '\\\\']
-                    )->toString();
-                }
-            }
-
             if ($property['type'] === 'phone_number' && (!isset($property['use_simple_text_input']) || !$property['use_simple_text_input']) && $receivedValue && in_array($receivedValue, $countryCodeMapper)) {
                 $mergeData[$property['id']] = null;
             }
