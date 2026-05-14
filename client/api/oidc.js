@@ -21,18 +21,23 @@ export const oidcApi = {
   getOptionsForEmail: (email) => apiService.post('/auth/oidc/options', { email }),
   
   // OIDC callback - processes authorization code and returns token/user
-  callback: (slug, queryParams) => {
+  callback: (slug, queryParams, stateVerifier = null) => {
     // Build query string from params
     const queryString = new URLSearchParams(queryParams).toString()
     const url = `/auth/${slug}/callback${queryString ? '?' + queryString : ''}`
+    const headers = {
+      'Accept': 'application/json'
+    }
+
+    if (stateVerifier) {
+      headers['X-OIDC-State-Verifier'] = stateVerifier
+    }
+
     // Use GET with Accept: application/json header to get JSON response
     return apiService.get(url, {
-      headers: {
-        'Accept': 'application/json'
-      }
+      headers
     })
   },
 
   link: (linkToken) => apiService.post('/auth/oidc/link', { link_token: linkToken }),
 }
-

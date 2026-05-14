@@ -11,6 +11,7 @@ use App\Http\Controllers\Auth\Traits\ManagesJWT;
 use App\Http\Controllers\Controller;
 use App\Enterprise\Oidc\ProvisioningService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -19,8 +20,9 @@ class SsoController extends Controller
 {
     use ManagesJWT;
 
-    private const STATE_SESSION_KEY = 'oidc_states';
+    private const STATE_CACHE_PREFIX = 'oidc_login_state:';
     private const STATE_TTL_SECONDS = 600;
+    private const STATE_VERIFIER_HEADER = 'X-OIDC-State-Verifier';
 
     public function __construct(
         private ConnectionManager $connectionManager,
@@ -53,18 +55,28 @@ class SsoController extends Controller
 
         try {
             $driver = $this->connectionManager->buildDriver($connection);
+            $state = null;
+            $stateVerifier = null;
 
             if ($this->requiresState($connection)) {
                 $state = Str::random(32);
-                $this->storeState($request, $connection, $state);
+                $stateVerifier = Str::random(64);
+                $this->storeState($connection, $state, $stateVerifier);
                 $driver->setState($state);
             }
 
             $redirectUrl = $driver->getRedirectUrl();
 
-            return response()->json([
+            $payload = [
                 'redirect_url' => $redirectUrl,
-            ]);
+            ];
+
+            if ($state && $stateVerifier) {
+                $payload['state'] = $state;
+                $payload['state_verifier'] = $stateVerifier;
+            }
+
+            return response()->json($payload);
         } catch (\Exception $e) {
             Log::error('OIDC redirect failed', [
                 'slug' => $slug,
@@ -104,7 +116,9 @@ class SsoController extends Controller
                     ], 400);
                 }
 
-                if (!$this->consumeState($request, $connection, (string) $state)) {
+                $stateVerifier = $request->header(self::STATE_VERIFIER_HEADER);
+
+                if (!$this->consumeState($connection, (string) $state, is_string($stateVerifier) ? $stateVerifier : null)) {
                     return response()->json([
                         'message' => 'Invalid state. Please try again.',
                     ], 400);
@@ -291,43 +305,40 @@ class SsoController extends Controller
         return data_get($connection->options, 'require_state', true) !== false;
     }
 
-    private function storeState(Request $request, IdentityConnection $connection, string $state): void
+    private function storeState(IdentityConnection $connection, string $state, string $stateVerifier): void
     {
-        $states = $this->prunedStates($request->session()->get(self::STATE_SESSION_KEY, []));
-        $states[$state] = [
+        Cache::put($this->stateCacheKey($state), [
             'connection_id' => $connection->id,
-            'created_at' => now()->getTimestamp(),
-        ];
-
-        $request->session()->put(self::STATE_SESSION_KEY, $states);
+            'verifier_hash' => hash('sha256', $stateVerifier),
+        ], self::STATE_TTL_SECONDS);
     }
 
-    private function consumeState(Request $request, IdentityConnection $connection, string $state): bool
+    private function consumeState(IdentityConnection $connection, string $state, ?string $stateVerifier): bool
     {
-        $states = $this->prunedStates($request->session()->get(self::STATE_SESSION_KEY, []));
-        $storedState = $states[$state] ?? null;
+        if (!$stateVerifier) {
+            return false;
+        }
 
-        unset($states[$state]);
-        $request->session()->put(self::STATE_SESSION_KEY, $states);
-
+        $storedState = Cache::get($this->stateCacheKey($state));
         if (!is_array($storedState)) {
             return false;
         }
 
-        return (int) ($storedState['connection_id'] ?? 0) === $connection->id;
-    }
-
-    private function prunedStates(mixed $states): array
-    {
-        if (!is_array($states)) {
-            return [];
+        if ((int) ($storedState['connection_id'] ?? 0) !== $connection->id) {
+            return false;
         }
 
-        $expiresBefore = now()->getTimestamp() - self::STATE_TTL_SECONDS;
+        if (!hash_equals((string) ($storedState['verifier_hash'] ?? ''), hash('sha256', $stateVerifier))) {
+            return false;
+        }
 
-        return array_filter($states, function ($state) use ($expiresBefore) {
-            return is_array($state)
-                && (int) ($state['created_at'] ?? 0) >= $expiresBefore;
-        });
+        Cache::forget($this->stateCacheKey($state));
+
+        return true;
+    }
+
+    private function stateCacheKey(string $state): string
+    {
+        return self::STATE_CACHE_PREFIX.$state;
     }
 }
