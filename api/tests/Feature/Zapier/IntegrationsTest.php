@@ -54,6 +54,27 @@ test('cannot create an integration without a corresponding ability', function ()
     assertDatabaseCount('form_integrations', 0);
 });
 
+test('cannot create an integration with a private hook url', function () {
+    $user = User::factory()->create();
+    $workspace = createUserWorkspace($user);
+
+    $form = createForm($user, $workspace, ['title' => 'First form']);
+
+    Sanctum::actingAs(
+        $user,
+        ['manage-integrations']
+    );
+
+    post(route('zapier.webhooks.store'), [
+        'form_id' => $form->id,
+        'hookUrl' => 'https://169.254.169.254/latest/meta-data/'
+    ])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('hookUrl');
+
+    assertDatabaseCount('form_integrations', 0);
+});
+
 test('cannot create an integration for other users form', function () {
     $user = User::factory()->create();
 

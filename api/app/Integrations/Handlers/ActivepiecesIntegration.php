@@ -3,13 +3,14 @@
 namespace App\Integrations\Handlers;
 
 use App\Models\Forms\Form;
+use App\Rules\PublicWebhookUrlRule;
 
 class ActivepiecesIntegration extends AbstractIntegrationHandler
 {
     public static function getValidationRules(?Form $form): array
     {
         return [
-            'webhook_url' => 'required|url',
+            'webhook_url' => ['required', 'url', new PublicWebhookUrlRule()],
             'provider_url' => 'nullable|url',
         ];
     }
