@@ -13,6 +13,10 @@ class BillingStateResolver
 {
     private const ACTIVE_STATUSES = ['trialing', 'active'];
 
+    public function __construct(protected PlanOverrideResolver $planOverrideResolver)
+    {
+    }
+
     public function resolveWorkspace(Workspace $workspace): BillingState
     {
         if (!pricing_enabled()) {
@@ -25,7 +29,8 @@ class BillingStateResolver
         }
 
         $state = $workspace->remember('billing_state', 15 * 60, function () use ($workspace) {
-            $overrideTier = $workspace->plan_overrides['tier'] ?? null;
+            $overrides = $this->planOverrideResolver->getEffectiveOverrides($workspace);
+            $overrideTier = $overrides['tier'] ?? null;
             if (is_string($overrideTier) && in_array($overrideTier, PlanTier::all(), true)) {
                 return new BillingState(
                     workspaceId: $workspace->id,

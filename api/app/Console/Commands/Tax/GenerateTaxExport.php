@@ -8,6 +8,7 @@ use App\Services\Tax\StripeExportDatasetService;
 use App\Services\Tax\StripeExportDatasetStore;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
+use Laravel\Cashier\Cashier;
 use Stripe\Invoice;
 
 class GenerateTaxExport extends Command
@@ -508,7 +509,7 @@ class GenerateTaxExport extends Command
             'cash_net_movement' => 'cash_net_movement_eur',
             'payouts' => 'payouts_eur',
         ] as $label => $targetColumn) {
-            $aggregatedReport[] = [
+            $row = [
                 'country' => '__RECONCILIATION__',
                 'customer_type' => $label,
                 'count' => 0,
@@ -536,8 +537,9 @@ class GenerateTaxExport extends Command
                 'total_eur' => 0,
                 'tax_total_eur' => 0,
                 'total_after_tax_eur' => 0,
-                $targetColumn => $summary[$targetColumn],
             ];
+            $row[$targetColumn] = $summary[$targetColumn];
+            $aggregatedReport[] = $row;
         }
 
         return $aggregatedReport;

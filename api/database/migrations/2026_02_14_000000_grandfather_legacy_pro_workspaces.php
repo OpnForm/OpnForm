@@ -29,9 +29,11 @@ return new class () extends Migration {
      */
     public function up(): void
     {
+        $extraProEmails = $this->extraProEmails();
+
         DB::table('workspaces')
-            ->select(['id', 'plan_overrides'])
-            ->where(function ($query) {
+            ->select(['id', 'plan_overrides', 'plan_overrides_subscription_id'])
+            ->where(function ($query) use ($extraProEmails) {
                 $query
                     ->whereExists(function ($exists) {
                         $exists
@@ -52,6 +54,18 @@ return new class () extends Migration {
                             ->where('user_workspace.role', 'admin')
                             ->where('licenses.status', 'active');
                     });
+
+                if ($extraProEmails !== []) {
+                    $query->orWhereExists(function ($exists) use ($extraProEmails) {
+                        $exists
+                            ->selectRaw('1')
+                            ->from('user_workspace')
+                            ->join('users', 'users.id', '=', 'user_workspace.user_id')
+                            ->whereColumn('user_workspace.workspace_id', 'workspaces.id')
+                            ->where('user_workspace.role', 'admin')
+                            ->whereIn('users.email', $extraProEmails);
+                    });
+                }
             })
             ->orderBy('id')
             ->chunkById(100, function ($workspaces) {
@@ -67,7 +81,7 @@ return new class () extends Migration {
     public function down(): void
     {
         DB::table('workspaces')
-            ->select(['id', 'plan_overrides'])
+            ->select(['id', 'plan_overrides', 'plan_overrides_subscription_id'])
             ->whereNotNull('plan_overrides')
             ->orderBy('id')
             ->chunkById(100, function ($workspaces) {
@@ -79,9 +93,26 @@ return new class () extends Migration {
 
     private function grandfatherWorkspace(object $workspace): void
     {
+        $hasActiveLifetimeLicense = $this->hasActiveLifetimeLicense($workspace->id);
+        $hasExtraProOwner = $this->hasExtraProOwner($workspace->id);
+        $isPermanentGrandfathering = $hasActiveLifetimeLicense || $hasExtraProOwner;
+        $subscriptionId = $isPermanentGrandfathering ? null : $this->getActiveLegacySubscriptionId($workspace->id);
+
+        if (!$isPermanentGrandfathering && !$subscriptionId) {
+            return;
+        }
+
         $overrides = $this->decodeOverrides($workspace->plan_overrides ?? null);
-        $existingFeatures = $this->normalizeStringList($overrides['features'] ?? []);
-        $featuresToAdd = array_values(array_diff(self::LEGACY_PRO_FEATURES, $existingFeatures));
+        if (!$isPermanentGrandfathering && !is_array($overrides[self::MARKER_KEY] ?? null)) {
+            $overrides = $this->moveExistingOverridesToPermanent($overrides);
+        }
+
+        $permanentFeatures = $this->normalizeStringList($overrides['permanent']['features'] ?? []);
+        $scopedFeatures = $this->normalizeStringList($overrides['features'] ?? []);
+        $featuresToAdd = array_values(array_diff(
+            self::LEGACY_PRO_FEATURES,
+            array_values(array_unique(array_merge($permanentFeatures, $scopedFeatures))),
+        ));
 
         if ($featuresToAdd === []) {
             return;
@@ -91,9 +122,10 @@ return new class () extends Migration {
             ? $overrides[self::MARKER_KEY]
             : [];
 
-        $overrides['features'] = array_values(array_unique(array_merge($existingFeatures, $featuresToAdd)));
+        $overrides['features'] = array_values(array_unique(array_merge($scopedFeatures, $featuresToAdd)));
         $overrides[self::MARKER_KEY] = [
-            'source' => 'legacy_default_pro',
+            'source' => $this->getGrandfatheringSource($hasActiveLifetimeLicense, $hasExtraProOwner),
+            'subscription_id' => $subscriptionId,
             'features' => array_values(array_unique(array_merge(
                 $this->normalizeStringList($marker['features'] ?? []),
                 $featuresToAdd,
@@ -104,6 +136,7 @@ return new class () extends Migration {
             ->where('id', $workspace->id)
             ->update([
                 'plan_overrides' => json_encode($overrides),
+                'plan_overrides_subscription_id' => $isPermanentGrandfathering ? null : $subscriptionId,
             ]);
     }
 
@@ -126,13 +159,169 @@ return new class () extends Migration {
             $overrides['features'] = $remainingFeatures;
         }
 
+        $subscriptionId = $marker['subscription_id'] ?? null;
         unset($overrides[self::MARKER_KEY]);
+        $overrides = $this->restorePermanentOverrides($overrides);
+
+        $updates = [
+            'plan_overrides' => $overrides === [] ? null : json_encode($overrides),
+        ];
+
+        if ($workspace->plan_overrides_subscription_id === $subscriptionId) {
+            $updates['plan_overrides_subscription_id'] = null;
+        }
 
         DB::table('workspaces')
             ->where('id', $workspace->id)
-            ->update([
-                'plan_overrides' => $overrides === [] ? null : json_encode($overrides),
-            ]);
+            ->update($updates);
+    }
+
+    private function getActiveLegacySubscriptionId(int $workspaceId): ?int
+    {
+        $subscription = DB::table('subscriptions')
+            ->select('subscriptions.id')
+            ->join('user_workspace', 'user_workspace.user_id', '=', 'subscriptions.user_id')
+            ->where('user_workspace.workspace_id', $workspaceId)
+            ->where('user_workspace.role', 'admin')
+            ->where('subscriptions.type', 'default')
+            ->whereIn('subscriptions.stripe_status', self::ACTIVE_STATUSES)
+            ->orderByDesc('subscriptions.created_at')
+            ->orderByDesc('subscriptions.id')
+            ->first();
+
+        return $subscription ? (int) $subscription->id : null;
+    }
+
+    private function hasActiveLifetimeLicense(int $workspaceId): bool
+    {
+        return DB::table('licenses')
+            ->join('user_workspace', 'user_workspace.user_id', '=', 'licenses.user_id')
+            ->where('user_workspace.workspace_id', $workspaceId)
+            ->where('user_workspace.role', 'admin')
+            ->where('licenses.status', 'active')
+            ->exists();
+    }
+
+    private function hasExtraProOwner(int $workspaceId): bool
+    {
+        $extraProEmails = $this->extraProEmails();
+        if ($extraProEmails === []) {
+            return false;
+        }
+
+        return DB::table('users')
+            ->join('user_workspace', 'user_workspace.user_id', '=', 'users.id')
+            ->where('user_workspace.workspace_id', $workspaceId)
+            ->where('user_workspace.role', 'admin')
+            ->whereIn('users.email', $extraProEmails)
+            ->exists();
+    }
+
+    private function moveExistingOverridesToPermanent(array $overrides): array
+    {
+        $existingOverrides = $this->extractOverridePayload($overrides);
+        if ($existingOverrides === []) {
+            return $overrides;
+        }
+
+        unset($overrides['tier'], $overrides['features'], $overrides['limits']);
+        $overrides['permanent'] = $this->mergeOverridePayloads(
+            $this->extractOverridePayload($overrides['permanent'] ?? []),
+            $existingOverrides,
+        );
+
+        return $overrides;
+    }
+
+    private function restorePermanentOverrides(array $overrides): array
+    {
+        $permanentOverrides = $this->extractOverridePayload($overrides['permanent'] ?? []);
+        unset($overrides['permanent']);
+
+        if ($permanentOverrides === []) {
+            return $overrides;
+        }
+
+        $topLevelOverrides = $this->extractOverridePayload($overrides);
+        unset($overrides['tier'], $overrides['features'], $overrides['limits']);
+
+        return array_merge(
+            $overrides,
+            $this->mergeOverridePayloads($permanentOverrides, $topLevelOverrides),
+        );
+    }
+
+    private function extractOverridePayload(mixed $overrides): array
+    {
+        if (!is_array($overrides)) {
+            return [];
+        }
+
+        $payload = [];
+
+        if (isset($overrides['tier']) && is_string($overrides['tier'])) {
+            $payload['tier'] = $overrides['tier'];
+        }
+
+        $features = $this->normalizeStringList($overrides['features'] ?? []);
+        if ($features !== []) {
+            $payload['features'] = $features;
+        }
+
+        if (isset($overrides['limits']) && is_array($overrides['limits'])) {
+            $payload['limits'] = $overrides['limits'];
+        }
+
+        return $payload;
+    }
+
+    private function mergeOverridePayloads(array $existingOverrides, array $newOverrides): array
+    {
+        $merged = $existingOverrides;
+
+        if (isset($newOverrides['tier'])) {
+            $merged['tier'] = $newOverrides['tier'];
+        }
+
+        $features = array_values(array_unique(array_merge(
+            $this->normalizeStringList($existingOverrides['features'] ?? []),
+            $this->normalizeStringList($newOverrides['features'] ?? []),
+        )));
+        if ($features !== []) {
+            $merged['features'] = $features;
+        }
+
+        $limits = array_merge(
+            is_array($existingOverrides['limits'] ?? null) ? $existingOverrides['limits'] : [],
+            is_array($newOverrides['limits'] ?? null) ? $newOverrides['limits'] : [],
+        );
+        if ($limits !== []) {
+            $merged['limits'] = $limits;
+        }
+
+        return $merged;
+    }
+
+    private function getGrandfatheringSource(bool $hasActiveLifetimeLicense, bool $hasExtraProOwner): string
+    {
+        if ($hasActiveLifetimeLicense) {
+            return 'lifetime_license';
+        }
+
+        return $hasExtraProOwner ? 'extra_pro_user' : 'legacy_default_pro';
+    }
+
+    private function extraProEmails(): array
+    {
+        $emails = config('opnform.extra_pro_users_emails', []);
+        if (!is_array($emails)) {
+            return [];
+        }
+
+        return array_values(array_filter(
+            $emails,
+            fn ($email) => is_string($email) && $email !== '',
+        ));
     }
 
     private function decodeOverrides(mixed $value): array

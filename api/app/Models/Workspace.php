@@ -2,13 +2,16 @@
 
 namespace App\Models;
 
+use App\Models\Billing\Subscription;
 use App\Models\Forms\Form;
 use App\Models\Traits\CachableAttributes;
 use App\Models\Traits\CachesAttributes;
 use App\Service\Billing\BillingStateResolver;
 use App\Service\Billing\PlanAccessService;
+use App\Service\Billing\PlanOverrideResolver;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Collection;
 
@@ -32,6 +35,7 @@ class Workspace extends Model implements CachableAttributes
         'custom_domain',
         'settings',
         'plan_overrides',
+        'plan_overrides_subscription_id',
     ];
 
     protected $dispatchesEvents = [
@@ -51,6 +55,7 @@ class Workspace extends Model implements CachableAttributes
             'custom_domains' => 'array',
             'settings' => 'array',
             'plan_overrides' => 'array',
+            'plan_overrides_subscription_id' => 'integer',
         ];
     }
 
@@ -88,7 +93,8 @@ class Workspace extends Model implements CachableAttributes
 
         return $this->remember('max_file_size', self::CACHE_TTL, function (): int {
             // 1. Check workspace-level override
-            $overrideLimit = $this->plan_overrides['limits']['file_upload_size'] ?? null;
+            $overrideLimit = app(PlanOverrideResolver::class)
+                ->getEffectiveOverrides($this)['limits']['file_upload_size'] ?? null;
             if ($overrideLimit !== null) {
                 return (int) $overrideLimit;
             }
@@ -115,7 +121,8 @@ class Workspace extends Model implements CachableAttributes
 
         return $this->remember('custom_domain_count', self::CACHE_TTL, function (): ?int {
             // 1. Check workspace-level override
-            $overrideLimit = $this->plan_overrides['limits']['custom_domain_count'] ?? null;
+            $overrideLimit = app(PlanOverrideResolver::class)
+                ->getEffectiveOverrides($this)['limits']['custom_domain_count'] ?? null;
             if ($overrideLimit !== null) {
                 return (int) $overrideLimit;
             }
@@ -235,13 +242,19 @@ class Workspace extends Model implements CachableAttributes
         return $this->users()->wherePivot('role', 'admin');
     }
 
+    public function planOverridesSubscription(): BelongsTo
+    {
+        return $this->belongsTo(Subscription::class, 'plan_overrides_subscription_id');
+    }
+
     /**
      * Get workspace owners who have an active billing relationship.
-     * Returns all admins if workspace has plan_overrides (paid without subscription is valid).
+     * Returns all admins if workspace has effective tier overrides (paid without subscription is valid).
      */
     public function billingOwners(): Collection
     {
-        if (!empty($this->plan_overrides['tier'])) {
+        $overrides = app(PlanOverrideResolver::class)->getEffectiveOverrides($this);
+        if (!empty($overrides['tier'])) {
             return $this->owners;
         }
 
