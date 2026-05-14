@@ -5,12 +5,12 @@ namespace App\Http\Controllers\Auth;
 use App\Enterprise\Oidc\ConnectionManager;
 use App\Enterprise\Oidc\Exceptions\OidcAccountLinkRequiredException;
 use App\Enterprise\Oidc\IdTokenVerifier;
+use App\Enterprise\Oidc\Models\IdentityConnection;
 use App\Enterprise\Oidc\OidcLinkService;
 use App\Http\Controllers\Auth\Traits\ManagesJWT;
 use App\Http\Controllers\Controller;
 use App\Enterprise\Oidc\ProvisioningService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -18,6 +18,10 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 class SsoController extends Controller
 {
     use ManagesJWT;
+
+    private const STATE_SESSION_KEY = 'oidc_states';
+    private const STATE_TTL_SECONDS = 600;
+
     public function __construct(
         private ConnectionManager $connectionManager,
         private ProvisioningService $provisioningService,
@@ -30,7 +34,7 @@ class SsoController extends Controller
      * Get redirect URL for OIDC provider authentication.
      * Returns JSON response so frontend can handle redirect and errors.
      */
-    public function redirect(string $slug)
+    public function redirect(Request $request, string $slug)
     {
         $connection = $this->connectionManager->getConnectionBySlug($slug);
 
@@ -52,7 +56,7 @@ class SsoController extends Controller
 
             if ($this->requiresState($connection)) {
                 $state = Str::random(32);
-                Cache::put("oidc_state_{$state}", true, 600);
+                $this->storeState($request, $connection, $state);
                 $driver->setState($state);
             }
 
@@ -100,8 +104,7 @@ class SsoController extends Controller
                     ], 400);
                 }
 
-                $stateValid = Cache::pull("oidc_state_{$state}");
-                if (!$stateValid) {
+                if (!$this->consumeState($request, $connection, (string) $state)) {
                     return response()->json([
                         'message' => 'Invalid state. Please try again.',
                     ], 400);
@@ -256,8 +259,8 @@ class SsoController extends Controller
 
         // Find enabled OIDC connection matching domain
         // Domain is stored directly on the connection record
-        $connection = \App\Enterprise\Oidc\Models\IdentityConnection::enabled()
-            ->where('type', \App\Enterprise\Oidc\Models\IdentityConnection::TYPE_OIDC)
+        $connection = IdentityConnection::enabled()
+            ->where('type', IdentityConnection::TYPE_OIDC)
             ->where('domain', $domain)
             ->first();
 
@@ -283,8 +286,48 @@ class SsoController extends Controller
         return count($parts) === 2 ? $parts[1] : null;
     }
 
-    private function requiresState(\App\Enterprise\Oidc\Models\IdentityConnection $connection): bool
+    private function requiresState(IdentityConnection $connection): bool
     {
         return data_get($connection->options, 'require_state', true) !== false;
+    }
+
+    private function storeState(Request $request, IdentityConnection $connection, string $state): void
+    {
+        $states = $this->prunedStates($request->session()->get(self::STATE_SESSION_KEY, []));
+        $states[$state] = [
+            'connection_id' => $connection->id,
+            'created_at' => now()->getTimestamp(),
+        ];
+
+        $request->session()->put(self::STATE_SESSION_KEY, $states);
+    }
+
+    private function consumeState(Request $request, IdentityConnection $connection, string $state): bool
+    {
+        $states = $this->prunedStates($request->session()->get(self::STATE_SESSION_KEY, []));
+        $storedState = $states[$state] ?? null;
+
+        unset($states[$state]);
+        $request->session()->put(self::STATE_SESSION_KEY, $states);
+
+        if (!is_array($storedState)) {
+            return false;
+        }
+
+        return (int) ($storedState['connection_id'] ?? 0) === $connection->id;
+    }
+
+    private function prunedStates(mixed $states): array
+    {
+        if (!is_array($states)) {
+            return [];
+        }
+
+        $expiresBefore = now()->getTimestamp() - self::STATE_TTL_SECONDS;
+
+        return array_filter($states, function ($state) use ($expiresBefore) {
+            return is_array($state)
+                && (int) ($state['created_at'] ?? 0) >= $expiresBefore;
+        });
     }
 }
