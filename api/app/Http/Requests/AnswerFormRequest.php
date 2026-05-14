@@ -14,7 +14,6 @@ use App\Service\Forms\FormLogicPropertyResolver;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
 use Stevebauman\Purify\Facades\Purify;
 
 class AnswerFormRequest extends FormRequest
@@ -214,7 +213,13 @@ class AnswerFormRequest extends FormRequest
                     return ['string'];
                 }
 
-                return [Rule::in($this->getSelectPropertyOptions($property))];
+                $options = $this->getSelectPropertyOptions($property);
+
+                return [function ($attribute, $value, $fail) use ($options) {
+                    if (!in_array($value, $options, true)) {
+                        $fail('validation.in')->translate();
+                    }
+                }];
             case 'checkbox':
                 return ['boolean'];
             case 'url':

@@ -234,9 +234,9 @@ describe('select options with special characters', function () {
         expect($submission->data['multi_special'])->toBe(["Tab\there", 'Back\\slash', 'Comma, inside']);
     });
 
-    it('can submit select option by id when option contains special characters', function () {
+    it('can submit select option containing mixed tab and unicode characters', function () {
         $selectField = [
-            'id' => 'select_by_id',
+            'id' => 'select_mixed',
             'name' => 'Choose an Option',
             'type' => 'select',
             'required' => true,
@@ -252,7 +252,7 @@ describe('select options with special characters', function () {
         $this->form->save();
 
         $formData = $this->generateFormSubmissionData($this->form, [
-            'select_by_id' => "Special\tOption — Опция",
+            'select_mixed' => "Special\tOption — Опция",
         ]);
 
         $this->postJson(route('forms.answer', $this->form->slug), $formData)
@@ -261,6 +261,9 @@ describe('select options with special characters', function () {
                 'type' => 'success',
                 'message' => 'Form submission saved.',
             ]);
+
+        $submission = $this->form->submissions()->first();
+        expect($submission->data['select_mixed'])->toBe("Special\tOption — Опция");
     });
 
     it('rejects invalid select option even with special characters in valid options', function () {
@@ -352,5 +355,70 @@ describe('select options with special characters', function () {
         expect($submission->data['select_stored'])->toBe($optionWithTab);
         expect($submission->data['select_stored'])->not->toContain('\\t');
         expect($submission->data['select_stored'])->toContain("\t");
+    });
+
+    it('can submit select option with a trailing backslash', function () {
+        $selectField = [
+            'id' => 'select_trailing_bs',
+            'name' => 'Choose an Option',
+            'type' => 'select',
+            'required' => true,
+            'select' => [
+                'options' => [
+                    ['id' => 'opt1', 'name' => 'Ends\\'],
+                    ['id' => 'opt2', 'name' => 'Normal'],
+                ],
+            ],
+        ];
+
+        $this->form->properties = array_merge($this->form->properties, [$selectField]);
+        $this->form->save();
+
+        $formData = $this->generateFormSubmissionData($this->form, [
+            'select_trailing_bs' => 'Ends\\',
+        ]);
+
+        $this->postJson(route('forms.answer', $this->form->slug), $formData)
+            ->assertSuccessful()
+            ->assertJson([
+                'type' => 'success',
+                'message' => 'Form submission saved.',
+            ]);
+
+        $submission = $this->form->submissions()->first();
+        expect($submission->data['select_trailing_bs'])->toBe('Ends\\');
+    });
+
+    it('can submit multi_select option with trailing backslashes', function () {
+        $multiSelectField = [
+            'id' => 'multi_trailing_bs',
+            'name' => 'Choose Options',
+            'type' => 'multi_select',
+            'required' => true,
+            'multi_select' => [
+                'options' => [
+                    ['id' => 'opt1', 'name' => 'Path\\'],
+                    ['id' => 'opt2', 'name' => 'Dir\\subdir\\'],
+                    ['id' => 'opt3', 'name' => 'Normal'],
+                ],
+            ],
+        ];
+
+        $this->form->properties = array_merge($this->form->properties, [$multiSelectField]);
+        $this->form->save();
+
+        $formData = $this->generateFormSubmissionData($this->form, [
+            'multi_trailing_bs' => ['Path\\', 'Dir\\subdir\\'],
+        ]);
+
+        $this->postJson(route('forms.answer', $this->form->slug), $formData)
+            ->assertSuccessful()
+            ->assertJson([
+                'type' => 'success',
+                'message' => 'Form submission saved.',
+            ]);
+
+        $submission = $this->form->submissions()->first();
+        expect($submission->data['multi_trailing_bs'])->toBe(['Path\\', 'Dir\\subdir\\']);
     });
 });
