@@ -31,9 +31,7 @@ export function useForms() {
       enabled: isQueryEnabled(slug, enabled, usePrivate),
       onSuccess: (form) => {
         if (form) {
-          if (form.id) {
-            queryClient.setQueryData(['forms', form.id], form)
-          }
+          queryClient.setQueryData(['forms', form.id], form)
           queryClient.setQueryData(detailKey(scope, form.slug), form)
         }
       },
@@ -56,10 +54,8 @@ export function useForms() {
       enabled: isQueryEnabled(id, enabled, usePrivate),
       onSuccess: (form) => {
         if (form) {
-          if (form.id) {
-            queryClient.setQueryData(['forms', form.id], form)
-            queryClient.setQueryData(detailByIdKey(scope, form.id), form)
-          }
+          queryClient.setQueryData(['forms', form.id], form)
+          queryClient.setQueryData(detailByIdKey(scope, form.id), form)
           queryClient.setQueryData(detailKey(scope, form.slug), form)
         }
       },

@@ -126,25 +126,7 @@ it('formats redirect data correctly for pro users', function () {
 
     expect($redirectData)->toBe([
         'redirect' => true,
-        'redirect_url' => 'https://example.com/test-value',
-        'redirect_external' => true,
-    ]);
-});
-
-it('returns no redirect for unsafe redirect urls', function () {
-    $user = $this->actingAsProUser();
-    $workspace = $this->createUserWorkspace($user);
-    $form = $this->createForm($user, $workspace, [
-        'redirect_url' => 'https://user:password@example.com/<span mention mention-field-id="field_1"></span>'
-    ]);
-
-    $processor = new FormSubmissionProcessor();
-    $redirectData = $processor->getRedirectData($form, [
-        'field_1' => 'test-value'
-    ]);
-
-    expect($redirectData)->toBe([
-        'redirect' => false
+        'redirect_url' => 'https://example.com/test-value'
     ]);
 });
 
@@ -177,7 +159,7 @@ describe('Clear Empty Fields On Update', function () {
 
         // Submit initial form with data
         $initialData = $this->generateFormSubmissionData($form);
-        $response = $this->postJson(route('forms.answer', $form->slug), $initialData)
+        $response = $this->postJson(route('forms.answer', $form), $initialData)
             ->assertSuccessful();
 
         $submissionId = $response->json('submission_id');
@@ -189,7 +171,7 @@ describe('Clear Empty Fields On Update', function () {
         $editData[$firstFieldKey] = null;
         $editData['submission_id'] = $submissionId;
 
-        $this->postJson(route('forms.answer', $form->slug), $editData)
+        $this->postJson(route('forms.answer', $form), $editData)
             ->assertSuccessful()
             ->assertJson([
                 'type' => 'success',
@@ -207,7 +189,7 @@ describe('Clear Empty Fields On Update', function () {
 
         // Submit initial form
         $initialData = $this->generateFormSubmissionData($form);
-        $this->postJson(route('forms.answer', $form->slug), $initialData)
+        $this->postJson(route('forms.answer', $form), $initialData)
             ->assertSuccessful();
 
         // Update same record with empty field (should be skipped, not sent to Notion)
@@ -217,7 +199,7 @@ describe('Clear Empty Fields On Update', function () {
         $fieldToClear = $fieldKeys[0];
         $updateData[$fieldToClear] = null; // Empty field should NOT be sent
 
-        $this->postJson(route('forms.answer', $form->slug), $updateData)
+        $this->postJson(route('forms.answer', $form), $updateData)
             ->assertSuccessful();
     });
 
@@ -231,7 +213,7 @@ describe('Clear Empty Fields On Update', function () {
 
         // Submit initial form
         $initialData = $this->generateFormSubmissionData($form);
-        $this->postJson(route('forms.answer', $form->slug), $initialData)
+        $this->postJson(route('forms.answer', $form), $initialData)
             ->assertSuccessful();
 
         // Update same record with empty field (should be sent and clear the field)
@@ -241,7 +223,7 @@ describe('Clear Empty Fields On Update', function () {
         $fieldToClear = $fieldKeys[0];
         $updateData[$fieldToClear] = null; // Empty field SHOULD be sent to clear it
 
-        $this->postJson(route('forms.answer', $form->slug), $updateData)
+        $this->postJson(route('forms.answer', $form), $updateData)
             ->assertSuccessful();
     });
 });

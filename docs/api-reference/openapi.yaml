@@ -591,14 +591,6 @@ paths:
                                         type: boolean
                                     redirect:
                                         type: boolean
-                                    redirect_url:
-                                        type: string
-                                        format: uri
-                                        nullable: true
-                                        description: "Present when the form is configured to redirect after submission."
-                                    redirect_external:
-                                        type: boolean
-                                        description: "True when redirect_url points to an external origin. External redirects require an explicit user action in the official client."
                 "422":
                     description: "Validation error"
                     content:
@@ -1301,7 +1293,6 @@ components:
                     type: string
                     format: uri
                     nullable: true
-                    description: "Optional post-submit redirect URL. Final URLs must use http or https and cannot contain embedded credentials. External redirects are not followed automatically by the official client."
                 re_fillable:
                     type: boolean
                 re_fill_button_text:

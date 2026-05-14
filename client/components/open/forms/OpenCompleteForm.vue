@@ -84,14 +84,6 @@
           />
           <div class="flex w-full gap-2 items-center mt-4">
             <open-form-button
-              v-if="externalRedirectUrl"
-              :form="form"
-              icon="i-heroicons-arrow-top-right-on-square"
-              @click="continueToExternalRedirect"
-            >
-              Continue
-            </open-form-button>
-            <open-form-button
               v-if="form.re_fillable"
               :form="form"
               icon="i-lucide-rotate-ccw"
@@ -254,10 +246,6 @@ const isFormOwner = computed(() => {
 const isProcessing = computed(() => formManager?.state.isProcessing ?? false)
 const showFormCleanings = computed(() => formManager?.strategy.value.display.showFormCleanings ?? false)
 const showFontLink = computed(() => formManager?.strategy.value.display.showFontLink ?? false)
-const externalRedirectUrl = computed(() => {
-  const result = formManager?.state.lastSubmissionResult
-  return result?.redirect && result?.redirect_external ? result.redirect_url : null
-})
 
 const formStyle = computed(() => {
   const baseStyle = {
@@ -399,11 +387,6 @@ const restart = async () => {
 const editSubmission = () => {
   const editUrl = props.form.share_url + '?submission_id=' + submissionId.value
   window.parent.location.href = editUrl
-}
-
-const continueToExternalRedirect = () => {
-  if (!externalRedirectUrl.value) return
-  window.parent.location.href = externalRedirectUrl.value
 }
 
 const addPasswordError = (msg) => {

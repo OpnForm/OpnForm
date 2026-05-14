@@ -254,7 +254,9 @@ In production, all OIDC redirects require HTTPS. Ensure your application is serv
 
 ### State Validation
 
-OpnForm always generates and validates an OIDC `state` value for login redirects. Callback requests without a valid, unexpired state are rejected to prevent login CSRF.
+OpnForm generates and validates an OIDC `state` value by default for login redirects. Callback requests without a valid, unexpired state are rejected to prevent login CSRF.
+
+State validation can be disabled explicitly on an OIDC connection by setting `options.require_state` to `false`, but this is not recommended unless required for a legacy identity provider.
 
 ### Account Linking
 

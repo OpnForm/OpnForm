@@ -48,12 +48,7 @@ class FormResource extends JsonResource
             }
         }
 
-        $data = parent::toArray($request);
-        if (!$this->userIsFormOwner()) {
-            unset($data['id'], $data['creator_id']);
-        }
-
-        return array_merge($data, $ownerData, [
+        return array_merge(parent::toArray($request), $ownerData, [
             'settings' => $this->settings ?? new \stdClass(),
             'is_pro' => $this->workspaceIsPro(),
             'is_trialing' => $this->workspaceIsTrialing(),
@@ -85,6 +80,7 @@ class FormResource extends JsonResource
     private function getProtectedForm()
     {
         return [
+            'id' => $this->id,
             'title' => $this->title,
             'description' => $this->description,
             'slug' => $this->slug,

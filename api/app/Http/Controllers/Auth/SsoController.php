@@ -50,9 +50,11 @@ class SsoController extends Controller
         try {
             $driver = $this->connectionManager->buildDriver($connection);
 
-            $state = Str::random(32);
-            Cache::put("oidc_state_{$state}", true, 600);
-            $driver->setState($state);
+            if ($this->requiresState($connection)) {
+                $state = Str::random(32);
+                Cache::put("oidc_state_{$state}", true, 600);
+                $driver->setState($state);
+            }
 
             $redirectUrl = $driver->getRedirectUrl();
 
@@ -90,18 +92,20 @@ class SsoController extends Controller
         }
 
         try {
-            $state = $request->input('state');
-            if (!$state) {
-                return response()->json([
-                    'message' => 'Missing or invalid state. Please try again.',
-                ], 400);
-            }
+            if ($this->requiresState($connection)) {
+                $state = $request->input('state');
+                if (!$state) {
+                    return response()->json([
+                        'message' => 'Missing or invalid state. Please try again.',
+                    ], 400);
+                }
 
-            $stateValid = Cache::pull("oidc_state_{$state}");
-            if (!$stateValid) {
-                return response()->json([
-                    'message' => 'Invalid state. Please try again.',
-                ], 400);
+                $stateValid = Cache::pull("oidc_state_{$state}");
+                if (!$stateValid) {
+                    return response()->json([
+                        'message' => 'Invalid state. Please try again.',
+                    ], 400);
+                }
             }
 
             $driver = $this->connectionManager->buildDriver($connection);
@@ -277,5 +281,10 @@ class SsoController extends Controller
     {
         $parts = explode('@', strtolower(trim($email)));
         return count($parts) === 2 ? $parts[1] : null;
+    }
+
+    private function requiresState(\App\Enterprise\Oidc\Models\IdentityConnection $connection): bool
+    {
+        return data_get($connection->options, 'require_state', true) !== false;
     }
 }
