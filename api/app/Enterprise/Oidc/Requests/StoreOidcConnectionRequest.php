@@ -76,13 +76,12 @@ class StoreOidcConnectionRequest extends FormRequest
             $this->merge(['enabled' => true]);
         }
 
-        if (!$this->has('options.require_state')) {
-            $options = $this->input('options', []);
-            if (!is_array($options)) {
-                $options = [];
-            }
-            $options['require_state'] = true;
-            $this->merge(['options' => $options]);
+        $options = $this->input('options', []);
+        if (!is_array($options)) {
+            $options = [];
         }
+
+        $options['require_state'] = true;
+        $this->merge(['options' => $options]);
     }
 }

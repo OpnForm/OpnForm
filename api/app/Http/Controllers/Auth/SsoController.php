@@ -50,12 +50,9 @@ class SsoController extends Controller
         try {
             $driver = $this->connectionManager->buildDriver($connection);
 
-            $requireState = (bool) data_get($connection->options, 'require_state', false);
-            if ($requireState) {
-                $state = Str::random(32);
-                Cache::put("oidc_state_{$state}", true, 600);
-                $driver->setState($state);
-            }
+            $state = Str::random(32);
+            Cache::put("oidc_state_{$state}", true, 600);
+            $driver->setState($state);
 
             $redirectUrl = $driver->getRedirectUrl();
 
@@ -93,21 +90,18 @@ class SsoController extends Controller
         }
 
         try {
-            $requireState = (bool) data_get($connection->options, 'require_state', false);
-            if ($requireState) {
-                $state = $request->input('state');
-                if (!$state) {
-                    return response()->json([
-                        'message' => 'Missing or invalid state. Please try again.',
-                    ], 400);
-                }
+            $state = $request->input('state');
+            if (!$state) {
+                return response()->json([
+                    'message' => 'Missing or invalid state. Please try again.',
+                ], 400);
+            }
 
-                $stateValid = Cache::pull("oidc_state_{$state}");
-                if (!$stateValid) {
-                    return response()->json([
-                        'message' => 'Invalid state. Please try again.',
-                    ], 400);
-                }
+            $stateValid = Cache::pull("oidc_state_{$state}");
+            if (!$stateValid) {
+                return response()->json([
+                    'message' => 'Invalid state. Please try again.',
+                ], 400);
             }
 
             $driver = $this->connectionManager->buildDriver($connection);

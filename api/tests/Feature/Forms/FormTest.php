@@ -97,15 +97,25 @@ it('does not leak workspace details on public form fetch', function () {
 
     $response = $this->getJson(route('forms.show', $form->slug))
         ->assertSuccessful()
-        ->assertJsonPath('id', $form->id)
         ->assertJsonPath('workspace_id', $workspace->id)
         ->assertJsonPath('workspace.id', $workspace->id)
         ->assertJsonPath('workspace.max_file_size', $workspace->max_file_size / 1000000);
 
+    $response->assertJsonMissingPath('id');
+    $response->assertJsonMissingPath('creator_id');
     $response->assertJsonMissingPath('workspace.users');
     $response->assertJsonMissingPath('workspace.is_admin');
     $response->assertJsonMissingPath('workspace.is_readonly');
     $response->assertJsonMissingPath('workspace.users_count');
+});
+
+it('does not expose public forms by numeric id', function () {
+    $user = \App\Models\User::factory()->create();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace);
+
+    $this->getJson(route('forms.show', $form->id))
+        ->assertNotFound();
 });
 
 it('can update a form', function () {

@@ -85,9 +85,13 @@ When `true`, the response includes a `submission_hash` that can be used to updat
   "submission_id": "sub_1234567890",
   "is_first_submission": true,
   "redirect": false,
+  "redirect_url": null,
+  "redirect_external": false,
   "submission_hash": null
 }
 ````
+
+When a form has a post-submit redirect, `redirect_url` is only returned after the URL is rendered with submitted values and passes safety checks. External redirects set `redirect_external` to `true`; the official client shows a submitted state and requires an explicit user action instead of redirecting automatically.
 
 ```json Partial Success (200 OK)
 {

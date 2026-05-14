@@ -24,6 +24,8 @@ class PublicFormController extends Controller
 {
     public function show(Request $request, Form $form)
     {
+        $this->ensureFormWasAddressedBySlug($request);
+
         // Ensure form is public or closed
         if (!in_array($form->visibility, ['public', 'closed'])) {
             abort(404);
@@ -51,6 +53,8 @@ class PublicFormController extends Controller
 
     public function view(Request $request, Form $form)
     {
+        $this->ensureFormWasAddressedBySlug($request);
+
         // Ensure form is public
         if ($form->visibility !== 'public') {
             abort(404);
@@ -79,6 +83,8 @@ class PublicFormController extends Controller
 
     public function listUsers(Request $request, Form $form)
     {
+        $this->ensureFormWasAddressedBySlug($request);
+
         // Check that form has user field
         if (!$form->has_user_field) {
             return [];
@@ -137,6 +143,8 @@ class PublicFormController extends Controller
 
     public function answer(AnswerFormRequest $request, Form $form, FormSubmissionProcessor $formSubmissionProcessor)
     {
+        $this->ensureFormWasAddressedBySlug($request);
+
         // Check if user can answer this form
         $this->authorize('answer', $form);
 
@@ -235,6 +243,8 @@ class PublicFormController extends Controller
 
     public function fetchSubmission(Request $request, Form $form, string $submission_id)
     {
+        $this->ensureFormWasAddressedBySlug($request);
+
         // Ensure form is public and allows editable submissions
         if ($form->visibility !== 'public') {
             abort(404);
@@ -279,5 +289,14 @@ class PublicFormController extends Controller
         $resource->publiclyAccessed();
 
         return $this->success($resource->toArray($request));
+    }
+
+    private function ensureFormWasAddressedBySlug(Request $request): void
+    {
+        $rawFormRouteParameter = $request->route()?->originalParameter('form');
+
+        if (is_string($rawFormRouteParameter) && preg_match('/^\d+$/', $rawFormRouteParameter) === 1) {
+            abort(404);
+        }
     }
 }

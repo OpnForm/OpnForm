@@ -25,6 +25,7 @@ describe('SsoController - Redirect', function () {
 
         // Mock the driver to return a redirect URL
         $mockDriver = Mockery::mock(\App\Enterprise\Oidc\Adapters\OAuthOidcDriver::class);
+        $mockDriver->shouldReceive('setState')->once()->with(Mockery::type('string'))->andReturnSelf();
         $mockDriver->shouldReceive('getRedirectUrl')->andReturn('https://idp.example.com/authorize');
 
         $mockConnectionManager = Mockery::mock(\App\Enterprise\Oidc\ConnectionManager::class);
@@ -251,7 +252,10 @@ describe('SsoController - Callback', function () {
         $this->app->instance(\App\Enterprise\Oidc\ConnectionManager::class, $mockConnectionManager);
         $this->app->instance(\App\Enterprise\Oidc\IdTokenVerifier::class, $mockIdTokenVerifier);
 
-        $response = $this->getJson("/auth/test-sso/callback", [
+        $state = 'new-user-state-token';
+        Cache::put("oidc_state_{$state}", true, 600);
+
+        $response = $this->getJson("/auth/test-sso/callback?state={$state}", [
             'Accept' => 'application/json',
         ]);
 
@@ -271,13 +275,10 @@ describe('SsoController - Callback', function () {
         expect($response->json('new_user'))->toBeTrue();
     });
 
-    it('rejects callback when state is required but missing', function () {
+    it('rejects callback when state is missing', function () {
         $connection = IdentityConnection::factory()->create([
             'slug' => 'state-required',
             'enabled' => true,
-            'options' => [
-                'require_state' => true,
-            ],
         ]);
 
         $response = $this->getJson("/auth/{$connection->slug}/callback", [
@@ -288,13 +289,10 @@ describe('SsoController - Callback', function () {
         expect($response->json('message'))->toContain('Missing or invalid state');
     });
 
-    it('accepts callback when state is valid and required', function () {
+    it('accepts callback when state is valid', function () {
         $connection = IdentityConnection::factory()->create([
             'slug' => 'state-valid',
             'enabled' => true,
-            'options' => [
-                'require_state' => true,
-            ],
         ]);
 
         $state = 'state-token-12345678';
@@ -391,7 +389,10 @@ describe('SsoController - Callback', function () {
         $this->app->instance(\App\Enterprise\Oidc\IdTokenVerifier::class, $mockIdTokenVerifier);
         $this->app->instance(\App\Enterprise\Oidc\ProvisioningService::class, $mockProvisioningService);
 
-        $response = $this->getJson("/auth/test-sso/callback", [
+        $state = 'provisioning-error-state-token';
+        Cache::put("oidc_state_{$state}", true, 600);
+
+        $response = $this->getJson("/auth/test-sso/callback?state={$state}", [
             'Accept' => 'application/json',
         ]);
 
@@ -469,7 +470,10 @@ describe('SsoController - Callback', function () {
         $this->app->instance(\App\Enterprise\Oidc\IdTokenVerifier::class, $mockIdTokenVerifier);
         $this->app->instance(\App\Enterprise\Oidc\ProvisioningService::class, $mockProvisioningService);
 
-        $response = $this->getJson("/auth/test-sso/callback", [
+        $state = 'blocked-user-state-token';
+        Cache::put("oidc_state_{$state}", true, 600);
+
+        $response = $this->getJson("/auth/test-sso/callback?state={$state}", [
             'Accept' => 'application/json',
         ]);
 

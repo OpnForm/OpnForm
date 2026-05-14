@@ -42,6 +42,7 @@ export function useFormManager(initialFormConfig, initialMode = FormMode.LIVE, o
     currentPage: 0,
     isSubmitted: false,
     isProcessing: false, // Unified flag for async ops
+    lastSubmissionResult: null,
   })
 
   // --- Initialize services that depend on config and form data ---
@@ -117,6 +118,7 @@ export function useFormManager(initialFormConfig, initialMode = FormMode.LIVE, o
   const initialize = async (options = {}) => {
     state.isProcessing = true
     state.isSubmitted = false
+    state.lastSubmissionResult = null
     state.currentPage = 0
    
     await initialization.initialize({
@@ -283,6 +285,7 @@ export function useFormManager(initialFormConfig, initialMode = FormMode.LIVE, o
       // 5. Update State on Success
       state.isSubmitted = true
       state.isProcessing = false
+      state.lastSubmissionResult = submissionResult
       
       // 6. Play confetti if enabled in config
       if (import.meta.client && toValue(config).confetti_on_submission) {
@@ -313,9 +316,10 @@ export function useFormManager(initialFormConfig, initialMode = FormMode.LIVE, o
           form: {
             slug: formConfig.slug,
             id: formConfig.id,
-            redirect_target_url: (formConfig.is_pro && submissionResult?.redirect && submissionResult?.redirect_url) 
+            redirect_target_url: (formConfig.is_pro && submissionResult?.redirect && submissionResult?.redirect_url && !submissionResult?.redirect_external)
                               ? submissionResult.redirect_url 
-                              : null
+                              : null,
+            redirect_external: !!submissionResult?.redirect_external
           },
           submission_data: form.data(),
           completion_time: completionTime
@@ -330,7 +334,7 @@ export function useFormManager(initialFormConfig, initialMode = FormMode.LIVE, o
       }
       
       // 11. Handle redirect if server response includes redirect info
-      if (import.meta.client && submissionResult?.redirect && submissionResult?.redirect_url) {
+      if (import.meta.client && submissionResult?.redirect && submissionResult?.redirect_url && !submissionResult?.redirect_external) {
         window.location.href = submissionResult.redirect_url
       }
       

@@ -4,6 +4,7 @@ namespace App\Service\Forms;
 
 use App\Models\Forms\Form;
 use App\Open\MentionParser;
+use App\Service\Security\PostSubmitRedirectUrl;
 
 class FormSubmissionProcessor
 {
@@ -65,13 +66,12 @@ class FormSubmissionProcessor
             ? (new MentionParser($form->redirect_url, $formattedData))->urlFriendlyOutput()->parseAsText()
             : null;
 
-        if ($redirectUrl && !filter_var($redirectUrl, FILTER_VALIDATE_URL)) {
-            $redirectUrl = null;
-        }
+        $redirect = PostSubmitRedirectUrl::parse($redirectUrl);
 
-        return $form->is_pro && $redirectUrl ? [
+        return $form->is_pro && $redirect ? [
             'redirect' => true,
-            'redirect_url' => $redirectUrl,
+            'redirect_url' => $redirect['url'],
+            'redirect_external' => $redirect['external'],
         ] : [
             'redirect' => false,
         ];

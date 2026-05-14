@@ -65,4 +65,19 @@ class UpdateOidcConnectionRequest extends FormRequest
             'enabled' => ['sometimes', 'boolean'],
         ];
     }
+
+    public function prepareForValidation(): void
+    {
+        if (!$this->has('options')) {
+            return;
+        }
+
+        $options = $this->input('options', []);
+        if (!is_array($options)) {
+            return;
+        }
+
+        $options['require_state'] = true;
+        $this->merge(['options' => $options]);
+    }
 }

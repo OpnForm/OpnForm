@@ -252,6 +252,10 @@ OpnForm is compatible with any OIDC-compliant identity provider, including:
 
 In production, all OIDC redirects require HTTPS. Ensure your application is served over HTTPS before configuring OIDC.
 
+### State Validation
+
+OpnForm always generates and validates an OIDC `state` value for login redirects. Callback requests without a valid, unexpired state are rejected to prevent login CSRF.
+
 ### Account Linking
 
 For security, OpnForm prevents automatic linking of existing accounts. If a user with the same email already exists but isn't linked to the OIDC connection, authentication will fail with a message to contact the administrator.
