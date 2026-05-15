@@ -8,6 +8,18 @@ async function storeLocalFile(file) {
   return response
 }
 
+function normalizeSignedStorageHeaders(headers = {}) {
+  return Object.entries(headers).reduce((normalizedHeaders, [name, value]) => {
+    if (name.toLowerCase() === 'host' || value === null || typeof value === 'undefined') {
+      return normalizedHeaders
+    }
+
+    normalizedHeaders[name] = Array.isArray(value) ? value.join(', ') : value
+
+    return normalizedHeaders
+  }, {})
+}
+
 export const storeFile = async (file, options = {}) => {
   if (useFeatureFlag('storage.local'))
     return storeLocalFile(file, options)
@@ -27,6 +39,7 @@ export const storeFile = async (file, options = {}) => {
   await useFetch(response.url, {
     method: "PUT",
     body: file,
+    headers: normalizeSignedStorageHeaders(response.headers),
   })
 
   response.extension = file.name.split(".").pop()
