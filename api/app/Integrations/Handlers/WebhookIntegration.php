@@ -3,6 +3,8 @@
 namespace App\Integrations\Handlers;
 
 use App\Models\Forms\Form;
+use App\Rules\PublicWebhookUrlRule;
+use App\Service\Security\PublicWebhookUrl;
 use Illuminate\Support\Facades\Http;
 
 class WebhookIntegration extends AbstractIntegrationHandler
@@ -28,7 +30,7 @@ class WebhookIntegration extends AbstractIntegrationHandler
     public static function getValidationRules(?Form $form): array
     {
         return [
-            'webhook_url' => 'required|url',
+            'webhook_url' => ['required', 'url', new PublicWebhookUrlRule()],
             'webhook_secret' => 'nullable|string|min:12',
             'webhook_headers' => [
                 'nullable',
@@ -137,6 +139,7 @@ class WebhookIntegration extends AbstractIntegrationHandler
 
         Http::throw()
             ->timeout(5)
+            ->withOptions(PublicWebhookUrl::requestOptions($this->getWebhookUrl()))
             ->withHeaders($headers)
             ->withBody($payload, 'application/json')
             ->post($this->getWebhookUrl());

@@ -6,9 +6,9 @@ describe('oidc connection options', () => {
     expect(getOidcRequireStateDefault()).toBe(true)
   })
 
-  it('returns false when require_state is missing', () => {
-    expect(getOidcRequireStateForEdit(undefined)).toBe(false)
-    expect(getOidcRequireStateForEdit({})).toBe(false)
+  it('returns true when require_state is missing', () => {
+    expect(getOidcRequireStateForEdit(undefined)).toBe(true)
+    expect(getOidcRequireStateForEdit({})).toBe(true)
   })
 
   it('returns stored require_state for existing connections', () => {

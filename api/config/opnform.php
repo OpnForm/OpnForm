@@ -10,4 +10,7 @@ return [
     'custom_code' => [
         'enable_self_hosted' => env('CUSTOM_CODE_ENABLE_SELF_HOSTED', false),
     ],
+    'webhooks' => [
+        'allow_private_urls' => env('WEBHOOKS_ALLOW_PRIVATE_URLS', false),
+    ],
 ];

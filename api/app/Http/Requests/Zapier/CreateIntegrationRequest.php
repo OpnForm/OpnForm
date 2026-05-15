@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Zapier;
 
 use App\Models\Forms\Form;
+use App\Rules\PublicWebhookUrlRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -18,6 +19,7 @@ class CreateIntegrationRequest extends FormRequest
             'hookUrl' => [
                 'required',
                 'url',
+                new PublicWebhookUrlRule(),
             ],
         ];
     }

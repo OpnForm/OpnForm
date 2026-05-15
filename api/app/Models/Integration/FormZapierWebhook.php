@@ -4,6 +4,7 @@ namespace App\Models\Integration;
 
 use App\Integrations\Handlers\ZapierIntegration;
 use App\Models\Forms\Form;
+use App\Service\Security\PublicWebhookUrl;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Database\Eloquent\Model;
@@ -31,7 +32,7 @@ class FormZapierWebhook extends Model
 
     public function triggerHook(array $data)
     {
-        Http::throw()->post(
+        Http::throw()->withOptions(PublicWebhookUrl::requestOptions($this->hook_url))->post(
             $this->hook_url,
             ZapierIntegration::formatWebhookData($this->form, $data)
         );

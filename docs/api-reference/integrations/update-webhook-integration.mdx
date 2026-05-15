@@ -33,7 +33,7 @@ Configuration object containing webhook details. All fields are optional.
 
 <Expandable title="data properties">
 <ParamField body="webhook_url" type="string">
-The updated URL where form submissions will be sent. Must be a valid HTTP/HTTPS URL.
+The updated URL where form submissions will be sent. Must be a valid HTTPS URL that resolves only to public IP addresses. Private, loopback, link-local, and cloud metadata addresses are rejected.
 </ParamField>
 
 <ParamField body="webhook_secret" type="string">
@@ -108,6 +108,7 @@ curl -X PUT 'https://api.opnform.com/open/forms/123/integrations/42' \
 {
   "message": "The given data was invalid.",
   "errors": {
+    "data.webhook_url": ["The webhook URL must use HTTPS."],
     "data.webhook_secret": ["The webhook secret must be at least 12 characters."],
     "data.webhook_headers": ["The 'Authorization' header cannot be customized for security reasons."]
   }
@@ -116,6 +117,8 @@ curl -X PUT 'https://api.opnform.com/open/forms/123/integrations/42' \
 </ResponseExample>
 
 ## Security
+
+Webhook URLs are validated when they are saved and again before each delivery. OpnForm does not follow webhook redirects, and private network destinations are blocked unless the instance operator explicitly enables private webhook URLs for a self-hosted deployment.
 
 ### Secret Rotation
 

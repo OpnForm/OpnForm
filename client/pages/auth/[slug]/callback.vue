@@ -46,6 +46,7 @@
 
 <script setup>
 import { oidcApi } from "~/api"
+import { consumeOidcStateVerifier } from "~/lib/oidc/state-verifier"
 
 const router = useRouter()
 const route = useRoute()
@@ -67,11 +68,13 @@ const handleCallback = async () => {
         queryParams[key] = route.query[key]
       }
     })
+    const state = Array.isArray(route.query.state) ? route.query.state[0] : route.query.state
+    const stateVerifier = consumeOidcStateVerifier(slug, state)
     
     // Call the OIDC callback endpoint to process authorization code
     let response
     try {
-      response = await oidcApi.callback(slug, queryParams)
+      response = await oidcApi.callback(slug, queryParams, stateVerifier)
     } catch (error) {
       // Handle 422 responses that indicate 2FA is required (not validation errors)
       const twoFactorResponse = handleTwoFactorError(error)
@@ -164,4 +167,3 @@ onMounted(() => {
   })
 })
 </script>
-
