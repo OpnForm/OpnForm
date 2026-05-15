@@ -42,7 +42,7 @@ it('prevents fetching another form integration events via mismatched form and in
         'integration_id' => 'webhook',
         'logic' => null,
         'data' => [
-            'webhook_url' => 'https://victim.example/webhook'
+            'webhook_url' => 'https://example.com/victim-webhook'
         ]
     ])->assertSuccessful();
 
