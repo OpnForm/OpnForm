@@ -231,7 +231,7 @@ function buildHomeScenario() {
     properties: [
       introSlide(
         "home_intro",
-        "Try OpnForm live.",
+        '<span class="text-blue-500">Try OpnForm live.</span>',
         "A short demo form with prefilled answers, a rating, text fields, and conditional logic.",
         "right-split",
         "intro",
