@@ -45,21 +45,12 @@
               name="i-heroicons-sparkles-20-solid"
               class="pointer-events-none h-4 w-4"
             />
-            <button
-              type="button"
-              class="rounded-full border border-neutral-200 bg-white/80 px-1.5 py-0.5 text-[10px] font-semibold leading-3 text-neutral-400 transition hover:border-neutral-300 hover:text-neutral-600"
-              :aria-label="`Switch live demo images to ${imageVariant === 'blobs' ? 'classic' : 'soft blobs'} version`"
-              :title="`Live demo images: ${imageVariantLabel}`"
-              @click="toggleImageVariant"
-            >
-              {{ imageVariantLabel }}
-            </button>
           </div>
         </div>
 
         <div class="relative min-h-[460px] bg-white sm:min-h-[620px]">
           <LiveDemoForm
-            :key="`${scenario.key}-${imageVariant}`"
+            :key="scenario.key"
             :scenario="scenario"
             :primary-cta-to="primaryCtaTo"
             :secondary-cta-to="secondaryCtaTo"
@@ -74,7 +65,6 @@
 import LiveDemoForm from "~/components/pages/welcome/LiveDemoForm.vue"
 import { useIsAuthenticated } from "~/composables/useAuthFlow"
 import {
-  DEFAULT_LIVE_DEMO_MEDIA_VARIANT,
   getLiveDemoMediaPreloads,
   getLiveDemoScenario,
 } from "~/data/live-demo-scenarios.js"
@@ -104,21 +94,14 @@ const props = defineProps({
 })
 
 const { isAuthenticated: authenticated } = useIsAuthenticated()
-const imageVariant = ref(DEFAULT_LIVE_DEMO_MEDIA_VARIANT)
-const imageVariantLabel = computed(() => imageVariant.value === "blobs" ? "v2" : "v1")
 
 const scenario = computed(() =>
   getLiveDemoScenario({
     variant: props.variant,
     competitorName: props.competitorName,
     importSource: props.importSource,
-    mediaVariant: imageVariant.value,
   }),
 )
-
-function toggleImageVariant() {
-  imageVariant.value = imageVariant.value === "blobs" ? "classic" : "blobs"
-}
 
 const primaryCtaTo = computed(() => ({
   name: authenticated.value ? "forms-create" : "forms-create-guest",
