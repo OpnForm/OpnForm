@@ -5,7 +5,7 @@
     >
       <div class="overflow-hidden rounded-[16px] bg-white sm:rounded-[20px]">
         <div
-          class="relative flex select-none items-center justify-center border-b border-neutral-100 px-3 py-1.5 sm:px-5 sm:py-2"
+          class="relative flex select-none items-center justify-center border-b border-neutral-100 px-3 py-1 sm:px-5 sm:py-1.5"
         >
           <div class="pointer-events-none hidden items-center gap-2.5 text-neutral-300 sm:absolute sm:left-5 sm:flex">
             <UIcon
@@ -27,7 +27,7 @@
           </div>
 
           <div
-            class="flex min-w-0 items-center gap-2 rounded-full bg-neutral-50 px-3 py-1 text-xs font-medium leading-4 text-neutral-600"
+            class="flex min-w-0 items-center gap-2 rounded-full bg-neutral-50 px-3 py-0.5 text-xs font-medium leading-4 text-neutral-600"
           >
             <UIcon
               name="i-heroicons-link-20-solid"
