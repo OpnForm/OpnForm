@@ -77,30 +77,30 @@ it('sanitizes svg files when moving them to public assets', function () {
         ->toContain('<svg');
 });
 
-it('throttles the unauthenticated upload endpoints', function () {
+it('throttles the unauthenticated upload endpoints without triple-counting a request', function () {
     Storage::fake();
+    config([
+        'opnform.public_uploads.rate_limit.per_minute' => 10,
+        'opnform.public_uploads.rate_limit.per_hour' => 30,
+    ]);
     $this->withMiddleware(ThrottleRequests::class);
     $this->withServerVariables(['REMOTE_ADDR' => '192.0.2.10']);
 
-    $uploadFileThrottled = false;
-    for ($attempt = 0; $attempt < 15; $attempt++) {
+    for ($attempt = 0; $attempt < 10; $attempt++) {
         $response = $this->post('/upload-file', [
             'file' => UploadedFile::fake()->createWithContent('note-' . $attempt . '.txt', 'ok'),
         ]);
 
-        if ($response->status() === 429) {
-            $uploadFileThrottled = true;
-            break;
-        }
-
         $response->assertCreated();
     }
-    expect($uploadFileThrottled)->toBeTrue();
+
+    $this->post('/upload-file', [
+        'file' => UploadedFile::fake()->createWithContent('note-throttled.txt', 'ok'),
+    ])->assertStatus(429);
 
     $this->withServerVariables(['REMOTE_ADDR' => '192.0.2.11']);
 
-    $assetUploadThrottled = false;
-    for ($attempt = 0; $attempt < 15; $attempt++) {
+    for ($attempt = 0; $attempt < 10; $attempt++) {
         $uuid = (string) Str::uuid();
         Storage::put('tmp/' . $uuid, 'safe file');
 
@@ -109,12 +109,40 @@ it('throttles the unauthenticated upload endpoints', function () {
             'type' => 'files',
         ]);
 
-        if ($response->status() === 429) {
-            $assetUploadThrottled = true;
-            break;
-        }
-
         $response->assertOk();
     }
-    expect($assetUploadThrottled)->toBeTrue();
+
+    $uuid = (string) Str::uuid();
+    Storage::put('tmp/' . $uuid, 'safe file');
+
+    $this->postJson('/open/forms/assets/upload', [
+        'url' => 'asset_' . $uuid . '.txt',
+        'type' => 'files',
+    ])->assertStatus(429);
+});
+
+it('keeps public upload endpoint rate limit buckets separate for the same client', function () {
+    Storage::fake();
+    config([
+        'opnform.public_uploads.rate_limit.per_minute' => 10,
+        'opnform.public_uploads.rate_limit.per_hour' => 30,
+    ]);
+    $this->withMiddleware(ThrottleRequests::class);
+    $this->withServerVariables(['REMOTE_ADDR' => '192.0.2.12']);
+
+    for ($attempt = 0; $attempt < 10; $attempt++) {
+        $response = $this->post('/upload-file', [
+            'file' => UploadedFile::fake()->createWithContent('note-' . $attempt . '.txt', 'ok'),
+        ]);
+
+        $response->assertCreated();
+    }
+
+    $uuid = (string) Str::uuid();
+    Storage::put('tmp/' . $uuid, 'safe file');
+
+    $this->postJson('/open/forms/assets/upload', [
+        'url' => 'asset_' . $uuid . '.txt',
+        'type' => 'files',
+    ])->assertOk();
 });

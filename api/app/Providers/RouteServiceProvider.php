@@ -50,6 +50,21 @@ class RouteServiceProvider extends ServiceProvider
         RateLimiter::for('api', function (Request $request) {
             return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
         });
+
+        RateLimiter::for('public-uploads', function (Request $request) {
+            $identifier = $request->user()
+                ? 'user:' . $request->user()->getAuthIdentifier()
+                : 'ip:' . $request->ip();
+            $route = $request->route()?->getName() ?? $request->path();
+            $key = $route . ':' . $identifier;
+
+            return [
+                Limit::perMinute(max(1, config('opnform.public_uploads.rate_limit.per_minute', 30)))
+                    ->by('public-uploads:minute:' . $key),
+                Limit::perHour(max(1, config('opnform.public_uploads.rate_limit.per_hour', 300)))
+                    ->by('public-uploads:hour:' . $key),
+            ];
+        });
     }
 
     protected function registerGlobalRouteParamConstraints()

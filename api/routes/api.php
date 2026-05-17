@@ -204,7 +204,7 @@ Route::group(['middleware' => 'auth.multi'], function () {
             Route::post(
                 '/assets/upload',
                 [FormController::class, 'uploadAsset']
-            )->middleware(['throttle:10,1', 'throttle:30,60'])->withoutMiddleware(['auth.multi'])->name('assets.upload');
+            )->middleware('throttle:public-uploads')->withoutMiddleware(['auth.multi'])->name('assets.upload');
             Route::get(
                 '/{form}/uploaded-file/{filename}',
                 [FormController::class, 'viewFile']
@@ -413,7 +413,7 @@ Route::post(
 Route::post(
     '/upload-file',
     [\App\Http\Controllers\Content\FileUploadController::class, 'upload']
-)->middleware(['throttle:10,1', 'throttle:30,60'])->name('upload-file');
+)->middleware('throttle:public-uploads')->name('upload-file');
 
 Route::get('local/temp/{path}', function (Request $request, string $path) {
     if (!$request->hasValidSignature()) {
