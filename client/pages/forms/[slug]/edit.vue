@@ -87,7 +87,10 @@ function initUpdatedForm() {
   if (!updatedForm.value) {
     return
   }
-  formInitialHash.value = hash(JSON.stringify(updatedForm.value.data()))
+
+  nextTick(() => {
+    formInitialHash.value = hash(JSON.stringify(updatedForm?.value?.data() ?? null))
+  })
 }
 
 // Update working form store when form changes

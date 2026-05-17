@@ -91,8 +91,20 @@ const formNavigationItems = computed(() => [
       active: false
     }),
     createNavItem({
+      label: 'PDF Templates',
+      icon: 'i-heroicons-document-arrow-down',
+      to: '#',
+      active: false
+    }),
+    createNavItem({
       label: 'Analytics',
       icon: 'i-heroicons-chart-bar',
+      to: '#',
+      active: false
+    }),
+    createNavItem({
+      label: 'Summary',
+      icon: 'i-heroicons-chart-pie',
       to: '#',
       active: false
     }),
@@ -116,11 +128,24 @@ const formNavigationItems = computed(() => [
       to: { name: 'forms-slug-show-integrations', params: { slug: props.form?.slug } },
       active: isActiveRoute('forms-slug-show-integrations')
     })]),
+    // Hide PDF Templates for read-only workspaces
+    ...(workspace.value?.is_readonly ? [] : [createNavItem({
+      label: 'PDF Templates',
+      icon: 'i-heroicons-document-arrow-down',
+      to: { name: 'forms-slug-show-pdf-templates', params: { slug: props.form?.slug } },
+      active: isActiveRoute('forms-slug-show-pdf-templates')
+    })]),
     createNavItem({
       label: 'Analytics',
       icon: 'i-heroicons-chart-bar',
       to: { name: 'forms-slug-show-stats', params: { slug: props.form?.slug } },
       active: isActiveRoute('forms-slug-show-stats')
+    }),
+    createNavItem({
+      label: 'Summary',
+      icon: 'i-heroicons-chart-pie',
+      to: { name: 'forms-slug-show-summary', params: { slug: props.form?.slug } },
+      active: isActiveRoute('forms-slug-show-summary')
     }),
     createNavItem({
       label: 'Share',

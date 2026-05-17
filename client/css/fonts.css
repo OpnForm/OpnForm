@@ -1,4 +1,4 @@
-@font-face {
+/* @font-face {
     font-family: "Inter-Variable";
     src: url("/fonts/inter/Inter-VariableFont_opsz,wght.ttf") format("truetype");
     font-weight: 100 900;
@@ -13,10 +13,10 @@
     font-weight: 100 900;
     font-display: swap;
     font-style: italic;
-}
+} */
 
 /* Add Inter alias */
-@font-face {
+/* @font-face {
     font-family: "Inter";
     src: url("/fonts/inter/Inter-VariableFont_opsz,wght.ttf") format("truetype");
     font-weight: 100 900;
@@ -31,4 +31,41 @@
     font-weight: 100 900;
     font-display: swap;
     font-style: italic;
+} */
+
+@font-face {
+    font-family: "euclid-circular-b";
+    src:
+        url("/fonts/euclid-circular-b/Euclid-Circular-B-Regular.ttf"),
+        format("truetype");
+    font-weight: 400; /* Font weight = 400 */
+    font-display: swap;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: "euclid-circular-b";
+    src: url("/fonts/euclid-circular-b/Euclid-Circular-B-Medium.ttf")
+        format("truetype") format("truetype");
+    font-weight: 500; /* Font weight = 500 */
+    font-display: swap;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: "euclid-circular-b";
+    src: url("/fonts/euclid-circular-b/Euclid-Circular-B-SemiBold.ttf")
+        format("truetype");
+    font-weight: 600; /* Font weight = 600 */
+    font-display: swap;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: "euclid-circular-b";
+    src: url("/fonts/euclid-circular-b/Euclid-Circular-B-Italic.ttf")
+        format("truetype");
+    font-weight: 100 900;
+    font-display: swap;
+    font-style: italic; /* Font style = italic */
 }

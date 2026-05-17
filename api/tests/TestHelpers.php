@@ -3,6 +3,7 @@
 namespace Tests;
 
 use App\Models\Forms\Form;
+use App\Models\License;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Service\Forms\FormSubmissionDataFactory;
@@ -191,6 +192,36 @@ trait TestHelpers
         return $user;
     }
 
+    public function createBusinessUser()
+    {
+        $user = $this->createUser();
+
+        $user->subscriptions()->create([
+            'type' => 'business',
+            'stripe_id' => Str::random(),
+            'stripe_status' => 'active',
+            'stripe_price' => Str::random(),
+            'quantity' => 1,
+        ]);
+
+        return $user;
+    }
+
+    public function createEnterpriseUser()
+    {
+        $user = $this->createUser();
+
+        $user->subscriptions()->create([
+            'type' => 'enterprise',
+            'stripe_id' => Str::random(),
+            'stripe_status' => 'active',
+            'stripe_price' => Str::random(),
+            'quantity' => 1,
+        ]);
+
+        return $user;
+    }
+
     public function createTrialingUser()
     {
         $user = $this->createUser();
@@ -204,6 +235,20 @@ trait TestHelpers
         ]);
 
         return $user;
+    }
+
+    public function createAppSumoLicensedUser(int $tier = 1)
+    {
+        $user = $this->createUser();
+
+        $user->licenses()->create([
+            'license_key' => Str::random(32),
+            'license_provider' => 'appsumo',
+            'status' => License::STATUS_ACTIVE,
+            'meta' => ['tier' => $tier],
+        ]);
+
+        return $user->fresh();
     }
 
     public function actingAsUser(?User $user = null)
@@ -234,7 +279,25 @@ trait TestHelpers
         return $this->actingAsUser($user);
     }
 
-    public function actingAsTrialingUser(User $user = null)
+    public function actingAsBusinessUser(?User $user = null)
+    {
+        if ($user == null) {
+            $user = $this->createBusinessUser();
+        }
+
+        return $this->actingAsUser($user);
+    }
+
+    public function actingAsEnterpriseUser(?User $user = null)
+    {
+        if ($user == null) {
+            $user = $this->createEnterpriseUser();
+        }
+
+        return $this->actingAsUser($user);
+    }
+
+    public function actingAsTrialingUser(?User $user = null)
     {
         if ($user == null) {
             $user = $this->createTrialingUser();

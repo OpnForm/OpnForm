@@ -66,8 +66,10 @@
 
     <UndoRedo />
 
+    <FormHistory />
+
     <div
-      class="flex items-stretch gap-x-2"
+      class="flex items-center gap-x-2"
     >
       <TrackClick name="form_editor_help_button_clicked">
         <UTooltip
@@ -77,9 +79,9 @@
           arrow
         >
           <UButton
-            color="ghost"
+            variant="ghost"
+            color="neutral"
             icon="i-heroicons-question-mark-circle"
-            class="p-2 text-neutral-500 hover:text-neutral-800"
             @click.prevent="crisp.openHelpdesk()"
           />
         </UTooltip>
@@ -104,6 +106,7 @@
             class="px-8 md:px-4 py-2"
             :loading="updateFormLoading"
             :class="saveButtonClass"
+            data-testid="save-form-button"
             icon="i-ic-outline-save"
             @click="emit('save-form')"
             :label="form.visibility === 'public' ? 'Publish Form' : 'Save Changes'"
@@ -116,6 +119,7 @@
 
 <script setup>
 import { storeToRefs } from 'pinia'
+import FormHistory from '~/components/open/editors/FormHistory.vue'
 import UndoRedo from '~/components/open/editors/UndoRedo.vue'
 import FormSettingsModal from '~/components/open/forms/components/form-components/FormSettingsModal.vue'
 import EditableTag from '~/components/app/EditableTag.vue'

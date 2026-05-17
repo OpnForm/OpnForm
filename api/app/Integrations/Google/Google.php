@@ -8,53 +8,22 @@ use Google\Client as Client;
 
 class Google
 {
-    protected Client $client;
-    protected ?string $token;
-    protected ?string $refreshToken;
+    protected GoogleOAuthClient $oauth;
 
     public function __construct(
         protected FormIntegration $formIntegration
     ) {
-        $this->client = new Client();
-        $this->client->setClientId(config('services.google.client_id'));
-        $this->client->setClientSecret(config('services.google.client_secret'));
-        $this->client->setAccessToken([
-            'access_token' => $this->formIntegration->provider->access_token,
-            'created' => $this->formIntegration->provider->updated_at->getTimestamp(),
-            'expires_in' => 3600,
-        ]);
+        $this->oauth = new GoogleOAuthClient($formIntegration->provider);
     }
 
     public function getClient(): Client
     {
-        if ($this->client->isAccessTokenExpired()) {
-            $this->refreshToken();
-        }
-
-        return $this->client;
+        return $this->oauth->getClient();
     }
 
     public function refreshToken(): static
     {
-        $provider = $this->formIntegration->provider;
-        if (!$provider?->refresh_token) {
-            return $this;
-        }
-
-        $this->client->refreshToken($provider->refresh_token);
-
-        $token = $this->client->getAccessToken();
-        if (!$token || !isset($token['access_token'])) {
-            return $this;
-        }
-
-        $updateData = ['access_token' => $token['access_token']];
-
-        if (isset($token['refresh_token'])) {
-            $updateData['refresh_token'] = $token['refresh_token'];
-        }
-
-        $provider->update($updateData);
+        $this->oauth->refreshToken();
 
         return $this;
     }

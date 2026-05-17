@@ -39,13 +39,19 @@
 <script>
 import { defineAsyncComponent } from 'vue'
 import OpenFilters from "../../../../../data/open_filters.json"
+import {
+  getConditionInputComponent,
+  getMentionComputedVariables,
+  getMentionFields,
+} from '~/lib/forms/conditionInputConfig.js'
 
 export default {
   components: {
     DateInput: defineAsyncComponent(() => import('~/components/forms/heavy/DateInput.vue')),
     FileInput: defineAsyncComponent(() => import('~/components/forms/heavy/FileInput.vue')),
     MatrixInput: defineAsyncComponent(() => import('~/components/forms/heavy/MatrixInput.vue')),
-    PhoneInput: defineAsyncComponent(() => import('~/components/forms/heavy/PhoneInput.vue'))
+    PhoneInput: defineAsyncComponent(() => import('~/components/forms/heavy/PhoneInput.vue')),
+    MentionInput: defineAsyncComponent(() => import('~/components/forms/heavy/MentionInput.vue')),
   },
   props: {
     modelValue: { type: Object, required: false, default: null },
@@ -58,31 +64,25 @@ export default {
       content: this.modelValue ? { ...this.modelValue } : {},
       available_filters: OpenFilters,
       hasInput: false,
-      inputComponent: {
-        text: "TextInput",
-        rich_text: "TextInput",
-        number: "TextInput",
-        rating: "TextInput",
-        scale: "TextInput",
-        slider: "TextInput",
-        select: "SelectInput",
-        multi_select: "SelectInput",
-        date: "DateInput",
-        files: "FileInput",
-        checkbox: "CheckboxInput",
-        url: "TextInput",
-        email: "TextInput",
-        phone_number: "TextInput",
-        matrix: "MatrixInput",
-      }
     }
   },
 
   computed: {
-    // Return type of input, and props for that input
+    formProperties() {
+      return []
+    },
+    formComputedVariables() {
+      return []
+    },
+    mentionFields() {
+      return getMentionFields(this.formProperties, this.property)
+    },
+    mentionComputedVariables() {
+      return getMentionComputedVariables(this.formComputedVariables, this.property)
+    },
     inputComponentData() {
       const componentData = {
-        component: this.inputComponent[this.property.type],
+        component: getConditionInputComponent(this.property),
         name: this.property.id,
         required: true,
         size: 'xs',
@@ -119,6 +119,12 @@ export default {
       else if (this.property.type === "matrix"){
         componentData.rows = this.property.rows
         componentData.columns = this.property.columns
+      }
+
+      // Pass mention props for MentionInput
+      if (componentData.component === 'MentionInput') {
+        componentData.mentions = this.mentionFields
+        componentData.computedVariables = this.mentionComputedVariables
       }
 
       return componentData
@@ -179,14 +185,20 @@ export default {
 
   methods: {
     castContent(content) {
+      if (typeof content.value === 'string' && content.value.includes('mention-field-id')) {
+        return content
+      }
+      const operator = this.selectedOperator()
       if (
-        ["number", "rating", "scale", "slider"].includes(this.property.type) &&
+        (["number", "rating", "scale", "slider"].includes(this.property.type) ||
+        (this.property.type === 'computed' &&
+          ['number', 'numeric', 'integer', 'float'].includes(this.property.result_type)) ||
+        operator?.expected_type === "number") &&
         content.value
       ) {
         content.value = Number(content.value)
       }
 
-      const operator = this.selectedOperator()
       if (operator.expected_type === "boolean") {
         content.value = Boolean(content.value)
       }

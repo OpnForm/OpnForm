@@ -1,11 +1,15 @@
 <template>
-  <div class="p-4 flex items-center gap-4 border rounded-lg shadow-xs">
-    <USkeleton
-      class="h-8 w-8 rounded-full"
-    />
-    <div class="space-y-2">
-      <USkeleton class="h-4 w-[250px]" />
+  <DashboardPanel padding="sm">
+    <div class="flex items-center gap-4">
+      <USkeleton class="h-8 w-8 rounded-full" />
+      <div class="space-y-2">
+        <USkeleton class="h-4 w-[250px]" />
+      </div>
+      <USkeleton class="h-8 w-8 ml-auto rounded-full" />
     </div>
-    <USkeleton class="h-8 w-8 ml-auto rounded-full" />
-  </div>
-</template> 
+  </DashboardPanel>
+</template>
+
+<script setup>
+import DashboardPanel from "~/components/dashboard/DashboardPanel.vue"
+</script> 

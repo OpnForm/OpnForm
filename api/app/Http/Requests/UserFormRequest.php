@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use App\Http\Requests\Workspace\CustomDomainRequest;
 use App\Models\Forms\Form;
 use App\Rules\CustomSlugRule;
+use App\Rules\ComputedVariablesRule;
 use App\Rules\FormPropertiesRule;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
@@ -108,6 +109,17 @@ abstract class UserFormRequest extends \Illuminate\Foundation\Http\FormRequest
             $workspace = \App\Models\Workspace::find($this->get('workspace_id'));
         }
 
+        $pdfTemplateIdRules = [
+            Rule::excludeIf($this->form === null),
+            'nullable',
+            'integer',
+        ];
+
+        if ($this->form) {
+            $pdfTemplateIdRules[] = Rule::exists('pdf_templates', 'id')
+                ->where(fn ($query) => $query->where('form_id', $this->form->id));
+        }
+
         return [
             // Form Info
             'title' => 'required|string|max:60',
@@ -150,6 +162,9 @@ abstract class UserFormRequest extends \Illuminate\Foundation\Http\FormRequest
             'submit_button_text' => 'nullable|string|max:50',
             're_fillable' => 'boolean',
             're_fill_button_text' => 'nullable|string|max:50',
+            'pdf_download_enabled' => 'boolean',
+            'pdf_download_button_text' => 'nullable|string|max:50',
+            'pdf_template_id' => $pdfTemplateIdRules,
             'submitted_text' => 'string|max:10000',
             'redirect_url' => 'nullable|string',
             'database_fields_update' => 'nullable|array',
@@ -168,6 +183,9 @@ abstract class UserFormRequest extends \Illuminate\Foundation\Http\FormRequest
             // Replaces ~35 wildcard rules (properties.*) with one efficient rule
             'properties' => ['required', 'array', new FormPropertiesRule($workspace)],
 
+            // Computed Variables - Single-pass validation with formula syntax checking
+            'computed_variables' => ['nullable', 'array', new ComputedVariablesRule()],
+
             // Security & Privacy
             'can_be_indexed' => 'boolean',
             'password' => 'sometimes|nullable',
@@ -182,6 +200,18 @@ abstract class UserFormRequest extends \Illuminate\Foundation\Http\FormRequest
             // Settings
             'settings' => 'nullable|array',
             'settings.navigation_arrows' => 'sometimes|boolean',
+            'settings.auto_next' => 'sometimes|boolean',
+
+            // Analytics
+            'analytics' => 'nullable|array',
+            'analytics.provider' => ['nullable', Rule::in(['meta_pixel', 'google_analytics', 'gtm'])],
+            'analytics.tracking_id' => [
+                'nullable',
+                'string',
+                'max:50',
+                'regex:/^[A-Za-z0-9\-_\.]+$/', // Only allow safe characters (alphanumeric, dash, underscore, dot)
+                'required_if:analytics.provider,meta_pixel,google_analytics,gtm',
+            ],
         ];
     }
 

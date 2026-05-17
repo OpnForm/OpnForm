@@ -8,32 +8,33 @@ You are an expert in Nuxt, Vue.js, Vue Router, Pinia, VueUse, NuxtUI v3 library 
 
 ## Code Style and Structure
 
-- Write concise, maintainable, and technically accurate code with relevant examples.
-- Use functional and declarative programming patterns; avoid classes.
-- Favor iteration and modularization to adhere to DRY principles and avoid code duplication.
-- Use descriptive variable names with auxiliary verbs (e.g., isLoading, hasError).
-- Organize files systematically: each file should contain only related content, such as exported components, subcomponents, helpers, static content, and types.
-- No need to import Vue Reactivity APIs like ref or computed, as well as lifecycle hooks and helpers in .vue components, as they are auto-imported by Nuxt
-- For promises and async, always use ().then().error().finally() syntax over try/catch/await
+-   Write concise, maintainable, and technically accurate code with relevant examples.
+-   Use functional and declarative programming patterns; avoid classes.
+-   Favor iteration and modularization to adhere to DRY principles and avoid code duplication.
+-   Use descriptive variable names with auxiliary verbs (e.g., isLoading, hasError).
+-   Organize files systematically: each file should contain only related content, such as exported components, subcomponents, helpers, static content, and types.
+-   No need to import Vue Reactivity APIs like ref or computed, as well as lifecycle hooks and helpers in .vue components, as they are auto-imported by Nuxt
+-   For promises and async, always use ().then().error().finally() syntax over try/catch/await
 
 ## Naming Conventions
 
-- Use lowercase with dashes for directories (e.g., components/auth-wizard).
-- Favor named exports for functions.
+-   Use lowercase with dashes for directories (e.g., components/auth-wizard).
+-   Favor named exports for functions.
 
 We don't use typescript, javascript only (except when really required for config file for instance).
 
 ## Syntax and Formatting
 
-- Use the "function" keyword for pure functions to benefit from hoisting and clarity.
-- Always use the Vue Composition API script setup style. If a legacy file still using options API, it it's short then directly update the script section. If it's longer and a bit more complex, make the requried change using the existing options API and at the end ask if you should migrate to composition API.
+-   Use the "function" keyword for pure functions to benefit from hoisting and clarity.
+-   Always use the Vue Composition API script setup style. If a legacy file still using options API, it it's short then directly update the script section. If it's longer and a bit more complex, make the requried change using the existing options API and at the end ask if you should migrate to composition API.
 
 ## UI and Styling
 
-- Use Nuxt UI v3 components (https://ui.nuxt.com/components) and Tailwind for components and styling. Ex: <UModal>, <UPopover>, <UToolTip>, <UBadge> etc... Essentially use NuxtUI for everything but for form components.
-- Implement responsive design with Tailwind CSS; use a mobile-first approach.
-- Build UI components using atomic design principles, organizing them from smallest to largest (e.g., atoms, molecules, organisms, pages).
-- Icons: use the <Icon> component, and for icon names always use `i-library-icon` syntax.
+-   Use Nuxt UI v3 components (https://ui.nuxt.com/components) and Tailwind for components and styling. Ex: <UModal>, <UPopover>, <UToolTip>, <UBadge> etc... Essentially use NuxtUI for everything but for form components.
+-   Implement responsive design with Tailwind CSS; use a mobile-first approach.
+-   Build UI components using atomic design principles, organizing them from smallest to largest (e.g., atoms, molecules, organisms, pages).
+-   Icons: use the <Icon> component, and for icon names always use `i-library-icon` syntax.
+-   **Color naming**: Never use Tailwind color "gray" - always use "neutral" instead (e.g., `text-neutral-500`, `bg-neutral-100`, `border-neutral-300`). This also applies to Nuxt UI component color props and any other component color props - use "neutral" instead of "gray" (e.g., `<UBadge color="neutral">`, not `color="gray"`).
 
 ## Form Component Theming
 
@@ -43,10 +44,10 @@ Form components use the **tailwind-variants (tv)** library with a standardized p
 
 Each form component has a corresponding theme file in `lib/forms/themes/`:
 
-- Theme files export a `themeObject` (e.g., `textInputTheme`, `focusedSelectorInputTheme`)
-- Themes define `slots` (HTML elements) with base Tailwind classes
-- Themes define `variants` (size, theme, borderRadius, hasError, disabled, etc.)
-- Themes define `defaultVariants` (fallback values)
+-   Theme files export a `themeObject` (e.g., `textInputTheme`, `focusedSelectorInputTheme`)
+-   Themes define `slots` (HTML elements) with base Tailwind classes
+-   Themes define `variants` (size, theme, borderRadius, hasError, disabled, etc.)
+-   Themes define `defaultVariants` (fallback values)
 
 Example theme structure:
 
@@ -121,25 +122,25 @@ ui: { slots: { container: 'max-w-xs' } }
 
 ### Key Rules
 
-- ✅ **Always pass ui overrides** via `class` parameter in templates
-- ✅ **Call tv() once** per slot function (don't pre-merge in composable)
-- ✅ **Enable twMerge** in tv config: `tv(theme, { twMerge: true })`
-- ✅ **One theme file** per component type (textInputTheme, focusedSelectorInputTheme, etc.)
-- ❌ **Don't merge props.ui in composable** - let tv slot functions handle it
+-   ✅ **Always pass ui overrides** via `class` parameter in templates
+-   ✅ **Call tv() once** per slot function (don't pre-merge in composable)
+-   ✅ **Enable twMerge** in tv config: `tv(theme, { twMerge: true })`
+-   ✅ **One theme file** per component type (textInputTheme, focusedSelectorInputTheme, etc.)
+-   ❌ **Don't merge props.ui in composable** - let tv slot functions handle it
 
 Forms
 
-- For forms inputs, use the components in client/components/forms such as <TextInput> etc.
-- Wrap then in @VForm.vue
-- All form components must support the theme + ui override pattern above
+-   For forms inputs, use the components in client/components/forms such as <TextInput> etc.
+-   Wrap then in @VForm.vue
+-   All form components must support the theme + ui override pattern above
 
 Performance Optimization
 
-- Leverage VueUse functions where applicable to enhance reactivity and performance.
-- Wrap asynchronous components in Suspense with a fallback UI made with <USkeleton/> components.
-- Use dynamic loading for non-critical components.
+-   Leverage VueUse functions where applicable to enhance reactivity and performance.
+-   Wrap asynchronous components in Suspense with a fallback UI made with <USkeleton/> components.
+-   Use dynamic loading for non-critical components.
 
 Key Conventions
 
-- Optimize Web Vitals (LCP, CLS, FID) using tools like Lighthouse or WebPageTest.
-- Implement proper error boundaries or try-catch mechanisms to handle errors gracefully, especially in asynchronous operations.
+-   Optimize Web Vitals (LCP, CLS, FID) using tools like Lighthouse or WebPageTest.
+-   Implement proper error boundaries or try-catch mechanisms to handle errors gracefully, especially in asynchronous operations.

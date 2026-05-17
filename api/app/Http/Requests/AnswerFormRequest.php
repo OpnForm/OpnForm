@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Models\Forms\Form;
 use App\Rules\CustomFieldValidationRule;
+use App\Rules\InputMaskRule;
 use App\Rules\MatrixValidationRule;
 use App\Rules\StorageFile;
 use App\Rules\ValidHCaptcha;
@@ -55,9 +56,6 @@ class AnswerFormRequest extends FormRequest
         });
         foreach ($this->form->properties as $property) {
             $rules = [];
-            /*if (!$this->form->is_pro) {  // If not pro then not check logic
-                $property['logic'] = false;
-            }*/
 
             $data = $this->toArray();
 
@@ -84,8 +82,8 @@ class AnswerFormRequest extends FormRequest
                 }
             }
             if (
-                FormLogicPropertyResolver::isRequired($property, $data) &&
-                !FormLogicPropertyResolver::isHidden($property, $data)
+                FormLogicPropertyResolver::isRequired($property, $data, $this->form) &&
+                !FormLogicPropertyResolver::isHidden($property, $data, $this->form)
             ) {
                 $rules[] = 'required';
 
@@ -135,8 +133,7 @@ class AnswerFormRequest extends FormRequest
             }
         }
 
-        // Validate submission_id for edit mode
-        if ($this->form->is_pro && $this->form->editable_submissions) {
+        if ($this->form->workspace && $this->form->workspace->hasFeature('editable_submissions') && $this->form->editable_submissions) {
             $this->requestRules['submission_id'] = 'string';
         }
 
@@ -199,6 +196,11 @@ class AnswerFormRequest extends FormRequest
     {
         switch ($property['type']) {
             case 'text':
+                if (isset($property['input_mask']) && $property['input_mask']) {
+                    return ['string', new InputMaskRule($property['input_mask'])];
+                }
+
+                return ['string'];
             case 'rich_text':
             case 'signature':
                 return ['string'];

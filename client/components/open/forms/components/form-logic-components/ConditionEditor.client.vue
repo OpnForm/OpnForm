@@ -49,14 +49,18 @@ export default {
 
   computed: {
     rules() {
-      return this.form.properties
+      const workspaceId = this.form.workspace_id
+      const formSlug = this.form.slug
+      const customValidation = this.customValidation
+      const allFormProperties = this.form.properties
+      const allComputedVariables = this.form.computed_variables || []
+      
+      // Form field rules
+      const fieldRules = allFormProperties
         .filter((property) => {
           return property.type && typeof property.type === 'string' && !property.type.startsWith("nf-")
         })
         .map((property) => {
-          const workspaceId = this.form.workspace_id
-          const formSlug = this.form.slug
-          const customValidation = this.customValidation
           return {
             identifier: property.id,
             name: property.name,
@@ -73,6 +77,12 @@ export default {
                   property() {
                     return property
                   },
+                  formProperties() {
+                    return allFormProperties
+                  },
+                  formComputedVariables() {
+                    return allComputedVariables
+                  },
                   viewContext() {
                     return {
                       form_slug: formSlug,
@@ -84,6 +94,55 @@ export default {
             })(),
           }
         })
+      
+      // Computed variable rules
+      const variableRules = allComputedVariables.map((variable) => {
+        // Create a pseudo-property for computed variables
+        // We'll treat them as text by default, but number conditions will also work
+        const pseudoProperty = {
+          id: variable.id,
+          name: variable.name,
+          type: 'computed', // Special type for computed variables
+          result_type: variable.result_type || 'auto'
+        }
+        
+        return {
+          identifier: variable.id,
+          name: variable.name,
+          icon: 'i-heroicons-variable',
+          iconClass: 'text-purple-600',
+          component: (function () {
+            return defineComponent({
+              extends: ColumnCondition,
+              props: {
+                customValidation: {
+                  type: Boolean,
+                  default: customValidation
+                }
+              },
+              computed: {
+                property() {
+                  return pseudoProperty
+                },
+                formProperties() {
+                  return allFormProperties
+                },
+                formComputedVariables() {
+                  return allComputedVariables
+                },
+                viewContext() {
+                  return {
+                    form_slug: formSlug,
+                    workspace_id: workspaceId,
+                  }
+                },
+              },
+            })
+          })(),
+        }
+      })
+      
+      return [...fieldRules, ...variableRules]
     },
 
     config() {
@@ -133,4 +192,3 @@ export default {
   }
 }
 </script>
-

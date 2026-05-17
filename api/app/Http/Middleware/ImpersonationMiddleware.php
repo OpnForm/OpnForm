@@ -32,6 +32,7 @@ class ImpersonationMiddleware
         'forms.users.index',
         'open.forms.index-all',
         'open.forms.show',
+        'open.forms.import',
         'open.forms.store',
         'open.forms.assets.upload',
         'open.forms.update',

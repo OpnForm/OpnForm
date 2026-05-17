@@ -38,7 +38,7 @@ export function useAmplitude () {
     amplitudeClient.setUserProperties({
       email: user.email,
       subscribed: user.is_subscribed,
-      enterprise_subscription: user.has_enterprise_subscription
+      plan_tier: user.plan_tier ?? 'free'
     })
   }
 

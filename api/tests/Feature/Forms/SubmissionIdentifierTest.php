@@ -6,7 +6,7 @@ use Vinkla\Hashids\Facades\Hashids;
 
 describe('Submission UUID Identifiers', function () {
     beforeEach(function () {
-        $this->user = $this->actingAsProUser();
+        $this->user = $this->actingAsBusinessUser();
         $this->workspace = $this->createUserWorkspace($this->user);
         $this->form = $this->createForm($this->user, $this->workspace, [
             'editable_submissions' => true,
@@ -92,7 +92,7 @@ describe('Submission UUID Identifiers', function () {
 
 describe('Legacy Hashid Backward Compatibility', function () {
     beforeEach(function () {
-        $this->user = $this->actingAsProUser();
+        $this->user = $this->actingAsBusinessUser();
         $this->workspace = $this->createUserWorkspace($this->user);
         $this->form = $this->createForm($this->user, $this->workspace, [
             'editable_submissions' => true,
@@ -144,7 +144,7 @@ describe('Legacy Hashid Backward Compatibility', function () {
 
 describe('Submission Fetch Authorization', function () {
     it('returns 404 for non-public forms', function () {
-        $user = $this->actingAsProUser();
+        $user = $this->actingAsBusinessUser();
         $workspace = $this->createUserWorkspace($user);
         $form = $this->createForm($user, $workspace, [
             'editable_submissions' => true,
@@ -165,7 +165,7 @@ describe('Submission Fetch Authorization', function () {
     });
 
     it('returns 403 when editable submissions disabled', function () {
-        $user = $this->actingAsProUser();
+        $user = $this->actingAsBusinessUser();
         $workspace = $this->createUserWorkspace($user);
         $form = $this->createForm($user, $workspace, [
             'editable_submissions' => false,
@@ -187,7 +187,7 @@ describe('Submission Fetch Authorization', function () {
 
 describe('Partial Submissions with UUID', function () {
     it('generates UUID for partial submissions', function () {
-        $user = $this->actingAsProUser();
+        $user = $this->actingAsBusinessUser();
         $workspace = $this->createUserWorkspace($user);
         $form = $this->createForm($user, $workspace, [
             'enable_partial_submissions' => true,
