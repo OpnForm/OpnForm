@@ -120,6 +120,7 @@ const form = computed(() => props.formManager.config.value)
 const structure = props.formManager.structure
 const state = computed(() => props.formManager.state)
 const isTemplateMode = computed(() => props.formManager?.mode?.value === FormMode.TEMPLATE)
+const isDemoMode = computed(() => props.formManager?.mode?.value === FormMode.DEMO)
 const focusedFormStyle = {
   minHeight: 'var(--form-focused-step-height, 100svh)'
 }
@@ -172,7 +173,7 @@ const autoNextFieldTypes = new Set(['checkbox', 'date', 'multi_select', 'rating'
 
 const handleNextClick = () => {
   props.formManager.nextPage().then((moved) => {
-    if (moved && import.meta.client && !isTemplateMode.value) window.scrollTo({ top: 0, behavior: 'smooth' })
+    if (moved && import.meta.client && !isTemplateMode.value && !isDemoMode.value) window.scrollTo({ top: 0, behavior: 'smooth' })
   })
 }
 
@@ -297,15 +298,15 @@ const goPrev = () => {
         }).catch(error => {
           console.warn('Error in previousPage:', error)
         }).finally(() => {
-          if (import.meta.client) window.scrollTo({ top: 0, behavior: 'smooth' })
+          if (import.meta.client && !isDemoMode.value) window.scrollTo({ top: 0, behavior: 'smooth' })
         })
       } else {
         // Synchronous result, scroll immediately
-        if (import.meta.client) window.scrollTo({ top: 0, behavior: 'smooth' })
+        if (import.meta.client && !isDemoMode.value) window.scrollTo({ top: 0, behavior: 'smooth' })
       }
     } catch (error) {
       console.warn('Error calling previousPage:', error)
-      if (import.meta.client) window.scrollTo({ top: 0, behavior: 'smooth' })
+      if (import.meta.client && !isDemoMode.value) window.scrollTo({ top: 0, behavior: 'smooth' })
     }
   }
 }

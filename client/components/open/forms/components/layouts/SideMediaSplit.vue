@@ -2,8 +2,8 @@
   <div class="w-full min-h-full flex z-10 flex-col @3xl:flex-row overflow-hidden">
     <!-- Mobile: media as background on top, content dictates scroll -->
     <div class="relative block @3xl:hidden w-full">
-      <!-- Spacer for 50vh visual band -->
-      <div class="pt-[50vh]"></div>
+      <!-- Spacer for the visual band; live demo can tune this through a CSS variable. -->
+      <div class="pt-[var(--form-focused-mobile-media-height,50vh)]"></div>
       <!-- Absolute background image so it doesn't affect layout height beyond spacer -->
       <div class="absolute inset-0 pointer-events-none">
         <BlockMediaLayout :image="image" :fallback-height="null" />

@@ -84,7 +84,12 @@
               no screenshots, no assumptions.
             </p>
           </div>
-          <LiveDemo class="mt-12" />
+          <LiveDemo
+            class="mt-12"
+            variant="comparison"
+            :competitor-name="competitorName"
+            :import-source="heroImportSource"
+          />
         </div>
         <div
           class="w-full h-full bg-linear-to-b from-white from-50% via-blue-50 via-70% to-white to-90% absolute inset-0"

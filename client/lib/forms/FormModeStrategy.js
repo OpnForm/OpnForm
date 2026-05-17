@@ -7,6 +7,7 @@ export const FormMode = {
   PREFILL: 'prefill',     // URL prefill preview with no validation
   EDIT: 'edit',           // Editing an existing submission
   TEST: 'test',           // Test mode with validation but no actual submission
+  DEMO: 'demo',           // Marketing demo with live-like UX and no actual submission
   TEMPLATE: 'template',   // Template mode with no validation
   READ_ONLY: 'read_only'  // Read only mode
 }
@@ -106,6 +107,15 @@ export function createFormModeStrategy(mode) {
       // Test mode - validate on submit but don't submit, and don't validate on next page
       strategy.validation.performActualSubmission = false
       strategy.validation.validateOnNextPage = false
+      strategy.submission.enablePartialSubmissions = false
+      break
+
+    case FormMode.DEMO:
+      // Marketing demo - live-like interaction, no validation blocking, no network submission
+      strategy.validation.performActualSubmission = false
+      strategy.validation.validateOnNextPage = false
+      strategy.validation.validateOnSubmit = false
+      strategy.display.showBranding = false
       strategy.submission.enablePartialSubmissions = false
       break
 

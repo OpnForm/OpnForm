@@ -126,12 +126,23 @@ export function useFormManager(initialFormConfig, initialMode = FormMode.LIVE, o
     state.isSubmitted = false
     state.currentPage = 0
    
-    await initialization.initialize({
+    const initializationPromise = initialization.initialize({
       ...options
     })
 
-    timer.reset()
-    timer.start()
+    if (options.eagerStructure) {
+      replaceStructure()
+      timer.reset()
+      timer.start()
+      state.isProcessing = false
+    }
+
+    await initializationPromise
+
+    if (!options.eagerStructure) {
+      timer.reset()
+      timer.start()
+    }
 
     // Ensure structure is built after initialization
     replaceStructure()
