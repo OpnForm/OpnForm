@@ -1,12 +1,26 @@
 const DEFAULT_COLOR = "#2563EB"
-const LIVE_DEMO_MEDIA = {
-  intro: "/img/live-demo/intro.webp",
-  fields: "/img/live-demo/fields.webp",
-  logic: "/img/live-demo/logic.webp",
-  routing: "/img/live-demo/routing.webp",
-  scale: "/img/live-demo/scale.webp",
-  summary: "/img/live-demo/summary.webp",
-  switch: "/img/live-demo/switch.webp",
+export const DEFAULT_LIVE_DEMO_MEDIA_VARIANT = "blobs"
+export const LIVE_DEMO_MEDIA_VARIANTS = {
+  blobs: {
+    intro: "/img/live-demo/variants/intro-big-soft-blobs-v2.webp",
+    fields: "/img/live-demo/variants/intro-big-soft-blobs-v2.webp",
+    logic: "/img/live-demo/variants/logic-big-soft-blobs-v2.webp",
+    routing: "/img/live-demo/variants/logic-big-soft-blobs-v2.webp",
+    scale: "/img/live-demo/variants/select-big-soft-blobs-v2.webp",
+    select: "/img/live-demo/variants/select-big-soft-blobs-v2.webp",
+    summary: "/img/live-demo/variants/summary-big-soft-blobs-v2.webp",
+    switch: "/img/live-demo/variants/logic-big-soft-blobs-v2.webp",
+  },
+  classic: {
+    intro: "/img/live-demo/intro.webp",
+    fields: "/img/live-demo/fields.webp",
+    logic: "/img/live-demo/logic.webp",
+    routing: "/img/live-demo/routing.webp",
+    scale: "/img/live-demo/scale.webp",
+    select: "/img/live-demo/routing.webp",
+    summary: "/img/live-demo/summary.webp",
+    switch: "/img/live-demo/switch.webp",
+  },
 }
 
 const scenarioGroups = {
@@ -28,7 +42,8 @@ function withSlideMedia(field, media, layout = "right-split", extra = {}) {
   return {
     ...field,
     image: {
-      url: LIVE_DEMO_MEDIA[media],
+      url: getLiveDemoMediaUrl(media),
+      media_key: media,
       alt: "Abstract OpnForm live demo visual",
       layout,
       focal_point: { x: 50, y: 56 },
@@ -42,6 +57,40 @@ function withSlideMedia(field, media, layout = "right-split", extra = {}) {
       ...extra,
     },
   }
+}
+
+function getLiveDemoMediaSet(mediaVariant = DEFAULT_LIVE_DEMO_MEDIA_VARIANT) {
+  return LIVE_DEMO_MEDIA_VARIANTS[mediaVariant] || LIVE_DEMO_MEDIA_VARIANTS[DEFAULT_LIVE_DEMO_MEDIA_VARIANT]
+}
+
+function getLiveDemoMediaUrl(media, mediaVariant = DEFAULT_LIVE_DEMO_MEDIA_VARIANT) {
+  const mediaSet = getLiveDemoMediaSet(mediaVariant)
+  return mediaSet[media] || mediaSet.intro
+}
+
+function applyLiveDemoMediaVariant(form, mediaVariant) {
+  if (!form?.properties) return
+
+  form.properties.forEach((field) => {
+    if (field.image?.media_key) {
+      field.image.url = getLiveDemoMediaUrl(field.image.media_key, mediaVariant)
+    }
+  })
+}
+
+function withMediaVariant(scenario, mediaVariant) {
+  applyLiveDemoMediaVariant(scenario.form, mediaVariant)
+  return {
+    ...scenario,
+    mediaVariant,
+  }
+}
+
+export function getLiveDemoMediaPreloads() {
+  return [...new Set(
+    Object.values(LIVE_DEMO_MEDIA_VARIANTS)
+      .flatMap((mediaSet) => Object.values(mediaSet)),
+  )]
 }
 
 function mention(id, name, fallback = "") {
@@ -243,7 +292,7 @@ function buildHomeScenario() {
         ratingField("home_rating", "How would you rate this demo so far?", {
           help: "Click a star to answer.",
         }),
-        "logic",
+        "scale",
         "right-split",
       ),
       withSlideMedia(
@@ -256,7 +305,7 @@ function buildHomeScenario() {
         ], {
           help: "A quick choice field for structured answers.",
         }),
-        "routing",
+        "select",
         "left-split",
       ),
       withSlideMedia(
@@ -350,7 +399,7 @@ function buildComparisonScenario(competitorName, importSource) {
       ], {
         help: "This mirrors the main objection a visitor brings to a comparison page.",
       }),
-      "logic",
+      "select",
       "left-split",
     ),
     withSlideMedia(
@@ -450,28 +499,33 @@ function getComparisonGroup(competitorName) {
   return "comparison"
 }
 
-export function getLiveDemoScenario({ variant = "home", competitorName = "your current tool", importSource = null } = {}) {
+export function getLiveDemoScenario({
+  variant = "home",
+  competitorName = "your current tool",
+  importSource = null,
+  mediaVariant = DEFAULT_LIVE_DEMO_MEDIA_VARIANT,
+} = {}) {
   if (variant !== "comparison") {
-    return buildHomeScenario()
+    return withMediaVariant(buildHomeScenario(), mediaVariant)
   }
 
   const group = getComparisonGroup(competitorName)
 
   if (group === "typeform") {
-    return buildTypeformScenario(importSource)
+    return withMediaVariant(buildTypeformScenario(importSource), mediaVariant)
   }
 
   if (group === "googleForms") {
-    return buildGoogleFormsScenario(importSource)
+    return withMediaVariant(buildGoogleFormsScenario(importSource), mediaVariant)
   }
 
   if (group === "workflow") {
-    return buildWorkflowScenario(competitorName, importSource)
+    return withMediaVariant(buildWorkflowScenario(competitorName, importSource), mediaVariant)
   }
 
   if (group === "simpleSwitch") {
-    return buildSimpleSwitchScenario(competitorName, importSource)
+    return withMediaVariant(buildSimpleSwitchScenario(competitorName, importSource), mediaVariant)
   }
 
-  return buildComparisonScenario(competitorName, importSource)
+  return withMediaVariant(buildComparisonScenario(competitorName, importSource), mediaVariant)
 }
