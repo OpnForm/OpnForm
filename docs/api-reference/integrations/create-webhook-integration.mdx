@@ -29,7 +29,7 @@ Configuration object containing webhook details.
 
 <Expandable title="data properties">
 <ParamField body="webhook_url" type="string" required>
-The URL where form submissions will be sent. Must be a valid HTTP/HTTPS URL.
+The URL where form submissions will be sent. Must be a valid HTTPS URL that resolves only to public IP addresses. Private, loopback, link-local, and cloud metadata addresses are rejected.
 </ParamField>
 
 <ParamField body="webhook_secret" type="string">
@@ -112,14 +112,14 @@ curl -X POST 'https://api.opnform.com/open/forms/123/integrations' \
 
 `404 Not Found` – Form not found.
 
-`422 Unprocessable Entity` – Validation error (e.g., invalid webhook URL, webhook_secret too short, blocked header).
+`422 Unprocessable Entity` – Validation error (e.g., invalid or non-public webhook URL, webhook_secret too short, blocked header).
 
 <ResponseExample>
 ```json Error
 {
   "message": "The given data was invalid.",
   "errors": {
-    "data.webhook_url": ["The webhook url must be a valid URL."],
+    "data.webhook_url": ["The webhook URL must use HTTPS."],
     "data.webhook_secret": ["The webhook secret must be at least 12 characters."],
     "data.webhook_headers": ["The 'Authorization' header cannot be customized for security reasons."]
   }
@@ -130,6 +130,8 @@ curl -X POST 'https://api.opnform.com/open/forms/123/integrations' \
 ## Security
 
 If you provide a `webhook_secret` when creating the webhook, OpnForm will sign each webhook request with an HMAC-SHA256 signature. This allows you to verify that the webhook came from OpnForm and hasn't been tampered with.
+
+Webhook URLs are validated when they are saved and again before each delivery. OpnForm does not follow webhook redirects, and private network destinations are blocked unless the instance operator explicitly enables private webhook URLs for a self-hosted deployment.
 
 Each webhook request will include:
 

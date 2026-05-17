@@ -58,7 +58,7 @@ it('prevents updating another form integration via mismatched form and integrati
         'integration_id' => 'webhook',
         'logic' => null,
         'data' => [
-            'webhook_url' => 'https://victim.example/webhook'
+            'webhook_url' => 'https://example.com/victim-webhook'
         ]
     ])->assertSuccessful();
 
@@ -74,12 +74,12 @@ it('prevents updating another form integration via mismatched form and integrati
         'integration_id' => 'webhook',
         'logic' => null,
         'data' => [
-            'webhook_url' => 'https://attacker.example/steal'
+            'webhook_url' => 'https://example.com/attacker-webhook'
         ]
     ])->assertStatus(404);
 
     $victimIntegration = \App\Models\Integration\FormIntegration::findOrFail((int) $victimIntegrationId);
-    expect($victimIntegration->data->webhook_url)->toBe('https://victim.example/webhook');
+    expect($victimIntegration->data->webhook_url)->toBe('https://example.com/victim-webhook');
 });
 
 it('prevents deleting another form integration via mismatched form and integration ids', function () {
@@ -92,7 +92,7 @@ it('prevents deleting another form integration via mismatched form and integrati
         'integration_id' => 'webhook',
         'logic' => null,
         'data' => [
-            'webhook_url' => 'https://victim.example/webhook'
+            'webhook_url' => 'https://example.com/victim-webhook'
         ]
     ])->assertSuccessful();
 
@@ -207,6 +207,68 @@ it('can create form integration with checkbox logic', function () {
 });
 
 describe('Webhook Integration', function () {
+    it('rejects webhook urls that point to private or metadata addresses', function () {
+        $user = $this->actingAsProUser();
+        $workspace = $this->createUserWorkspace($user);
+        $form = $this->createForm($user, $workspace);
+
+        foreach ([
+            'http://169.254.169.254/latest/meta-data/',
+            'https://169.254.169.254/latest/meta-data/',
+            'https://127.0.0.1/webhook',
+            'https://localhost/webhook',
+            'https://10.0.0.5/webhook',
+        ] as $url) {
+            $this->postJson(route('open.forms.integrations.create', $form), [
+                'status' => 'active',
+                'integration_id' => 'webhook',
+                'logic' => null,
+                'data' => [
+                    'webhook_url' => $url,
+                ],
+            ])
+                ->assertStatus(422)
+                ->assertJsonValidationErrors(['data.webhook_url']);
+        }
+    });
+
+    it('revalidates stored webhook urls before dispatching them', function () {
+        Http::fake();
+
+        $user = $this->actingAsProUser();
+        $workspace = $this->createUserWorkspace($user);
+        $form = $this->createForm($user, $workspace, [
+            'properties' => [
+                [
+                    'id' => 'name',
+                    'name' => 'Name',
+                    'type' => 'text',
+                    'hidden' => false,
+                    'required' => true,
+                ],
+            ],
+        ]);
+
+        $integration = \App\Models\Integration\FormIntegration::factory()
+            ->for($form)
+            ->create([
+                'integration_id' => 'webhook',
+                'status' => \App\Models\Integration\FormIntegration::STATUS_ACTIVE,
+                'data' => [
+                    'webhook_url' => 'https://127.0.0.1/webhook',
+                ],
+            ]);
+
+        $this->postJson(route('forms.answer', $form->slug), $this->generateFormSubmissionData($form))
+            ->assertSuccessful();
+
+        Http::assertNothingSent();
+        $this->assertDatabaseHas('form_integrations_events', [
+            'integration_id' => $integration->id,
+            'status' => \App\Models\Integration\FormIntegrationsEvent::STATUS_ERROR,
+        ]);
+    });
+
     it('includes form and submission ids in the webhook payload', function () {
         Http::fake([
             'https://example.com/*' => Http::response(['ok' => true], 200),

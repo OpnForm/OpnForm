@@ -117,6 +117,7 @@
 import ForgotPasswordModal from "../ForgotPasswordModal.vue"
 import GoogleOneTap from "~/components/vendor/GoogleOneTap.vue"
 import { WindowMessageTypes } from "~/composables/useWindowMessage"
+import { storeOidcStateVerifier } from "~/lib/oidc/state-verifier"
 
 // Props
 const props = defineProps({
@@ -191,6 +192,7 @@ const checkOidcOptions = async () => {
           const redirectResponse = await form.post(`/auth/${response.slug}/redirect`)
           
           if (redirectResponse.redirect_url) {
+            storeOidcStateVerifier(response.slug, redirectResponse.state, redirectResponse.state_verifier)
             // Redirect to OIDC provider
             window.location.href = redirectResponse.redirect_url
             return

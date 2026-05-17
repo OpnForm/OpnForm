@@ -15,7 +15,6 @@ use App\Service\Forms\FormLogicPropertyResolver;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
 use Stevebauman\Purify\Facades\Purify;
 
 class AnswerFormRequest extends FormRequest
@@ -216,7 +215,13 @@ class AnswerFormRequest extends FormRequest
                     return ['string'];
                 }
 
-                return [Rule::in($this->getSelectPropertyOptions($property))];
+                $options = $this->getSelectPropertyOptions($property);
+
+                return [function ($attribute, $value, $fail) use ($options) {
+                    if (!in_array($value, $options, true)) {
+                        $fail('validation.in')->translate();
+                    }
+                }];
             case 'checkbox':
                 return ['boolean'];
             case 'url':
@@ -292,26 +297,6 @@ class AnswerFormRequest extends FormRequest
         $countryCodeMapper = json_decode(file_get_contents(resource_path('data/country_code_mapper.json')), true);
         collect($this->form->properties)->each(function ($property) use ($countryCodeMapper, $receivedData, &$mergeData) {
             $receivedValue = $receivedData[$property['id']] ?? null;
-
-            // Escape all '\' in select options
-            if (in_array($property['type'], ['select', 'multi_select']) && !is_null($receivedValue)) {
-                if (is_array($receivedValue)) {
-                    $mergeData[$property['id']] = collect($receivedValue)->map(function ($value) {
-                        $value = Str::of($value);
-
-                        return $value->replace(
-                            ["\e", "\f", "\n", "\r", "\t", "\v", '\\'],
-                            ['\\e', '\\f', '\\n', '\\r', '\\t', '\\v', '\\\\']
-                        )->toString();
-                    })->toArray();
-                } else {
-                    $receivedValue = Str::of($receivedValue);
-                    $mergeData[$property['id']] = $receivedValue->replace(
-                        ["\e", "\f", "\n", "\r", "\t", "\v", '\\'],
-                        ['\\e', '\\f', '\\n', '\\r', '\\t', '\\v', '\\\\']
-                    )->toString();
-                }
-            }
 
             if ($property['type'] === 'phone_number' && (!isset($property['use_simple_text_input']) || !$property['use_simple_text_input']) && $receivedValue && in_array($receivedValue, $countryCodeMapper)) {
                 $mergeData[$property['id']] = null;

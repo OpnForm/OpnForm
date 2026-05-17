@@ -4,6 +4,7 @@ namespace App\Http\Requests\Integration\Zapier;
 
 use App\Models\Forms\Form;
 use App\Models\Integration\FormZapierWebhook;
+use App\Rules\PublicWebhookUrlRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreFormZapierWebhookRequest extends FormRequest
@@ -17,7 +18,7 @@ class StoreFormZapierWebhookRequest extends FormRequest
     {
         return [
             'form_slug' => 'required|exists:forms,slug',
-            'hook_url' => 'required|string|url',
+            'hook_url' => ['required', 'string', 'url', new PublicWebhookUrlRule()],
         ];
     }
 

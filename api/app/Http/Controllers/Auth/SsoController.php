@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Enterprise\Oidc\ConnectionManager;
 use App\Enterprise\Oidc\Exceptions\OidcAccountLinkRequiredException;
 use App\Enterprise\Oidc\IdTokenVerifier;
+use App\Enterprise\Oidc\Models\IdentityConnection;
 use App\Enterprise\Oidc\OidcLinkService;
 use App\Http\Controllers\Auth\Traits\ManagesJWT;
 use App\Http\Controllers\Controller;
@@ -18,6 +19,11 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 class SsoController extends Controller
 {
     use ManagesJWT;
+
+    private const STATE_CACHE_PREFIX = 'oidc_login_state:';
+    private const STATE_TTL_SECONDS = 600;
+    private const STATE_VERIFIER_HEADER = 'X-OIDC-State-Verifier';
+
     public function __construct(
         private ConnectionManager $connectionManager,
         private ProvisioningService $provisioningService,
@@ -30,7 +36,7 @@ class SsoController extends Controller
      * Get redirect URL for OIDC provider authentication.
      * Returns JSON response so frontend can handle redirect and errors.
      */
-    public function redirect(string $slug)
+    public function redirect(Request $request, string $slug)
     {
         $connection = $this->connectionManager->getConnectionBySlug($slug);
 
@@ -49,19 +55,28 @@ class SsoController extends Controller
 
         try {
             $driver = $this->connectionManager->buildDriver($connection);
+            $state = null;
+            $stateVerifier = null;
 
-            $requireState = (bool) data_get($connection->options, 'require_state', false);
-            if ($requireState) {
+            if ($this->requiresState($connection)) {
                 $state = Str::random(32);
-                Cache::put("oidc_state_{$state}", true, 600);
+                $stateVerifier = Str::random(64);
+                $this->storeState($connection, $state, $stateVerifier);
                 $driver->setState($state);
             }
 
             $redirectUrl = $driver->getRedirectUrl();
 
-            return response()->json([
+            $payload = [
                 'redirect_url' => $redirectUrl,
-            ]);
+            ];
+
+            if ($state && $stateVerifier) {
+                $payload['state'] = $state;
+                $payload['state_verifier'] = $stateVerifier;
+            }
+
+            return response()->json($payload);
         } catch (\Exception $e) {
             Log::error('OIDC redirect failed', [
                 'slug' => $slug,
@@ -93,8 +108,7 @@ class SsoController extends Controller
         }
 
         try {
-            $requireState = (bool) data_get($connection->options, 'require_state', false);
-            if ($requireState) {
+            if ($this->requiresState($connection)) {
                 $state = $request->input('state');
                 if (!$state) {
                     return response()->json([
@@ -102,8 +116,9 @@ class SsoController extends Controller
                     ], 400);
                 }
 
-                $stateValid = Cache::pull("oidc_state_{$state}");
-                if (!$stateValid) {
+                $stateVerifier = $request->header(self::STATE_VERIFIER_HEADER);
+
+                if (!$this->consumeState($connection, (string) $state, is_string($stateVerifier) ? $stateVerifier : null)) {
                     return response()->json([
                         'message' => 'Invalid state. Please try again.',
                     ], 400);
@@ -258,8 +273,8 @@ class SsoController extends Controller
 
         // Find enabled OIDC connection matching domain
         // Domain is stored directly on the connection record
-        $connection = \App\Enterprise\Oidc\Models\IdentityConnection::enabled()
-            ->where('type', \App\Enterprise\Oidc\Models\IdentityConnection::TYPE_OIDC)
+        $connection = IdentityConnection::enabled()
+            ->where('type', IdentityConnection::TYPE_OIDC)
             ->where('domain', $domain)
             ->first();
 
@@ -283,5 +298,47 @@ class SsoController extends Controller
     {
         $parts = explode('@', strtolower(trim($email)));
         return count($parts) === 2 ? $parts[1] : null;
+    }
+
+    private function requiresState(IdentityConnection $connection): bool
+    {
+        return data_get($connection->options, 'require_state', true) !== false;
+    }
+
+    private function storeState(IdentityConnection $connection, string $state, string $stateVerifier): void
+    {
+        Cache::put($this->stateCacheKey($state), [
+            'connection_id' => $connection->id,
+            'verifier_hash' => hash('sha256', $stateVerifier),
+        ], self::STATE_TTL_SECONDS);
+    }
+
+    private function consumeState(IdentityConnection $connection, string $state, ?string $stateVerifier): bool
+    {
+        if (!$stateVerifier) {
+            return false;
+        }
+
+        $storedState = Cache::get($this->stateCacheKey($state));
+        if (!is_array($storedState)) {
+            return false;
+        }
+
+        if ((int) ($storedState['connection_id'] ?? 0) !== $connection->id) {
+            return false;
+        }
+
+        if (!hash_equals((string) ($storedState['verifier_hash'] ?? ''), hash('sha256', $stateVerifier))) {
+            return false;
+        }
+
+        Cache::forget($this->stateCacheKey($state));
+
+        return true;
+    }
+
+    private function stateCacheKey(string $state): string
+    {
+        return self::STATE_CACHE_PREFIX.$state;
     }
 }

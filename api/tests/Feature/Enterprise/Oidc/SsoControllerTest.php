@@ -11,6 +11,28 @@ require_once __DIR__ . '/../../../TestHelpers/OidcTestHelpers.php';
 uses(TestHelpers::class);
 uses()->group('oidc', 'feature');
 
+if (!function_exists('cacheOidcState')) {
+    function cacheOidcState(IdentityConnection $connection, string $state, string $verifier = 'valid-state-verifier', int $ttlSeconds = 600): string
+    {
+        Cache::put("oidc_login_state:{$state}", [
+            'connection_id' => $connection->id,
+            'verifier_hash' => hash('sha256', $verifier),
+        ], $ttlSeconds);
+
+        return $verifier;
+    }
+}
+
+if (!function_exists('oidcVerifierHeaders')) {
+    function oidcVerifierHeaders(string $verifier): array
+    {
+        return [
+            'Accept' => 'application/json',
+            'X-OIDC-State-Verifier' => $verifier,
+        ];
+    }
+}
+
 afterEach(function () {
     Mockery::close();
     Cache::flush();
@@ -23,8 +45,18 @@ describe('SsoController - Redirect', function () {
             'enabled' => true,
         ]);
 
+        $capturedState = null;
+
         // Mock the driver to return a redirect URL
         $mockDriver = Mockery::mock(\App\Enterprise\Oidc\Adapters\OAuthOidcDriver::class);
+        $mockDriver->shouldReceive('setState')
+            ->once()
+            ->with(Mockery::on(function ($state) use (&$capturedState) {
+                $capturedState = $state;
+
+                return is_string($state) && strlen($state) === 32;
+            }))
+            ->andReturnSelf();
         $mockDriver->shouldReceive('getRedirectUrl')->andReturn('https://idp.example.com/authorize');
 
         $mockConnectionManager = Mockery::mock(\App\Enterprise\Oidc\ConnectionManager::class);
@@ -43,6 +75,48 @@ describe('SsoController - Redirect', function () {
         $response->assertJson([
             'redirect_url' => 'https://idp.example.com/authorize',
         ]);
+
+        $stateVerifier = $response->json('state_verifier');
+        $storedState = Cache::get("oidc_login_state:{$capturedState}");
+
+        expect($response->json('state'))->toBe($capturedState)
+            ->and($stateVerifier)->toBeString()
+            ->and(strlen($stateVerifier))->toBe(64)
+            ->and($storedState['connection_id'])->toBe($connection->id)
+            ->and(hash_equals($storedState['verifier_hash'], hash('sha256', $stateVerifier)))->toBeTrue();
+    });
+
+    it('does not add state when explicitly disabled on the connection', function () {
+        $connection = IdentityConnection::factory()->create([
+            'slug' => 'state-disabled',
+            'enabled' => true,
+            'options' => [
+                'require_state' => false,
+            ],
+        ]);
+
+        $mockDriver = Mockery::mock(\App\Enterprise\Oidc\Adapters\OAuthOidcDriver::class);
+        $mockDriver->shouldNotReceive('setState');
+        $mockDriver->shouldReceive('getRedirectUrl')->andReturn('https://idp.example.com/authorize');
+
+        $mockConnectionManager = Mockery::mock(\App\Enterprise\Oidc\ConnectionManager::class);
+        $mockConnectionManager->shouldReceive('getConnectionBySlug')
+            ->with('state-disabled')
+            ->andReturn($connection);
+        $mockConnectionManager->shouldReceive('buildDriver')
+            ->with($connection)
+            ->andReturn($mockDriver);
+
+        $this->app->instance(\App\Enterprise\Oidc\ConnectionManager::class, $mockConnectionManager);
+
+        $response = $this->postJson("/auth/{$connection->slug}/redirect");
+
+        $response->assertSuccessful();
+        $response->assertJson([
+            'redirect_url' => 'https://idp.example.com/authorize',
+        ]);
+        expect($response->json('state'))->toBeNull()
+            ->and($response->json('state_verifier'))->toBeNull();
     });
 
     it('returns 404 for non-existent connection', function () {
@@ -251,8 +325,11 @@ describe('SsoController - Callback', function () {
         $this->app->instance(\App\Enterprise\Oidc\ConnectionManager::class, $mockConnectionManager);
         $this->app->instance(\App\Enterprise\Oidc\IdTokenVerifier::class, $mockIdTokenVerifier);
 
-        $response = $this->getJson("/auth/test-sso/callback", [
-            'Accept' => 'application/json',
+        $state = 'new-user-state-token';
+        $stateVerifier = cacheOidcState($connection, $state);
+
+        $response = $this->getJson("/auth/test-sso/callback?state={$state}", [
+            ...oidcVerifierHeaders($stateVerifier),
         ]);
 
         $response->assertSuccessful();
@@ -271,13 +348,10 @@ describe('SsoController - Callback', function () {
         expect($response->json('new_user'))->toBeTrue();
     });
 
-    it('rejects callback when state is required but missing', function () {
+    it('rejects callback when state is missing', function () {
         $connection = IdentityConnection::factory()->create([
             'slug' => 'state-required',
             'enabled' => true,
-            'options' => [
-                'require_state' => true,
-            ],
         ]);
 
         $response = $this->getJson("/auth/{$connection->slug}/callback", [
@@ -288,17 +362,148 @@ describe('SsoController - Callback', function () {
         expect($response->json('message'))->toContain('Missing or invalid state');
     });
 
-    it('accepts callback when state is valid and required', function () {
+    it('rejects callback when state verifier is missing', function () {
         $connection = IdentityConnection::factory()->create([
-            'slug' => 'state-valid',
+            'slug' => 'state-required',
+            'enabled' => true,
+        ]);
+
+        $state = 'missing-verifier-state';
+        cacheOidcState($connection, $state);
+
+        $response = $this->getJson("/auth/{$connection->slug}/callback?state={$state}", [
+            'Accept' => 'application/json',
+        ]);
+
+        $response->assertStatus(400);
+        expect($response->json('message'))->toContain('Invalid state');
+    });
+
+    it('rejects callback when state was not issued by the OIDC login flow', function () {
+        $connection = IdentityConnection::factory()->create([
+            'slug' => 'state-required',
+            'enabled' => true,
+        ]);
+
+        $state = 'attacker-session-state';
+        Cache::put("oidc_state_{$state}", true, 600);
+
+        $response = $this->getJson("/auth/{$connection->slug}/callback?state={$state}", [
+            ...oidcVerifierHeaders('attacker-verifier'),
+        ]);
+
+        $response->assertStatus(400);
+        expect($response->json('message'))->toContain('Invalid state');
+    });
+
+    it('rejects callback when state verifier does not match', function () {
+        $connection = IdentityConnection::factory()->create([
+            'slug' => 'state-required',
+            'enabled' => true,
+        ]);
+
+        $state = 'wrong-verifier-state';
+        cacheOidcState($connection, $state, 'correct-verifier');
+
+        $response = $this->getJson("/auth/{$connection->slug}/callback?state={$state}", [
+            ...oidcVerifierHeaders('wrong-verifier'),
+        ]);
+
+        $response->assertStatus(400);
+        expect($response->json('message'))->toContain('Invalid state');
+        expect(Cache::get("oidc_login_state:{$state}"))->not->toBeNull();
+    });
+
+    it('rejects callback when state belongs to a different connection', function () {
+        $connection = IdentityConnection::factory()->create([
+            'slug' => 'state-required',
+            'enabled' => true,
+        ]);
+        $otherConnection = IdentityConnection::factory()->create([
+            'slug' => 'other-state-owner',
+            'enabled' => true,
+        ]);
+
+        $state = 'other-connection-state';
+        $stateVerifier = cacheOidcState($otherConnection, $state);
+
+        $response = $this->getJson("/auth/{$connection->slug}/callback?state={$state}", [
+            ...oidcVerifierHeaders($stateVerifier),
+        ]);
+
+        $response->assertStatus(400);
+        expect($response->json('message'))->toContain('Invalid state');
+    });
+
+    it('rejects callback when state has expired in the current session', function () {
+        $connection = IdentityConnection::factory()->create([
+            'slug' => 'state-required',
+            'enabled' => true,
+        ]);
+
+        $state = 'expired-state';
+        $stateVerifier = cacheOidcState($connection, $state, 'expired-verifier', -1);
+
+        $response = $this->getJson("/auth/{$connection->slug}/callback?state={$state}", [
+            ...oidcVerifierHeaders($stateVerifier),
+        ]);
+
+        $response->assertStatus(400);
+        expect($response->json('message'))->toContain('Invalid state');
+    });
+
+    it('accepts callback without state when explicitly disabled on the connection', function () {
+        $connection = IdentityConnection::factory()->create([
+            'slug' => 'state-disabled',
             'enabled' => true,
             'options' => [
-                'require_state' => true,
+                'require_state' => false,
             ],
         ]);
 
+        $socialiteUser = createMockSocialiteUser(
+            email: 'nostate@example.com',
+            name: 'No State User'
+        );
+        $idTokenClaims = createValidIdTokenClaims($connection, 'sub-no-state');
+        $idToken = createMockIdToken($idTokenClaims);
+
+        $mockDriver = Mockery::mock(\App\Enterprise\Oidc\Adapters\OAuthOidcDriver::class);
+        $mockDriver->shouldReceive('setRedirectUrl')->andReturnSelf();
+        $mockDriver->shouldReceive('getUser')->andReturn($socialiteUser);
+        $mockDriver->shouldReceive('getIdToken')->andReturn($idToken);
+
+        $mockConnectionManager = Mockery::mock(\App\Enterprise\Oidc\ConnectionManager::class);
+        $mockConnectionManager->shouldReceive('getConnectionBySlug')
+            ->with('state-disabled')
+            ->andReturn($connection);
+        $mockConnectionManager->shouldReceive('buildDriver')
+            ->with($connection)
+            ->andReturn($mockDriver);
+
+        $mockIdTokenVerifier = Mockery::mock(\App\Enterprise\Oidc\IdTokenVerifier::class);
+        $mockIdTokenVerifier->shouldReceive('verifySignature')
+            ->with($connection, $idToken)
+            ->andReturnNull();
+
+        $this->app->instance(\App\Enterprise\Oidc\ConnectionManager::class, $mockConnectionManager);
+        $this->app->instance(\App\Enterprise\Oidc\IdTokenVerifier::class, $mockIdTokenVerifier);
+
+        $response = $this->getJson("/auth/{$connection->slug}/callback", [
+            'Accept' => 'application/json',
+        ]);
+
+        $response->assertSuccessful();
+    });
+
+    it('accepts callback when state is valid', function () {
+        $connection = IdentityConnection::factory()->create([
+            'slug' => 'state-valid',
+            'enabled' => true,
+        ]);
+
         $state = 'state-token-12345678';
-        \Illuminate\Support\Facades\Cache::put("oidc_state_{$state}", true, 600);
+        $stateVerifier = cacheOidcState($connection, $state);
 
         $socialiteUser = createMockSocialiteUser(
             email: 'stateuser@example.com',
@@ -329,10 +534,11 @@ describe('SsoController - Callback', function () {
         $this->app->instance(\App\Enterprise\Oidc\IdTokenVerifier::class, $mockIdTokenVerifier);
 
         $response = $this->getJson("/auth/{$connection->slug}/callback?state={$state}", [
-            'Accept' => 'application/json',
+            ...oidcVerifierHeaders($stateVerifier),
         ]);
 
         $response->assertSuccessful();
+        expect(Cache::get("oidc_login_state:{$state}"))->toBeNull();
     });
 
     it('returns 404 for non-existent connection', function () {
@@ -391,8 +597,11 @@ describe('SsoController - Callback', function () {
         $this->app->instance(\App\Enterprise\Oidc\IdTokenVerifier::class, $mockIdTokenVerifier);
         $this->app->instance(\App\Enterprise\Oidc\ProvisioningService::class, $mockProvisioningService);
 
-        $response = $this->getJson("/auth/test-sso/callback", [
-            'Accept' => 'application/json',
+        $state = 'provisioning-error-state-token';
+        $stateVerifier = cacheOidcState($connection, $state);
+
+        $response = $this->getJson("/auth/test-sso/callback?state={$state}", [
+            ...oidcVerifierHeaders($stateVerifier),
         ]);
 
         $response->assertStatus(400);
@@ -469,8 +678,11 @@ describe('SsoController - Callback', function () {
         $this->app->instance(\App\Enterprise\Oidc\IdTokenVerifier::class, $mockIdTokenVerifier);
         $this->app->instance(\App\Enterprise\Oidc\ProvisioningService::class, $mockProvisioningService);
 
-        $response = $this->getJson("/auth/test-sso/callback", [
-            'Accept' => 'application/json',
+        $state = 'blocked-user-state-token';
+        $stateVerifier = cacheOidcState($connection, $state);
+
+        $response = $this->getJson("/auth/test-sso/callback?state={$state}", [
+            ...oidcVerifierHeaders($stateVerifier),
         ]);
 
         $response->assertForbidden();

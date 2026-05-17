@@ -10,6 +10,7 @@ use App\Service\Forms\FormSubmissionFormatter;
 use App\Service\Forms\FormLogicConditionChecker;
 use App\Service\Forms\SubmissionUrlService;
 use App\Service\Formulas\ComputedVariableEvaluator;
+use App\Service\Security\PublicWebhookUrl;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -115,7 +116,11 @@ abstract class AbstractIntegrationHandler
             return;
         }
 
-        Http::throw()->post($this->getWebhookUrl(), $this->getWebhookData());
+        $url = $this->getWebhookUrl();
+
+        Http::throw()
+            ->withOptions(PublicWebhookUrl::requestOptions($url))
+            ->post($url, $this->getWebhookData());
     }
 
     abstract public static function getValidationRules(?Form $form): array;

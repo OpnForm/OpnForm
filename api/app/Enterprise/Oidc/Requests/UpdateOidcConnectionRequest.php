@@ -65,4 +65,5 @@ class UpdateOidcConnectionRequest extends FormRequest
             'enabled' => ['sometimes', 'boolean'],
         ];
     }
+
 }

@@ -2,6 +2,7 @@
 
 use App\Models\User;
 use App\Models\Forms\FormSubmission;
+use App\Service\Forms\FormSubmissionFormatter;
 use App\Service\Storage\FileUploadPathService;
 use Illuminate\Support\Facades\Storage;
 
@@ -136,6 +137,31 @@ it('rejects submission ids that do not belong to the form', function () {
 
     $response->assertStatus(422)
         ->assertJsonValidationErrors(['submissionIds.0']);
+});
+
+it('accepts status as a valid export column', function () {
+    $user = $this->actingAsProUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace);
+
+    $textField = collect($form->properties)->firstWhere('type', 'text');
+    $submissionData = $this->generateFormSubmissionData($form, [
+        $textField['id'] => 'John Doe',
+    ]);
+    $this->postJson(route('forms.answer', $form->slug), $submissionData)
+        ->assertSuccessful();
+
+    $response = $this->postJson(route('open.forms.submissions.export', [
+        'form' => $form,
+    ]), [
+        'columns' => [
+            $textField['id'] => true,
+            'status' => true,
+        ],
+    ]);
+
+    $response->assertSuccessful()
+        ->assertHeader('content-disposition', 'attachment; filename=' . $form->slug . '-submission-data.csv');
 });
 
 it('cannot export form submissions with invalid columns', function () {
@@ -323,7 +349,7 @@ it('does not include status column when partial submissions are disabled', funct
     expect(str_contains($content, 'status'))->toBeFalse();
 });
 
-it('exports file urls with expiration and a valid signature', function () {
+it('exports file urls with a durable expiration and a valid signature', function () {
     $user = $this->actingAsProUser();
     $workspace = $this->createUserWorkspace($user);
     $form = $this->createForm($user, $workspace, [
@@ -369,6 +395,13 @@ it('exports file urls with expiration and a valid signature', function () {
     parse_str(parse_url($exportedFileUrl, PHP_URL_QUERY), $queryParameters);
 
     expect($queryParameters)->toHaveKeys(['expires', 'signature']);
+    expect((int) $queryParameters['expires'])->toBeGreaterThan(now()->addMinutes(FormSubmissionFormatter::SIGNED_FILE_URL_EXPIRATION_MINUTES - 1)->timestamp);
 
     $this->get($exportedFileUrl)->assertOk();
+
+    $this->travel(6)->minutes();
+
+    $this->get($exportedFileUrl)->assertOk();
+
+    $this->travelBack();
 });
