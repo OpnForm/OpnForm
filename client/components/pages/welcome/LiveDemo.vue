@@ -1,84 +1,122 @@
 <template>
-  <div
-    class="w-full mx-auto max-w-266 flex items-center justify-center relative z-10"
-  >
+  <div class="relative z-10 mx-auto flex w-full max-w-266 items-center justify-center">
     <div
-      class="rounded-[22px] bg-[#D5E2FF] border border-gray-200 shadow-xl overflow-visible relative p-2.5 w-full"
+      class="relative w-full overflow-hidden rounded-[20px] border border-neutral-200 bg-[#D5E2FF] p-1.5 shadow-[0_28px_90px_-44px_rgba(15,23,42,0.45)] sm:rounded-[28px] sm:p-2.5"
     >
-      <!-- <iframe
-        class="min-h-150 sm:min-h-137.5 lg:min-h-175 bg-white rounded-[12px]"
-        style="border: none; width: 100%"
-        :src="url"
-      /> -->
-      <div
-        class="min-h-[58vh] sm:min-h-[62vh] lg:min-h-[68vh] w-full overflow-hidden bg-white rounded-[14px]"
-      >
+      <div class="overflow-hidden rounded-[16px] bg-white sm:rounded-[20px]">
         <div
-          class="flex items-center gap-3 justify-between border-b-[0.5px] border-gray-100 px-6 py-1"
+          class="relative flex select-none items-center justify-center border-b border-neutral-100 px-3 py-1 sm:px-5 sm:py-1.5"
         >
-          <div class="flex items-center gap-3.5">
+          <div class="pointer-events-none hidden items-center gap-2.5 text-neutral-300 sm:absolute sm:left-5 sm:flex">
             <UIcon
               name="i-heroicons-view-columns-20-solid"
-              class="h-4 w-4 text-gray-600"
+              class="h-4 w-4"
             />
             <UIcon
               name="i-heroicons-arrow-left-20-solid"
-              class="h-4 w-4 text-gray-600"
+              class="h-4 w-4"
             />
             <UIcon
               name="i-heroicons-arrow-right-20-solid"
-              class="h-4 w-4 text-gray-600"
+              class="h-4 w-4"
             />
             <UIcon
               name="i-heroicons-arrow-path-20-solid"
-              class="h-4 w-4 text-gray-600"
+              class="h-4 w-4"
             />
           </div>
-          <div class="flex items-center gap-1">
+
+          <div
+            class="flex min-w-0 items-center gap-2 rounded-full bg-neutral-50 px-3 py-0.5 text-xs font-medium leading-4 text-neutral-600"
+          >
             <UIcon
               name="i-heroicons-link-20-solid"
-              class="h-4 w-4 text-gray-600"
+              class="h-4 w-4 shrink-0 text-neutral-300"
             />
-            <p
-              class="text-[12px] leading-4 tracking-[-1%] font-medium text-gray-600"
-            >
-              opnform.com/
-            </p>
+            <span class="truncate">opnform.com</span>
           </div>
-          <div class="flex items-center gap-3.5">
+
+          <div class="hidden items-center gap-2 text-neutral-300 sm:absolute sm:right-5 sm:flex">
             <UIcon
               name="i-heroicons-adjustments-horizontal-20-solid"
-              class="h-4 w-4 text-gray-600"
+              class="pointer-events-none h-4 w-4"
             />
             <UIcon
-              name="i-heroicons-view-columns-20-solid"
-              class="h-4 w-4 text-gray-600"
+              name="i-heroicons-sparkles-20-solid"
+              class="pointer-events-none h-4 w-4"
             />
           </div>
         </div>
-      </div>
 
-      <NuxtLink
-        :to="{ name: authenticated ? 'forms-create' : 'forms-create-guest' }"
-        class="pl-2 py-1 pr-1 min-w-52 z-15 absolute bottom-12 left-1/2 -translate-x-1/2 inline-flex items-center rounded-full overflow-hidden bg-gray-900 text-white text-sm shadow-[0_0_32px_8px_rgba(51,92,255,0.2)]"
-      >
-        <span class="px-2"> Like a Demo? </span>
-        <span class="px-3 py-1.25 rounded-full bg-blue-600 hover:bg-blue-700">
-          Try a Form
-        </span>
-      </NuxtLink>
+        <div class="relative min-h-[460px] bg-white sm:min-h-[620px]">
+          <LiveDemoForm
+            :key="scenario.key"
+            :scenario="scenario"
+            :primary-cta-to="primaryCtaTo"
+            :secondary-cta-to="secondaryCtaTo"
+          />
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-defineProps({
-  url: {
+import LiveDemoForm from "~/components/pages/welcome/LiveDemoForm.vue"
+import { useIsAuthenticated } from "~/composables/useAuthFlow"
+import {
+  getLiveDemoMediaPreloads,
+  getLiveDemoScenario,
+} from "~/data/live-demo-scenarios.js"
+
+useHead({
+  link: getLiveDemoMediaPreloads().map((href) => ({
+    rel: "preload",
+    href,
+    as: "image",
+    type: "image/webp",
+  })),
+})
+
+const props = defineProps({
+  variant: {
     type: String,
-    required: false,
-    default: "https://opnform.com/forms/opnform-contact",
+    default: "home",
+  },
+  competitorName: {
+    type: String,
+    default: null,
+  },
+  importSource: {
+    type: String,
+    default: null,
   },
 })
 
 const { isAuthenticated: authenticated } = useIsAuthenticated()
+
+const scenario = computed(() =>
+  getLiveDemoScenario({
+    variant: props.variant,
+    competitorName: props.competitorName,
+    importSource: props.importSource,
+  }),
+)
+
+const primaryCtaTo = computed(() => ({
+  name: authenticated.value ? "forms-create" : "forms-create-guest",
+}))
+
+const secondaryCtaTo = computed(() => {
+  if (!props.importSource || !scenario.value.secondaryCtaLabel) {
+    return null
+  }
+
+  return {
+    name: authenticated.value || props.importSource === "google_forms"
+      ? "forms-create"
+      : "forms-create-guest",
+    query: { import: props.importSource },
+  }
+})
 </script>

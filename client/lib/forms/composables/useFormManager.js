@@ -126,12 +126,23 @@ export function useFormManager(initialFormConfig, initialMode = FormMode.LIVE, o
     state.isSubmitted = false
     state.currentPage = 0
    
-    await initialization.initialize({
+    const initializationPromise = initialization.initialize({
       ...options
     })
 
-    timer.reset()
-    timer.start()
+    if (options.eagerStructure) {
+      replaceStructure()
+      timer.reset()
+      timer.start()
+      state.isProcessing = false
+    }
+
+    await initializationPromise
+
+    if (!options.eagerStructure) {
+      timer.reset()
+      timer.start()
+    }
 
     // Ensure structure is built after initialization
     replaceStructure()
@@ -302,8 +313,8 @@ export function useFormManager(initialFormConfig, initialMode = FormMode.LIVE, o
       // 8. Clear partial submission hash to prevent stale data
       partialSubmissionService?.clearSubmissionHash()
       
-      // 9. Handle amplitude logging
-      if (import.meta.client) {
+      // 9. Handle amplitude logging for real submissions only
+      if (import.meta.client && strategy.value?.validation?.performActualSubmission !== false) {
         const amplitude = useAmplitude()
         amplitude.logEvent('form_submission', {
           workspace_id: toValue(config).workspace_id,
