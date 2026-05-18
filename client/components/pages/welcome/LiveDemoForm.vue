@@ -159,4 +159,9 @@ function restartDemo() {
   line-height: 1.6;
 }
 
+.live-demo-form :deep([role="listbox"] [role="option"] > span:first-child) {
+  pointer-events: none;
+  user-select: none;
+}
+
 </style>

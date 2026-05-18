@@ -33,11 +33,7 @@
           role="option"
         >
           <!-- Label (A, B, C, etc.) -->
-          <span
-            :class="labelClasses(isSelected(option))"
-            @pointerup.prevent.stop="selectOptionFromLabelPointer($event, option)"
-            @click.prevent.stop="selectOptionFromLabelClick(option)"
-          >
+          <span :class="labelClasses(isSelected(option))">
             {{ getOptionLabel(idx) }}
           </span>
 
@@ -161,7 +157,6 @@ const {
 const focusedIdx = ref(-1)
 const root = ref(null)
 const animatingOption = ref(null) // Track which option is animating
-let didSelectFromLabelPointer = false
 
 // Computed properties
 const optionStyle = computed(() => ({
@@ -322,26 +317,6 @@ function selectOption(option, fromKeyboard = false) {
       compVal.value = null
     }
   }
-}
-
-function selectOptionFromLabelPointer(event, option) {
-  if (event.button !== undefined && event.button !== 0) return
-
-  didSelectFromLabelPointer = true
-  selectOption(option, false)
-
-  setTimeout(() => {
-    didSelectFromLabelPointer = false
-  }, 0)
-}
-
-function selectOptionFromLabelClick(option) {
-  if (didSelectFromLabelPointer) {
-    didSelectFromLabelPointer = false
-    return
-  }
-
-  selectOption(option, false)
 }
 
 function onKeydown(e) {

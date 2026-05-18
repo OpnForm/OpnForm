@@ -15,7 +15,7 @@ export const focusedSelectorInputTheme = {
       'focus:outline-hidden'
     ],
     label: [
-      'select-none shrink-0 flex items-center justify-center',
+      'shrink-0 flex items-center justify-center',
       'font-medium transition-all duration-200'
     ],
     optionText: [
@@ -158,3 +158,4 @@ export const focusedSelectorInputTheme = {
     disabled: false
   }
 }
+
