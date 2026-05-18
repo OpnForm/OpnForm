@@ -244,4 +244,4 @@ export function useComponentRegistry() {
     getProviderWidget,
     createAsyncComponent
   }
-} 
+}

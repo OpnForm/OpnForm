@@ -28,7 +28,7 @@ export function createFormModeStrategy(mode) {
       validateOnSubmit: true,
       performActualSubmission: true
     },
-    
+
     // Display behaviors
     display: {
       showHiddenFields: false,
@@ -142,4 +142,4 @@ export function createFormModeStrategy(mode) {
   }
 
   return strategy
-} 
+}
