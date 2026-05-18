@@ -298,7 +298,7 @@ function buildHomeScenario() {
       withSlideMedia(
         textBlock(
           "home_summary",
-          `<p><strong>Demo complete</strong></p><h2>Thanks, ${mention("home_name", "Name", "Alex")}.</h2><p>You rated the demo ${mention("home_rating", "Rating", "5")}/5 and picked ${mention("home_use_case", "Use case", "a form workflow")}.</p><p>Your note: ${mention("home_comment", "Comment", "a short answer")}</p>`,
+          `<p><strong>Demo complete</strong></p><h2><span class="text-blue-500">Thanks, ${mention("home_name", "Name", "Alex")}.</span></h2><p>You rated the demo ${mention("home_rating", "Rating", "5")}/5 and picked ${mention("home_use_case", "Use case", "a form workflow")}.</p><p>Your note: ${mention("home_comment", "Comment", "a short answer")}</p>`,
         ),
         "summary",
         "right-split",
@@ -399,7 +399,7 @@ function buildComparisonScenario(competitorName, importSource) {
     withSlideMedia(
       textBlock(
         "cmp_summary",
-        `<p><strong>Demo complete</strong></p><h2>Thanks, ${mention("cmp_name", "Name", "Jamie")}.</h2><p>You rated ${competitorName} ${mention("cmp_satisfaction", "Satisfaction", "3")}/5 and said your main reason to compare is ${mention("cmp_reason", "Reason", "response limits")}.</p><p>Your note: ${mention("cmp_note", "Switch note", "you want a cleaner form experience with fewer limits")}</p>`,
+        `<p><strong>Demo complete</strong></p><h2><span class="text-blue-500">Thanks, ${mention("cmp_name", "Name", "Jamie")}.</span></h2><p>You rated ${competitorName} ${mention("cmp_satisfaction", "Satisfaction", "3")}/5 and said your main reason to compare is ${mention("cmp_reason", "Reason", "response limits")}.</p><p>Your note: ${mention("cmp_note", "Switch note", "you want a cleaner form experience with fewer limits")}</p>`,
       ),
       "summary",
       "left-split",
