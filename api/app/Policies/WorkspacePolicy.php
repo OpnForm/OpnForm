@@ -132,11 +132,6 @@ class WorkspacePolicy
             return Response::deny('You need to be an admin of this workspace to do this.');
         }
 
-        // If self-hosted, allow
-        if (!pricing_enabled()) {
-            return Response::allow();
-        }
-
         if (!$workspace->hasFeature('invite_user')) {
             return Response::deny('A Pro plan is required to invite users.');
         }
@@ -184,4 +179,5 @@ class WorkspacePolicy
     {
         return $user->ownsWorkspace($workspace);
     }
+
 }

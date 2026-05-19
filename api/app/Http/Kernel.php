@@ -17,6 +17,8 @@ use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Foundation\Http\Kernel as HttpKernel;
 use Illuminate\Routing\Router;
 use App\Http\Middleware\CheckUserIsBlocked;
+use App\Http\Middleware\EnsureCloudInstance;
+use App\Http\Middleware\EnsureSelfHostedInstance;
 
 class Kernel extends HttpKernel
 {
@@ -130,6 +132,9 @@ class Kernel extends HttpKernel
         'abilities' => \Laravel\Sanctum\Http\Middleware\CheckAbilities::class,
         'ability' => \Laravel\Sanctum\Http\Middleware\CheckForAnyAbility::class,
         'auth.multi' => \App\Http\Middleware\AuthenticateWithJwtOrSanctum::class,
+
+        'cloud' => EnsureCloudInstance::class,  // Allow cloud instances only
+        'self-hosted' => EnsureSelfHostedInstance::class, // Allow self-hosted instances only
     ];
 
     public function __construct(Application $app, Router $router)

@@ -54,15 +54,16 @@ class SendTelemetryPing extends Command
         }
 
         // Collect metrics
-        $properties = $this->collectMetrics();
+        $instanceProperties = $telemetryService->getInstanceProperties();
+        $properties = array_merge($this->collectMetrics(), $instanceProperties);
 
         // Update instance identification with latest metrics and send ping event
         $client = $telemetryService->createClient();
         $version = $telemetryService->getAppVersion();
         $client->identifyInstance($instanceId, $version, $properties);
 
-        // Send ping event directly using the client (without properties - identification already updated)
-        $client->sendEvent(TelemetryEvent::INSTANCE_PING->value(), [], $instanceId);
+        // Send ping event directly using the client.
+        $client->sendEvent(TelemetryEvent::INSTANCE_PING->value(), $instanceProperties, $instanceId);
 
         $this->info('Telemetry ping sent successfully');
 

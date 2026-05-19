@@ -8,6 +8,7 @@ use App\Traits\EnsureUserHasWorkspace;
 use Illuminate\Http\Request;
 use App\Models\Workspace;
 use App\Models\User;
+use App\Service\License\SelfHostedSeatLimitService;
 use App\Service\WorkspaceHelper;
 
 class WorkspaceUserController extends Controller
@@ -72,10 +73,12 @@ class WorkspaceUserController extends Controller
             ->pending()
             ->exists()
         ) {
-            return $this->success([
+            return $this->error([
                 'message' => 'User has already been invited.'
             ]);
         }
+
+        app(SelfHostedSeatLimitService::class)->assertCanInviteEmail($email);
 
         // Send new invite
         $invite = UserInvite::inviteUser($email, $role, $workspace, now()->addDays(7));

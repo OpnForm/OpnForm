@@ -1,10 +1,34 @@
 <?php
 
+use App\Enums\SettingsKey;
 use App\Enterprise\Oidc\Models\IdentityConnection;
+use App\Models\Setting;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Service\License\LicenseCheckResult;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Crypt;
 
 uses()->group('oidc', 'feature');
+
+function activateSsoLicense(): void
+{
+    Setting::set(SettingsKey::SELF_HOSTED_LICENSE, [
+        'license_key' => Crypt::encryptString('lic_test_oidc_ctrl'),
+        'status' => 'active',
+        'features' => ['sso' => true],
+        'last_checked_at' => now()->format('c'),
+        'expires_at' => now()->addYear()->format('c'),
+        'cloud_license_id' => '1',
+        'activation_id' => '1',
+    ]);
+    Cache::put('self_hosted_license_check', new LicenseCheckResult(
+        status: 'active',
+        features: ['sso' => true],
+        lastChecked: now(),
+        expiresAt: now()->addYear(),
+    ), 86400);
+}
 
 describe('OidcConnectionController - List Connections', function () {
     it('lists workspace-scoped connections for workspace admin', function () {
@@ -68,8 +92,9 @@ describe('OidcConnectionController - List Connections', function () {
 
 describe('OidcConnectionController - Create Connection', function () {
     beforeEach(function () {
-        // Set self-hosted mode to bypass Pro checks in tests
         config(['app.self_hosted' => true]);
+        config(['cashier.key' => null]);
+        activateSsoLicense();
     });
 
     it('creates workspace-scoped connection as enterprise user', function () {
@@ -393,6 +418,8 @@ describe('OidcConnectionController - Update Connection', function () {
 
     it('updates workspace-scoped connection in self-hosted mode', function () {
         config(['app.self_hosted' => true]);
+        config(['cashier.key' => null]);
+        activateSsoLicense();
 
         $user = User::factory()->create(['email' => 'user@company.com']);
         $this->actingAs($user);
@@ -519,6 +546,8 @@ describe('OidcConnectionController - Delete Connection', function () {
 
     it('deletes workspace-scoped connection in self-hosted mode', function () {
         config(['app.self_hosted' => true]);
+        config(['cashier.key' => null]);
+        activateSsoLicense();
 
         $user = User::factory()->create(['email' => 'user@company.com']);
         $this->actingAs($user);

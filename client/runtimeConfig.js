@@ -28,6 +28,9 @@ export default {
     SENTRY_ERROR_REPLAY_SAMPLE_RATE: parseNumber(process.env.SENTRY_ERROR_REPLAY_SAMPLE_RATE),
 
     clarityProjectId: process.env.NUXT_PUBLIC_CLARITY_PROJECT_ID || null,
+
+    /** Cloud API base URL. Used for self-hosted license checkout from the client. */
+    licenseApiEndpoint: process.env.NUXT_PUBLIC_LICENSE_API_ENDPOINT || 'https://api.opnform.com',
   },
 
   /**

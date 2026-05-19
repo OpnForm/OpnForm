@@ -96,4 +96,11 @@ return [
         'cache_ttl_hours' => env('IPINFO_CACHE_TTL_HOURS', 24),
         'request_timeout' => env('IPINFO_REQUEST_TIMEOUT', 5),
     ],
+
+    'license' => [
+        'endpoint' => env('LICENSE_API_ENDPOINT', 'https://api.opnform.com'),
+        'checkout_success_url' => env('LICENSE_CHECKOUT_SUCCESS_URL', 'https://opnform.com/self-hosted/checkout/success'),
+        'checkout_cancel_url' => env('LICENSE_CHECKOUT_CANCEL_URL', 'https://opnform.com/self-hosted/checkout/canceled'),
+        'portal_return_url' => env('LICENSE_PORTAL_RETURN_URL', 'https://opnform.com/self-hosted/checkout/success'),
+    ],
 ];

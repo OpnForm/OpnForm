@@ -57,10 +57,11 @@ class SendTelemetryJob implements ShouldQueue
             }
 
             $client = $telemetryService->createClient();
+            $properties = $telemetryService->getInstanceProperties($this->properties);
 
             $client->sendEvent(
                 $this->eventName,
-                $this->properties,
+                $properties,
                 $instanceId
             );
         } catch (\Exception $e) {
