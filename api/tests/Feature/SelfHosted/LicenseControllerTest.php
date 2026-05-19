@@ -117,6 +117,41 @@ describe('POST /settings/license/activate', function () {
         $response->assertStatus(403);
     });
 
+    it('requires a workspace admin for every license management endpoint', function (string $method, string $uri, array $payload = []) {
+        $member = $this->createUser();
+        $this->workspace->users()->attach($member, ['role' => 'user']);
+        $this->actingAs($member, 'api');
+
+        $response = $this->json($method, $uri, $payload);
+
+        $response->assertStatus(403);
+    })->with([
+        'status' => ['GET', '/settings/license/status'],
+        'activate' => ['POST', '/settings/license/activate', [
+            'license_key' => 'lic_testkey1234567890abcdef12345678',
+        ]],
+        'deactivate' => ['POST', '/settings/license/deactivate'],
+        'portal' => ['POST', '/settings/license/portal'],
+    ]);
+
+    it('hides self-hosted license settings endpoints from cloud instances', function (string $method, string $uri, array $payload = []) {
+        config(['app.self_hosted' => false]);
+
+        $response = $this->json($method, $uri, $payload);
+
+        $response->assertStatus(404)
+            ->assertJson([
+                'error' => 'Only available on self-hosted instances.',
+            ]);
+    })->with([
+        'status' => ['GET', '/settings/license/status'],
+        'activate' => ['POST', '/settings/license/activate', [
+            'license_key' => 'lic_testkey1234567890abcdef12345678',
+        ]],
+        'deactivate' => ['POST', '/settings/license/deactivate'],
+        'portal' => ['POST', '/settings/license/portal'],
+    ]);
+
     it('opens a cloud billing portal using the installed key', function () {
         $this->storeSelfHostedLicense([
             'license_key' => 'lic_portalkey1234567890',

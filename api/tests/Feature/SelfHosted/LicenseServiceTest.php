@@ -139,6 +139,59 @@ describe('storeLicenseKey', function () {
         expect($service->getLicenseKey())->toBe('lic_existing_valid_key');
     });
 
+    it('does not replace an existing valid key when the candidate reached its activation limit', function () {
+        $this->storeSelfHostedLicense([
+            'license_key' => 'lic_existing_valid_key',
+            'features' => ['sso' => true],
+        ]);
+
+        Http::fake([
+            'https://api.opnform.com/licenses/validate' => Http::response([
+                'valid' => false,
+                'status' => 'activation_limit_reached',
+                'features' => null,
+            ]),
+        ]);
+
+        $service = app(LicenseService::class);
+        $result = $service->storeLicenseKey('lic_reused_candidate_key');
+
+        expect($result->isActive())->toBeFalse();
+        expect($result->status)->toBe('activation_limit_reached');
+        expect($service->getLicenseKey())->toBe('lic_existing_valid_key');
+    });
+
+    it('replaces an existing key only after the candidate receives a fresh active response', function () {
+        $this->storeSelfHostedLicense([
+            'license_key' => 'lic_existing_valid_key',
+            'features' => ['sso' => true],
+            'cloud_license_id' => 'old-license-id',
+            'activation_id' => 'old-activation-id',
+        ]);
+
+        Http::fake([
+            'https://api.opnform.com/licenses/validate' => Http::response([
+                'valid' => true,
+                'status' => 'active',
+                'features' => ['sso' => true, 'custom_smtp' => true],
+                'expiresAt' => '2027-03-03T23:59:59Z',
+                'licenseId' => 'new-license-id',
+                'activationId' => 'new-activation-id',
+            ]),
+        ]);
+
+        $service = app(LicenseService::class);
+        $result = $service->storeLicenseKey('lic_new_active_candidate');
+        $stored = Setting::get(SettingsKey::SELF_HOSTED_LICENSE);
+
+        expect($result->isActive())->toBeTrue();
+        expect($service->getLicenseKey())->toBe('lic_new_active_candidate');
+        expect(Crypt::decryptString($stored['license_key']))->toBe('lic_new_active_candidate');
+        expect($stored['cloud_license_id'])->toBe('new-license-id');
+        expect($stored['activation_id'])->toBe('new-activation-id');
+        expect($stored['features'])->toBe(['sso' => true, 'custom_smtp' => true]);
+    });
+
     it('does not accept candidate keys from grace fallback when API is unreachable', function () {
         $this->storeSelfHostedLicense([
             'license_key' => 'lic_existing_valid_key',

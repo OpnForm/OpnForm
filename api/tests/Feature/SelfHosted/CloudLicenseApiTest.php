@@ -2,11 +2,18 @@
 
 use App\Models\LicenseActivation;
 use App\Models\LicenseKey;
+use Stripe\ApiRequestor;
+use Stripe\HttpClient\ClientInterface;
+use Stripe\HttpClient\CurlClient;
 
 beforeEach(function () {
     config(['app.self_hosted' => false]);
     config(['cashier.key' => 'pk_test_123']);
     config(['cashier.secret' => 'sk_test_123']);
+});
+
+afterEach(function () {
+    ApiRequestor::setHttpClient(CurlClient::instance());
 });
 
 describe('POST /licenses/validate', function () {
@@ -196,4 +203,98 @@ describe('POST /licenses/create', function () {
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['period']);
     });
+});
+
+describe('POST /licenses/portal', function () {
+    it('creates a billing portal session for an active license key', function () {
+        LicenseKey::create([
+            'license_key' => 'lic_portalcloudkey123456789012345678',
+            'billing_email' => 'admin@company.com',
+            'stripe_customer_id' => 'cus_portal',
+            'stripe_subscription_id' => '',
+            'status' => 'active',
+            'plan' => 'self_hosted',
+            'features' => ['sso' => true],
+            'expires_at' => now()->addYear(),
+        ]);
+
+        ApiRequestor::setHttpClient(new class () implements ClientInterface {
+            public function request($method, $absUrl, $headers, $params, $hasFile, $apiMode = 'v1', $maxNetworkRetries = null)
+            {
+                return [
+                    json_encode([
+                        'id' => 'bps_test',
+                        'object' => 'billing_portal.session',
+                        'url' => 'https://billing.stripe.com/p/session',
+                    ]),
+                    200,
+                    [],
+                ];
+            }
+        });
+
+        $response = $this->postJson('/licenses/portal', [
+            'licenseKey' => 'lic_portalcloudkey123456789012345678',
+        ]);
+
+        $response->assertSuccessful()
+            ->assertJson([
+                'portalUrl' => 'https://billing.stripe.com/p/session',
+            ]);
+    });
+
+    it('rejects invalid or expired license keys', function () {
+        LicenseKey::create([
+            'license_key' => 'lic_expiredportalkey1234567890123456',
+            'billing_email' => 'admin@company.com',
+            'stripe_customer_id' => 'cus_portal',
+            'stripe_subscription_id' => '',
+            'status' => 'active',
+            'plan' => 'self_hosted',
+            'features' => ['sso' => true],
+            'expires_at' => now()->subDay(),
+        ]);
+
+        $response = $this->postJson('/licenses/portal', [
+            'licenseKey' => 'lic_expiredportalkey1234567890123456',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJson([
+                'error' => 'License key is invalid or expired.',
+            ]);
+    });
+
+    it('validates licenseKey is required', function () {
+        $response = $this->postJson('/licenses/portal', []);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['licenseKey']);
+    });
+});
+
+describe('cloud license endpoints middleware', function () {
+    it('hides cloud license endpoints from self-hosted instances', function (string $method, string $uri, array $payload = []) {
+        config(['app.self_hosted' => true]);
+
+        $response = $this->json($method, $uri, $payload);
+
+        $response->assertStatus(404)
+            ->assertJson([
+                'error' => 'Only available on cloud instances.',
+            ]);
+    })->with([
+        'create' => ['POST', '/licenses/create', [
+            'billingEmail' => 'admin@example.com',
+            'plan' => 'self_hosted',
+            'period' => 'yearly',
+        ]],
+        'validate' => ['POST', '/licenses/validate', [
+            'licenseKey' => 'lic_test1234567890',
+            'instanceId' => 'instance-1',
+        ]],
+        'portal' => ['POST', '/licenses/portal', [
+            'licenseKey' => 'lic_test1234567890',
+        ]],
+    ]);
 });

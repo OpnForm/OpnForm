@@ -61,6 +61,44 @@ describe('self-hosted invite limits without license', function () {
         $response->assertStatus(403);
     });
 
+    it('does not count expired pending invites toward the instance free seats', function () {
+        UserInvite::create([
+            'email' => 'expired@example.com',
+            'role' => 'user',
+            'workspace_id' => $this->workspace->id,
+            'token' => 'test_token_' . str_repeat('e', 90),
+            'status' => UserInvite::PENDING_STATUS,
+            'valid_until' => now()->subDay(),
+        ]);
+
+        $response = $this->postJson(
+            route('open.workspaces.users.add', ['workspace' => $this->workspace]),
+            ['email' => 'fresh@example.com', 'role' => 'user']
+        );
+
+        $response->assertSuccessful();
+    });
+
+    it('does not treat a differently-cased pending invite email as another free seat', function () {
+        UserInvite::create([
+            'email' => 'MixedCase@example.com',
+            'role' => 'user',
+            'workspace_id' => $this->workspace->id,
+            'token' => 'test_token_' . str_repeat('m', 90),
+            'status' => UserInvite::PENDING_STATUS,
+            'valid_until' => now()->addDays(7),
+        ]);
+
+        $otherWorkspace = $this->createUserWorkspace($this->user);
+
+        $response = $this->postJson(
+            route('open.workspaces.users.add', ['workspace' => $otherWorkspace]),
+            ['email' => 'mixedcase@example.com', 'role' => 'user']
+        );
+
+        $response->assertSuccessful();
+    });
+
     it('blocks adding a third active user', function () {
         $member = $this->createUser(['email' => 'member@example.com']);
         $this->workspace->users()->attach($member, ['role' => 'user']);
