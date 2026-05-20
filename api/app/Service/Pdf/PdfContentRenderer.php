@@ -56,7 +56,8 @@ class PdfContentRenderer
             return;
         }
 
-        $shouldRenderAsImage = array_key_exists('static_image', $zone) || $this->isImageReference($value);
+        $isStaticImage = array_key_exists('static_image', $zone);
+        $shouldRenderAsImage = $isStaticImage || $this->isImageReference($value);
         if ($shouldRenderAsImage) {
             $imageContent = $this->imageResolver->resolveContent($value);
             if ($imageContent !== null) {
@@ -70,6 +71,10 @@ class PdfContentRenderer
                         'error' => $e->getMessage(),
                     ]);
                 }
+            }
+
+            if ($isStaticImage) {
+                return;
             }
         }
 

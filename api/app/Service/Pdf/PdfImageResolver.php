@@ -5,7 +5,6 @@ namespace App\Service\Pdf;
 use App\Http\Controllers\Forms\FormController;
 use App\Models\Forms\Form;
 use App\Service\Storage\FileUploadPathService;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
@@ -17,7 +16,10 @@ class PdfImageResolver
     }
 
     /**
-     * Resolve a zone image value to binary content from storage or remote URL.
+     * Resolve a zone image value to binary content from storage.
+     *
+     * URL-shaped values are treated as references to previously uploaded files
+     * by filename only. They are never fetched over the network.
      */
     public function resolveContent(string $imageValue): ?string
     {
@@ -26,10 +28,6 @@ class PdfImageResolver
                 if (Storage::exists($path)) {
                     return Storage::get($path);
                 }
-            }
-
-            if (filter_var(trim($imageValue), FILTER_VALIDATE_URL) !== false) {
-                return $this->downloadRemoteImage(trim($imageValue));
             }
         } catch (\Throwable $e) {
             Log::debug('PDF image resolve failed', [
@@ -76,33 +74,5 @@ class PdfImageResolver
         $candidates[] = FormController::ASSETS_UPLOAD_PATH . '/' . $normalized;
 
         return array_values(array_unique($candidates));
-    }
-
-    private function downloadRemoteImage(string $url): ?string
-    {
-        try {
-            $response = Http::timeout(10)
-                ->accept('image/*')
-                ->get($url);
-
-            if (!$response->successful()) {
-                return null;
-            }
-
-            $contentType = strtolower((string) $response->header('Content-Type', ''));
-            if ($contentType !== '' && !str_starts_with($contentType, 'image/')) {
-                return null;
-            }
-
-            $body = $response->body();
-            return $body !== '' ? $body : null;
-        } catch (\Throwable $e) {
-            Log::debug('PDF remote image download failed', [
-                'form_id' => $this->form?->id,
-                'url' => $url,
-                'error' => $e->getMessage(),
-            ]);
-            return null;
-        }
     }
 }

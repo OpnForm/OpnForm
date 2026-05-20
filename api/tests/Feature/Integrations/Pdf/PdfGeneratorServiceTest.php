@@ -7,9 +7,12 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Service\Pdf\PdfContentRenderer;
 use App\Service\Pdf\PdfGeneratorService;
+use App\Service\Pdf\PdfImageRenderer;
 use App\Service\Pdf\PdfImageResolver;
+use App\Service\Pdf\PdfRichTextRenderer;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
+use setasign\Fpdi\Fpdi;
 
 beforeEach(function () {
     Storage::fake('local');
@@ -217,14 +220,8 @@ describe('PdfGeneratorService', function () {
         expect(Storage::exists($resultPath))->toBeTrue();
     });
 
-    it('generates pdf with static image from unsplash-like url', function () {
-        Http::fake([
-            'https://images.unsplash.com/*' => Http::response(
-                tinyPngBytes(),
-                200,
-                ['Content-Type' => 'image/png']
-            ),
-        ]);
+    it('generates pdf without fetching static image urls unavailable in storage', function () {
+        Http::fake();
 
         $pdfContent = createTestPdf();
         $templatePath = 'pdf-templates/1/template.pdf';
@@ -266,6 +263,7 @@ describe('PdfGeneratorService', function () {
 
         expect(Storage::exists($resultPath))->toBeTrue();
         expect(Storage::get($resultPath))->toStartWith('%PDF');
+        Http::assertNothingSent();
     });
 });
 
@@ -296,42 +294,33 @@ describe('Image resolving', function () {
         expect($content)->toBe('img-bytes');
     });
 
-    it('fetches remote image urls when reachable and image content-type', function () {
-        Http::fake([
-            'https://example.com/*' => Http::response(
-                tinyPngBytes(),
-                200,
-                ['Content-Type' => 'image/png']
-            ),
-        ]);
+    it('does not fetch remote image urls', function () {
+        Http::fake();
 
         $resolver = new PdfImageResolver();
 
-        $content = $resolver->resolveContent('https://example.com/image.png');
-
-        expect($content)->toBe(tinyPngBytes());
-    });
-
-    it('returns null for remote urls with non-image content-type', function () {
-        Http::fake([
-            'https://example.com/*' => Http::response(
-                '<html>not an image</html>',
-                200,
-                ['Content-Type' => 'text/html']
-            ),
-        ]);
-
-        $resolver = new PdfImageResolver();
         $content = $resolver->resolveContent('https://example.com/image.png');
 
         expect($content)->toBeNull();
+        Http::assertNothingSent();
+    });
+
+    it('resolves url-shaped image values by storage filename only', function () {
+        Http::fake();
+        Storage::put('assets/forms/image.png', 'stored-image-bytes');
+
+        $resolver = new PdfImageResolver();
+        $content = $resolver->resolveContent('https://example.com/image.png');
+
+        expect($content)->toBe('stored-image-bytes');
+        Http::assertNothingSent();
     });
 });
 
 describe('PdfContentRenderer scalar values', function () {
     it('renders numeric values without dropping them', function () {
         $renderer = PdfContentRenderer::forForm(null);
-        $pdf = new \setasign\Fpdi\Fpdi();
+        $pdf = new Fpdi();
         $pdf->AddPage();
 
         $renderer->renderContent(
@@ -347,6 +336,54 @@ describe('PdfContentRenderer scalar values', function () {
 
         $content = $pdf->Output('S');
         expect($content)->toStartWith('%PDF');
+    });
+
+    it('does not render unresolved static image values as text', function () {
+        $imageResolver = new class extends PdfImageResolver {
+            public function resolveContent(string $imageValue): ?string
+            {
+                return null;
+            }
+        };
+
+        $richTextRenderer = new class extends PdfRichTextRenderer {
+            public bool $rendered = false;
+
+            public function render(
+                Fpdi $pdf,
+                string $text,
+                float $x,
+                float $y,
+                float $width,
+                float $height,
+                array $zone,
+                float $pageWidth
+            ): void {
+                $this->rendered = true;
+            }
+        };
+
+        $renderer = new PdfContentRenderer(
+            null,
+            $imageResolver,
+            new PdfImageRenderer(),
+            $richTextRenderer
+        );
+        $pdf = new Fpdi();
+        $pdf->AddPage();
+
+        $renderer->renderContent(
+            $pdf,
+            'https://example.com/image.png',
+            10,
+            10,
+            80,
+            20,
+            ['static_image' => 'https://example.com/image.png'],
+            210
+        );
+
+        expect($richTextRenderer->rendered)->toBeFalse();
     });
 });
 
