@@ -339,14 +339,14 @@ describe('PdfContentRenderer scalar values', function () {
     });
 
     it('does not render unresolved static image values as text', function () {
-        $imageResolver = new class extends PdfImageResolver {
+        $imageResolver = new class () extends PdfImageResolver {
             public function resolveContent(string $imageValue): ?string
             {
                 return null;
             }
         };
 
-        $richTextRenderer = new class extends PdfRichTextRenderer {
+        $richTextRenderer = new class () extends PdfRichTextRenderer {
             public bool $rendered = false;
 
             public function render(
