@@ -133,7 +133,7 @@ const featureComparison = [
   },
   {
     label: "Analytics dashboard",
-    cells: ["Pro+", "Summary free; analytics Business"],
+    cells: ["Pro+", "Summary free; analytics paid"],
   },
   {
     label: "Open source",

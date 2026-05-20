@@ -386,6 +386,8 @@ class OpnFormLocalSDK extends EventEmitter {
   }
 
   _handleMessage(event) {
+    if (event.source !== window) return
+
     const data = event.data
     if (!data || typeof data !== 'object') return
 
@@ -904,6 +906,12 @@ export function useSdkBridge(options) {
    * Handle incoming messages
    */
   function onMessage(event) {
+    if (isIframe) {
+      if (event.source !== window.parent) return
+    } else if (event.source !== window) {
+      return
+    }
+
     const data = event.data
     if (!data || typeof data !== 'object') return
     

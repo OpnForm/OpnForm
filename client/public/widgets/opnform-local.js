@@ -110,6 +110,8 @@
   
   // Forward SDK events to listeners
   window.addEventListener('message', function(event) {
+    if (event.source !== window) return
+
     var data = event.data
     if (!data || typeof data !== 'object') return
     if (data.type && data.type.indexOf && data.type.indexOf('opnform:event') === 0) {
@@ -140,4 +142,3 @@
     }
   })
 })()
-

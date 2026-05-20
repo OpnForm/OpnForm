@@ -38,6 +38,15 @@
     RESIZE: 'resize'
   }
 
+  function getIframeOrigin(iframe) {
+    try {
+      if (!iframe?.src) return null
+      return new URL(iframe.src, window.location.href).origin
+    } catch (e) {
+      return null
+    }
+  }
+
   /**
    * Simple EventEmitter implementation
    */
@@ -117,6 +126,7 @@
       this._currentPage = { index: 0, total: 1 }
       this._popupOpen = false
       this._resizeInitialized = false
+      this._targetOrigin = getIframeOrigin(iframe) || '*'
     }
 
     isReady() { return this._ready }
@@ -144,8 +154,13 @@
             reject(new Error('Command timeout'))
           }
         }, 5000)
-        this.iframe.contentWindow.postMessage(message, '*')
+        this.iframe.contentWindow.postMessage(message, this._targetOrigin)
       })
+    }
+
+    matchesMessageSource(event) {
+      if (!this.iframe || event.source !== this.iframe.contentWindow) return false
+      return this._targetOrigin === '*' || event.origin === this._targetOrigin
     }
 
     _handleResponse(response) {
@@ -231,7 +246,7 @@
     initResize() {
       if (this._resizeInitialized) return
       if (global.iFrameResize && this.iframe) {
-        global.iFrameResize({ log: false, checkOrigin: false }, this.iframe)
+        global.iFrameResize({ log: false }, this.iframe)
         this._resizeInitialized = true
       }
     }
@@ -324,24 +339,30 @@
 
       // Handle legacy form-submitted event
       if (data.type === 'form-submitted') {
-        this._handleLegacySubmit(data)
+        const form = this._forms[data.form?.slug]
+        if (form?.matchesMessageSource(event)) {
+          this._handleLegacySubmit(data, form)
+        }
         return
       }
 
       // Handle SDK events
       if (data.type && data.type.startsWith && data.type.startsWith(MSG_PREFIX)) {
+        const form = this._forms[data.formSlug]
+        if (!form?.matchesMessageSource(event)) return
+
         const messageType = data.type.replace(MSG_PREFIX, '')
         if (messageType === 'event') {
-          this._handleEvent(data)
+          this._handleEvent(data, form)
         } else if (messageType === 'response') {
-          this._handleResponse(data)
+          this._handleResponse(data, form)
         }
       }
     }
 
-    _handleLegacySubmit(data) {
+    _handleLegacySubmit(data, form = null) {
       const formSlug = data.form?.slug
-      const form = this._forms[formSlug]
+      form = form || this._forms[formSlug]
       
       const eventData = {
         form: { slug: formSlug, id: data.form?.id },
@@ -362,9 +383,9 @@
       }
     }
 
-    _handleEvent(message) {
+    _handleEvent(message, form = null) {
       const { event, formSlug, payload } = message
-      const form = this._forms[formSlug]
+      form = form || this._forms[formSlug]
 
       if (!form) return
 
@@ -414,9 +435,9 @@
       }
     }
 
-    _handleResponse(message) {
+    _handleResponse(message, form = null) {
       const { formSlug, requestId, success, data, error } = message
-      const form = this._forms[formSlug]
+      form = form || this._forms[formSlug]
       if (form) {
         form._handleResponse({ requestId, success, data, error })
       }
@@ -479,7 +500,7 @@
         form.initResize()
       } else if (global.iFrameResize) {
         const selector = '#' + slugOrId
-        global.iFrameResize({ log: false, checkOrigin: false }, selector)
+        global.iFrameResize({ log: false }, selector)
       }
     }
   }

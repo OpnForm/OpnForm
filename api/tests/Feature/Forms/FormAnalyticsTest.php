@@ -251,8 +251,8 @@ describe('Form Analytics Validation', function () {
     });
 });
 
-describe('Form Analytics Business Feature Gating', function () {
-    it('warns about analytics cleaning for non-business users on form create', function () {
+describe('Form Analytics Pro Feature Gating', function () {
+    it('warns about analytics cleaning for non-pro users on form create', function () {
         $user = $this->actingAsUser(); // Free tier user
         $workspace = $this->createUserWorkspace($user);
         $form = $this->makeForm($user, $workspace, [
@@ -271,7 +271,7 @@ describe('Form Analytics Business Feature Gating', function () {
         expect($response->json('message'))->toContain('Pro features you used will be disabled');
     });
 
-    it('cleans analytics when public form is fetched for non-business user', function () {
+    it('cleans analytics when public form is fetched for non-pro user', function () {
         $user = $this->actingAsUser(); // Free tier user
         $workspace = $this->createUserWorkspace($user);
         $form = $this->createForm($user, $workspace, [
@@ -293,8 +293,8 @@ describe('Form Analytics Business Feature Gating', function () {
         expect($response->json('analytics'))->toBeEmpty();
     });
 
-    it('preserves analytics when public form is fetched for business user', function () {
-        $user = $this->actingAsBusinessUser();
+    it('preserves analytics when public form is fetched for pro user', function () {
+        $user = $this->actingAsProUser();
         $workspace = $this->createUserWorkspace($user);
         $form = $this->createForm($user, $workspace, [
             'analytics' => [
@@ -307,7 +307,7 @@ describe('Form Analytics Business Feature Gating', function () {
         // Logout to access as guest (public form endpoint)
         $this->actingAsGuest();
 
-        // Public endpoint should preserve analytics for business workspace
+        // Public endpoint should preserve analytics for pro workspace
         $response = $this->getJson(route('forms.show', $form->slug))
             ->assertSuccessful();
 
@@ -316,7 +316,7 @@ describe('Form Analytics Business Feature Gating', function () {
         expect($response->json('analytics.tracking_id'))->toBe('GTM-PROACC01');
     });
 
-    it('preserves analytics in database for non-business users', function () {
+    it('preserves analytics in database for non-pro users', function () {
         $user = $this->actingAsUser(); // Free tier user
         $workspace = $this->createUserWorkspace($user);
         $form = $this->createForm($user, $workspace, [

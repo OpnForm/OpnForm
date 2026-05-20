@@ -264,7 +264,7 @@ const sections = [
     rows: [
       {
         label: "Analytics dashboard",
-        values: [false, false, true, true],
+        values: [false, true, true, true],
       },
       {
         label: "Partial submissions / draft saving",
