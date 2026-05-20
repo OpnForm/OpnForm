@@ -68,7 +68,8 @@ describe('checkLicense', function () {
         expect($result->cloudLicenseId)->toBe('10');
         expect($result->activationId)->toBe('20');
 
-        Http::assertSent(fn ($request) =>
+        Http::assertSent(
+            fn ($request) =>
             str_contains($request->url(), '/licenses/validate')
             && $request['licenseKey'] === 'lic_testkey12345'
             && is_string($request['instanceId'])

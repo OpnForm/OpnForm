@@ -170,7 +170,8 @@ describe('POST /settings/license/activate', function () {
                 'portalUrl' => 'https://billing.stripe.com/p/session',
             ]);
 
-        Http::assertSent(fn ($request) =>
+        Http::assertSent(
+            fn ($request) =>
             str_contains($request->url(), '/licenses/portal')
             && $request['licenseKey'] === 'lic_portalkey1234567890'
         );
