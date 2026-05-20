@@ -10,6 +10,12 @@ return [
     'custom_code' => [
         'enable_self_hosted' => env('CUSTOM_CODE_ENABLE_SELF_HOSTED', false),
     ],
+    'public_uploads' => [
+        'rate_limit' => [
+            'per_minute' => (int) env('PUBLIC_UPLOADS_RATE_LIMIT_PER_MINUTE', 30),
+            'per_hour' => (int) env('PUBLIC_UPLOADS_RATE_LIMIT_PER_HOUR', 300),
+        ],
+    ],
     'webhooks' => [
         'allow_private_urls' => env('WEBHOOKS_ALLOW_PRIVATE_URLS', false),
     ],
