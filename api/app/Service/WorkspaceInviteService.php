@@ -5,6 +5,7 @@ namespace App\Service;
 use App\Models\User;
 use App\Models\UserInvite;
 use App\Models\Workspace;
+use App\Service\License\SelfHostedSeatLimitService;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Support\Facades\DB;
 
@@ -47,6 +48,8 @@ class WorkspaceInviteService
                     response()->json(['message' => 'Invite token has expired.'], 400)
                 );
             }
+
+            app(SelfHostedSeatLimitService::class)->assertCanAcceptInvite($userInvite);
 
             // markAsAccepted() uses atomic conditional update to prevent races
             $userInvite->markAsAccepted();

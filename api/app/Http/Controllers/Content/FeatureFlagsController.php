@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Content;
 
 use App\Http\Controllers\Controller;
+use App\Service\License\LicenseService;
 use Illuminate\Support\Facades\Cache;
 
 class FeatureFlagsController extends Controller
@@ -49,10 +50,31 @@ class FeatureFlagsController extends Controller
                     'available' => $this->isOidcAvailable(),
                     'forced' => config('oidc.force_login', false) && $this->isOidcAvailable(),
                 ],
+                'license' => $this->getLicenseFlags(),
             ];
         });
 
         return response()->json($featureFlags);
+    }
+
+    /**
+     * Get license flags for self-hosted instances.
+     * Returns null for cloud deployments.
+     */
+    private function getLicenseFlags(): ?array
+    {
+        if (!config('app.self_hosted')) {
+            return null;
+        }
+
+        $licenseService = app(LicenseService::class);
+        $result = $licenseService->checkLicense();
+
+        return [
+            'status' => $result->status,
+            'features' => $result->features,
+            'expires_at' => $result->expiresAt?->format('c'),
+        ];
     }
 
     /**

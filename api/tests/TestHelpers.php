@@ -2,13 +2,16 @@
 
 namespace Tests;
 
+use App\Enums\SettingsKey;
 use App\Models\Forms\Form;
 use App\Models\License;
+use App\Models\Setting;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Service\Forms\FormSubmissionDataFactory;
 use Database\Factories\FormFactory;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Str;
 
 trait TestHelpers
@@ -362,5 +365,21 @@ trait TestHelpers
         }
 
         return $factory->createSubmissionData($data);
+    }
+
+    public function storeSelfHostedLicense(array $attributes = []): void
+    {
+        $licenseKey = $attributes['license_key'] ?? 'lic_test_enterprise_12345';
+        unset($attributes['license_key']);
+
+        Setting::set(SettingsKey::SELF_HOSTED_LICENSE, array_merge([
+            'license_key' => Crypt::encryptString($licenseKey),
+            'status' => 'active',
+            'features' => ['sso' => true, 'multiOrg' => true],
+            'last_checked_at' => now()->format('c'),
+            'expires_at' => now()->addYear()->format('c'),
+            'cloud_license_id' => '1',
+            'activation_id' => '1',
+        ], $attributes));
     }
 }

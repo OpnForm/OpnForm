@@ -3,6 +3,7 @@
 use App\Enums\SettingsKey;
 use App\Models\Setting;
 use App\Service\Telemetry\TelemetryService;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
 use Tests\TestCase;
 
@@ -10,6 +11,7 @@ uses(TestCase::class);
 
 describe('TelemetryService', function () {
     beforeEach(function () {
+        Cache::flush();
         $this->service = new TelemetryService();
     });
 
@@ -87,5 +89,34 @@ describe('TelemetryService', function () {
         Config::set('telemetry.client_secret', $clientSecret);
 
         expect($this->service->getClientSecret())->toBe($clientSecret);
+    });
+
+    it('adds a false paid license flag to instance properties without a license', function () {
+        Config::set('app.self_hosted', true);
+
+        expect($this->service->getInstanceProperties())->toBe([
+            'has_paid_license' => false,
+        ]);
+    });
+
+    it('adds a true paid license flag to instance properties with an active self-hosted license', function () {
+        Config::set('app.self_hosted', true);
+        $this->storeSelfHostedLicense([
+            'license_key' => 'lic_telemetrypaid12345',
+            'status' => 'active',
+        ]);
+
+        expect($this->service->getInstanceProperties(['forms_count' => 10]))->toBe([
+            'forms_count' => 10,
+            'has_paid_license' => true,
+        ]);
+    });
+
+    it('does not allow callers to override the paid license flag', function () {
+        Config::set('app.self_hosted', true);
+
+        expect($this->service->getInstanceProperties(['has_paid_license' => true]))->toBe([
+            'has_paid_license' => false,
+        ]);
     });
 });

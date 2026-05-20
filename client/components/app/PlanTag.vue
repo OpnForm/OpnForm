@@ -60,7 +60,9 @@ const displayTier = computed(() => {
 
 // Check if we should display the tag
 const shouldDisplayTag = computed(() => {
-  if (!useFeatureFlag('billing.enabled')) return false
+  const isSelfHostedRequired = displayTier.value === 'self_hosted'
+  if (!isSelfHostedRequired && useFeatureFlag('self_hosted')) return false
+  if (!isSelfHostedRequired && !useFeatureFlag('billing.enabled')) return false
   if (!displayTier.value) return false
   if (!user.value || !workspace.value) return true
 
@@ -86,6 +88,8 @@ const tagClasses = computed(() => {
   const base = 'px-2 text-xs uppercase inline rounded-full font-semibold cursor-pointer'
 
   switch (displayTier.value) {
+    case 'self_hosted':
+      return `${base} bg-emerald-600 text-white`
     case 'enterprise':
       return `${base} bg-purple-600 text-white`
     case 'business':
