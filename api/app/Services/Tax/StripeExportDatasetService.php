@@ -63,6 +63,7 @@ class StripeExportDatasetService
             ],
             'status' => 'paid',
             'created' => [
+                'gte' => Carbon::parse($startDate)->subDays($this->getAccountingLookbackDays())->startOfDay()->timestamp,
                 'lte' => Carbon::parse($endDate)->endOfDay()->timestamp,
             ],
         ];
@@ -599,6 +600,7 @@ class StripeExportDatasetService
         $queryOptions = [
             'limit' => 100,
             'created' => [
+                'gte' => Carbon::parse($startDate)->subDays($this->getAccountingLookbackDays())->startOfDay()->timestamp,
                 'lte' => Carbon::parse($endDate)->endOfDay()->timestamp,
             ],
             'expand' => [
@@ -679,6 +681,11 @@ class StripeExportDatasetService
         }
 
         return [];
+    }
+
+    private function getAccountingLookbackDays(): int
+    {
+        return max(0, (int) env('STRIPE_EXPORT_LOOKBACK_DAYS', 45));
     }
 
     private function resolveCustomerId(Invoice $invoice): string
