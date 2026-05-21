@@ -16,7 +16,7 @@ return [
         'pro' => ['order' => 1, 'name' => 'Pro', 'price_monthly' => 29, 'price_yearly' => 299, 'price_yearly_per_month' => 25],
         'business' => ['order' => 2, 'name' => 'Business', 'price_monthly' => 79, 'price_yearly' => 799, 'price_yearly_per_month' => 67],
         'enterprise' => ['order' => 3, 'name' => 'Enterprise', 'price_monthly' => 250, 'price_yearly' => 2640, 'price_yearly_per_month' => 220],
-        'self_hosted' => ['order' => 4, 'name' => 'Self-hosted Enterprise', 'price_monthly' => 199, 'price_yearly' => 1990, 'price_yearly_per_month' => 166],
+        'self_hosted' => ['order' => 4, 'name' => 'Self-hosted Enterprise', 'price_monthly' => 199, 'price_yearly' => 1999, 'price_yearly_per_month' => 167],
     ],
 
     /**

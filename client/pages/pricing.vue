@@ -661,7 +661,7 @@
                     <span
                       class="text-3xl sm:text-[40px] sm:leading-12 font-medium tracking-[-1%] text-gray-950"
                     >
-                      $1,990
+                      $1,999
                     </span>
                     <span
                       class="text-base leading-7 tracking-[-1.1%] font-medium text-gray-600"
