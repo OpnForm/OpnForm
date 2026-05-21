@@ -18,6 +18,7 @@ describe('useBillingUpsell', () => {
         pro: { order: 1, name: 'Pro', price_monthly: 29, price_yearly_per_month: 25 },
         business: { order: 2, name: 'Business', price_monthly: 79, price_yearly_per_month: 67 },
         enterprise: { order: 3, name: 'Enterprise', price_monthly: 250, price_yearly_per_month: 220 },
+        self_hosted: { order: 4, name: 'Self-hosted Enterprise', price_monthly: 199, price_yearly_per_month: 167 },
       })),
     })
   })
@@ -29,10 +30,12 @@ describe('useBillingUpsell', () => {
     delete globalThis.usePlanCatalog
   })
 
-  it('reads enterprise yearly pricing from the loaded plan catalog', () => {
+  it('reads yearly pricing from the loaded plan catalog', () => {
     const { getPlanPrice, getTierDisplayName } = useBillingUpsell()
 
     expect(getPlanPrice('enterprise', true)).toBe(220)
     expect(getTierDisplayName('enterprise')).toBe('Enterprise')
+    expect(getPlanPrice('self_hosted', true)).toBe(167)
+    expect(getTierDisplayName('self_hosted')).toBe('Self-hosted Enterprise')
   })
 })
