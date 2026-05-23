@@ -24,6 +24,7 @@ class FormSubmissionExportRequest extends FormRequest
         ))->pluck('id')->toArray();
         $validColumns[] = 'created_at';
         $validColumns[] = 'status';
+        $validColumns[] = 'ip_address';
 
         return [
             'columns' => [
