@@ -19,7 +19,7 @@
     @if(!empty($field['value_is_html']))
     {!! $field['value'] !!}
     @else
-    {{ is_array($field['value']) ? implode(',', $field['value']) : $field['value'] }}
+     {!! is_array($field['value']) ? implode(',', $field['value']) : html_entity_decode($field['value'], ENT_QUOTES, 'UTF-8') !!}
     @endif
 </p>
 @endif
