@@ -49,6 +49,10 @@ class FormExportService
             }
         }
 
+        if (isset($displayColumns['ip_address']) && $displayColumns['ip_address'] === true) {
+            $filteredData['ip_address'] = $submission->meta['ip_address'] ?? null;
+        }
+
         if (isset($displayColumns['created_at']) && $displayColumns['created_at'] === true) {
             $filteredData['created_at'] = $submission->created_at->format('Y-m-d H:i');
         }
