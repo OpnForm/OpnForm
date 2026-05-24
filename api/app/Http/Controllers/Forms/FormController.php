@@ -265,7 +265,7 @@ class FormController extends Controller
 
         return $this->success([
             'message' => 'File uploaded.',
-            'url' => route('forms.assets.show', [$fileNameParser->getMovedFileName()]),
+            'url' => str_replace('http://', 'https://', route('forms.assets.show', [$fileNameParser->getMovedFileName()])),
         ]);
     }
 
