@@ -46,10 +46,12 @@ class WorkspaceResource extends JsonResource
             ];
         }
 
+        $isAdmin = $this->isAdminUser($request->user());
+
         $data = array_merge(parent::toArray($request), [
             'max_file_size' => $this->max_file_size / 1000000,
             'is_readonly' => $this->isReadonlyUser($request->user()),
-            'is_admin' => $this->isAdminUser($request->user()),
+            'is_admin' => $isAdmin,
             'users_count' => $this->users_count,
             'plan_tier' => app(PlanAccessService::class)->getTier($this->resource),
             'features' => app(PlanAccessService::class)->getFeatures($this->resource),
@@ -57,6 +59,10 @@ class WorkspaceResource extends JsonResource
             'required_tiers' => app(PlanAccessService::class)->getRequiredTiers(),
             'is_grandfathered' => app(BillingStateResolver::class)->resolveWorkspace($this->resource)->isGrandfathered,
         ]);
+
+        if (! $isAdmin && isset($data['settings'])) {
+            unset($data['settings']['email_settings']);
+        }
 
         return $data;
     }

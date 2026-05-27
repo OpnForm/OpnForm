@@ -324,3 +324,94 @@ describe('Custom Code Settings', function () {
         ])->assertStatus(403);
     });
 });
+
+describe('SMTP settings redaction', function () {
+    it('exposes email_settings to admin users', function () {
+        $admin = $this->actingAsProUser();
+        $workspace = $this->createUserWorkspace($admin);
+        $workspace->update(['settings' => [
+            'email_settings' => [
+                'host' => 'smtp.test.com',
+                'port' => 587,
+                'username' => 'admin@test.com',
+                'password' => 'super-secret-password',
+            ],
+        ]]);
+
+        $response = $this->getJson(route('open.workspaces.index'))
+            ->assertSuccessful();
+
+        $ws = collect($response->json())->firstWhere('id', $workspace->id);
+        expect($ws['settings']['email_settings']['password'])->toBe('super-secret-password');
+        expect($ws['settings']['email_settings']['host'])->toBe('smtp.test.com');
+    });
+
+    it('hides email_settings from non-admin user role', function () {
+        $admin = $this->createProUser();
+        $workspace = $this->createUserWorkspace($admin);
+        $workspace->update(['settings' => [
+            'email_settings' => [
+                'host' => 'smtp.test.com',
+                'port' => 587,
+                'username' => 'admin@test.com',
+                'password' => 'super-secret-password',
+            ],
+        ]]);
+
+        $member = $this->createUser();
+        $workspace->users()->attach($member, ['role' => 'user']);
+        $this->actingAsUser($member);
+
+        $response = $this->getJson(route('open.workspaces.index'))
+            ->assertSuccessful();
+
+        $ws = collect($response->json())->firstWhere('id', $workspace->id);
+        expect($ws['settings']['email_settings'] ?? null)->toBeNull();
+    });
+
+    it('hides email_settings from readonly role', function () {
+        $admin = $this->createProUser();
+        $workspace = $this->createUserWorkspace($admin);
+        $workspace->update(['settings' => [
+            'email_settings' => [
+                'host' => 'smtp.test.com',
+                'port' => 587,
+                'username' => 'admin@test.com',
+                'password' => 'super-secret-password',
+            ],
+        ]]);
+
+        $readonlyUser = $this->createUser();
+        $workspace->users()->attach($readonlyUser, ['role' => 'readonly']);
+        $this->actingAsUser($readonlyUser);
+
+        $response = $this->getJson(route('open.workspaces.index'))
+            ->assertSuccessful();
+
+        $ws = collect($response->json())->firstWhere('id', $workspace->id);
+        expect($ws['settings']['email_settings'] ?? null)->toBeNull();
+    });
+
+    it('preserves non-sensitive settings for non-admin users', function () {
+        $admin = $this->createProUser();
+        $workspace = $this->createUserWorkspace($admin);
+        $workspace->update(['settings' => [
+            'custom_code' => '<script>tracking</script>',
+            'email_settings' => [
+                'host' => 'smtp.test.com',
+                'password' => 'secret',
+            ],
+        ]]);
+
+        $member = $this->createUser();
+        $workspace->users()->attach($member, ['role' => 'user']);
+        $this->actingAsUser($member);
+
+        $response = $this->getJson(route('open.workspaces.index'))
+            ->assertSuccessful();
+
+        $ws = collect($response->json())->firstWhere('id', $workspace->id);
+        expect($ws['settings']['custom_code'])->toBe('<script>tracking</script>');
+        expect($ws['settings']['email_settings'] ?? null)->toBeNull();
+    });
+});
