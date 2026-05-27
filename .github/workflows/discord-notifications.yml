@@ -10,83 +10,140 @@ on:
   pull_request:
     types: [opened, closed]
 
+permissions:
+  contents: read
+
 jobs:
-  push-notification:
-    if: github.event_name == 'push'
+  discord-notification:
     runs-on: ubuntu-latest
-    name: Push Notification
+    name: Discord Notification
     steps:
       - name: Send Discord notification
-        uses: Ilshidur/action-discord@0.3.2
+        shell: bash
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-        with:
-          args: "⬆️ **Push to main** by ${{ github.actor }} - ${{ github.event.head_commit.message }} - [View Commit](${{ github.event.head_commit.url }})"
-
-  issue-notification:
-    if: github.event_name == 'issues'
-    runs-on: ubuntu-latest
-    name: Issue Notification
-    steps:
-      - name: Set issue status
-        id: issue
         run: |
-          case "${{ github.event.action }}" in
-            opened)
-              echo "emoji=🆕" >> $GITHUB_OUTPUT
-              echo "action=opened" >> $GITHUB_OUTPUT
-              ;;
-            closed)
-              echo "emoji=✅" >> $GITHUB_OUTPUT
-              echo "action=closed" >> $GITHUB_OUTPUT
-              ;;
-            reopened)
-              echo "emoji=🔄" >> $GITHUB_OUTPUT
-              echo "action=reopened" >> $GITHUB_OUTPUT
-              ;;
-          esac
+          set -euo pipefail
 
-      - name: Send Discord notification
-        uses: Ilshidur/action-discord@0.3.2
-        env:
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-        with:
-          args: "${{ steps.issue.outputs.emoji }} **Issue ${{ steps.issue.outputs.action }}** - #${{ github.event.issue.number }}: ${{ github.event.issue.title }} by ${{ github.event.issue.user.login }} - [View Issue](${{ github.event.issue.html_url }})"
-
-  pr-notification:
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    name: PR Notification
-    steps:
-      - name: Set PR status
-        id: pr
-        run: |
-          if [[ "${{ github.event.action }}" == "opened" ]]; then
-            echo "emoji=📝" >> $GITHUB_OUTPUT
-            echo "action=opened" >> $GITHUB_OUTPUT
-          elif [[ "${{ github.event.action }}" == "closed" && "${{ github.event.pull_request.merged }}" == "true" ]]; then
-            echo "emoji=🎉" >> $GITHUB_OUTPUT
-            echo "action=merged" >> $GITHUB_OUTPUT
-          elif [[ "${{ github.event.action }}" == "closed" ]]; then
-            echo "emoji=🚫" >> $GITHUB_OUTPUT
-            echo "action=closed" >> $GITHUB_OUTPUT
+          if [ -z "${DISCORD_WEBHOOK:-}" ]; then
+            echo "DISCORD_WEBHOOK is unavailable; skipping Discord notification."
+            exit 0
           fi
 
-      - name: Send Discord notification
-        uses: Ilshidur/action-discord@0.3.2
-        env:
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-        with:
-          args: "${{ steps.pr.outputs.emoji }} **PR ${{ steps.pr.outputs.action }}** - #${{ github.event.pull_request.number }}: ${{ github.event.pull_request.title }} by ${{ github.event.pull_request.user.login }} - [View PR](${{ github.event.pull_request.html_url }})"
+          node <<'NODE'
+          const fs = require('node:fs');
 
-  release-notification:
-    if: github.event_name == 'release'
-    runs-on: ubuntu-latest
-    name: Release Notification
-    steps:
-      - name: Send Discord notification
-        uses: Ilshidur/action-discord@0.3.2
-        env:
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-        with:
-          args: "🚀 **New Release Published** - ${{ github.event.release.tag_name }}: ${{ github.event.release.name }} - [View Release](${{ github.event.release.html_url }})"
+          const event = JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH, 'utf8'));
+          const eventName = process.env.GITHUB_EVENT_NAME;
+          const actor = process.env.GITHUB_ACTOR || 'unknown';
+
+          function text(value, fallback = '') {
+            if (value === null || value === undefined || value === '') {
+              return fallback;
+            }
+
+            return String(value);
+          }
+
+          function oneLine(value, fallback = '') {
+            return text(value, fallback).replace(/\s+/g, ' ').trim();
+          }
+
+          function truncate(value, maxLength = 1900) {
+            if (value.length <= maxLength) {
+              return value;
+            }
+
+            return `${value.slice(0, maxLength - 1)}…`;
+          }
+
+          function issueMessage() {
+            const issue = event.issue || {};
+            const action = event.action || 'updated';
+            const statuses = {
+              opened: ['🆕', 'opened'],
+              closed: ['✅', 'closed'],
+              reopened: ['🔄', 'reopened'],
+            };
+            const [emoji, label] = statuses[action] || ['ℹ️', action];
+
+            return `${emoji} **Issue ${label}** - #${text(issue.number, '?')}: ${oneLine(issue.title, '(untitled)')} by ${text(issue.user && issue.user.login, 'unknown')} - [View Issue](${text(issue.html_url)})`;
+          }
+
+          function pullRequestMessage() {
+            const pullRequest = event.pull_request || {};
+            const action = event.action || 'updated';
+            let emoji = 'ℹ️';
+            let label = action;
+
+            if (action === 'opened') {
+              emoji = '📝';
+              label = 'opened';
+            } else if (action === 'closed' && pullRequest.merged === true) {
+              emoji = '🎉';
+              label = 'merged';
+            } else if (action === 'closed') {
+              emoji = '🚫';
+              label = 'closed';
+            }
+
+            return `${emoji} **PR ${label}** - #${text(pullRequest.number, '?')}: ${oneLine(pullRequest.title, '(untitled)')} by ${text(pullRequest.user && pullRequest.user.login, 'unknown')} - [View PR](${text(pullRequest.html_url)})`;
+          }
+
+          function pushMessage() {
+            const commit = event.head_commit || {};
+            const message = oneLine(commit.message, '(no commit message)');
+            const url = text(commit.url || event.compare);
+            const link = url ? ` - [View Commit](${url})` : '';
+
+            return `⬆️ **Push to main** by ${actor} - ${message}${link}`;
+          }
+
+          function releaseMessage() {
+            const release = event.release || {};
+            const tagName = text(release.tag_name, '(untagged)');
+            const releaseName = oneLine(release.name, tagName);
+
+            return `🚀 **New Release Published** - ${tagName}: ${releaseName} - [View Release](${text(release.html_url)})`;
+          }
+
+          const messageBuilders = {
+            issues: issueMessage,
+            pull_request: pullRequestMessage,
+            push: pushMessage,
+            release: releaseMessage,
+          };
+
+          const buildMessage = messageBuilders[eventName];
+          if (!buildMessage) {
+            console.log(`Unsupported event "${eventName}"; skipping Discord notification.`);
+            process.exit(0);
+          }
+
+          const payload = {
+            content: truncate(buildMessage()),
+            allowed_mentions: {
+              parse: [],
+            },
+          };
+
+          async function main() {
+            const response = await fetch(`${process.env.DISCORD_WEBHOOK}?wait=true`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(payload),
+            });
+
+            if (!response.ok) {
+              const body = await response.text();
+              throw new Error(`Discord webhook failed with ${response.status}: ${body}`);
+            }
+          }
+
+          main().catch((error) => {
+            console.error(error.message);
+            process.exit(1);
+          });
+          NODE
