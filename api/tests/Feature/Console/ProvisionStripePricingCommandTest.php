@@ -43,6 +43,30 @@ it('supports dry run without writing env values', function () {
                     ],
                 ],
             ],
+            [
+                'plan' => 'self_hosted',
+                'tier' => 'self_hosted',
+                'product' => [
+                    'id' => null,
+                    'env_key' => 'STRIPE_TEST_SELF_HOSTED_PRODUCT_ID',
+                    'action' => 'would_create',
+                    'display_name' => 'OpnForm Self-hosted Enterprise',
+                ],
+                'prices' => [
+                    'monthly' => [
+                        'id' => null,
+                        'env_key' => 'STRIPE_TEST_SELF_HOSTED_PRICING_MONTHLY',
+                        'action' => 'would_create',
+                        'amount' => 19900,
+                    ],
+                    'yearly' => [
+                        'id' => null,
+                        'env_key' => 'STRIPE_TEST_SELF_HOSTED_PRICING_YEARLY',
+                        'action' => 'would_create',
+                        'amount' => 199900,
+                    ],
+                ],
+            ],
         ]);
     $provisioner->shouldNotReceive('writeEnvValues');
 
@@ -54,6 +78,10 @@ it('supports dry run without writing env values', function () {
         ->expectsOutput('  product [would_create] STRIPE_TEST_PRO_PRODUCT_ID=(would create)')
         ->expectsOutput('  monthly [would_create] STRIPE_TEST_PRO_PRICING_MONTHLY=(would create) $29')
         ->expectsOutput('  yearly  [would_create] STRIPE_TEST_PRO_PRICING_YEARLY=(would create) $299')
+        ->expectsOutput('SELF_HOSTED (OpnForm Self-hosted Enterprise)')
+        ->expectsOutput('  product [would_create] STRIPE_TEST_SELF_HOSTED_PRODUCT_ID=(would create)')
+        ->expectsOutput('  monthly [would_create] STRIPE_TEST_SELF_HOSTED_PRICING_MONTHLY=(would create) $199')
+        ->expectsOutput('  yearly  [would_create] STRIPE_TEST_SELF_HOSTED_PRICING_YEARLY=(would create) $1,999')
         ->expectsOutput('Dry run mode: no Stripe resources were created and .env was not modified.')
         ->assertExitCode(0);
 });

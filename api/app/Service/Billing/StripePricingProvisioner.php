@@ -41,6 +41,7 @@ class StripePricingProvisioner
             $this->makePlanDefinition($mode, 'pro', 'pro', 'OpnForm Pro'),
             $this->makePlanDefinition($mode, 'business', 'business', 'OpnForm Business'),
             $this->makePlanDefinition($mode, 'enterprise', 'enterprise', 'OpnForm Enterprise'),
+            $this->makePlanDefinition($mode, 'self_hosted', 'self_hosted', 'OpnForm Self-hosted Enterprise'),
         ];
 
         if ($includeLegacyDefault) {
