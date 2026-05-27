@@ -17,6 +17,10 @@ class UserInvite extends Model
     public const PENDING_STATUS = 'pending';
     public const ACCEPTED_STATUS = 'accepted';
 
+    protected $hidden = [
+        'token',
+    ];
+
     protected $fillable = [
         'email',
         'role',
