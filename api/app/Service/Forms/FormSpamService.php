@@ -5,6 +5,7 @@ namespace App\Service\Forms;
 use App\Models\Forms\Form;
 use App\Models\User;
 use App\Service\AI\Prompts\Form\CheckSpamFormPrompt;
+use App\Service\SpamKeywordMatcher;
 use App\Service\UserActionService;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -15,9 +16,11 @@ class FormSpamService
 
     public function __construct(
         protected UserActionService $userActionService,
-        ?FormSpamContentAnalyzer $contentAnalyzer = null
+        ?FormSpamContentAnalyzer $contentAnalyzer = null,
+        protected ?SpamKeywordMatcher $keywordMatcher = null
     ) {
         $this->contentAnalyzer = $contentAnalyzer ?? new FormSpamContentAnalyzer();
+        $this->keywordMatcher = $keywordMatcher ?? new SpamKeywordMatcher();
     }
 
     public function checkForm(Form $form): void
@@ -57,8 +60,8 @@ class FormSpamService
             return false;
         }
 
-        if ($form->creator->created_at->diffInMonths(now()) > 3) {
-            return false;
+        if ($this->containsKeywords($form)) {
+            return true;
         }
 
         // Skip checking users who were manually unblocked by admin in the past 7 days
@@ -67,8 +70,8 @@ class FormSpamService
             return false;
         }
 
-        if ($this->containsKeywords($form)) {
-            return true;
+        if ($form->creator->created_at->diffInMonths(now()) > 3) {
+            return false;
         }
 
         if ($this->isRiskyUser($form->creator)) {
@@ -104,13 +107,7 @@ class FormSpamService
         $content = strtolower($this->contentAnalyzer->keywordScanText($form));
         $keywords = config('spam.keywords', []);
 
-        foreach ($keywords as $keyword) {
-            if (str_contains($content, strtolower($keyword))) {
-                return true;
-            }
-        }
-
-        return false;
+        return $this->keywordMatcher->containsAny($content, $keywords);
     }
 
     /**

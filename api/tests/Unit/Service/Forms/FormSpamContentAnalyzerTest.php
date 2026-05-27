@@ -110,3 +110,24 @@ it('keeps disabled visible help in the prompt without counting it as active', fu
         ->toContain('CLICK HERE TO CONTINUE')
         ->toContain('https://btmmm-108027.weeblysite.com/');
 });
+
+it('includes sensitive field constraints in the prompt content', function () {
+    $form = makeSpamAnalyzerForm([
+        [
+            'id' => 'momo-pin',
+            'type' => 'text',
+            'name' => 'Enter Your Account MoMo Pin To Authorize Your Delivery Receipt',
+            'hidden' => false,
+            'required' => true,
+            'max_char_limit' => 4,
+            'secret_input' => false,
+        ],
+    ]);
+
+    $promptContent = (new FormSpamContentAnalyzer())->promptContent($form);
+
+    expect($promptContent)
+        ->toContain('Required: yes')
+        ->toContain('Max Character Limit: 4')
+        ->toContain('Secret Input: no');
+});

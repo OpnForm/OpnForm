@@ -58,6 +58,18 @@ class FormSpamContentAnalyzer
                 $content[] = '  Disabled: yes';
             }
 
+            if (array_key_exists('required', $field)) {
+                $content[] = '  Required: ' . (filter_var($field['required'], FILTER_VALIDATE_BOOLEAN) ? 'yes' : 'no');
+            }
+
+            if (!empty($field['max_char_limit'])) {
+                $content[] = '  Max Character Limit: ' . $this->summarizeText((string) $field['max_char_limit']);
+            }
+
+            if (array_key_exists('secret_input', $field)) {
+                $content[] = '  Secret Input: ' . (filter_var($field['secret_input'], FILTER_VALIDATE_BOOLEAN) ? 'yes' : 'no');
+            }
+
             foreach (['placeholder', 'help', 'helpful_text', 'content', 'image_block'] as $key) {
                 if (!empty($field[$key])) {
                     $label = Str::of($key)->replace('_', ' ')->title();
