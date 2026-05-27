@@ -1,4 +1,5 @@
 import { apiService } from './base'
+import { getOpnRequestsOptions } from '~/composables/useOpnApi'
 
 export const formsApi = {
   // Form views
@@ -24,6 +25,7 @@ export const formsApi = {
   // Form submissions
   submissions: {
     list: (formId, options) => apiService.get(`/open/forms/${formId}/submissions`, options),
+    fetch: (formId, submissionId, options) => apiService.get(`/open/forms/${formId}/submissions/${submissionId}`, options),
     get: (slug, submissionId, options) => apiService.get(`/forms/${slug}/submissions/${submissionId}`, options),
     update: (formId, submissionId, data) => apiService.put(`/open/forms/${formId}/submissions/${submissionId}`, data),
     delete: (formId, submissionId) => apiService.delete(`/open/forms/${formId}/submissions/${submissionId}`),
@@ -37,11 +39,18 @@ export const formsApi = {
   stats: (workspaceId, formId, options) => apiService.get(`/open/workspaces/${workspaceId}/form-stats/${formId}`, options),
   statsDetails: (workspaceId, formId, options) => apiService.get(`/open/workspaces/${workspaceId}/form-stats-details/${formId}`, options),
 
+  // Form summary
+  summary: (workspaceId, formId, options) => apiService.get(`/open/workspaces/${workspaceId}/form-summary/${formId}`, options),
+  summaryFieldValues: (workspaceId, formId, fieldId, options) => apiService.get(`/open/workspaces/${workspaceId}/form-summary/${formId}/field/${fieldId}/values`, options),
+
   // File operations
   assets: {
     upload: (data, options) => apiService.post('/open/forms/assets/upload', data, options),
     view: (formId, filename, options) => apiService.get(`/open/forms/${formId}/uploaded-file/${filename}`, options)
   },
+
+  // Form import
+  import: (data) => apiService.post('/open/forms/import', data),
 
   // AI form generation
   ai: {
@@ -69,5 +78,25 @@ export const formsApi = {
   zapier: {
     store: (data) => apiService.post('/open/forms/webhooks/zapier', data),
     delete: (id) => apiService.delete(`/open/forms/webhooks/zapier/${id}`)
+  },
+
+  // PDF Templates
+  pdfTemplates: {
+    list: (formId, options) => apiService.get(`/open/forms/${formId}/pdf-templates`, options),
+    upload: (formId, data, options) => apiService.post(`/open/forms/${formId}/pdf-templates`, data, options),
+    get: (formId, templateId, options) => apiService.get(`/open/forms/${formId}/pdf-templates/${templateId}`, options),
+    update: (formId, templateId, data) => apiService.put(`/open/forms/${formId}/pdf-templates/${templateId}`, data),
+    delete: (formId, templateId) => apiService.delete(`/open/forms/${formId}/pdf-templates/${templateId}`),
+    download: (formId, templateId, options) => apiService.get(`/open/forms/${formId}/pdf-templates/${templateId}/download`, options),
+    getDownloadRequest: (formId, templateId) => {
+      const endpoint = `/open/forms/${formId}/pdf-templates/${templateId}/download`
+      const requestOptions = getOpnRequestsOptions(endpoint, {})
+      return {
+        url: new URL(endpoint, requestOptions.baseURL).toString(),
+        httpHeaders: requestOptions.headers,
+      }
+    },
+    getSubmissionSignedUrl: (formId, templateId, submissionId) => apiService.get(`/open/forms/${formId}/pdf-templates/${templateId}/submissions/${submissionId}/signed-url`),
+    getPreviewSignedUrl: (formId, templateId) => apiService.get(`/open/forms/${formId}/pdf-templates/${templateId}/preview/signed-url`)
   }
 }

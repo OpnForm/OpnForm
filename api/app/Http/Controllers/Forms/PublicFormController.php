@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Forms;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\AnswerFormRequest;
 use App\Models\Forms\Form;
+use App\Models\Forms\FormSubmission;
 use App\Http\Resources\FormResource;
 use App\Http\Resources\FormSubmissionResource;
 use App\Jobs\Form\StoreFormSubmissionJob;
@@ -147,7 +148,8 @@ class PublicFormController extends Controller
 
         // Use raw data for partial submissions (don't validate all required fields)
         // Use validated data for complete submissions
-        $submissionData = ($isPartial && $form->enable_partial_submissions && $form->is_pro)
+        $canPartialSubmit = $form->enable_partial_submissions && $form->workspace->hasFeature('partial_submissions');
+        $submissionData = ($isPartial && $canPartialSubmit)
             ? $request->all()
             : $request->validated();
 
@@ -156,12 +158,12 @@ class PublicFormController extends Controller
 
         // Add IP address for tracking if enabled
         unset($submissionData['submitter_ip']);
-        if ($form->enable_ip_tracking && $form->is_pro) {
+        if ($form->enable_ip_tracking && $form->workspace->hasFeature('enable_ip_tracking')) {
             $submissionData['submitter_ip'] = $request->ip();
         }
 
         // Handle partial submissions
-        if ($isPartial && $form->enable_partial_submissions && $form->is_pro) {
+        if ($isPartial && $canPartialSubmit) {
             return $this->handlePartialSubmissions($submissionData, $form);
         }
 
@@ -210,6 +212,28 @@ class PublicFormController extends Controller
             return $submissionData;
         }
 
+        // Only resolve identifiers when the form permits edits or partial draft updates
+        $canEditSubmissions = $form->editable_submissions
+            && $form->workspace
+            && $form->workspace->hasFeature('editable_submissions');
+        $canPartialSubmit = $form->enable_partial_submissions
+            && $form->workspace
+            && $form->workspace->hasFeature('partial_submissions');
+
+        if (!$canEditSubmissions && !$canPartialSubmit) {
+            unset($submissionData['submission_id'], $submissionData['submission_hash']);
+
+            return $submissionData;
+        }
+
+        $canUseResolvedSubmission = function (?FormSubmission $submission) use ($canEditSubmissions, $canPartialSubmit): bool {
+            if ($canEditSubmissions) {
+                return true;
+            }
+
+            return $canPartialSubmit && $submission?->status === FormSubmission::STATUS_PARTIAL;
+        };
+
         // Check if it's a UUID (new format)
         if (Str::isUuid($submissionIdentifier)) {
             $submission = $form->submissions()
@@ -217,6 +241,11 @@ class PublicFormController extends Controller
                 ->first();
             if (!$submission) {
                 abort(404, 'Submission not found');
+            }
+            if (!$canUseResolvedSubmission($submission)) {
+                unset($submissionData['submission_id'], $submissionData['submission_hash']);
+
+                return $submissionData;
             }
             $submissionData['submission_id'] = $submission->id;
             unset($submissionData['submission_hash']);
@@ -226,7 +255,16 @@ class PublicFormController extends Controller
         // Legacy Hashid support (backward compatibility)
         $decodedId = Hashids::decode($submissionIdentifier);
         if (!empty($decodedId)) {
-            $submissionData['submission_id'] = (int)($decodedId[0] ?? null);
+            $numericId = (int)($decodedId[0] ?? null);
+            if ($numericId) {
+                $submission = $form->submissions()->find($numericId);
+                if ($submission && $submission->public_id) {
+                    abort(404, 'Submission not found');
+                }
+                if ($canUseResolvedSubmission($submission)) {
+                    $submissionData['submission_id'] = $numericId;
+                }
+            }
         }
         unset($submissionData['submission_hash']);
 

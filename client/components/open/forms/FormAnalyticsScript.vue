@@ -1,0 +1,105 @@
+<template>
+  <!-- This component doesn't render anything visible -->
+</template>
+
+<script setup>
+const props = defineProps({
+  form: {
+    type: Object,
+    required: true
+  }
+})
+
+const provider = computed(() => props.form?.analytics?.provider)
+const rawTrackingId = computed(() => props.form?.analytics?.tracking_id)
+const formId = computed(() => props.form?.id)
+
+/**
+ * Sanitize tracking ID to prevent XSS injection.
+ * Only allows alphanumeric characters, dashes, underscores, and dots.
+ * This provides defense-in-depth alongside backend validation.
+ */
+const sanitizeTrackingId = (id) => {
+  if (!id || typeof id !== 'string') return null
+  const sanitized = id.replace(/[^A-Za-z0-9\-_.]/g, '')
+  // Return null if sanitization removed characters (indicates potentially malicious input)
+  return sanitized === id ? sanitized : null
+}
+
+const trackingId = computed(() => sanitizeTrackingId(rawTrackingId.value))
+
+const shouldInjectScripts = computed(() => {
+  return import.meta.client && provider.value && trackingId.value
+})
+
+// Provider configurations with script generators and tracking handlers
+const getProviderConfig = (formId) => ({
+  meta_pixel: {
+    getScripts: (id) => [{
+      key: `meta-pixel-${formId}`,
+      innerHTML: `
+        !function(f,b,e,v,n,t,s)
+        {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+        n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+        if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+        n.queue=[];t=b.createElement(e);t.async=!0;
+        t.src=v;s=b.getElementsByTagName(e)[0];
+        s.parentNode.insertBefore(t,s)}(window, document,'script',
+        'https://connect.facebook.net/en_US/fbevents.js');
+        fbq('init', '${id}');
+        fbq('track', 'PageView');
+      `
+    }],
+    trackSubmit: () => window.fbq?.('track', 'Lead')
+  },
+  google_analytics: {
+    getScripts: (id) => [
+      { key: `ga-external-${formId}`, src: `https://www.googletagmanager.com/gtag/js?id=${id}`, async: true },
+      { key: `ga-inline-${formId}`, innerHTML: `
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', '${id}');
+      `}
+    ],
+    trackSubmit: (form, trackingId) => window.gtag?.('event', 'form_submit', { 
+      send_to: trackingId, // Explicitly send only to user's GA property
+      form_id: form?.id, 
+      form_slug: form?.slug 
+    })
+  },
+  gtm: {
+    getScripts: (id) => [{
+      key: `gtm-${formId}`,
+      innerHTML: `
+        (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+        new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+        j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+        'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+        })(window,document,'script','dataLayer','${id}');
+      `
+    }],
+    trackSubmit: (form) => window.dataLayer?.push({ event: 'form_submit', form_id: form?.id, form_slug: form?.slug })
+  }
+})
+
+const headConfig = computed(() => {
+  if (!shouldInjectScripts.value) return {}
+  const providerConfig = getProviderConfig(formId.value)
+  const config = providerConfig[provider.value]
+  return config ? { script: config.getScripts(trackingId.value) } : {}
+})
+
+useHead(headConfig)
+
+const trackFormSubmit = () => {
+  // Explicit SSR guard to prevent window access during server-side rendering
+  if (!import.meta.client) return
+  if (!shouldInjectScripts.value) return
+  const providerConfig = getProviderConfig(formId.value)
+  providerConfig[provider.value]?.trackSubmit(props.form, trackingId.value)
+}
+
+defineExpose({ trackFormSubmit })
+</script>
+

@@ -31,16 +31,8 @@
 
           <div class="mt-8 flex justify-center">
             <UButton
-              v-if="!authenticated"
               class="mr-1"
-              :to="{ name: 'forms-create-guest' }"
-              trailing-icon="i-heroicons-arrow-right"
-              label="Get started for free"
-            />
-            <UButton
-              v-else
-              class="mr-1"
-              :to="{ name: 'forms-create' }"
+              :to="{ name: authenticated ? 'forms-create' : 'forms-create-guest' }"
               trailing-icon="i-heroicons-arrow-right"
               label="Get started for free"
             />
@@ -544,16 +536,8 @@
 
           <div class="mt-8 flex justify-center">
             <UButton
-              v-if="!authenticated"
               class="mr-1"
-              :to="{ name: 'forms-create-guest' }"
-              trailing-icon="i-heroicons-arrow-right"
-              label="Get started for free"
-            />
-            <UButton
-              v-else
-              class="mr-1"
-              :to="{ name: 'forms-create' }"
+              :to="{ name: authenticated ? 'forms-create' : 'forms-create-guest' }"
               trailing-icon="i-heroicons-arrow-right"
               label="Get started for free"
             />

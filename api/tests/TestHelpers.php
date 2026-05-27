@@ -2,12 +2,16 @@
 
 namespace Tests;
 
+use App\Enums\SettingsKey;
 use App\Models\Forms\Form;
+use App\Models\License;
+use App\Models\Setting;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Service\Forms\FormSubmissionDataFactory;
 use Database\Factories\FormFactory;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Str;
 
 trait TestHelpers
@@ -191,6 +195,36 @@ trait TestHelpers
         return $user;
     }
 
+    public function createBusinessUser()
+    {
+        $user = $this->createUser();
+
+        $user->subscriptions()->create([
+            'type' => 'business',
+            'stripe_id' => Str::random(),
+            'stripe_status' => 'active',
+            'stripe_price' => Str::random(),
+            'quantity' => 1,
+        ]);
+
+        return $user;
+    }
+
+    public function createEnterpriseUser()
+    {
+        $user = $this->createUser();
+
+        $user->subscriptions()->create([
+            'type' => 'enterprise',
+            'stripe_id' => Str::random(),
+            'stripe_status' => 'active',
+            'stripe_price' => Str::random(),
+            'quantity' => 1,
+        ]);
+
+        return $user;
+    }
+
     public function createTrialingUser()
     {
         $user = $this->createUser();
@@ -204,6 +238,20 @@ trait TestHelpers
         ]);
 
         return $user;
+    }
+
+    public function createAppSumoLicensedUser(int $tier = 1)
+    {
+        $user = $this->createUser();
+
+        $user->licenses()->create([
+            'license_key' => Str::random(32),
+            'license_provider' => 'appsumo',
+            'status' => License::STATUS_ACTIVE,
+            'meta' => ['tier' => $tier],
+        ]);
+
+        return $user->fresh();
     }
 
     public function actingAsUser(?User $user = null)
@@ -234,7 +282,25 @@ trait TestHelpers
         return $this->actingAsUser($user);
     }
 
-    public function actingAsTrialingUser(User $user = null)
+    public function actingAsBusinessUser(?User $user = null)
+    {
+        if ($user == null) {
+            $user = $this->createBusinessUser();
+        }
+
+        return $this->actingAsUser($user);
+    }
+
+    public function actingAsEnterpriseUser(?User $user = null)
+    {
+        if ($user == null) {
+            $user = $this->createEnterpriseUser();
+        }
+
+        return $this->actingAsUser($user);
+    }
+
+    public function actingAsTrialingUser(?User $user = null)
     {
         if ($user == null) {
             $user = $this->createTrialingUser();
@@ -299,5 +365,21 @@ trait TestHelpers
         }
 
         return $factory->createSubmissionData($data);
+    }
+
+    public function storeSelfHostedLicense(array $attributes = []): void
+    {
+        $licenseKey = $attributes['license_key'] ?? 'lic_test_enterprise_12345';
+        unset($attributes['license_key']);
+
+        Setting::set(SettingsKey::SELF_HOSTED_LICENSE, array_merge([
+            'license_key' => Crypt::encryptString($licenseKey),
+            'status' => 'active',
+            'features' => ['sso' => true, 'multiOrg' => true],
+            'last_checked_at' => now()->format('c'),
+            'expires_at' => now()->addYear()->format('c'),
+            'cloud_license_id' => '1',
+            'activation_id' => '1',
+        ], $attributes));
     }
 }

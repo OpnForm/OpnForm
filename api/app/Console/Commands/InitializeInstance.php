@@ -56,7 +56,7 @@ class InitializeInstance extends Command
         if ($telemetryService->shouldSendTelemetry()) {
             $client = $telemetryService->createClient();
             $version = $telemetryService->getAppVersion();
-            $client->identifyInstance($uuid, $version);
+            $client->identifyInstance($uuid, $version, $telemetryService->getInstanceProperties());
         }
 
         // Track instance creation

@@ -49,4 +49,15 @@ class Setting extends Model
             ['value' => $value]
         );
     }
+
+    /**
+     * Delete a setting value by key.
+     *
+     * @param SettingsKey $key
+     * @return void
+     */
+    public static function forget(SettingsKey $key): void
+    {
+        static::where('key', $key->value)->delete();
+    }
 }

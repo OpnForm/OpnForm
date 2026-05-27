@@ -4,13 +4,14 @@ namespace App\Service\AI\Prompts\Form;
 
 use App\Models\Forms\Form;
 use App\Service\AI\Prompts\Prompt;
+use App\Service\Forms\FormSpamContentAnalyzer;
 use Illuminate\Support\Str;
 
 class CheckSpamFormPrompt extends Prompt
 {
     protected ?float $temperature = 0.2;
     protected ?int $maxTokens = 500;
-    protected string $model = 'gpt-4.1-mini';
+    protected string $model = 'gpt-5.4-nano';
 
     public const PROMPT_TEMPLATE = <<<'EOD'
         {blockingConsiderations}
@@ -169,17 +170,7 @@ THIS USER HAS BLOCKING HISTORY - READ CAREFULLY:
 
     private function extractFormContent(): string
     {
-        $content = [];
-        $content[] = "Title: " . $this->form->title;
-        $content[] = "Description: " . $this->form->description;
-
-        foreach ($this->form->properties as $field) {
-            $content[] = "- Field Name: " . ($field['name'] ?? 'N/A');
-            $content[] = "  Field Type: " . ($field['type'] ?? 'N/A');
-            $content[] = "  Placeholder: " . ($field['placeholder'] ?? 'N/A');
-        }
-
-        return implode("\n", $content);
+        return (new FormSpamContentAnalyzer())->promptContent($this->form);
     }
 
     private function extractBlockingHistory(): string

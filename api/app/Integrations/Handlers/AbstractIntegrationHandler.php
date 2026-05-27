@@ -9,6 +9,7 @@ use App\Models\Integration\FormIntegrationsEvent;
 use App\Service\Forms\FormSubmissionFormatter;
 use App\Service\Forms\FormLogicConditionChecker;
 use App\Service\Forms\SubmissionUrlService;
+use App\Service\Formulas\ComputedVariableEvaluator;
 use App\Service\Security\PublicWebhookUrl;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
@@ -20,6 +21,7 @@ abstract class AbstractIntegrationHandler
     protected $submissionData = null;
     protected $integrationData = null;
     protected $provider = null;
+    protected ?array $computedValues = null;
 
     public function __construct(
         protected FormSubmitted $event,
@@ -32,6 +34,20 @@ abstract class AbstractIntegrationHandler
         $this->provider = $formIntegration->provider;
     }
 
+    /**
+     * Get computed variable values for this submission
+     */
+    protected function getComputedValues(): array
+    {
+        if ($this->computedValues === null) {
+            $this->computedValues = ComputedVariableEvaluator::evaluateForSubmission(
+                $this->form,
+                $this->submissionData
+            );
+        }
+        return $this->computedValues;
+    }
+
     protected function getProviderName(): string
     {
         return $this->integration['name'] ?? '';
@@ -42,9 +58,10 @@ abstract class AbstractIntegrationHandler
         if (!$this->formIntegration->logic || empty((array) $this->formIntegration->logic)) {
             return true;
         }
-        return FormLogicConditionChecker::conditionsMet(
+        return FormLogicConditionChecker::conditionsMetWithForm(
             json_decode(json_encode($this->formIntegration->logic), true),
-            $this->submissionData
+            $this->submissionData,
+            $this->form
         );
     }
 
@@ -150,7 +167,7 @@ abstract class AbstractIntegrationHandler
         if (isset($submissionData['submission_id'])) {
             $data['submission_id'] = $submissionData['submission_id'];
         }
-        if ($form->is_pro && $form->editable_submissions && isset($submissionData['submission_id'])) {
+        if ($form->workspace?->hasFeature('editable_submissions') && $form->editable_submissions && isset($submissionData['submission_id'])) {
             $data['edit_link'] = SubmissionUrlService::buildEditUrl($form, $submissionData['submission_id']);
         }
 

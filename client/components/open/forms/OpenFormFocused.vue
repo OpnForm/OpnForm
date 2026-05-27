@@ -1,5 +1,5 @@
 <template>
-  <form ref="formElement" v-if="form" @submit.prevent="" class="@container w-full relative overflow-hidden flex flex-col min-h-full">
+  <form ref="formElement" v-if="form" @submit.prevent="" class="@container w-full relative overflow-hidden flex flex-col min-h-full" :style="focusedFormStyle">
     <!-- Fixed fullscreen background from form cover -->
     <div v-if="form.cover_picture" class="absolute inset-0 pointer-events-none">
       <BlockMediaLayout :image="coverMedia" alt="Form cover image" />
@@ -120,6 +120,10 @@ const form = computed(() => props.formManager.config.value)
 const structure = props.formManager.structure
 const state = computed(() => props.formManager.state)
 const isTemplateMode = computed(() => props.formManager?.mode?.value === FormMode.TEMPLATE)
+const isDemoMode = computed(() => props.formManager?.mode?.value === FormMode.DEMO)
+const focusedFormStyle = {
+  minHeight: 'var(--form-focused-step-height, 100svh)'
+}
 
 const currentIndex = computed(() => state.value.currentPage)
 const currentFields = computed(() => structure?.value?.getPageFields
@@ -165,14 +169,20 @@ const layoutConfig = {
 // Single dynamic component + props for active layout
 const currentLayoutComponent = computed(() => layoutConfig[layoutName.value]?.component || CenteredStep)
 const currentLayoutProps = computed(() => layoutConfig[layoutName.value]?.props() || { background: null })
+const autoNextFieldTypes = new Set(['checkbox', 'date', 'multi_select', 'rating', 'scale', 'select'])
 
 const handleNextClick = () => {
   props.formManager.nextPage().then((moved) => {
-    if (moved && import.meta.client && !isTemplateMode.value) window.scrollTo({ top: 0, behavior: 'smooth' })
+    if (moved && import.meta.client && !isTemplateMode.value && !isDemoMode.value) window.scrollTo({ top: 0, behavior: 'smooth' })
   })
 }
 
 const onInputFilled = () => {
+  // Only disable auto-advance for selection-based inputs.
+  if (currentBlock.value?.type && autoNextFieldTypes.has(currentBlock.value.type) && form.value?.settings?.auto_next === false) {
+    return
+  }
+
   // On last page, submit the form instead of advancing
   if (isLast.value) {
     // Don't submit if already processing
@@ -288,15 +298,15 @@ const goPrev = () => {
         }).catch(error => {
           console.warn('Error in previousPage:', error)
         }).finally(() => {
-          if (import.meta.client) window.scrollTo({ top: 0, behavior: 'smooth' })
+          if (import.meta.client && !isDemoMode.value) window.scrollTo({ top: 0, behavior: 'smooth' })
         })
       } else {
         // Synchronous result, scroll immediately
-        if (import.meta.client) window.scrollTo({ top: 0, behavior: 'smooth' })
+        if (import.meta.client && !isDemoMode.value) window.scrollTo({ top: 0, behavior: 'smooth' })
       }
     } catch (error) {
       console.warn('Error calling previousPage:', error)
-      if (import.meta.client) window.scrollTo({ top: 0, behavior: 'smooth' })
+      if (import.meta.client && !isDemoMode.value) window.scrollTo({ top: 0, behavior: 'smooth' })
     }
   }
 }

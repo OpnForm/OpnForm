@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers\Webhook;
 
+use App\Models\LicenseKey;
 use App\Notifications\Subscription\FailedPaymentNotification;
+use App\Service\BillingHelper;
+use App\Service\License\LicenseKeyService;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\Log;
 use Laravel\Cashier\Http\Controllers\WebhookController;
 use Stripe\Subscription as StripeSubscription;
 
@@ -16,13 +19,68 @@ class StripeController extends WebhookController
     }
 
     /**
-     * Override to add a sleep, and to detect plan upgrades
+     * Handle checkout.session.completed for self-hosted license purchases.
+     */
+    protected function handleCheckoutSessionCompleted(array $payload)
+    {
+        $session = $payload['data']['object'];
+        $metadata = $session['metadata'] ?? [];
+
+        if (($metadata['type'] ?? '') !== 'self_hosted_license') {
+            return $this->successMethod();
+        }
+
+        $service = app(LicenseKeyService::class);
+
+        try {
+            $expiresAt = null;
+            if (empty($session['subscription']) || empty($session['customer'])) {
+                throw new \RuntimeException('Self-hosted checkout session is missing customer or subscription.');
+            }
+
+            \Stripe\Stripe::setApiKey(config('cashier.secret'));
+            $subscription = \Stripe\Subscription::retrieve($session['subscription']);
+            $periodEnd = $subscription->current_period_end ?? null;
+            if ($periodEnd !== null) {
+                $expiresAt = Carbon::createFromTimestamp($periodEnd);
+            }
+
+            $licenseKey = $service->generateKeyForSession(
+                stripeSessionId: $session['id'],
+                stripeCustomerId: $session['customer'],
+                stripeSubscriptionId: $session['subscription'],
+                expiresAt: $expiresAt,
+            );
+
+            $service->sendLicenseKeyEmail($licenseKey, $session['id']);
+
+            Log::info('Self-hosted license key generated and emailed', [
+                'session_id' => $session['id'],
+                'license_key_id' => $licenseKey->id,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Failed to process self-hosted license checkout', [
+                'session_id' => $session['id'],
+                'error' => $e->getMessage(),
+            ]);
+
+            return response('Failed to process self-hosted license checkout.', 500);
+        }
+
+        return $this->successMethod();
+    }
+
+    /**
+     * Override to add a sleep, and to detect plan upgrades.
+     * Also handles self-hosted license subscription updates.
      *
      * @return \Symfony\Component\HttpFoundation\Response|void
      */
     protected function handleCustomerSubscriptionUpdated(array $payload)
     {
         sleep(1);
+
+        $this->updateSelfHostedLicenseFromSubscription($payload);
 
         if ($user = $this->getUserByStripeId($payload['data']['object']['customer'])) {
             $data = $payload['data']['object'];
@@ -47,10 +105,10 @@ class StripeController extends WebhookController
             $isSinglePrice = count($data['items']['data']) === 1;
 
             // Price...
-            $subscription->stripe_price = $isSinglePrice ? $mainItem['price']['id'] : null;
+            $subscription->stripe_price = $mainItem['price']['id'] ?? ($isSinglePrice ? $data['items']['data'][0]['price']['id'] ?? null : null);
 
             // Type - previously (Name)
-            $subscription->type = $this->getSubscriptionName($mainItem['price']['product']);
+            $subscription->type = $this->getSubscriptionName($mainItem['price']['product'] ?? null) ?? $subscription->type ?? $this->newSubscriptionName($payload);
 
             // Quantity...
             $subscription->quantity = $isSinglePrice && isset($mainItem['quantity']) ? $mainItem['quantity'] : null;
@@ -120,19 +178,48 @@ class StripeController extends WebhookController
     private function getMainSubscriptionLineItem(array $items)
     {
         return collect($items)->first(function ($item) {
-            return in_array($this->getSubscriptionName($item['price']['product']), ['default']);
-        });
+            return $this->getSubscriptionName($item['price']['product'] ?? null) !== null;
+        }) ?? ($items[0] ?? []);
     }
 
-    private function getSubscriptionName(string $stripeProductId)
+    protected function handleCustomerSubscriptionDeleted(array $payload)
     {
-        $config = App::environment() == 'production' ? config('pricing.production') : config('pricing.test');
-        foreach ($config as $plan => $data) {
-            if ($stripeProductId == $config[$plan]['product_id']) {
-                return $plan;
-            }
+        $data = $payload['data']['object'];
+
+        if (!empty($data['id'])) {
+            app(LicenseKeyService::class)->handleSubscriptionDeleted($data['id']);
         }
 
-        return 'default';
+        return parent::handleCustomerSubscriptionDeleted($payload);
+    }
+
+    private function updateSelfHostedLicenseFromSubscription(array $payload): void
+    {
+        $data = $payload['data']['object'];
+        $subscriptionId = $data['id'] ?? null;
+        if (!$subscriptionId) {
+            return;
+        }
+
+        $status = match ($data['status'] ?? '') {
+            'active', 'trialing' => LicenseKey::STATUS_ACTIVE,
+            'canceled', 'unpaid', 'incomplete_expired' => LicenseKey::STATUS_EXPIRED,
+            default => null,
+        };
+
+        if (!$status) {
+            return;
+        }
+
+        $expiresAt = isset($data['current_period_end'])
+            ? Carbon::createFromTimestamp($data['current_period_end'])
+            : null;
+
+        app(LicenseKeyService::class)->handleSubscriptionUpdated($subscriptionId, $status, $expiresAt);
+    }
+
+    private function getSubscriptionName(?string $stripeProductId): ?string
+    {
+        return BillingHelper::getSubscriptionNameByProductId($stripeProductId);
     }
 }

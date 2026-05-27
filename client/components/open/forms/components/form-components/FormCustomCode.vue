@@ -4,25 +4,41 @@
       <div class="flex flex-col flex-wrap items-start justify-between gap-4 sm:flex-row sm:items-center">
         <div>
           <h3 class="text-lg font-medium text-neutral-900">
-            Custom Code <ProTag
+            Custom Code <PlanTag
               class="mb-2 block"
               upgrade-modal-title="Upgrade to Unlock Custom Code Capabilities"
               upgrade-modal-description="On the Free plan, you can explore custom code features within the form editor. Upgrade your plan to implement custom scripts, styles, and advanced tracking in live forms. Elevate your form's functionality and design with unlimited customization options."
+            />
+            <PlanTag
+              v-if="isSelfHosted"
+              required-tier="self_hosted"
+              class="mb-2 block"
+              upgrade-modal-title="Upgrade to Unlock Custom Code"
             />
           </h3>
           <p class="mt-1 text-sm text-neutral-500">
             The code will be injected in the <b>head</b> section of your form page.
           </p>
         </div>
-        <UButton
-          label="Help"
-          icon="i-heroicons-question-mark-circle"
-          variant="outline"
-          color="neutral"
-          @click="crisp.openHelpdeskArticle('how-do-i-add-custom-code-to-my-form-1amadj3')"
-        />
+        <div class="flex gap-2">
+          <UButton
+            label="SDK Docs"
+            icon="i-heroicons-code-bracket"
+            variant="outline"
+            color="neutral"
+            to="https://docs.opnform.com/embedding/javascript-sdk#custom-code-integration"
+            target="_blank"
+          />
+          <UButton
+            label="Help"
+            icon="i-heroicons-question-mark-circle"
+            variant="outline"
+            color="neutral"
+            @click="crisp.openHelpdeskArticle('how-do-i-add-custom-code-to-my-form-1amadj3')"
+          />
+        </div>
       </div>
-
+      
       <CodeInput
         :allow-fullscreen="true"
         name="custom_code"
@@ -38,10 +54,16 @@
         <div class="flex flex-col flex-wrap items-start justify-between gap-4 sm:flex-row sm:items-center">
           <div>
             <h3 class="text-lg font-medium text-neutral-900">
-              Custom CSS <ProTag
+              Custom CSS <PlanTag
                 class="mb-2 block"
                 upgrade-modal-title="Upgrade to Unlock Custom CSS"
                 upgrade-modal-description="On the Free plan, you can explore custom CSS within the editor. Upgrade to apply custom styles to your live forms."
+              />
+              <PlanTag
+                v-if="isSelfHosted"
+                required-tier="self_hosted"
+                class="mb-2 block"
+                upgrade-modal-title="Upgrade to Unlock Custom CSS"
               />
             </h3>
             <p class="mt-1 text-sm text-neutral-500">
@@ -72,23 +94,23 @@
 </template>
 
 <script setup>
-import ProTag from "~/components/app/ProTag.vue"
+import PlanTag from "~/components/app/PlanTag.vue"
 
 const workingFormStore = useWorkingFormStore()
 const { content: form } = storeToRefs(workingFormStore)
 const crisp = useCrisp()
 
 const canUseCustomCode = computed(() => workingFormStore.isCustomCodeAllowed)
+const isSelfHosted = computed(() => useFeatureFlag('self_hosted'))
 
 const customCodeHelp = computed(() => {
   const hasCustomDomain = !!form.value?.custom_domain
-  const selfHosted = !!useFeatureFlag('self_hosted', false)
   const allowSelfHosted = !!useFeatureFlag('custom_code.enable_self_hosted', false)
   if (canUseCustomCode.value) {
     return 'Saves changes and visit the actual form page to test.'
   }
   // In self-hosted mode with flag disabled (and no custom domain), show safety notice with docs link
-  if (selfHosted && !allowSelfHosted && !hasCustomDomain) {
+  if (isSelfHosted.value && !allowSelfHosted && !hasCustomDomain) {
     return 'Custom code is disabled for safety on self-hosted. Enable via CUSTOM_CODE_ENABLE_SELF_HOSTED=true. See technical docs: https://docs.opnform.com/introduction'
   }
   return 'Custom code requires to be using a custom domain.'

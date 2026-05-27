@@ -30,7 +30,7 @@ class UserInvite extends Model
         string $email,
         string $role,
         Workspace $workspace,
-        Carbon $validUntil = null
+        ?Carbon $validUntil = null
     ): self {
         // Generate a token
         do {

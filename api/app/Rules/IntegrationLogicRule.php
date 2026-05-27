@@ -101,6 +101,10 @@ class IntegrationLogicRule implements DataAwareRule, ValidationRule
 
     private function valueHasCorrectType($type, $value)
     {
+        if (is_string($value) && str_contains($value, 'mention-field-id')) {
+            return true;
+        }
+
         if (
             ($type === 'string' && gettype($value) !== 'string') ||
             ($type === 'boolean' && !is_bool($value)) ||

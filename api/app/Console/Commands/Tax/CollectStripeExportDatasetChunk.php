@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\Tax;
 
+use App\Services\Tax\StripeBalanceSummaryService;
 use App\Services\Tax\StripeExportDatasetService;
 use App\Services\Tax\StripeExportDatasetStore;
 use Illuminate\Console\Command;
@@ -16,8 +17,11 @@ class CollectStripeExportDatasetChunk extends Command
 
     protected $description = 'Collect a single Stripe export dataset chunk';
 
-    public function handle(StripeExportDatasetService $collector, StripeExportDatasetStore $store): int
-    {
+    public function handle(
+        StripeExportDatasetService $collector,
+        StripeExportDatasetStore $store,
+        StripeBalanceSummaryService $balanceSummaryService
+    ): int {
         $datasetId = (string) $this->option('dataset');
         $startDate = (string) $this->option('start-date');
         $endDate = (string) $this->option('end-date');
@@ -34,13 +38,15 @@ class CollectStripeExportDatasetChunk extends Command
         ], now()->addDay());
 
         $payload = $collector->collect($startDate, $endDate);
-        $store->writeChunk($datasetId, $chunkKey, $payload['rows'], $payload['stats']);
+        $balanceSummary = $balanceSummaryService->summarize($startDate, $endDate);
+        $store->writeChunk($datasetId, $chunkKey, $payload['rows'], $payload['stats'], $balanceSummary);
 
         Cache::put("stripe-export-dataset:{$datasetId}:{$chunkKey}", [
             'status' => 'completed',
             'completed_at' => now()->toIso8601String(),
             'row_count' => count($payload['rows']),
             'stats' => $payload['stats'],
+            'balance_summary' => $balanceSummary,
         ], now()->addDay());
 
         $this->info("Collected {$chunkKey}: " . count($payload['rows']) . ' rows');

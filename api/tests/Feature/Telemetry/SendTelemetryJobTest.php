@@ -103,6 +103,34 @@ describe('SendTelemetryJob', function () {
         });
     });
 
+    it('includes paid license flag in event properties', function () {
+        $instanceId = 'test-instance-id';
+        Setting::set(SettingsKey::INSTANCE_ID, $instanceId);
+        $this->storeSelfHostedLicense([
+            'license_key' => 'lic_telemetryjobpaid12345',
+            'status' => 'active',
+        ]);
+
+        Http::fake([
+            'test-endpoint.com/track' => Http::response([], 200),
+        ]);
+
+        $job = new SendTelemetryJob(
+            TelemetryEvent::FORM_CREATED->value(),
+            []
+        );
+
+        $job->handle(
+            app(TelemetryService::class)
+        );
+
+        Http::assertSent(function ($request) {
+            return $request['payload']['properties']['has_paid_license'] === true
+                && !array_key_exists('license_key', $request['payload']['properties'])
+                && !array_key_exists('license_id', $request['payload']['properties']);
+        });
+    });
+
     it('handles errors gracefully', function () {
         $instanceId = 'test-instance-id';
         Setting::set(SettingsKey::INSTANCE_ID, $instanceId);

@@ -3,38 +3,54 @@
     <div class="flex flex-col flex-wrap items-start justify-between gap-4 sm:flex-row sm:items-center">
       <div class="flex-1">
         <h3 class="text-lg font-medium text-neutral-900">
-          Custom Code <ProTag
+          Custom Code <PlanTag required-tier="business"
             class="mb-2 block"
             upgrade-modal-title="Upgrade to Unlock Custom Code Capabilities"
             upgrade-modal-description="On the Free plan, you can explore custom code features within the workspace settings. Upgrade your plan to implement custom scripts, styles, and advanced tracking in all your workspace forms. Elevate your forms' functionality and design with unlimited customization options."
+          />
+          <PlanTag
+            v-if="isSelfHosted"
+            required-tier="self_hosted"
+            class="mb-2 block"
+            upgrade-modal-title="Upgrade to Unlock Custom Code"
           />
         </h3>
         <p class="mt-1 text-sm text-neutral-500">
           The code will be injected in the <b>head</b> section of all forms in this workspace. Workspace code is applied first, then form-specific code (if any).
         </p>
       </div>
-      <UButton
-        label="Help"
-        icon="i-heroicons-question-mark-circle"
-        variant="outline"
-        color="neutral"
-        @click="crisp.openHelpdeskArticle('how-do-i-add-custom-code-to-my-form-1amadj3')"
-      />
+      <div class="flex gap-2">
+        <UButton
+          label="SDK Docs"
+          icon="i-heroicons-code-bracket"
+          variant="outline"
+          color="neutral"
+          to="https://docs.opnform.com/embedding/javascript-sdk#custom-code-integration"
+          target="_blank"
+        />
+        <UButton
+          label="Help"
+          icon="i-heroicons-question-mark-circle"
+          variant="outline"
+          color="neutral"
+          @click="crisp.openHelpdeskArticle('how-do-i-add-custom-code-to-my-form-1amadj3')"
+        />
+      </div>
     </div>
 
     <UAlert
-      v-if="!workspace.is_pro"
+      v-if="!isSelfHosted && !canAccessAdvancedBranding"
       icon="i-heroicons-user-group-20-solid"
       class="mb-4"
       color="warning"
       variant="subtle"
-      title="Pro plan required"
-      description="Please upgrade your account to use workspace-level custom code."
+      title="Business plan required"
+      description="Please upgrade your plan to unlock workspace-level custom code."
       :actions="[{
-        label: 'Try Pro plan',
+        label: 'Try Business plan',
         color: 'warning',
         variant: 'solid',
-        onClick: () => openSubscriptionModal()
+        onClick: () => openUpgradeModal()
       }]"
     />
 
@@ -60,10 +76,16 @@
             <div class="flex flex-col flex-wrap items-start justify-between gap-4 sm:flex-row sm:items-center">
               <div>
                 <h3 class="text-lg font-medium text-neutral-900">
-                  Custom CSS <ProTag
+                  Custom CSS <PlanTag
                     class="mb-2 block"
                     upgrade-modal-title="Upgrade to Unlock Custom CSS"
                     upgrade-modal-description="On the Free plan, you can explore custom CSS within the workspace settings. Upgrade to apply custom styles to all your workspace forms."
+                  />
+                  <PlanTag
+                    v-if="isSelfHosted"
+                    required-tier="self_hosted"
+                    class="mb-2 block"
+                    upgrade-modal-title="Upgrade to Unlock Custom CSS"
                   />
                 </h3>
                 <p class="mt-1 text-sm text-neutral-500">
@@ -84,7 +106,7 @@
               name="custom_css"
               class="mt-4"
               :form="customCodeForm"
-              :disabled="!workspace.is_pro"
+              :disabled="!canAccessAdvancedBranding"
               help="CSS only. Example: body { background: #f8fafc }"
               label="Custom CSS"
               placeholder="body { background: #f8fafc }"
@@ -96,7 +118,7 @@
           <UButton
             type="submit"
             :loading="customCodeForm.busy"
-            :disabled="!workspace.is_pro"
+            :disabled="!canAccessAdvancedBranding"
             color="primary"
           >
             Save Changes
@@ -108,16 +130,22 @@
 </template>
 
 <script setup>
-import ProTag from "~/components/app/ProTag.vue"
+import PlanTag from "~/components/app/PlanTag.vue"
 
 const alert = useAlert()
 const crisp = useCrisp()
 const { current: workspace } = useCurrentWorkspace()
-const { openSubscriptionModal: openModal } = useAppModals()
 const { invalidateAll } = useWorkspaces()
+const { hasFeature } = usePlanFeatures()
+const canAccessAdvancedBranding = computed(() => hasFeature('branding.advanced'))
+const isSelfHosted = computed(() => useFeatureFlag('self_hosted'))
+const { openSubscriptionModal } = useAppModals()
 
-const openSubscriptionModal = () => {
-  openModal({ modal_title: 'Upgrade to use workspace level custom code' })
+const openUpgradeModal = () => {
+  openSubscriptionModal({
+    plan: isSelfHosted.value ? 'self_hosted' : 'business',
+    modal_title: 'Upgrade to use workspace level custom code'
+  })
 }
 
 const customCodeForm = useForm({
@@ -129,26 +157,25 @@ const hasCustomDomain = computed(() => {
   return workspace.value?.custom_domains && workspace.value.custom_domains.length > 0
 })
 
-const selfHosted = computed(() => !!useFeatureFlag('self_hosted', false))
 const allowSelfHosted = computed(() => !!useFeatureFlag('custom_code.enable_self_hosted', false))
 
 const canUseCustomCode = computed(() => {
-  if (!workspace.value?.is_pro) return false
-  return hasCustomDomain.value || (selfHosted.value && allowSelfHosted.value)
+  if (!canAccessAdvancedBranding.value) return false
+  return hasCustomDomain.value || (isSelfHosted.value && allowSelfHosted.value)
 })
 
 const customCodeHelp = computed(() => {
   if (canUseCustomCode.value) {
     return 'Saves changes and visit any form page to test. Workspace code is applied to all forms in this workspace.'
   }
-  if (selfHosted.value && !allowSelfHosted.value && !hasCustomDomain.value) {
+  if (isSelfHosted.value && !allowSelfHosted.value && !hasCustomDomain.value) {
     return 'Custom code is disabled for safety on self-hosted. Enable via CUSTOM_CODE_ENABLE_SELF_HOSTED=true. See technical docs: https://docs.opnform.com/introduction'
   }
   return 'Custom code requires a Pro plan and a custom domain configured for this workspace.'
 })
 
 const saveChanges = () => {
-  if (!workspace.value?.is_pro) return
+  if (!canAccessAdvancedBranding.value) return
 
   customCodeForm
     .put(`/open/workspaces/${workspace.value.id}/custom-code-settings`, {
@@ -163,7 +190,7 @@ const saveChanges = () => {
       invalidateAll()
     })
     .catch((error) => {
-      alert.error("Failed to update custom code settings: " + (error.response?.data?.message || error.message))
+      alert.error("Failed to update custom code settings: " + (error?.data?.message || error.message))
     })
 }
 

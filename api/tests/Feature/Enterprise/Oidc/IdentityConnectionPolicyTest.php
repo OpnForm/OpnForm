@@ -1,18 +1,38 @@
 <?php
 
+use App\Enums\SettingsKey;
 use App\Enterprise\Oidc\Models\IdentityConnection;
 use App\Enterprise\Oidc\Policies\IdentityConnectionPolicy;
+use App\Models\Setting;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Service\License\LicenseCheckResult;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Crypt;
 
 uses()->group('oidc', 'feature');
 
 describe('IdentityConnectionPolicy', function () {
     beforeEach(function () {
-        // Set up admin email config
         config(['opnform.admin_emails' => ['admin@test.com']]);
-        // Set self-hosted mode to bypass Pro checks in tests
         config(['app.self_hosted' => true]);
+        config(['cashier.key' => null]);
+
+        Setting::set(SettingsKey::SELF_HOSTED_LICENSE, [
+            'license_key' => Crypt::encryptString('lic_test_oidc_policy'),
+            'status' => 'active',
+            'features' => ['sso' => true],
+            'last_checked_at' => now()->format('c'),
+            'expires_at' => now()->addYear()->format('c'),
+            'cloud_license_id' => '1',
+            'activation_id' => '1',
+        ]);
+        Cache::put('self_hosted_license_check', new LicenseCheckResult(
+            status: 'active',
+            features: ['sso' => true],
+            lastChecked: now(),
+            expiresAt: now()->addYear(),
+        ), 86400);
     });
 
     it('allows workspace admin to view workspace connections', function () {

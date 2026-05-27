@@ -4,11 +4,17 @@ namespace App\Service\Telemetry;
 
 use App\Enums\SettingsKey;
 use App\Models\Setting;
+use App\Service\License\LicenseService;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Cache;
 
 class TelemetryService
 {
+    public function __construct(
+        private ?LicenseService $licenseService = null
+    ) {
+    }
+
     /**
      * Check if telemetry should be sent.
      *
@@ -86,6 +92,22 @@ class TelemetryService
         return config('app.docker_version');
     }
 
+    public function getInstanceProperties(array $properties = []): array
+    {
+        return array_merge($properties, [
+            'has_paid_license' => $this->hasPaidLicense(),
+        ]);
+    }
+
+    public function hasPaidLicense(): bool
+    {
+        if (!config('app.self_hosted', false)) {
+            return false;
+        }
+
+        return $this->getLicenseService()->hasPaidLicense();
+    }
+
     /**
      * Create a configured OpenPanel client instance.
      *
@@ -98,5 +120,10 @@ class TelemetryService
             $this->getClientId(),
             $this->getClientSecret()
         );
+    }
+
+    private function getLicenseService(): LicenseService
+    {
+        return $this->licenseService ??= app(LicenseService::class);
     }
 }

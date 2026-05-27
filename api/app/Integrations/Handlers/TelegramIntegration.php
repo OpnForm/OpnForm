@@ -42,7 +42,10 @@ class TelegramIntegration extends AbstractIntegrationHandler
     protected function shouldRun(): bool
     {
         $hasValidProvider = $this->formIntegration->oauth_id && $this->provider;
-        $shouldRun = !is_null($this->getWebhookUrl()) && $hasValidProvider && $this->form->is_pro && parent::shouldRun();
+        $shouldRun = !is_null($this->getWebhookUrl())
+            && $hasValidProvider
+            && $this->form->workspace?->hasFeature('integrations.telegram')
+            && parent::shouldRun();
         return $shouldRun;
     }
 
