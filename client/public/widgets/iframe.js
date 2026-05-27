@@ -482,9 +482,32 @@ function initEmbed(formSlug, options = {}) {
 
   const { autoResize = true } = options || {}
 
+  function getFormIframe() {
+    return document.getElementById(formSlug)
+  }
+
+  function getIframeOrigin(iframe) {
+    try {
+      return iframe?.src ? new URL(iframe.src, window.location.href).origin : null
+    } catch (e) {
+      return null
+    }
+  }
+
+  function isTrustedFormMessage(event) {
+    const iframe = getFormIframe()
+    const origin = getIframeOrigin(iframe)
+    return !!iframe
+      && event.source === iframe.contentWindow
+      && (!origin || event.origin === origin)
+  }
+
   window.addEventListener('message', function (event) {
     // Make sure that the event data has the type `form-submitted`
     if (event.data?.type !== 'form-submitted' || event.data?.form?.slug !== formSlug) {
+      return
+    }
+    if (!isTrustedFormMessage(event)) {
       return
     }
 
@@ -501,6 +524,6 @@ function initEmbed(formSlug, options = {}) {
   }
 
   document.addEventListener("DOMContentLoaded", function () {
-    iFrameResize({log: false, checkOrigin: false}, '#' + formSlug)
+    iFrameResize({log: false}, '#' + formSlug)
   })
 }

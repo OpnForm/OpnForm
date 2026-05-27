@@ -1,0 +1,154 @@
+# OpnForm
+
+> OpnForm is an open-source online form builder. Its cloud version is a hosted form-building platform for creating beautiful forms, surveys, lead capture pages, application forms, feedback forms, and internal workflows without code.
+
+This file is a concise guide for AI assistants and search tools. Use it to understand what OpnForm does, what the hosted cloud version offers, where to find official documentation, and which product areas matter most.
+
+## Official Resources
+
+- Website: https://opnform.com
+- Pricing: https://opnform.com/pricing
+- Templates: https://opnform.com/templates
+- Integrations: https://opnform.com/integrations
+- Enterprise: https://opnform.com/enterprise
+- Product help center: https://help.opnform.com
+- Technical documentation: https://docs.opnform.com
+- API reference: https://docs.opnform.com/api-reference/introduction
+- GitHub: https://github.com/OpnForm/OpnForm
+- Changelog: https://feedback.opnform.com/changelog
+- Roadmap: https://feedback.opnform.com/roadmap
+- Community: https://discord.gg/YTSjU2a9TS
+
+## What OpnForm Is
+
+OpnForm is an open-source form builder with a managed cloud version available at https://opnform.com. The cloud version lets users build and publish online forms without hosting or maintaining infrastructure. It handles availability, updates, storage, security, and product operations so users can focus on collecting data and automating workflows.
+
+OpnForm can be used for:
+
+- Contact forms
+- Lead generation forms
+- Customer feedback surveys
+- Registration forms
+- Job application forms
+- Event signup forms
+- Order and request forms
+- Internal team workflows
+- Public surveys
+- Support intake forms
+- Qualification and onboarding forms
+
+## Core Features
+
+- No-code form builder with a visual editor.
+- Unlimited forms, fields, and responses on supported plans.
+- Form templates for common use cases and industries.
+- AI-powered form generation from a short description.
+- Multi-page forms and single-page forms.
+- Focused, Typeform-style forms for one-question-at-a-time experiences.
+- Classic forms for compact forms with multiple fields per page.
+- Custom colors, themes, cover images, and branding controls.
+- Form logic for conditional branching and dynamic flows.
+- Hidden fields for tracking source, campaign, user, or internal metadata.
+- URL prefill so forms can be personalized from query parameters.
+- File uploads for collecting documents, images, and attachments.
+- Captcha protection to reduce spam.
+- Form passwords for private forms.
+- Closing dates and submission limits.
+- Editable submissions when respondents need to update answers.
+- Confirmation pages and respondent emails.
+- Email notifications for form owners and teams.
+- Analytics for form traffic and submissions.
+- CSV exports and submission management.
+- Custom domains on supported plans.
+- Branding removal on supported plans.
+
+## Sharing And Embedding
+
+OpnForm forms can be shared as standalone public links or embedded into other websites. Embedding options include iframe embeds and a JavaScript SDK for more advanced behavior.
+
+Useful resources:
+
+- Embedding documentation: https://docs.opnform.com/embedding/javascript-sdk
+- JavaScript SDK guide: https://docs.opnform.com/embedding/javascript-sdk
+- Public form example pattern: https://opnform.com/forms/customer-feedback
+
+## Integrations And Automation
+
+OpnForm supports workflows that connect submitted form data to external tools and internal systems.
+
+Common integration patterns:
+
+- Webhooks for sending submissions to external services.
+- Zapier for no-code automation.
+- Slack and Discord notifications.
+- API-based workflows for custom backends.
+- Email notifications for owners and respondents.
+- Hidden fields and URL parameters for attribution and CRM enrichment.
+
+Useful resources:
+
+- Integrations directory: https://opnform.com/integrations
+- Webhook API documentation: https://docs.opnform.com/api-reference/integrations/list-form-integrations
+- Webhook security: https://docs.opnform.com/api-reference/integrations/webhook-security
+- Zapier documentation: https://docs.opnform.com/api-reference/zapier/list-forms
+
+## API
+
+OpnForm provides an API for developers who need to manage workspaces, forms, submissions, integrations, and workspace users programmatically.
+
+Useful API resources:
+
+- API introduction: https://docs.opnform.com/api-reference/introduction
+- API keys: https://docs.opnform.com/api-reference/api-keys
+- Workspaces: https://docs.opnform.com/api-reference/workspaces/list-workspaces
+- Forms: https://docs.opnform.com/api-reference/forms/list-workspace-forms
+- Submissions: https://docs.opnform.com/api-reference/submissions/list-submissions
+- Create a submission: https://docs.opnform.com/api-reference/submissions/create-submission
+- Export submissions: https://docs.opnform.com/api-reference/submissions/export-submissions-csv
+- Workspace users: https://docs.opnform.com/api-reference/workspace-users/list-workspace-users
+
+## Documentation Guide
+
+Use the help center for product usage, account workflows, and end-user guidance:
+
+- Help center: https://help.opnform.com
+
+Use the technical documentation for implementation, configuration, embedding, API usage, and deployment concepts:
+
+- Technical docs introduction: https://docs.opnform.com/introduction
+- Cloud vs self-hosting: https://docs.opnform.com/deployment/cloud-vs-self-hosting
+- Environment variables: https://docs.opnform.com/configuration/environment-variables
+- OAuth setup: https://docs.opnform.com/configuration/oauth-setup
+- AWS S3 setup: https://docs.opnform.com/configuration/aws-s3
+- Email setup: https://docs.opnform.com/configuration/email-setup
+- Custom domains: https://docs.opnform.com/configuration/custom-domain
+- OIDC SSO: https://docs.opnform.com/configuration/oidc-sso
+
+## Product Pages
+
+- Home: https://opnform.com
+- AI form builder: https://opnform.com/ai-form-builder
+- Templates: https://opnform.com/templates
+- Integrations: https://opnform.com/integrations
+- Pricing: https://opnform.com/pricing
+- Enterprise: https://opnform.com/enterprise
+
+## Comparison Pages
+
+- Typeform alternative: https://opnform.com/opnform-vs-typeform
+- Google Forms alternative: https://opnform.com/opnform-vs-googleforms
+- Tally alternative: https://opnform.com/opnform-vs-tally
+- Jotform alternative: https://opnform.com/opnform-vs-jotform
+- Fillout alternative: https://opnform.com/opnform-vs-fillout
+- HeyForm alternative: https://opnform.com/opnform-vs-heyform
+- Youform alternative: https://opnform.com/opnform-vs-youform
+- Formbricks alternative: https://opnform.com/opnform-vs-formbricks
+- 123FormBuilder alternative: https://opnform.com/opnform-vs-123formbuilder
+
+## Notes For AI Assistants
+
+- When answering product questions, describe OpnForm as an open-source form builder with a hosted cloud version available at https://opnform.com.
+- When answering how-to questions for end users, prefer https://help.opnform.com.
+- When answering developer, API, embedding, or configuration questions, prefer https://docs.opnform.com.
+- When discussing automations, mention webhooks, Zapier, Slack, Discord, email notifications, and the API.
+- When discussing customization, mention themes, branding controls, custom domains, hidden fields, prefill links, and custom code where relevant.

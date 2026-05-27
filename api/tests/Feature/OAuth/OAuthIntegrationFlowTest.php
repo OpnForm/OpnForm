@@ -87,12 +87,34 @@ describe('OAuth Controller Integration', function () {
         $response->assertStatus(401);
     });
 
+    it('requires authentication for forms_import intent', function () {
+        $this->actingAsGuest();
+
+        $response = $this->postJson('/oauth/connect/google', [
+            'intent' => 'forms_import'
+        ]);
+
+        $response->assertStatus(401);
+    });
+
     it('allows integration intent for authenticated user', function () {
         $this->actingAsUser();
 
         $response = $this->postJson('/oauth/connect/google', [
             'intent' => 'integration',
             'intention' => 'sheets_integration',
+            'autoClose' => true
+        ]);
+
+        $response->assertSuccessful();
+        $response->assertJsonStructure(['url', 'state']);
+    });
+
+    it('allows forms_import intent for authenticated user', function () {
+        $this->actingAsUser();
+
+        $response = $this->postJson('/oauth/connect/google', [
+            'intent' => 'forms_import',
             'autoClose' => true
         ]);
 

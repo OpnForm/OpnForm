@@ -2,12 +2,14 @@
   <div class="flex flex-wrap flex-col flex-grow">
     <create-form-base-modal
       :show="showInitialFormModal"
+      :default-import-source="defaultImportSource"
       @form-generated="formGenerated"
+      @form-imported="formImported"
       @close="showInitialFormModal = false"
     />
     <VTransition name="fade">
       <FormEditor
-        v-if="stateReady"
+        v-if="editorReady"
         ref="editor"
         class="w-full flex flex-grow"
         :error="error"
@@ -62,6 +64,14 @@ const stateReady = ref(false)
 const error = ref("")
 const isGuest = ref(true)
 const showInitialFormModal = ref(false)
+const editorBootstrapped = ref(false)
+const hasInitialTemplate = computed(() => !!(template && template.structure))
+const editorReady = computed(() => stateReady.value && (editorBootstrapped.value || hasInitialTemplate.value))
+const supportedGuestImportSources = ['typeform', 'tally', 'fillout']
+const defaultImportSource = computed(() => {
+  const source = route.query.import
+  return supportedGuestImportSources.includes(source) ? source : null
+})
 
 // Component ref
 const editor = ref(null)
@@ -71,8 +81,10 @@ onMounted(() => {
   const guestWorkspace = {
     id: null,
     name: "Guest Workspace",
-    is_enterprise: false,
-    is_pro: false,
+    plan_tier: 'free',
+    features: [],
+    limits: {},
+    required_tiers: {},
   }
   
   // Manually set the workspace data in query cache
@@ -86,6 +98,18 @@ onMounted(() => {
     showInitialFormModal.value = true
   }
   stateReady.value = true
+
+  const scheduleEditorBootstrap = () => {
+    editorBootstrapped.value = true
+  }
+
+  if (import.meta.client && typeof window.requestIdleCallback === 'function') {
+    window.requestIdleCallback(scheduleEditorBootstrap, { timeout: 120 })
+  } else if (import.meta.client) {
+    window.setTimeout(scheduleEditorBootstrap, 16)
+  } else {
+    editorBootstrapped.value = true
+  }
 
   // Set up window message listener for after-login
   const afterLoginMessage = useWindowMessage(WindowMessageTypes.AFTER_LOGIN)
@@ -106,5 +130,9 @@ const afterLogin = () => {
 
 const formGenerated = (newForm) => {
   form.value = useForm({ ...form.value.data(), ...newForm })
+}
+
+const formImported = (importedForm) => {
+  form.value = useForm({ ...form.value.data(), ...importedForm })
 }
 </script>

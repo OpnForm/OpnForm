@@ -15,6 +15,7 @@ import { useAmplitude } from '~/composables/useAmplitude'
 import { useConfetti } from '~/composables/useConfetti'
 import { cloneDeep } from 'lodash'
 import { useFieldState } from './useFieldState'
+import { useComputedVariables } from '~/composables/forms/useComputedVariables'
 
 /**
  * @fileoverview Main orchestrator composable for form operations.
@@ -47,9 +48,15 @@ export function useFormManager(initialFormConfig, initialMode = FormMode.LIVE, o
   // --- Initialize services that depend on config and form data ---
   // Create a reactive reference to the form data for dependent composables to watch
   const formDataRef = computed(() => form.data())
+  const computedVariables = useComputedVariables(computed(() => config.value), formDataRef)
 
   // Centralized field state (single instance per manager)
-  const fieldState = useFieldState(formDataRef, computed(() => config.value), computed(() => strategy.value))
+  const fieldState = useFieldState(
+    formDataRef,
+    computed(() => config.value),
+    computed(() => strategy.value),
+    computed(() => computedVariables.values.value)
+  )
 
   // Instantiate pending submission service (handles localStorage saving)
   const pendingSubmissionService = usePendingSubmission(config, formDataRef)
@@ -119,12 +126,23 @@ export function useFormManager(initialFormConfig, initialMode = FormMode.LIVE, o
     state.isSubmitted = false
     state.currentPage = 0
    
-    await initialization.initialize({
+    const initializationPromise = initialization.initialize({
       ...options
     })
 
-    timer.reset()
-    timer.start()
+    if (options.eagerStructure) {
+      replaceStructure()
+      timer.reset()
+      timer.start()
+      state.isProcessing = false
+    }
+
+    await initializationPromise
+
+    if (!options.eagerStructure) {
+      timer.reset()
+      timer.start()
+    }
 
     // Ensure structure is built after initialization
     replaceStructure()
@@ -295,8 +313,8 @@ export function useFormManager(initialFormConfig, initialMode = FormMode.LIVE, o
       // 8. Clear partial submission hash to prevent stale data
       partialSubmissionService?.clearSubmissionHash()
       
-      // 9. Handle amplitude logging
-      if (import.meta.client) {
+      // 9. Handle amplitude logging for real submissions only
+      if (import.meta.client && strategy.value?.validation?.performActualSubmission !== false) {
         const amplitude = useAmplitude()
         amplitude.logEvent('form_submission', {
           workspace_id: toValue(config).workspace_id,
@@ -313,7 +331,7 @@ export function useFormManager(initialFormConfig, initialMode = FormMode.LIVE, o
           form: {
             slug: formConfig.slug,
             id: formConfig.id,
-            redirect_target_url: (formConfig.is_pro && submissionResult?.redirect && submissionResult?.redirect_url) 
+            redirect_target_url: (submissionResult?.redirect && submissionResult?.redirect_url)
                               ? submissionResult.redirect_url 
                               : null
           },
@@ -402,6 +420,7 @@ export function useFormManager(initialFormConfig, initialMode = FormMode.LIVE, o
     // Composables (Expose if direct access needed, often not necessary)
     structure,
     fieldState,     // Expose centralized field state service
+    computedValues: computed(() => computedVariables.values.value),
     payment,        // Expose payment service
 
     // Core Methods

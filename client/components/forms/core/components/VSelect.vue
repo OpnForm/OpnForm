@@ -8,7 +8,8 @@
       :content="{
         align: 'start',
         side: 'bottom',
-        sideOffset: 4
+        sideOffset: 4,
+        onOpenAutoFocus: preventAutoFocusScroll
       }"
       :ui="{
         content: 'bg-white dark:!bg-notion-dark-light shadow-xl z-30 overflow-auto ' + borderRadiusClass
@@ -663,6 +664,9 @@ export default {
         this.select(newItem)
         this.searchTerm = ''
       }
+    },
+    preventAutoFocusScroll (event) {
+      event.preventDefault()
     },
     handleButtonKeydown (event) {
       if (this.disabled) return

@@ -1,12 +1,9 @@
 <template>
   <div
     v-if="template"
-    class="relative group"
+    class="relative group border border-gray-200 rounded-[24px] overflow-hidden"
   >
-    <div
-      v-if="template.is_new"
-      class="absolute top-0 right-0 p-3 z-10"
-    >
+    <div v-if="template.is_new" class="absolute top-0 right-0 p-3 z-10">
       <span
         class="inline-flex items-center gap-1 rounded-full bg-blue-500 px-2 py-1 text-xs font-medium text-white"
       >
@@ -27,46 +24,46 @@
       </span>
     </div>
 
-    <div class="aspect-[4/3] rounded-lg shadow-xs overflow-hidden bg-neutral-50">
+    <div class="w-full aspect-[4/3] overflow-hidden bg-gray-100">
       <img
         v-if="template.image_url && !imageError"
-        class="group-hover:scale-110 transition-all duration-200 h-full object-cover w-full"
+        class="group-hover:scale-105 transition-transform duration-300 h-full object-cover w-full"
         :src="template.image_url"
         alt=""
-        width="450px"
         @error="handleImageError"
-      >
-      <!-- Fallback when no image or image error -->
+      />
       <div
         v-else
-        class="h-full w-full flex items-center justify-center bg-neutral-100"
+        class="h-full w-full flex items-center justify-center"
       >
         <UIcon
           name="i-heroicons-document-duplicate"
-          class="h-16 w-16 text-neutral-400"
+          class="h-16 w-16 text-gray-400"
         />
       </div>
     </div>
-    <p
-      class="text-lg font-semibold leading-tight tracking-tight text-neutral-900 mt-4 group-hover:text-blue-500 transition-all duration-150"
-    >
-      {{ template.name }}
-    </p>
-    <p class="line-clamp-2 mt-2 text-sm font-normal text-neutral-600">
-      {{ cleanQuotes(template.short_description) }}
-    </p>
+    <div class="px-5 pt-5 pb-4">
+      <p
+        class="text-lg font-semibold leading-snug text-gray-900 group-hover:text-gray-600 transition-colors duration-150"
+      >
+        {{ template.name }}
+      </p>
+      <p
+        class="line-clamp-2 mt-1.5 text-sm leading-relaxed text-gray-500"
+      >
+        {{ cleanQuotes(template.short_description) }}
+      </p>
+    </div>
+
     <template-tags
       :template="template"
-      class="flex mt-4 items-center flex-wrap gap-3"
+      class="flex mt-2 items-center flex-wrap gap-2 px-5 pb-5"
     />
     <NuxtLink
-      :to="{ params: { slug: template.slug }, name: 'templates-slug' }"
-      title=""
+      v-if="template.slug"
+      :to="{ name: 'templates-slug', params: { slug: template.slug } }"
     >
-      <span
-        class="absolute inset-0"
-        aria-hidden="true"
-      />
+      <span class="absolute inset-0" aria-hidden="true" />
     </NuxtLink>
   </div>
 </template>

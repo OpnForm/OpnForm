@@ -4,6 +4,7 @@
     v-model="selectedOption"
     :multiple="false"
     :disabled="false"
+    :clearable="true"
     :columns="3"
     name="field_state"
   />

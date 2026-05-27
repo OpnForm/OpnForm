@@ -276,7 +276,7 @@ const redirect = () => {
   const intendedUrlCookie = useCookie("intended_url")
 
   if (intendedUrlCookie.value) {
-    router.push({ path: intendedUrlCookie.value })
+    router.push(intendedUrlCookie.value)
     useCookie("intended_url").value = null
   } else {
     router.push({ name: "home" })

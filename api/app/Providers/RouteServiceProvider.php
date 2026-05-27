@@ -51,6 +51,11 @@ class RouteServiceProvider extends ServiceProvider
             return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
         });
 
+        // Rate limit for summary endpoints: 30 requests per minute per user
+        RateLimiter::for('summary', function (Request $request) {
+            return Limit::perMinute(30)->by($request->user()?->id ?: $request->ip());
+        });
+
         RateLimiter::for('public-uploads', function (Request $request) {
             $identifier = $request->user()
                 ? 'user:' . $request->user()->getAuthIdentifier()

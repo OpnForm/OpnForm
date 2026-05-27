@@ -6,6 +6,9 @@
         <p class="mt-1 text-sm text-neutral-500">
           Customize email sender - connect your SMTP server.
         </p>
+        <PlanTag
+          required-tier="self_hosted"
+        />
       </div>
 
       <UButton
@@ -18,7 +21,7 @@
     </div>
 
     <UAlert
-      v-if="!workspace.is_pro"
+      v-if="!isSelfHosted && !canAccessSmtp"
       icon="i-heroicons-user-group-20-solid"
       class="mb-4"
       color="warning"
@@ -29,7 +32,7 @@
         label: 'Try Pro plan',
         color: 'warning',
         variant: 'solid',
-        onClick: () => openSubscriptionModal()
+        onClick: () => openUpgradeModal()
       }]"
     />
 
@@ -42,7 +45,7 @@
             :form="emailSettingsForm"
             name="host"
             :required="true"
-            :disabled="!workspace.is_pro"
+            :disabled="!canAccessSmtp"
             label="Host/Server"
             class="mt-2"
             placeholder="smtp.example.com"
@@ -51,14 +54,14 @@
             :form="emailSettingsForm"
             name="port"
             :required="true"
-            :disabled="!workspace.is_pro"
+            :disabled="!canAccessSmtp"
             label="Port"
             placeholder="587"
           />
           <OptionSelectorInput
             :form="emailSettingsForm"
             name="encryption"
-            :disabled="!workspace.is_pro"
+            :disabled="!canAccessSmtp"
             label="Encryption"
             :options="encryptionOptions"
             :columns="3"
@@ -68,7 +71,7 @@
             :form="emailSettingsForm"
             name="username"
             :required="true"
-            :disabled="!workspace.is_pro"
+            :disabled="!canAccessSmtp"
             label="Username"
             placeholder="Username"
           />
@@ -77,14 +80,14 @@
             name="password"
             native-type="password"
             :required="true"
-            :disabled="!workspace.is_pro"
+            :disabled="!canAccessSmtp"
             label="Password"
             placeholder="Password"
           />
           <TextInput
             :form="emailSettingsForm"
             name="sender_address"
-            :disabled="!workspace.is_pro"
+            :disabled="!canAccessSmtp"
             label="Sender address"
             placeholder="sender@example.com"
           />
@@ -94,7 +97,7 @@
           <UButton
             type="submit"
             :loading="emailSettingsForm.busy"
-            :disabled="!workspace.is_pro"
+            :disabled="!canAccessSmtp"
           >
             Save Domain(s)
           </UButton>
@@ -102,7 +105,7 @@
             color="neutral"
             variant="outline"
             :loading="emailSettingsForm.busy"
-            :disabled="!workspace.is_pro"
+            :disabled="!canAccessSmtp"
             @click="clearEmailSettings"
           >
             Clear settings
@@ -114,15 +117,23 @@
 </template>
 
 <script setup>
+import PlanTag from "~/components/app/PlanTag.vue"
+
 const alert = useAlert()
 
 const { current: workspace } = useCurrentWorkspace()
 
-const { openSubscriptionModal: openModal } = useAppModals()
+const { openSubscriptionModal } = useAppModals()
 const crisp = useCrisp()
+const { hasFeature } = usePlanFeatures()
+const canAccessSmtp = computed(() => hasFeature('custom_smtp'))
+const isSelfHosted = computed(() => useFeatureFlag('self_hosted'))
 
-const openSubscriptionModal = () => {
-  openModal({ modal_title: 'Upgrade to send emails using your own domain' })
+const openUpgradeModal = () => {
+  openSubscriptionModal({
+    plan: isSelfHosted.value ? 'self_hosted' : 'pro',
+    modal_title: 'Upgrade to send emails using your own domain'
+  })
 }
 
 const encryptionOptions = [
@@ -157,6 +168,13 @@ const clearEmailSettings = () => {
 }
 
 const saveChanges = () => {
+  if (isSelfHosted.value) {
+    if (!canAccessSmtp.value) {
+      openUpgradeModal()
+      return
+    }
+  }
+
   // Update the workspace Email Settings
   emailSettingsForm
     .put("/open/workspaces/" + workspace.value.id + "/email-settings", {

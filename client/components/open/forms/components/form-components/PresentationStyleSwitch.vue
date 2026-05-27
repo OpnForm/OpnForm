@@ -144,6 +144,10 @@ function onSelectStyle(newVal) {
     if (form.value.settings.navigation_arrows === undefined) {
       form.value.settings.navigation_arrows = true
     }
+    // Enable auto-next by default in focused mode
+    if (form.value.settings.auto_next === undefined) {
+      form.value.settings.auto_next = true
+    }
     // Enable focused components (selectors for small select lists, toggles for checkboxes)
     enableFocusedComponents(form.value)
     // Seed first block with an abstract image to highlight focused mode
@@ -177,6 +181,10 @@ function confirmSwitch() {
     // Enable navigation arrows by default in focused mode
     if (form.value.settings.navigation_arrows === undefined) {
       form.value.settings.navigation_arrows = true
+    }
+    // Enable auto-next by default in focused mode
+    if (form.value.settings.auto_next === undefined) {
+      form.value.settings.auto_next = true
     }
     // Enable focused components (selectors for small select lists, toggles for checkboxes)
     enableFocusedComponents(form.value)

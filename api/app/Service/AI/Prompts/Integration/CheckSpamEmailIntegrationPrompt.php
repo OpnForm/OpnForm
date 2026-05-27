@@ -5,13 +5,14 @@ namespace App\Service\AI\Prompts\Integration;
 use App\Models\Forms\Form;
 use App\Models\Integration\FormIntegration;
 use App\Service\AI\Prompts\Prompt;
+use App\Service\Forms\FormSpamContentAnalyzer;
 use Illuminate\Support\Str;
 
 class CheckSpamEmailIntegrationPrompt extends Prompt
 {
     protected ?float $temperature = 0.2;
     protected ?int $maxTokens = 500;
-    protected string $model = 'gpt-4.1-mini';
+    protected string $model = 'gpt-5.4-nano';
 
     public const PROMPT_TEMPLATE = <<<'EOD'
         Analyze this email notification integration for spam/phishing or unrelated content.
@@ -29,6 +30,7 @@ class CheckSpamEmailIntegrationPrompt extends Prompt
         Form title: {formTitle}
         Form description: {formDescription}
         Form appears to be default/dummy: {isDefaultForm}
+        Active input fields: {activeInputFields}
         </formContext>
 
         <userInformation>
@@ -110,6 +112,7 @@ class CheckSpamEmailIntegrationPrompt extends Prompt
         $userRegisteredSince = $this->form->creator->created_at->diffInDays(now());
         $isSubscribed = $this->form->creator->is_subscribed ? 'yes' : 'no';
         $isDefaultForm = $this->isDefaultDummyForm() ? 'yes' : 'no';
+        $activeInputFields = (new FormSpamContentAnalyzer())->activeInputFieldCount($this->form);
 
         $blockingHistory = $this->buildBlockingHistoryContext();
 
@@ -121,6 +124,7 @@ class CheckSpamEmailIntegrationPrompt extends Prompt
             ->replace('{linkEditSubmission}', $linkEditSubmission)
             ->replace('{formTitle}', (string) $this->form->title)
             ->replace('{formDescription}', (string) $this->form->description)
+            ->replace('{activeInputFields}', (string) $activeInputFields)
             ->replace('{userRegisteredSince}', (string) $userRegisteredSince)
             ->replace('{isSubscribed}', $isSubscribed)
             ->replace('{isDefaultForm}', $isDefaultForm)
@@ -138,7 +142,7 @@ class CheckSpamEmailIntegrationPrompt extends Prompt
         $hasNoDescription = empty($form->description) || $form->description === '';
 
         // Check if form has very few fields (just the default ones)
-        $defaultFieldCount = count($form->properties ?? []) <= 4;
+        $defaultFieldCount = (new FormSpamContentAnalyzer())->activeInputFieldCount($form) <= 4;
 
         return $isDefaultTitle && $hasNoDescription && $defaultFieldCount;
     }

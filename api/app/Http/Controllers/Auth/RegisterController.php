@@ -29,8 +29,12 @@ class RegisterController extends Controller
     {
         $this->middleware('guest');
 
-        $this->middleware('throttle:5,1')->only('register'); // 5 attempts per minute
-        $this->middleware('throttle:30,60')->only('register'); // 30 attempts per hour
+        $appEnv = (string) config('app.env', 'production');
+
+        if (!in_array($appEnv, ['testing', 'e2e'], true)) {
+            $this->middleware('throttle:5,1')->only('register'); // 5 attempts per minute
+            $this->middleware('throttle:30,60')->only('register'); // 30 attempts per hour
+        }
     }
 
     /**

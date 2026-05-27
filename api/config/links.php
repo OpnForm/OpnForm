@@ -9,6 +9,6 @@ return [
     'discord' => 'https://discord.gg/YTSjU2a9TS',
     'twitter' => 'https://twitter.com/OpnForm',
     'zapier_integration' => 'https://zapier.com/developer/public-invite/146950/58db583730cc46b821614468d94c35de/',
-    'book_onboarding' => 'https://zcal.co/i/YQVGEULQ',
+    'book_onboarding' => 'https://cal.com/julien-nahum/opnform-intro-call',
     'feature_requests' => 'https://opnform.canny.io/feature-requests',
 ];

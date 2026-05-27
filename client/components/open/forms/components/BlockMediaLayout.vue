@@ -2,7 +2,7 @@
   <div class="relative w-full h-full" :style="wrapperStyle">
     <VTransition name="fade">
       <div
-        v-if="image && image.url && !isLoaded"
+        v-if="image && image.url && shouldFadeImage && !isLoaded"
         class="absolute inset-0 bg-neutral-500"
       />
     </VTransition>
@@ -10,8 +10,13 @@
       v-if="image && image.url"
       :src="image.url"
       :alt="(image.alt && image.alt.length > 0) ? image.alt : alt"
-      :class="[imgClass, { 'opacity-0': !isLoaded }]"
+      :class="[imgClass, { 'opacity-0': shouldFadeImage && !isLoaded }]"
       :style="imageStyle"
+      :loading="image.loading || 'eager'"
+      :decoding="image.decoding || 'auto'"
+      :fetchpriority="image.fetchpriority || null"
+      :width="image.width || null"
+      :height="image.height || null"
       draggable="false"
       ref="imgEl"
       @dragstart.prevent
@@ -31,7 +36,13 @@
         alt?: string,
         layout?: 'between'|'right-small'|'left-small'|'right-split'|'left-split'|'background',
         focal_point?: { x: number, y: number }, // 0..100
-        brightness?: number // -100..100
+        brightness?: number, // -100..100
+        fade?: boolean,
+        loading?: 'eager'|'lazy',
+        decoding?: 'async'|'sync'|'auto',
+        fetchpriority?: 'high'|'low'|'auto',
+        width?: number|string,
+        height?: number|string
       }
 */
 
@@ -46,6 +57,7 @@ const props = defineProps({
 
 const isLoaded = ref(false)
 const imgEl = ref(null)
+const shouldFadeImage = computed(() => props.image?.fade !== false)
 
 const onLoad = () => {
   isLoaded.value = true
@@ -56,7 +68,7 @@ const onError = () => {
 }
 
 watch(() => props.image?.url, () => {
-  isLoaded.value = false
+  isLoaded.value = !shouldFadeImage.value
 })
 
 onMounted(() => {
@@ -94,6 +106,5 @@ const wrapperStyle = computed(() => {
   return { minHeight: value }
 })
 </script>
-
 
 

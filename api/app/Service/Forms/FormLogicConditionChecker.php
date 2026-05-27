@@ -2,11 +2,15 @@
 
 namespace App\Service\Forms;
 
+use App\Models\Forms\Form;
 use App\Models\Forms\FormSubmission;
+use App\Service\Formulas\ComputedVariableEvaluator;
 use Illuminate\Support\Facades\DB;
 
 class FormLogicConditionChecker
 {
+    private ?array $computedValues = null;
+
     public function __construct(private ?array $conditions, private ?array $formData)
     {
     }
@@ -14,6 +18,91 @@ class FormLogicConditionChecker
     public static function conditionsMet(?array $conditions, array $formData): bool
     {
         return (new self($conditions, $formData))->conditionsAreMet($conditions, $formData);
+    }
+
+    /**
+     * Check conditions with computed variable support
+     */
+    public static function conditionsMetWithForm(?array $conditions, array $formData, ?Form $form): bool
+    {
+        $checker = new self($conditions, $formData);
+
+        // If form has computed variables, evaluate them
+        if ($form && !empty($form->computed_variables)) {
+            $checker->computedValues = ComputedVariableEvaluator::evaluateForSubmission($form, $formData);
+        }
+
+        return $checker->conditionsAreMet($conditions, $formData);
+    }
+
+    /**
+     * Set computed variable values
+     */
+    public function setComputedValues(array $values): self
+    {
+        $this->computedValues = $values;
+        return $this;
+    }
+
+    /**
+     * Get value for a field or computed variable
+     */
+    private function getValue(string $fieldId)
+    {
+        // First check form data
+        if (isset($this->formData[$fieldId])) {
+            return $this->formData[$fieldId];
+        }
+
+        // Then check computed variables
+        if ($this->computedValues !== null && isset($this->computedValues[$fieldId])) {
+            return $this->computedValues[$fieldId];
+        }
+
+        return null;
+    }
+
+    /**
+     * Resolve mention references in a condition value.
+     * Single mention with no surrounding text returns the raw field value (preserving type).
+     * Mixed content or multiple mentions resolves to a plain-text string.
+     */
+    private function resolveConditionValue($value)
+    {
+        if (!is_string($value) || !str_contains($value, 'mention-field-id')) {
+            return $value;
+        }
+
+        preg_match_all('/mention-field-id="([^"]+)"/', $value, $matches);
+        $mentionCount = count($matches[1] ?? []);
+
+        if ($mentionCount === 1) {
+            $withoutSpan = preg_replace('/<span[^>]*mention[^>]*>.*?<\/span>/s', '', $value);
+
+            if (trim($withoutSpan) === '') {
+                $fieldId = $matches[1][0];
+                $resolvedValue = $this->getValue($fieldId);
+
+                if ($resolvedValue !== null) {
+                    return $resolvedValue;
+                }
+
+                if (preg_match('/mention-fallback="([^"]*)"/', $value, $fb) && $fb[1] !== '') {
+                    return $fb[1];
+                }
+
+                return null;
+            }
+        }
+
+        $data = collect($this->formData)
+            ->map(fn ($val, $id) => ['id' => $id, 'value' => $val])
+            ->values()
+            ->toArray();
+
+        $parser = new \App\Open\MentionParser($value, $data, $this->computedValues ?? []);
+
+        return $parser->parseAsText();
     }
 
     private function conditionsAreMet(?array $conditions, array $formData): bool
@@ -24,13 +113,21 @@ class FormLogicConditionChecker
 
         // If it's not a group, just a single condition
         if (!isset($conditions['operatorIdentifier'])) {
-            return $this->propertyConditionMet($conditions['value'], $formData[$conditions['value']['property_meta']['id']] ?? null);
+            $fieldId = $conditions['value']['property_meta']['id'] ?? null;
+            $value = $fieldId ? $this->getValue($fieldId) : null;
+
+            $condition = $conditions['value'];
+            if (isset($condition['value'])) {
+                $condition['value'] = $this->resolveConditionValue($condition['value']);
+            }
+
+            return $this->propertyConditionMet($condition, $value);
         }
 
         if ($conditions['operatorIdentifier'] === 'and') {
             $isvalid = true;
             foreach ($conditions['children'] as $childrenCondition) {
-                if (!$this->conditionsMet($childrenCondition, $formData)) {
+                if (!$this->conditionsAreMet($childrenCondition, $formData)) {
                     $isvalid = false;
                     break;
                 }
@@ -40,7 +137,7 @@ class FormLogicConditionChecker
         } elseif ($conditions['operatorIdentifier'] === 'or') {
             $isvalid = false;
             foreach ($conditions['children'] as $childrenCondition) {
-                if ($this->conditionsMet($childrenCondition, $formData)) {
+                if ($this->conditionsAreMet($childrenCondition, $formData)) {
                     $isvalid = true;
                     break;
                 }
@@ -54,7 +151,15 @@ class FormLogicConditionChecker
 
     private function propertyConditionMet(array $propertyCondition, $value): bool
     {
-        switch ($propertyCondition['property_meta']['type']) {
+        $type = $propertyCondition['property_meta']['type'] ?? null;
+        $fieldId = $propertyCondition['property_meta']['id'] ?? '';
+
+        // Handle computed variables (cv_ prefix)
+        if (str_starts_with($fieldId, 'cv_') || $type === 'computed') {
+            return $this->computedVariableConditionMet($propertyCondition, $value);
+        }
+
+        switch ($type) {
             case 'text':
             case 'url':
             case 'email':
@@ -84,6 +189,32 @@ class FormLogicConditionChecker
         return false;
     }
 
+    /**
+     * Handle conditions for computed variables
+     * Computed variables can be numbers, text, or booleans
+     */
+    private function computedVariableConditionMet(array $propertyCondition, $value): bool
+    {
+        $operator = $propertyCondition['operator'] ?? null;
+
+        // Check if value is numeric and use number conditions
+        if (is_numeric($value)) {
+            return $this->numberConditionMet($propertyCondition, $value);
+        }
+
+        // Check if value is boolean
+        if (is_bool($value)) {
+            return match ($operator) {
+                'equals', 'is_checked' => $value === true,
+                'does_not_equal', 'is_not_checked' => $value === false,
+                default => false
+            };
+        }
+
+        // Default to text conditions
+        return $this->textConditionMet($propertyCondition, $value);
+    }
+
     private function checkEquals($condition, $fieldValue): bool
     {
         if (!isset($condition['value'])) {
@@ -108,6 +239,12 @@ class FormLogicConditionChecker
         }
         if (is_array($fieldValue)) {
             return in_array($condition['value'], $fieldValue);
+        }
+        if (!is_string($fieldValue)) {
+            return false;
+        }
+        if (!is_string($condition['value'])) {
+            return false;
         }
         return \Illuminate\Support\Str::contains($fieldValue, $condition['value']);
     }
@@ -179,12 +316,18 @@ class FormLogicConditionChecker
         if (!isset($condition['value'])) {
             return false;
         }
+        if (!is_string($fieldValue) || !is_string($condition['value'])) {
+            return false;
+        }
         return str_starts_with($fieldValue, $condition['value']);
     }
 
     private function checkEndsWith($condition, $fieldValue): bool
     {
         if (!isset($condition['value'])) {
+            return false;
+        }
+        if (!is_string($fieldValue) || !is_string($condition['value'])) {
             return false;
         }
         return str_ends_with($fieldValue, $condition['value']);
@@ -204,7 +347,11 @@ class FormLogicConditionChecker
      */
     private function areValidNumbers($condition, $fieldValue): bool
     {
-        return isset($condition['value']) && $fieldValue !== null && $fieldValue !== '';
+        return isset($condition['value']) &&
+            $fieldValue !== null &&
+            $fieldValue !== '' &&
+            is_numeric($condition['value']) &&
+            is_numeric($fieldValue);
     }
 
     private function checkGreaterThan($condition, $fieldValue): bool
@@ -439,10 +586,10 @@ class FormLogicConditionChecker
 
     private function checkLength($condition, $fieldValue, $operator = '==='): bool
     {
-        if (!$fieldValue || strlen($fieldValue) === 0) {
+        if (!$fieldValue || !is_string($fieldValue) || strlen($fieldValue) === 0) {
             return false;
         }
-        if (!isset($condition['value'])) {
+        if (!isset($condition['value']) || !is_numeric($condition['value'])) {
             return false;
         }
         switch ($operator) {
@@ -572,12 +719,18 @@ class FormLogicConditionChecker
                 return $this->checkLength($propertyCondition, $value, '<=');
             case 'matches_regex':
                 try {
+                    if (!is_string($propertyCondition['value']) || !is_string($value)) {
+                        return false;
+                    }
                     return (bool) preg_match('/' . $propertyCondition['value'] . '/', $value);
                 } catch (\Exception $e) {
                     return false;
                 }
             case 'does_not_match_regex':
                 try {
+                    if (!is_string($propertyCondition['value']) || !is_string($value)) {
+                        return true;
+                    }
                     return !(bool) preg_match('/' . $propertyCondition['value'] . '/', $value);
                 } catch (\Exception $e) {
                     return true;
