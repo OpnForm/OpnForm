@@ -37,11 +37,12 @@ class CheckSpamFormPrompt extends Prompt
         **BLOCK IMMEDIATELY (is_spam: true):**
         - Login forms impersonating major services (Gmail, PayPal, Facebook, Outlook, etc.)
         - Forms asking for existing passwords/credentials to "verify" accounts or for fake login
+        - Forms asking for payment authorization secrets such as mobile money/MoMo PINs, wallet PINs, card PINs, OTPs, passcodes, 2FA/MFA codes, or banking codes
         - Clear brand impersonation with sensitive data collection
 
         **FLAG FOR ADMIN REVIEW (needs_admin_review: true) - RARE CASES ONLY:**
         - Forms with suspicious brand impersonation but unclear intent
-        - Requests for highly sensitive data (SSN, banking details) without clear business purpose
+        - Requests for highly sensitive data (SSN, banking details, payment references, account IDs) without clear business purpose
         - Forms that appear to be testing system vulnerabilities
 
         **ALLOW (both false) - DEFAULT FOR MOST FORMS:**
