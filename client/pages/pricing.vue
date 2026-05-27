@@ -737,21 +737,27 @@ useOpnSeoMeta({
 
 const { openSubscriptionModal } = useAppModals()
 const { isAuthenticated: authenticated } = useIsAuthenticated()
+const { suspense: planCatalogSuspense } = usePlanCatalog()
+
+if (import.meta.server) {
+  await planCatalogSuspense()
+}
+
 const { getPlanPrice } = useBillingUpsell()
 
 const pricingIsYearly = ref(true)
 const displayedPlanPrices = ref({
-  pro: 0,
-  business: 0,
-  enterprise: 0,
+  pro: null,
+  business: null,
+  enterprise: null,
 })
 const activePriceAnimationFrame = ref(null)
 let hasInitializedDisplayedPrices = false
 
 const planPriceValues = computed(() => ({
-  pro: getPlanPrice("pro", pricingIsYearly.value) ?? 0,
-  business: getPlanPrice("business", pricingIsYearly.value) ?? 0,
-  enterprise: getPlanPrice("enterprise", pricingIsYearly.value) ?? 0,
+  pro: getPlanPrice("pro", pricingIsYearly.value),
+  business: getPlanPrice("business", pricingIsYearly.value),
+  enterprise: getPlanPrice("enterprise", pricingIsYearly.value),
 }))
 
 function easeOutCubic(progress) {
@@ -760,7 +766,7 @@ function easeOutCubic(progress) {
 
 function formatAnimatedPlanPrice(plan) {
   const price = displayedPlanPrices.value[plan]
-  if (price == null) return null
+  if (price == null) return "—"
   return `$${Math.round(price)}`
 }
 
@@ -779,7 +785,12 @@ function animatePlanPrices(nextPrices) {
 
     displayedPlanPrices.value = Object.keys(nextPrices).reduce((prices, plan) => {
       const startPrice = startPrices[plan] ?? 0
-      const endPrice = nextPrices[plan] ?? 0
+      const endPrice = nextPrices[plan]
+
+      if (endPrice == null) {
+        prices[plan] = null
+        return prices
+      }
 
       prices[plan] = startPrice + (endPrice - startPrice) * easedProgress
       return prices
