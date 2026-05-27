@@ -7,7 +7,6 @@ use App\Jobs\Billing\RemoveWorkspaceGuests;
 use App\Models\License;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Validation\UnauthorizedException;
 
 class AppSumoController extends Controller
 {
@@ -103,10 +102,15 @@ class AppSumoController extends Controller
     private function validateSignature(Request $request)
     {
         $signature = $request->header('x-appsumo-signature');
-        $payload = $request->getContent();
 
-        if ($signature === hash_hmac('sha256', $payload, config('services.appsumo.api_key'))) {
-            throw new UnauthorizedException('Invalid signature.');
+        if (! $signature) {
+            abort(401, 'Missing signature.');
+        }
+
+        $expected = hash_hmac('sha256', $request->getContent(), config('services.appsumo.api_key'));
+
+        if (! hash_equals($expected, $signature)) {
+            abort(401, 'Invalid signature.');
         }
     }
 }
