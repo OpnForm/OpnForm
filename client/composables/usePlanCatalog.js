@@ -1,5 +1,4 @@
 import { useQuery } from '@tanstack/vue-query'
-import { contentApi } from '~/api/content'
 
 const PLAN_CATALOG_QUERY_KEY = ['content', 'plans']
 
@@ -10,7 +9,7 @@ export function usePlanCatalog() {
 
   const query = useQuery({
     queryKey: PLAN_CATALOG_QUERY_KEY,
-    queryFn: () => contentApi.plans.list(),
+    queryFn: () => $fetch('/api/plan-catalog'),
     staleTime: 10 * 60 * 1000,
     initialData: () => hasCatalog.value ? catalog.value : undefined,
   })
