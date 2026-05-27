@@ -1,6 +1,5 @@
 <?php
 
-use App\Models\License;
 
 beforeEach(function () {
     $this->apiKey = 'test-appsumo-api-key';
