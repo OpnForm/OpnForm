@@ -133,6 +133,39 @@ describe('Legacy Hashid Backward Compatibility', function () {
         ]))->assertStatus(404);
     });
 
+    it('rejects hashid update when submission has UUID', function () {
+        $submission = new FormSubmission();
+        $submission->form_id = $this->form->id;
+        $submission->data = ['test' => 'data'];
+        $submission->public_id = Str::uuid()->toString();
+        $submission->save();
+
+        $hashid = Hashids::encode($submission->id);
+
+        $editData = $this->generateFormSubmissionData($this->form);
+        $editData['submission_id'] = $hashid;
+
+        $this->actingAsGuest();
+        $this->postJson(route('forms.answer', $this->form), $editData)
+            ->assertStatus(404);
+    });
+
+    it('allows hashid update for legacy submission without UUID', function () {
+        $submission = new FormSubmission();
+        $submission->form_id = $this->form->id;
+        $submission->data = ['test' => 'data'];
+        $submission->public_id = null;
+        $submission->save();
+
+        $hashid = Hashids::encode($submission->id);
+
+        $editData = $this->generateFormSubmissionData($this->form);
+        $editData['submission_id'] = $hashid;
+
+        $this->postJson(route('forms.answer', $this->form), $editData)
+            ->assertSuccessful();
+    });
+
     it('returns 404 for invalid hashid', function () {
         $this->actingAsGuest();
         $this->getJson(route('forms.fetchSubmission', [

@@ -227,7 +227,14 @@ class PublicFormController extends Controller
         // Legacy Hashid support (backward compatibility)
         $decodedId = Hashids::decode($submissionIdentifier);
         if (!empty($decodedId)) {
-            $submissionData['submission_id'] = (int)($decodedId[0] ?? null);
+            $numericId = (int)($decodedId[0] ?? null);
+            if ($numericId) {
+                $submission = $form->submissions()->find($numericId);
+                if ($submission && $submission->public_id) {
+                    abort(404, 'Submission not found');
+                }
+                $submissionData['submission_id'] = $numericId;
+            }
         }
         unset($submissionData['submission_hash']);
 
