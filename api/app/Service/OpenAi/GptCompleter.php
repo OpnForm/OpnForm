@@ -174,7 +174,7 @@ class GptCompleter
         ];
 
         if (!is_null($maxTokens)) {
-            $completionInput['max_tokens'] = $maxTokens;
+            $completionInput[$this->maxTokensParameter()] = $maxTokens;
         }
 
         if (!is_null($temperature)) {
@@ -192,6 +192,11 @@ class GptCompleter
         $this->completionInput = $completionInput;
 
         return $this;
+    }
+
+    private function maxTokensParameter(): string
+    {
+        return str_starts_with($this->model, 'gpt-5') ? 'max_completion_tokens' : 'max_tokens';
     }
 
     protected function queryCompletion(): self
