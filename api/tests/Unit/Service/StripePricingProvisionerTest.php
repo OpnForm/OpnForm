@@ -18,9 +18,19 @@ it('infers provisioning mode from stripe secret prefix', function () {
 it('builds current plan definitions without legacy default by default', function () {
     $definitions = $this->provisioner->getPlanDefinitions(StripePricingProvisioner::MODE_TEST);
 
-    expect(array_column($definitions, 'plan'))->toBe(['pro', 'business', 'enterprise']);
+    expect(array_column($definitions, 'plan'))->toBe(['pro', 'business', 'enterprise', 'self_hosted']);
     expect($definitions[0]['env']['product_id'])->toBe('STRIPE_TEST_PRO_PRODUCT_ID');
     expect($definitions[2]['env']['yearly'])->toBe('STRIPE_TEST_ENTERPRISE_PRICING_YEARLY');
+    expect($definitions[3]['product_name'])->toBe('OpnForm Self-hosted Enterprise');
+    expect($definitions[3]['amounts'])->toBe([
+        'monthly' => 19900,
+        'yearly' => 199900,
+    ]);
+    expect($definitions[3]['env'])->toBe([
+        'product_id' => 'STRIPE_TEST_SELF_HOSTED_PRODUCT_ID',
+        'monthly' => 'STRIPE_TEST_SELF_HOSTED_PRICING_MONTHLY',
+        'yearly' => 'STRIPE_TEST_SELF_HOSTED_PRICING_YEARLY',
+    ]);
 });
 
 it('writes env values only for missing or empty keys', function () {

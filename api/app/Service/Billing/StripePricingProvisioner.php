@@ -14,9 +14,7 @@ class StripePricingProvisioner
 
     public const MODE_PRODUCTION = 'production';
 
-    public function __construct(protected StripeClient $stripeClient)
-    {
-    }
+    public function __construct(protected StripeClient $stripeClient) {}
 
     public function inferModeFromSecret(?string $secret): ?string
     {
@@ -41,6 +39,7 @@ class StripePricingProvisioner
             $this->makePlanDefinition($mode, 'pro', 'pro', 'OpnForm Pro'),
             $this->makePlanDefinition($mode, 'business', 'business', 'OpnForm Business'),
             $this->makePlanDefinition($mode, 'enterprise', 'enterprise', 'OpnForm Enterprise'),
+            $this->makePlanDefinition($mode, 'self_hosted', 'self_hosted', 'OpnForm Self-hosted Enterprise'),
         ];
 
         if ($includeLegacyDefault) {

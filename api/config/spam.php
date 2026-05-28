@@ -109,6 +109,12 @@ return [
         "claim your reward",
         "prize winner",
         "lottery winner",
-        "free access"
+        "free access",
+        "voicemail",
+        "click here to listen",
+        "tap here to listen",
+        "click here to continue",
+        "framer.app",
+        "weeblysite.com"
     ],
 ];

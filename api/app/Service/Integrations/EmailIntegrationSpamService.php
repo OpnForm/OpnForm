@@ -22,6 +22,10 @@ class EmailIntegrationSpamService
             return null;
         }
 
+        if (!$this->hasOpenAiApiKey($form, $integration)) {
+            return null;
+        }
+
         try {
             $result = CheckSpamEmailIntegrationPrompt::run($form, $integration);
 
@@ -36,7 +40,7 @@ class EmailIntegrationSpamService
             }
 
             return $result;
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::error('Failed to check email integration for spam.', [
                 'form_id' => $form->id,
                 'integration_id' => $integration->id,
@@ -102,6 +106,21 @@ class EmailIntegrationSpamService
 
         // Random check for other users
         return (rand(1, 100) <= config('spam.random_check_percentage', 0));
+    }
+
+    private function hasOpenAiApiKey(Form $form, FormIntegration $integration): bool
+    {
+        if (!blank(config('services.openai.api_key'))) {
+            return true;
+        }
+
+        Log::warning('Skipping email integration spam check because OpenAI API key is not configured.', [
+            'form_id' => $form->id,
+            'integration_id' => $integration->id,
+            'user_id' => $form->creator?->id,
+        ]);
+
+        return false;
     }
 
     private function isRiskyUser(User $user): bool

@@ -17,7 +17,7 @@ abstract class Prompt
 
     protected ?int $maxTokens = 4096;
 
-    protected string $model = 'gpt-4.1';
+    protected string $model = 'gpt-5.4-mini';
 
     protected bool $useStreaming = false;
 
