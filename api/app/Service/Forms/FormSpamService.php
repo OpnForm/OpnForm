@@ -11,13 +11,22 @@ use Illuminate\Support\Facades\Log;
 
 class FormSpamService
 {
-    public function __construct(protected UserActionService $userActionService)
-    {
+    protected FormSpamContentAnalyzer $contentAnalyzer;
+
+    public function __construct(
+        protected UserActionService $userActionService,
+        ?FormSpamContentAnalyzer $contentAnalyzer = null
+    ) {
+        $this->contentAnalyzer = $contentAnalyzer ?? new FormSpamContentAnalyzer();
     }
 
     public function checkForm(Form $form): void
     {
         if (!config('spam.enabled') || !$this->shouldCheck($form)) {
+            return;
+        }
+
+        if (!$this->hasOpenAiApiKey($form)) {
             return;
         }
 
@@ -29,7 +38,7 @@ class FormSpamService
             } elseif ($result['needs_admin_review'] ?? false) {
                 $this->logAdminReview($form, $result['reason'] ?? 'Form flagged for admin review');
             }
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::error('Failed to check form for spam.', [
                 'form_id' => $form->id,
                 'exception' => $e->getMessage(),
@@ -70,6 +79,20 @@ class FormSpamService
         return (rand(1, 100) <= config('spam.random_check_percentage', 0));
     }
 
+    private function hasOpenAiApiKey(Form $form): bool
+    {
+        if (!blank(config('services.openai.api_key'))) {
+            return true;
+        }
+
+        Log::warning('Skipping form spam check because OpenAI API key is not configured.', [
+            'form_id' => $form->id,
+            'user_id' => $form->creator?->id,
+        ]);
+
+        return false;
+    }
+
     private function isRiskyUser(User $user): bool
     {
         // Example: Free user registered in the last N days
@@ -78,8 +101,7 @@ class FormSpamService
 
     private function containsKeywords(Form $form): bool
     {
-        $content = json_encode($form->fields) . ' ' . $form->title . ' ' . $form->description;
-        $content = strtolower($content);
+        $content = strtolower($this->contentAnalyzer->keywordScanText($form));
         $keywords = config('spam.keywords', []);
 
         foreach ($keywords as $keyword) {

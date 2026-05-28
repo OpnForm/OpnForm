@@ -351,16 +351,19 @@ const isOpen = computed({
   set: (value) => emit('close', value)
 })
 
+const isSelfHosted = computed(() => useFeatureFlag('self_hosted'))
+const cloudPaidPlans = ['pro', 'business', 'enterprise']
+const selfHostedPaidPlans = ['self_hosted']
+const paidPlans = computed(() => isSelfHosted.value ? selfHostedPaidPlans : cloudPaidPlans)
+
 const normalizedPlan = computed(() => {
   if (isSelfHosted.value) return 'self_hosted'
   if (!props.plan || props.plan === 'default') return 'pro'
-  return props.plan
+  return cloudPaidPlans.includes(props.plan) ? props.plan : 'pro'
 })
 
 const showRequirementHints = computed(() => props.show_requirement_hints)
 
-const isSelfHosted = computed(() => useFeatureFlag('self_hosted'))
-const paidPlans = ['pro', 'business', 'enterprise', 'self_hosted']
 const currentPlan = ref(normalizedPlan.value)
 const isYearly = ref(props.yearly)
 const loading = ref(false)
@@ -373,9 +376,9 @@ const isSubscribed = computed(() => userIsSubscribed.value)
 
 const selectedPlanName = computed(() => getTierDisplayName(currentPlan.value))
 
-const requiredPlanKey = computed(() => paidPlans.find((plan) => plan === normalizedPlan.value) || 'pro')
+const requiredPlanKey = computed(() => paidPlans.value.find((plan) => plan === normalizedPlan.value) || paidPlans.value[0])
 const planOptions = computed(() => {
-  return paidPlans.map((planKey) => {
+  return paidPlans.value.map((planKey) => {
     const details = PLAN_DETAILS[planKey]
     const isRequired = planKey === requiredPlanKey.value
     const meetsRequirement = tierMeetsRequirement(planKey, requiredPlanKey.value)
@@ -409,11 +412,8 @@ const planOptions = computed(() => {
 })
 
 const visiblePlanOptions = computed(() => {
-  if (isSelfHosted.value) {
-    return [...planOptions.value].filter((option) => option.key === 'self_hosted')
-  }
   return [...planOptions.value].sort((left, right) => {
-    return paidPlans.indexOf(left.key) - paidPlans.indexOf(right.key)
+    return paidPlans.value.indexOf(left.key) - paidPlans.value.indexOf(right.key)
   })
 })
 

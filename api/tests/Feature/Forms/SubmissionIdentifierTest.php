@@ -133,6 +133,39 @@ describe('Legacy Hashid Backward Compatibility', function () {
         ]))->assertStatus(404);
     });
 
+    it('rejects hashid update when submission has UUID', function () {
+        $submission = new FormSubmission();
+        $submission->form_id = $this->form->id;
+        $submission->data = ['test' => 'data'];
+        $submission->public_id = Str::uuid()->toString();
+        $submission->save();
+
+        $hashid = Hashids::encode($submission->id);
+
+        $editData = $this->generateFormSubmissionData($this->form);
+        $editData['submission_id'] = $hashid;
+
+        $this->actingAsGuest();
+        $this->postJson(route('forms.answer', $this->form), $editData)
+            ->assertStatus(404);
+    });
+
+    it('allows hashid update for legacy submission without UUID', function () {
+        $submission = new FormSubmission();
+        $submission->form_id = $this->form->id;
+        $submission->data = ['test' => 'data'];
+        $submission->public_id = null;
+        $submission->save();
+
+        $hashid = Hashids::encode($submission->id);
+
+        $editData = $this->generateFormSubmissionData($this->form);
+        $editData['submission_id'] = $hashid;
+
+        $this->postJson(route('forms.answer', $this->form), $editData)
+            ->assertSuccessful();
+    });
+
     it('returns 404 for invalid hashid', function () {
         $this->actingAsGuest();
         $this->getJson(route('forms.fetchSubmission', [
@@ -182,6 +215,93 @@ describe('Submission Fetch Authorization', function () {
             'form' => $form->slug,
             'submission_id' => $submission->public_id,
         ]))->assertStatus(403);
+    });
+});
+
+describe('Submission update blocked when editable submissions disabled', function () {
+    it('does not update legacy submission via hashid when editable_submissions is false', function () {
+        $user = $this->actingAsBusinessUser();
+        $workspace = $this->createUserWorkspace($user);
+        $form = $this->createForm($user, $workspace, [
+            'editable_submissions' => false,
+        ]);
+
+        $submission = new FormSubmission();
+        $submission->form_id = $form->id;
+        $submission->data = ['original' => 'data'];
+        $submission->public_id = null;
+        $submission->save();
+
+        $originalData = $submission->data;
+        $hashid = Hashids::encode($submission->id);
+
+        $editData = $this->generateFormSubmissionData($form);
+        $editData['submission_id'] = $hashid;
+
+        $this->postJson(route('forms.answer', $form), $editData)
+            ->assertSuccessful();
+
+        // Should have created a new submission, not updated the existing one
+        expect($form->submissions()->count())->toBe(2);
+        $submission->refresh();
+        expect($submission->data)->toBe($originalData);
+    });
+
+    it('does not update submission via UUID when editable_submissions is false', function () {
+        $user = $this->actingAsBusinessUser();
+        $workspace = $this->createUserWorkspace($user);
+        $form = $this->createForm($user, $workspace, [
+            'editable_submissions' => false,
+        ]);
+
+        $submission = new FormSubmission();
+        $submission->form_id = $form->id;
+        $submission->data = ['original' => 'data'];
+        $submission->public_id = Str::uuid()->toString();
+        $submission->save();
+
+        $originalData = $submission->data;
+
+        $editData = $this->generateFormSubmissionData($form);
+        $editData['submission_id'] = $submission->public_id;
+
+        $this->postJson(route('forms.answer', $form), $editData)
+            ->assertSuccessful();
+
+        // Should have created a new submission, not updated the existing one
+        expect($form->submissions()->count())->toBe(2);
+        $submission->refresh();
+        expect($submission->data)->toBe($originalData);
+    });
+
+    it('does not update completed legacy submission when only partial submissions are enabled', function () {
+        $user = $this->actingAsBusinessUser();
+        $workspace = $this->createUserWorkspace($user);
+        $form = $this->createForm($user, $workspace, [
+            'editable_submissions' => false,
+            'enable_partial_submissions' => true,
+        ]);
+
+        $submission = new FormSubmission();
+        $submission->form_id = $form->id;
+        $submission->data = ['original' => 'data'];
+        $submission->status = FormSubmission::STATUS_COMPLETED;
+        $submission->public_id = null;
+        $submission->save();
+
+        $originalData = $submission->data;
+        $hashid = Hashids::encode($submission->id);
+
+        $editData = $this->generateFormSubmissionData($form);
+        $editData['submission_id'] = $hashid;
+
+        $this->postJson(route('forms.answer', $form), $editData)
+            ->assertSuccessful();
+
+        expect($form->submissions()->count())->toBe(2);
+        $submission->refresh();
+        expect($submission->status)->toBe(FormSubmission::STATUS_COMPLETED);
+        expect($submission->data)->toBe($originalData);
     });
 });
 

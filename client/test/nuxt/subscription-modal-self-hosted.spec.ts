@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   routerPush: vi.fn(),
   alertError: vi.fn(),
   stripeCheckout: vi.fn(),
+  isSelfHosted: true,
 }))
 
 vi.mock('#imports', async () => {
@@ -15,7 +16,7 @@ vi.mock('#imports', async () => {
   return {
     ref: vue.ref,
     watch: vue.watch,
-    useFeatureFlag: (key: string) => key === 'self_hosted',
+    useFeatureFlag: (key: string) => key === 'self_hosted' && mocks.isSelfHosted,
     useRouter: () => ({ push: mocks.routerPush }),
     useIsAuthenticated: () => ({ isAuthenticated: vue.ref(true) }),
     useAuth: () => ({
@@ -78,7 +79,7 @@ vi.mock('~/composables/useBillingUpsell.js', async () => {
 })
 
 vi.mock('~/composables/useFeatureFlag.js', () => ({
-  useFeatureFlag: (key: string) => key === 'self_hosted',
+  useFeatureFlag: (key: string) => key === 'self_hosted' && mocks.isSelfHosted,
 }))
 
 vi.mock('~/composables/useStripeCheckout.js', async () => {
@@ -99,10 +100,11 @@ describe('SubscriptionModal self-hosted checkout', () => {
   let openMock: ReturnType<typeof vi.fn>
   let originalOpen: typeof window.open
 
-  const mountModal = () => mount(SubscriptionModal, {
+  const mountModal = (props = {}) => mount(SubscriptionModal, {
     props: {
       modelValue: true,
       plan: 'self_hosted',
+      ...props,
     },
     global: {
       stubs: {
@@ -141,6 +143,7 @@ describe('SubscriptionModal self-hosted checkout', () => {
     mocks.routerPush.mockReset()
     mocks.alertError.mockReset()
     mocks.stripeCheckout.mockReset()
+    mocks.isSelfHosted = true
     openMock = vi.fn()
     originalOpen = window.open
     window.open = openMock
@@ -185,5 +188,15 @@ describe('SubscriptionModal self-hosted checkout', () => {
     await flushPromises()
 
     expect(openMock).toHaveBeenCalledWith('https://checkout.stripe.test/session', '_blank')
+  })
+
+  it('does not render the self-hosted license plan on hosted upgrade modals', () => {
+    mocks.isSelfHosted = false
+
+    const wrapper = mountModal({ plan: 'pro' })
+
+    expect(wrapper.findAll('article')).toHaveLength(3)
+    expect(wrapper.text()).not.toContain('Self Hosted')
+    expect(wrapper.text()).not.toContain('Purchase license')
   })
 })
