@@ -14,7 +14,9 @@ class StripePricingProvisioner
 
     public const MODE_PRODUCTION = 'production';
 
-    public function __construct(protected StripeClient $stripeClient) {}
+    public function __construct(protected StripeClient $stripeClient)
+    {
+    }
 
     public function inferModeFromSecret(?string $secret): ?string
     {
