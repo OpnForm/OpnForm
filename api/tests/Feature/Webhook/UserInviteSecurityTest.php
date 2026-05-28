@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\UserInvite;
+use Laravel\Sanctum\Sanctum;
 
 describe('Invite listing authorization', function () {
     it('allows admin to list invites', function () {
@@ -33,6 +34,41 @@ describe('Invite listing authorization', function () {
         $readonly = $this->createUser();
         $workspace->users()->attach($readonly, ['role' => 'readonly']);
         $this->actingAsUser($readonly);
+
+        $this->getJson(route('open.workspaces.invites.index', $workspace))
+            ->assertStatus(403);
+    });
+
+    it('allows admin token with workspaces-write ability to list invites', function () {
+        $admin = $this->createProUser();
+        $workspace = $this->createUserWorkspace($admin);
+        UserInvite::inviteUser('test@example.com', 'user', $workspace);
+
+        Sanctum::actingAs($admin, ['workspaces-write']);
+
+        $this->getJson(route('open.workspaces.invites.index', $workspace))
+            ->assertSuccessful();
+    });
+
+    it('denies admin token with workspace-users-read ability from listing invites', function () {
+        $admin = $this->createProUser();
+        $workspace = $this->createUserWorkspace($admin);
+        UserInvite::inviteUser('test@example.com', 'user', $workspace);
+
+        Sanctum::actingAs($admin, ['workspace-users-read']);
+
+        $this->getJson(route('open.workspaces.invites.index', $workspace))
+            ->assertStatus(403);
+    });
+
+    it('denies non-admin token with workspaces-write ability from listing invites', function () {
+        $admin = $this->createProUser();
+        $workspace = $this->createUserWorkspace($admin);
+        UserInvite::inviteUser('test@example.com', 'user', $workspace);
+
+        $member = $this->createUser();
+        $workspace->users()->attach($member, ['role' => 'user']);
+        Sanctum::actingAs($member, ['workspaces-write']);
 
         $this->getJson(route('open.workspaces.invites.index', $workspace))
             ->assertStatus(403);
