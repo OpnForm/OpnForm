@@ -212,8 +212,14 @@ Route::group(['middleware' => 'auth.multi'], function () {
                 Route::get('/', [FormSubmissionController::class, 'submissions'])->name('index');
                 Route::get('/{submission_id}', [FormSubmissionController::class, 'fetch'])->name('fetch');
                 Route::put('/{submission_id}', [FormSubmissionController::class, 'update'])->name('update');
-                Route::post('/export', [FormSubmissionController::class, 'export'])->name('export');
-                Route::get('/export/status/{jobId}', [FormSubmissionController::class, 'exportStatus'])->name('export.status');
+                Route::post('/export', [FormSubmissionController::class, 'export'])
+                    ->withoutMiddleware(['throttle:100,1'])
+                    ->middleware('throttle:export')
+                    ->name('export');
+                Route::get('/export/status/{jobId}', [FormSubmissionController::class, 'exportStatus'])
+                    ->withoutMiddleware(['throttle:100,1'])
+                    ->middleware('throttle:export-status')
+                    ->name('export.status');
                 Route::get('/file/{filename}', [FormSubmissionController::class, 'submissionFile'])
                     ->middleware('signed')
                     ->withoutMiddleware(['auth.multi'])

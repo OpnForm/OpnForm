@@ -4,7 +4,10 @@ use App\Models\User;
 use App\Models\Forms\FormSubmission;
 use App\Service\Forms\FormSubmissionFormatter;
 use App\Service\Storage\FileUploadPathService;
+use Illuminate\Routing\Middleware\ThrottleRequests;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 function parseCsvRows(string $content): array
 {
@@ -404,4 +407,42 @@ it('exports file urls with a durable expiration and a valid signature', function
     $this->get($exportedFileUrl)->assertOk();
 
     $this->travelBack();
+});
+
+it('allows export status polling when the general api rate limit is exhausted', function () {
+    $this->withMiddleware(ThrottleRequests::class);
+
+    $router = app('router');
+    $apiMiddleware = $router->getMiddlewareGroups()['api'];
+    array_unshift($apiMiddleware, 'throttle:100,1');
+    $router->middlewareGroup('api', $apiMiddleware);
+
+    $user = $this->actingAsProUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace);
+
+    $jobId = (string) Str::uuid();
+    Cache::put('form_export_job:' . $jobId, [
+        'status' => 'processing',
+        'progress' => 50,
+        'form_id' => $form->id,
+        'user_id' => $user->id,
+        'created_at' => now()->toISOString(),
+        'updated_at' => now()->toISOString(),
+    ], now()->addHour());
+
+    for ($i = 0; $i < 100; $i++) {
+        $this->getJson(route('open.forms.submissions.index', ['form' => $form]))
+            ->assertSuccessful();
+    }
+
+    $this->getJson(route('open.forms.submissions.index', ['form' => $form]))
+        ->assertStatus(429);
+
+    $this->getJson(route('open.forms.submissions.export.status', [
+        'form' => $form,
+        'jobId' => $jobId,
+    ]))
+        ->assertSuccessful()
+        ->assertJsonPath('status', 'processing');
 });
