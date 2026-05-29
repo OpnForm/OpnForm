@@ -245,3 +245,42 @@ it('allows template editors to update publicly_listed on update', function () {
 
     expect($template->fresh()->publicly_listed)->toBeTrue();
 });
+
+it('does not change publicly_listed when editors omit the field on update', function () {
+    config(['opnform.template_editor_emails' => ['editor@example.com']]);
+
+    $user = $this->createUser(['email' => 'editor@example.com']);
+    $this->actingAsUser($user);
+
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->makeForm($user, $workspace);
+
+    $template = Template::create([
+        'name' => 'Listed Editor Template',
+        'slug' => 'listed-editor-template',
+        'short_description' => 'Short description',
+        'description' => 'Description',
+        'image_url' => 'https://example.com/image.jpg',
+        'publicly_listed' => true,
+        'structure' => $form->getAttributes(),
+        'questions' => [],
+        'industries' => [],
+        'types' => [],
+    ]);
+    $template->creator_id = $user->id;
+    $template->save();
+
+    $payload = templateRequestPayload($form, [
+        'slug' => 'listed-editor-template',
+        'name' => 'Renamed Editor Template',
+    ]);
+    unset($payload['publicly_listed']);
+
+    $this->putJson(route('templates.update', ['id' => $template->id]), $payload)
+        ->assertSuccessful();
+
+    $template->refresh();
+
+    expect($template->name)->toBe('Renamed Editor Template')
+        ->and($template->publicly_listed)->toBeTrue();
+});

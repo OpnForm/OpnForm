@@ -91,7 +91,7 @@ class FormTemplateRequest extends FormRequest
             'questions' => $this->input('questions', []),
         ];
 
-        if ($this->canSetPubliclyListed()) {
+        if ($this->canSetPubliclyListed() && $this->has('publicly_listed')) {
             $attributes['publicly_listed'] = $this->boolean('publicly_listed');
         }
 
