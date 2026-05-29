@@ -42,6 +42,12 @@ echo -e "${BLUE}Starting OpnForm Docker setup...${NC}"
 if [ "$DEV_MODE" = false ]; then
     echo -e "${GREEN}Setting up environment files...${NC}"
     bash "$SCRIPT_DIR/setup-env.sh" --docker
+
+    if grep -Eq '^JWT_SKIP_IP_UA_VALIDATION=(true|1|yes|on)$' "$PROJECT_ROOT/api/.env"; then
+        echo -e "${YELLOW}Warning: JWT User Agent validation is disabled in api/.env.${NC}"
+        echo -e "${YELLOW}Set JWT_SKIP_IP_UA_VALIDATION=false for production Docker deployments.${NC}"
+        exit 1
+    fi
 else
     echo -e "${GREEN}Development mode - skipping .env generation (using docker-compose environment variables)${NC}"
 fi
