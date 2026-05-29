@@ -33,20 +33,18 @@ class FormTemplateRequest extends FormRequest
     ];
 
     /**
-     * Get the validation rules that apply to the request.
-     *
      * @return array<string, mixed>
      */
     public function rules()
     {
         $slugRule = '';
-        if ($this->id) {
-            $slugRule = ',' . $this->id;
+        if ($this->route('id') ?? $this->input('id')) {
+            $slugRule = ',' . ($this->route('id') ?? $this->input('id'));
         }
 
         return [
             'form' => 'required|array',
-            'publicly_listed' => 'boolean',
+            'publicly_listed' => 'sometimes|boolean',
             'name' => 'required|string|max:60',
             'slug' => 'required|string|alpha_dash|unique:templates,slug' . $slugRule,
             'short_description' => 'required|string|max:1000',
@@ -61,26 +59,62 @@ class FormTemplateRequest extends FormRequest
 
     public function getTemplate(): Template
     {
-        $structure = $this->form;
-        foreach ($structure as $key => $val) {
-            if (in_array($key, self::IGNORED_KEYS)) {
-                unset($structure[$key]);
-            }
+        $template = new Template($this->getMutableAttributes());
+        $template->creator_id = $this->user()?->id;
+
+        return $template;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function getUpdateAttributes(): array
+    {
+        return $this->getMutableAttributes();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function getMutableAttributes(): array
+    {
+        $attributes = [
+            'name' => $this->input('name'),
+            'slug' => $this->input('slug'),
+            'short_description' => $this->input('short_description'),
+            'description' => $this->input('description'),
+            'image_url' => $this->input('image_url'),
+            'structure' => $this->cleanFormStructure($this->input('form', [])),
+            'types' => $this->input('types', []),
+            'industries' => $this->input('industries', []),
+            'related_templates' => $this->input('related_templates', []),
+            'questions' => $this->input('questions', []),
+        ];
+
+        if ($this->canSetPubliclyListed()) {
+            $attributes['publicly_listed'] = $this->boolean('publicly_listed');
         }
 
-        return new Template([
-            'creator_id' => $this->user()?->id ?? null,
-            'publicly_listed' => $this->publicly_listed,
-            'name' => $this->name,
-            'slug' => $this->slug,
-            'short_description' => $this->short_description,
-            'description' => $this->description,
-            'image_url' => $this->image_url,
-            'structure' => $structure,
-            'types' => $this->types ?? [],
-            'industries' => $this->industries ?? [],
-            'related_templates' => $this->related_templates ?? [],
-            'questions' => $this->questions ?? [],
-        ]);
+        return $attributes;
+    }
+
+    /**
+     * @param  array<string, mixed>  $structure
+     * @return array<string, mixed>
+     */
+    private function cleanFormStructure(array $structure): array
+    {
+        foreach (self::IGNORED_KEYS as $key) {
+            unset($structure[$key]);
+        }
+
+        return $structure;
+    }
+
+    private function canSetPubliclyListed(): bool
+    {
+        $user = $this->user();
+
+        return $user !== null && ($user->admin || $user->template_editor);
     }
 }
