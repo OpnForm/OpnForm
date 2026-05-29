@@ -50,4 +50,31 @@ class FilenameUrlEncoder
 
         return $decoded;
     }
+
+    public static function isEncoded(string $value): bool
+    {
+        if ($value === '') {
+            return false;
+        }
+
+        $decoded = self::decode($value);
+        if ($decoded === $value) {
+            return false;
+        }
+
+        if (self::encode($decoded) !== $value) {
+            return false;
+        }
+
+        return self::isPlausibleFilename($decoded);
+    }
+
+    public static function isPlausibleFilename(string $filename): bool
+    {
+        if ($filename === '' || !mb_check_encoding($filename, 'UTF-8')) {
+            return false;
+        }
+
+        return preg_match('/^[\p{L}\p{N}\.\s_\-\(\)\']+$/u', $filename) === 1;
+    }
 }
