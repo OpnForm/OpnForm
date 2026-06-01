@@ -75,6 +75,7 @@ class FilenameUrlEncoder
             return false;
         }
 
-        return preg_match('/^[\p{L}\p{N}\.\s_\-\(\)\']+$/u', $filename) === 1;
+        // Keep in sync with S3KeyCleaner allowed filename characters (excluding "/").
+        return preg_match('/^[\p{L}\p{N}\.\s_\-\(\)\'!*]+$/u', $filename) === 1;
     }
 }

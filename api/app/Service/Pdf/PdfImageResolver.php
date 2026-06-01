@@ -37,6 +37,10 @@ class PdfImageResolver
             }
 
             if ($this->isUrl($normalized)) {
+                if ($this->isLocalAssetUrl($normalized)) {
+                    return null;
+                }
+
                 return $this->remoteFetcher()->fetch($normalized);
             }
         } catch (\Throwable $e) {

@@ -136,6 +136,28 @@ describe('PdfImageResolver', function () {
         expect($content)->toBe('encoded-upload-bytes');
     });
 
+    it('resolves encoded submission filenames containing exclamation marks', function () {
+        $form = createPdfImageResolverTestForm();
+        $fileName = 'Important!-document_550e8400-e29b-41d4-a716-446655440000.png';
+        Storage::put(FileUploadPathService::getFileUploadPath($form->id, $fileName), 'important-upload-bytes');
+
+        $resolver = new PdfImageResolver($form);
+        $content = $resolver->resolveContent(FilenameUrlEncoder::encode($fileName));
+
+        expect($content)->toBe('important-upload-bytes');
+    });
+
+    it('resolves encoded submission filenames containing asterisks', function () {
+        $form = createPdfImageResolverTestForm();
+        $fileName = 'star*file_550e8400-e29b-41d4-a716-446655440000.png';
+        Storage::put(FileUploadPathService::getFileUploadPath($form->id, $fileName), 'star-upload-bytes');
+
+        $resolver = new PdfImageResolver($form);
+        $content = $resolver->resolveContent(FilenameUrlEncoder::encode($fileName));
+
+        expect($content)->toBe('star-upload-bytes');
+    });
+
     it('does not probe arbitrary storage keys for slash-containing values', function () {
         Storage::put('private/nested/photo.png', 'private-bytes');
 
@@ -143,6 +165,16 @@ describe('PdfImageResolver', function () {
         $content = $resolver->resolveContent('private/nested/photo.png');
 
         expect($content)->toBeNull();
+    });
+
+    it('does not remote-fetch local asset urls when storage lookup misses', function () {
+        Http::fake();
+
+        $resolver = new PdfImageResolver();
+        $content = $resolver->resolveContent(route('forms.assets.show', ['missing.png']));
+
+        expect($content)->toBeNull();
+        Http::assertNothingSent();
     });
 });
 
@@ -153,6 +185,50 @@ describe('PdfSafeImageFetcher', function () {
                 '<html></html>',
                 200,
                 ['Content-Type' => 'text/html']
+            ),
+        ]);
+
+        $fetcher = new PdfSafeImageFetcher();
+        $content = $fetcher->fetch('https://images.unsplash.com/photo-12345');
+
+        expect($content)->toBeNull();
+    });
+
+    it('rejects private urls even when private webhook urls are allowed', function () {
+        config(['opnform.webhooks.allow_private_urls' => true]);
+        Http::fake();
+
+        $fetcher = new PdfSafeImageFetcher();
+        $content = $fetcher->fetch('https://127.0.0.1/internal.png');
+
+        expect($content)->toBeNull();
+        Http::assertNothingSent();
+    });
+
+    it('rejects responses whose content-length exceeds the download limit', function () {
+        Http::fake([
+            'https://images.unsplash.com/*' => Http::response(
+                'ignored',
+                200,
+                [
+                    'Content-Type' => 'image/png',
+                    'Content-Length' => (string) (6 * 1024 * 1024),
+                ]
+            ),
+        ]);
+
+        $fetcher = new PdfSafeImageFetcher();
+        $content = $fetcher->fetch('https://images.unsplash.com/photo-12345');
+
+        expect($content)->toBeNull();
+    });
+
+    it('rejects response bodies that exceed the download limit', function () {
+        Http::fake([
+            'https://images.unsplash.com/*' => Http::response(
+                str_repeat('a', (5 * 1024 * 1024) + 1),
+                200,
+                ['Content-Type' => 'image/png']
             ),
         ]);
 
