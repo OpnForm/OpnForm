@@ -5,8 +5,9 @@ namespace App\Service\Forms;
 use App\Models\Forms\Form;
 use App\Service\Storage\FilenameUrlEncoder;
 use Carbon\Carbon;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Str;
+use Stevebauman\Purify\Facades\Purify;
 
 class FormSubmissionFormatter
 {
@@ -239,6 +240,14 @@ class FormSubmissionFormatter
                 }
             } elseif ($field['type'] == 'matrix') {
                 $field['value'] = str_replace(' | ', "\n", $this->getMatrixString($data[$field['id']]));
+            } elseif ($field['type'] == 'rich_text') {
+                $value = $data[$field['id']];
+                if (is_string($value) && $value !== '') {
+                    $field['value'] = Purify::clean($value);
+                    $field['value_is_html'] = true;
+                } else {
+                    $field['value'] = $value;
+                }
             } elseif (in_array($field['type'], ['files', 'signature'])) {
                 if ($this->outputStringsOnly) {
                     $formId = $this->form->id;

@@ -426,3 +426,43 @@ it('resolves mentions for hidden fields in email content when hidden submission 
 
     expect(trim($renderedMail->render()))->toContain('hidden-value-xyz');
 });
+
+it('renders rich text field values as html in submission data', function () {
+    $user = $this->actingAsUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace);
+
+    $richTextField = [
+        'id' => 'rich-text-sample',
+        'name' => 'Rich Tex Sample',
+        'type' => 'rich_text',
+    ];
+    $form->properties = array_merge($form->properties, [$richTextField]);
+    $form->update();
+
+    $integrationData = $this->createFormIntegration('email', $form->id, [
+        'send_to' => $user->email,
+        'sender_name' => 'OpnForm',
+        'subject' => 'New form submission',
+        'email_content' => 'Hello there',
+        'include_submission_data' => true,
+    ]);
+
+    $richTextValue = '<p>Test <em>Sample </em><u>Underline </u><strong>Bold </strong><span style="color:rgb(230,0,0);">Colored</span></p><p><br /></p><p>Line break</p>';
+    $formData = [
+        $richTextField['id'] => $richTextValue,
+    ];
+
+    $event = new \App\Events\Forms\FormSubmitted($form, $formData);
+    $mailable = new FormEmailNotification($event, $integrationData);
+    $notifiable = new AnonymousNotifiable();
+    $notifiable->route('mail', $user->email);
+
+    $html = trim($mailable->toMail($notifiable)->render());
+
+    expect($html)->toContain('<strong');
+    expect($html)->toContain('Bold </strong>');
+    expect($html)->toContain('<em');
+    expect($html)->toContain('Sample </em>');
+    expect($html)->not->toContain('&lt;p&gt;Test &lt;em&gt;Sample');
+});
