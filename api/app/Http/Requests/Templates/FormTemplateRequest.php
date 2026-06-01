@@ -44,7 +44,6 @@ class FormTemplateRequest extends FormRequest
         }
 
         return [
-            'id' => 'prohibited',
             'form' => 'required|array',
             'publicly_listed' => 'sometimes|boolean',
             'name' => 'required|string|max:60',
