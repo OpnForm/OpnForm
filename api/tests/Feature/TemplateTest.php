@@ -284,3 +284,105 @@ it('does not change publicly_listed when editors omit the field on update', func
     expect($template->name)->toBe('Renamed Editor Template')
         ->and($template->publicly_listed)->toBeTrue();
 });
+
+it('rejects template create when body id is provided', function () {
+    $user = $this->createUser(['email' => 'admin@opnform.com']);
+    $this->actingAsUser($user);
+
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->makeForm($user, $workspace);
+
+    $this->postJson(route('templates.create'), [
+        'id' => 999,
+        'name' => 'Invalid Template',
+        'slug' => 'invalid-template',
+        'short_description' => 'Short description',
+        'description' => 'Description',
+        'image_url' => 'https://example.com/image.jpg',
+        'form' => $form->getAttributes(),
+        'questions' => [],
+    ])->assertUnprocessable()
+        ->assertJsonValidationErrors(['id']);
+});
+
+it('does not allow create to bypass slug uniqueness using body id', function () {
+    $user = $this->createUser(['email' => 'admin@opnform.com']);
+    $this->actingAsUser($user);
+
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->makeForm($user, $workspace);
+
+    $existing = Template::create([
+        'name' => 'Existing Template',
+        'slug' => 'shared-template-slug',
+        'short_description' => 'Short description',
+        'description' => 'Description',
+        'image_url' => 'https://example.com/image.jpg',
+        'publicly_listed' => false,
+        'structure' => $form->getAttributes(),
+        'questions' => [],
+        'industries' => [],
+        'types' => [],
+    ]);
+    $existing->creator_id = $user->id;
+    $existing->save();
+
+    $this->postJson(route('templates.create'), [
+        'id' => $existing->id,
+        'name' => 'Duplicate Slug Template',
+        'slug' => 'shared-template-slug',
+        'short_description' => 'Short description',
+        'description' => 'Description',
+        'image_url' => 'https://example.com/image.jpg',
+        'form' => $form->getAttributes(),
+        'questions' => [],
+    ])->assertUnprocessable()
+        ->assertJsonValidationErrors(['slug', 'id']);
+
+    expect(Template::where('slug', 'shared-template-slug')->count())->toBe(1);
+});
+
+it('stores empty arrays instead of null for template list fields on update', function () {
+    config(['opnform.template_editor_emails' => ['editor@example.com']]);
+
+    $user = $this->createUser(['email' => 'editor@example.com']);
+    $this->actingAsUser($user);
+
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->makeForm($user, $workspace);
+
+    $template = Template::create([
+        'name' => 'Array Template',
+        'slug' => 'array-template',
+        'short_description' => 'Short description',
+        'description' => 'Description',
+        'image_url' => 'https://example.com/image.jpg',
+        'publicly_listed' => false,
+        'structure' => $form->getAttributes(),
+        'questions' => [['question' => 'Q1', 'answer' => 'A1']],
+        'industries' => ['healthcare'],
+        'types' => ['survey'],
+        'related_templates' => ['other-template'],
+    ]);
+    $template->creator_id = $user->id;
+    $template->save();
+
+    $payload = templateRequestPayload($form, [
+        'slug' => 'array-template',
+        'types' => null,
+        'industries' => null,
+        'related_templates' => null,
+        'questions' => null,
+    ]);
+
+    $this->putJson(route('templates.update', ['id' => $template->id]), $payload)
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['types', 'industries', 'related_templates', 'questions']);
+
+    $template->refresh();
+
+    expect($template->types)->toBe(['survey'])
+        ->and($template->industries)->toBe(['healthcare'])
+        ->and($template->related_templates)->toBe(['other-template'])
+        ->and($template->questions)->toBe([['question' => 'Q1', 'answer' => 'A1']]);
+});

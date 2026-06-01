@@ -38,11 +38,13 @@ class FormTemplateRequest extends FormRequest
     public function rules()
     {
         $slugRule = '';
-        if ($this->route('id') ?? $this->input('id')) {
-            $slugRule = ',' . ($this->route('id') ?? $this->input('id'));
+        $templateId = $this->route('id');
+        if ($templateId !== null) {
+            $slugRule = ',' . $templateId;
         }
 
         return [
+            'id' => 'prohibited',
             'form' => 'required|array',
             'publicly_listed' => 'sometimes|boolean',
             'name' => 'required|string|max:60',
@@ -50,9 +52,9 @@ class FormTemplateRequest extends FormRequest
             'short_description' => 'required|string|max:1000',
             'description' => 'required|string',
             'image_url' => 'required|string',
-            'types' => 'nullable|array',
-            'industries' => 'nullable|array',
-            'related_templates' => 'nullable|array',
+            'types' => 'array',
+            'industries' => 'array',
+            'related_templates' => 'array',
             'questions' => 'array',
         ];
     }
@@ -85,10 +87,10 @@ class FormTemplateRequest extends FormRequest
             'description' => $this->input('description'),
             'image_url' => $this->input('image_url'),
             'structure' => $this->cleanFormStructure($this->input('form', [])),
-            'types' => $this->input('types', []),
-            'industries' => $this->input('industries', []),
-            'related_templates' => $this->input('related_templates', []),
-            'questions' => $this->input('questions', []),
+            'types' => $this->arrayInput('types'),
+            'industries' => $this->arrayInput('industries'),
+            'related_templates' => $this->arrayInput('related_templates'),
+            'questions' => $this->arrayInput('questions'),
         ];
 
         if ($this->canSetPubliclyListed() && $this->has('publicly_listed')) {
@@ -109,6 +111,13 @@ class FormTemplateRequest extends FormRequest
         }
 
         return $structure;
+    }
+
+    private function arrayInput(string $key): array
+    {
+        $value = $this->input($key);
+
+        return is_array($value) ? $value : [];
     }
 
     private function canSetPubliclyListed(): bool
