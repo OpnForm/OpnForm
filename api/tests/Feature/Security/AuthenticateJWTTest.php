@@ -1,5 +1,31 @@
 <?php
 
+use App\Http\Middleware\AuthenticateJWT;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use Tymon\JWTAuth\Facades\JWTAuth;
+use Tymon\JWTAuth\Payload;
+
+function createJwtMiddlewareRequest(string $userAgent = 'Different Browser'): Request
+{
+    return Request::create('/api/open/forms', 'GET', [], [], [], [
+        'HTTP_USER_AGENT' => $userAgent,
+        'HTTP_AUTHORIZATION' => 'Bearer fake-token',
+    ]);
+}
+
+function mockJwtPayloadWithUserAgent(string $userAgent): Payload
+{
+    $payload = Mockery::mock(Payload::class);
+    $payload->shouldReceive('get')->with('impersonating')->andReturn(false);
+    $payload->shouldReceive('get')->with('ua')->andReturn(Hash::make($userAgent));
+
+    JWTAuth::shouldReceive('parseToken->getPayload')->andReturn($payload);
+
+    return $payload;
+}
+
 it('defaults jwt user agent validation to enabled', function () {
     expect(config('app.jwt_skip_ip_ua_validation'))->toBeFalse();
 });
@@ -10,20 +36,20 @@ it('keeps jwt validation enabled in the docker production env template', functio
     expect($envDocker)->toContain('JWT_SKIP_IP_UA_VALIDATION=false');
 });
 
-it('skips jwt user agent validation when configured', function () {
-    config(['app.jwt_skip_ip_ua_validation' => true]);
+it('skips jwt user agent validation before token parsing when configured', function () {
+    config([
+        'app.jwt_skip_ip_ua_validation' => true,
+        'app.front_api_secret' => 'front-secret',
+    ]);
 
-    $middleware = new App\Http\Middleware\AuthenticateJWT();
-    $request = Illuminate\Http\Request::create('/api/open/forms', 'GET');
-    $called = false;
+    JWTAuth::shouldReceive('parseToken')->never();
 
-    $response = $middleware->handle($request, function () use (&$called) {
-        $called = true;
+    $middleware = new AuthenticateJWT();
+    $request = createJwtMiddlewareRequest('Different Browser');
 
-        return response('ok');
-    });
+    $response = $middleware->handle($request, fn () => response('ok'));
 
-    expect($called)->toBeTrue()
+    expect($response->getStatusCode())->toBe(200)
         ->and($response->getContent())->toBe('ok');
 });
 
@@ -33,20 +59,11 @@ it('rejects jwt requests when user agent does not match token claim', function (
         'app.front_api_secret' => 'front-secret',
     ]);
 
-    $payload = Mockery::mock(Tymon\JWTAuth\Payload::class);
-    $payload->shouldReceive('get')->with('impersonating')->andReturn(false);
-    $payload->shouldReceive('get')->with('ua')->andReturn(
-        Illuminate\Support\Facades\Hash::make('Mozilla/5.0 (Valid Browser)')
-    );
+    mockJwtPayloadWithUserAgent('Mozilla/5.0 (Valid Browser)');
+    Auth::shouldReceive('invalidate')->once();
 
-    Tymon\JWTAuth\Facades\JWTAuth::shouldReceive('parseToken->getPayload')->andReturn($payload);
-    Illuminate\Support\Facades\Auth::shouldReceive('invalidate')->once();
-
-    $middleware = new App\Http\Middleware\AuthenticateJWT();
-    $request = Illuminate\Http\Request::create('/api/open/forms', 'GET', [], [], [], [
-        'HTTP_USER_AGENT' => 'Different Browser',
-        'HTTP_AUTHORIZATION' => 'Bearer fake-token',
-    ]);
+    $middleware = new AuthenticateJWT();
+    $request = createJwtMiddlewareRequest('Different Browser');
 
     $response = $middleware->handle($request, fn () => response('ok'));
 

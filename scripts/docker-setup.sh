@@ -36,6 +36,42 @@ done
 
 cd "$PROJECT_ROOT"
 
+is_truthy_env_value() {
+    local value="$1"
+
+    value="${value%%#*}"
+    value="$(printf '%s' "$value" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+    value="${value#\"}"
+    value="${value%\"}"
+    value="${value#\'}"
+    value="${value%\'}"
+    value="${value#(}"
+    value="${value%)}"
+    value="$(printf '%s' "$value" | tr '[:upper:]' '[:lower:]')"
+
+    case "$value" in
+        true|1|yes|on) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+jwt_skip_validation_disabled_in_env() {
+    local env_file="$1"
+    local line value
+
+    if [ ! -f "$env_file" ]; then
+        return 1
+    fi
+
+    line="$(grep -E '^[[:space:]]*JWT_SKIP_IP_UA_VALIDATION[[:space:]]*=' "$env_file" | tail -n 1 || true)"
+    if [ -z "$line" ]; then
+        return 1
+    fi
+
+    value="${line#*=}"
+    is_truthy_env_value "$value"
+}
+
 echo -e "${BLUE}Starting OpnForm Docker setup...${NC}"
 
 # Run the environment setup script with --docker flag (only for production)
@@ -43,7 +79,7 @@ if [ "$DEV_MODE" = false ]; then
     echo -e "${GREEN}Setting up environment files...${NC}"
     bash "$SCRIPT_DIR/setup-env.sh" --docker
 
-    if grep -Eq '^JWT_SKIP_IP_UA_VALIDATION=(true|1|yes|on)$' "$PROJECT_ROOT/api/.env"; then
+    if jwt_skip_validation_disabled_in_env "$PROJECT_ROOT/api/.env"; then
         echo -e "${YELLOW}Warning: JWT User Agent validation is disabled in api/.env.${NC}"
         echo -e "${YELLOW}Set JWT_SKIP_IP_UA_VALIDATION=false for production Docker deployments.${NC}"
         exit 1
