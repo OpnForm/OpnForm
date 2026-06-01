@@ -135,5 +135,19 @@ describe('FilenameUrlEncoder', function () {
         it('does not treat plain upload filenames as encoded filenames', function () {
             expect(FilenameUrlEncoder::isEncoded('avatar-test.png'))->toBeFalse();
         });
+
+        it('detects encoded filenames with exclamation marks', function () {
+            $filename = 'Important!-document_uuid.pdf';
+            $encoded = FilenameUrlEncoder::encode($filename);
+
+            expect(FilenameUrlEncoder::isEncoded($encoded))->toBeTrue();
+        });
+
+        it('detects encoded filenames with asterisks', function () {
+            $filename = 'star*file_uuid.pdf';
+            $encoded = FilenameUrlEncoder::encode($filename);
+
+            expect(FilenameUrlEncoder::isEncoded($encoded))->toBeTrue();
+        });
     });
 });
