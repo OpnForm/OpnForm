@@ -84,7 +84,7 @@
     :show="showEditSubmissionModal"
     :form="form"
     :submission="submission"
-    @close="showEditSubmissionModal = false"
+    @close="onEditSubmissionModalClose"
   />
 </template>
 
@@ -277,5 +277,10 @@ const deleteRecord = () => {
   }).catch((error) => {
     alert.error(error.data?.message || "Something went wrong!")
   })
+}
+
+const onEditSubmissionModalClose = () => {
+  showEditSubmissionModal.value = false
+  formManagerInit()
 }
 </script>
