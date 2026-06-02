@@ -4,13 +4,39 @@
     :ui="{ content: 'sm:max-w-4xl', body: 'p-0!' }"
   >
     <template #header>
-      <div class="flex items-center justify-between w-full">
-        <h2 class="font-semibold">
+      <div class="flex flex-col gap-3 w-full min-w-0 sm:flex-row sm:items-center sm:justify-between sm:gap-2">
+        <h2 class="font-semibold shrink-0">
           View Submission
         </h2>
 
-        <div class="flex items-center gap-2">
-          <div class="relative z-20">
+        <div class="flex flex-wrap items-center gap-2 justify-between sm:justify-end min-w-0">
+          <div class="flex items-center gap-1 relative z-20 shrink-0">
+            <TrackClick
+              name="edit_record_click"
+              :properties="{ form_id: form.id, submission_id: submissionId }"
+            >
+              <UButton
+                color="neutral"
+                variant="outline"
+                size="sm"
+                icon="heroicons:pencil-square"
+                aria-label="Edit"
+                @click="showEditSubmissionModal = true"
+              >
+                <span class="hidden sm:inline">Edit</span>
+              </UButton>
+            </TrackClick>
+            <UButton
+              v-if="hasPdfTemplates"
+              color="neutral"
+              variant="outline"
+              size="sm"
+              icon="i-heroicons-arrow-down-tray-20-solid"
+              aria-label="Download PDF"
+              @click="downloadPdf"
+            >
+              <span class="hidden sm:inline">Download PDF</span>
+            </UButton>
             <UDropdownMenu
               :items="getMenuItems"
               :content="{ side: 'bottom', align: 'end' }"
@@ -18,19 +44,21 @@
             >
               <UButton
                 color="neutral"
-                variant="ghost"
+                variant="outline"
                 icon="i-heroicons-ellipsis-horizontal"
-                size="md"
+                size="sm"
+                aria-label="More actions"
               />
             </UDropdownMenu>
-          </div>         
-          
+          </div>
+
           <UPagination
             v-model:page="currentPage"
             :items-per-page="1"
             :total="totalSubmissions"
             size="sm"
             :sibling-count="0"
+            class="shrink-0"
             :ui="{
               wrapper: 'w-auto',
               list: 'gap-0',
@@ -40,7 +68,7 @@
             }"
           >
             <template #item="{ page, pageCount }">
-              <span class="text-sm font-medium px-2">{{ page }} of {{ pageCount }}</span>
+              <span class="text-sm font-medium px-2 whitespace-nowrap">{{ page }} of {{ pageCount }}</span>
             </template>
           </UPagination>
         </div>
@@ -95,6 +123,7 @@ import EditSubmissionModal from "./EditSubmissionModal.vue"
 import OpenForm from "../forms/OpenForm.vue"
 import { FormMode } from "~/lib/forms/FormModeStrategy.js"
 import { useFormManager } from '~/lib/forms/composables/useFormManager'
+import { usePdfTemplates } from '~/composables/query/forms/usePdfTemplates'
 
 // Provide form size context for OpenForm (same pattern as OpenCompleteForm)
 provide('formSize', ref('sm'))
@@ -119,6 +148,11 @@ const alert = useAlert()
 const { copy } = useClipboard()
 const downloadPdfRef = ref(null)
 
+// PDF Templates for this form
+const { list: listPdfTemplates } = usePdfTemplates()
+const { data: pdfTemplatesData } = listPdfTemplates(() => props.form?.id)
+const hasPdfTemplates = computed(() => (pdfTemplatesData.value?.data?.length ?? 0) > 0)
+
 // Use form submissions composable for delete
 const { deleteSubmission } = useFormSubmissions()
 const deleteSubmissionMutation = deleteSubmission()
@@ -133,24 +167,10 @@ const getMenuItems = computed(() => {
         onClick: copyLink
       },
       {
-        label: 'Download PDF',
-        icon: 'i-heroicons-arrow-down-tray-20-solid',
-        onClick: downloadPdf
-      },
-    ],
-    [
-      {
         label: 'Submission History',
         icon: 'i-heroicons-clock',
         onClick: () => {
           showSubmissionHistoryModal.value = true
-        }
-      },
-      {
-        label: 'Edit',
-        icon: 'i-heroicons-pencil-square-20-solid',
-        onClick: () => {
-          showEditSubmissionModal.value = true
         }
       }
     ],
