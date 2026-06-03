@@ -9,6 +9,7 @@ use App\Service\Storage\FileUploadPathService;
 use App\Models\Forms\Form;
 use App\Models\Forms\FormSubmission;
 use App\Service\Billing\Feature;
+use App\Service\Forms\FormAutoIncrementSequence;
 use App\Service\Forms\FormLogicPropertyResolver;
 use App\Service\Storage\StorageFileNameParser;
 use Illuminate\Bus\Queueable;
@@ -53,6 +54,7 @@ class StoreFormSubmissionJob implements ShouldQueue
     private bool $isPartial = false;
     private bool $isClientProvidedSubmissionId = false;
     private ?string $submitterIp = null;
+    private ?string $allocatedAutoIncrementId = null;
 
     /**
      * Create a new job instance.
@@ -282,7 +284,7 @@ class StoreFormSubmissionJob implements ShouldQueue
                     }
                 } elseif (isset($field['generates_auto_increment_id']) && $field['generates_auto_increment_id'] && $field['type'] == 'text') {
                     if (empty($answerValue) || !is_numeric($answerValue)) {
-                        $finalData[$field['id']] = $this->workspaceHasIdGenerationAccess() ? (string)($this->form->submissions_count + 1) : 'Please upgrade your OpenForm subscription to use our ID generation features';
+                        $finalData[$field['id']] = $this->autoIncrementIdValue();
                     } else {
                         $finalData[$field['id']] = $answerValue;
                     }
@@ -404,7 +406,7 @@ class StoreFormSubmissionJob implements ShouldQueue
                 }
 
                 if (isset($property['generates_auto_increment_id']) && $property['generates_auto_increment_id']) {
-                    $formData[$property['id']] = $this->workspaceHasIdGenerationAccess() ? (string)($this->form->submissions_count + 1) : 'Please upgrade your OpenForm subscription to use our ID generation features';
+                    $formData[$property['id']] = $this->autoIncrementIdValue();
                     return; // ID generated, so we skip prefill logic for this field.
                 }
             }
@@ -448,5 +450,18 @@ class StoreFormSubmissionJob implements ShouldQueue
         }
 
         return $workspace->hasFeature(Feature::ID_GENERATION);
+    }
+
+    private function autoIncrementIdValue(): string
+    {
+        if (!$this->workspaceHasIdGenerationAccess()) {
+            return 'Please upgrade your OpenForm subscription to use our ID generation features';
+        }
+
+        if ($this->allocatedAutoIncrementId === null) {
+            $this->allocatedAutoIncrementId = FormAutoIncrementSequence::allocateNext($this->form);
+        }
+
+        return $this->allocatedAutoIncrementId;
     }
 }
