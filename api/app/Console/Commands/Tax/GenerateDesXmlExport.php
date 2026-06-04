@@ -6,6 +6,7 @@ use App\Services\Tax\StripeExportDatasetService;
 use App\Services\Tax\StripeExportDatasetStore;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Storage;
 use Laravel\Cashier\Cashier;
 use Stripe\Invoice;
 
@@ -124,14 +125,49 @@ class GenerateDesXmlExport extends Command
         // Generate XML
         $xml = $this->generateXml($invoices);
 
-        // Save XML file with .xml extension
+        $xmlString = $xml->asXML();
+        if ($xmlString === false) {
+            $this->error('Failed to serialize XML.');
+            return Command::FAILURE;
+        }
+
         $period = Carbon::parse($startDate)->format('Ym');
         $filename = "DES_{$period}.xml";
-        file_put_contents(storage_path("app/{$filename}"), $xml->asXML());
+        $targetPath = storage_path("app/{$filename}");
 
-        $this->info("XML file generated: " . storage_path("app/{$filename}"));
+        try {
+            $writtenPath = $this->writeXmlFile($filename, $xmlString);
+        } catch (\Throwable $e) {
+            $this->error("Failed to write XML file: {$targetPath}");
+            $this->error($e->getMessage());
+            return Command::FAILURE;
+        }
+
+        $this->info("XML file generated: {$writtenPath}");
 
         return Command::SUCCESS;
+    }
+
+    /**
+     * Write XML atomically via a temporary file, then rename into place.
+     *
+     * @throws \RuntimeException
+     */
+    private function writeXmlFile(string $filename, string $contents): string
+    {
+        $disk = Storage::disk('local');
+        $tempFilename = $filename . '.' . uniqid('tmp', true);
+
+        if ($disk->put($tempFilename, $contents) === false) {
+            throw new \RuntimeException('Failed to write temporary XML file.');
+        }
+
+        if (!$disk->move($tempFilename, $filename)) {
+            $disk->delete($tempFilename);
+            throw new \RuntimeException("Failed to write XML file: {$disk->path($filename)}");
+        }
+
+        return $disk->path($filename);
     }
 
     private function getInvoices($startDate, $endDate)
