@@ -133,7 +133,7 @@ class WorkspacePolicy
         }
 
         if (!$workspace->hasFeature('invite_user')) {
-            return Response::deny('A Pro plan is required to invite users.');
+            return Response::deny('A Business plan is required to invite users with roles.');
         }
 
         // In case of special license, check license limit

@@ -193,6 +193,10 @@ class PlanAccessService
             return true;
         }
 
+        if ($this->workspaceHasLicenseFeatureGrant($workspace, $feature)) {
+            return true;
+        }
+
         $requiredTier = $featureMap[$feature] ?? null;
         if ($requiredTier === null) {
             return false;
@@ -216,5 +220,24 @@ class PlanAccessService
             array_keys(config('plans.features', [])),
             array_keys(config('plans.form_features', [])),
         )));
+    }
+
+    private function workspaceHasLicenseFeatureGrant(Workspace $workspace, string $feature): bool
+    {
+        $grants = config('plans.license_feature_grants', []);
+
+        foreach ($workspace->billingOwners() as $owner) {
+            $license = $owner->activeLicense();
+            if (!$license) {
+                continue;
+            }
+
+            $provider = $license->license_provider;
+            if (in_array($feature, $grants[$provider] ?? [], true)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

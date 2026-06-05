@@ -38,7 +38,6 @@ return [
         // Pro
         'branding.removal' => 'pro',
         'workspaces.multiple' => 'pro',
-        'invite_user' => 'pro',
         'custom_domain' => 'pro',
         'form_summary' => 'pro',
         'form_analytics' => 'pro',
@@ -59,7 +58,7 @@ return [
         // Business
         'branding.advanced' => 'business',  // CSS, fonts, favicons
         'custom_domain.wildcard' => 'business',
-        'multi_user.roles' => 'business',
+        'invite_user' => 'business',  // Invite users with roles
         'integrations.hubspot' => 'business',
         'integrations.salesforce' => 'business',
         'integrations.airtable' => 'business',
@@ -143,12 +142,20 @@ return [
     ],
 
     /**
+     * Features granted to active cloud license holders regardless of tier mapping.
+     * Currently only AppSumo licenses exist on cloud; they are Pro-tier but retain invite_user.
+     */
+    'license_feature_grants' => [
+        'appsumo' => ['invite_user'],
+    ],
+
+    /**
      * Self-hosted license configuration.
      * Maps License API feature keys to application feature keys from the 'features' section above.
      */
     'self_hosted_features' => [
         'sso' => ['sso.oidc', 'sso.saml', 'sso.ldap'],
-        'multiOrg' => ['workspaces.multiple', 'multi_user.roles'],
+        'multiOrg' => ['workspaces.multiple', 'invite_user'],
         'whitelabel' => ['branding.removal', 'branding.advanced', 'white_label'],
         'custom_smtp' => ['custom_smtp'],
         'audit_logs' => ['audit_logs', 'compliance_features'],

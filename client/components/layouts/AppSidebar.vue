@@ -136,7 +136,7 @@ const navigationSections = computed(() => [
         },
         color: 'primary'
       })] : []),
-      ...(workspace.value && can('workspaces.multiple') && !can('multi_user.roles') && !isSelfHosted.value ? [createNavItem({
+      ...(workspace.value && can('workspaces.multiple') && !can('invite_user') && !isSelfHosted.value ? [createNavItem({
         label: 'Upgrade to Business',
         icon: 'i-heroicons-sparkles-solid',
         onClick: () => {

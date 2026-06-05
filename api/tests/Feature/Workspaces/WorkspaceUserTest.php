@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Mail;
 use App\Mail\UserInvitationEmail;
 
 beforeEach(function () {
-    $this->user = $this->actingAsProUser();
+    $this->user = $this->actingAsBusinessUser();
     $this->workspace = Workspace::factory()->create();
     $this->workspace->users()->attach($this->user, ['role' => 'admin']);
 });
@@ -133,6 +133,70 @@ it('enforces appsumo license member limits when inviting users', function () {
         ]);
 
     expect($workspace->fresh()->users()->count())->toBe(1);
+});
+
+it('denies updating user roles for pro workspaces without invite_user', function () {
+    $owner = $this->createProUser();
+    $this->actingAs($owner);
+    $workspace = Workspace::factory()->create();
+    $workspace->users()->attach($owner, ['role' => 'admin']);
+    $member = User::factory()->create();
+    $workspace->users()->attach($member, ['role' => 'user']);
+    $workspace->flush();
+    $owner->flush();
+
+    $this->putJson(route('open.workspaces.users.update-role', [
+        'workspace' => $workspace,
+        'user' => $member,
+    ]), [
+        'role' => 'admin',
+    ])->assertStatus(403);
+
+    $role = \Illuminate\Support\Facades\DB::table('user_workspace')
+        ->where('workspace_id', $workspace->id)
+        ->where('user_id', $member->id)
+        ->value('role');
+
+    expect($role)->toBe('user');
+});
+
+it('denies inviting users for pro workspaces without invite_user', function () {
+    $owner = $this->createProUser();
+    $this->actingAs($owner);
+    $workspace = Workspace::factory()->create();
+    $workspace->users()->attach($owner, ['role' => 'admin']);
+    $workspace->flush();
+    $owner->flush();
+
+    $this->postJson(route('open.workspaces.users.add', ['workspace' => $workspace]), [
+        'email' => 'pro-denied@example.com',
+        'role' => 'user',
+    ])
+        ->assertStatus(403);
+
+    expect($workspace->fresh()->users()->count())->toBe(1);
+});
+
+it('allows appsumo licensed users to invite users on pro-tier workspaces', function () {
+    Mail::fake();
+
+    $owner = $this->createAppSumoLicensedUser(2);
+    $this->actingAs($owner);
+    $workspace = Workspace::factory()->create();
+    $workspace->users()->attach($owner, ['role' => 'admin']);
+    $workspace->flush();
+    $owner->flush();
+
+    $this->postJson(route('open.workspaces.users.add', ['workspace' => $workspace]), [
+        'email' => 'appsumo-invite@example.com',
+        'role' => 'user',
+    ])
+        ->assertSuccessful()
+        ->assertJson([
+            'message' => 'Registration invitation email sent to user.',
+        ]);
+
+    Mail::assertQueued(UserInvitationEmail::class);
 });
 
 it('allows inviting users when the workspace has an invite_user override', function () {

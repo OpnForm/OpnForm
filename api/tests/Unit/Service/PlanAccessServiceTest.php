@@ -62,3 +62,22 @@ it('fails closed for unknown workspace feature keys', function () {
     expect($this->service->hasFeature($workspace, 'unknown.feature'))->toBeFalse();
     expect($this->service->userHasFeature($user, 'unknown.feature'))->toBeFalse();
 });
+
+it('grants invite_user to business workspaces only for paid subscriptions', function () {
+    $proUser = $this->createProUser();
+    $proWorkspace = $this->createUserWorkspace($proUser);
+    $businessUser = $this->createBusinessUser();
+    $businessWorkspace = $this->createUserWorkspace($businessUser);
+
+    expect($this->service->hasFeature($proWorkspace, Feature::INVITE_USER))->toBeFalse();
+    expect($this->service->hasFeature($businessWorkspace, Feature::INVITE_USER))->toBeTrue();
+});
+
+it('grants invite_user to appsumo licensed workspaces on pro tier', function () {
+    $user = $this->createAppSumoLicensedUser(2);
+    $workspace = $this->createUserWorkspace($user);
+    $workspace->flush();
+
+    expect($workspace->fresh()->plan_tier)->toBe('pro');
+    expect($this->service->hasFeature($workspace->fresh(), Feature::INVITE_USER))->toBeTrue();
+});
