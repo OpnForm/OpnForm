@@ -155,7 +155,7 @@ return [
      */
     'self_hosted_features' => [
         'sso' => ['sso.oidc', 'sso.saml', 'sso.ldap'],
-        'multiOrg' => ['workspaces.multiple', 'invite_user'],
+        'multiOrg' => ['workspaces.multiple'],
         'whitelabel' => ['branding.removal', 'branding.advanced', 'white_label'],
         'custom_smtp' => ['custom_smtp'],
         'audit_logs' => ['audit_logs', 'compliance_features'],
