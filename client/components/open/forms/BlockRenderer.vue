@@ -320,8 +320,14 @@ const boundProps = computed(() => {
     inputProperties.minSlider = parseInt(field.slider_min_value) ?? 0
     inputProperties.maxSlider = parseInt(field.slider_max_value) ?? 50
     inputProperties.stepSlider = parseInt(field.slider_step_value) ?? 5
-  } else if (field.type === 'number' || (field.type === 'phone_number' && field.use_simple_text_input)) {
+  } else if (field.type === 'email') {
+    inputProperties.inputMode = 'email'
+  } else if (field.type === 'url') {
+    inputProperties.inputMode = 'url'
+  } else if (field.type === 'number') {
     inputProperties.pattern = '/d*'
+  } else if (field.type === 'phone_number' && field.use_simple_text_input) {
+    inputProperties.inputMode = 'tel'
   } else if (field.type === 'phone_number' && !field.use_simple_text_input) {
     inputProperties.unavailableCountries = field.unavailable_countries ?? []
   } else if (field.type === 'text' && field.secret_input) {
