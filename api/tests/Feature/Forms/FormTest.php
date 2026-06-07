@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Testing\Fluent\AssertableJson;
+use Illuminate\Support\Facades\Cache;
 
 it('can create a contact form', function () {
     $user = $this->actingAsUser();
@@ -88,6 +89,21 @@ it('can fetch a form', function () {
             'id' => $form->id,
             'title' => $form->title
         ]);
+});
+
+it('returns effective no_branding for form owners on self-hosted', function () {
+    config()->set('app.self_hosted', true);
+    Cache::flush();
+
+    $user = $this->actingAsUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace, [
+        'no_branding' => true,
+    ]);
+
+    $formData = (new \App\Http\Resources\FormResource($form))->toArray(request());
+
+    expect($formData['no_branding'])->toBeFalse();
 });
 
 it('does not leak workspace details on public form fetch', function () {

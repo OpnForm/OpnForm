@@ -29,7 +29,7 @@ class FormCleaner
 
     private array $cleaningMessages = [
         // For form
-        'no_branding' => 'OpenForm branding is not hidden.',
+        'no_branding' => 'OpnForm branding is not hidden.',
         'database_fields_update' => 'Form submission will only create new records (no updates).',
         'editable_submissions' => 'Users will not be able to edit their submissions.',
         'custom_code' => 'Custom code was disabled',
@@ -111,6 +111,7 @@ class FormCleaner
     public function processForm(Request $request, Form $form): FormCleaner
     {
         $data = (new FormResource($form))->toArray($request);
+        $data['no_branding'] = (bool) $form->no_branding;
 
         // Determine if custom code is allowed in this response context
         $allowOnSelfHosted = config('app.self_hosted', true) && (bool) config('opnform.custom_code.enable_self_hosted', false);
