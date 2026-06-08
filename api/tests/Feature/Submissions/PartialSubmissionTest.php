@@ -384,3 +384,20 @@ it('validates required fields when is_partial sent on free tier form', function 
         'is_partial' => true,
     ])->assertStatus(422);
 });
+
+it('validates required fields when is_partial is false on partial-enabled form', function () {
+    $user = $this->actingAsBusinessUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace, [
+        'enable_partial_submissions' => true,
+    ]);
+
+    $properties = $form->properties;
+    $properties[0]['required'] = true;
+    $form->update(['properties' => $properties]);
+
+    // is_partial: false is a completed submission — required fields must be validated
+    $this->postJson(route('forms.answer', $form->slug), [
+        'is_partial' => false,
+    ])->assertStatus(422);
+});
