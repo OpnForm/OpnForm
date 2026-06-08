@@ -2,9 +2,25 @@ import templateIndustries from './data/forms/templates/industries.json'
 import templateTypes from './data/forms/templates/types.json'
 import opnformConfig from './opnform.config.js'
 
+const apiBaseUrl = process.env.NUXT_PUBLIC_API_BASE || process.env.NUXT_PRIVATE_API_BASE || ''
+const sitemapLastmod = process.env.NUXT_PUBLIC_SITEMAP_LASTMOD || new Date().toISOString()
+
 export default {
-  exclude: ['/subscriptions/**', '/templates/my-templates', '/setup'],
-  sources: [`${process.env.NUXT_PUBLIC_API_BASE}sitemap-urls`],
+  exclude: [
+    '/admin',
+    '/forms/create',
+    '/forms/create/guest',
+    '/home',
+    '/login',
+    '/password/**',
+    '/redirect/**',
+    '/register',
+    '/self-hosted/checkout/**',
+    '/setup',
+    '/subscriptions/**',
+    '/templates/my-templates',
+  ],
+  sources: apiBaseUrl ? [joinUrl(apiBaseUrl, 'sitemap-urls')] : [],
   cacheMaxAgeSeconds: 60 * 60 * 2, // 2 hours
   xslColumns: [
     { label: 'URL', width: '50%' },
@@ -21,10 +37,15 @@ export default {
   }
 }
 
+function joinUrl (baseUrl, path) {
+  return `${baseUrl.replace(/\/+$/, '')}/${path.replace(/^\/+/, '')}`
+}
+
 function getTemplateTypesUrls () {
   return Object.values(templateTypes).map((feature) => {
     return {
       url: `/templates/types/${feature.slug}`,
+      lastmod: sitemapLastmod,
       changefreq: 'monthly',
       priority: 0.8
     }
@@ -35,6 +56,7 @@ function getTemplateIndustriesUrls () {
   return Object.values(templateIndustries).map((feature) => {
     return {
       url: `/templates/industries/${feature.slug}`,
+      lastmod: sitemapLastmod,
       changefreq: 'monthly',
       priority: 0.8
     }
@@ -61,6 +83,7 @@ async function getIntegrationsPages () {
       if (!slug || !published) return null
       return {
         url: `/integrations/${slug}`,
+        lastmod: page.LastEdited ?? page.lastEdited ?? page.lastmod ?? sitemapLastmod,
         changefreq: 'monthly',
         priority: 0.9
       }
