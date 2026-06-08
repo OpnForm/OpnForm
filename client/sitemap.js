@@ -3,6 +3,7 @@ import templateTypes from './data/forms/templates/types.json'
 import opnformConfig from './opnform.config.js'
 
 const apiBaseUrl = process.env.NUXT_PUBLIC_API_BASE || process.env.NUXT_PRIVATE_API_BASE || ''
+const sitemapLastmod = process.env.NUXT_PUBLIC_SITEMAP_LASTMOD || new Date().toISOString()
 
 export default {
   exclude: [
@@ -44,6 +45,7 @@ function getTemplateTypesUrls () {
   return Object.values(templateTypes).map((feature) => {
     return {
       url: `/templates/types/${feature.slug}`,
+      lastmod: sitemapLastmod,
       changefreq: 'monthly',
       priority: 0.8
     }
@@ -54,6 +56,7 @@ function getTemplateIndustriesUrls () {
   return Object.values(templateIndustries).map((feature) => {
     return {
       url: `/templates/industries/${feature.slug}`,
+      lastmod: sitemapLastmod,
       changefreq: 'monthly',
       priority: 0.8
     }
@@ -80,6 +83,7 @@ async function getIntegrationsPages () {
       if (!slug || !published) return null
       return {
         url: `/integrations/${slug}`,
+        lastmod: page.LastEdited ?? page.lastEdited ?? page.lastmod ?? sitemapLastmod,
         changefreq: 'monthly',
         priority: 0.9
       }
