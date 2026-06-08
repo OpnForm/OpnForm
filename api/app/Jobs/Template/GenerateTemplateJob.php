@@ -77,14 +77,36 @@ class GenerateTemplateJob implements ShouldQueue
      */
     private function getImageCoverUrl($searchQuery): ?string
     {
-        $url = 'https://api.unsplash.com/search/photos?query=' . urlencode($searchQuery) . '&client_id=' . config('services.unsplash.access_key');
-        $response = Http::get($url)->json();
-        $photoIndex = rand(0, max(count($response['results']) - 1, 10));
-        if (isset($response['results'][$photoIndex]['urls']['regular'])) {
-            return Str::of($response['results'][$photoIndex]['urls']['regular'])->replace('w=1080', 'w=600')->toString();
+        $searchQuery = trim((string) $searchQuery);
+        if ($searchQuery === '') {
+            return null;
         }
 
-        return null;
+        $accessKey = config('services.unsplash.access_key');
+        if (!$accessKey) {
+            return null;
+        }
+
+        $url = 'https://api.unsplash.com/search/photos?query=' . urlencode($searchQuery) . '&client_id=' . $accessKey;
+        $response = Http::get($url)->json();
+
+        if (!is_array($response)) {
+            return null;
+        }
+
+        $results = $response['results'] ?? null;
+        if (!is_array($results) || count($results) === 0) {
+            return null;
+        }
+
+        $photoIndex = random_int(0, count($results) - 1);
+        $photoUrl = $results[$photoIndex]['urls']['regular'] ?? null;
+
+        if (!$photoUrl) {
+            return null;
+        }
+
+        return Str::of($photoUrl)->replace('w=1080', 'w=600')->toString();
     }
 
     private function getRelatedTemplates(array $industries, array $types): array

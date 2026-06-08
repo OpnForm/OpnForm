@@ -6,7 +6,7 @@ use App\Exceptions\PdfNotSupportedException;
 use App\Models\Forms\Form;
 use App\Models\Forms\FormSubmission;
 use App\Models\PdfTemplate;
-use App\Service\Billing\Feature;
+use App\Service\Branding\BrandingPolicy;
 use App\Service\Forms\FormSubmissionFormatter;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -37,8 +37,7 @@ class PdfGeneratorService
         $submissionData = $this->getFormattedSubmissionData($form, $submission);
 
         // Check if branding should be added
-        $hasBrandingRemoval = $form->workspace?->hasFeature(Feature::BRANDING_REMOVAL) ?? false;
-        $addBranding = !($template->remove_branding && $hasBrandingRemoval);
+        $addBranding = !app(BrandingPolicy::class)->canRemoveBranding($form, (bool) $template->remove_branding);
 
         // Generate the PDF
         $pdfContent = $this->generatePdfContent($template, $zoneMappings, $submissionData, $addBranding);

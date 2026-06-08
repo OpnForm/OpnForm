@@ -17,7 +17,7 @@ class UserInviteController extends Controller
 
     public function listInvites(Request $request, Workspace $workspace)
     {
-        $this->authorize('view', $workspace);
+        $this->authorize('adminAction', $workspace);
 
         return (new WorkspaceHelper($workspace))->getAllInvites();
     }

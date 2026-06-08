@@ -65,6 +65,15 @@ class PlanAccessService
 
     public function hasFormFeature(Workspace $workspace, string $feature): bool
     {
+        if ($feature === 'no_branding') {
+            $overrideFeatures = $this->planOverrideResolver->getEffectiveOverrides($workspace)['features'] ?? [];
+            if (in_array($feature, $overrideFeatures, true)) {
+                return true;
+            }
+
+            return $this->hasFeature($workspace, Feature::BRANDING_REMOVAL);
+        }
+
         $featureMap = config('plans.form_features', []);
         $overrideFeatures = $this->planOverrideResolver->getEffectiveOverrides($workspace)['features'] ?? [];
 

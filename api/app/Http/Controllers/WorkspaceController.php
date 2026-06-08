@@ -7,6 +7,7 @@ use App\Http\Requests\Workspace\CustomCodeSettingsRequest;
 use App\Http\Requests\Workspace\EmailSettingsRequest;
 use App\Http\Resources\WorkspaceResource;
 use App\Models\Workspace;
+use App\Service\Billing\Feature;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -65,7 +66,7 @@ class WorkspaceController extends Controller
     public function saveCustomCodeSettings(CustomCodeSettingsRequest $request)
     {
         $this->authorize('adminAction', $request->workspace);
-        $request->workspace->requireFeature('branding.advanced');
+        $request->workspace->requireFeature(Feature::CUSTOM_CODE);
 
         $validated = $request->validated();
         $request->workspace->update([

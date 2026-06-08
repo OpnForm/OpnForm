@@ -3,6 +3,22 @@ title: "Changelog"
 description: "Notable updates to the OpnForm API."
 ---
 
+## 2026-05-27 – Workspace invite listing requires admin access
+
+The workspace invite listing endpoint now requires workspace admin access:
+
+* `GET /open/workspaces/{workspaceId}/invites`
+
+### What changed
+
+- Non-admin workspace members can no longer list pending or accepted workspace invites.
+- Personal Access Tokens must include `workspaces-write` and belong to a workspace admin.
+- Invite responses do not expose invite tokens.
+
+### Migration guide
+
+If your integration lists workspace invites, use an admin-owned token with the `workspaces-write` ability. Continue using `GET /open/workspaces/{workspaceId}/users` with `workspace-users-read` when you only need accepted workspace members.
+
 ## 2025-01-02 – Optimized form list endpoint
 
 The form list endpoint now returns **lightweight form summaries** for improved performance:

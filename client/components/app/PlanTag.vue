@@ -48,7 +48,7 @@ const props = defineProps({
 const { openSubscriptionModal } = useAppModals()
 const { data: user } = useAuth().user()
 const { current: workspace } = useCurrentWorkspace()
-const { getRequiredTier } = usePlanFeatures()
+const { getRequiredTier, hasFeature } = usePlanFeatures()
 const { currentWorkspaceTier, getTierDisplayName, tierMeetsRequirement } = useBillingUpsell()
 
 // Determine the display tier (either explicit or from feature)
@@ -64,6 +64,7 @@ const shouldDisplayTag = computed(() => {
   if (!isSelfHostedRequired && useFeatureFlag('self_hosted')) return false
   if (!isSelfHostedRequired && !useFeatureFlag('billing.enabled')) return false
   if (!displayTier.value) return false
+  if (props.feature && hasFeature(props.feature)) return false
   if (!user.value || !workspace.value) return true
 
   // Show tag if current tier doesn't meet requirement

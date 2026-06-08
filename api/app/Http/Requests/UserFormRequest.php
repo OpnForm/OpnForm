@@ -36,6 +36,10 @@ abstract class UserFormRequest extends \Illuminate\Foundation\Http\FormRequest
 
         if (isset($data['properties']) && is_array($data['properties'])) {
             $data['properties'] = array_map(function ($property) {
+                if (!is_array($property)) {
+                    return $property;
+                }
+
                 if (isset($property['name']) && is_string($property['name'])) {
                     $property['name'] = trim(strip_tags($property['name']));
                 }
@@ -46,11 +50,42 @@ abstract class UserFormRequest extends \Illuminate\Foundation\Http\FormRequest
                         $property['help'] = null;
                     }
                 }
+                $property = $this->normalizeSelectOptionIds($property);
                 return $property;
             }, $data['properties']);
         }
 
         $this->merge($data);
+    }
+
+    /**
+     * Backfill option ids for legacy select fields before strict property validation runs.
+     */
+    private function normalizeSelectOptionIds(array $property): array
+    {
+        $type = $property['type'] ?? null;
+
+        if (!in_array($type, ['select', 'multi_select'], true)) {
+            return $property;
+        }
+
+        if (!isset($property[$type]['options']) || !is_array($property[$type]['options'])) {
+            return $property;
+        }
+
+        $property[$type]['options'] = array_map(function ($option) {
+            if (!is_array($option) || !empty($option['id'] ?? null)) {
+                return $option;
+            }
+
+            if (!empty($option['name'] ?? null) && is_string($option['name'])) {
+                $option['id'] = $option['name'];
+            }
+
+            return $option;
+        }, $property[$type]['options']);
+
+        return $property;
     }
 
     /**
