@@ -126,14 +126,30 @@ class WorkspacePolicy
         return false;
     }
 
-    public function inviteUser(User $user, Workspace $workspace)
+    public function manageWorkspaceMembers(User $user, Workspace $workspace)
     {
         if (!$this->adminAction($user, $workspace)) {
             return Response::deny('You need to be an admin of this workspace to do this.');
         }
 
         if (!$workspace->hasFeature('invite_user')) {
-            return Response::deny('A Business plan is required to invite users with roles.');
+            return Response::deny('A Business plan is required to manage workspace members.');
+        }
+
+        if ($token = $user->currentAccessToken()) {
+            if (! $token->can('workspaces-write')) {
+                return Response::deny('Token lacks workspaces:write ability.');
+            }
+        }
+
+        return true;
+    }
+
+    public function inviteUser(User $user, Workspace $workspace)
+    {
+        $manageMembers = $this->manageWorkspaceMembers($user, $workspace);
+        if ($manageMembers !== true) {
+            return $manageMembers;
         }
 
         // In case of special license, check license limit
@@ -142,13 +158,6 @@ class WorkspacePolicy
             $userActiveMembers = (new UserHelper($billingOwner))->getActiveMembersCount();
             if ($userActiveMembers >= $license->max_users_limit_count) {
                 return Response::deny('You have reached the maximum number of users allowed with your license.');
-            }
-        }
-
-        // If using Sanctum token, require write ability first
-        if ($token = $user->currentAccessToken()) {
-            if (! $token->can('workspaces-write')) {
-                return Response::deny('Token lacks workspaces:write ability.');
             }
         }
 

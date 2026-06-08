@@ -222,3 +222,58 @@ it('allows inviting users when the workspace has an invite_user override', funct
 
     Mail::assertQueued(UserInvitationEmail::class);
 });
+
+it('allows managing members at appsumo seat limit without adding new users', function () {
+    Mail::fake();
+
+    $owner = $this->createAppSumoLicensedUser(2);
+    $this->actingAs($owner);
+    $workspace = Workspace::factory()->create();
+    $workspace->users()->attach($owner, ['role' => 'admin']);
+
+    $members = User::factory()->count(4)->create();
+    foreach ($members as $member) {
+        $workspace->users()->attach($member, ['role' => 'user']);
+    }
+
+    $targetMember = $members->first();
+    $pendingInvite = \App\Models\UserInvite::create([
+        'email' => 'stale-invite@example.com',
+        'role' => 'user',
+        'workspace_id' => $workspace->id,
+        'valid_until' => now()->addDays(7),
+        'status' => \App\Models\UserInvite::PENDING_STATUS,
+        'token' => 'stale-invite-token',
+    ]);
+
+    $workspace->flush();
+    $owner->flush();
+
+    $this->postJson(route('open.workspaces.users.add', ['workspace' => $workspace]), [
+        'email' => 'seat-limit@example.com',
+        'role' => 'user',
+    ])->assertStatus(403);
+
+    $this->putJson(route('open.workspaces.users.update-role', [
+        'workspace' => $workspace,
+        'user' => $targetMember,
+    ]), [
+        'role' => 'admin',
+    ])->assertSuccessful();
+
+    $this->postJson(route('open.workspaces.invites.resend', [
+        'workspace' => $workspace,
+        'inviteId' => $pendingInvite->id,
+    ]))->assertSuccessful();
+
+    $this->deleteJson(route('open.workspaces.invites.cancel', [
+        'workspace' => $workspace,
+        'inviteId' => $pendingInvite->id,
+    ]))->assertSuccessful();
+
+    expect($workspace->fresh()->invites()->whereKey($pendingInvite->id)->exists())->toBeFalse();
+    expect(\Illuminate\Support\Facades\DB::table('user_workspace')
+        ->where('workspace_id', $workspace->id)
+        ->where('user_id', $targetMember->id)
+        ->value('role'))->toBe('admin');
+});
