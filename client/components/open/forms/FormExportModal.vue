@@ -73,7 +73,7 @@
               <div class="space-y-3">
                 <p class="text-red-600 font-semibold text-lg">Export failed</p>
                 <p class="text-sm text-neutral-600">{{ exportError }}</p>
-                <UButton color="red" @click="closeModal">Close</UButton>
+                <UButton color="neutral" @click="closeModal" label="Close" />
               </div>
             </div>
 

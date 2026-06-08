@@ -26,7 +26,7 @@ return new class () extends Migration {
      */
     public function down()
     {
-        Schema::table('workspaces', function (Blueprint $table) {
+        Schema::table('user_workspace', function (Blueprint $table) {
             $table->string('access_token')->nullable();
             $table->boolean('is_owner')->default(true);
             $table->dropColumn('role');

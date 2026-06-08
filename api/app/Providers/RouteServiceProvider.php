@@ -56,6 +56,16 @@ class RouteServiceProvider extends ServiceProvider
             return Limit::perMinute(30)->by($request->user()?->id ?: $request->ip());
         });
 
+        // Export endpoints use dedicated buckets so long-running CSV exports
+        // are not blocked by the general API rate limit.
+        RateLimiter::for('export', function (Request $request) {
+            return Limit::perMinute(10)->by($request->user()?->id ?: $request->ip());
+        });
+
+        RateLimiter::for('export-status', function (Request $request) {
+            return Limit::perMinute(180)->by($request->user()?->id ?: $request->ip());
+        });
+
         RateLimiter::for('public-uploads', function (Request $request) {
             $identifier = $request->user()
                 ? 'user:' . $request->user()->getAuthIdentifier()

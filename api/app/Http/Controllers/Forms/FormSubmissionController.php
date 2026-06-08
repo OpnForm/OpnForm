@@ -86,7 +86,9 @@ class FormSubmissionController extends Controller
 
         $submissionData = $request->validated();
         $submissionData['submission_id'] = $submission->id;
-        (new StoreFormSubmissionJob($form, $submissionData))->handle();
+        $job = new StoreFormSubmissionJob($form, $submissionData);
+        $job->allowCompletedUpdate = true;
+        $job->handle();
 
         $submission = $submission->fresh()->setRelation('form', $form);
         $data = new FormSubmissionResource($submission);
