@@ -278,7 +278,7 @@ paths:
             tags:
                 - Workspace Users
             summary: List Workspace Invites
-            description: "Requires `workspace-users-read`. Lists pending & accepted invites."
+            description: "Requires workspace admin access. Personal Access Tokens must include `workspaces-write` and belong to a workspace admin. Lists pending & accepted invites."
             security:
                 - bearerAuth: []
             parameters:
