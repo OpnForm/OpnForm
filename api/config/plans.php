@@ -57,6 +57,7 @@ return [
 
         // Business
         'branding.advanced' => 'business',  // CSS, fonts, favicons
+        'custom_code' => 'business',
         'custom_domain.wildcard' => 'business',
         'invite_user' => 'business',  // Invite users with roles
         'integrations.hubspot' => 'business',
@@ -160,6 +161,6 @@ return [
         'custom_smtp' => ['custom_smtp'],
         'audit_logs' => ['audit_logs', 'compliance_features'],
         'external_storage' => ['external_storage'],
-        'custom_code' => ['custom_code', 'custom_css', 'branding.advanced'],
+        'custom_code' => ['custom_code', 'custom_css'],
     ],
 ];

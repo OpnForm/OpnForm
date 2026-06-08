@@ -1,7 +1,9 @@
 <?php
 
 use App\Service\Forms\FormCleaner;
+use App\Service\License\LicenseCheckResult;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 uses(\Tests\TestCase::class);
 
@@ -151,6 +153,52 @@ describe('FormCleaner tier-based cleaning', function () {
         // Pro features should remain for pro tier
         expect($data['no_branding'])->toBeTrue();
         expect($data['redirect_url'])->toBe('https://example.com/thanks');
+    });
+
+    it('cleans no_branding on self-hosted without whitelabel license', function () {
+        config()->set('app.self_hosted', true);
+        Cache::flush();
+
+        $user = $this->actingAsUser();
+        $workspace = $this->createUserWorkspace($user);
+
+        $form = $this->createForm($user, $workspace, [
+            'no_branding' => true,
+        ]);
+
+        $request = Request::create('/', 'GET');
+        $cleaner = (new FormCleaner())->processForm($request, $form);
+        $cleaner->performCleaning($workspace);
+        $data = $cleaner->getData();
+
+        expect($data['no_branding'])->toBeFalse();
+    });
+
+    it('keeps no_branding on self-hosted with whitelabel license', function () {
+        config()->set('app.self_hosted', true);
+        $this->storeSelfHostedLicense([
+            'license_key' => 'lic_whitelabel12345',
+        ]);
+
+        Cache::put('self_hosted_license_check', new LicenseCheckResult(
+            status: 'active',
+            features: ['whitelabel' => true],
+            lastChecked: now(),
+        ), 86400);
+
+        $user = $this->actingAsUser();
+        $workspace = $this->createUserWorkspace($user);
+
+        $form = $this->createForm($user, $workspace, [
+            'no_branding' => true,
+        ]);
+
+        $request = Request::create('/', 'GET');
+        $cleaner = (new FormCleaner())->processForm($request, $form);
+        $cleaner->performCleaning($workspace);
+        $data = $cleaner->getData();
+
+        expect($data['no_branding'])->toBeTrue();
     });
 
     it('cleans business features from pro tier workspace', function () {
@@ -310,7 +358,7 @@ describe('FormCleaner tier-based cleaning', function () {
 
         $cleanings = $cleaner->getPerformedCleanings();
         expect($cleanings)->toHaveKey('form');
-        expect($cleanings['form']->toArray())->toContain('OpenForm branding is not hidden.');
+        expect($cleanings['form']->toArray())->toContain('OpnForm branding is not hidden.');
         expect($cleanings['form']->toArray())->toContain('Redirect Url was disabled');
         expect($cleanings['form']->toArray())->toContain('Partial submissions were disabled');
         expect($cleanings['form']->toArray())->toContain('IP tracking was disabled');

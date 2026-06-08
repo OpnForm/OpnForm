@@ -10,7 +10,7 @@
 
       <div class="flex shrink-0 items-center gap-2">
         <UButton
-          v-if="!workspace.is_readonly"
+          v-if="canManageMembers"
           label="Invite User"
           icon="i-heroicons-user-plus-20-solid"
           :loading="isLoadingData"
@@ -126,6 +126,7 @@
     </UModal>
 
     <WorkspacesSettingsInviteUser
+      v-if="canManageMembers"
       v-model="showInviteUserModal"
       @user-added="handleUserAdded"
     />
@@ -151,6 +152,7 @@ const auth = useAuth()
 
 // Get current user
 const { data: user } = auth.user()
+const canManageMembers = computed(() => workspace?.value?.is_admin ?? false)
 
 // Reactive state
 const showEditUserModal = ref(false)
@@ -174,10 +176,12 @@ const columnPinning = ref({
 
 // Get workspace users and invites reactively
 const { data: workspaceUsers, isLoading: isLoadingUsers } = users(workspaceId)
-const { data: workspaceInvites, isLoading: isLoadingInvites } = invites(workspaceId)
+const { data: workspaceInvites, isLoading: isLoadingInvites } = invites(workspaceId, {
+  enabled: computed(() => !!workspaceId.value && canManageMembers.value)
+})
 
 // Combined loading state
-const isLoadingData = computed(() => (isLoadingUsers?.value || isLoadingInvites?.value) ?? false)
+const isLoadingData = computed(() => (isLoadingUsers?.value || (canManageMembers.value && isLoadingInvites?.value)) ?? false)
 
 // Transform and combine data reactively
 const combinedUsers = computed(() => {
@@ -212,7 +216,6 @@ const combinedUsers = computed(() => {
 
 // Table columns configuration
 const tableColumns = computed(() => {
-  const isAdmin = workspace?.value?.is_admin ?? false
   return [
     {
       id: 'name',
@@ -229,7 +232,7 @@ const tableColumns = computed(() => {
       accessorKey: 'role',
       header: 'Role'
     },
-    ...(isAdmin ? [
+    ...(canManageMembers.value ? [
       {
         id: 'actions',
         header: '',
@@ -239,13 +242,15 @@ const tableColumns = computed(() => {
 
 // User management handlers
 const editUser = (user) => {
+  if (!canManageMembers.value) return
+
   selectedUser.value = user
   editUserForm.role = selectedUser.value.pivot?.role || selectedUser.value.role
   showEditUserModal.value = true
 }
 
 const updateUserRole = () => {
-  if (!workspaceId.value || !selectedUser.value?.id) return
+  if (!workspaceId.value || !selectedUser.value?.id || !canManageMembers.value) return
 
   updateMutation.mutateAsync({
     userId: selectedUser.value.id,
@@ -259,7 +264,7 @@ const updateUserRole = () => {
 }
 
 const removeUserHandler = (user) => {
-  if (!workspaceId.value) return
+  if (!workspaceId.value || !canManageMembers.value) return
 
   alert.confirm("Do you really want to remove " + user.name + " from this workspace?", () => {
     removeMutation.mutateAsync(user.id).then(() => {
@@ -272,7 +277,7 @@ const removeUserHandler = (user) => {
 
 // Invite management handlers  
 const resendInviteHandler = (invite) => {
-  if (!workspaceId.value) return
+  if (!workspaceId.value || !canManageMembers.value) return
 
   alert.confirm("Do you really want to resend invite email to this user?", () => {
     resendMutation.mutateAsync(invite.id).then(() => {
@@ -284,7 +289,7 @@ const resendInviteHandler = (invite) => {
 }
 
 const cancelInviteHandler = (invite) => {
-  if (!workspaceId.value) return
+  if (!workspaceId.value || !canManageMembers.value) return
 
   alert.confirm("Do you really want to cancel this user's invitation to this workspace?", () => {
     cancelMutation.mutateAsync(invite.id).then(() => {

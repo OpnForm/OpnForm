@@ -17,6 +17,7 @@ services:
       FRONT_URL: http://localhost:3000
       APP_KEY: base64:dD8AFEB45nKZ0VWmIPiW495rDYb+ywRJnCCSdycw0pI=
       JWT_SECRET: 38hjE96gYu4ceKSSHNnzgeynMr2m3WkNBN2u7zzpVeiITtxFEloxAjcr7TCKuiiy
+      JWT_SKIP_IP_UA_VALIDATION: "true"
       # Database settings
       DB_HOST: db
       DB_DATABASE: ${DB_DATABASE:-forge}

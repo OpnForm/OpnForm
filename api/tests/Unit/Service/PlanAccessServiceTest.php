@@ -3,6 +3,8 @@
 use App\Exceptions\FeatureAccessDeniedException;
 use App\Service\Billing\Feature;
 use App\Service\Billing\PlanAccessService;
+use App\Service\License\LicenseCheckResult;
+use Illuminate\Support\Facades\Cache;
 
 uses(\Tests\TestCase::class);
 
@@ -46,6 +48,55 @@ it('does not leak paid workspace or form features into a free workspace payload'
     expect($features)->toBe([]);
     expect($this->service->hasFeature($workspace, Feature::BRANDING_REMOVAL))->toBeFalse();
     expect($this->service->hasFormFeature($workspace, 'redirect_url'))->toBeFalse();
+});
+
+it('requires self-hosted whitelabel for branding removal and no_branding', function () {
+    config()->set('app.self_hosted', true);
+    Cache::flush();
+
+    $user = $this->createUser();
+    $workspace = $this->createUserWorkspace($user);
+
+    expect($this->service->hasFeature($workspace, Feature::BRANDING_REMOVAL))->toBeFalse();
+    expect($this->service->hasFormFeature($workspace, 'no_branding'))->toBeFalse();
+});
+
+it('does not grant custom code with self-hosted whitelabel only', function () {
+    config()->set('app.self_hosted', true);
+    $this->storeSelfHostedLicense([
+        'license_key' => 'lic_whitelabel12345',
+    ]);
+
+    Cache::put('self_hosted_license_check', new LicenseCheckResult(
+        status: 'active',
+        features: ['whitelabel' => true],
+        lastChecked: now(),
+    ), 86400);
+
+    $user = $this->createUser();
+    $workspace = $this->createUserWorkspace($user);
+
+    expect($this->service->hasFeature($workspace, Feature::CUSTOM_CODE))->toBeFalse();
+    expect($this->service->hasFeature($workspace, Feature::BRANDING_ADVANCED))->toBeTrue();
+});
+
+it('grants branding removal and no_branding with self-hosted whitelabel', function () {
+    config()->set('app.self_hosted', true);
+    $this->storeSelfHostedLicense([
+        'license_key' => 'lic_whitelabel12345',
+    ]);
+
+    Cache::put('self_hosted_license_check', new LicenseCheckResult(
+        status: 'active',
+        features: ['whitelabel' => true],
+        lastChecked: now(),
+    ), 86400);
+
+    $user = $this->createUser();
+    $workspace = $this->createUserWorkspace($user);
+
+    expect($this->service->hasFeature($workspace, Feature::BRANDING_REMOVAL))->toBeTrue();
+    expect($this->service->hasFormFeature($workspace, 'no_branding'))->toBeTrue();
 });
 
 it('throws a feature exception when access is denied', function () {

@@ -256,7 +256,6 @@ const showGoogleFontPicker = ref(false)
 const { $i18n } = useNuxtApp()
 
 const isPro = computed(() => {
-  if (!useFeatureFlag('billing.enabled')) return true
   return hasFeature('branding.removal')
 })
 
