@@ -179,4 +179,32 @@ describe('OpnForm public SDK postMessage security', () => {
       'https://embedder.example.test',
     )
   })
+
+  it('rejects commands when handshake times out without ack', async () => {
+    vi.useFakeTimers()
+
+    const dom = new JSDOM(
+      '<!doctype html><html><body><iframe id="demo" src="https://forms.example.test/forms/demo"></iframe></body></html>',
+      {
+        url: 'https://embedder.example.test/',
+        runScripts: 'outside-only',
+      },
+    )
+
+    dom.window.eval(sdkSource)
+    const iframe = dom.window.document.getElementById('demo') as HTMLIFrameElement
+
+    vi.spyOn(iframe.contentWindow!, 'postMessage').mockImplementation(() => {})
+    dom.window.opnform._forms = {}
+    dom.window.opnform.init({ autoResize: false, preventRedirect: true })
+
+    const form = dom.window.opnform.get('demo')
+    const commandPromise = form.setField('email', 'user@example.test')
+    const assertion = expect(commandPromise).rejects.toThrow('SDK handshake timeout')
+
+    await vi.advanceTimersByTimeAsync(3000)
+    await assertion
+
+    vi.useRealTimers()
+  })
 })

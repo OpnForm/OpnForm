@@ -147,6 +147,7 @@
       this._handshakeComplete = false
       this._handshakePromise = null
       this._handshakeResolve = null
+      this._handshakeReject = null
       this._handshakeRetryTimer = null
     }
 
@@ -164,8 +165,9 @@
     }
 
     _createHandshakePromise() {
-      return new Promise((resolve) => {
+      return new Promise((resolve, reject) => {
         this._handshakeResolve = resolve
+        this._handshakeReject = reject
         this._sendHandshake()
 
         this._handshakeRetryTimer = setInterval(() => {
@@ -174,13 +176,18 @@
         }, 250)
 
         setTimeout(() => {
+          if (this._handshakeComplete) return
+
           if (this._handshakeRetryTimer) {
             clearInterval(this._handshakeRetryTimer)
             this._handshakeRetryTimer = null
           }
-          if (!this._handshakeComplete) {
-            this._handshakeComplete = true
-            resolve()
+
+          this._handshakePromise = null
+          this._handshakeResolve = null
+          if (this._handshakeReject) {
+            this._handshakeReject(new Error('SDK handshake timeout'))
+            this._handshakeReject = null
           }
         }, 3000)
       })
@@ -209,18 +216,27 @@
     }
 
     _handleHandshakeAck(message) {
-      if (message.success === false) return
-
-      this._handshakeComplete = true
-
       if (this._handshakeRetryTimer) {
         clearInterval(this._handshakeRetryTimer)
         this._handshakeRetryTimer = null
       }
 
+      if (message.success === false) {
+        this._handshakePromise = null
+        this._handshakeResolve = null
+        if (this._handshakeReject) {
+          this._handshakeReject(new Error('SDK handshake rejected'))
+          this._handshakeReject = null
+        }
+        return
+      }
+
+      this._handshakeComplete = true
+
       if (this._handshakeResolve) {
         this._handshakeResolve()
         this._handshakeResolve = null
+        this._handshakeReject = null
       }
     }
 

@@ -10,19 +10,19 @@ export function resolveInitialTrustedOrigin(isIframe) {
     if (parentOrigin) {
       return new URL(decodeURIComponent(parentOrigin), window.location.href).origin
     }
-  } catch (_) { /* ignore */ }
+  } catch { /* ignore */ }
 
   try {
     if (window.location.ancestorOrigins?.length) {
       return window.location.ancestorOrigins[window.location.ancestorOrigins.length - 1]
     }
-  } catch (_) { /* ignore */ }
+  } catch { /* ignore */ }
 
   try {
     if (document.referrer) {
       return new URL(document.referrer).origin
     }
-  } catch (_) { /* ignore */ }
+  } catch { /* ignore */ }
 
   return null
 }
@@ -33,7 +33,7 @@ export function readSdkTokenFromUrl() {
   try {
     const params = new URLSearchParams(window.location.search)
     return params.get('_sdkToken') || null
-  } catch (_) {
+  } catch {
     return null
   }
 }
