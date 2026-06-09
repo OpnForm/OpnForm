@@ -89,7 +89,16 @@ export function useParseMention(content, mentionsAllowed, form, formData, comput
     return content
   }
 
-  // Early return for empty/falsy content
+  // Early return for null/undefined only (0 and false are valid values)
+  if (content == null) {
+    return content
+  }
+
+  // Coerce non-string content (e.g. numeric payment amounts) — mentions only exist in strings
+  if (typeof content !== 'string') {
+    return String(content)
+  }
+
   if (!content) {
     return content
   }
