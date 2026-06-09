@@ -10,8 +10,9 @@ return new class () extends Migration {
      */
     public function up(): void
     {
-        // Drop table if it exists (from failed migration) to ensure clean state
-        Schema::dropIfExists('user_identities');
+        if (Schema::hasTable('user_identities')) {
+            return;
+        }
 
         Schema::create('user_identities', function (Blueprint $table) {
             $table->id();

@@ -16,6 +16,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Stevebauman\Purify\Facades\Purify;
@@ -48,6 +49,12 @@ class StoreFormSubmissionJob implements ShouldQueue
     use SerializesModels;
 
     public ?int $submissionId = null;
+
+    /**
+     * When true, allows updating a completed submission (admin edit path only).
+     */
+    public bool $allowCompletedUpdate = false;
+
     private ?array $formData = null;
     private ?int $completionTime = null;
     private bool $isPartial = false;
@@ -172,46 +179,50 @@ class StoreFormSubmissionJob implements ShouldQueue
      */
     private function storeSubmission(array $formData)
     {
-        // Handle record update
-        if ($recordToUpdate = $this->resolveRecordToUpdate($this->submissionData)) {
-            $this->submissionId = $recordToUpdate;
-        }
-
-        $submission = $this->submissionId
-            ? $this->form->submissions()->findOrFail($this->submissionId)
-            : new FormSubmission();
-        if (!$this->submissionId) {
-            $submission->form_id = $this->form->id;
-        }
-        $submission->data = $formData;
-        $submission->completion_time = $this->completionTime;
-
-        // Determine submission status
-        // Never allow a completed submission to be reverted to partial (prevents race conditions)
-        if ($this->isPartial) {
-            // Only set partial status if submission is new OR not already completed
-            if (!$this->submissionId || $submission->status !== FormSubmission::STATUS_COMPLETED) {
-                $submission->status = FormSubmission::STATUS_PARTIAL;
+        DB::transaction(function () use ($formData) {
+            // Handle record update
+            if ($recordToUpdate = $this->resolveRecordToUpdate($this->submissionData)) {
+                $this->submissionId = $recordToUpdate;
             }
-            // If already completed, keep it completed (ignore the partial flag)
-        } else {
-            $submission->status = FormSubmission::STATUS_COMPLETED;
-        }
 
-        // Generate a new UUID for new submissions
-        if (!$this->submissionId) {
-            $submission->public_id = \Illuminate\Support\Str::uuid()->toString();
-        }
+            if ($this->submissionId) {
+                $submission = $this->form->submissions()->lockForUpdate()->findOrFail($this->submissionId);
 
-        // Store IP address in meta if IP tracking is enabled (business feature)
-        if ($this->form->enable_ip_tracking && $this->form->workspace->hasFeature('enable_ip_tracking') && $this->submitterIp) {
-            $existingMeta = $submission->meta ?? [];
-            $existingMeta['ip_address'] = $this->submitterIp;
-            $submission->meta = $existingMeta;
-        }
+                // Completed submissions are terminal for public/partial saves (prevents race overwrites)
+                if (
+                    $this->isPartial
+                    && !$this->allowCompletedUpdate
+                    && $submission->status === FormSubmission::STATUS_COMPLETED
+                ) {
+                    return;
+                }
+            } else {
+                $submission = new FormSubmission();
+                $submission->form_id = $this->form->id;
+            }
 
-        $submission->save();
-        $this->submissionId = $submission->id;
+            $submission->data = $formData;
+            $submission->completion_time = $this->completionTime;
+
+            if ($this->isPartial) {
+                $submission->status = FormSubmission::STATUS_PARTIAL;
+            } else {
+                $submission->status = FormSubmission::STATUS_COMPLETED;
+            }
+
+            if (!$this->submissionId) {
+                $submission->public_id = Str::uuid()->toString();
+            }
+
+            if ($this->form->enable_ip_tracking && $this->form->workspace->hasFeature('enable_ip_tracking') && $this->submitterIp) {
+                $existingMeta = $submission->meta ?? [];
+                $existingMeta['ip_address'] = $this->submitterIp;
+                $submission->meta = $existingMeta;
+            }
+
+            $submission->save();
+            $this->submissionId = $submission->id;
+        });
     }
 
     /**

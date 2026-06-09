@@ -8,7 +8,9 @@ Retrieve all pending or accepted invitations for a workspace.
 
 ## Authentication & Scope
 
-Requires `workspace-users-read` ability. The requester must be a member of the workspace.
+Requires workspace admin access.
+
+For Personal Access Tokens, the token must include the `workspaces-write` ability and the token owner must be an admin of the workspace. Non-admin workspace members and tokens with only `workspace-users-read` cannot list invites.
 
 ## Request
 
@@ -40,4 +42,4 @@ Authorization: Bearer <token>
 ]
 ```
 
-`403 Forbidden` – Token lacks `workspace-users-read` or you lack access.
+`403 Forbidden` – You are not a workspace admin, or your token lacks `workspaces-write`.

@@ -6,6 +6,7 @@ use App\Events\Forms\FormSubmitted;
 use App\Models\Forms\FormSubmission;
 use App\Models\PdfTemplate;
 use App\Open\MentionParser;
+use App\Service\Branding\BrandingPolicy;
 use App\Service\Billing\Feature;
 use App\Service\Forms\FormSubmissionFormatter;
 use App\Service\Forms\SubmissionUrlService;
@@ -302,7 +303,7 @@ class FormEmailNotification extends Notification
             'fields' => $this->formatSubmissionData(),
             'form' => $form,
             'integrationData' => $this->integrationData,
-            'noBranding' => $form->no_branding,
+            'noBranding' => app(BrandingPolicy::class)->canRemoveFormBranding($form),
             'submission_id' => $this->getEncodedSubmissionId(),
             'emailAppearance' => $emailAppearance,
         ];
