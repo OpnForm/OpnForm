@@ -285,6 +285,49 @@ it('does not change publicly_listed when editors omit the field on update', func
         ->and($template->publicly_listed)->toBeTrue();
 });
 
+it('preserves template list fields when omitted on update', function () {
+    config(['opnform.template_editor_emails' => ['editor@example.com']]);
+
+    $user = $this->createUser(['email' => 'editor@example.com']);
+    $this->actingAsUser($user);
+
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->makeForm($user, $workspace);
+
+    $template = Template::create([
+        'name' => 'Array Template',
+        'slug' => 'array-template',
+        'short_description' => 'Short description',
+        'description' => 'Description',
+        'image_url' => 'https://example.com/image.jpg',
+        'publicly_listed' => false,
+        'structure' => $form->getAttributes(),
+        'questions' => [['question' => 'Q1', 'answer' => 'A1']],
+        'industries' => ['healthcare'],
+        'types' => ['survey'],
+        'related_templates' => ['other-template'],
+    ]);
+    $template->creator_id = $user->id;
+    $template->save();
+
+    $payload = templateRequestPayload($form, [
+        'slug' => 'array-template',
+        'name' => 'Renamed Array Template',
+    ]);
+    unset($payload['types'], $payload['industries'], $payload['related_templates'], $payload['questions']);
+
+    $this->putJson(route('templates.update', ['id' => $template->id]), $payload)
+        ->assertSuccessful();
+
+    $template->refresh();
+
+    expect($template->name)->toBe('Renamed Array Template')
+        ->and($template->types)->toBe(['survey'])
+        ->and($template->industries)->toBe(['healthcare'])
+        ->and($template->related_templates)->toBe(['other-template'])
+        ->and($template->questions)->toBe([['question' => 'Q1', 'answer' => 'A1']]);
+});
+
 it('stores empty arrays instead of null for template list fields on update', function () {
     config(['opnform.template_editor_emails' => ['editor@example.com']]);
 

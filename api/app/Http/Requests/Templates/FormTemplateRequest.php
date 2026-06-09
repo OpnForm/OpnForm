@@ -7,6 +7,13 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class FormTemplateRequest extends FormRequest
 {
+    private const LIST_FIELDS = [
+        'types',
+        'industries',
+        'related_templates',
+        'questions',
+    ];
+
     public const IGNORED_KEYS = [
         'id',
         'creator',
@@ -60,7 +67,7 @@ class FormTemplateRequest extends FormRequest
 
     public function getTemplate(): Template
     {
-        $template = new Template($this->getMutableAttributes());
+        $template = new Template($this->getMutableAttributes(includeOptionalListFields: true));
         $template->creator_id = $this->user()?->id;
 
         return $template;
@@ -71,13 +78,13 @@ class FormTemplateRequest extends FormRequest
      */
     public function getUpdateAttributes(): array
     {
-        return $this->getMutableAttributes();
+        return $this->getMutableAttributes(includeOptionalListFields: false);
     }
 
     /**
      * @return array<string, mixed>
      */
-    private function getMutableAttributes(): array
+    private function getMutableAttributes(bool $includeOptionalListFields): array
     {
         $attributes = [
             'name' => $this->input('name'),
@@ -86,11 +93,13 @@ class FormTemplateRequest extends FormRequest
             'description' => $this->input('description'),
             'image_url' => $this->input('image_url'),
             'structure' => $this->cleanFormStructure($this->input('form', [])),
-            'types' => $this->arrayInput('types'),
-            'industries' => $this->arrayInput('industries'),
-            'related_templates' => $this->arrayInput('related_templates'),
-            'questions' => $this->arrayInput('questions'),
         ];
+
+        foreach (self::LIST_FIELDS as $key) {
+            if ($includeOptionalListFields || $this->has($key)) {
+                $attributes[$key] = $this->arrayInput($key);
+            }
+        }
 
         if ($this->canSetPubliclyListed() && $this->has('publicly_listed')) {
             $attributes['publicly_listed'] = $this->boolean('publicly_listed');
