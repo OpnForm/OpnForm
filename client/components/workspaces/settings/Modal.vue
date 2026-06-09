@@ -23,7 +23,7 @@
     </SettingsModalPage>
 
     <SettingsModalPage
-      v-if="workspace && workspace.is_admin"
+      v-if="showDomainsSettings"
       id="domains"
       label="Domains"
       icon="i-heroicons-globe-alt"
@@ -77,6 +77,9 @@ const props = defineProps({
 })
 
 const { current: workspace } = useCurrentWorkspace()
+const showDomainsSettings = computed(() => {
+  return !!workspace.value && workspace.value.is_admin && !useFeatureFlag('self_hosted')
+})
 
 // Modal state is now derived from the presence of an active tab
 const isOpen = computed({

@@ -98,6 +98,7 @@ import OidcConnectionModal from './OidcConnectionModal.vue'
 const { current: workspace } = useCurrentWorkspace()
 const alert = useAlert()
 const { openSubscriptionModal } = useAppModals()
+const { handleLicenseError } = useLicenseUpgradeModal()
 
 const workspaceId = computed(() => workspace.value?.id)
 
@@ -160,6 +161,14 @@ const openUpgradeModal = () => {
   })
 }
 
+const openSsoLicenseModal = (error) => {
+  return handleLicenseError(error, {
+    includeUnauthorized: true,
+    title: 'Enterprise license required for SSO',
+    description: 'Your self-hosted license does not include SSO. Purchase or activate an Enterprise self-hosted license to create and manage OIDC connections.'
+  })
+}
+
 const showCreateModal = ref(false)
 const editingConnection = ref(null)
 
@@ -196,6 +205,7 @@ const saveConnection = () => {
       })
       .catch((error) => {
         // Form handles validation errors automatically
+        if (openSsoLicenseModal(error)) return
         if (error.response?.status !== 422) {
           alert.error(error.response?._data?.message ?? 'Failed to update connection')
         }
@@ -210,6 +220,7 @@ const saveConnection = () => {
       })
       .catch((error) => {
         // Form handles validation errors automatically
+        if (openSsoLicenseModal(error)) return
         if (error.response?.status !== 422) {
           alert.error(error.response?._data?.message ?? 'Failed to create connection')
         }
@@ -247,6 +258,7 @@ const deleteConnection = (connection) => {
           alert.success('OIDC connection deleted successfully')
         })
         .catch((error) => {
+          if (openSsoLicenseModal(error)) return
           alert.error(error.response?._data?.message ?? 'Failed to delete connection')
         })
     }

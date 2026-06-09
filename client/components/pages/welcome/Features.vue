@@ -333,7 +333,7 @@ const panels = [
   {
     eyebrow: "Modern Form Builder",
     eyebrowClass: "text-blue-600",
-    title: "Design forms that look professional - without needing a designer.",
+    title: "Design forms that look professional, without needing a designer.",
     description:
       "Drag and drop fields, apply themes, use multi-page layouts, and choose between conversational or classic form styles. Everything feels fast, smooth, and focused.",
     items: [
@@ -380,7 +380,7 @@ const panels = [
   {
     eyebrow: "Unlimited Submissions",
     eyebrowClass: "text-emerald-600",
-    title: "Collect as many responses as you need — even on the free plan.",
+    title: "Collect as many responses as you need, even on the free plan.",
     description:
       "No per-response charges. No hidden quotas. No unexpected overages. OpnForm grows with your team.",
     items: [

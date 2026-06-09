@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Http\Middleware\Form\ProtectedForm;
+use App\Service\Branding\BrandingPolicy;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User as UserModel;
@@ -48,7 +49,7 @@ class FormResource extends JsonResource
             }
         }
 
-        return array_merge(parent::toArray($request), $ownerData, [
+        $data = array_merge(parent::toArray($request), $ownerData, [
             'settings' => $this->settings ?? new \stdClass(),
             'plan_tier' => $this->workspace->plan_tier ?? 'free',
             'is_trialing' => $this->workspaceIsTrialing(),
@@ -69,6 +70,10 @@ class FormResource extends JsonResource
             'translations' => $this->translations ?? new \stdClass(),
             'computed_variables' => $this->computed_variables ?? [],
         ]);
+
+        $data['no_branding'] = app(BrandingPolicy::class)->canRemoveFormBranding($this->resource);
+
+        return $data;
     }
 
     public function setCleanings(array $cleanings)
@@ -97,7 +102,7 @@ class FormResource extends JsonResource
             'has_password' => $this->has_password,
             'width' => 'centered',
             'layout_rtl' => $this->layout_rtl,
-            'no_branding' => $this->no_branding,
+            'no_branding' => app(BrandingPolicy::class)->canRemoveFormBranding($this->resource),
             'properties' => [],
             'logo_picture' => $this->logo_picture,
             'seo_meta' => $this->seo_meta,
