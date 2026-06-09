@@ -102,6 +102,100 @@ describe('PdfImageResolver', function () {
         Http::assertNothingSent();
     });
 
+    it('prefers form assets over submission storage for local asset urls', function () {
+        Http::fake();
+        $form = createPdfImageResolverTestForm();
+        $fileName = 'photo.png';
+        Storage::put(FileUploadPathService::getFileUploadPath($form->id, $fileName), 'submission-bytes');
+        Storage::put(FormController::ASSETS_UPLOAD_PATH . '/' . $fileName, 'asset-bytes');
+
+        $resolver = new PdfImageResolver($form);
+        $content = $resolver->resolveContent(route('forms.assets.show', [$fileName]));
+
+        expect($content)->toBe('asset-bytes');
+        Http::assertNothingSent();
+    });
+
+    it('resolves asset path urls from storage when host matches front url', function () {
+        Http::fake();
+        config(['app.url' => 'http://api.test']);
+        config(['app.front_url' => 'http://frontend.test']);
+        Storage::put(FormController::ASSETS_UPLOAD_PATH . '/photo.png', 'asset-bytes');
+
+        $resolver = new PdfImageResolver();
+        $content = $resolver->resolveContent('http://frontend.test/forms/assets/photo.png');
+
+        expect($content)->toBe('asset-bytes');
+        Http::assertNothingSent();
+    });
+
+    it('treats localhost and 127.0.0.1 as the same app origin', function () {
+        Http::fake();
+        config(['app.url' => 'http://localhost']);
+        Storage::put(FormController::ASSETS_UPLOAD_PATH . '/photo.png', 'asset-bytes');
+
+        $resolver = new PdfImageResolver();
+        $content = $resolver->resolveContent('http://127.0.0.1/forms/assets/photo.png');
+
+        expect($content)->toBe('asset-bytes');
+        Http::assertNothingSent();
+    });
+
+    it('does not remote-fetch app-origin urls regardless of scheme', function () {
+        Http::fake();
+        config(['app.url' => 'http://api.test']);
+        Storage::put(FormController::ASSETS_UPLOAD_PATH . '/photo.png', 'asset-bytes');
+
+        $resolver = new PdfImageResolver();
+        $content = $resolver->resolveContent('https://api.test/forms/assets/photo.png');
+
+        expect($content)->toBe('asset-bytes');
+        Http::assertNothingSent();
+    });
+
+    it('caches repeated image lookups within the same resolver instance', function () {
+        Http::fake([
+            'https://images.unsplash.com/*' => Http::response(
+                pdfResolverTinyPngBytes(),
+                200,
+                ['Content-Type' => 'image/png']
+            ),
+        ]);
+
+        $resolver = new PdfImageResolver();
+        $url = 'https://images.unsplash.com/photo-12345?auto=format&fit=crop&w=900';
+
+        expect($resolver->resolveContent($url))->toBe(pdfResolverTinyPngBytes());
+        expect($resolver->resolveContent($url))->toBe(pdfResolverTinyPngBytes());
+        Http::assertSentCount(1);
+    });
+
+    it('does not remote-fetch app-origin urls that miss storage', function () {
+        Http::fake();
+
+        $resolver = new PdfImageResolver();
+        $content = $resolver->resolveContent(route('forms.assets.show', ['missing.png']));
+
+        expect($content)->toBeNull();
+        Http::assertNothingSent();
+    });
+
+    it('does not treat remote urls with asset-like paths as local', function () {
+        Http::fake([
+            'https://images.unsplash.com/*' => Http::response(
+                pdfResolverTinyPngBytes(),
+                200,
+                ['Content-Type' => 'image/png']
+            ),
+        ]);
+
+        $resolver = new PdfImageResolver();
+        $content = $resolver->resolveContent('https://images.unsplash.com/forms/assets/photo.png');
+
+        expect($content)->toBe(pdfResolverTinyPngBytes());
+        Http::assertSentCount(1);
+    });
+
     it('resolves uploaded form asset urls from storage', function () {
         Http::fake();
         $fileName = 'logo_550e8400-e29b-41d4-a716-446655440000.png';
@@ -166,16 +260,6 @@ describe('PdfImageResolver', function () {
 
         expect($content)->toBeNull();
     });
-
-    it('does not remote-fetch local asset urls when storage lookup misses', function () {
-        Http::fake();
-
-        $resolver = new PdfImageResolver();
-        $content = $resolver->resolveContent(route('forms.assets.show', ['missing.png']));
-
-        expect($content)->toBeNull();
-        Http::assertNothingSent();
-    });
 });
 
 describe('PdfSafeImageFetcher', function () {
@@ -229,6 +313,24 @@ describe('PdfSafeImageFetcher', function () {
                 str_repeat('a', (5 * 1024 * 1024) + 1),
                 200,
                 ['Content-Type' => 'image/png']
+            ),
+        ]);
+
+        $fetcher = new PdfSafeImageFetcher();
+        $content = $fetcher->fetch('https://images.unsplash.com/photo-12345');
+
+        expect($content)->toBeNull();
+    });
+
+    it('rejects chunked response bodies that exceed the download limit', function () {
+        Http::fake([
+            'https://images.unsplash.com/*' => Http::response(
+                str_repeat('a', (5 * 1024 * 1024) + 1),
+                200,
+                [
+                    'Content-Type' => 'image/png',
+                    'Transfer-Encoding' => 'chunked',
+                ]
             ),
         ]);
 

@@ -13,9 +13,12 @@ use App\Service\Security\PublicWebhookUrl;
  */
 class PdfRemoteImageUrl
 {
+    /** @var array<string, true> */
+    private static array $validatedUrls = [];
+
     public static function assertSafe(string $url): void
     {
-        PublicWebhookUrl::assertPublicOnly($url);
+        self::rememberValidated($url);
     }
 
     /**
@@ -23,6 +26,22 @@ class PdfRemoteImageUrl
      */
     public static function requestOptions(string $url): array
     {
-        return PublicWebhookUrl::requestOptionsPublicOnly($url);
+        self::rememberValidated($url);
+
+        // Validate resolved IPs are public, but do not pin a single CDN node. Pinning
+        // one address from DNS caused intermittent image download failures in PDF generation.
+        return [
+            'allow_redirects' => false,
+        ];
+    }
+
+    private static function rememberValidated(string $url): void
+    {
+        if (isset(self::$validatedUrls[$url])) {
+            return;
+        }
+
+        PublicWebhookUrl::assertPublicOnly($url);
+        self::$validatedUrls[$url] = true;
     }
 }
