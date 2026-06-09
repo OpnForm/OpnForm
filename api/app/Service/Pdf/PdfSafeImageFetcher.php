@@ -10,9 +10,9 @@ use RuntimeException;
 
 class PdfSafeImageFetcher
 {
-    private const CONNECT_TIMEOUT_SECONDS = 5;
+    private const CONNECT_TIMEOUT_SECONDS = 3;
 
-    private const TIMEOUT_SECONDS = 10;
+    private const TIMEOUT_SECONDS = 5;
 
     private const MAX_BYTES = 5 * 1024 * 1024;
 

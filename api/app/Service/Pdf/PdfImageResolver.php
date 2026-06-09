@@ -12,6 +12,9 @@ use League\Flysystem\UnableToCheckFileExistence;
 
 class PdfImageResolver
 {
+    private array $resolvedContentCache = [];
+    private ?array $allowedAssetHosts = null;
+
     public function __construct(
         private readonly ?Form $form = null,
         private readonly ?PdfSafeImageFetcher $remoteFetcher = null,
@@ -28,6 +31,18 @@ class PdfImageResolver
             return null;
         }
 
+        if (array_key_exists($normalized, $this->resolvedContentCache)) {
+            return $this->resolvedContentCache[$normalized];
+        }
+
+        $content = $this->resolveUncachedContent($normalized);
+        $this->resolvedContentCache[$normalized] = $content;
+
+        return $content;
+    }
+
+    private function resolveUncachedContent(string $normalized): ?string
+    {
         try {
             foreach ($this->candidatePaths($normalized) as $path) {
                 $content = $this->readFromStorage($path);
@@ -37,7 +52,7 @@ class PdfImageResolver
             }
 
             if ($this->isUrl($normalized)) {
-                if ($this->isLocalAssetUrl($normalized)) {
+                if (!$this->shouldRemoteFetch($normalized)) {
                     return null;
                 }
 
@@ -46,7 +61,7 @@ class PdfImageResolver
         } catch (\Throwable $e) {
             Log::debug('PDF image resolve failed', [
                 'form_id' => $this->form?->id,
-                'value' => $imageValue,
+                'value' => $normalized,
                 'error' => $e->getMessage(),
             ]);
         }
@@ -56,14 +71,15 @@ class PdfImageResolver
 
     private function candidatePaths(string $imageValue): array
     {
-        if ($this->isUrl($imageValue) && !$this->isLocalAssetUrl($imageValue)) {
+        if ($this->isUrl($imageValue) && !$this->hasAssetPath($imageValue)) {
             return [];
         }
 
         $candidates = [];
+        $restrictToFormAssets = $this->isUrl($imageValue) && $this->hasAssetPath($imageValue);
 
         foreach ($this->extractFileNames($imageValue) as $fileName) {
-            if ($this->form) {
+            if (!$restrictToFormAssets && $this->form) {
                 $candidates[] = FileUploadPathService::getFileUploadPath($this->form->id, $fileName);
             }
 
@@ -87,7 +103,7 @@ class PdfImageResolver
                     $fileNames[] = $this->sanitizeFileName(rawurldecode($matches[1]));
                 }
 
-                if ($this->isLocalAssetUrl($value)) {
+                if ($this->hasAssetPath($value)) {
                     $fileNames[] = $this->sanitizeFileName(rawurldecode(basename($path)));
                 }
             }
@@ -130,6 +146,14 @@ class PdfImageResolver
             ]);
 
             return null;
+        } catch (\Throwable $e) {
+            Log::debug('PDF image storage lookup failed', [
+                'form_id' => $this->form?->id,
+                'path' => $path,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
         }
     }
 
@@ -143,11 +167,84 @@ class PdfImageResolver
         return filter_var($value, FILTER_VALIDATE_URL) !== false;
     }
 
-    private function isLocalAssetUrl(string $url): bool
+    private function shouldRemoteFetch(string $url): bool
+    {
+        return !$this->matchesAppAssetOrigin($url);
+    }
+
+    private function hasAssetPath(string $url): bool
     {
         $path = parse_url($url, PHP_URL_PATH);
 
         return is_string($path) && preg_match('#/forms/assets/([^/]+)$#', $path) === 1;
+    }
+
+    private function matchesAppAssetOrigin(string $url): bool
+    {
+        $host = $this->normalizedHostFromUrl($url);
+        if ($host === null) {
+            return false;
+        }
+
+        return in_array($host, $this->allowedAssetHosts(), true);
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function allowedAssetHosts(): array
+    {
+        if ($this->allowedAssetHosts !== null) {
+            return $this->allowedAssetHosts;
+        }
+
+        $hosts = [];
+
+        foreach ([config('app.url'), config('app.front_url')] as $baseUrl) {
+            if (!is_string($baseUrl) || $baseUrl === '') {
+                continue;
+            }
+
+            $host = $this->normalizedHostFromUrl($baseUrl);
+            if ($host !== null) {
+                $hosts[] = $host;
+            }
+        }
+
+        $routeHost = $this->normalizedHostFromUrl(route('forms.assets.show', ['__probe__']));
+        if ($routeHost !== null) {
+            $hosts[] = $routeHost;
+        }
+
+        $this->allowedAssetHosts = array_values(array_unique($hosts));
+
+        return $this->allowedAssetHosts;
+    }
+
+    private function normalizedHostFromUrl(string $url): ?string
+    {
+        $host = parse_url($url, PHP_URL_HOST);
+
+        if (!is_string($host) || $host === '') {
+            return null;
+        }
+
+        return $this->normalizeHost($host);
+    }
+
+    private function normalizeHost(string $host): string
+    {
+        $host = strtolower($host);
+
+        if (in_array($host, ['127.0.0.1', '::1'], true)) {
+            return 'localhost';
+        }
+
+        if (str_starts_with($host, 'www.')) {
+            return substr($host, 4);
+        }
+
+        return $host;
     }
 
     private function sanitizeFileName(?string $fileName): ?string
