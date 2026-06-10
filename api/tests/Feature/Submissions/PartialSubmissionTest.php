@@ -401,3 +401,20 @@ it('validates required fields when is_partial is false on partial-enabled form',
         'is_partial' => false,
     ])->assertStatus(422);
 });
+
+it('stores completed submission when is_partial is string false on partial-enabled form', function () {
+    $user = $this->actingAsBusinessUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace, [
+        'enable_partial_submissions' => true,
+    ]);
+
+    $formData = $this->generateFormSubmissionData($form);
+    $formData['is_partial'] = 'false';
+
+    $this->postJson(route('forms.answer', $form->slug), $formData)
+        ->assertSuccessful();
+
+    $submission = FormSubmission::first();
+    expect($submission->status)->toBe(FormSubmission::STATUS_COMPLETED);
+});
