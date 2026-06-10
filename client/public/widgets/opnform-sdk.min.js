@@ -195,6 +195,7 @@
 
     _startHandshake() {
       this._handshakePromise = this._createHandshakePromise()
+      this._handshakePromise.catch(() => {})
 
       if (this.iframe.contentWindow) {
         this._sendHandshake()

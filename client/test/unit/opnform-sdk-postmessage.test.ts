@@ -152,6 +152,39 @@ describe('OpnForm public SDK postMessage security', () => {
     )
   })
 
+  it('does not create an unhandled rejection when passive handshake times out', async () => {
+    vi.useFakeTimers()
+
+    try {
+      const dom = new JSDOM(
+        '<!doctype html><html><body><iframe id="demo" src="https://forms.example.test/forms/demo"></iframe></body></html>',
+        {
+          url: 'https://embedder.example.test/',
+          runScripts: 'outside-only',
+        },
+      )
+
+      dom.window.eval(sdkSource)
+      const iframe = dom.window.document.getElementById('demo') as HTMLIFrameElement
+
+      vi.spyOn(iframe.contentWindow!, 'postMessage').mockImplementation(() => {})
+      dom.window.opnform._forms = {}
+      dom.window.opnform.init({ autoResize: false, preventRedirect: true })
+
+      await vi.advanceTimersByTimeAsync(3000)
+
+      expect(iframe.contentWindow!.postMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'opnform:handshake',
+          formSlug: 'demo',
+        }),
+        'https://forms.example.test',
+      )
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('includes the SDK token when creating a form iframe', async () => {
     const dom = new JSDOM('<!doctype html><html><body><div id="container"></div></body></html>', {
       url: 'https://embedder.example.test/',
