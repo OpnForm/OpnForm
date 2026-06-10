@@ -15,7 +15,6 @@ class Template extends Model
     use HasSlug;
 
     protected $fillable = [
-        'creator_id',
         'name',
         'slug',
         'description',
@@ -37,6 +36,7 @@ class Template extends Model
             'industries' => 'array',
             'types' => 'array',
             'related_templates' => 'array',
+            'publicly_listed' => 'boolean',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
         ];
