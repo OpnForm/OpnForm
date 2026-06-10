@@ -123,7 +123,6 @@ import EditSubmissionModal from "./EditSubmissionModal.vue"
 import OpenForm from "../forms/OpenForm.vue"
 import { FormMode } from "~/lib/forms/FormModeStrategy.js"
 import { useFormManager } from '~/lib/forms/composables/useFormManager'
-import { usePdfTemplates } from '~/composables/query/forms/usePdfTemplates'
 
 // Provide form size context for OpenForm (same pattern as OpenCompleteForm)
 provide('formSize', ref('sm'))
@@ -138,7 +137,11 @@ const props = defineProps({
     default: () => [],
   },
   show: { type: Boolean, required: true },
-  form: { type: Object, required: true }
+  form: { type: Object, required: true },
+  hasPdfTemplates: {
+    type: Boolean,
+    default: false,
+  },
 })
 
 const emit = defineEmits(["close", "restored"])
@@ -147,11 +150,6 @@ const router = useRouter()
 const alert = useAlert()
 const { copy } = useClipboard()
 const downloadPdfRef = ref(null)
-
-// PDF Templates for this form
-const { list: listPdfTemplates } = usePdfTemplates()
-const { data: pdfTemplatesData } = listPdfTemplates(() => props.form?.id)
-const hasPdfTemplates = computed(() => (pdfTemplatesData.value?.data?.length ?? 0) > 0)
 
 // Use form submissions composable for delete
 const { deleteSubmission } = useFormSubmissions()
@@ -201,9 +199,15 @@ const isModalOpen = computed({
 
 const showEditSubmissionModal = ref(false)
 const showSubmissionHistoryModal = ref(false)
-const currentPage = ref(props.data.findIndex(s => s.id === props.submissionId) + 1)
+const currentPage = ref(1)
 const totalSubmissions = ref(props.data.length)
 const submission = computed(() => props.data[currentPage.value - 1])
+
+const syncCurrentPage = () => {
+  const index = props.data.findIndex(s => Number(s.id) === Number(props.submissionId))
+  currentPage.value = index >= 0 ? index + 1 : 1
+  totalSubmissions.value = props.data.length
+}
 
 // Set up form manager with proper mode
 let formManager = null
@@ -219,6 +223,8 @@ const setupFormManager = () => {
 formManager = setupFormManager()
 
 const formManagerInit = () => {
+  if (!submission.value) return
+
   formManager.initialize({
     skipPendingSubmission: true,
     skipUrlParams: true,
@@ -229,6 +235,25 @@ const formManagerInit = () => {
 
 watch(() => props.show, (newShow) => {
   if (newShow) {
+    syncCurrentPage()
+    nextTick(() => {
+      formManagerInit()
+    })
+  }
+}, { immediate: true })
+
+watch(() => props.submissionId, () => {
+  if (props.show) {
+    syncCurrentPage()
+    nextTick(() => {
+      formManagerInit()
+    })
+  }
+})
+
+watch(() => props.data, () => {
+  if (props.show) {
+    syncCurrentPage()
     nextTick(() => {
       formManagerInit()
     })
