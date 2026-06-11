@@ -29,15 +29,26 @@ class PdfSafeImageFetcher
             return null;
         }
 
-        $httpOptions = array_merge($requestOptions, [
-            'on_headers' => function (ResponseInterface $response): void {
-                if (!$this->responseHeadersAreSafeFromPsr($response)) {
-                    throw new RuntimeException('PDF remote image response rejected.');
-                }
-            },
-        ]);
-
         try {
+            $bodyStream = fopen('php://temp/maxmemory:' . self::MAX_BYTES, 'w+');
+            if ($bodyStream === false) {
+                throw new RuntimeException('PDF remote image download buffer unavailable.');
+            }
+
+            $httpOptions = array_merge($requestOptions, [
+                'sink' => $bodyStream,
+                'on_headers' => function (ResponseInterface $response): void {
+                    if (!$this->responseHeadersAreSafeFromPsr($response)) {
+                        throw new RuntimeException('PDF remote image response rejected.');
+                    }
+                },
+                'progress' => function ($downloadTotal, $downloadedBytes, $uploadTotal, $uploadedBytes): void {
+                    if ($downloadTotal > self::MAX_BYTES || $downloadedBytes > self::MAX_BYTES) {
+                        throw new RuntimeException('PDF remote image download exceeded size limit.');
+                    }
+                },
+            ]);
+
             $response = Http::connectTimeout(self::CONNECT_TIMEOUT_SECONDS)
                 ->timeout(self::TIMEOUT_SECONDS)
                 ->accept('image/*')
@@ -52,7 +63,7 @@ class PdfSafeImageFetcher
                 return null;
             }
 
-            $body = $response->body();
+            $body = $this->responseBody($response, $bodyStream);
             if ($body === '' || strlen($body) > self::MAX_BYTES) {
                 return null;
             }
@@ -72,6 +83,10 @@ class PdfSafeImageFetcher
             ]);
 
             return null;
+        } finally {
+            if (isset($bodyStream) && is_resource($bodyStream)) {
+                fclose($bodyStream);
+            }
         }
     }
 
@@ -103,5 +118,20 @@ class PdfSafeImageFetcher
         }
 
         return true;
+    }
+
+    /**
+     * @param  resource  $bodyStream
+     */
+    private function responseBody(\Illuminate\Http\Client\Response $response, $bodyStream): string
+    {
+        rewind($bodyStream);
+        $body = stream_get_contents($bodyStream);
+
+        if ($body !== false && $body !== '') {
+            return $body;
+        }
+
+        return $response->body();
     }
 }
