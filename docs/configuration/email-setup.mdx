@@ -20,7 +20,8 @@ Self-hosted OpnForm has two email configuration levels:
     You do not need workspace email settings to send emails from a self-hosted
     instance. Configure the instance-wide `MAIL_*` variables first, then use
     workspace email settings only when a workspace needs its own SMTP server or
-    sender identity.
+    sender identity. See [Workspace Custom
+    SMTP](/deployment/enterprise-features/workspace-custom-smtp) for details.
 </Info>
 
 ## Supported Mail Drivers
@@ -73,7 +74,8 @@ To configure workspace SMTP settings:
 <Note>
     Workspace email settings do not replace the instance-wide mail
     configuration. Keep the `MAIL_*` variables configured as the default sender
-    and fallback for your instance.
+    and fallback for your instance. Workspace email settings require a
+    self-hosted Enterprise license.
 </Note>
 
 import CloudVersion from "/snippets/cloud-version.mdx";
