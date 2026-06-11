@@ -5,6 +5,7 @@ use App\Models\Forms\Form;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Service\Pdf\PdfImageResolver;
+use App\Service\Pdf\PdfRemoteImageUrl;
 use App\Service\Pdf\PdfSafeImageFetcher;
 use App\Service\Storage\FileUploadPathService;
 use App\Service\Storage\FilenameUrlEncoder;
@@ -188,6 +189,7 @@ describe('PdfImageResolver', function () {
                 ['Content-Type' => 'image/png']
             ),
         ]);
+        Storage::put(FormController::ASSETS_UPLOAD_PATH . '/photo.png', 'colliding-local-asset');
 
         $resolver = new PdfImageResolver();
         $content = $resolver->resolveContent('https://images.unsplash.com/forms/assets/photo.png');
@@ -263,6 +265,13 @@ describe('PdfImageResolver', function () {
 });
 
 describe('PdfSafeImageFetcher', function () {
+    it('pins the validated public destination ip for remote image requests', function () {
+        $options = PdfRemoteImageUrl::requestOptions('https://93.184.216.34/image.png');
+
+        expect($options['allow_redirects'])->toBeFalse()
+            ->and($options['curl'][CURLOPT_RESOLVE])->toBe(['93.184.216.34:443:93.184.216.34']);
+    });
+
     it('rejects non-image content types', function () {
         Http::fake([
             'https://images.unsplash.com/*' => Http::response(

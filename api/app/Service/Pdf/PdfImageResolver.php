@@ -71,12 +71,14 @@ class PdfImageResolver
 
     private function candidatePaths(string $imageValue): array
     {
-        if ($this->isUrl($imageValue) && !$this->hasAssetPath($imageValue)) {
-            return [];
+        if ($this->isUrl($imageValue)) {
+            if (!$this->hasAssetPath($imageValue) || !$this->matchesAppAssetOrigin($imageValue)) {
+                return [];
+            }
         }
 
         $candidates = [];
-        $restrictToFormAssets = $this->isUrl($imageValue) && $this->hasAssetPath($imageValue);
+        $restrictToFormAssets = $this->isUrl($imageValue);
 
         foreach ($this->extractFileNames($imageValue) as $fileName) {
             if (!$restrictToFormAssets && $this->form) {

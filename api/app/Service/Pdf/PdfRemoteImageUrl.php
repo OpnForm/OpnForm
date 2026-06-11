@@ -28,11 +28,7 @@ class PdfRemoteImageUrl
     {
         self::rememberValidated($url);
 
-        // Validate resolved IPs are public, but do not pin a single CDN node. Pinning
-        // one address from DNS caused intermittent image download failures in PDF generation.
-        return [
-            'allow_redirects' => false,
-        ];
+        return PublicWebhookUrl::requestOptionsPublicOnly($url);
     }
 
     private static function rememberValidated(string $url): void
