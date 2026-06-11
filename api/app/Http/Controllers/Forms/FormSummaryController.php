@@ -19,6 +19,7 @@ class FormSummaryController extends Controller
 
     public function getSummary(FormSummaryRequest $request, Workspace $workspace, Form $form): JsonResponse
     {
+        $this->ensureFormBelongsToWorkspace($form, $workspace);
         $this->authorize('view', $form);
 
         $summary = $this->summaryService->generateSummary(
@@ -33,6 +34,7 @@ class FormSummaryController extends Controller
 
     public function getFieldValues(FormSummaryRequest $request, Workspace $workspace, Form $form, string $fieldId): JsonResponse
     {
+        $this->ensureFormBelongsToWorkspace($form, $workspace);
         $this->authorize('view', $form);
 
         $values = $this->summaryService->getFieldTextValues(
@@ -49,5 +51,12 @@ class FormSummaryController extends Controller
         }
 
         return response()->json($values);
+    }
+
+    private function ensureFormBelongsToWorkspace(Form $form, Workspace $workspace): void
+    {
+        if ($form->workspace_id !== $workspace->id) {
+            abort(404);
+        }
     }
 }

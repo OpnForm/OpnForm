@@ -108,7 +108,7 @@
               Collect partial submissions
             </span>
             <PlanTag
-              required-tier="business"
+              feature="enable_partial_submissions"
               class="ml-1"
               upgrade-modal-title="Upgrade to collect partial submissions"
               upgrade-modal-description="Capture valuable data from incomplete form submissions. Analyze where users drop off and collect partial information even when they don't complete the entire form."
@@ -129,7 +129,7 @@
           </span>
           <PlanTag
             class="ml-1"
-            required-tier="business"
+            feature="enable_ip_tracking"
             upgrade-modal-title="Upgrade to collect IP addresses"
             upgrade-modal-description="Automatically capture submitter IP addresses to gain valuable insights into your form traffic. Analyze geographic patterns, detect suspicious activity, and enhance your form security with detailed submission analytics."
           />

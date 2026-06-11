@@ -126,6 +126,17 @@ describe('custom code and CSS settings', function () {
         $response->assertStatus(403);
     });
 
+    it('blocks custom code with whitelabel license only', function () {
+        activateLicenseWithFeatures(['whitelabel' => true]);
+
+        $response = $this->putJson(
+            route('open.workspaces.save-custom-code-settings', ['workspace' => $this->workspace]),
+            ['custom_code' => '<script>console.log("hello")</script>'],
+        );
+
+        $response->assertStatus(403);
+    });
+
     it('allows custom code with license having custom_code feature', function () {
         activateLicenseWithFeatures(['custom_code' => true]);
 

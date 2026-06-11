@@ -39,6 +39,7 @@ class LicenseKeyService
             ]],
             'success_url' => config('services.license.checkout_success_url'),
             'cancel_url' => config('services.license.checkout_cancel_url'),
+            'allow_promotion_codes' => true,
             'billing_address_collection' => 'required',
             'metadata' => [
                 'type' => 'self_hosted_license',

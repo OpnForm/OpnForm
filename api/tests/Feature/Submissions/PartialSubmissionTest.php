@@ -313,8 +313,10 @@ it('cannot revert a completed submission back to partial', function () {
         'enable_partial_submissions' => true
     ]);
 
+    $targetField = collect($form->properties)->where('name', 'Name')->first();
+
     // Step 1: Create a partial submission
-    $formData = $this->generateFormSubmissionData($form, ['text' => 'Initial']);
+    $formData = $this->generateFormSubmissionData($form, [$targetField['id'] => 'Initial']);
     $formData['is_partial'] = true;
 
     $partialResponse = $this->postJson(route('forms.answer', $form->slug), $formData)
@@ -323,7 +325,7 @@ it('cannot revert a completed submission back to partial', function () {
     $submissionHash = $partialResponse->json('submission_hash');
 
     // Step 2: Complete the submission
-    $completeData = $this->generateFormSubmissionData($form, ['text' => 'Complete']);
+    $completeData = $this->generateFormSubmissionData($form, [$targetField['id'] => 'Complete']);
     $completeData['submission_hash'] = $submissionHash;
 
     $this->postJson(route('forms.answer', $form->slug), $completeData)
@@ -332,16 +334,18 @@ it('cannot revert a completed submission back to partial', function () {
     // Verify it's completed
     $submission = FormSubmission::first();
     expect($submission->status)->toBe(FormSubmission::STATUS_COMPLETED);
+    expect($submission->data[$targetField['id']])->toBe('Complete');
 
     // Step 3: Try to send another partial submission with the same hash
-    $latePartialData = $this->generateFormSubmissionData($form, ['text' => 'Late partial update']);
+    $latePartialData = $this->generateFormSubmissionData($form, [$targetField['id'] => 'Late partial update']);
     $latePartialData['is_partial'] = true;
     $latePartialData['submission_hash'] = $submissionHash;
 
     $this->postJson(route('forms.answer', $form->slug), $latePartialData)
         ->assertSuccessful();
 
-    // Verify the submission status was NOT reverted to partial
+    // Verify the completed submission was not overwritten
     $submission->refresh();
     expect($submission->status)->toBe(FormSubmission::STATUS_COMPLETED);
+    expect($submission->data[$targetField['id']])->toBe('Complete');
 });

@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Testing\Fluent\AssertableJson;
+use Illuminate\Support\Facades\Cache;
 
 it('can create a contact form', function () {
     $user = $this->actingAsUser();
@@ -90,6 +91,21 @@ it('can fetch a form', function () {
         ]);
 });
 
+it('returns effective no_branding for form owners on self-hosted', function () {
+    config()->set('app.self_hosted', true);
+    Cache::flush();
+
+    $user = $this->actingAsUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace, [
+        'no_branding' => true,
+    ]);
+
+    $formData = (new \App\Http\Resources\FormResource($form))->toArray(request());
+
+    expect($formData['no_branding'])->toBeFalse();
+});
+
 it('does not leak workspace details on public form fetch', function () {
     $user = \App\Models\User::factory()->create();
     $workspace = $this->createUserWorkspace($user);
@@ -128,6 +144,78 @@ it('can update a form', function () {
         'id' => $form->id,
         'title' => $form->title
     ]);
+});
+
+it('backfills missing select option ids when creating a form', function () {
+    $user = $this->actingAsUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->makeForm($user, $workspace);
+
+    $form->properties = array_merge($form->properties, [
+        [
+            'id' => 'legacy_select',
+            'name' => 'Legacy Select',
+            'type' => 'select',
+            'required' => false,
+            'select' => [
+                'options' => [
+                    ['name' => 'First legacy option'],
+                    ['name' => 'Second legacy option', 'id' => 'existing-option-id'],
+                ],
+            ],
+        ],
+    ]);
+
+    $formData = (new \App\Http\Resources\FormResource($form))->toArray(request());
+
+    $response = $this->postJson(route('open.forms.store', $formData))
+        ->assertSuccessful()
+        ->assertJson([
+            'type' => 'success',
+            'message' => 'Form created.',
+        ]);
+
+    $createdForm = \App\Models\Forms\Form::find($response->json('form.id'));
+    $legacySelect = collect($createdForm->properties)->firstWhere('id', 'legacy_select');
+
+    expect($legacySelect['select']['options'][0]['id'])->toBe('First legacy option');
+    expect($legacySelect['select']['options'][1]['id'])->toBe('existing-option-id');
+});
+
+it('backfills missing multi select option ids when updating a form', function () {
+    $user = $this->actingAsUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace);
+
+    $form->properties = array_merge($form->properties, [
+        [
+            'id' => 'legacy_multi_select',
+            'name' => 'Legacy Multi Select',
+            'type' => 'multi_select',
+            'required' => false,
+            'multi_select' => [
+                'options' => [
+                    ['name' => 'Legacy choice'],
+                    ['name' => 'Existing choice', 'id' => 'existing-choice-id'],
+                ],
+            ],
+        ],
+    ]);
+
+    $formData = (new \App\Http\Resources\FormResource($form))->toArray(request());
+
+    $this->putJson(route('open.forms.update', $form->id), $formData)
+        ->assertSuccessful()
+        ->assertJson([
+            'type' => 'success',
+            'message' => 'Form updated.',
+        ]);
+
+    $form->refresh();
+    $legacyMultiSelect = collect($form->properties)->firstWhere('id', 'legacy_multi_select');
+
+    expect($legacyMultiSelect['multi_select']['options'][0]['id'])->toBe('Legacy choice');
+    expect($legacyMultiSelect['multi_select']['options'][1]['id'])->toBe('existing-choice-id');
 });
 
 it('can regenerate a form url', function () {

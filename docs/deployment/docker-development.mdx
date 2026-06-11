@@ -41,7 +41,10 @@ OpnForm provides a minimal Docker-based development environment optimized for lo
 
     <Note>
         Development mode doesn't require .env files - all configuration is
-        embedded in docker-compose.dev.yml for simplicity.
+        embedded in docker-compose.dev.yml for simplicity. This includes
+        `JWT_SKIP_IP_UA_VALIDATION=true`, which disables JWT User Agent checks
+        for easier local testing. Production Docker deployments should keep this
+        setting disabled.
     </Note>
 
 3. Access your development environment:

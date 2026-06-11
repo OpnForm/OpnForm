@@ -203,6 +203,46 @@ describe('POST /licenses/create', function () {
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['period']);
     });
+
+    it('allows promotion codes on self-hosted license checkout sessions', function () {
+        config([
+            'pricing.test.self_hosted.pricing.yearly' => 'price_self_hosted_yearly',
+        ]);
+
+        $stripeClient = new class () implements ClientInterface {
+            public array $requests = [];
+
+            public function request($method, $absUrl, $headers, $params, $hasFile, $apiMode = 'v1', $maxNetworkRetries = null)
+            {
+                $this->requests[] = compact('method', 'absUrl', 'headers', 'params', 'hasFile', 'apiMode');
+
+                return [
+                    json_encode([
+                        'id' => 'cs_self_hosted_coupon_test',
+                        'object' => 'checkout.session',
+                        'url' => 'https://checkout.stripe.test/session',
+                    ]),
+                    200,
+                    [],
+                ];
+            }
+        };
+        ApiRequestor::setHttpClient($stripeClient);
+
+        $response = $this->postJson('/licenses/create', [
+            'billingEmail' => 'test@example.com',
+            'plan' => 'self_hosted',
+            'period' => 'yearly',
+        ]);
+
+        $response->assertSuccessful()
+            ->assertJson([
+                'checkoutUrl' => 'https://checkout.stripe.test/session',
+                'sessionId' => 'cs_self_hosted_coupon_test',
+            ]);
+
+        expect($stripeClient->requests[0]['params']['allow_promotion_codes'])->toBe('true');
+    });
 });
 
 describe('POST /licenses/portal', function () {
