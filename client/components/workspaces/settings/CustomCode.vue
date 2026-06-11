@@ -3,17 +3,7 @@
     <div class="flex flex-col flex-wrap items-start justify-between gap-4 sm:flex-row sm:items-center">
       <div class="flex-1">
         <h3 class="text-lg font-medium text-neutral-900">
-          Custom Code <PlanTag required-tier="business"
-            class="mb-2 block"
-            upgrade-modal-title="Upgrade to Unlock Custom Code Capabilities"
-            upgrade-modal-description="On the Free plan, you can explore custom code features within the workspace settings. Upgrade your plan to implement custom scripts, styles, and advanced tracking in all your workspace forms. Elevate your forms' functionality and design with unlimited customization options."
-          />
-          <PlanTag
-            v-if="isSelfHosted"
-            required-tier="self_hosted"
-            class="mb-2 block"
-            upgrade-modal-title="Upgrade to Unlock Custom Code"
-          />
+          Custom Code
         </h3>
         <p class="mt-1 text-sm text-neutral-500">
           The code will be injected in the <b>head</b> section of all forms in this workspace. Workspace code is applied first, then form-specific code (if any).
@@ -39,15 +29,15 @@
     </div>
 
     <UAlert
-      v-if="!isSelfHosted && !canAccessAdvancedBranding"
-      icon="i-heroicons-user-group-20-solid"
+      v-if="!canAccessCustomCode"
+      icon="i-heroicons-lock-closed"
       class="mb-4"
       color="warning"
       variant="subtle"
-      title="Business plan required"
-      description="Please upgrade your plan to unlock workspace-level custom code."
+      :title="upgradeCalloutTitle"
+      :description="upgradeCalloutDescription"
       :actions="[{
-        label: 'Try Business plan',
+        label: upgradeCalloutActionLabel,
         color: 'warning',
         variant: 'solid',
         onClick: () => openUpgradeModal()
@@ -76,17 +66,7 @@
             <div class="flex flex-col flex-wrap items-start justify-between gap-4 sm:flex-row sm:items-center">
               <div>
                 <h3 class="text-lg font-medium text-neutral-900">
-                  Custom CSS <PlanTag
-                    class="mb-2 block"
-                    upgrade-modal-title="Upgrade to Unlock Custom CSS"
-                    upgrade-modal-description="On the Free plan, you can explore custom CSS within the workspace settings. Upgrade to apply custom styles to all your workspace forms."
-                  />
-                  <PlanTag
-                    v-if="isSelfHosted"
-                    required-tier="self_hosted"
-                    class="mb-2 block"
-                    upgrade-modal-title="Upgrade to Unlock Custom CSS"
-                  />
+                  Custom CSS
                 </h3>
                 <p class="mt-1 text-sm text-neutral-500">
                   The CSS will be injected in the <b>head</b> of all forms in this workspace.
@@ -106,7 +86,7 @@
               name="custom_css"
               class="mt-4"
               :form="customCodeForm"
-              :disabled="!canAccessAdvancedBranding"
+              :disabled="!canAccessCustomCode"
               help="CSS only. Example: body { background: #f8fafc }"
               label="Custom CSS"
               placeholder="body { background: #f8fafc }"
@@ -118,7 +98,7 @@
           <UButton
             type="submit"
             :loading="customCodeForm.busy"
-            :disabled="!canAccessAdvancedBranding"
+            :disabled="!canAccessCustomCode"
             color="primary"
           >
             Save Changes
@@ -130,21 +110,36 @@
 </template>
 
 <script setup>
-import PlanTag from "~/components/app/PlanTag.vue"
-
 const alert = useAlert()
 const crisp = useCrisp()
 const { current: workspace } = useCurrentWorkspace()
 const { invalidateAll } = useWorkspaces()
 const { hasFeature } = usePlanFeatures()
-const canAccessAdvancedBranding = computed(() => hasFeature('branding.advanced'))
+const canAccessCustomCode = computed(() => hasFeature('custom_code'))
 const isSelfHosted = computed(() => useFeatureFlag('self_hosted'))
 const { openSubscriptionModal } = useAppModals()
+
+const upgradeCalloutTitle = computed(() => {
+  return isSelfHosted.value ? 'Enterprise license required' : 'Business plan required'
+})
+
+const upgradeCalloutDescription = computed(() => {
+  if (isSelfHosted.value) {
+    return 'Workspace-level custom code and CSS require an Enterprise self-hosted license. Purchase or activate a license to inject scripts and styles across all forms in this workspace.'
+  }
+
+  return 'Workspace-level custom code and CSS require a Business plan. Upgrade to inject scripts, styles, analytics snippets, and advanced tracking across all forms in this workspace.'
+})
+
+const upgradeCalloutActionLabel = computed(() => {
+  return isSelfHosted.value ? 'Purchase license' : 'Upgrade to Business'
+})
 
 const openUpgradeModal = () => {
   openSubscriptionModal({
     plan: isSelfHosted.value ? 'self_hosted' : 'business',
-    modal_title: 'Upgrade to use workspace level custom code'
+    modal_title: isSelfHosted.value ? 'Enterprise license required for custom code' : 'Upgrade to use workspace-level custom code',
+    modal_description: upgradeCalloutDescription.value
   })
 }
 
@@ -160,7 +155,7 @@ const hasCustomDomain = computed(() => {
 const allowSelfHosted = computed(() => !!useFeatureFlag('custom_code.enable_self_hosted', false))
 
 const canUseCustomCode = computed(() => {
-  if (!canAccessAdvancedBranding.value) return false
+  if (!canAccessCustomCode.value) return false
   return hasCustomDomain.value || (isSelfHosted.value && allowSelfHosted.value)
 })
 
@@ -175,7 +170,7 @@ const customCodeHelp = computed(() => {
 })
 
 const saveChanges = () => {
-  if (!canAccessAdvancedBranding.value) return
+  if (!canAccessCustomCode.value) return
 
   customCodeForm
     .put(`/open/workspaces/${workspace.value.id}/custom-code-settings`, {

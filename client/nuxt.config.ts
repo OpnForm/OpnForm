@@ -149,6 +149,9 @@ export default defineNuxtConfig({
           },
       ],
       clientBundle: {
+          icons: [
+              'ix:mandatory',
+          ],
           includeCustomCollections: true,
           scan: {
               globInclude: ['**/*.vue', '**/*.json'],
