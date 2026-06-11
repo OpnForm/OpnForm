@@ -49,6 +49,8 @@ class StoreFormSubmissionJob implements ShouldQueue
     use Queueable;
     use SerializesModels;
 
+    private const AUTO_INCREMENT_ID_PLACEHOLDER = '__opnform_auto_increment_id__';
+
     public ?int $submissionId = null;
 
     /**
@@ -61,7 +63,6 @@ class StoreFormSubmissionJob implements ShouldQueue
     private bool $isPartial = false;
     private bool $isClientProvidedSubmissionId = false;
     private ?string $submitterIp = null;
-    private ?string $allocatedAutoIncrementId = null;
 
     /**
      * Create a new job instance.
@@ -179,9 +180,9 @@ class StoreFormSubmissionJob implements ShouldQueue
      *
      * @param array $formData
      */
-    private function storeSubmission(array $formData)
+    private function storeSubmission(array &$formData)
     {
-        DB::transaction(function () use ($formData) {
+        DB::transaction(function () use (&$formData) {
             // Handle record update
             if ($recordToUpdate = $this->resolveRecordToUpdate($this->submissionData)) {
                 $this->submissionId = $recordToUpdate;
@@ -203,14 +204,42 @@ class StoreFormSubmissionJob implements ShouldQueue
                 $submission->form_id = $this->form->id;
             }
 
+            if ($this->isPartial) {
+                foreach ($formData as $fieldId => $value) {
+                    if ($value === self::AUTO_INCREMENT_ID_PLACEHOLDER) {
+                        unset($formData[$fieldId]);
+                    }
+                }
+            } elseif (in_array(self::AUTO_INCREMENT_ID_PLACEHOLDER, $formData, true)) {
+                $existingData = $submission->exists ? ($submission->data ?? []) : [];
+                $isCompletedEdit = $submission->exists && $submission->status === FormSubmission::STATUS_COMPLETED;
+                $generatedAutoIncrementId = null;
+
+                foreach ($formData as $fieldId => $value) {
+                    if ($value !== self::AUTO_INCREMENT_ID_PLACEHOLDER) {
+                        continue;
+                    }
+
+                    if (array_key_exists($fieldId, $existingData)) {
+                        $formData[$fieldId] = $existingData[$fieldId];
+                        continue;
+                    }
+
+                    if ($isCompletedEdit) {
+                        unset($formData[$fieldId]);
+                        continue;
+                    }
+
+                    $generatedAutoIncrementId ??= FormAutoIncrementSequence::allocateNext($this->form);
+                    $formData[$fieldId] = $generatedAutoIncrementId;
+                }
+            }
+
             $submission->data = $formData;
             $submission->completion_time = $this->completionTime;
-
-            if ($this->isPartial) {
-                $submission->status = FormSubmission::STATUS_PARTIAL;
-            } else {
-                $submission->status = FormSubmission::STATUS_COMPLETED;
-            }
+            $submission->status = $this->isPartial
+                ? FormSubmission::STATUS_PARTIAL
+                : FormSubmission::STATUS_COMPLETED;
 
             if (!$this->submissionId) {
                 $submission->public_id = Str::uuid()->toString();
@@ -295,7 +324,7 @@ class StoreFormSubmissionJob implements ShouldQueue
                     }
                 } elseif (isset($field['generates_auto_increment_id']) && $field['generates_auto_increment_id'] && $field['type'] == 'text') {
                     if (empty($answerValue) || !is_numeric($answerValue)) {
-                        $finalData[$field['id']] = $this->autoIncrementIdValue();
+                        $finalData[$field['id']] = $this->autoIncrementIdPlaceholder();
                     } else {
                         $finalData[$field['id']] = $answerValue;
                     }
@@ -417,7 +446,7 @@ class StoreFormSubmissionJob implements ShouldQueue
                 }
 
                 if (isset($property['generates_auto_increment_id']) && $property['generates_auto_increment_id']) {
-                    $formData[$property['id']] = $this->autoIncrementIdValue();
+                    $formData[$property['id']] = $this->autoIncrementIdPlaceholder();
                     return; // ID generated, so we skip prefill logic for this field.
                 }
             }
@@ -463,16 +492,12 @@ class StoreFormSubmissionJob implements ShouldQueue
         return $workspace->hasFeature(Feature::ID_GENERATION);
     }
 
-    private function autoIncrementIdValue(): string
+    private function autoIncrementIdPlaceholder(): string
     {
         if (!$this->workspaceHasIdGenerationAccess()) {
             return 'Please upgrade your OpenForm subscription to use our ID generation features';
         }
 
-        if ($this->allocatedAutoIncrementId === null) {
-            $this->allocatedAutoIncrementId = FormAutoIncrementSequence::allocateNext($this->form);
-        }
-
-        return $this->allocatedAutoIncrementId;
+        return self::AUTO_INCREMENT_ID_PLACEHOLDER;
     }
 }

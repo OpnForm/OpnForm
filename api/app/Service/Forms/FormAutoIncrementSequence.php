@@ -19,8 +19,10 @@ class FormAutoIncrementSequence
                 ->firstOrFail();
 
             $next = $lockedForm->auto_increment_sequence + 1;
-            $lockedForm->auto_increment_sequence = $next;
-            $lockedForm->save();
+
+            DB::table('forms')
+                ->where('id', $lockedForm->id)
+                ->update(['auto_increment_sequence' => $next]);
 
             return $next;
         });
