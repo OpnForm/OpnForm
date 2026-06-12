@@ -52,6 +52,29 @@ it('cannot register with existing email', function () {
         ->assertJsonValidationErrors(['email']);
 });
 
+it('blocks registering a third user on a free self-hosted instance', function () {
+    config(['app.self_hosted' => true]);
+    config(['cashier.key' => null]);
+
+    User::factory()->create(['email' => 'owner@example.com']);
+    User::factory()->create(['email' => 'member@example.com']);
+
+    $this->postJson('/register', [
+        'name' => 'Third User',
+        'email' => 'third@example.com',
+        'hear_about_us' => 'google',
+        'password' => 'Abcd@1234',
+        'password_confirmation' => 'Abcd@1234',
+        'g-recaptcha-response' => 'test-token',
+    ])
+        ->assertStatus(403)
+        ->assertJson([
+            'message' => 'Enterprise license is required to add more than 2 users to a self-hosted instance.',
+        ]);
+
+    expect(User::where('email', 'third@example.com')->exists())->toBeFalse();
+});
+
 it('cannot register with disposable email', function () {
     Http::fake([
         ValidReCaptcha::RECAPTCHA_VERIFY_URL => Http::response(['success' => true])

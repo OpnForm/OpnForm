@@ -148,7 +148,7 @@ return [
      * Maps License API feature keys to application feature keys from the 'features' section above.
      */
     'self_hosted_features' => [
-        'sso' => ['sso.oidc', 'sso.saml', 'sso.ldap'],
+        'sso' => ['sso.saml', 'sso.ldap'],
         'multiOrg' => ['workspaces.multiple', 'multi_user.roles'],
         'whitelabel' => ['branding.removal', 'branding.advanced', 'white_label'],
         'custom_smtp' => ['custom_smtp'],

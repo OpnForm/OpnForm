@@ -21,7 +21,10 @@ OpnForm also includes Enterprise features under a separate Enterprise License. T
 | Run OpnForm for commercial use | Yes | Yes |
 | Modify the AGPLv3 core and redistribute under AGPLv3 | Yes | Yes |
 | Use core form builder features | Yes | Yes |
+| Use up to 2 users across the instance | Yes | Yes |
+| Add more than 2 users across the instance | No | Yes |
 | Configure instance-wide SMTP, storage, domains, and OAuth | Yes | Yes |
+| Use OIDC SSO | Yes, within the 2-user limit | Yes |
 | Use Enterprise workspace features | No | Yes |
 | Use Enterprise support and licensing terms | No | Yes |
 
@@ -37,8 +40,9 @@ Community self-hosted installations include the core OpnForm product:
 -   Instance-wide domain configuration with `APP_URL`, `FRONT_URL`, and your reverse proxy
 -   Instance-wide file storage configuration, including local and S3-compatible storage
 -   Standard authentication and OAuth providers configured with environment variables
+-   OIDC SSO for up to 2 users across the instance
 
-The exact limits depend on your infrastructure and on the product features enabled in your version of OpnForm.
+Free self-hosted instances are limited to 2 users total across the whole instance. This limit applies regardless of how users are added: registration, invitations, or OIDC provisioning.
 
 ## What is included in self-hosted Enterprise?
 
@@ -46,7 +50,7 @@ Self-hosted Enterprise unlocks advanced workspace and organization controls:
 
 | Enterprise area | What it unlocks |
 | --------------- | --------------- |
-| SSO | OIDC, SAML, and LDAP single sign-on features |
+| SSO | SAML and LDAP single sign-on features; OIDC remains available on Community self-hosted within the 2-user limit |
 | Multi-org | Multiple workspaces and advanced team role features |
 | White label | Branding removal, advanced branding, and white-label controls |
 | Workspace Custom SMTP | Dedicated SMTP settings for individual workspaces |
@@ -68,7 +72,7 @@ Some OpnForm settings exist at two levels. The instance-wide configuration is av
 | Email | Configure the default sender with `MAIL_*` variables | Configure Workspace Custom SMTP for a specific workspace |
 | Storage | Configure the default filesystem or S3-compatible storage | Use Enterprise external storage controls when available |
 | Branding | Use core form customization options | Remove OpnForm branding and use advanced white-label controls |
-| Authentication | Use standard login and configured OAuth providers | Use OIDC, SAML, or LDAP SSO |
+| Authentication | Use standard login, configured OAuth providers, and OIDC within the 2-user limit | Use SAML/LDAP SSO and add more than 2 users |
 
 <Note>
     Custom domains can also exist at two levels: the domain for your whole

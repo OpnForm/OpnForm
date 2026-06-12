@@ -4,12 +4,11 @@ description: Complete guide to configuring OpenID Connect Single Sign-On for you
 ---
 
 <Info>
-    **Enterprise Feature**: OIDC SSO is part of OpnForm Enterprise. On
-    self-hosted installations, configure an active Enterprise license before
-    creating or updating workspace OIDC connections. For more information about
-    Enterprise licensing, see our [Enterprise
-    Terms](https://opnform.com/terms-conditions) and [License
-    Activation](/deployment/license-activation).
+    **Self-hosted availability**: OIDC SSO is available on self-hosted
+    installations without an Enterprise license. Free self-hosted instances are
+    limited to 2 users total across the whole instance, regardless of whether
+    users are created by registration, invitations, or OIDC provisioning. An
+    Enterprise license is required to add more users.
 </Info>
 
 OpnForm supports OpenID Connect (OIDC) based Single Sign-On (SSO), allowing users to authenticate using their organization's identity provider (IdP) such as Azure Entra ID, Authentik, Okta, or any OIDC-compliant provider.
@@ -36,6 +35,13 @@ Before setting up OIDC SSO, ensure you have:
 2. OAuth client credentials (Client ID and Client Secret) from your IdP
 3. Admin access to the workspace where you want to configure SSO
 4. The issuer URL from your IdP (typically found in the `.well-known/openid-configuration` endpoint)
+
+<Note>
+    On self-hosted Community instances, OIDC can provision users until the
+    instance reaches the free 2-user limit. Existing linked users can continue
+    signing in with OIDC. Activate a self-hosted Enterprise license to add more
+    than 2 users.
+</Note>
 
 ## Setup Steps
 

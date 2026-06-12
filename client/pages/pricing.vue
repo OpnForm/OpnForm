@@ -480,7 +480,7 @@
                     class="w-4 h-5 text-emerald-600"
                     name="heroicons:check-20-solid"
                   />
-                  SSO (SAML, OIDC, LDAP)
+                  SAML / LDAP SSO
                 </li>
                 <li class="flex items-center gap-2.5">
                   <Icon

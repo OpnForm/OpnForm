@@ -3,23 +3,29 @@ title: Single Sign-On
 description: Use Enterprise SSO features on self-hosted OpnForm
 ---
 
-Self-hosted Enterprise can unlock SSO features for teams that need centralized identity management.
+Self-hosted Enterprise unlocks advanced SSO features for teams that need centralized identity management beyond the Community self-hosted limits.
+
+<Info>
+    OIDC SSO is available on self-hosted Community instances without an
+    Enterprise license, but the instance remains limited to 2 users total.
+    Enterprise is required to add more than 2 users and to use SAML or LDAP SSO.
+</Info>
 
 ## What this unlocks
 
 Enterprise SSO covers:
 
--   OIDC SSO
 -   SAML SSO
 -   LDAP SSO
+-   More than 2 self-hosted users when using OIDC provisioning
 
-OIDC configuration is currently documented in detail. SAML and LDAP availability depends on the Enterprise features enabled for your installation.
+OIDC configuration is documented in detail and can be used on Community self-hosted instances within the 2-user limit. SAML and LDAP availability depends on the Enterprise features enabled for your installation.
 
 ## Before you start
 
 Make sure you have:
 
--   An active self-hosted Enterprise license with SSO enabled
+-   An active self-hosted Enterprise license with SSO enabled for SAML or LDAP
 -   Workspace admin access
 -   Identity provider credentials and allowed redirect URI configuration
 

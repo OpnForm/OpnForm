@@ -135,6 +135,32 @@ describe('OidcConnectionController - Create Connection', function () {
         expect($response->json('client_secret'))->toBeNull(); // Should not expose secret
     });
 
+    it('creates workspace-scoped connection on self-hosted without license', function () {
+        Setting::forget(SettingsKey::SELF_HOSTED_LICENSE);
+        Cache::forget('self_hosted_license_check');
+
+        $user = User::factory()->create(['email' => 'user@company.com']);
+        $this->actingAs($user);
+
+        $workspace = Workspace::factory()->create();
+        $user->workspaces()->attach($workspace->id, ['role' => 'admin']);
+
+        $data = [
+            'name' => 'Company SSO',
+            'slug' => 'company-sso',
+            'domain' => 'company.com',
+            'issuer' => 'https://idp.company.com',
+            'client_id' => 'client-123',
+            'client_secret' => 'secret-456',
+            'enabled' => true,
+        ];
+
+        $response = $this->postJson("/open/workspaces/{$workspace->id}/oidc-connections", $data);
+
+        $response->assertStatus(201);
+        expect($response->json('name'))->toBe('Company SSO');
+    });
+
     it('validates required fields', function () {
         $user = $this->actingAsEnterpriseUser();
         $workspace = Workspace::factory()->create();
