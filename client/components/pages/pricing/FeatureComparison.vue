@@ -187,8 +187,8 @@ const sections = [
       {
         label: "Multi-user access",
         values: [
-          "(all admins)",
-          "(all admins)",
+          false,
+          false,
           "(roles & permissions)",
           "(roles + SSO)",
         ],

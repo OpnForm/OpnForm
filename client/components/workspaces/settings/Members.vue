@@ -259,7 +259,7 @@ const updateUserRole = () => {
     alert.success(data.message || 'User role updated successfully')
     showEditUserModal.value = false
   }).catch((error) => {
-    alert.error(error.response?.data?.message || "There was an error updating user role")
+    alert.error(error.response?._data?.message || "There was an error updating user role")
   })
 }
 
@@ -270,7 +270,7 @@ const removeUserHandler = (user) => {
     removeMutation.mutateAsync(user.id).then(() => {
       alert.success("User successfully removed.")
     }).catch((error) => {
-      alert.error(error.response?.data?.message || "There was an error removing user")
+      alert.error(error.response?._data?.message || "There was an error removing user")
     })
   })
 }
@@ -283,7 +283,7 @@ const resendInviteHandler = (invite) => {
     resendMutation.mutateAsync(invite.id).then(() => {
       alert.success("Invitation resent successfully.")
     }).catch((error) => {
-      alert.error(error.response?.data?.message || "Failed to resend invitation")
+      alert.error(error.response?._data?.message || "Failed to resend invitation")
     })
   })
 }
@@ -295,7 +295,7 @@ const cancelInviteHandler = (invite) => {
     cancelMutation.mutateAsync(invite.id).then(() => {
       alert.success("Invitation cancelled successfully.")
     }).catch((error) => {
-      alert.error(error.response?.data?.message || "Failed to cancel invitation")
+      alert.error(error.response?._data?.message || "Failed to cancel invitation")
     })
   })
 }

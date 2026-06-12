@@ -29,15 +29,16 @@
         class="mb-4"
         color="warning"
         variant="subtle"
-        title="Pro plan required"
-        description="Please upgrade your account to invite users to your workspace."
+        title="Business plan required"
+        description="Please upgrade your account to invite users with roles to your workspace."
         :actions="[{
-          label: 'Upgrade to Pro',
+          label: 'Upgrade to Business',
           color: 'warning',
           variant: 'solid',
           onClick: () => openSubscriptionModal({
+            plan: 'business',
             modal_title: 'Upgrade to invite users to your workspace',
-            modal_description: 'Upgrade to our Pro plan to unlock team collaboration features along with customized branding, form analytics, custom domains, and more!'
+            modal_description: 'Upgrade to our Business plan to invite teammates with roles and permissions, along with advanced branding, partial submissions, and more!'
           })
         }]"
       />

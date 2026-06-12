@@ -30,6 +30,14 @@ it('grandfathers active legacy default subscriptions with moved pro features lin
     expect($service->hasFormFeature($workspace, 'custom_css'))->toBeTrue();
     expect($service->hasFormFeature($workspace, 'seo_meta'))->toBeTrue();
     expect($service->hasFormFeature($workspace, 'enable_ip_tracking'))->toBeTrue();
+    expect($workspace->plan_overrides['features'])->toContain('multi_user.roles');
+
+    (include database_path('migrations/2026_06_04_000000_rename_multi_user_roles_to_invite_user_in_plan_overrides.php'))->up();
+
+    $workspace = $workspace->fresh();
+    expect($workspace->plan_overrides['features'])->toContain('invite_user');
+    expect($workspace->plan_overrides['features'])->not->toContain('multi_user.roles');
+    expect(app(PlanAccessService::class)->hasFeature($workspace, Feature::INVITE_USER))->toBeTrue();
 });
 
 it('drops grandfathered features when the linked legacy subscription stops being active', function () {
