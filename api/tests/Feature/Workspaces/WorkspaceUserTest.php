@@ -135,13 +135,23 @@ it('enforces appsumo license member limits when inviting users', function () {
     expect($workspace->fresh()->users()->count())->toBe(1);
 });
 
-it('denies updating user roles for pro workspaces without invite_user', function () {
+it('allows pro workspace admins to manage existing members and invites without invite_user', function () {
+    Mail::fake();
+
     $owner = $this->createProUser();
     $this->actingAs($owner);
     $workspace = Workspace::factory()->create();
     $workspace->users()->attach($owner, ['role' => 'admin']);
     $member = User::factory()->create();
     $workspace->users()->attach($member, ['role' => 'user']);
+    $pendingInvite = \App\Models\UserInvite::create([
+        'email' => 'existing-invite@example.com',
+        'role' => 'user',
+        'workspace_id' => $workspace->id,
+        'valid_until' => now()->addDays(7),
+        'status' => \App\Models\UserInvite::PENDING_STATUS,
+        'token' => 'existing-invite-token',
+    ]);
     $workspace->flush();
     $owner->flush();
 
@@ -150,14 +160,25 @@ it('denies updating user roles for pro workspaces without invite_user', function
         'user' => $member,
     ]), [
         'role' => 'admin',
-    ])->assertStatus(403);
+    ])->assertSuccessful();
+
+    $this->postJson(route('open.workspaces.invites.resend', [
+        'workspace' => $workspace,
+        'inviteId' => $pendingInvite->id,
+    ]))->assertSuccessful();
+
+    $this->deleteJson(route('open.workspaces.invites.cancel', [
+        'workspace' => $workspace,
+        'inviteId' => $pendingInvite->id,
+    ]))->assertSuccessful();
 
     $role = \Illuminate\Support\Facades\DB::table('user_workspace')
         ->where('workspace_id', $workspace->id)
         ->where('user_id', $member->id)
         ->value('role');
 
-    expect($role)->toBe('user');
+    expect($role)->toBe('admin');
+    expect($workspace->fresh()->invites()->whereKey($pendingInvite->id)->exists())->toBeFalse();
 });
 
 it('denies inviting users for pro workspaces without invite_user', function () {
@@ -197,6 +218,54 @@ it('allows appsumo licensed users to invite users on pro-tier workspaces', funct
         ]);
 
     Mail::assertQueued(UserInvitationEmail::class);
+});
+
+it('enforces appsumo seat limits when a mixed pro and appsumo workspace relies on appsumo invite_user access', function () {
+    $proOwner = $this->createProUser();
+    $appsumoOwner = $this->createAppSumoLicensedUser(1);
+    $this->actingAs($proOwner);
+    $workspace = Workspace::factory()->create();
+    $workspace->users()->attach($proOwner, ['role' => 'admin']);
+    $workspace->users()->attach($appsumoOwner, ['role' => 'admin']);
+    $workspace->flush();
+    $proOwner->flush();
+    $appsumoOwner->flush();
+
+    $this->postJson(route('open.workspaces.users.add', ['workspace' => $workspace]), [
+        'email' => 'mixed-appsumo-limit@example.com',
+        'role' => 'user',
+    ])
+        ->assertStatus(403)
+        ->assertJson([
+            'message' => 'You have reached the maximum number of users allowed with your license.',
+        ]);
+
+    expect($workspace->fresh()->users()->count())->toBe(2);
+});
+
+it('does not apply appsumo seat limits when business tier grants invite_user in a mixed-owner workspace', function () {
+    $businessOwner = $this->createBusinessUser();
+    $appsumoOwner = $this->createAppSumoLicensedUser(1);
+    $this->actingAs($businessOwner);
+    $workspace = Workspace::factory()->create();
+    $workspace->users()->attach($businessOwner, ['role' => 'admin']);
+    $workspace->users()->attach($appsumoOwner, ['role' => 'admin']);
+    $workspace->flush();
+    $businessOwner->flush();
+    $appsumoOwner->flush();
+
+    $newUser = User::factory()->create(['email' => 'mixed-business-invite@example.com']);
+
+    $this->postJson(route('open.workspaces.users.add', ['workspace' => $workspace]), [
+        'email' => $newUser->email,
+        'role' => 'user',
+    ])
+        ->assertSuccessful()
+        ->assertJson([
+            'message' => 'User has been successfully added to workspace.',
+        ]);
+
+    expect($workspace->fresh()->users()->whereKey($newUser->id)->exists())->toBeTrue();
 });
 
 it('allows inviting users when the workspace has an invite_user override', function () {

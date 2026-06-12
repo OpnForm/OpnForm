@@ -178,6 +178,46 @@ class PlanAccessService
             ?? config('plans.form_features.' . $feature);
     }
 
+    public function featureUsesLicenseGrant(Workspace $workspace, string $feature): bool
+    {
+        $overrideFeatures = $this->planOverrideResolver->getEffectiveOverrides($workspace)['features'] ?? [];
+        if (in_array($feature, $overrideFeatures, true)) {
+            return false;
+        }
+
+        $requiredTier = $this->getRequiredTier($feature);
+        if (
+            $requiredTier !== null
+            && $this->tierMeetsRequirement($this->getTier($workspace), $requiredTier)
+        ) {
+            return false;
+        }
+
+        return $this->licenseFeatureGrant($workspace, $feature) !== null;
+    }
+
+    public function licenseFeatureGrant(Workspace $workspace, string $feature): ?array
+    {
+        $grants = config('plans.license_feature_grants', []);
+
+        foreach ($workspace->billingOwners() as $owner) {
+            $license = $owner->activeLicense();
+            if (!$license) {
+                continue;
+            }
+
+            $provider = $license->license_provider;
+            if (in_array($feature, $grants[$provider] ?? [], true)) {
+                return [
+                    'owner' => $owner,
+                    'license' => $license,
+                ];
+            }
+        }
+
+        return null;
+    }
+
     public function getFormFeatureRequiredTier(string $feature): ?string
     {
         return config('plans.form_features.' . $feature);
@@ -233,20 +273,6 @@ class PlanAccessService
 
     private function workspaceHasLicenseFeatureGrant(Workspace $workspace, string $feature): bool
     {
-        $grants = config('plans.license_feature_grants', []);
-
-        foreach ($workspace->billingOwners() as $owner) {
-            $license = $owner->activeLicense();
-            if (!$license) {
-                continue;
-            }
-
-            $provider = $license->license_provider;
-            if (in_array($feature, $grants[$provider] ?? [], true)) {
-                return true;
-            }
-        }
-
-        return false;
+        return $this->licenseFeatureGrant($workspace, $feature) !== null;
     }
 }

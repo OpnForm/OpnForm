@@ -126,36 +126,26 @@ class WorkspacePolicy
         return false;
     }
 
-    public function manageWorkspaceMembers(User $user, Workspace $workspace)
+    public function inviteUser(User $user, Workspace $workspace)
     {
         if (!$this->adminAction($user, $workspace)) {
             return Response::deny('You need to be an admin of this workspace to do this.');
         }
 
-        if (!$workspace->hasFeature('invite_user')) {
-            return Response::deny('A Business plan is required to manage workspace members.');
+        $planAccess = app(PlanAccessService::class);
+        if (!$planAccess->hasFeature($workspace, 'invite_user')) {
+            return Response::deny('A Business plan is required to invite users.');
         }
 
-        if ($token = $user->currentAccessToken()) {
-            if (! $token->can('workspaces-write')) {
-                return Response::deny('Token lacks workspaces:write ability.');
+        if ($planAccess->featureUsesLicenseGrant($workspace, 'invite_user')) {
+            $grant = $planAccess->licenseFeatureGrant($workspace, 'invite_user');
+            if (!$grant) {
+                return Response::deny('A Business plan is required to invite users.');
             }
-        }
 
-        return true;
-    }
-
-    public function inviteUser(User $user, Workspace $workspace)
-    {
-        $manageMembers = $this->manageWorkspaceMembers($user, $workspace);
-        if ($manageMembers !== true) {
-            return $manageMembers;
-        }
-
-        // In case of special license, check license limit
-        $billingOwner = $workspace->billingOwners()->first();
-        if ($billingOwner && ($license = $billingOwner->activeLicense())) {
-            $userActiveMembers = (new UserHelper($billingOwner))->getActiveMembersCount();
+            $license = $grant['license'];
+            $owner = $grant['owner'];
+            $userActiveMembers = (new UserHelper($owner))->getActiveMembersCount();
             if ($userActiveMembers >= $license->max_users_limit_count) {
                 return Response::deny('You have reached the maximum number of users allowed with your license.');
             }

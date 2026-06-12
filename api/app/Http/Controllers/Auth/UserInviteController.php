@@ -24,7 +24,7 @@ class UserInviteController extends Controller
 
     public function resendInvite(Workspace $workspace, $inviteId)
     {
-        $this->authorize('manageWorkspaceMembers', $workspace);
+        $this->authorize('adminAction', $workspace);
         $userInvite = $workspace->invites()->find($inviteId);
         if (!$userInvite) {
             return $this->error(['success' => false, 'message' => 'Invite not found for this workspace.']);
@@ -41,7 +41,7 @@ class UserInviteController extends Controller
 
     public function cancelInvite(Workspace $workspace, $inviteId)
     {
-        $this->authorize('manageWorkspaceMembers', $workspace);
+        $this->authorize('adminAction', $workspace);
         $userInvite = $workspace->invites()->find($inviteId);
         if (!$userInvite) {
             return $this->error(['success' => false, 'message' => 'Invite not found for this workspace.']);

@@ -91,7 +91,7 @@ class WorkspaceUserController extends Controller
 
     public function updateUserRole(Request $request, Workspace $workspace, User $user)
     {
-        $this->authorize('manageWorkspaceMembers', $workspace);
+        $this->authorize('adminAction', $workspace);
         if (!$workspace->users()->whereKey($user->id)->exists()) {
             abort(404);
         }
