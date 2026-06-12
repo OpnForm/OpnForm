@@ -1,0 +1,92 @@
+---
+title: Self-hosted License
+description: Understand Community and Enterprise features for self-hosted OpnForm installations
+---
+
+OpnForm is open-source and licensed under AGPLv3. You can self-host the core product without an Enterprise license.
+
+OpnForm also includes Enterprise features under a separate Enterprise License. These features are built for teams that need stronger identity controls, branding, auditability, and workspace-level administration while helping fund ongoing development of the open-source project.
+
+<Info>
+    Enterprise code is included with the OpnForm repository and Docker images,
+    but Enterprise features require an active self-hosted Enterprise license to
+    use.
+</Info>
+
+## When do I need a license?
+
+| Capability | Community self-hosted | Self-hosted Enterprise |
+| ---------- | --------------------- | ---------------------- |
+| Run OpnForm for personal use | Yes | Yes |
+| Run OpnForm for commercial use | Yes | Yes |
+| Modify the AGPLv3 core and redistribute under AGPLv3 | Yes | Yes |
+| Use core form builder features | Yes | Yes |
+| Configure instance-wide SMTP, storage, domains, and OAuth | Yes | Yes |
+| Use Enterprise workspace features | No | Yes |
+| Use Enterprise support and licensing terms | No | Yes |
+
+## What is included in Community self-hosted?
+
+Community self-hosted installations include the core OpnForm product:
+
+-   Core form builder and public form pages
+-   Form submissions and exports
+-   Embeds and the JavaScript SDK
+-   Webhooks and standard integrations available in your deployment
+-   Instance-wide email sending with `MAIL_*` environment variables
+-   Instance-wide domain configuration with `APP_URL`, `FRONT_URL`, and your reverse proxy
+-   Instance-wide file storage configuration, including local and S3-compatible storage
+-   Standard authentication and OAuth providers configured with environment variables
+
+The exact limits depend on your infrastructure and on the product features enabled in your version of OpnForm.
+
+## What is included in self-hosted Enterprise?
+
+Self-hosted Enterprise unlocks advanced workspace and organization controls:
+
+| Enterprise area | What it unlocks |
+| --------------- | --------------- |
+| SSO | OIDC, SAML, and LDAP single sign-on features |
+| Multi-org | Multiple workspaces and advanced team role features |
+| White label | Branding removal, advanced branding, and white-label controls |
+| Workspace Custom SMTP | Dedicated SMTP settings for individual workspaces |
+| Audit logs | Audit and compliance-oriented visibility features |
+| External storage | Enterprise storage controls beyond the instance-wide default |
+| Custom code | Workspace and form custom code when enabled for self-hosted deployments |
+
+<Note>
+    Your license key controls which Enterprise areas are enabled. Some licenses
+    may include a subset of Enterprise features.
+</Note>
+
+## Instance configuration vs Enterprise workspace features
+
+Some OpnForm settings exist at two levels. The instance-wide configuration is available to self-hosted installations without an Enterprise license. The workspace-level Enterprise feature gives specific workspaces their own dedicated controls.
+
+| Area | Community instance-wide configuration | Enterprise workspace feature |
+| ---- | ------------------------------------- | ---------------------------- |
+| Email | Configure the default sender with `MAIL_*` variables | Configure Workspace Custom SMTP for a specific workspace |
+| Storage | Configure the default filesystem or S3-compatible storage | Use Enterprise external storage controls when available |
+| Branding | Use core form customization options | Remove OpnForm branding and use advanced white-label controls |
+| Authentication | Use standard login and configured OAuth providers | Use OIDC, SAML, or LDAP SSO |
+
+<Note>
+    Custom domains can also exist at two levels: the domain for your whole
+    OpnForm instance, and custom domains attached to workspaces or forms. See
+    [Using your own domain](/configuration/custom-domain) for the instance-wide
+    setup.
+</Note>
+
+## Activate Enterprise features
+
+To unlock Enterprise features on a self-hosted instance, activate a license key in OpnForm.
+
+See [License Activation](/deployment/license-activation) for setup steps, network requirements, and troubleshooting.
+
+## Related pages
+
+-   [License Activation](/deployment/license-activation)
+-   [Workspace Custom SMTP](/deployment/enterprise-features/workspace-custom-smtp)
+-   [Single Sign-On](/deployment/enterprise-features/single-sign-on)
+-   [Email Setup](/configuration/email-setup)
+-   [Environment Variables](/configuration/environment-variables)

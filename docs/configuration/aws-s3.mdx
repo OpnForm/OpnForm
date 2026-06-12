@@ -5,6 +5,13 @@ description: OpnForm & File uploads
 
 OpnForm uses [Laravel's filesystem](https://laravel.com/docs/master/filesystem), which provides a powerful abstraction layer for various file storage systems. While AWS S3 is a popular choice, OpnForm supports both local storage and S3-compatible services.
 
+<Info>
+    This guide covers instance-wide file storage configuration for your
+    self-hosted deployment. Enterprise external storage features are separate
+    workspace or organization-level controls. See [External
+    Storage](/deployment/enterprise-features/external-storage).
+</Info>
+
 1. Create an S3 bucket in your AWS account (or use an equivalent service).
 
 2. Create an IAM user with access to this bucket. Ensure the user has the necessary permissions to read from and write to the bucket.

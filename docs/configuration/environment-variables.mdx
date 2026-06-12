@@ -35,7 +35,7 @@ There are dedicated configuration pages available for more detailed setup instru
 | `FRONT_API_SECRET`               | Shared secret with the front-end.                                                                                                                                                         |
 | `JWT_TTL`                        | Time to live for JSON Web Tokens (JWT).                                                                                                                                                   |
 | `JWT_SECRET`                     | Secret key used to sign JWTs.                                                                                                                                                             |
-| `JWT_SKIP_IP_UA_VALIDATION`      | Set to `true` to disable JWT IP and User Agent validation (defaults to `false`). Useful for dynamic IPs.                                                                                  |
+| `JWT_SKIP_IP_UA_VALIDATION`      | Set to `true` to disable JWT User Agent validation (defaults to `false`). Keep this disabled in production and Docker deployments. For local Docker development, `docker-compose.dev.yml` sets this to `true` automatically. |
 | `PUBLIC_UPLOADS_RATE_LIMIT_PER_MINUTE` | Maximum public upload requests allowed per client IP or authenticated user per route each minute. Defaults to `30`.                                                                 |
 | `PUBLIC_UPLOADS_RATE_LIMIT_PER_HOUR`   | Maximum public upload requests allowed per client IP or authenticated user per route each hour. Defaults to `300`.                                                                  |
 | `OIDC_FORCE_LOGIN`               | When set to `true`, password-based authentication is disabled and users must authenticate via OIDC SSO. See [Force Login Mode](../configuration/oidc-sso#7-force-login-mode) for details. |
@@ -44,6 +44,14 @@ There are dedicated configuration pages available for more detailed setup instru
 | `LICENSE_CHECKOUT_SUCCESS_URL`   | Cloud checkout success URL used when creating self-hosted Enterprise license Stripe sessions.                                                                                             |
 | `LICENSE_CHECKOUT_CANCEL_URL`    | Cloud checkout cancellation URL used when creating self-hosted Enterprise license Stripe sessions.                                                                                         |
 | `LICENSE_PORTAL_RETURN_URL`      | Return URL used by the Stripe billing portal for self-hosted Enterprise licenses.                                                                                                          |
+
+### Self-hosted Enterprise licensing
+
+Self-hosted Enterprise features are unlocked by activating a license key in the OpnForm UI. Most installations can use the default license API endpoint.
+
+Use the `LICENSE_*` variables only when you need to override checkout, billing portal, or license API URLs for your deployment.
+
+For activation steps and troubleshooting, see [License Activation](../deployment/license-activation).
 
 ### OAuth Integration Environment Variables
 

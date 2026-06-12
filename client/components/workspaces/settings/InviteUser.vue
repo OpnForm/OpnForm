@@ -96,6 +96,7 @@ const hasActiveLicense = computed(() => {
 })
 const crisp = useCrisp()
 const { openSubscriptionModal } = useAppModals()
+const { handleLicenseError } = useLicenseUpgradeModal()
 const { currentId: workspaceId } = useCurrentWorkspace()
 const alert = useAlert()
 const { hasFeature } = usePlanFeatures()
@@ -142,6 +143,15 @@ const addUser = () => {
     emit('user-added')
     closeModal()
   }).catch((error) => {
+    const handled = handleLicenseError(error, {
+      title: 'Enterprise license required for more users',
+      description: 'Your self-hosted instance includes up to 2 users without an Enterprise license. Purchase or activate an Enterprise self-hosted license to invite more workspace members.'
+    })
+    if (handled) {
+      closeModal()
+      return
+    }
+
     alert.error(error?.data?.message || "There was an error adding user")
   })
 }

@@ -39,7 +39,7 @@ class WorkspaceResource extends JsonResource
             return [
                 'id' => $this->resource->id,
                 'max_file_size' => $this->resource->max_file_size / 1000000,
-                'settings' => $this->resource->hasFeature('branding.advanced') ? [
+                'settings' => $this->resource->hasFeature('custom_code') ? [
                     'custom_code' => $settings['custom_code'] ?? null,
                     'custom_css' => $settings['custom_css'] ?? null,
                 ] : [],

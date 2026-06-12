@@ -16,6 +16,7 @@ final class Feature
     public const FILE_UPLOAD_ALLOWED_TYPES = 'file_upload.allowed_types';
     public const EDITABLE_SUBMISSIONS = 'editable_submissions';
     public const BRANDING_ADVANCED = 'branding.advanced';
+    public const CUSTOM_CODE = 'custom_code';
     public const FORM_VERSIONING = 'form_versioning';
     public const ENABLE_IP_TRACKING = 'enable_ip_tracking';
     public const PARTIAL_SUBMISSIONS = 'partial_submissions';
@@ -37,6 +38,7 @@ final class Feature
             self::FILE_UPLOAD_ALLOWED_TYPES,
             self::EDITABLE_SUBMISSIONS,
             self::BRANDING_ADVANCED,
+            self::CUSTOM_CODE,
             self::FORM_VERSIONING,
             self::ENABLE_IP_TRACKING,
             self::PARTIAL_SUBMISSIONS,

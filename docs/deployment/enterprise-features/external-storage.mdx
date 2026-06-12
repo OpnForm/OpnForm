@@ -1,0 +1,28 @@
+---
+title: External Storage
+description: Understand Enterprise external storage controls for self-hosted OpnForm
+---
+
+External Storage is an Enterprise area for teams that need storage controls beyond the instance-wide default.
+
+<Info>
+    Instance-wide file storage configuration, including local and
+    S3-compatible storage, is configured separately and does not require an
+    Enterprise license by itself.
+</Info>
+
+## Instance-wide storage vs Enterprise external storage
+
+Self-hosted OpnForm can use Laravel filesystem configuration to store uploads locally or in S3-compatible storage. This is the default storage configuration for the whole instance.
+
+Enterprise external storage features are workspace or organization-level controls that go beyond the default instance storage setup.
+
+## Configure instance-wide file storage
+
+See [AWS S3 Configuration](/configuration/aws-s3) for the standard self-hosted storage setup.
+
+## Related pages
+
+-   [AWS S3 Configuration](/configuration/aws-s3)
+-   [Self-hosted License](/deployment/self-hosted-license)
+-   [License Activation](/deployment/license-activation)

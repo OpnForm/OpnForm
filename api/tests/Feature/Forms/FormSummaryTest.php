@@ -280,6 +280,22 @@ describe('Form Summary', function () {
         $this->getJson(route('open.workspaces.form.summary', [$otherWorkspace, $otherForm]))
             ->assertStatus(402);
     });
+
+    it('returns 404 when workspace and form do not match on summary endpoints', function () {
+        $workspaceA = $this->createUserWorkspace($this->user);
+        $workspaceB = $this->createUserWorkspace($this->user);
+        $formInWorkspaceA = $this->createForm($this->user, $workspaceA);
+        $nameProperty = collect($formInWorkspaceA->properties)->firstWhere('name', 'Name');
+
+        $this->getJson(route('open.workspaces.form.summary', [$workspaceB, $formInWorkspaceA]))
+            ->assertStatus(404);
+
+        $this->getJson(route('open.workspaces.form.summary.field-values', [
+            $workspaceB,
+            $formInWorkspaceA,
+            $nameProperty['id'],
+        ]))->assertStatus(404);
+    });
 });
 
 describe('Form Summary Field Values (Load More)', function () {

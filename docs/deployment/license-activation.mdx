@@ -1,0 +1,96 @@
+---
+title: License Activation
+description: Activate a self-hosted Enterprise license on your OpnForm installation
+---
+
+Use a self-hosted Enterprise license key to unlock Enterprise features on your OpnForm instance.
+
+## Prerequisites
+
+Before activating a license, make sure you have:
+
+-   A running self-hosted OpnForm installation
+-   A user account that is an admin of at least one workspace
+-   A self-hosted Enterprise license key
+-   Network access from your API container or server to the OpnForm license API
+
+By default, self-hosted license validation uses `https://api.opnform.com`.
+
+## Activate a license from the UI
+
+<Steps>
+<Step title="Open user settings">
+    Sign in as a workspace admin, then open your user settings.
+</Step>
+
+<Step title="Open Enterprise License">
+    Go to the **Enterprise License** section.
+</Step>
+
+<Step title="Enter your license key">
+    Paste your license key in the **License Key** field.
+</Step>
+
+<Step title="Activate the license">
+    Click **Activate License**. When activation succeeds, OpnForm refreshes the instance feature flags and enables the licensed Enterprise features.
+</Step>
+</Steps>
+
+## License-related environment variables
+
+Most installations can use the default license API settings. Override these variables only when instructed by OpnForm support or when you run a custom license API endpoint.
+
+| Variable | Description |
+| -------- | ----------- |
+| `LICENSE_API_ENDPOINT` | Backend license API endpoint. Defaults to `https://api.opnform.com`. |
+| `LICENSE_CHECKOUT_SUCCESS_URL` | Checkout success URL used when creating self-hosted Enterprise license checkout sessions. |
+| `LICENSE_CHECKOUT_CANCEL_URL` | Checkout cancellation URL used when creating self-hosted Enterprise license checkout sessions. |
+| `LICENSE_PORTAL_RETURN_URL` | Return URL used by the billing portal for self-hosted Enterprise licenses. |
+| `NUXT_PUBLIC_LICENSE_API_ENDPOINT` | Front-end license API endpoint used to start Enterprise license checkout. Defaults to `https://api.opnform.com`. |
+
+<Warning>
+    After changing environment variables, recreate the affected Docker
+    containers. A simple restart does not reload Docker environment variables.
+</Warning>
+
+## Network requirements
+
+The API validates the installed license with the configured license API endpoint. The instance sends its license key, instance identifier, and usage metadata needed to validate the license.
+
+OpnForm caches license checks. If the license API is temporarily unavailable after a successful check, the instance can enter a short grace state and continue using licensed features while it retries validation.
+
+## License statuses
+
+| Status | Meaning |
+| ------ | ------- |
+| `active` | The license is valid and Enterprise features are enabled. |
+| `grace` | The last successful check is still within the grace window after a temporary license API failure. |
+| `expired` | The license is no longer active. Enterprise features are disabled until renewal or activation of a valid key. |
+| `activation_limit_reached` | The key is already activated on another self-hosted instance. Contact support to reset the activation. |
+| `invalid` | The key is missing, invalid, or could not be validated. |
+
+## Troubleshooting
+
+<AccordionGroup>
+<Accordion title="The license key is invalid or expired">
+    Confirm that you copied the full key and that the license is active. If the key still fails, contact OpnForm support.
+</Accordion>
+
+<Accordion title="The activation limit was reached">
+    A self-hosted license key is tied to an instance activation. Contact support if you migrated servers or need the activation reset.
+</Accordion>
+
+<Accordion title="Enterprise features are still locked after activation">
+    Refresh the page and sign in again. If features remain locked, confirm that the API can reach the configured `LICENSE_API_ENDPOINT`, then recreate containers if you changed environment variables.
+</Accordion>
+
+<Accordion title="The billing portal does not open">
+    Make sure a valid license key is installed and that the API can reach the license API endpoint.
+</Accordion>
+</AccordionGroup>
+
+## Related pages
+
+-   [Self-hosted License](/deployment/self-hosted-license)
+-   [Environment Variables](/configuration/environment-variables)
+-   [Docker Environment Variables](/configuration/environment-variables#docker-environment-variables)
