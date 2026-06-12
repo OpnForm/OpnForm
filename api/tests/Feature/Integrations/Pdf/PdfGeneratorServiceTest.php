@@ -220,8 +220,14 @@ describe('PdfGeneratorService', function () {
         expect(Storage::exists($resultPath))->toBeTrue();
     });
 
-    it('generates pdf without fetching static image urls unavailable in storage', function () {
-        Http::fake();
+    it('generates pdf with static image from unsplash-like url', function () {
+        Http::fake([
+            'https://images.unsplash.com/*' => Http::response(
+                tinyPngBytes(),
+                200,
+                ['Content-Type' => 'image/png']
+            ),
+        ]);
 
         $pdfContent = createTestPdf();
         $templatePath = 'pdf-templates/1/template.pdf';
@@ -263,7 +269,7 @@ describe('PdfGeneratorService', function () {
 
         expect(Storage::exists($resultPath))->toBeTrue();
         expect(Storage::get($resultPath))->toStartWith('%PDF');
-        Http::assertNothingSent();
+        Http::assertSentCount(1);
     });
 });
 
@@ -294,23 +300,23 @@ describe('Image resolving', function () {
         expect($content)->toBe('img-bytes');
     });
 
-    it('does not fetch remote image urls', function () {
+    it('does not fetch unsafe remote image urls', function () {
         Http::fake();
 
         $resolver = new PdfImageResolver();
 
-        $content = $resolver->resolveContent('https://example.com/image.png');
+        $content = $resolver->resolveContent('https://169.254.169.254/latest/meta-data/');
 
         expect($content)->toBeNull();
         Http::assertNothingSent();
     });
 
-    it('resolves url-shaped image values by storage filename only', function () {
+    it('resolves local asset urls from storage without remote fetch', function () {
         Http::fake();
         Storage::put('assets/forms/image.png', 'stored-image-bytes');
 
         $resolver = new PdfImageResolver();
-        $content = $resolver->resolveContent('https://example.com/image.png');
+        $content = $resolver->resolveContent(route('forms.assets.show', ['image.png']));
 
         expect($content)->toBe('stored-image-bytes');
         Http::assertNothingSent();
