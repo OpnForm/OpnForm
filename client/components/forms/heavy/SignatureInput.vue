@@ -107,6 +107,21 @@ export default {
       handler(file) {
         this.compVal = file?.url || null
       }
+    },
+    compVal: {
+      immediate: true,
+      handler(val) {
+        // When viewing an existing submission, the API returns signature data
+        // as [{file_url: "...", file_name: "..."}]. Convert to the format
+        // expected by UploadedFile so the signature image is displayed.
+        if (this.disabled && val && Array.isArray(val) && val.length > 0 && val[0].file_url) {
+          this.file = {
+            file: { name: val[0].file_name || 'signature.png' },
+            url: val[0].file_url,
+            src: val[0].file_url
+          }
+        }
+      }
     }
   },
 
