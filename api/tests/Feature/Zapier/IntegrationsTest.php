@@ -12,7 +12,7 @@ use function PHPUnit\Framework\assertEquals;
 
 function zapierIntegrationTokenAbilities(): array
 {
-    return ['forms-write', 'manage-integrations'];
+    return ['manage-integrations'];
 }
 
 test('create an integration', function () {
@@ -39,6 +39,47 @@ test('create an integration', function () {
 
     assertEquals($form->id, $integration->form_id);
     assertEquals($hookUrl, $integration->data->hook_url);
+});
+
+test('writable workspace members can create integrations with only the manage integrations ability', function () {
+    $owner = User::factory()->create();
+    $workspace = createUserWorkspace($owner);
+    $form = createForm($owner, $workspace, ['title' => 'First form']);
+
+    $member = User::factory()->create();
+    $member->workspaces()->sync([$workspace->id => ['role' => 'user']], false);
+
+    Sanctum::actingAs($member, zapierIntegrationTokenAbilities());
+
+    post(route('zapier.webhooks.store'), [
+        'form_id' => $form->id,
+        'hookUrl' => $hookUrl = 'https://zapier.com/hook/test',
+    ])->assertOk();
+
+    assertDatabaseCount('form_integrations', 1);
+
+    $integration = FormIntegration::first();
+
+    assertEquals($form->id, $integration->form_id);
+    assertEquals($hookUrl, $integration->data->hook_url);
+});
+
+test('readonly workspace members cannot create integrations even with form write token ability', function () {
+    $owner = User::factory()->create();
+    $workspace = createUserWorkspace($owner);
+    $form = createForm($owner, $workspace, ['title' => 'First form']);
+
+    $readonly = User::factory()->create();
+    $readonly->workspaces()->sync([$workspace->id => ['role' => 'readonly']], false);
+
+    Sanctum::actingAs($readonly, ['forms-write', 'manage-integrations']);
+
+    post(route('zapier.webhooks.store'), [
+        'form_id' => $form->id,
+        'hookUrl' => 'https://zapier.com/hook/test',
+    ])->assertForbidden();
+
+    assertDatabaseCount('form_integrations', 0);
 });
 
 test('readonly workspace members cannot create integrations even with integration token abilities', function () {
