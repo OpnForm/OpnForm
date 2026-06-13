@@ -105,7 +105,7 @@ const workspaceId = computed(() => workspace.value?.id)
 const { hasFeature } = usePlanFeatures()
 const canManageConnections = computed(() => !!workspace.value && workspace.value.is_admin)
 
-// Check if feature is accessible (Enterprise required for cloud, free for self-hosted)
+// OIDC is available on self-hosted instances; cloud workspaces still require Enterprise.
 const isSelfHosted = computed(() => useFeatureFlag('self_hosted'))
 const billingEnabled = computed(() => useFeatureFlag('billing.enabled'))
 const canAccessFeature = computed(() => {
@@ -115,7 +115,7 @@ const canAccessFeature = computed(() => {
 
 const { connections, create, update, remove } = useOidcConnections(workspaceId)
 
-// Allow viewing connections without Enterprise (Enterprise only required for create/update/delete)
+// Allow viewing connections without Enterprise (Enterprise only required for create/update/delete on cloud)
 const { data: connectionsData, isLoading: isConnectionsLoading } = connections()
 
 const alertConfig = computed(() => {
@@ -148,7 +148,7 @@ const alertConfig = computed(() => {
     icon: 'i-heroicons-information-circle',
     color: 'info',
     title: 'OIDC SSO',
-    description: 'Configure OpenID Connect single sign-on for your self-hosted installation.',
+    description: 'OIDC is available on self-hosted instances. Free self-hosted instances are limited to 2 users total; activate an Enterprise license to add more users.',
     actions: []
   }
 })
@@ -164,8 +164,8 @@ const openUpgradeModal = () => {
 const openSsoLicenseModal = (error) => {
   return handleLicenseError(error, {
     includeUnauthorized: true,
-    title: 'Enterprise license required for SSO',
-    description: 'Your self-hosted license does not include SSO. Purchase or activate an Enterprise self-hosted license to create and manage OIDC connections.'
+    title: 'Enterprise license required',
+    description: 'Activate an Enterprise self-hosted license to add more than 2 users or use advanced Enterprise features.'
   })
 }
 

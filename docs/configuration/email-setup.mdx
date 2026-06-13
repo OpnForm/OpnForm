@@ -9,13 +9,28 @@ By default, with a new Docker deployment, the email driver used is `log`, which 
 
 OpnForm uses Laravel's mail system. For more detailed information, you can refer to the [Laravel Mail documentation](https://laravel.com/docs/master/mail).
 
+## Email Configuration Options
+
+Self-hosted OpnForm has two email configuration levels:
+
+-   **Instance-wide email sending**: Configure the default mailer for your whole OpnForm instance with environment variables such as `MAIL_MAILER`, `MAIL_HOST`, and `MAIL_FROM_ADDRESS`. This is the standard setup for sending account emails, notifications, and any form email notification that does not use workspace-specific SMTP settings.
+-   **Workspace email settings**: Configure a custom SMTP server from a workspace's **Email Settings** page. These settings apply only to that workspace and override the instance-wide mailer for that workspace's form email notifications. Workspace email settings are a self-hosted Enterprise feature.
+
+<Info>
+    You do not need workspace email settings to send emails from a self-hosted
+    instance. Configure the instance-wide `MAIL_*` variables first, then use
+    workspace email settings only when a workspace needs its own SMTP server or
+    sender identity. See [Workspace Custom
+    SMTP](/deployment/enterprise-features/workspace-custom-smtp) for details.
+</Info>
+
 ## Supported Mail Drivers
 
 Laravel supports various mail drivers, including SMTP, Mailgun, Postmark, Amazon SES, and more. In this guide, we'll focus on setting up SMTP, which is widely used.
 
-## Configuring SMTP Settings
+## Configure Instance-Wide SMTP Settings
 
-To configure SMTP, you need to set the following environment variables in your `.env` file:
+To configure SMTP for the whole instance, set the following environment variables in your backend `.env` file:
 
 | Variable | Description |
 |----------|-------------|
@@ -27,6 +42,41 @@ To configure SMTP, you need to set the following environment variables in your `
 | `MAIL_ENCRYPTION` | The encryption method used by your SMTP server (typically `tls` or `ssl`). |
 | `MAIL_FROM_ADDRESS` | The email address that emails should be sent from. |
 | `MAIL_FROM_NAME` | The name that should appear as the sender of the emails. |
+
+After changing these variables, restart the API container or process so Laravel loads the new mail configuration.
+
+## Configure Workspace SMTP Settings
+
+Workspace email settings let a workspace send its form email notifications through a dedicated SMTP server instead of the instance-wide mailer.
+
+Use workspace email settings when:
+
+-   A customer or internal team needs emails to come from their own domain.
+-   Different workspaces need different SMTP credentials.
+-   You want form notifications for one workspace to use a separate sender reputation or provider.
+
+To configure workspace SMTP settings:
+
+<Steps>
+<Step title="Open workspace settings">
+    Open the workspace where you want to use a custom sender, then go to **Email Settings**.
+</Step>
+
+<Step title="Enter SMTP credentials">
+    Add the SMTP host, port, encryption, username, password, and sender address for that workspace.
+</Step>
+
+<Step title="Save the settings">
+    Save the workspace email settings. Form email notifications from this workspace will use this SMTP server when the workspace has access to the feature.
+</Step>
+</Steps>
+
+<Note>
+    Workspace email settings do not replace the instance-wide mail
+    configuration. Keep the `MAIL_*` variables configured as the default sender
+    and fallback for your instance. Workspace email settings require a
+    self-hosted Enterprise license.
+</Note>
 
 import CloudVersion from "/snippets/cloud-version.mdx";
 
