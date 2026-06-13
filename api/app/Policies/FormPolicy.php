@@ -60,18 +60,24 @@ class FormPolicy
     }
 
     /**
+     * Determine whether the user can access the form as a writable workspace member.
+     */
+    private function canAccessWritableForm(User $user, Form $form): bool
+    {
+        return $user->ownsForm($form) && !$form->workspace->isReadonlyUser($user);
+    }
+
+    /**
      * Determine whether the user can perform write operations on the model.
      */
     private function canPerformWriteOperation(User $user, Form $form): bool
     {
-        $ownsAndWritable = $user->ownsForm($form) && !$form->workspace->isReadonlyUser($user);
-
         // If using Sanctum token, ensure the token has write ability
         if ($token = $user->currentAccessToken()) {
-            return $token->can('forms-write') && $ownsAndWritable;
+            return $token->can('forms-write') && $this->canAccessWritableForm($user, $form);
         }
 
-        return $ownsAndWritable;
+        return $this->canAccessWritableForm($user, $form);
     }
 
     /**
@@ -113,8 +119,7 @@ class FormPolicy
      */
     public function manageIntegrations(User $user, Form $form)
     {
-        // First check if user has write permission
-        if (!$this->canPerformWriteOperation($user, $form)) {
+        if (!$this->canAccessWritableForm($user, $form)) {
             return false;
         }
 
