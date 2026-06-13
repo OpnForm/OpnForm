@@ -253,6 +253,7 @@ class PublicFormController extends Controller
         }
 
         // Legacy Hashid support (backward compatibility)
+        unset($submissionData['submission_id'], $submissionData['submission_hash']);
         $decodedId = Hashids::decode($submissionIdentifier);
         if (!empty($decodedId)) {
             $numericId = (int)($decodedId[0] ?? null);
@@ -266,7 +267,6 @@ class PublicFormController extends Controller
                 }
             }
         }
-        unset($submissionData['submission_hash']);
 
         return $submissionData;
     }
