@@ -685,7 +685,7 @@ class StripeExportDatasetService
 
     private function getAccountingLookbackDays(): int
     {
-        return max(0, (int) env('STRIPE_EXPORT_LOOKBACK_DAYS', 45));
+        return max(0, (int) config('services.stripe.export_lookback_days', 45));
     }
 
     private function resolveCustomerId(Invoice $invoice): string
