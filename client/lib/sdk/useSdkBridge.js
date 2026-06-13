@@ -7,9 +7,13 @@
 import { watch, toValue, onMounted, onUnmounted, toRaw, isRef, unref } from 'vue'
 import { useIsIframe } from '~/composables/useIsIframe'
 import { handleDarkMode } from '~/lib/forms/public-page'
-
-const MSG_PREFIX = 'opnform:'
-const POST_MESSAGE_TARGET = '*'
+import {
+  MSG_PREFIX,
+  WILDCARD_ORIGIN,
+  createSdkBridgeMessageHandler,
+  readSdkTokenFromUrl,
+  resolveInitialTrustedOrigin,
+} from '~/lib/sdk/sdkBridgeMessaging'
 
 // Event types
 const EVENTS = {
@@ -688,9 +692,14 @@ export function useSdkBridge(options) {
   const isIframe = useIsIframe()
   let messageHandler = null
 
-  function postMessageSafe(target, message) {
+  const initialSdkToken = typeof window !== 'undefined' ? readSdkTokenFromUrl() : null
+  const initialTrustedOrigin = typeof window !== 'undefined'
+    ? resolveInitialTrustedOrigin(isIframe)
+    : null
+
+  function postMessageSafe(target, message, origin) {
     try {
-      target.postMessage(message, POST_MESSAGE_TARGET)
+      target.postMessage(message, origin || WILDCARD_ORIGIN)
     } catch (error) {
       if (error?.name !== 'DataCloneError') {
         console.error('[OpnForm SDK Bridge] postMessage failed:', error)
@@ -703,9 +712,9 @@ export function useSdkBridge(options) {
     if (!cloneableMessage) return
 
     if (isIframe) {
-      postMessageSafe(window.parent, cloneableMessage)
+      postMessageSafe(window.parent, cloneableMessage, bridgeMessaging.getPostTargetOrigin())
     }
-    postMessageSafe(window, cloneableMessage)
+    postMessageSafe(window, cloneableMessage, window.location.origin)
   }
 
   /**
@@ -746,23 +755,18 @@ export function useSdkBridge(options) {
   function sendResponse(requestId, success, data = null, error = null) {
     if (!import.meta.client) return
 
-    const config = toValue(formConfig)
-    const message = {
-      type: MSG_PREFIX + 'response',
-      formSlug: config?.slug,
-      requestId: requestId,
-      success: success,
-      data: toPlainObject(data),
-      error: toPlainObject(error)
-    }
-
-    emitMessage(message)
+    bridgeMessaging.sendResponse(
+      requestId,
+      success,
+      toPlainObject(data),
+      toPlainObject(error),
+    )
   }
 
   /**
    * Handle incoming command from parent
    */
-  function handleCommand(message) {
+  function handleCommand(message, respond = sendResponse) {
     const { command, payload, requestId } = message
     const config = toValue(formConfig)
     
@@ -857,8 +861,8 @@ export function useSdkBridge(options) {
         case 'submit':
           if (formManager?.submit) {
             formManager.submit()
-              .then(() => sendResponse(requestId, true, { success: true }))
-              .catch((err) => sendResponse(requestId, false, null, err?.message || 'Submit failed'))
+              .then(() => respond(requestId, true, { success: true }))
+              .catch((err) => respond(requestId, false, null, err?.message || 'Submit failed'))
             return
           }
           break
@@ -894,31 +898,31 @@ export function useSdkBridge(options) {
       }
 
       if (result !== null) {
-        sendResponse(requestId, result.success !== false, result)
+        respond(requestId, result.success !== false, result)
       }
     } catch (e) {
       console.error('[OpnForm SDK Bridge] Command error:', e)
-      sendResponse(requestId, false, null, e.message)
+      respond(requestId, false, null, e.message)
     }
   }
+
+  const bridgeMessaging = createSdkBridgeMessageHandler({
+    isIframe,
+    getFormSlug: () => toValue(formConfig)?.slug,
+    initialSdkToken,
+    initialTrustedOrigin,
+    postToParent: (message, origin) => {
+      if (!import.meta.client || !isIframe) return
+      postMessageSafe(window.parent, message, origin)
+    },
+    onCommand: handleCommand,
+  })
 
   /**
    * Handle incoming messages
    */
   function onMessage(event) {
-    if (isIframe) {
-      if (event.source !== window.parent) return
-    } else if (event.source !== window) {
-      return
-    }
-
-    const data = event.data
-    if (!data || typeof data !== 'object') return
-    
-    // Handle SDK commands
-    if (data.type === MSG_PREFIX + 'command') {
-      handleCommand(data)
-    }
+    bridgeMessaging.onMessage(event)
   }
 
   /**

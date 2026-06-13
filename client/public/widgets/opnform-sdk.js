@@ -38,10 +38,26 @@
     RESIZE: 'resize'
   }
 
+  function generateSdkToken() {
+    if (global.crypto?.randomUUID) {
+      return global.crypto.randomUUID()
+    }
+    return `${Date.now()}-${Math.random().toString(36).slice(2)}`
+  }
+
   function getIframeOrigin(iframe) {
     try {
       if (!iframe?.src) return null
       return new URL(iframe.src, window.location.href).origin
+    } catch (e) {
+      return null
+    }
+  }
+
+  function getIframeSdkToken(iframe) {
+    try {
+      if (!iframe?.src) return null
+      return new URL(iframe.src, window.location.href).searchParams.get('_sdkToken')
     } catch (e) {
       return null
     }
@@ -111,12 +127,13 @@
    * Form Instance - represents a single embedded form
    */
   class FormInstance extends EventEmitter {
-    constructor(iframe, slug, sdk) {
+    constructor(iframe, slug, sdk, sdkToken = null) {
       super()
       this.iframe = iframe
       this.slug = slug
       this.id = iframe.id || slug
       this._sdk = sdk
+      this._sdkToken = sdkToken || getIframeSdkToken(iframe) || generateSdkToken()
       this._ready = false
       this._pendingRequests = {}
       this._requestId = 0
@@ -127,9 +144,102 @@
       this._popupOpen = false
       this._resizeInitialized = false
       this._targetOrigin = getIframeOrigin(iframe) || '*'
+      this._handshakeComplete = false
+      this._handshakePromise = null
+      this._handshakeResolve = null
+      this._handshakeReject = null
+      this._handshakeRetryTimer = null
     }
 
     isReady() { return this._ready }
+
+    _sendHandshake() {
+      if (!this.iframe?.contentWindow || !this._sdkToken) return
+
+      this.iframe.contentWindow.postMessage({
+        type: MSG_PREFIX + 'handshake',
+        formSlug: this.slug,
+        _sdkToken: this._sdkToken,
+        parentOrigin: window.location.origin,
+      }, this._targetOrigin)
+    }
+
+    _createHandshakePromise() {
+      return new Promise((resolve, reject) => {
+        this._handshakeResolve = resolve
+        this._handshakeReject = reject
+        this._sendHandshake()
+
+        this._handshakeRetryTimer = setInterval(() => {
+          if (this._handshakeComplete) return
+          this._sendHandshake()
+        }, 250)
+
+        setTimeout(() => {
+          if (this._handshakeComplete) return
+
+          if (this._handshakeRetryTimer) {
+            clearInterval(this._handshakeRetryTimer)
+            this._handshakeRetryTimer = null
+          }
+
+          this._handshakePromise = null
+          this._handshakeResolve = null
+          if (this._handshakeReject) {
+            this._handshakeReject(new Error('SDK handshake timeout'))
+            this._handshakeReject = null
+          }
+        }, 3000)
+      })
+    }
+
+    _startHandshake() {
+      this._handshakePromise = this._createHandshakePromise()
+      this._handshakePromise.catch(() => {})
+
+      if (this.iframe.contentWindow) {
+        this._sendHandshake()
+      } else {
+        this.iframe.addEventListener('load', () => this._sendHandshake())
+      }
+    }
+
+    _ensureHandshake() {
+      if (this._handshakeComplete) {
+        return Promise.resolve()
+      }
+
+      if (!this._handshakePromise) {
+        this._handshakePromise = this._createHandshakePromise()
+      }
+
+      return this._handshakePromise
+    }
+
+    _handleHandshakeAck(message) {
+      if (this._handshakeRetryTimer) {
+        clearInterval(this._handshakeRetryTimer)
+        this._handshakeRetryTimer = null
+      }
+
+      if (message.success === false) {
+        this._handshakePromise = null
+        this._handshakeResolve = null
+        if (this._handshakeReject) {
+          this._handshakeReject(new Error('SDK handshake rejected'))
+          this._handshakeReject = null
+        }
+        return
+      }
+
+      this._handshakeComplete = true
+
+      if (this._handshakeResolve) {
+        this._handshakeResolve()
+        this._handshakeResolve = null
+        this._handshakeReject = null
+      }
+    }
 
     _sendCommand(command, payload = {}) {
       if (!this.iframe || !this.iframe.contentWindow) {
@@ -137,24 +247,27 @@
         return Promise.reject(new Error('Iframe not available'))
       }
 
-      const requestId = ++this._requestId
-      const message = {
-        type: MSG_PREFIX + 'command',
-        command: command,
-        formSlug: this.slug,
-        requestId: requestId,
-        payload: payload
-      }
+      return this._ensureHandshake().then(() => {
+        const requestId = ++this._requestId
+        const message = {
+          type: MSG_PREFIX + 'command',
+          command: command,
+          formSlug: this.slug,
+          requestId: requestId,
+          payload: payload,
+          _sdkToken: this._sdkToken,
+        }
 
-      return new Promise((resolve, reject) => {
-        this._pendingRequests[requestId] = { resolve, reject }
-        setTimeout(() => {
-          if (this._pendingRequests[requestId]) {
-            delete this._pendingRequests[requestId]
-            reject(new Error('Command timeout'))
-          }
-        }, 5000)
-        this.iframe.contentWindow.postMessage(message, this._targetOrigin)
+        return new Promise((resolve, reject) => {
+          this._pendingRequests[requestId] = { resolve, reject }
+          setTimeout(() => {
+            if (this._pendingRequests[requestId]) {
+              delete this._pendingRequests[requestId]
+              reject(new Error('Command timeout'))
+            }
+          }, 5000)
+          this.iframe.contentWindow.postMessage(message, this._targetOrigin)
+        })
       })
     }
 
@@ -312,13 +425,15 @@
       })
     }
 
-    _registerForm(iframe, slug) {
-      const instance = new FormInstance(iframe, slug, this)
+    _registerForm(iframe, slug, sdkToken = null) {
+      const instance = new FormInstance(iframe, slug, this, sdkToken)
       this._forms[slug] = instance
       
       if (iframe.id && iframe.id !== slug) {
         this._forms[iframe.id] = instance
       }
+
+      instance._startHandshake()
 
       // Auto-initialize resize if enabled
       if (this._options.autoResize !== false) {
@@ -356,6 +471,8 @@
           this._handleEvent(data, form)
         } else if (messageType === 'response') {
           this._handleResponse(data, form)
+        } else if (messageType === 'handshake-ack') {
+          form._handleHandshakeAck(data)
         }
       }
     }
@@ -475,14 +592,20 @@
       iframe.style.height = height === 'auto' ? '600px' : height
 
       let url = `/forms/${slug}`
+      const sdkToken = generateSdkToken()
+      const query = new URLSearchParams({
+        _sdkToken: sdkToken,
+        _sdkParentOrigin: window.location.origin,
+      })
       if (darkMode !== undefined) {
-        url += `?darkMode=${darkMode}`
+        query.set('darkMode', String(darkMode))
       }
+      url += `?${query.toString()}`
       iframe.src = url
 
       containerEl.appendChild(iframe)
 
-      const form = this._registerForm(iframe, slug)
+      const form = this._registerForm(iframe, slug, sdkToken)
 
       if (onSubmit) {
         form.on(EVENTS.SUBMIT, onSubmit)
