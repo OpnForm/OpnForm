@@ -4,7 +4,7 @@
       <div>
         <h3 class="text-lg font-medium text-neutral-900">Email Settings</h3>
         <p class="mt-1 text-sm text-neutral-500">
-          Customize email sender - connect your SMTP server.
+          Configure a custom SMTP sender for this workspace.
         </p>
         <PlanTag
           required-tier="self_hosted"
@@ -19,6 +19,23 @@
         @click="crisp.openHelpdeskArticle('how-to-send-emails-using-your-own-domain-name-and-email-address-13kkcif')"
       />
     </div>
+
+    <UAlert
+      v-if="isSelfHosted"
+      icon="i-heroicons-information-circle"
+      color="info"
+      variant="subtle"
+      title="Instance-wide email sending is configured separately"
+      description="Use MAIL_* environment variables to configure the default sender for your whole self-hosted instance. These workspace settings override that sender for this workspace and require a self-hosted Enterprise license."
+      :actions="[{
+        label: 'Email setup docs',
+        icon: 'i-heroicons-arrow-top-right-on-square',
+        color: 'info',
+        variant: 'solid',
+        to: 'https://docs.opnform.com/configuration/email-setup',
+        target: '_blank'
+      }]"
+    />
 
     <UAlert
       v-if="!isSelfHosted && !canAccessSmtp"
@@ -206,4 +223,4 @@ const initEmailSettings = () => {
   emailSettingsForm.password = emailSettings?.password
   emailSettingsForm.sender_address = emailSettings?.sender_address
 }
-</script> 
+</script>

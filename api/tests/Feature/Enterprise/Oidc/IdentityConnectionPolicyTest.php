@@ -128,6 +128,18 @@ describe('IdentityConnectionPolicy', function () {
         expect($policy->create($user, $workspace))->toBeTrue();
     });
 
+    it('allows self-hosted workspace admin to create workspace connection without license', function () {
+        Setting::forget(SettingsKey::SELF_HOSTED_LICENSE);
+        Cache::forget('self_hosted_license_check');
+
+        $user = User::factory()->create();
+        $workspace = Workspace::factory()->create();
+        $user->workspaces()->attach($workspace->id, ['role' => 'admin']);
+        $policy = new IdentityConnectionPolicy();
+
+        expect($policy->create($user, $workspace))->toBeTrue();
+    });
+
     it('prevents non-admin from creating workspace connection', function () {
         $user = User::factory()->create();
         $workspace = Workspace::factory()->create();

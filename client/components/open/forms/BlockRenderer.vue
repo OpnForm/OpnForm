@@ -334,7 +334,7 @@ const boundProps = computed(() => {
     inputProperties.currency = field.currency
     // Parse amount with mentions - field.amount may contain mention HTML
     const parsedAmount = useParseMention(field.amount, true, form.value, dataForm.value)
-    const sanitizedAmount = parsedAmount
+    const sanitizedAmount = String(parsedAmount ?? '')
       .replace(/<[^>]*>/g, '')
       .replace(/,/g, '')
       .trim()
@@ -346,11 +346,11 @@ const boundProps = computed(() => {
     // Parse prefill fields with mentions
     if (field.prefill_name) {
       const parsed = useParseMention(field.prefill_name, true, form.value, dataForm.value)
-      inputProperties.prefillName = parsed.replace(/<[^>]*>/g, '').trim()
+      inputProperties.prefillName = String(parsed ?? '').replace(/<[^>]*>/g, '').trim()
     }
     if (field.prefill_email) {
       const parsed = useParseMention(field.prefill_email, true, form.value, dataForm.value)
-      inputProperties.prefillEmail = parsed.replace(/<[^>]*>/g, '').trim()
+      inputProperties.prefillEmail = String(parsed ?? '').replace(/<[^>]*>/g, '').trim()
     }
     if (props.formManager?.payment) {
       try { inputProperties.paymentData = props.formManager.payment.getPaymentData(field) } catch (e) { console.error(e) }

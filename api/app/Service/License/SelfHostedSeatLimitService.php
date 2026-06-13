@@ -11,6 +11,29 @@ class SelfHostedSeatLimitService
 {
     private const FREE_SEAT_LIMIT = 2;
 
+    public function canCreateUser(string $email): bool
+    {
+        if (!$this->shouldEnforceLimit()) {
+            return true;
+        }
+
+        if ($this->hasValidLicense()) {
+            return true;
+        }
+
+        $normalizedEmail = $this->normalizeEmail($email);
+        $activeUserEmails = $this->activeUserEmails();
+        if ($activeUserEmails->contains($normalizedEmail)) {
+            return true;
+        }
+
+        if ($this->pendingInviteEmails()->contains($normalizedEmail)) {
+            return $activeUserEmails->count() < self::FREE_SEAT_LIMIT;
+        }
+
+        return $this->usedSeats() < self::FREE_SEAT_LIMIT;
+    }
+
     public function canInviteEmail(string $email): bool
     {
         if (!$this->shouldEnforceLimit()) {
@@ -44,6 +67,17 @@ class SelfHostedSeatLimitService
         }
 
         return $this->usedSeats($invite) < self::FREE_SEAT_LIMIT;
+    }
+
+    public function assertCanCreateUser(string $email): void
+    {
+        if ($this->canCreateUser($email)) {
+            return;
+        }
+
+        throw new HttpResponseException(
+            response()->json(['message' => $this->limitMessage()], 403)
+        );
     }
 
     public function assertCanInviteEmail(string $email): void

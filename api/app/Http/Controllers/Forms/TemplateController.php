@@ -88,7 +88,7 @@ class TemplateController extends Controller
         $template = Template::findOrFail($id);
         $this->authorize('update', $template);
 
-        $template->update($request->all());
+        $template->update($request->getUpdateAttributes());
 
         return $this->success([
             'message' => 'Template was updated.',
