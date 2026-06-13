@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\UserResource;
 use App\Models\User;
+use App\Service\License\SelfHostedSeatLimitService;
 use App\Service\WorkspaceInviteService;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Foundation\Auth\RegistersUsers;
@@ -109,6 +110,10 @@ class RegisterController extends Controller
     protected function create(array $data)
     {
         $this->checkRegistrationAllowed($data);
+        if (!array_key_exists('invite_token', $data) || empty($data['invite_token'])) {
+            app(SelfHostedSeatLimitService::class)->assertCanCreateUser($data['email']);
+        }
+
         [$workspace, $role] = app(WorkspaceInviteService::class)->getWorkspaceAndRole($data);
 
         $user = User::create([

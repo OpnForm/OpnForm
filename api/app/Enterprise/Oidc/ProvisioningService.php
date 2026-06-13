@@ -7,6 +7,7 @@ use App\Enterprise\Oidc\Models\IdentityConnection;
 use App\Enterprise\Oidc\Models\UserIdentity;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Service\License\SelfHostedSeatLimitService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Laravel\Socialite\Contracts\User as SocialiteUser;
@@ -84,6 +85,8 @@ class ProvisioningService
                         claims: $idTokenClaims,
                     );
                 }
+
+                app(SelfHostedSeatLimitService::class)->assertCanCreateUser($email);
 
                 // Create new user
                 $userName = $name ?? $socialiteUser->getName() ?? explode('@', $email)[0];

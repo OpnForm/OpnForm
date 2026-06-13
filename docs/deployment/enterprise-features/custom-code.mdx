@@ -1,0 +1,44 @@
+---
+title: Custom Code
+description: Use workspace and form custom code on self-hosted OpnForm
+---
+
+Custom Code lets you inject scripts or CSS into forms for advanced tracking, styling, and integrations.
+
+<Warning>
+    Custom code can execute JavaScript on public form pages. Enable it only
+    when you trust the workspace admins who can edit forms and workspace
+    settings.
+</Warning>
+
+## What this unlocks
+
+Depending on your license and instance configuration, Custom Code can unlock:
+
+-   Workspace-level custom code
+-   Form-level custom code
+-   Custom CSS for advanced form styling
+-   Advanced tracking scripts and SDK integrations
+
+## Self-hosted safety setting
+
+Self-hosted deployments keep custom code disabled by default for safety. To allow custom code execution on self-hosted forms, set:
+
+```bash
+CUSTOM_CODE_ENABLE_SELF_HOSTED=true
+```
+
+After changing this value, recreate the affected Docker containers so the new environment variable is loaded.
+
+<Info>
+    The environment variable controls whether custom code can execute on
+    self-hosted forms. The Enterprise license controls whether the workspace can
+    access the underlying advanced branding and custom code features.
+</Info>
+
+## Related pages
+
+-   [JavaScript SDK](/embedding/javascript-sdk)
+-   [Environment Variables](/configuration/environment-variables)
+-   [Self-hosted License](/deployment/self-hosted-license)
+-   [License Activation](/deployment/license-activation)

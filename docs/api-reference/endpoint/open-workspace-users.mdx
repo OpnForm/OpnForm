@@ -9,6 +9,8 @@ Authorization: Bearer <token with `workspace-users-read`>
 
 ## Add User to Workspace
 
+Self-hosted Community instances are limited to 2 users total across the whole instance. Adding or inviting a new user beyond that limit requires a self-hosted Enterprise license.
+
 ```http
 POST /open/workspaces/{workspaceId}/users/add HTTP/1.1
 Authorization: Bearer <token with `workspace-users-write`>

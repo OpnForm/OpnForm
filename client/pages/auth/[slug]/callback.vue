@@ -121,6 +121,8 @@ const handleCallback = async () => {
     if (errorResponse.error === 'oidc_account_link_required' && errorResponse.link_token) {
       error.value = 'An account with this email already exists. Please link your existing account to continue.'
       linkToken.value = errorResponse.link_token
+    } else if (errorMessage.includes('more than 2 users')) {
+      error.value = 'This self-hosted instance is limited to 2 users without an Enterprise license. Ask the instance admin to activate a license or remove another user.'
     } else if (errorMessage.includes('account with this email already exists')) {
       error.value = 'An account with this email already exists. Please contact your administrator to link your accounts.'
     } else if (errorMessage.includes('blocked')) {
