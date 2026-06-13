@@ -294,7 +294,7 @@ const PLAN_DETAILS = {
     ],
     summaryLine: 'Best when security, compliance, and centralized access control are non-negotiable.',
     features: [
-      { icon: 'heroicons:shield-check', title: 'Enterprise SSO', description: 'Connect OIDC, SAML, or LDAP so access is controlled from your identity provider.' },
+      { icon: 'heroicons:shield-check', title: 'Enterprise SSO', description: 'Connect SAML or LDAP so access is controlled from your identity provider.' },
       { icon: 'heroicons:document-text', title: 'Audit logs & compliance', description: 'Track important activity and support teams that need stronger internal controls.' },
       { icon: 'heroicons:server-stack', title: 'External storage', description: 'Route storage to your own infrastructure when you need tighter operational ownership.' },
     ],
@@ -304,13 +304,13 @@ const PLAN_DETAILS = {
     highlights: [
       'Branding removal',
       'Custom domains and SMTP',
-      'Invite unlimited users',
-      'SSO and enterprise identity controls',
+      'Add more than 2 users',
+      'SAML/LDAP and enterprise identity controls',
     ],
     summaryLine: 'Best when security, compliance, and centralized access control are non-negotiable.',
     features: [
       { icon: 'heroicons:globe-alt', title: 'Remove OpnForm branding', description: 'Publish forms without the OpnForm watermark and make the experience feel truly yours.' },
-      { icon: 'heroicons:shield-check', title: 'Enterprise SSO', description: 'Connect OIDC, SAML, or LDAP so access is controlled from your identity provider.' },
+      { icon: 'heroicons:shield-check', title: 'Enterprise SSO', description: 'Connect SAML or LDAP and add more than 2 users on your self-hosted instance.' },
       { icon: 'heroicons:document-text', title: 'Audit logs & compliance', description: 'Track important activity and support teams that need stronger internal controls.' },
     ],
   },

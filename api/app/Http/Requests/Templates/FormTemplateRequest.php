@@ -7,6 +7,13 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class FormTemplateRequest extends FormRequest
 {
+    private const LIST_FIELDS = [
+        'types',
+        'industries',
+        'related_templates',
+        'questions',
+    ];
+
     public const IGNORED_KEYS = [
         'id',
         'creator',
@@ -33,54 +40,98 @@ class FormTemplateRequest extends FormRequest
     ];
 
     /**
-     * Get the validation rules that apply to the request.
-     *
      * @return array<string, mixed>
      */
     public function rules()
     {
         $slugRule = '';
-        if ($this->id) {
-            $slugRule = ',' . $this->id;
+        $templateId = $this->route('id');
+        if ($templateId !== null) {
+            $slugRule = ',' . $templateId;
         }
 
         return [
             'form' => 'required|array',
-            'publicly_listed' => 'boolean',
+            'publicly_listed' => 'sometimes|boolean',
             'name' => 'required|string|max:60',
             'slug' => 'required|string|alpha_dash|unique:templates,slug' . $slugRule,
             'short_description' => 'required|string|max:1000',
             'description' => 'required|string',
             'image_url' => 'required|string',
-            'types' => 'nullable|array',
-            'industries' => 'nullable|array',
-            'related_templates' => 'nullable|array',
+            'types' => 'array',
+            'industries' => 'array',
+            'related_templates' => 'array',
             'questions' => 'array',
         ];
     }
 
     public function getTemplate(): Template
     {
-        $structure = $this->form;
-        foreach ($structure as $key => $val) {
-            if (in_array($key, self::IGNORED_KEYS)) {
-                unset($structure[$key]);
+        $template = new Template($this->getMutableAttributes(includeOptionalListFields: true));
+        $template->creator_id = $this->user()?->id;
+
+        return $template;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function getUpdateAttributes(): array
+    {
+        return $this->getMutableAttributes(includeOptionalListFields: false);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function getMutableAttributes(bool $includeOptionalListFields): array
+    {
+        $attributes = [
+            'name' => $this->input('name'),
+            'slug' => $this->input('slug'),
+            'short_description' => $this->input('short_description'),
+            'description' => $this->input('description'),
+            'image_url' => $this->input('image_url'),
+            'structure' => $this->cleanFormStructure($this->input('form', [])),
+        ];
+
+        foreach (self::LIST_FIELDS as $key) {
+            if ($includeOptionalListFields || $this->has($key)) {
+                $attributes[$key] = $this->arrayInput($key);
             }
         }
 
-        return new Template([
-            'creator_id' => $this->user()?->id ?? null,
-            'publicly_listed' => $this->publicly_listed,
-            'name' => $this->name,
-            'slug' => $this->slug,
-            'short_description' => $this->short_description,
-            'description' => $this->description,
-            'image_url' => $this->image_url,
-            'structure' => $structure,
-            'types' => $this->types ?? [],
-            'industries' => $this->industries ?? [],
-            'related_templates' => $this->related_templates ?? [],
-            'questions' => $this->questions ?? [],
-        ]);
+        if ($this->canSetPubliclyListed() && $this->has('publicly_listed')) {
+            $attributes['publicly_listed'] = $this->boolean('publicly_listed');
+        }
+
+        return $attributes;
+    }
+
+    /**
+     * @param  array<string, mixed>  $structure
+     * @return array<string, mixed>
+     */
+    private function cleanFormStructure(array $structure): array
+    {
+        foreach (self::IGNORED_KEYS as $key) {
+            unset($structure[$key]);
+        }
+
+        return $structure;
+    }
+
+    private function arrayInput(string $key): array
+    {
+        $value = $this->input($key);
+
+        return is_array($value) ? $value : [];
+    }
+
+    private function canSetPubliclyListed(): bool
+    {
+        $user = $this->user();
+
+        return $user !== null && ($user->admin || $user->template_editor);
     }
 }

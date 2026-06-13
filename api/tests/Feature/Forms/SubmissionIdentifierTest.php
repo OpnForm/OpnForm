@@ -88,6 +88,32 @@ describe('Submission UUID Identifiers', function () {
         // Verify only one submission exists (was updated, not created new)
         expect($this->form->submissions()->count())->toBe(1);
     });
+
+    it('does not allow editing submission using raw numeric id', function () {
+        $nameField = collect($this->form->properties)->where('name', 'Name')->first();
+
+        $initialData = $this->generateFormSubmissionData($this->form, [
+            $nameField['id'] => 'ORIGINAL_DATA',
+        ]);
+        $this->postJson(route('forms.answer', $this->form), $initialData)
+            ->assertSuccessful();
+
+        $submission = $this->form->submissions()->first();
+
+        $editData = $this->generateFormSubmissionData($this->form, [
+            $nameField['id'] => 'POISONED_DATA',
+        ]);
+        $editData['submission_id'] = (string) $submission->id;
+
+        $this->actingAsGuest();
+        $this->postJson(route('forms.answer', $this->form), $editData)
+            ->assertSuccessful();
+
+        expect($this->form->submissions()->count())->toBe(2);
+
+        $submission->refresh();
+        expect($submission->data[$nameField['id']])->toBe('ORIGINAL_DATA');
+    });
 });
 
 describe('Legacy Hashid Backward Compatibility', function () {

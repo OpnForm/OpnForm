@@ -312,7 +312,7 @@ describe('hasAppFeature', function () {
 
         $service = app(LicenseService::class);
 
-        expect($service->hasAppFeature('sso.oidc'))->toBeTrue();
+        expect($service->hasAppFeature('sso.oidc'))->toBeFalse();
         expect($service->hasAppFeature('sso.saml'))->toBeTrue();
         expect($service->hasAppFeature('custom_smtp'))->toBeTrue();
         expect($service->hasAppFeature('audit_logs'))->toBeFalse();

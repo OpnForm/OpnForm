@@ -6,6 +6,10 @@ openapi: post /open/workspaces/{workspaceId}/users/add
 
 Invite an existing OpnForm user to a workspace or send an email invite if the user doesn't yet have an account.
 
+<Note>
+Self-hosted Community instances are limited to 2 users total across the whole instance. Adding or inviting a new user beyond that limit requires a self-hosted Enterprise license. Adding an existing instance user to another workspace does not consume an additional user seat.
+</Note>
+
 ## Authentication & Scope
 
 Requires the `workspace-users-write` ability and **admin** privileges in the workspace.
@@ -57,4 +61,4 @@ The response structure:
 }
 ```
 
-`403 Forbidden` – Token lacks `workspace-users-write` or insufficient privileges.
+`403 Forbidden` – Token lacks `workspace-users-write`, the requester has insufficient privileges, or the self-hosted Community instance has reached the 2-user limit.

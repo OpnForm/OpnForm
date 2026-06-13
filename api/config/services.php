@@ -89,6 +89,7 @@ return [
         'client_id' => env('STRIPE_CLIENT_ID'),
         'client_secret' => env('STRIPE_CLIENT_SECRET', env('STRIPE_SECRET')),
         'redirect' => env('STRIPE_REDIRECT_URL', front_url('/oauth/stripe/callback')),
+        'export_lookback_days' => env('STRIPE_EXPORT_LOOKBACK_DAYS', 45),
     ],
 
     'ipinfo' => [
