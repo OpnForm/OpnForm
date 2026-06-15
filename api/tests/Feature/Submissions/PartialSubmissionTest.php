@@ -76,6 +76,76 @@ it('can update partial submission multiple times', function () {
     expect($submission->data[array_key_first($secondData)])->toBe('Second Draft');
 });
 
+it('does not update a partial submission from a raw numeric submission id', function () {
+    $user = $this->actingAsBusinessUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace, [
+        'enable_partial_submissions' => true
+    ]);
+    $nameField = collect($form->properties)->where('name', 'Name')->first();
+
+    $this->actingAsGuest();
+
+    $victimData = $this->generateFormSubmissionData($form, [
+        $nameField['id'] => 'VICTIM_CONFIDENTIAL_DATA',
+    ]);
+    $victimData['is_partial'] = true;
+
+    $this->postJson(route('forms.answer', $form->slug), $victimData)
+        ->assertSuccessful();
+
+    $victimSubmission = $form->submissions()->first();
+
+    $attackData = $this->generateFormSubmissionData($form, [
+        $nameField['id'] => 'ATTACKER_POISONED_DATA',
+    ]);
+    $attackData['is_partial'] = true;
+    $attackData['submission_id'] = (string) $victimSubmission->id;
+
+    $this->postJson(route('forms.answer', $form->slug), $attackData)
+        ->assertSuccessful();
+
+    expect($form->submissions()->count())->toBe(2);
+
+    $victimSubmission->refresh();
+    expect($victimSubmission->data[$nameField['id']])->toBe('VICTIM_CONFIDENTIAL_DATA');
+});
+
+it('does not update a completed submission from a raw numeric submission id in a partial request', function () {
+    $user = $this->actingAsBusinessUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace, [
+        'enable_partial_submissions' => true
+    ]);
+    $nameField = collect($form->properties)->where('name', 'Name')->first();
+
+    $this->actingAsGuest();
+
+    $completedData = $this->generateFormSubmissionData($form, [
+        $nameField['id'] => 'COMPLETED_ORIGINAL_DATA',
+    ]);
+
+    $this->postJson(route('forms.answer', $form->slug), $completedData)
+        ->assertSuccessful();
+
+    $completedSubmission = $form->submissions()->first();
+
+    $attackData = $this->generateFormSubmissionData($form, [
+        $nameField['id'] => 'ATTACKER_POISONED_DATA',
+    ]);
+    $attackData['is_partial'] = true;
+    $attackData['submission_id'] = (string) $completedSubmission->id;
+
+    $this->postJson(route('forms.answer', $form->slug), $attackData)
+        ->assertSuccessful();
+
+    expect($form->submissions()->count())->toBe(2);
+
+    $completedSubmission->refresh();
+    expect($completedSubmission->status)->toBe(FormSubmission::STATUS_COMPLETED);
+    expect($completedSubmission->data[$nameField['id']])->toBe('COMPLETED_ORIGINAL_DATA');
+});
+
 it('calculates stats correctly for partial vs completed submissions', function () {
     $user = $this->actingAsBusinessUser();
     $workspace = $this->createUserWorkspace($user);
@@ -348,4 +418,73 @@ it('cannot revert a completed submission back to partial', function () {
     $submission->refresh();
     expect($submission->status)->toBe(FormSubmission::STATUS_COMPLETED);
     expect($submission->data[$targetField['id']])->toBe('Complete');
+});
+
+it('validates required fields when is_partial sent to form without partial submissions', function () {
+    $user = $this->actingAsBusinessUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace, [
+        'enable_partial_submissions' => false,
+    ]);
+
+    // Make a required field to ensure validation fires
+    $properties = $form->properties;
+    $properties[0]['required'] = true;
+    $form->update(['properties' => $properties]);
+
+    // Send only is_partial with no field data — should be rejected by validation
+    $this->postJson(route('forms.answer', $form->slug), [
+        'is_partial' => true,
+    ])->assertStatus(422);
+});
+
+it('validates required fields when is_partial sent on free tier form', function () {
+    $user = $this->actingAsUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace, [
+        'enable_partial_submissions' => true,
+    ]);
+
+    $properties = $form->properties;
+    $properties[0]['required'] = true;
+    $form->update(['properties' => $properties]);
+
+    // Free tier cannot use partial submissions, so validation should run
+    $this->postJson(route('forms.answer', $form->slug), [
+        'is_partial' => true,
+    ])->assertStatus(422);
+});
+
+it('validates required fields when is_partial is false on partial-enabled form', function () {
+    $user = $this->actingAsBusinessUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace, [
+        'enable_partial_submissions' => true,
+    ]);
+
+    $properties = $form->properties;
+    $properties[0]['required'] = true;
+    $form->update(['properties' => $properties]);
+
+    // is_partial: false is a completed submission — required fields must be validated
+    $this->postJson(route('forms.answer', $form->slug), [
+        'is_partial' => false,
+    ])->assertStatus(422);
+});
+
+it('stores completed submission when is_partial is string false on partial-enabled form', function () {
+    $user = $this->actingAsBusinessUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace, [
+        'enable_partial_submissions' => true,
+    ]);
+
+    $formData = $this->generateFormSubmissionData($form);
+    $formData['is_partial'] = 'false';
+
+    $this->postJson(route('forms.answer', $form->slug), $formData)
+        ->assertSuccessful();
+
+    $submission = FormSubmission::first();
+    expect($submission->status)->toBe(FormSubmission::STATUS_COMPLETED);
 });

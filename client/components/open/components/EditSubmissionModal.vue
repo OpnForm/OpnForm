@@ -91,7 +91,7 @@ watch(() => props.show, (newShow) => {
       })
     })
   }
-})
+}, { immediate: true })
 
 // Use form submissions composable for update
 const { updateSubmission } = useFormSubmissions()

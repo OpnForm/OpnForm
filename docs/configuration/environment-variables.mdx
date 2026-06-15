@@ -45,6 +45,14 @@ There are dedicated configuration pages available for more detailed setup instru
 | `LICENSE_CHECKOUT_CANCEL_URL`    | Cloud checkout cancellation URL used when creating self-hosted Enterprise license Stripe sessions.                                                                                         |
 | `LICENSE_PORTAL_RETURN_URL`      | Return URL used by the Stripe billing portal for self-hosted Enterprise licenses.                                                                                                          |
 
+### Self-hosted Enterprise licensing
+
+Self-hosted Enterprise features are unlocked by activating a license key in the OpnForm UI. Most installations can use the default license API endpoint.
+
+Use the `LICENSE_*` variables only when you need to override checkout, billing portal, or license API URLs for your deployment.
+
+For activation steps and troubleshooting, see [License Activation](../deployment/license-activation).
+
 ### OAuth Integration Environment Variables
 
 OAuth integrations enable user authentication and third-party service connections. OpnForm automatically handles OAuth redirect URLs - you don't need to manually configure redirect URIs in your OAuth applications.

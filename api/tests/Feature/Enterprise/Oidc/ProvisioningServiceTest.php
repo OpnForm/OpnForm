@@ -5,6 +5,9 @@ use App\Enterprise\Oidc\Models\UserIdentity;
 use App\Enterprise\Oidc\ProvisioningService;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Service\License\LicenseCheckResult;
+use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Support\Facades\Cache;
 use Tests\TestHelpers;
 
 require_once __DIR__ . '/../../../TestHelpers/OidcTestHelpers.php';
@@ -80,6 +83,89 @@ describe('ProvisioningService - New User Creation', function () {
         // Current implementation: $name ?? $socialiteUser->getName() ?? explode('@', $email)[0]
         // Since $name will be null (all fields unset), it should use email prefix
         expect($user->name)->toBe('noname');
+    });
+});
+
+describe('ProvisioningService - Self-hosted seat limits', function () {
+    beforeEach(function () {
+        config(['app.self_hosted' => true]);
+        config(['cashier.key' => null]);
+        Cache::forget('self_hosted_license_check');
+    });
+
+    it('blocks OIDC provisioning beyond the free 2 user instance limit', function () {
+        User::factory()->create(['email' => 'owner@example.com']);
+        User::factory()->create(['email' => 'member@example.com']);
+
+        $connection = IdentityConnection::factory()->create();
+        $socialiteUser = createMockSocialiteUser(
+            email: 'third@example.com',
+            name: 'Third User'
+        );
+        $idTokenClaims = createValidIdTokenClaims($connection, 'sub-third');
+
+        $service = app(ProvisioningService::class);
+
+        expect(fn () => $service->provisionUser($connection, $socialiteUser, $idTokenClaims))
+            ->toThrow(HttpResponseException::class);
+
+        expect(User::where('email', 'third@example.com')->exists())->toBeFalse();
+        expect(UserIdentity::where('subject', 'sub-third')->exists())->toBeFalse();
+    });
+
+    it('allows existing OIDC users to sign in when the free user limit is full', function () {
+        User::factory()->create(['email' => 'owner@example.com']);
+        $existingUser = User::factory()->create(['email' => 'existing@example.com']);
+        $connection = IdentityConnection::factory()->create();
+
+        UserIdentity::factory()->create([
+            'user_id' => $existingUser->id,
+            'connection_id' => $connection->id,
+            'subject' => 'sub-existing',
+            'email' => 'existing@example.com',
+        ]);
+
+        $socialiteUser = createMockSocialiteUser(
+            email: 'existing@example.com',
+            name: 'Existing User'
+        );
+        $idTokenClaims = createValidIdTokenClaims($connection, 'sub-existing');
+
+        $service = app(ProvisioningService::class);
+        $user = $service->provisionUser($connection, $socialiteUser, $idTokenClaims);
+
+        expect($user->id)->toBe($existingUser->id);
+    });
+
+    it('allows OIDC provisioning beyond 2 users with an active self-hosted license', function () {
+        User::factory()->create(['email' => 'owner@example.com']);
+        User::factory()->create(['email' => 'member@example.com']);
+        $this->storeSelfHostedLicense([
+            'license_key' => 'lic_oidc_seats_active',
+            'status' => 'active',
+            'features' => ['sso' => true],
+            'last_checked_at' => now()->format('c'),
+            'expires_at' => now()->addYear()->format('c'),
+        ]);
+        Cache::put('self_hosted_license_check', new LicenseCheckResult(
+            status: 'active',
+            features: ['sso' => true],
+            lastChecked: now(),
+            expiresAt: now()->addYear(),
+        ), 86400);
+
+        $connection = IdentityConnection::factory()->create();
+        $socialiteUser = createMockSocialiteUser(
+            email: 'third@example.com',
+            name: 'Third User'
+        );
+        $idTokenClaims = createValidIdTokenClaims($connection, 'sub-third');
+
+        $service = app(ProvisioningService::class);
+        $user = $service->provisionUser($connection, $socialiteUser, $idTokenClaims);
+
+        expect($user->email)->toBe('third@example.com');
+        expect(UserIdentity::where('subject', 'sub-third')->exists())->toBeTrue();
     });
 });
 

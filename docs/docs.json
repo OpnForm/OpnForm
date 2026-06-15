@@ -32,7 +32,21 @@
               "deployment/docker",
               "deployment/docker-development",
               "deployment/local-deployment",
-              "deployment/cloud-vs-self-hosting"
+              "deployment/cloud-vs-self-hosting",
+              "deployment/self-hosted-license",
+              "deployment/license-activation"
+            ]
+          },
+          {
+            "group": "Self-hosted Enterprise",
+            "pages": [
+              "deployment/enterprise-features/workspace-custom-smtp",
+              "deployment/enterprise-features/single-sign-on",
+              "deployment/enterprise-features/multiple-workspaces",
+              "deployment/enterprise-features/white-label-branding",
+              "deployment/enterprise-features/custom-code",
+              "deployment/enterprise-features/audit-logs",
+              "deployment/enterprise-features/external-storage"
             ]
           },
           {

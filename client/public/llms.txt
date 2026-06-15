@@ -117,6 +117,8 @@ Use the technical documentation for implementation, configuration, embedding, AP
 
 - Technical docs introduction: https://docs.opnform.com/introduction
 - Cloud vs self-hosting: https://docs.opnform.com/deployment/cloud-vs-self-hosting
+- Self-hosted license: https://docs.opnform.com/deployment/self-hosted-license
+- License activation: https://docs.opnform.com/deployment/license-activation
 - Environment variables: https://docs.opnform.com/configuration/environment-variables
 - OAuth setup: https://docs.opnform.com/configuration/oauth-setup
 - AWS S3 setup: https://docs.opnform.com/configuration/aws-s3

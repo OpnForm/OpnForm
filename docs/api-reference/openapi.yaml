@@ -155,7 +155,7 @@ paths:
             tags:
                 - Workspace Users
             summary: Add Workspace User
-            description: "Requires `workspace-users-write`. Add an existing user or send an invite if the email is unknown."
+            description: "Requires `workspace-users-write`. Add an existing user or send an invite if the email is unknown. Self-hosted Community instances are limited to 2 users total across the instance; adding or inviting more users requires a self-hosted Enterprise license."
             security:
                 - bearerAuth: []
             parameters:
@@ -184,7 +184,7 @@ paths:
                 "200":
                     description: User added
                 "403":
-                    description: Forbidden
+                    description: Forbidden, insufficient privileges, or self-hosted Community user limit reached
     "/open/workspaces/{workspaceId}/users/{userId}/remove":
         delete:
             tags:

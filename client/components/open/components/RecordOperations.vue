@@ -1,33 +1,45 @@
 <template>
   <div class="flex gap-1">
     <TrackClick
+      name="edit_record_click"
+      :properties="{ form_id: form.id, submission_id: submissionId }"
+    >
+      <UButton
+        size="xs"
+        color="neutral"
+        variant="outline"
+        icon="heroicons:pencil-square"
+        @click="emit('edit', submissionId)"
+      />
+    </TrackClick>
+    <UButton
+      v-if="hasPdfTemplates"
+      size="xs"
+      color="neutral"
+      variant="outline"
+      icon="i-heroicons-arrow-down-tray-20-solid"
+      aria-label="Download PDF"
+      @click="emit('download-pdf', submissionId)"
+    />
+    <TrackClick
       name="view_record_click"
-      :properties="{}"
+      :properties="{ form_id: form.id, submission_id: submissionId }"
     >
       <UButton
         size="xs"
         color="neutral"
         variant="outline"
         icon="heroicons:arrows-pointing-out"
-        @click="showViewSubmissionModal = true"
+        @click="emit('view', submissionId)"
       />
     </TrackClick>
   </div>
-  
-  <ViewSubmissionModal
-    :show="showViewSubmissionModal"
-    :form="form"
-    :data="data"
-    :submission-id="submissionId"
-    @close="showViewSubmissionModal = false"
-  />
 </template>
 
 <script setup>
-import ViewSubmissionModal from "./ViewSubmissionModal.vue"
 import TrackClick from "~/components/global/TrackClick.vue"
 
-const props = defineProps({
+defineProps({
   form: {
     type: Object,
     required: true,
@@ -36,24 +48,11 @@ const props = defineProps({
     type: Number,
     required: true,
   },
-  data: {
-    type: Array,
-    default: () => [],
+  hasPdfTemplates: {
+    type: Boolean,
+    default: false,
   },
 })
 
-const route = useRoute()
-const showViewSubmissionModal = ref(false)
-
-// Auto-open view modal if URL view param matches THIS component's submission ID (only on mount)
-onMounted(() => {
-  const urlViewId = route.query.view
-  if (urlViewId && parseInt(urlViewId) === props.submissionId) {
-    nextTick(() => {
-      showViewSubmissionModal.value = true
-    })
-  }
-})
-
- 
+const emit = defineEmits(['edit', 'download-pdf', 'view'])
 </script>

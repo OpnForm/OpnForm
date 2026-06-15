@@ -63,7 +63,7 @@ export const useWorkingFormStore = defineStore("working_form", {
         actions.push({
           label: 'View docs',
           icon: 'i-heroicons-book-open',
-          onclick: () => { if (import.meta.client) window.open('https://docs.opnform.com/introduction', '_blank') }
+          onclick: () => { if (import.meta.client) window.open('https://docs.opnform.com/deployment/enterprise-features/custom-code', '_blank') }
         })
       } else {
         // Cloud: require custom domain + Crisp help

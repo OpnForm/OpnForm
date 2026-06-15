@@ -144,12 +144,13 @@ class PublicFormController extends Controller
         $isFirstSubmission = ($form->submissions_count === 0);
 
         // Check for partial submission flag early (before validation)
-        $isPartial = $request->get('is_partial') ?? false;
+        $isPartial = $request->boolean('is_partial');
+        $canPartialSubmit = $form->enable_partial_submissions && $form->workspace->hasFeature('partial_submissions');
+        $isPartialSubmission = $isPartial && $canPartialSubmit;
 
         // Use raw data for partial submissions (don't validate all required fields)
         // Use validated data for complete submissions
-        $canPartialSubmit = $form->enable_partial_submissions && $form->workspace->hasFeature('partial_submissions');
-        $submissionData = ($isPartial && $canPartialSubmit)
+        $submissionData = $isPartialSubmission
             ? $request->all()
             : $request->validated();
 
@@ -163,7 +164,7 @@ class PublicFormController extends Controller
         }
 
         // Handle partial submissions
-        if ($isPartial && $canPartialSubmit) {
+        if ($isPartialSubmission) {
             return $this->handlePartialSubmissions($submissionData, $form);
         }
 
@@ -253,6 +254,7 @@ class PublicFormController extends Controller
         }
 
         // Legacy Hashid support (backward compatibility)
+        unset($submissionData['submission_id'], $submissionData['submission_hash']);
         $decodedId = Hashids::decode($submissionIdentifier);
         if (!empty($decodedId)) {
             $numericId = (int)($decodedId[0] ?? null);
@@ -266,7 +268,6 @@ class PublicFormController extends Controller
                 }
             }
         }
-        unset($submissionData['submission_hash']);
 
         return $submissionData;
     }

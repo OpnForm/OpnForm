@@ -237,7 +237,7 @@ const sections = [
         values: [false, true, true, true],
       },
       {
-        label: "SSO (SAML, OIDC, LDAP)",
+        label: "Advanced SSO (SAML/LDAP)",
         values: [false, false, false, true],
       },
     ],

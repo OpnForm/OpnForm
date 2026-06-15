@@ -4,13 +4,39 @@
     :ui="{ content: 'sm:max-w-4xl', body: 'p-0!' }"
   >
     <template #header>
-      <div class="flex items-center justify-between w-full">
-        <h2 class="font-semibold">
+      <div class="flex flex-col gap-3 w-full min-w-0 sm:flex-row sm:items-center sm:justify-between sm:gap-2">
+        <h2 class="font-semibold shrink-0">
           View Submission
         </h2>
 
-        <div class="flex items-center gap-2">
-          <div class="relative z-20">
+        <div class="flex flex-wrap items-center gap-2 justify-between sm:justify-end min-w-0">
+          <div class="flex items-center gap-1 relative z-20 shrink-0">
+            <TrackClick
+              name="edit_record_click"
+              :properties="{ form_id: form.id, submission_id: submissionId }"
+            >
+              <UButton
+                color="neutral"
+                variant="outline"
+                size="sm"
+                icon="heroicons:pencil-square"
+                aria-label="Edit"
+                @click="showEditSubmissionModal = true"
+              >
+                <span class="hidden sm:inline">Edit</span>
+              </UButton>
+            </TrackClick>
+            <UButton
+              v-if="hasPdfTemplates"
+              color="neutral"
+              variant="outline"
+              size="sm"
+              icon="i-heroicons-arrow-down-tray-20-solid"
+              aria-label="Download PDF"
+              @click="downloadPdf"
+            >
+              <span class="hidden sm:inline">Download PDF</span>
+            </UButton>
             <UDropdownMenu
               :items="getMenuItems"
               :content="{ side: 'bottom', align: 'end' }"
@@ -18,19 +44,21 @@
             >
               <UButton
                 color="neutral"
-                variant="ghost"
+                variant="outline"
                 icon="i-heroicons-ellipsis-horizontal"
-                size="md"
+                size="sm"
+                aria-label="More actions"
               />
             </UDropdownMenu>
-          </div>         
-          
+          </div>
+
           <UPagination
             v-model:page="currentPage"
             :items-per-page="1"
             :total="totalSubmissions"
             size="sm"
             :sibling-count="0"
+            class="shrink-0"
             :ui="{
               wrapper: 'w-auto',
               list: 'gap-0',
@@ -40,7 +68,7 @@
             }"
           >
             <template #item="{ page, pageCount }">
-              <span class="text-sm font-medium px-2">{{ page }} of {{ pageCount }}</span>
+              <span class="text-sm font-medium px-2 whitespace-nowrap">{{ page }} of {{ pageCount }}</span>
             </template>
           </UPagination>
         </div>
@@ -84,7 +112,7 @@
     :show="showEditSubmissionModal"
     :form="form"
     :submission="submission"
-    @close="showEditSubmissionModal = false"
+    @close="onEditSubmissionModalClose"
   />
 </template>
 
@@ -109,7 +137,11 @@ const props = defineProps({
     default: () => [],
   },
   show: { type: Boolean, required: true },
-  form: { type: Object, required: true }
+  form: { type: Object, required: true },
+  hasPdfTemplates: {
+    type: Boolean,
+    default: false,
+  },
 })
 
 const emit = defineEmits(["close", "restored"])
@@ -133,24 +165,10 @@ const getMenuItems = computed(() => {
         onClick: copyLink
       },
       {
-        label: 'Download PDF',
-        icon: 'i-heroicons-arrow-down-tray-20-solid',
-        onClick: downloadPdf
-      },
-    ],
-    [
-      {
         label: 'Submission History',
         icon: 'i-heroicons-clock',
         onClick: () => {
           showSubmissionHistoryModal.value = true
-        }
-      },
-      {
-        label: 'Edit',
-        icon: 'i-heroicons-pencil-square-20-solid',
-        onClick: () => {
-          showEditSubmissionModal.value = true
         }
       }
     ],
@@ -181,9 +199,15 @@ const isModalOpen = computed({
 
 const showEditSubmissionModal = ref(false)
 const showSubmissionHistoryModal = ref(false)
-const currentPage = ref(props.data.findIndex(s => s.id === props.submissionId) + 1)
+const currentPage = ref(1)
 const totalSubmissions = ref(props.data.length)
 const submission = computed(() => props.data[currentPage.value - 1])
+
+const syncCurrentPage = () => {
+  const index = props.data.findIndex(s => Number(s.id) === Number(props.submissionId))
+  currentPage.value = index >= 0 ? index + 1 : 1
+  totalSubmissions.value = props.data.length
+}
 
 // Set up form manager with proper mode
 let formManager = null
@@ -199,6 +223,8 @@ const setupFormManager = () => {
 formManager = setupFormManager()
 
 const formManagerInit = () => {
+  if (!submission.value) return
+
   formManager.initialize({
     skipPendingSubmission: true,
     skipUrlParams: true,
@@ -209,6 +235,25 @@ const formManagerInit = () => {
 
 watch(() => props.show, (newShow) => {
   if (newShow) {
+    syncCurrentPage()
+    nextTick(() => {
+      formManagerInit()
+    })
+  }
+}, { immediate: true })
+
+watch(() => props.submissionId, () => {
+  if (props.show) {
+    syncCurrentPage()
+    nextTick(() => {
+      formManagerInit()
+    })
+  }
+})
+
+watch(() => props.data, () => {
+  if (props.show) {
+    syncCurrentPage()
     nextTick(() => {
       formManagerInit()
     })
@@ -277,5 +322,10 @@ const deleteRecord = () => {
   }).catch((error) => {
     alert.error(error.data?.message || "Something went wrong!")
   })
+}
+
+const onEditSubmissionModalClose = () => {
+  showEditSubmissionModal.value = false
+  formManagerInit()
 }
 </script>

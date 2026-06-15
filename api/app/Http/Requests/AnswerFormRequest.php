@@ -46,8 +46,12 @@ class AnswerFormRequest extends FormRequest
      */
     public function rules()
     {
-        // Skip validation if this is a partial submission
-        if ($this->has('is_partial')) {
+        // Only skip validation for legitimate partial submissions (form + plan must allow it)
+        if (
+            $this->boolean('is_partial')
+            && $this->form->enable_partial_submissions
+            && $this->form->workspace->hasFeature('partial_submissions')
+        ) {
             return [];
         }
 

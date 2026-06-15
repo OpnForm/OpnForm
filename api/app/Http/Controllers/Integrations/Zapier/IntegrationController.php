@@ -18,7 +18,7 @@ class IntegrationController
     {
         $form = $request->form();
 
-        $this->authorize('view', $form);
+        $this->authorize('manageIntegrations', $form);
 
         $form->integrations()
             ->create([
@@ -36,7 +36,7 @@ class IntegrationController
     {
         $form = $request->form();
 
-        $this->authorize('view', $form);
+        $this->authorize('manageIntegrations', $form);
 
         $form
             ->integrations()
@@ -50,7 +50,7 @@ class IntegrationController
     {
         $form = $request->form();
 
-        $this->authorize('view', $form);
+        $this->authorize('manageIntegrations', $form);
 
         $lastSubmission = $form->submissions()->latest()->first();
         $submissionData = null;

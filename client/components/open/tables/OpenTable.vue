@@ -166,13 +166,39 @@
           <RecordOperations
             :form="form"
             :submission-id="row.original.id"
-            :data="sortedData"
+            :has-pdf-templates="hasPdfTemplates"
+            @edit="onEditSubmission"
+            @download-pdf="onDownloadPdf"
+            @view="onViewSubmission"
           />
         </div>
       </template>
     </UTable>
 
+    <ViewSubmissionModal
+      v-if="viewSubmissionId"
+      :show="showViewSubmissionModal"
+      :form="form"
+      :data="viewModalSubmissions"
+      :submission-id="viewSubmissionId"
+      :has-pdf-templates="hasPdfTemplates"
+      @close="onViewSubmissionModalClose"
+      @restored="emit('refresh')"
+    />
 
+    <EditSubmissionModal
+      :show="showEditSubmissionModal"
+      :form="form"
+      :submission="editSubmission"
+      @close="onEditSubmissionModalClose"
+    />
+
+    <DownloadPdf
+      v-if="hasPdfTemplates"
+      ref="downloadPdfRef"
+      :form="form"
+      :submission-id="activeDownloadSubmissionId"
+    />
   </div>
 </template>
 
@@ -190,10 +216,15 @@ import OpenFile from "./components/OpenFile.vue"
 import OpenCheckbox from "./components/OpenCheckbox.vue"
 import OpenPayment from "./components/OpenPayment.vue"
 import OpenSubmissionStatus from "./components/OpenSubmissionStatus.vue"
+import DownloadPdf from "../components/DownloadPdf.vue"
+import EditSubmissionModal from "../components/EditSubmissionModal.vue"
 import RecordOperations from "../components/RecordOperations.vue"
+import ViewSubmissionModal from "../components/ViewSubmissionModal.vue"
 import TableHeader from "./components/TableHeader.vue"
 import TableColumnManager from "./components/TableColumnManager.vue"
+import { formsApi } from '~/api/forms'
 import { useFormSubmissions } from "~/composables/query/forms/useFormSubmissions"
+import { usePdfTemplates } from '~/composables/query/forms/usePdfTemplates'
 
 const props = defineProps({
   data: {
@@ -215,6 +246,8 @@ const props = defineProps({
 })
 
 const emit = defineEmits(["search", "filter", "page-change", "refresh"])
+
+const route = useRoute()
 
 // Get workspace for table state
 const { current: workspace } = useCurrentWorkspace()
@@ -266,6 +299,18 @@ const searchInput = ref("")
 const debouncedSearch = refDebounced(searchInput, 300)
 const statusFilter = ref('all')
 const alert = useAlert()
+const showViewSubmissionModal = ref(false)
+const viewSubmissionId = ref(null)
+const viewModalExtraSubmission = ref(null)
+const pendingViewFromUrl = ref(false)
+const showEditSubmissionModal = ref(false)
+const editSubmissionId = ref(null)
+const downloadPdfRef = ref(null)
+const activeDownloadSubmissionId = ref(0)
+
+const { list: listPdfTemplates } = usePdfTemplates()
+const { data: pdfTemplatesData } = listPdfTemplates(() => props.form?.id)
+const hasPdfTemplates = computed(() => (pdfTemplatesData.value?.data?.length ?? 0) > 0)
 
 // Use form submissions composable for multi-delete
 const { deleteMultiSubmissions } = useFormSubmissions()
@@ -319,6 +364,87 @@ const statusList = [
 const sortedData = computed(() => {
   return props.data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
 })
+
+const editSubmission = computed(() => sortedData.value.find(s => s.id === editSubmissionId.value))
+
+const viewModalSubmissions = computed(() => {
+  if (!viewModalExtraSubmission.value) {
+    return sortedData.value
+  }
+
+  const extraId = viewModalExtraSubmission.value.id
+  const rest = sortedData.value.filter(s => s.id !== extraId)
+  return [viewModalExtraSubmission.value, ...rest]
+})
+
+const onViewSubmission = (submissionId) => {
+  viewModalExtraSubmission.value = null
+  viewSubmissionId.value = submissionId
+  showViewSubmissionModal.value = true
+}
+
+const onViewSubmissionModalClose = () => {
+  showViewSubmissionModal.value = false
+  viewSubmissionId.value = null
+  viewModalExtraSubmission.value = null
+}
+
+const openViewFromUrl = () => {
+  const urlViewId = route.query.view
+  if (!urlViewId || showViewSubmissionModal.value || !props.form?.id) return
+
+  const submissionId = parseInt(urlViewId)
+  if (!submissionId || Number.isNaN(submissionId)) return
+
+  const inCurrentPage = sortedData.value.some(s => Number(s.id) === submissionId)
+  if (inCurrentPage) {
+    viewModalExtraSubmission.value = null
+    viewSubmissionId.value = submissionId
+    showViewSubmissionModal.value = true
+    return
+  }
+
+  if (props.loading || pendingViewFromUrl.value) return
+
+  pendingViewFromUrl.value = true
+  formsApi.submissions.fetch(props.form.id, submissionId)
+    .then((record) => {
+      if (!record?.data) return
+      viewModalExtraSubmission.value = record.data
+      viewSubmissionId.value = submissionId
+      showViewSubmissionModal.value = true
+    })
+    .catch(() => {})
+    .finally(() => {
+      pendingViewFromUrl.value = false
+    })
+}
+
+const onEditSubmission = (submissionId) => {
+  editSubmissionId.value = submissionId
+  showEditSubmissionModal.value = true
+}
+
+const onEditSubmissionModalClose = () => {
+  showEditSubmissionModal.value = false
+  editSubmissionId.value = null
+}
+
+const onDownloadPdf = (submissionId) => {
+  const submission = sortedData.value.find(s => s.id === submissionId)
+  if (!submission?.submission_id) {
+    alert.error("Something went wrong!")
+    return
+  }
+  activeDownloadSubmissionId.value = submission.submission_id
+  nextTick(() => {
+    if (downloadPdfRef.value) {
+      downloadPdfRef.value.handleDownload()
+    } else {
+      alert.error("Something went wrong!")
+    }
+  })
+}
 
 // Replace with simple data pass-through:
 const filteredTableData = computed(() => props.data || [])
@@ -392,6 +518,14 @@ const handleColumnResize = (columnId, newSize) => {
 onMounted(() => {
   computeMaxHeight()
 })
+
+watch(
+  () => [route.query.view, props.loading, props.data.length],
+  () => {
+    openViewFromUrl()
+  },
+  { immediate: true }
+)
 
 useEventListener(window, 'resize', computeMaxHeight)
 </script> 

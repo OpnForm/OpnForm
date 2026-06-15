@@ -803,7 +803,7 @@ const enterpriseFaqs = [
   {
     question: "Does OpnForm support SSO?",
     answer:
-      "Yes. OpnForm supports enterprise identity controls including SSO options such as SAML and OIDC, depending on your setup and plan.",
+      "Yes. OpnForm supports SSO options such as OIDC and Enterprise SSO controls such as SAML, depending on your setup and plan.",
   },
   {
     question: "Where is form data hosted?",
