@@ -44,27 +44,35 @@ const freePlanComparison = [
   },
   {
     label: "Branding removal",
-    cells: ["No", "No"],
+    cells: ["Pro+", "Pro"],
   },
   {
     label: "Conditional logic",
-    cells: ["Yes", "Yes"],
+    cells: ["Included", "Included"],
   },
   {
     label: "File uploads",
-    cells: ["Free basic quota", "Yes"],
+    cells: ["Included", "Included"],
   },
   {
     label: "Custom CSS",
-    cells: ["No", "No"],
+    cells: ["Business+", "Pro"],
   },
   {
     label: "Native integrations",
-    cells: ["Basic", "Basic"],
+    cells: ["Included", "Included"],
   },
   {
     label: "Webhooks",
-    cells: ["Free", "Free"],
+    cells: ["Included", "Included"],
+  },
+  {
+    label: "Open source",
+    cells: ["Y", "N"],
+  },
+  {
+    label: "Self-hosting option",
+    cells: ["Y", "N"],
   },
 ]
 
@@ -112,7 +120,7 @@ const featureComparison = [
   },
   {
     label: "Full API access",
-    cells: ["Free API + webhooks", "Available"],
+    cells: ["Included API + webhooks", "Available"],
   },
   {
     label: "Custom domains for forms",
@@ -124,11 +132,11 @@ const featureComparison = [
   },
   {
     label: "Native integrations ecosystem",
-    cells: ["Basic free; advanced paid", "Zapier, Make, webhooks"],
+    cells: ["Basic included; advanced paid", "Zapier, Make, webhooks"],
   },
   {
     label: "Developer-first workflows",
-    cells: ["Free API + webhooks", "API + webhooks"],
+    cells: ["Included API + webhooks", "API + webhooks"],
   },
   {
     label: "Flexible form use cases",
