@@ -460,9 +460,9 @@
               <UButton
                 class="w-fit sm:w-full justify-center px-4 py-2.5 rounded-[12px] text-base leading-7 tracking-[-1.1%] font-medium"
                 variant="outline"
-                label="Request a quote"
+                label="Get started free"
                 color="neutral"
-                @click.prevent="contactUs"
+                @click.prevent="handleEnterpriseCta"
               />
             </div>
 
@@ -916,8 +916,5 @@ const handlePlanCta = (plan) => {
 
 const handleProCta = () => handlePlanCta("pro")
 const handleBusinessCta = () => handlePlanCta("business")
-
-const contactUs = () => {
-  useCrisp().openAndShowChat()
-}
+const handleEnterpriseCta = () => handlePlanCta("enterprise")
 </script>

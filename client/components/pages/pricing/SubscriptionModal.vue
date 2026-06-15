@@ -507,12 +507,6 @@ const startCheckout = async (planName) => {
     return
   }
 
-  if(planName === 'enterprise') {
-    closeModal()
-    useCrisp().openAndShowChat()
-    return
-  }
-
   currentPlan.value = planName
 
   try {
