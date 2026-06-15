@@ -917,4 +917,8 @@ const handlePlanCta = (plan) => {
 const handleProCta = () => handlePlanCta("pro")
 const handleBusinessCta = () => handlePlanCta("business")
 const handleEnterpriseCta = () => handlePlanCta("enterprise")
+
+const contactUs = () => {
+  useCrisp().openAndShowChat()
+}
 </script>
