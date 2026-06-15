@@ -3,6 +3,9 @@
     competitor-name="Form.io"
     competitor-icon="opnform:formio"
     :hero-title="'OpnForm — The Open-Source Form.io Alternative'"
+    competitor-plan-label="Self-hosted"
+    :plan-comparison-title="'Hosted vs Self-hosted Setup:\nOpnForm vs Form.io'"
+    plan-comparison-subtitle="Compare OpnForm's hosted free plan with Form.io's developer-oriented self-hosted setup."
     :free-plan-comparison="freePlanComparison"
     :switch-reasons="switchReasons"
     :feature-comparison="featureComparison"
@@ -51,7 +54,7 @@ const freePlanComparison = [
   },
   {
     label: "File uploads",
-    cells: ["Free basic quota", "Included with file storage setup"],
+    cells: ["Included", "Requires file storage setup"],
   },
   {
     label: "Drag-and-drop builder",
@@ -59,11 +62,23 @@ const freePlanComparison = [
   },
   {
     label: "No code required",
-    cells: ["Yes", "Low-code / developer-oriented"],
+    cells: ["Y", "Low-code / developer-oriented"],
   },
   {
     label: "Hosted experience without infra",
-    cells: ["Yes", "Must self-host"],
+    cells: ["Y", "N"],
+  },
+  {
+    label: "API access",
+    cells: ["Included", "Included"],
+  },
+  {
+    label: "Open source",
+    cells: ["Y", "Y"],
+  },
+  {
+    label: "Self-hosting option",
+    cells: ["Y", "Y"],
   },
 ]
 
@@ -115,11 +130,11 @@ const featureComparison = [
   },
   {
     label: "Developer workflows (API + webhooks)",
-    cells: ["Free API + webhooks", "Y"],
+    cells: ["Included API + webhooks", "Y"],
   },
   {
     label: "Native integrations ecosystem",
-    cells: ["Basic free; advanced paid", "Must build integrations"],
+    cells: ["Basic included; advanced paid", "Must build integrations"],
   },
   {
     label: "Full control of styling without code",

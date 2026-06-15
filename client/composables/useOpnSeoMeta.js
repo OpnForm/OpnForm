@@ -18,6 +18,7 @@ const nonIndexablePathPatterns = [
 export const useOpnSeoMeta = (meta, alwaysEnabled = false) => {
   const { shouldRedirect } = useSubdomainRedirect()
   const route = useRoute()
+  const canonicalBaseUrl = resolveCanonicalBaseUrl()
 
   if (!alwaysEnabled && shouldRedirect()) {
     return
@@ -27,7 +28,7 @@ export const useOpnSeoMeta = (meta, alwaysEnabled = false) => {
   delete seoMeta.canonical
 
   useHead(() => {
-    const canonicalUrl = resolveCanonicalUrl(meta.canonical, route)
+    const canonicalUrl = resolveCanonicalUrl(meta.canonical, route, canonicalBaseUrl)
 
     return {
       link: canonicalUrl
@@ -74,17 +75,17 @@ function resolveRobots (robots, route) {
   return isNonIndexablePath(route.path) ? 'noindex, nofollow' : null
 }
 
-function resolveCanonicalUrl (canonical, route) {
+function resolveCanonicalUrl (canonical, route, canonicalBaseUrl) {
   const resolvedCanonical = resolveMetaValue(canonical)
   if (resolvedCanonical === false) {
     return null
   }
 
   if (typeof resolvedCanonical === 'string' && resolvedCanonical) {
-    return normalizeCanonicalUrl(resolvedCanonical)
+    return normalizeCanonicalUrl(resolvedCanonical, canonicalBaseUrl)
   }
 
-  return joinCanonicalUrl(resolveCanonicalBaseUrl(), route.path)
+  return joinCanonicalUrl(canonicalBaseUrl, route.path)
 }
 
 function resolveCanonicalBaseUrl () {
@@ -105,12 +106,12 @@ function resolveCanonicalBaseUrl () {
   return import.meta.client ? window.location.origin : ''
 }
 
-function normalizeCanonicalUrl (url) {
+function normalizeCanonicalUrl (url, canonicalBaseUrl) {
   if (/^https?:\/\//.test(url)) {
     return url
   }
 
-  return joinCanonicalUrl(resolveCanonicalBaseUrl(), url)
+  return joinCanonicalUrl(canonicalBaseUrl, url)
 }
 
 function joinCanonicalUrl (baseUrl, path) {

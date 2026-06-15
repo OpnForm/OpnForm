@@ -3,6 +3,9 @@
     competitor-name="HeyForm"
     competitor-icon="opnform:heyform"
     :hero-title="'OpnForm — The Open-Source HeyForm Alternative'"
+    competitor-plan-label="Basic"
+    :plan-comparison-title="'Entry Plan Comparison:\nOpnForm Free vs HeyForm Basic'"
+    plan-comparison-subtitle="Compare OpnForm's free plan with HeyForm's entry cloud plan."
     :free-plan-comparison="freePlanComparison"
     :switch-reasons="switchReasons"
     :feature-comparison="featureComparison"
@@ -44,27 +47,39 @@ const freePlanComparison = [
   },
   {
     label: "Conditional logic",
-    cells: ["Yes", "Yes"],
+    cells: ["Included", "Included"],
   },
   {
     label: "File uploads",
-    cells: ["Free basic quota", "Yes, capped by storage"],
+    cells: ["Included", "Included"],
   },
   {
     label: "Multi-page / conversational forms",
-    cells: ["Yes", "Yes"],
+    cells: ["Included", "Included"],
   },
   {
     label: "Drag-and-drop builder",
-    cells: ["Yes", "Yes"],
+    cells: ["Included", "Included"],
   },
   {
     label: "Embedded forms",
-    cells: ["Yes", "Yes"],
+    cells: ["Included", "Included"],
   },
   {
     label: "No code required",
-    cells: ["Yes", "Yes"],
+    cells: ["Y", "Y"],
+  },
+  {
+    label: "Custom CSS",
+    cells: ["Business+", "Premium+"],
+  },
+  {
+    label: "Open source",
+    cells: ["Y", "Y"],
+  },
+  {
+    label: "Self-hosting option",
+    cells: ["Y", "Y"],
   },
 ]
 
@@ -116,7 +131,7 @@ const featureComparison = [
   },
   {
     label: "Developer workflows (API + webhooks)",
-    cells: ["Free API + webhooks", "Integrations listed"],
+    cells: ["Included API + webhooks", "Integrations listed"],
   },
   {
     label: "AI-powered form generation",
