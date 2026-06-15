@@ -5,8 +5,8 @@
   "scripts": {
     "build": "NODE_OPTIONS='--max-old-space-size=8192' nuxt build",
     "build:e2e": "E2E=1 NODE_OPTIONS='--max-old-space-size=8192' nuxt build",
-    "dev": "export NODE_TLS_REJECT_UNAUTHORIZED=0; nuxt dev",
-    "docker-dev": "export NODE_TLS_REJECT_UNAUTHORIZED=0; nuxt dev --host 0.0.0.0",
+    "dev": "export NODE_TLS_REJECT_UNAUTHORIZED=0; node --import ./scripts/node-localstorage-polyfill.mjs ./node_modules/nuxt/bin/nuxt.mjs dev",
+    "docker-dev": "export NODE_TLS_REJECT_UNAUTHORIZED=0; node --import ./scripts/node-localstorage-polyfill.mjs ./node_modules/nuxt/bin/nuxt.mjs dev --host 0.0.0.0",
     "generate": "export NODE_TLS_REJECT_UNAUTHORIZED=0; nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",

@@ -3,6 +3,7 @@
     competitor-name="123FormBuilder"
     competitor-icon="opnform:123formbuilder"
     :hero-title="'OpnForm — The Open-Source 123FormBuilder Alternative'"
+    competitor-plan-label="Basic"
     :free-plan-comparison="freePlanComparison"
     :switch-reasons="switchReasons"
     :feature-comparison="featureComparison"
@@ -35,7 +36,7 @@ const freePlanComparison = [
     cells: ["Unlimited submissions", "Limited (100/month)"],
   },
   {
-    label: "Forms Allowed",
+    label: "Forms allowed",
     cells: ["Unlimited forms", "Limited (5 forms)"],
   },
   {
@@ -51,17 +52,25 @@ const freePlanComparison = [
     cells: ["Included", "Included"],
   },
   {
-    label: "File Uploads",
-    cells: ["Free basic quota", "Not Included"],
+    label: "File uploads",
+    cells: ["Included", "Paid plan"],
   },
   {
     label: "Custom CSS",
-    cells: ["No direct custom CSS", "CSS editor"],
+    cells: ["Business+", "Included"],
   },
   {
     label: "API access",
-    cells: ["Free", "100 calls/day"],
-  }
+    cells: ["Included", "100 calls/day"],
+  },
+  {
+    label: "Open source",
+    cells: ["Y", "N"],
+  },
+  {
+    label: "Self-hosting option",
+    cells: ["Y", "N"],
+  },
 ]
 
 const switchReasons = [
@@ -132,7 +141,7 @@ const featureComparison = [
   },
   {
     label: "Integrations",
-    cells: ["Basic free; advanced paid", "Limited"],
+    cells: ["Basic included; advanced paid", "Limited"],
   },
   {
     label: "Analytics dashboard",

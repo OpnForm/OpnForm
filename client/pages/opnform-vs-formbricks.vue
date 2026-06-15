@@ -4,6 +4,7 @@
     competitor-icon="i-simple-icons-formbricks"
     competitor-icon-class="text-[#00CABA]"
     :hero-title="'OpnForm — The Open-Source Formbricks Alternative'"
+    competitor-plan-label="Hobby"
     :free-plan-comparison="freePlanComparison"
     :switch-reasons="switchReasons"
     :feature-comparison="featureComparison"
@@ -34,16 +35,16 @@ useOpnSeoMeta({
 
 const freePlanComparison = [
   {
-    label: "Monthly Responses",
+    label: "Monthly responses",
     cells: ["Unlimited", "250/month on Cloud Hobby"],
   },
   {
     label: "Unlimited forms / surveys",
-    cells: ["Yes", "Yes"],
+    cells: ["Y", "Y"],
   },
   {
     label: "File uploads",
-    cells: ["Free basic quota", "Limited"],
+    cells: ["Included", "Included"],
   },
   {
     label: "Custom CSS / styling",
@@ -51,15 +52,19 @@ const freePlanComparison = [
   },
   {
     label: "Native integrations",
-    cells: ["Basic", "Pro cloud / self-host"],
-  },
-  {
-    label: "Self-hosting",
-    cells: ["Yes", "Yes"],
+    cells: ["Included", "Pro cloud / self-host"],
   },
   {
     label: "API access",
-    cells: ["Free", "Scale cloud / self-host"],
+    cells: ["Included", "Self-host / paid cloud"],
+  },
+  {
+    label: "Open source",
+    cells: ["Y", "Y"],
+  },
+  {
+    label: "Self-hosting option",
+    cells: ["Y", "Y"],
   },
 ]
 
@@ -107,7 +112,7 @@ const featureComparison = [
   },
   {
     label: "Developer extensibility (API + webhooks)",
-    cells: ["Free API + webhooks", "Cloud tiers / self-host"],
+    cells: ["Included API + webhooks", "Cloud tiers / self-host"],
   },
   {
     label: "Custom domains for forms",
@@ -119,7 +124,7 @@ const featureComparison = [
   },
   {
     label: "Native ecosystem integrations",
-    cells: ["Basic free; advanced paid", "Pro cloud / self-host"],
+    cells: ["Basic included; advanced paid", "Pro cloud / self-host"],
   },
   {
     label: "Advanced analytics & dashboards",
