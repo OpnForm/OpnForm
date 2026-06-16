@@ -52,10 +52,5 @@ class MatrixValidationRule implements ValidationRule
             }
         }
 
-        // Check for extra rows that shouldn't be there
-        $extraRows = array_diff(array_keys($value), $rows);
-        foreach ($extraRows as $extraRow) {
-            $fail("Unexpected row '{$extraRow}' in the matrix.");
-        }
     }
 }

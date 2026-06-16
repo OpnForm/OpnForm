@@ -309,6 +309,13 @@ class AnswerFormRequest extends FormRequest
             if ($property['type'] === 'rich_text' && $receivedValue) {
                 $mergeData[$property['id']] = Purify::clean($receivedValue);
             }
+
+            if ($property['type'] === 'matrix' && is_array($receivedValue)) {
+                $mergeData[$property['id']] = array_intersect_key(
+                    $receivedValue,
+                    array_flip($property['rows'] ?? [])
+                );
+            }
         });
 
         $this->merge($mergeData);

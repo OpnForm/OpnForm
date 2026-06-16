@@ -37,6 +37,48 @@ it('can submit form with valid matrix input', function () {
         ]);
 });
 
+it('silently ignores matrix rows that no longer exist', function () {
+    $user = $this->actingAsUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace);
+
+    $matrixProperty = [
+        'id' => 'matrix_field',
+        'name' => 'Matrix Question',
+        'type' => 'matrix',
+        'rows' => ['Row 2', 'Row 3'],
+        'columns' => ['Column A', 'Column B', 'Column C'],
+        'required' => true
+    ];
+
+    $form->properties = array_merge($form->properties, [$matrixProperty]);
+    $form->update();
+
+    $submissionData = [
+        'matrix_field' => [
+            'Row 1' => 'Column A',
+            'Row 2' => 'Column B',
+            'Row 3' => 'Column C'
+        ]
+    ];
+
+    $formData = $this->generateFormSubmissionData($form, $submissionData);
+
+    $this->postJson(route('forms.answer', $form->slug), $formData)
+        ->assertSuccessful()
+        ->assertJson([
+            'type' => 'success',
+            'message' => 'Form submission saved.',
+        ]);
+
+    $submission = $form->submissions()->latest()->first();
+
+    expect($submission->data['matrix_field'])->toBe([
+        'Row 2' => 'Column B',
+        'Row 3' => 'Column C'
+    ]);
+});
+
 it('cannot submit form with invalid matrix input', function () {
     $user = $this->actingAsUser();
     $workspace = $this->createUserWorkspace($user);
