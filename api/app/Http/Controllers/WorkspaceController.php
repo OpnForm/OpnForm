@@ -6,6 +6,8 @@ use App\Http\Requests\Workspace\CustomDomainRequest;
 use App\Http\Requests\Workspace\CustomCodeSettingsRequest;
 use App\Http\Requests\Workspace\EmailSettingsRequest;
 use App\Http\Resources\WorkspaceResource;
+use App\Models\User;
+use App\Models\UserWorkspace;
 use App\Models\Workspace;
 use App\Service\Billing\Feature;
 use Illuminate\Http\Request;
@@ -108,12 +110,14 @@ class WorkspaceController extends Controller
             'icon' => ($request->emoji) ? $request->emoji : '',
         ]);
 
-        // Add relation with user
-        $user->workspaces()->sync([
-            $workspace->id => [
-                'role' => 'admin',
-            ],
-        ], false);
+        // Add relation with user. Use the pivot model so workspace entitlement listeners run.
+        UserWorkspace::create([
+            'workspace_id' => $workspace->id,
+            'user_id' => $user->id,
+            'role' => User::ROLE_ADMIN,
+        ]);
+
+        $workspace->refresh();
 
         return $this->success([
             'message' => 'Workspace created.',

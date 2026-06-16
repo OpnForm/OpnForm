@@ -11,7 +11,9 @@ use App\Events\Models\FormCreated;
 use App\Events\Models\FormIntegrationCreated;
 use App\Events\Models\FormIntegrationSaved;
 use App\Events\Models\FormIntegrationsEventCreated;
+use App\Events\Models\UserWorkspaceCreated;
 use App\Listeners\Billing\HandleSubscriptionCreated;
+use App\Listeners\Billing\ApplyLifetimeLicenseWorkspaceEntitlements;
 use App\Listeners\Billing\RemoveWorkspaceGuestsIfNeeded;
 use App\Listeners\Forms\FormCreationConfirmation;
 use App\Listeners\Forms\FormIntegrationCreatedHandler;
@@ -62,7 +64,10 @@ class EventServiceProvider extends ServiceProvider
         ],
         SubscriptionUpdated::class => [
             RemoveWorkspaceGuestsIfNeeded::class
-        ]
+        ],
+        UserWorkspaceCreated::class => [
+            ApplyLifetimeLicenseWorkspaceEntitlements::class,
+        ],
     ];
 
     /**
