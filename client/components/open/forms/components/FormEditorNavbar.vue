@@ -46,6 +46,7 @@
         id="form-editor-title"
         v-model="form.title"
         element="h3"
+        :max-length="255"
         class="font-medium py-1 text-md w-48 text-neutral-500 truncate form-editor-title"
       />
       <UBadge

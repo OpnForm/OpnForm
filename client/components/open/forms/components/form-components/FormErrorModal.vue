@@ -14,12 +14,15 @@
           class="text-red-800 mb-3"
           v-text="validationErrorResponse.message"
         />
-        <ul class="list-disc list-inside text-red-700 space-y-1">
+        <ul
+          v-if="validationErrors.length > 0"
+          class="list-disc list-inside text-red-700 space-y-1"
+        >
           <li
-            v-for="(err, key) in validationErrorResponse.errors"
+            v-for="(err, key) in validationErrors"
             :key="key"
           >
-            {{ Array.isArray(err) ? err[0] : err }}
+            {{ err }}
           </li>
         </ul>
       </div>
@@ -46,6 +49,18 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['close'])
+
+const validationErrors = computed(() => {
+  if (!props.validationErrorResponse?.errors) {
+    return []
+  }
+
+  const errors = Object.values(props.validationErrorResponse.errors).map((err) => {
+    return Array.isArray(err) ? err[0] : err
+  })
+
+  return errors.filter((err) => err !== props.validationErrorResponse.message)
+})
 
 // Modal state
 const isOpen = computed({

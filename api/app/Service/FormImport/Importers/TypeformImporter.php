@@ -48,7 +48,7 @@ class TypeformImporter extends AbstractImporter
         $html = $this->fetchHtml($url);
         $formData = $this->extractFormData($html);
 
-        $title = $this->sanitizeText($formData['title'] ?? 'Imported Typeform', 60);
+        $title = $this->sanitizeText($formData['title'] ?? 'Imported Typeform', 255);
         $properties = [];
         if ($welcome = $this->renderWelcomeScreen($formData['welcome_screens'] ?? [])) {
             $properties[] = $welcome;

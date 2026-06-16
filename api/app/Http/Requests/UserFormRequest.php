@@ -13,6 +13,7 @@ use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\Http\Request;
 use App\Rules\CssOnlyRule;
+use Illuminate\Support\Str;
 use Stevebauman\Purify\Facades\Purify;
 
 /**
@@ -33,6 +34,10 @@ abstract class UserFormRequest extends \Illuminate\Foundation\Http\FormRequest
     protected function prepareForValidation()
     {
         $data = $this->all();
+
+        if (isset($data['title']) && is_string($data['title'])) {
+            $data['title'] = Str::substr(trim($data['title']), 0, 255);
+        }
 
         if (isset($data['properties']) && is_array($data['properties'])) {
             $data['properties'] = array_map(function ($property) {
@@ -157,7 +162,7 @@ abstract class UserFormRequest extends \Illuminate\Foundation\Http\FormRequest
 
         return [
             // Form Info
-            'title' => 'required|string|max:60',
+            'title' => 'required|string|max:255',
             'description' => 'nullable|string|max:2000',
             'tags' => 'nullable|array',
             'visibility' => ['required', Rule::in(Form::VISIBILITY)],
@@ -259,6 +264,8 @@ abstract class UserFormRequest extends \Illuminate\Foundation\Http\FormRequest
     {
         // Note: Property-specific messages are now handled by FormPropertiesRule
         // for better performance (single-pass validation)
-        return [];
+        return [
+            'title.max' => 'Form name must be 255 characters or fewer.',
+        ];
     }
 }

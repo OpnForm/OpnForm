@@ -27,6 +27,7 @@
         v-model="content"
         class="absolute inset-0 focus:outline-hidden bg-white rounded-sm transition-colors px-2"
         :class="[{ 'bg-blue-50': editing }, contentClass]"
+        :maxlength="maxLength"
         @blur="editing = false"
         @keyup.enter="editing = false"
         @input="handleInput"
@@ -43,6 +44,7 @@ const props = defineProps({
   textAlign: { type: String, default: "left" },
   contentClass: { type: String, default: "" },
   element: { type: String, default: 'div' }, // New prop for element type
+  maxLength: { type: Number, default: null },
 })
 
 const emit = defineEmits(['update:modelValue'])

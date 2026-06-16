@@ -146,6 +146,24 @@ it('can update a form', function () {
     ]);
 });
 
+it('truncates form titles longer than the database limit when updating a form', function () {
+    $user = $this->actingAsUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace);
+
+    $formData = (new \App\Http\Resources\FormResource($form))->toArray(request());
+    $formData['title'] = str_repeat('a', 300);
+
+    $this->putJson(route('open.forms.update', $form->id), $formData)
+        ->assertSuccessful()
+        ->assertJsonPath('form.title', str_repeat('a', 255));
+
+    $this->assertDatabaseHas('forms', [
+        'id' => $form->id,
+        'title' => str_repeat('a', 255),
+    ]);
+});
+
 it('backfills missing select option ids when creating a form', function () {
     $user = $this->actingAsUser();
     $workspace = $this->createUserWorkspace($user);
