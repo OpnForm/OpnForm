@@ -122,7 +122,7 @@ class GoogleFormsImporter extends AbstractImporter
 
     private function parseFormData(array $data): array
     {
-        $title = $this->sanitizeText($data['info']['title'] ?? $data['info']['documentTitle'] ?? 'Imported Google Form', 60);
+        $title = $this->sanitizeText($data['info']['title'] ?? $data['info']['documentTitle'] ?? 'Imported Google Form', 255);
         $description = $this->sanitizeText($data['info']['description'] ?? '', 8000);
         $items = $data['items'] ?? [];
 

@@ -55,7 +55,7 @@ class FilloutImporter extends AbstractImporter
             throw new FormImportException('Could not find form data in the page structure.');
         }
 
-        $title = $this->sanitizeText($pageProps['flow']['name'] ?? 'Imported Fillout Form', 60);
+        $title = $this->sanitizeText($pageProps['flow']['name'] ?? 'Imported Fillout Form', 255);
 
         $template = $pageProps['flowSnapshot']['template'] ?? [];
         $stepsMap = $this->asMap($template['steps'] ?? []);

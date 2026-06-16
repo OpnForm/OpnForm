@@ -16,6 +16,8 @@
         class="mt-4 max-w-xs"
         label="Form Name"
         placeholder="My form"
+        :max-char-limit="255"
+        :show-char-limit="true"
       />
       <select-input
         name="tags"
