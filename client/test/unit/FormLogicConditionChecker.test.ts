@@ -57,6 +57,47 @@ describe('FormLogicConditionChecker computed variables', () => {
   })
 })
 
+describe('FormLogicConditionChecker unanswered negative value comparisons', () => {
+  const condition = (type: string, operator: string, value: unknown, fieldId = 'field') => ({
+    value: {
+      operator,
+      value,
+      property_meta: {
+        id: fieldId,
+        type
+      }
+    }
+  })
+
+  it.each([
+    ['text does_not_equal', condition('text', 'does_not_equal', 'blocked')],
+    ['text does_not_contain', condition('text', 'does_not_contain', 'blocked')],
+    ['text does_not_match_regex', condition('text', 'does_not_match_regex', '^blocked$')],
+    ['text content_length_does_not_equal', condition('text', 'content_length_does_not_equal', 7)],
+    ['number does_not_equal', condition('number', 'does_not_equal', 42)],
+    ['select does_not_equal', condition('select', 'does_not_equal', 'blocked')],
+    ['multi_select does_not_contain', condition('multi_select', 'does_not_contain', 'blocked')],
+    ['matrix does_not_equal', condition('matrix', 'does_not_equal', { row1: 'blocked' })],
+    ['matrix does_not_contain', condition('matrix', 'does_not_contain', { row1: 'blocked' })]
+  ])('does not satisfy %s when the referenced field is unanswered', (_name, conditions) => {
+    expect(conditionsMet(conditions, {})).toBe(false)
+  })
+
+  it('does not satisfy a mixed positive and negative AND group before every referenced field is answered', () => {
+    const conditions = {
+      operatorIdentifier: 'and',
+      children: [
+        condition('text', 'equals', 'yes', 'answered_field'),
+        condition('text', 'does_not_equal', 'blocked', 'unanswered_field')
+      ]
+    }
+
+    expect(conditionsMet(conditions, {
+      answered_field: 'yes'
+    })).toBe(false)
+  })
+})
+
 describe('FormLogicConditionChecker mention values', () => {
   const mentionHtml = (fieldId: string, fieldName: string, fallback = '') => {
     return `<span mention="true" mention-field-id="${fieldId}" mention-field-name="${fieldName}" mention-fallback="${fallback}">@${fieldName}</span>`

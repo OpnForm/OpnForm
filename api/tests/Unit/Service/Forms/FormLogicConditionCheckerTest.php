@@ -335,6 +335,48 @@ describe('FormLogicConditionChecker', function () {
         });
     });
 
+    describe('unanswered negative value comparisons', function () {
+        $condition = fn (string $type, string $operator, mixed $value, string $fieldId = 'field') => [
+            'value' => [
+                'property_meta' => [
+                    'id' => $fieldId,
+                    'type' => $type,
+                ],
+                'operator' => $operator,
+                'value' => $value,
+            ],
+        ];
+
+        it('does not satisfy negative value comparisons when the referenced field is unanswered', function (string $type, string $operator, mixed $value) use ($condition) {
+            expect(FormLogicConditionChecker::conditionsMet($condition($type, $operator, $value), []))
+                ->toBeFalse();
+        })->with([
+            'text does_not_equal' => ['text', 'does_not_equal', 'blocked'],
+            'text does_not_contain' => ['text', 'does_not_contain', 'blocked'],
+            'text does_not_match_regex' => ['text', 'does_not_match_regex', '^blocked$'],
+            'text content_length_does_not_equal' => ['text', 'content_length_does_not_equal', 7],
+            'number does_not_equal' => ['number', 'does_not_equal', 42],
+            'select does_not_equal' => ['select', 'does_not_equal', 'blocked'],
+            'multi_select does_not_contain' => ['multi_select', 'does_not_contain', 'blocked'],
+            'matrix does_not_equal' => ['matrix', 'does_not_equal', ['row1' => 'blocked']],
+            'matrix does_not_contain' => ['matrix', 'does_not_contain', ['row1' => 'blocked']],
+        ]);
+
+        it('does not satisfy a mixed positive and negative AND group before every referenced field is answered', function () use ($condition) {
+            $conditions = [
+                'operatorIdentifier' => 'and',
+                'children' => [
+                    $condition('text', 'equals', 'yes', 'answered_field'),
+                    $condition('text', 'does_not_equal', 'blocked', 'unanswered_field'),
+                ],
+            ];
+
+            expect(FormLogicConditionChecker::conditionsMet($conditions, [
+                'answered_field' => 'yes',
+            ]))->toBeFalse();
+        });
+    });
+
     describe('date conditions', function () {
         it('handles date comparison operators correctly', function () {
             $condition = [
@@ -477,9 +519,9 @@ describe('FormLogicConditionChecker', function () {
             $formData = ['matrix_field' => ['row2' => 'col2']];
             expect(FormLogicConditionChecker::conditionsMet($condition, $formData))->toBeTrue();
 
-            // User has no data for matrix field
+            // User has no data for matrix field, so value comparisons should not match yet
             $formData = ['matrix_field' => []];
-            expect(FormLogicConditionChecker::conditionsMet($condition, $formData))->toBeTrue();
+            expect(FormLogicConditionChecker::conditionsMet($condition, $formData))->toBeFalse();
         });
 
         it('handles missing rows in field value for contains operator', function () {

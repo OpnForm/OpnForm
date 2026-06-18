@@ -354,6 +354,23 @@ class FormLogicConditionChecker
             is_numeric($fieldValue);
     }
 
+    private function hasAnswerValue($fieldValue): bool
+    {
+        if ($fieldValue === null) {
+            return false;
+        }
+
+        if (is_string($fieldValue)) {
+            return $fieldValue !== '';
+        }
+
+        if (is_array($fieldValue)) {
+            return count($fieldValue) > 0;
+        }
+
+        return true;
+    }
+
     private function checkGreaterThan($condition, $fieldValue): bool
     {
         if (!$this->areValidNumbers($condition, $fieldValue)) {
@@ -692,11 +709,11 @@ class FormLogicConditionChecker
             case 'equals':
                 return $this->checkEquals($propertyCondition, $value);
             case 'does_not_equal':
-                return !$this->checkEquals($propertyCondition, $value);
+                return $this->hasAnswerValue($value) && !$this->checkEquals($propertyCondition, $value);
             case 'contains':
                 return $this->checkContains($propertyCondition, $value);
             case 'does_not_contain':
-                return !$this->checkContains($propertyCondition, $value);
+                return $this->hasAnswerValue($value) && !$this->checkContains($propertyCondition, $value);
             case 'starts_with':
                 return $this->checkStartsWith($propertyCondition, $value);
             case 'ends_with':
@@ -728,6 +745,9 @@ class FormLogicConditionChecker
                 }
             case 'does_not_match_regex':
                 try {
+                    if (!$this->hasAnswerValue($value)) {
+                        return false;
+                    }
                     if (!is_string($propertyCondition['value']) || !is_string($value)) {
                         return true;
                     }
@@ -750,7 +770,7 @@ class FormLogicConditionChecker
             case 'equals':
                 return $this->checkEquals($propertyCondition, $value);
             case 'does_not_equal':
-                return !$this->checkEquals($propertyCondition, $value);
+                return $this->hasAnswerValue($value) && !$this->checkEquals($propertyCondition, $value);
             case 'greater_than':
                 return $this->checkGreaterThan($propertyCondition, $value);
             case 'less_than':
@@ -812,7 +832,7 @@ class FormLogicConditionChecker
             case 'equals':
                 return $this->checkEquals($propertyCondition, $value);
             case 'does_not_equal':
-                return !$this->checkEquals($propertyCondition, $value);
+                return $this->hasAnswerValue($value) && !$this->checkEquals($propertyCondition, $value);
             case 'is_empty':
                 return $this->checkIsEmpty($propertyCondition, $value);
             case 'is_not_empty':
@@ -876,7 +896,7 @@ class FormLogicConditionChecker
             case 'contains':
                 return $this->checkListContains($propertyCondition, $value);
             case 'does_not_contain':
-                return !$this->checkListContains($propertyCondition, $value);
+                return $this->hasAnswerValue($value) && !$this->checkListContains($propertyCondition, $value);
             case 'is_empty':
                 return $this->checkIsEmpty($propertyCondition, $value);
             case 'is_not_empty':
@@ -908,11 +928,11 @@ class FormLogicConditionChecker
             case 'equals':
                 return $this->checkMatrixEquals($propertyCondition, $value);
             case 'does_not_equal':
-                return !$this->checkMatrixEquals($propertyCondition, $value);
+                return $this->hasAnswerValue($value) && !$this->checkMatrixEquals($propertyCondition, $value);
             case 'contains':
                 return $this->checkMatrixContains($propertyCondition, $value);
             case 'does_not_contain':
-                return !$this->checkMatrixContains($propertyCondition, $value);
+                return $this->hasAnswerValue($value) && !$this->checkMatrixContains($propertyCondition, $value);
             case 'exists_in_submissions':
                 return $this->checkExistsInSubmissions($propertyCondition, $value);
             case 'does_not_exist_in_submissions':

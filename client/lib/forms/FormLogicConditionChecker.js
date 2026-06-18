@@ -147,9 +147,11 @@ function computedConditionMet(propertyCondition, value) {
           safeParseFloat(value) !== null &&
           parseFloat(propertyCondition.value) === parseFloat(value)
       case "does_not_equal":
-        return safeParseFloat(propertyCondition.value) === null ||
+        return hasAnswerValue(value) && (
+          safeParseFloat(propertyCondition.value) === null ||
           safeParseFloat(value) === null ||
           parseFloat(propertyCondition.value) !== parseFloat(value)
+        )
       default:
         return numberConditionMet(propertyCondition, value)
     }
@@ -170,6 +172,14 @@ function areValidNumbers(condition, fieldValue) {
   const conditionValue = safeParseFloat(condition.value)
   const parsedFieldValue = safeParseFloat(fieldValue)
   return conditionValue !== null && parsedFieldValue !== null
+}
+
+function hasAnswerValue(fieldValue) {
+  if (fieldValue === undefined || fieldValue === null) return false
+  if (typeof fieldValue === 'string') return fieldValue.length > 0
+  if (Array.isArray(fieldValue)) return fieldValue.length > 0
+  if (typeof fieldValue === 'object') return Object.keys(fieldValue).length > 0
+  return true
 }
 
 function checkEquals(condition, fieldValue) {
@@ -409,11 +419,11 @@ function textConditionMet(propertyCondition, value) {
     case "equals":
       return checkEquals(propertyCondition, value)
     case "does_not_equal":
-      return !checkEquals(propertyCondition, value)
+      return hasAnswerValue(value) && !checkEquals(propertyCondition, value)
     case "contains":
       return checkContains(propertyCondition, value)
     case "does_not_contain":
-      return !checkContains(propertyCondition, value)
+      return hasAnswerValue(value) && !checkContains(propertyCondition, value)
     case "starts_with":
       return checkStartsWith(propertyCondition, value)
     case "ends_with":
@@ -444,6 +454,7 @@ function textConditionMet(propertyCondition, value) {
       }
     case 'does_not_match_regex':
       try {
+        if (!hasAnswerValue(value)) return false
         if (typeof propertyCondition.value !== 'string' || typeof value !== 'string') return true
         const regex2 = new RegExp(propertyCondition.value)
         return !regex2.test(value)
@@ -459,7 +470,7 @@ function numberConditionMet(propertyCondition, value) {
     case "equals":
       return checkEquals(propertyCondition, value)
     case "does_not_equal":
-      return !checkEquals(propertyCondition, value)
+      return hasAnswerValue(value) && !checkEquals(propertyCondition, value)
     case "greater_than":
       return checkGreaterThan(propertyCondition, value)
     case "less_than":
@@ -508,7 +519,7 @@ function selectConditionMet(propertyCondition, value) {
     case "equals":
       return checkEquals(propertyCondition, value)
     case "does_not_equal":
-      return !checkEquals(propertyCondition, value)
+      return hasAnswerValue(value) && !checkEquals(propertyCondition, value)
     case "is_empty":
       return checkIsEmpty(propertyCondition, value)
     case "is_not_empty":
@@ -560,7 +571,7 @@ function multiSelectConditionMet(propertyCondition, value) {
     case "contains":
       return checkListContains(propertyCondition, value)
     case "does_not_contain":
-      return !checkListContains(propertyCondition, value)
+      return hasAnswerValue(value) && !checkListContains(propertyCondition, value)
     case "is_empty":
       return checkIsEmpty(propertyCondition, value)
     case "is_not_empty":
@@ -584,11 +595,11 @@ function matrixConditionMet(propertyCondition, value) {
     case "equals":
       return checkObjectEquals(propertyCondition, value)
     case "does_not_equal":
-      return !checkObjectEquals(propertyCondition, value)
+      return hasAnswerValue(value) && !checkObjectEquals(propertyCondition, value)
     case "contains":
      return checkMatrixContains(propertyCondition, value)
     case "does_not_contain":
-     return !checkMatrixContains(propertyCondition, value)
+     return hasAnswerValue(value) && !checkMatrixContains(propertyCondition, value)
   }
   return false
 }
