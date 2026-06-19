@@ -23,14 +23,14 @@
 
       <div class="min-w-0 flex-1">
         <div class="flex items-start justify-between gap-2">
-          <p class="truncate text-xs font-medium leading-5 text-blue-600">
-            {{ feature.category }}
-          </p>
-          <FeaturePlanBadge :plan="feature.plan" />
+          <h3 class="text-lg font-semibold leading-6 tracking-[-0.4%] text-neutral-950">
+            {{ feature.title }}
+          </h3>
+          <FeaturePlanBadge
+            :plan="feature.plan"
+            class="shrink-0"
+          />
         </div>
-        <h3 class="mt-1 text-lg font-semibold leading-6 tracking-[-0.4%] text-neutral-950">
-          {{ feature.title }}
-        </h3>
       </div>
     </div>
 

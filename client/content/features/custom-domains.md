@@ -10,6 +10,7 @@ featured: false
 order: 1
 seoTitle: Custom domains for OpnForm
 seoDescription: Connect your own domain to OpnForm forms and deliver a branded respondent experience on cloud and self-hosted plans.
+heroImage: /img/pages/welcome/share-1.png
 published: true
 ---
 
@@ -19,9 +20,11 @@ Custom domains let you replace generic hosted URLs with links that match your co
 
 ::feature-callout
 ---
+eyebrow: Branded links
 title: Why teams choose custom domains
 icon: i-heroicons-globe-alt
 tone: blue
+image: /img/pages/welcome/share-2.png
 items:
   - Branded form URLs that match your website
   - Stronger trust for customers, applicants, and leads
@@ -51,7 +54,7 @@ metrics:
 ---
 ::
 
-## How setup works
+## Configure your custom domain
 
 ::feature-workflow
 ---

@@ -127,3 +127,50 @@ export function getRelatedFeatures (currentFeature, allFeatures) {
     .filter((item) => item.slug !== currentFeature.slug && item.category === currentFeature.category)
     .sort(sortFeatures)
 }
+
+export const FEATURE_CATEGORY_DESCRIPTIONS = {
+  'Forms & Submissions': 'Collect responses, track progress, and manage submission workflows.',
+  'Branding & Control': 'Customize branding, domains, and the respondent experience.',
+  'Notifications & Delivery': 'Control how forms notify your team and users.',
+}
+
+export function categoryToSlug (category) {
+  return String(category ?? '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+}
+
+export function getCategoryDescription (category) {
+  return FEATURE_CATEGORY_DESCRIPTIONS[category]
+    ?? `Explore OpnForm capabilities in ${category}.`
+}
+
+export function groupFeaturesByCategory (features) {
+  const grouped = (features ?? []).reduce((groups, feature) => {
+    const category = feature.category ?? 'Features'
+
+    if (!groups[category]) {
+      groups[category] = []
+    }
+
+    groups[category].push(feature)
+    return groups
+  }, {})
+
+  return Object.entries(grouped)
+    .map(([category, categoryFeatures]) => ({
+      category,
+      slug: categoryToSlug(category),
+      description: getCategoryDescription(category),
+      features: [...categoryFeatures].sort(sortFeatures),
+      order: Math.min(...categoryFeatures.map((feature) => feature.order ?? 999)),
+    }))
+    .sort((groupA, groupB) => {
+      if (groupA.order !== groupB.order) {
+        return groupA.order - groupB.order
+      }
+
+      return groupA.category.localeCompare(groupB.category)
+    })
+}

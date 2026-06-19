@@ -4,7 +4,7 @@
       <FeatureDetailHero :feature="feature" />
 
       <section class="px-5 py-12 sm:px-8 sm:py-16 lg:px-12">
-        <div class="mx-auto max-w-3xl">
+        <div class="mx-auto max-w-6xl">
           <article class="min-w-0 animate-fade-in-up animation-delay-200">
             <ContentRenderer
               :value="feature"
@@ -143,6 +143,8 @@ const relatedFeatures = computed(() => {
 
   return getRelatedFeatures(feature.value, allFeatures.value ?? [])
 })
+
+provide('featureTitle', computed(() => feature.value?.title ?? ''))
 
 function relatedAnimationDelay (index) {
   return ['animation-delay-100', 'animation-delay-200', 'animation-delay-300'][index] ?? 'animation-delay-300'

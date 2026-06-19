@@ -10,6 +10,7 @@ featured: true
 order: 0
 seoTitle: Remove OpnForm branding from your forms
 seoDescription: Hide the OpnForm footer and present a fully branded form experience on Pro plans and above.
+heroImage: /img/pages/features/branding-removal-hero.png
 published: true
 ---
 
@@ -19,9 +20,11 @@ Branding removal lets you hide the default OpnForm footer from public forms. Res
 
 ::feature-callout
 ---
+eyebrow: White-label forms
 title: Why teams remove OpnForm branding
 icon: i-heroicons-eye-slash
 tone: emerald
+image: /img/pages/features/branding-removal-hero.png
 items:
   - Cleaner forms for customer-facing and public campaigns
   - A more professional look for sales, support, and onboarding flows
@@ -51,7 +54,7 @@ metrics:
 ---
 ::
 
-## How to enable it
+## Remove OpnForm branding
 
 ::feature-workflow
 ---

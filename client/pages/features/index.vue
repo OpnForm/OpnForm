@@ -1,22 +1,20 @@
 <template>
   <div>
     <section class="relative">
-      <div class="py-14 sm:py-16 px-8 sm:px-12 relative z-2">
-        <div class="max-w-3xl mx-auto text-center">
+      <div class="relative z-2 px-8 py-14 sm:px-12 sm:py-16">
+        <div class="mx-auto max-w-3xl text-center">
           <h1
-            class="text-4xl sm:text-[56px] sm:leading-16 tracking-[-1%] font-semibold text-gray-950"
+            class="text-4xl font-semibold tracking-[-1%] text-gray-950 sm:text-[56px] sm:leading-16"
           >
             Everything you need to build, share, and automate beautiful forms.
           </h1>
           <p
-            class="mt-4 text-lg sm:text-xl leading-7 tracking-[-1.5%] sm:leading-8 font-normal text-gray-600"
+            class="mt-4 text-lg font-normal leading-7 tracking-[-1.5%] text-gray-600 sm:text-xl sm:leading-8"
           >
             Explore the full OpnForm feature set, from powerful form building blocks to branding, delivery, and team workflows.
           </p>
 
-          <div
-            class="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4"
-          >
+          <div class="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <UButton
               :to="{ name: authenticated ? 'forms-create' : 'forms-create-guest' }"
               size="lg"
@@ -36,59 +34,74 @@
         </div>
       </div>
       <div
-        class="pointer-events-none w-full h-full bg-linear-to-b from-white from-35% via-blue-50 via-60% to-white to-85% absolute inset-0"
-      ></div>
-    </section>     
+        class="pointer-events-none absolute inset-0 h-full w-full bg-linear-to-b from-white from-35% via-blue-50 via-60% to-white to-85%"
+      />
+    </section>
 
-    <section class="px-5 py-12 sm:px-8 sm:py-16 lg:px-12">
+    <section class="px-5 pb-12 sm:px-8 sm:pb-16 lg:px-12">
       <div class="mx-auto max-w-7xl">
-        <div class="flex flex-col gap-6">
-          <div class="max-w-3xl">
-            <p class="text-sm font-semibold uppercase tracking-[0.16em] text-blue-600">
-              Feature directory
-            </p>
-            <h2 class="mt-3 text-3xl font-semibold tracking-[-1%] text-neutral-950 sm:text-4xl">
-              Find the right capability for your workflow.
-            </h2>
-            <p class="mt-4 text-base leading-7 text-neutral-600">
-              Browse by category to narrow the library, or explore everything at once.
-            </p>
-          </div>
-
-          <div class="flex w-full flex-wrap gap-1.5">
-            <UButton
-              v-for="category in categories"
-              :key="category"
-              :variant="selectedCategory === category ? 'solid' : 'outline'"
-              color="neutral"
-              :label="category"
-              class="rounded-full px-3 py-1 text-xs font-medium"
-              :class="selectedCategory === category ? 'bg-neutral-950 text-white ring-neutral-950' : ''"
-              @click="selectedCategory = category"
-            />
-          </div>
+        <div
+          v-if="!isLoading && categorySections.length"
+          class="my-10 flex flex-wrap items-center justify-center gap-1.5"
+        >
+          <UButton
+            v-for="section in categorySections"
+            :key="section.slug"
+            variant="outline"
+            color="neutral"
+            :label="section.category"
+            class="rounded-full px-3 py-1 text-xs font-medium"
+            @click="scrollToCategory(section.slug)"
+          />
         </div>
 
         <div
           v-if="isLoading"
-          class="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3"
+          class="space-y-12"
         >
-          <USkeleton
-            v-for="index in 6"
+          <div
+            v-for="index in 3"
             :key="index"
-            class="h-52 rounded-[24px]"
-          />
+          >
+            <USkeleton class="h-8 w-64 rounded-lg" />
+            <USkeleton class="mt-3 h-5 w-full max-w-2xl rounded-lg" />
+            <div class="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              <USkeleton
+                v-for="cardIndex in 3"
+                :key="cardIndex"
+                class="h-52 rounded-[24px]"
+              />
+            </div>
+          </div>
         </div>
 
         <div
-          v-else-if="filteredFeatures.length"
-          class="mt-12 grid gap-5 sm:grid-cols-3"
+          v-else-if="categorySections.length"
+          class="space-y-16 sm:space-y-20"
         >
-          <FeatureCard
-            v-for="feature in filteredFeatures"
-            :key="feature.slug"
-            :feature="feature"
-          />
+          <section
+            v-for="section in categorySections"
+            :id="section.slug"
+            :key="section.slug"
+            class="scroll-mt-24"
+          >
+            <div class="max-w-3xl">
+              <h2 class="text-3xl font-semibold tracking-[-1%] text-neutral-950 sm:text-4xl">
+                {{ section.category }}
+              </h2>
+              <p class="mt-4 text-base leading-7 text-neutral-600">
+                {{ section.description }}
+              </p>
+            </div>
+
+            <div class="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              <FeatureCard
+                v-for="feature in section.features"
+                :key="feature.slug"
+                :feature="feature"
+              />
+            </div>
+          </section>
         </div>
 
         <div
@@ -99,7 +112,7 @@
             No features found
           </h3>
           <p class="mt-2 text-neutral-600">
-            Try another category to explore the feature library.
+            Feature pages will appear here once they are published.
           </p>
         </div>
       </div>
@@ -110,7 +123,7 @@
 </template>
 
 <script setup>
-import { filterPublishedFeatures, sortFeatures } from '~/lib/features.js'
+import { filterPublishedFeatures, groupFeaturesByCategory, sortFeatures } from '~/lib/features.js'
 
 defineRouteRules({
   swr: 3600,
@@ -122,7 +135,6 @@ useOpnSeoMeta({
 })
 
 const { isAuthenticated: authenticated } = useIsAuthenticated()
-const selectedCategory = ref('All')
 
 const { data: features, pending: isLoading } = await useAsyncData('features-list', () => {
   return queryCollection('features').all().then((documents) => {
@@ -131,12 +143,12 @@ const { data: features, pending: isLoading } = await useAsyncData('features-list
 })
 
 const sortedFeatures = computed(() => features.value ?? [])
-const categories = computed(() => {
-  const featureCategories = sortedFeatures.value.map((feature) => feature.category)
-  return ['All', ...new Set(featureCategories)]
-})
-const filteredFeatures = computed(() => {
-  if (selectedCategory.value === 'All') return sortedFeatures.value
-  return sortedFeatures.value.filter((feature) => feature.category === selectedCategory.value)
-})
+const categorySections = computed(() => groupFeaturesByCategory(sortedFeatures.value))
+
+function scrollToCategory (categorySlug) {
+  document.getElementById(categorySlug)?.scrollIntoView({
+    behavior: 'smooth',
+    block: 'start',
+  })
+}
 </script>
