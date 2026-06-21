@@ -20,6 +20,7 @@
             wrapper-class="mb-0"
             :date-range="true"
             :disable-future-dates="true"
+            :date-format="localDateFormat"
             class="!mb-0 w-full sm:w-auto"
           />
         </div>
@@ -169,6 +170,32 @@ const statusOptions = [
   { value: 'partial', name: 'Partial' },
 ]
 
+const localDateFormat = computed(() => {
+  if (!import.meta.client || typeof Intl === 'undefined') {
+    return 'dd/MM/yyyy'
+  }
+
+  const parts = new Intl.DateTimeFormat(undefined, {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(new Date(2026, 10, 22))
+
+  const order = parts
+    .filter((part) => ['day', 'month', 'year'].includes(part.type))
+    .map((part) => part.type)
+
+  if (order[0] === 'month') {
+    return 'MM/dd/yyyy'
+  }
+
+  if (order[0] === 'year') {
+    return 'yyyy/MM/dd'
+  }
+
+  return 'dd/MM/yyyy'
+})
+
 const dateFrom = computed(() => filterForm.date_range?.[0] || null)
 const dateTo = computed(() => filterForm.date_range?.[1] || null)
 const status = computed(() => filterForm.status || 'completed')
@@ -204,4 +231,3 @@ const limitationDescription = computed(() => {
   return `Your form has ${total} total submissions. For performance, the summary is calculated from the most recent entries.`
 })
 </script>
-

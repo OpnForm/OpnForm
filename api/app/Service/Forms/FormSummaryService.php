@@ -162,13 +162,21 @@ class FormSummaryService
     private function accumulateValue(array &$acc, mixed $value, array $property, int $submissionId): void
     {
         $summaryType = $this->getSummaryType($property['type'] ?? '');
-        $acc['answered']++;
 
         try {
+            if ($summaryType === 'rating') {
+                if ($this->accumulateRating($acc, $value, $property)) {
+                    $acc['answered']++;
+                }
+
+                return;
+            }
+
+            $acc['answered']++;
+
             match ($summaryType) {
                 'distribution' => $this->accumulateDistribution($acc, $value),
                 'numeric_stats' => $this->accumulateNumeric($acc, $value),
-                'rating' => $this->accumulateRating($acc, $value),
                 'boolean' => $this->accumulateBoolean($acc, $value),
                 'text_list' => $this->accumulateText($acc, $value, $submissionId),
                 'date_summary' => $this->accumulateDate($acc, $value),
@@ -211,15 +219,25 @@ class FormSummaryService
         }
     }
 
-    private function accumulateRating(array &$acc, mixed $value): void
+    private function accumulateRating(array &$acc, mixed $value, array $property): bool
     {
         $numericValue = $this->extractNumericValue($value);
 
-        if ($numericValue !== null) {
-            $rating = (int) round($numericValue);
-            $acc['values'][] = $numericValue;
-            $acc['distribution'][$rating] = ($acc['distribution'][$rating] ?? 0) + 1;
+        if ($numericValue === null) {
+            return false;
         }
+
+        $maxRating = (int) ($property['rating_max_value'] ?? 5);
+        $rating = (int) round($numericValue);
+
+        if ($rating < 1 || $rating > $maxRating) {
+            return false;
+        }
+
+        $acc['values'][] = $numericValue;
+        $acc['distribution'][$rating] = ($acc['distribution'][$rating] ?? 0) + 1;
+
+        return true;
     }
 
     private function accumulateBoolean(array &$acc, mixed $value): void
