@@ -18,7 +18,6 @@ use App\Service\WorkspaceHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
-use Vinkla\Hashids\Facades\Hashids;
 use Illuminate\Support\Str;
 
 class PublicFormController extends Controller
@@ -194,9 +193,7 @@ class PublicFormController extends Controller
     /**
      * Processes submission identifiers to ensure consistent format
      *
-     * Handles both UUID (new format) and Hashid (legacy format) in submission_id field.
-     * For UUID: Looks up submission and converts to numeric ID if found
-     * For Hashid: Decodes to numeric ID
+     * Handles UUID submission identifiers and converts them to internal numeric IDs.
      *
      * @param Request $request
      * @param array $submissionData
@@ -235,39 +232,23 @@ class PublicFormController extends Controller
             return $canPartialSubmit && $submission?->status === FormSubmission::STATUS_PARTIAL;
         };
 
-        // Check if it's a UUID (new format)
-        if (Str::isUuid($submissionIdentifier)) {
-            $submission = $form->submissions()
-                ->where('public_id', $submissionIdentifier)
-                ->first();
-            if (!$submission) {
-                abort(404, 'Submission not found');
-            }
-            if (!$canUseResolvedSubmission($submission)) {
-                unset($submissionData['submission_id'], $submissionData['submission_hash']);
+        if (!Str::isUuid($submissionIdentifier)) {
+            abort(404, 'Submission not found');
+        }
 
-                return $submissionData;
-            }
-            $submissionData['submission_id'] = $submission->id;
-            unset($submissionData['submission_hash']);
+        $submission = $form->submissions()
+            ->where('public_id', $submissionIdentifier)
+            ->first();
+        if (!$submission) {
+            abort(404, 'Submission not found');
+        }
+        if (!$canUseResolvedSubmission($submission)) {
+            unset($submissionData['submission_id'], $submissionData['submission_hash']);
+
             return $submissionData;
         }
-
-        // Legacy Hashid support (backward compatibility)
-        unset($submissionData['submission_id'], $submissionData['submission_hash']);
-        $decodedId = Hashids::decode($submissionIdentifier);
-        if (!empty($decodedId)) {
-            $numericId = (int)($decodedId[0] ?? null);
-            if ($numericId) {
-                $submission = $form->submissions()->find($numericId);
-                if ($submission && $submission->public_id) {
-                    abort(404, 'Submission not found');
-                }
-                if ($canUseResolvedSubmission($submission)) {
-                    $submissionData['submission_id'] = $numericId;
-                }
-            }
-        }
+        $submissionData['submission_id'] = $submission->id;
+        unset($submissionData['submission_hash']);
 
         return $submissionData;
     }
@@ -282,30 +263,15 @@ class PublicFormController extends Controller
             abort(403);
         }
 
-        $submission = null;
-
-        // Try UUID lookup first (new format)
-        if (Str::isUuid($submission_id)) {
-            $submission = $form->submissions()
-                ->where('public_id', $submission_id)
-                ->first();
+        if (!Str::isUuid($submission_id)) {
+            return $this->error([
+                'message' => 'Submission not found.',
+            ], 404);
         }
 
-        // Fallback to Hashid decode (backward compatibility - strict migration)
-        if (!$submission) {
-            $decodedId = Hashids::decode($submission_id);
-            $numericId = !empty($decodedId) ? (int)($decodedId[0]) : false;
-            if ($numericId) {
-                $submission = $form->submissions()->find($numericId);
-
-                // CRITICAL: If submission has UUID, return 404 (force UUID usage)
-                if ($submission && $submission->public_id) {
-                    return $this->error([
-                        'message' => 'Submission not found.'
-                    ], 404);
-                }
-            }
-        }
+        $submission = $form->submissions()
+            ->where('public_id', $submission_id)
+            ->first();
 
         if (!$submission) {
             return $this->error([
