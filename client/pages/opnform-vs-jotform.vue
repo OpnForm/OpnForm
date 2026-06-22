@@ -3,6 +3,7 @@
     competitor-name="JotForm"
     competitor-icon="opnform:jotform"
     :hero-title="'OpnForm — The Open-Source JotForm Alternative'"
+    competitor-plan-label="Starter"
     :free-plan-comparison="freePlanComparison"
     :switch-reasons="switchReasons"
     :feature-comparison="featureComparison"
@@ -35,37 +36,45 @@ const freePlanComparison = [
     cells: ["Unlimited submissions", "Limited (100/month)"],
   },
   {
-    label: "Active forms",
+    label: "Forms allowed",
     cells: ["Unlimited forms", "Limited (5 forms)"],
   },
   {
     label: "Form views",
-    cells: ["Unlimited", "Limited (1000/month)"],
+    cells: ["Unlimited", "Limited (10,000/month)"],
   },
   {
     label: "File uploads",
-    cells: ["Free basic quota", "Included"],
+    cells: ["Included", "Included"],
   },
   {
-    label: "Conditional Logic",
+    label: "Conditional logic",
     cells: ["Included", "Included"],
   },
   {
     label: "Custom CSS",
-    cells: ["Business+", "Not available"],
+    cells: ["Business+", "Not listed"],
   },
   {
     label: "API access",
-    cells: ["Free", "Basic"],
+    cells: ["Included", "Basic"],
   },
   {
     label: "Webhooks",
-    cells: ["Free", "Available"],
+    cells: ["Included", "Available"],
   },
   {
     label: "Storage space",
     cells: ["Depends on plan", "Limited"],
-  }
+  },
+  {
+    label: "Open source",
+    cells: ["Y", "N"],
+  },
+  {
+    label: "Self-hosting option",
+    cells: ["Y", "N"],
+  },
 ]
 
 const switchReasons = [
@@ -120,7 +129,7 @@ const featureComparison = [
   },
   {
     label: "Developer extensibility",
-    cells: ["Free API + webhooks", "Moderate"],
+    cells: ["Included API + webhooks", "Moderate"],
   },
   {
     label: "Custom domains for forms",

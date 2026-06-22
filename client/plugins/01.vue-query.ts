@@ -14,7 +14,7 @@ import { useState } from '#app'
 export default defineNuxtPlugin((nuxt) => {
   const vueQueryState = useState<DehydratedState | null>('vue-query')
   const shouldEnableVueQueryDevtools =
-    process.env.NODE_ENV === 'development' && process.env.E2E !== '1'
+    import.meta.client && process.env.NODE_ENV === 'development' && process.env.E2E !== '1'
 
   // Modify your Vue Query global settings here
   const queryClient = new QueryClient({

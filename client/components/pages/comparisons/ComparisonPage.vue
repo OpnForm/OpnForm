@@ -103,15 +103,14 @@
           <h2
             class="text-4xl sm:text-5xl sm:leading-14 font-semibold tracking-[-1%] text-gray-950"
           >
-            Free Plan Comparison:
-            <br />
-            OpnForm vs {{ competitorName }}
+            {{ resolvedPlanComparisonTitleLines[0] }}
+            <br v-if="resolvedPlanComparisonTitleLines.length > 1" />
+            {{ resolvedPlanComparisonTitleLines[1] }}
           </h2>
           <p
             class="mt-4 text-base tracking-[-1.1%] font-medium leading-8 text-gray-600"
           >
-            With OpnForm, you get everything {{ competitorName }} offers — and
-            more — without limits.
+            {{ resolvedPlanComparisonSubtitle }}
           </p>
         </div>
 
@@ -133,8 +132,20 @@
                       OpnForm
                     </span>
                   </div>
-                  <div class="text-right text-sm font-medium leading-5 text-gray-700">
-                    {{ row.cells[0] }}
+                  <div class="flex justify-end text-right text-sm font-medium leading-5 text-gray-700">
+                    <UIcon
+                      v-if="isYesCell(row.cells[0])"
+                      name="i-heroicons-check"
+                      class="h-5 w-5 text-green-500"
+                    />
+                    <UIcon
+                      v-else-if="isNoCell(row.cells[0])"
+                      name="i-heroicons-x-mark"
+                      class="h-5 w-5 text-red-500"
+                    />
+                    <span v-else>
+                      {{ row.cells[0] }}
+                    </span>
                   </div>
                 </div>
                 <div class="flex items-start justify-between gap-4 px-5 py-4">
@@ -148,8 +159,20 @@
                       {{ competitorName }}
                     </span>
                   </div>
-                  <div class="text-right text-sm font-medium leading-5 text-gray-700">
-                    {{ row.cells[1] }}
+                  <div class="flex justify-end text-right text-sm font-medium leading-5 text-gray-700">
+                    <UIcon
+                      v-if="isYesCell(row.cells[1])"
+                      name="i-heroicons-check"
+                      class="h-5 w-5 text-green-500"
+                    />
+                    <UIcon
+                      v-else-if="isNoCell(row.cells[1])"
+                      name="i-heroicons-x-mark"
+                      class="h-5 w-5 text-red-500"
+                    />
+                    <span v-else>
+                      {{ row.cells[1] }}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -179,7 +202,7 @@
                     OpnForm
                     <span
                       class="ml-3 text-gray-600 text-base leading-8 tracking-[-1.1%] font-medium"
-                      >(Free)</span
+                      >({{ opnformPlanLabel }})</span
                     >
                   </div>
                 </div>
@@ -189,7 +212,21 @@
                   class="px-6 py-4 text-base leading-8 tracking-[-1.1%] font-medium text-gray-950"
                   :class="idx % 2 === 0 ? 'bg-gray-50' : 'bg-white'"
                 >
-                  {{ row.cells[0] }}
+                  <div class="flex items-center justify-start gap-2">
+                    <UIcon
+                      v-if="isYesCell(row.cells[0])"
+                      name="i-heroicons-check"
+                      class="h-6 w-6 text-green-500"
+                    />
+                    <UIcon
+                      v-else-if="isNoCell(row.cells[0])"
+                      name="i-heroicons-x-mark"
+                      class="h-6 w-6 text-red-500"
+                    />
+                    <span v-else>
+                      {{ row.cells[0] }}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -201,7 +238,7 @@
                   {{ competitorName }}
                   <span
                     class="ml-3 text-gray-600 text-base leading-8 tracking-[-1.1%] font-medium"
-                    >(Free)</span
+                    >({{ competitorPlanLabel }})</span
                   >
                 </div>
               </div>
@@ -211,7 +248,21 @@
                 class="px-6 py-4 text-base leading-8 tracking-[-1.1%] font-medium text-gray-600 rounded-r-[12px]"
                 :class="idx % 2 === 0 ? 'bg-gray-50' : 'bg-white'"
               >
-                {{ row.cells[1] }}
+                <div class="flex items-center justify-start gap-2">
+                  <UIcon
+                    v-if="isYesCell(row.cells[1])"
+                    name="i-heroicons-check"
+                    class="h-6 w-6 text-green-500"
+                  />
+                  <UIcon
+                    v-else-if="isNoCell(row.cells[1])"
+                    name="i-heroicons-x-mark"
+                    class="h-6 w-6 text-red-500"
+                  />
+                  <span v-else>
+                    {{ row.cells[1] }}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
@@ -309,12 +360,12 @@
                   </div>
                   <div class="flex justify-end text-right text-sm font-medium leading-5 text-gray-700">
                     <UIcon
-                      v-if="row.cells[0] === 'Y'"
+                      v-if="isYesCell(row.cells[0])"
                       name="i-heroicons-check"
                       class="h-5 w-5 text-green-500"
                     />
                     <UIcon
-                      v-else-if="row.cells[0] === 'N'"
+                      v-else-if="isNoCell(row.cells[0])"
                       name="i-heroicons-x-mark"
                       class="h-5 w-5 text-red-500"
                     />
@@ -336,12 +387,12 @@
                   </div>
                   <div class="flex justify-end text-right text-sm font-medium leading-5 text-gray-700">
                     <UIcon
-                      v-if="row.cells[1] === 'Y'"
+                      v-if="isYesCell(row.cells[1])"
                       name="i-heroicons-check"
                       class="h-5 w-5 text-green-500"
                     />
                     <UIcon
-                      v-else-if="row.cells[1] === 'N'"
+                      v-else-if="isNoCell(row.cells[1])"
                       name="i-heroicons-x-mark"
                       class="h-5 w-5 text-red-500"
                     />
@@ -407,12 +458,12 @@
                   <td class="px-8 py-4 text-center border-l border-gray-200">
                     <div class="flex items-center justify-center gap-2">
                       <UIcon
-                        v-if="row.cells[0] === 'Y'"
+                        v-if="isYesCell(row.cells[0])"
                         name="i-heroicons-check"
                         class="h-6 w-6 text-green-500"
                       />
                       <UIcon
-                        v-else-if="row.cells[0] === 'N'"
+                        v-else-if="isNoCell(row.cells[0])"
                         name="i-heroicons-x-mark"
                         class="h-6 w-6 text-red-500"
                       />
@@ -428,12 +479,12 @@
                   <td class="px-8 py-4 text-center border-l border-neutral-200">
                     <div class="flex items-center justify-center gap-2">
                       <UIcon
-                        v-if="row.cells[1] === 'Y'"
+                        v-if="isYesCell(row.cells[1])"
                         name="i-heroicons-check"
                         class="h-6 w-6 text-green-500"
                       />
                       <UIcon
-                        v-else-if="row.cells[1] === 'N'"
+                        v-else-if="isNoCell(row.cells[1])"
                         name="i-heroicons-x-mark"
                         class="h-6 w-6 text-red-500"
                       />
@@ -686,6 +737,22 @@ const props = defineProps({
     type: String,
     default: null,
   },
+  opnformPlanLabel: {
+    type: String,
+    default: "Free",
+  },
+  competitorPlanLabel: {
+    type: String,
+    default: "Free",
+  },
+  planComparisonTitle: {
+    type: String,
+    default: null,
+  },
+  planComparisonSubtitle: {
+    type: String,
+    default: null,
+  },
   featureSectionSubtitle: {
     type: String,
     default:
@@ -706,13 +773,29 @@ const props = defineProps({
   getCompetitorPrice: {
     type: Function,
     default: null,
-  }
+  },
 })
 
 const { isAuthenticated: authenticated } = useIsAuthenticated()
 
 const switchSectionTitle = computed(
   () => `Why Users Switch from ${props.competitorName} to OpnForm`,
+)
+
+const resolvedPlanComparisonTitle = computed(
+  () =>
+    props.planComparisonTitle ??
+    `Free Plan Comparison:\nOpnForm vs ${props.competitorName}`,
+)
+
+const resolvedPlanComparisonTitleLines = computed(() =>
+  resolvedPlanComparisonTitle.value.split("\n"),
+)
+
+const resolvedPlanComparisonSubtitle = computed(
+  () =>
+    props.planComparisonSubtitle ??
+    `With OpnForm, you get everything ${props.competitorName} offers — and more — without limits.`,
 )
 
 const resolvedHeroSecondaryCtaLabel = computed(
@@ -780,6 +863,14 @@ const privacyFeatures = [
 const displayCompetitorPrice = computed(() => {
   return (props.getCompetitorPrice) ? true : false
 })
+
+function isYesCell(value) {
+  return value === "Y" || value === true
+}
+
+function isNoCell(value) {
+  return value === "N" || value === false
+}
 
 const submissionOptions = [
   100, 250, 500, 1000, 2500, 5000, 7500, 10000, 15000, 20000, 25000,

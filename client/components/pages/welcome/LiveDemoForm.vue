@@ -4,10 +4,11 @@
     class="live-demo-form relative flex min-h-[460px] flex-col overflow-hidden bg-white sm:min-h-[620px]"
     :style="formStyle"
   >
-    <OpenFormFocused
+    <component
+      :is="formComponent"
       v-if="isFormReady"
       :form-manager="formManager"
-      class="grow"
+      class="grow overflow-y-auto"
       @submit="handleSubmit"
     >
       <template #after-submit>
@@ -52,7 +53,7 @@
           </div>
         </div>
       </template>
-    </OpenFormFocused>
+    </component>
   </div>
 </template>
 
@@ -60,6 +61,7 @@
 import { tailwindcssPaletteGenerator } from "~/lib/colors.js"
 import { useFormManager } from "~/lib/forms/composables/useFormManager"
 import { FormMode } from "~/lib/forms/FormModeStrategy.js"
+import OpenForm from "~/components/open/forms/OpenForm.vue"
 import OpenFormFocused from "~/components/open/forms/OpenFormFocused.vue"
 
 const props = defineProps({
@@ -80,6 +82,9 @@ const props = defineProps({
 const scenario = computed(() => props.scenario)
 const primaryCtaTo = computed(() => props.primaryCtaTo)
 const secondaryCtaTo = computed(() => props.secondaryCtaTo)
+const formComponent = computed(() =>
+  props.scenario.form.presentation_style === "focused" ? OpenFormFocused : OpenForm,
+)
 
 provide("formTheme", computed(() => props.scenario.form.theme || "default"))
 provide("formSize", computed(() => props.scenario.form.size || "lg"))
@@ -153,6 +158,10 @@ function restartDemo() {
 
 .live-demo-form :deep(.nf-text .text-block h2) {
   line-height: 1.22;
+}
+
+.live-demo-form :deep(.nf-text .text-block p:first-child strong) {
+  color: var(--form-color, #2563eb);
 }
 
 .live-demo-form :deep(.nf-text .text-block p) {
