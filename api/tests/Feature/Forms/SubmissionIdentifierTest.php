@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Forms\FormSubmission;
+use App\Service\Forms\SubmissionUrlService;
 use Illuminate\Support\Str;
 use Vinkla\Hashids\Facades\Hashids;
 
@@ -107,16 +108,16 @@ describe('Submission UUID Identifiers', function () {
 
         $this->actingAsGuest();
         $this->postJson(route('forms.answer', $this->form), $editData)
-            ->assertSuccessful();
+            ->assertStatus(404);
 
-        expect($this->form->submissions()->count())->toBe(2);
+        expect($this->form->submissions()->count())->toBe(1);
 
         $submission->refresh();
         expect($submission->data[$nameField['id']])->toBe('ORIGINAL_DATA');
     });
 });
 
-describe('Legacy Hashid Backward Compatibility', function () {
+describe('Legacy Hashid Rejection', function () {
     beforeEach(function () {
         $this->user = $this->actingAsBusinessUser();
         $this->workspace = $this->createUserWorkspace($this->user);
@@ -125,7 +126,7 @@ describe('Legacy Hashid Backward Compatibility', function () {
         ]);
     });
 
-    it('allows fetching legacy submission without UUID using hashid', function () {
+    it('rejects fetching legacy submission without UUID using hashid', function () {
         // Create a legacy submission (without UUID)
         $submission = new FormSubmission();
         $submission->form_id = $this->form->id;
@@ -139,7 +140,7 @@ describe('Legacy Hashid Backward Compatibility', function () {
         $this->getJson(route('forms.fetchSubmission', [
             'form' => $this->form->slug,
             'submission_id' => $hashid,
-        ]))->assertSuccessful();
+        ]))->assertStatus(404);
     });
 
     it('rejects hashid access when submission has UUID', function () {
@@ -176,7 +177,7 @@ describe('Legacy Hashid Backward Compatibility', function () {
             ->assertStatus(404);
     });
 
-    it('allows hashid update for legacy submission without UUID', function () {
+    it('rejects hashid update for legacy submission without UUID', function () {
         $submission = new FormSubmission();
         $submission->form_id = $this->form->id;
         $submission->data = ['test' => 'data'];
@@ -189,7 +190,20 @@ describe('Legacy Hashid Backward Compatibility', function () {
         $editData['submission_id'] = $hashid;
 
         $this->postJson(route('forms.answer', $this->form), $editData)
-            ->assertSuccessful();
+            ->assertStatus(404);
+    });
+
+    it('generates a UUID identifier for legacy submissions when building edit links', function () {
+        $submission = new FormSubmission();
+        $submission->form_id = $this->form->id;
+        $submission->data = ['test' => 'data'];
+        $submission->public_id = null;
+        $submission->save();
+
+        $identifier = SubmissionUrlService::getSubmissionIdentifier($submission);
+
+        expect(Str::isUuid($identifier))->toBeTrue();
+        expect($submission->refresh()->public_id)->toBe($identifier);
     });
 
     it('returns 404 for invalid hashid', function () {
@@ -300,7 +314,7 @@ describe('Submission update blocked when editable submissions disabled', functio
         expect($submission->data)->toBe($originalData);
     });
 
-    it('does not update completed legacy submission when only partial submissions are enabled', function () {
+    it('rejects non-UUID submission identifier when only partial submissions are enabled', function () {
         $user = $this->actingAsBusinessUser();
         $workspace = $this->createUserWorkspace($user);
         $form = $this->createForm($user, $workspace, [
@@ -322,9 +336,9 @@ describe('Submission update blocked when editable submissions disabled', functio
         $editData['submission_id'] = $hashid;
 
         $this->postJson(route('forms.answer', $form), $editData)
-            ->assertSuccessful();
+            ->assertStatus(404);
 
-        expect($form->submissions()->count())->toBe(2);
+        expect($form->submissions()->count())->toBe(1);
         $submission->refresh();
         expect($submission->status)->toBe(FormSubmission::STATUS_COMPLETED);
         expect($submission->data)->toBe($originalData);
