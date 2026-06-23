@@ -10,7 +10,7 @@ featured: false
 order: 1
 seoTitle: Partial submissions for OpnForm
 seoDescription: Collect partial form submissions on OpnForm Business plans to analyze drop-off points and save in-progress responses.
-heroImage: /img/pages/welcome/feature-3.png
+heroImage: /img/pages/features/partial-submissions-hero.png
 published: true
 ---
 
@@ -24,7 +24,6 @@ eyebrow: Drop-off insights
 title: Why teams enable partial submissions
 icon: i-heroicons-clipboard-document-list
 tone: amber
-image: /img/pages/welcome/share-3.png
 items:
   - See where respondents abandon long or multi-step forms
   - Recover contact details and early answers before completion

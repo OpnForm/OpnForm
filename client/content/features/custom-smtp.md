@@ -10,7 +10,7 @@ featured: true
 order: 2
 seoTitle: Custom SMTP for OpnForm notifications
 seoDescription: Configure custom SMTP in OpnForm to send form notifications from your own mail server and sender domain.
-heroImage: /img/pages/welcome/feature-5.png
+heroImage: /img/pages/features/custom-smtp-hero.png
 published: true
 ---
 
@@ -24,7 +24,6 @@ eyebrow: Branded delivery
 title: What custom SMTP unlocks
 icon: i-heroicons-envelope
 tone: emerald
-image: /img/pages/welcome/feature-4.png
 items:
   - Emails sent from your own domain and sender address
   - Better control over deliverability and sender reputation

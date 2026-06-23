@@ -10,7 +10,7 @@ featured: true
 order: 0
 seoTitle: Unlimited form submissions on OpnForm
 seoDescription: OpnForm does not cap form submissions. Collect unlimited responses on the Free plan and scale without worrying about usage limits.
-heroImage: /img/pages/welcome/feature-2.png
+heroImage: /img/pages/features/unlimited-submissions-hero.png
 published: true
 ---
 
@@ -24,7 +24,6 @@ eyebrow: No usage caps
 title: Why unlimited submissions matter
 icon: i-heroicons-inbox-stack
 tone: blue
-image: /img/pages/welcome/feature-1.png
 items:
   - Launch forms without guessing how much traffic you will receive
   - Avoid surprise blocks when a campaign or event drives more responses

@@ -24,7 +24,6 @@ eyebrow: White-label forms
 title: Why teams remove OpnForm branding
 icon: i-heroicons-eye-slash
 tone: emerald
-image: /img/pages/features/branding-removal-hero.png
 items:
   - Cleaner forms for customer-facing and public campaigns
   - A more professional look for sales, support, and onboarding flows
