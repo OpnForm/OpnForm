@@ -4,12 +4,12 @@
       <div class="relative z-2 px-8 py-14 sm:px-12 sm:py-16">
         <div class="mx-auto max-w-3xl text-center">
           <h1
-            class="text-4xl font-semibold tracking-[-1%] text-gray-950 sm:text-[56px] sm:leading-16"
+            class="text-4xl font-semibold tracking-[-1%] text-neutral-950 sm:text-[56px] sm:leading-16"
           >
             Everything you need to build, share, and automate beautiful forms.
           </h1>
           <p
-            class="mt-4 text-lg font-normal leading-7 tracking-[-1.5%] text-gray-600 sm:text-xl sm:leading-8"
+            class="mt-4 text-lg font-normal leading-7 tracking-[-1.5%] text-neutral-600 sm:text-xl sm:leading-8"
           >
             Explore the full OpnForm feature set, from powerful form building blocks to branding, delivery, and team workflows.
           </p>

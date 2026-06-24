@@ -132,6 +132,10 @@ const { data: feature } = await useAsyncData(`feature-${slug.value}`, () => {
     })
 })
 
+if (!feature.value) {
+  setResponseStatus(useRequestEvent(), 404, 'Feature not found')
+}
+
 const { data: allFeatures } = await useAsyncData('features-related-list', () => {
   return queryCollection('features').all().then((documents) => {
     return filterPublishedFeatures(documents).sort(sortFeatures)
