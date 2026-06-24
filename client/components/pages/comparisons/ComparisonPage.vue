@@ -2,7 +2,7 @@
   <div>
     <section class="bg-white">
       <div class="relative">
-        <div class="py-14 sm:py-28 px-8 lg:px-12 relative z-2">
+        <div class="py-14 sm:py-28 px-4 sm:px-8 lg:px-12 relative z-2">
           <div class="max-w-3xl mx-auto text-center">
             <div class="flex items-center justify-center gap-4">
               <div
@@ -68,7 +68,7 @@
         ></div>
       </div>
       <div class="relative">
-        <div class="pt-1 pb-14 sm:pb-24 px-8 lg:px-12 relative z-2">
+        <div class="pt-1 pb-14 sm:pb-24 px-4 sm:px-8 lg:px-12 relative z-2">
           <div class="max-w-3xl mx-auto text-center">
             <h2
               class="text-2xl leading-8 font-semibold tracking-[-0.5%] text-gray-950"
@@ -97,7 +97,7 @@
       </div>
     </section>
 
-    <section class="py-14 sm:py-28 px-8 lg:px-12 bg-white">
+    <section class="py-14 sm:py-28 px-4 sm:px-8 lg:px-12 bg-white">
       <div class="max-w-266 mx-auto">
         <div class="max-w-2xl mx-auto text-center">
           <h2
@@ -282,7 +282,7 @@
       </div>
     </section>
 
-    <section class="py-14 sm:py-28 px-8 lg:px-12 bg-white">
+    <section class="py-14 sm:py-28 px-4 sm:px-8 lg:px-12 bg-white">
       <div class="max-w-266 mx-auto">
         <div class="max-w-2xl mx-auto text-center">
           <h2
@@ -323,7 +323,7 @@
       </div>
     </section>
 
-    <section class="py-14 sm:py-28 px-8 lg:px-12 bg-white">
+    <section class="py-14 sm:py-28 px-4 sm:px-8 lg:px-12 bg-white">
       <div class="max-w-266 mx-auto">
         <div class="max-w-2xl mx-auto text-center">
           <h2
@@ -504,7 +504,7 @@
       </div>
     </section>
 
-    <section v-if="displayCompetitorPrice" class="py-14 sm:py-28 px-8 lg:px-12 bg-white">
+    <section v-if="displayCompetitorPrice" class="py-14 sm:py-28 px-4 sm:px-8 lg:px-12 bg-white">
       <div class="max-w-266 mx-auto">
         <div class="max-w-2xl mx-auto text-center">
           <h2
@@ -591,7 +591,7 @@
       </div>
     </section>
 
-    <section class="py-14 sm:py-28 px-8 lg:px-12 bg-white">
+    <section class="py-14 sm:py-28 px-4 sm:px-8 lg:px-12 bg-white">
       <div class="max-w-266 mx-auto">
         <div class="max-w-2xl mx-auto text-center">
           <h2
@@ -649,7 +649,7 @@
       </div>
     </section>
 
-    <section class="py-14 sm:py-28 px-8 lg:px-12 bg-white">
+    <section class="py-14 sm:py-28 px-4 sm:px-8 lg:px-12 bg-white">
       <div class="max-w-266 mx-auto">
         <div class="max-w-2xl mx-auto text-center">
           <h2
@@ -694,7 +694,7 @@
       </div>
     </section>
 
-    <section class="py-14 sm:py-28 px-8 lg:px-12 bg-white">
+    <section class="py-14 sm:py-28 px-4 sm:px-8 lg:px-12 bg-white">
       <Testimonials />
     </section>
 
