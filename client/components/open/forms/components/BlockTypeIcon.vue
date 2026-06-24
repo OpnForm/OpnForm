@@ -13,6 +13,19 @@
 <script setup>
 import blocksTypes from '~/data/blocks_types.json'
 
+const extraBlocksTypes = {
+  status: {
+    icon: 'i-heroicons-clipboard-document-check-20-solid',
+    bg_class: 'bg-gray-100',
+    text_class: 'text-gray-900',
+  },
+  ip_address: {
+    icon: 'i-heroicons-globe-alt',
+    bg_class: 'bg-gray-100',
+    text_class: 'text-gray-900',
+  },
+}
+
 const props = defineProps({
   type: {
     type: String,
@@ -28,7 +41,8 @@ const props = defineProps({
   }
 })
 
-const bgClass = computed(() => props.bgClass || blocksTypes[props.type]?.bg_class || '')
-const textClass = computed(() => props.textClass || blocksTypes[props.type]?.text_class || '')
-const icon = computed(() => blocksTypes[props.type]?.icon || '')
+const blockType = computed(() => blocksTypes[props.type] || extraBlocksTypes[props.type])
+const bgClass = computed(() => props.bgClass || blockType.value?.bg_class || '')
+const textClass = computed(() => props.textClass || blockType.value?.text_class || '')
+const icon = computed(() => blockType.value?.icon || '')
 </script>
