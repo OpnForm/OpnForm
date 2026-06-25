@@ -115,7 +115,7 @@ describe('PDF Template Upload', function () {
 });
 
 describe('PDF Template Create from Scratch', function () {
-    it('can create a template with 1 blank page', function () {
+    it('can create a template from scratch with form fields rendered', function () {
         $user = $this->actingAsProUser();
         $workspace = $this->createUserWorkspace($user);
         $form = $this->createForm($user, $workspace);
@@ -141,9 +141,29 @@ describe('PDF Template Create from Scratch', function () {
 
         $template = PdfTemplate::where('form_id', $form->id)->first();
         expect($template->name)->toBe('My PDF Template 1');
-        expect($template->page_count)->toBe(1);
-        expect($template->zone_mappings)->toBe([]);
+        expect($template->page_count)->toBeGreaterThanOrEqual(1);
+        expect($template->zone_mappings)->toBeArray()->not->toBeEmpty();
         expect(Storage::exists($template->file_path))->toBeTrue();
+
+        // Each form input field should have a field_id zone
+        $inputFields = collect($form->properties)
+            ->filter(fn ($f) => !str_starts_with($f['type'], 'nf-'))
+            ->pluck('id')
+            ->toArray();
+        $zoneFieldIds = collect($template->zone_mappings)
+            ->pluck('field_id')
+            ->filter()
+            ->values()
+            ->toArray();
+        foreach ($inputFields as $fieldId) {
+            expect($zoneFieldIds)->toContain($fieldId);
+        }
+
+        // Every zone must reference a valid page_id from the manifest
+        $manifestIds = collect($template->page_manifest)->pluck('id')->toArray();
+        foreach ($template->zone_mappings as $zone) {
+            expect($manifestIds)->toContain($zone['page_id']);
+        }
     });
 
     it('uses incremental default name when creating from scratch', function () {
