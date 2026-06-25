@@ -355,6 +355,12 @@ const saveFormEdit = () => {
 
 const saveFormCreate = () => {
   if (form.value.busy) return
+
+  if (!workspace.value?.id) {
+    useAlert().error("Your workspace is still loading, please try again.")
+    return
+  }
+
   // Attach workspace ID before sending
   form.value.workspace_id = workspace.value.id
   validationErrorResponse.value = null

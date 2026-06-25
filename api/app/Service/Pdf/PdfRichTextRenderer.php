@@ -27,7 +27,6 @@ class PdfRichTextRenderer
     ): void {
         $baseFontSize = (int) ($zone['font_size'] ?? self::DEFAULT_FONT_SIZE);
         $baseColor = $this->colorParser->parseColor($zone['font_color'] ?? null);
-        $lineHeight = $baseFontSize * 0.4;
         $zoneBottom = $y + $height;
 
         // Set margins so text wraps inside the zone width.
@@ -44,6 +43,7 @@ class PdfRichTextRenderer
         $pdf->SetXY($x, $y);
 
         $segments = $this->parseHtmlToSegments($text, $baseFontSize, $baseColor);
+        $currentLineX = $x;
 
         foreach ($segments as $segment) {
             if ($pdf->GetY() >= $zoneBottom) {
@@ -53,6 +53,7 @@ class PdfRichTextRenderer
             $style = ($segment['bold'] ? 'B' : '') . ($segment['italic'] ? 'I' : '') . ($segment['underline'] ? 'U' : '');
             $fontSize = $segment['fontSize'];
             $color = $segment['color'];
+            $lineHeight = $fontSize * 0.4;
 
             $pdf->SetFont('Helvetica', $style, $fontSize);
             $pdf->SetTextColor(...$color);
@@ -63,10 +64,11 @@ class PdfRichTextRenderer
                 }
                 $pdf->Ln($lineHeight);
                 $pdf->SetX($x);
+                $currentLineX = $x;
             }
 
             if ($segment['text'] !== '') {
-                $this->writeClipped($pdf, $segment['text'], $lineHeight, $width, $x, $zoneBottom);
+                $this->writeInlineClipped($pdf, $segment['text'], $lineHeight, $width, $x, $currentLineX, $zoneBottom);
             }
         }
 
@@ -74,45 +76,54 @@ class PdfRichTextRenderer
         $pdf->SetRightMargin($savedRightMargin);
     }
 
-    private function writeClipped(Fpdi $pdf, string $text, float $lineHeight, float $width, float $x, float $zoneBottom): void
+    private function writeInlineClipped(Fpdi $pdf, string $text, float $lineHeight, float $width, float $x, float &$currentLineX, float $zoneBottom): void
     {
-        $lines = $this->wrapTextToLines($pdf, $text, $width);
-        foreach ($lines as $line) {
-            if ($pdf->GetY() + $lineHeight > $zoneBottom) {
-                break;
+        $paragraphs = explode("\n", str_replace("\r", '', $text));
+        foreach ($paragraphs as $paragraphIndex => $paragraph) {
+            if ($paragraphIndex > 0) {
+                if (!$this->moveToNextLine($pdf, $lineHeight, $x, $currentLineX, $zoneBottom)) {
+                    return;
+                }
             }
-            $pdf->Cell($width, $lineHeight, $line, 0, 2, '', false);
-            $pdf->SetX($x);
+
+            $tokens = preg_split('/(\s+)/u', $paragraph, -1, PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY);
+            foreach ($tokens ?: [] as $token) {
+                if (trim($token) === '' && $currentLineX === $x) {
+                    continue;
+                }
+
+                $tokenWidth = $pdf->GetStringWidth($token);
+                if ($currentLineX > $x && $currentLineX + $tokenWidth > $x + $width) {
+                    if (!$this->moveToNextLine($pdf, $lineHeight, $x, $currentLineX, $zoneBottom)) {
+                        return;
+                    }
+                    if (trim($token) === '') {
+                        continue;
+                    }
+                }
+
+                if ($pdf->GetY() + $lineHeight > $zoneBottom) {
+                    return;
+                }
+
+                $pdf->SetX($currentLineX);
+                $pdf->Cell($tokenWidth, $lineHeight, $token, 0, 0, '', false);
+                $currentLineX += $tokenWidth;
+            }
         }
     }
 
-    private function wrapTextToLines(Fpdi $pdf, string $text, float $width): array
+    private function moveToNextLine(Fpdi $pdf, float $lineHeight, float $x, float &$currentLineX, float $zoneBottom): bool
     {
-        $text = str_replace("\r", '', $text);
-        $lines = [];
-        $paragraphs = explode("\n", $text);
-        $usableWidth = max(1, $width - 2);
-
-        foreach ($paragraphs as $para) {
-            $words = explode(' ', $para);
-            $currentLine = '';
-            foreach ($words as $word) {
-                $testLine = $currentLine === '' ? $word : $currentLine . ' ' . $word;
-                if ($pdf->GetStringWidth($testLine) <= $usableWidth) {
-                    $currentLine = $testLine;
-                } else {
-                    if ($currentLine !== '') {
-                        $lines[] = $currentLine;
-                    }
-                    $currentLine = $word;
-                }
-            }
-            if ($currentLine !== '') {
-                $lines[] = $currentLine;
-            }
+        if ($pdf->GetY() + $lineHeight > $zoneBottom) {
+            return false;
         }
 
-        return $lines;
+        $pdf->Ln($lineHeight);
+        $pdf->SetX($x);
+        $currentLineX = $x;
+
+        return true;
     }
 
     private function parseHtmlToSegments(string $html, int $baseFontSize, array $baseColor): array
@@ -180,7 +191,7 @@ class PdfRichTextRenderer
 
         $name = strtolower($node->nodeName);
 
-        $isBold = $bold || in_array($name, ['strong', 'b'], true);
+        $isBold = $bold || in_array($name, ['strong', 'b', 'h1', 'h2'], true);
         $isItalic = $italic || in_array($name, ['em', 'i'], true);
         $isUnderline = $underline || $name === 'u';
 

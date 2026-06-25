@@ -63,7 +63,8 @@
             <!-- In-canvas text preview (static text zones only) -->
             <div
               v-if="zone.static_text !== undefined && zone.static_text"
-              class="w-full h-full overflow-hidden leading-tight pointer-events-none select-none"
+              class="pdf-zone-text-preview w-full h-full overflow-hidden leading-tight pointer-events-none select-none"
+              :style="getZoneTextPreviewStyle(zone)"
               v-html="zone.static_text"
             />
             <!-- In-canvas image preview (static image zones only) -->
@@ -77,11 +78,29 @@
                 class="w-full h-full"
               >
             </div>
+            <!-- In-canvas mapped field preview (actual submissions render here) -->
+            <div
+              v-else-if="zone.field_id"
+              class="pdf-zone-text-preview w-full h-full overflow-hidden pointer-events-none select-none leading-tight"
+              :style="getZoneTextPreviewStyle(zone)"
+            >
+              {{ getZoneLabel(zone) }}
+            </div>
             <div
               class="absolute bottom-0 right-0 w-3 h-3 bg-blue-500 cursor-se-resize"
               @mousedown.stop="startResizing($event, zone)"
             />
           </div>
+          <div
+            v-if="snapGuides.page === pageNum && snapGuides.vertical !== null"
+            class="absolute top-0 bottom-0 w-px bg-blue-500/80 pointer-events-none z-20"
+            :style="{ left: `${snapGuides.vertical}%` }"
+          />
+          <div
+            v-if="snapGuides.page === pageNum && snapGuides.horizontal !== null"
+            class="absolute left-0 right-0 h-px bg-blue-500/80 pointer-events-none z-20"
+            :style="{ top: `${snapGuides.horizontal}%` }"
+          />
         </div>
         <!-- Page number label below -->
         <span class="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
@@ -125,6 +144,11 @@ const activeRenderTasks = new Map()
 const renderPassId = ref(0)
 const zoomRenderTimeout = ref(null)
 const pendingRenderAfterInteraction = ref(false)
+const INITIAL_FIT_HORIZONTAL_PADDING = 48
+const SNAP_THRESHOLD_PX = 6
+const MIN_ZONE_WIDTH_PERCENT = 5
+const MIN_ZONE_HEIGHT_PERCENT = 2
+const snapGuides = ref({ page: null, vertical: null, horizontal: null })
 
 // Drag/resize state
 const isDragging = ref(false)
@@ -157,6 +181,15 @@ const getZoneStyle = (zone) => {
     top: `${(zone.y / 100) * canvasHeight.value}px`,
     width: `${(zone.width / 100) * canvasWidth.value}px`,
     height: `${(zone.height / 100) * canvasHeight.value}px`,
+  }
+}
+
+const getZoneTextPreviewStyle = (zone) => {
+  const fontSize = Number(zone.font_size) || 12
+  return {
+    color: zone.font_color || '#111827',
+    fontFamily: 'Helvetica, Arial, sans-serif',
+    fontSize: `${fontSize * zoomScale.value}px`,
   }
 }
 
@@ -199,6 +232,146 @@ const getActiveZoneLive = () => {
   return pdfTemplate.value.zone_mappings.find((z) => z.id === activeZone.value.id) || null
 }
 
+const clearSnapGuides = () => {
+  snapGuides.value = { page: null, vertical: null, horizontal: null }
+}
+
+const setSnapGuides = (page, snapResult) => {
+  snapGuides.value = {
+    page,
+    vertical: snapResult.vertical ?? null,
+    horizontal: snapResult.horizontal ?? null,
+  }
+}
+
+const clampPercent = (value, min, max) => {
+  return Math.max(min, Math.min(max, value))
+}
+
+const getSnapTargetsForPage = (activeZoneId, page) => {
+  const targets = {
+    x: [0, 50, 100],
+    y: [0, 50, 100],
+  }
+
+  for (const zone of pdfTemplate.value?.zone_mappings || []) {
+    if (zone.id === activeZoneId || Number(zone.page) !== Number(page)) continue
+    targets.x.push(zone.x, zone.x + (zone.width / 2), zone.x + zone.width)
+    targets.y.push(zone.y, zone.y + (zone.height / 2), zone.y + zone.height)
+  }
+
+  return targets
+}
+
+const findClosestSnap = (activeAnchors, targets, thresholdPercent) => {
+  let closest = null
+
+  for (const activeAnchor of activeAnchors) {
+    for (const target of targets) {
+      const delta = target - activeAnchor
+      const distance = Math.abs(delta)
+      if (distance > thresholdPercent) continue
+      if (!closest || distance < closest.distance) {
+        closest = { delta, target, distance }
+      }
+    }
+  }
+
+  return closest
+}
+
+const snapMovingZone = (zone, rect, dimensions) => {
+  const targets = getSnapTargetsForPage(zone.id, zone.page)
+  const thresholdX = (SNAP_THRESHOLD_PX / dimensions.w) * 100
+  const thresholdY = (SNAP_THRESHOLD_PX / dimensions.h) * 100
+
+  const xSnap = findClosestSnap([
+    rect.x,
+    rect.x + (rect.width / 2),
+    rect.x + rect.width,
+  ], targets.x, thresholdX)
+  const ySnap = findClosestSnap([
+    rect.y,
+    rect.y + (rect.height / 2),
+    rect.y + rect.height,
+  ], targets.y, thresholdY)
+
+  const snappedRect = { ...rect }
+  if (xSnap) {
+    snappedRect.x = clampPercent(rect.x + xSnap.delta, 0, 100 - rect.width)
+  }
+  if (ySnap) {
+    snappedRect.y = clampPercent(rect.y + ySnap.delta, 0, 100 - rect.height)
+  }
+
+  return {
+    rect: snappedRect,
+    vertical: xSnap?.target,
+    horizontal: ySnap?.target,
+  }
+}
+
+const findResizeSnap = (start, currentSize, targets, thresholdPercent, minSize, maxSize) => {
+  const anchors = [
+    {
+      value: start + currentSize,
+      getSize: (target) => target - start,
+    },
+    {
+      value: start + (currentSize / 2),
+      getSize: (target) => (target - start) * 2,
+    },
+  ]
+  let closest = null
+
+  for (const anchor of anchors) {
+    for (const target of targets) {
+      const nextSize = anchor.getSize(target)
+      if (nextSize < minSize || nextSize > maxSize) continue
+      const delta = target - anchor.value
+      const distance = Math.abs(delta)
+      if (distance > thresholdPercent) continue
+      if (!closest || distance < closest.distance) {
+        closest = { size: nextSize, target, distance }
+      }
+    }
+  }
+
+  return closest
+}
+
+const snapResizingZone = (zone, rect, dimensions) => {
+  const targets = getSnapTargetsForPage(zone.id, zone.page)
+  const thresholdX = (SNAP_THRESHOLD_PX / dimensions.w) * 100
+  const thresholdY = (SNAP_THRESHOLD_PX / dimensions.h) * 100
+  const widthSnap = findResizeSnap(
+    rect.x,
+    rect.width,
+    targets.x,
+    thresholdX,
+    MIN_ZONE_WIDTH_PERCENT,
+    100 - rect.x
+  )
+  const heightSnap = findResizeSnap(
+    rect.y,
+    rect.height,
+    targets.y,
+    thresholdY,
+    MIN_ZONE_HEIGHT_PERCENT,
+    100 - rect.y
+  )
+
+  return {
+    rect: {
+      ...rect,
+      width: widthSnap?.size ?? rect.width,
+      height: heightSnap?.size ?? rect.height,
+    },
+    vertical: widthSnap?.target,
+    horizontal: heightSnap?.target,
+  }
+}
+
 // Initialize PDF.js library
 const initPdfJs = async () => {
   if (!import.meta.client) return null
@@ -229,6 +402,35 @@ const getPriorityZoomPages = () => {
   const current = Number(currentPage.value)
   const candidatePages = [current - 1, current, current + 1]
   return candidatePages.filter((pageNum) => pageList.value.includes(pageNum) && !isNewPage(pageNum))
+}
+
+const getEditorScrollRoot = () => {
+  return pagesContainer.value?.closest?.('.pdf-editor-scroll-container')
+}
+
+const getAvailablePageWidth = () => {
+  const scrollRoot = getEditorScrollRoot()
+  const containerWidth = scrollRoot?.clientWidth || pagesContainer.value?.clientWidth || 0
+  return Math.max(0, containerWidth - INITIAL_FIT_HORIZONTAL_PADDING)
+}
+
+const fitZoomToPageWidth = async () => {
+  if (!pdfDoc.value) return
+
+  const firstPhysicalPage = pageList.value.find((pageNum) => !isNewPage(pageNum))
+  if (!firstPhysicalPage) return
+
+  const sourcePageNumber = pdfStore.getSourcePageNumber(firstPhysicalPage)
+  if (sourcePageNumber == null) return
+
+  const availablePageWidth = getAvailablePageWidth()
+  if (!availablePageWidth) return
+
+  const page = await pdfDoc.value.getPage(sourcePageNumber)
+  const viewport = page.getViewport({ scale: 1 })
+  if (!viewport.width) return
+
+  pdfStore.setZoomScale(availablePageWidth / viewport.width)
 }
 
 const scheduleRenderAllPages = (delayMs = 0, options = {}) => {
@@ -271,6 +473,8 @@ const loadPdf = async () => {
       formsApi.pdfTemplates.getDownloadRequest(form.value.id, pdfTemplate.value.id)
     )
     pdfDoc.value = await loadingTask.promise
+    await nextTick()
+    await fitZoomToPageWidth()
     await renderAllPages()
   } catch (err) {
     console.error('Failed to load PDF:', err)
@@ -448,7 +652,7 @@ const setupObserver = () => {
   if (intersectionObserver) {
     intersectionObserver.disconnect()
   }
-  const scrollRoot = pagesContainer.value?.closest?.('.pdf-editor-scroll-container')
+  const scrollRoot = getEditorScrollRoot()
   if (!scrollRoot || Object.keys(pageRefs.value).length === 0) return
 
   intersectionObserver = new IntersectionObserver(
@@ -530,6 +734,7 @@ const moveZoneToAdjacentPage = (direction, event) => {
   const targetPageNum = pageList.value[targetIndex]
   zone.page = targetPageNum
   zone.page_id = pdfStore.getPageId(targetPageNum)
+  clearSnapGuides()
   zone.y = direction > 0
     ? 0
     : Math.max(0, 100 - zone.height)
@@ -572,17 +777,17 @@ const onDrag = (event) => {
     }
   }
 
-  const { w, h } = getCanvasDimensions()
-  if (!Number.isFinite(w) || !Number.isFinite(h) || w < 20 || h < 20) return
+  const dimensions = getCanvasDimensions()
+  if (!Number.isFinite(dimensions.w) || !Number.isFinite(dimensions.h) || dimensions.w < 20 || dimensions.h < 20) return
 
   const dx = event.clientX - dragStart.value.x
   const dy = event.clientY - dragStart.value.y
-  const dxPercent = (dx / w) * 100
-  const dyPercent = (dy / h) * 100
+  const dxPercent = (dx / dimensions.w) * 100
+  const dyPercent = (dy / dimensions.h) * 100
 
   const maxY = 100 - zoneStart.value.height
-  let newX = Math.max(0, Math.min(100 - zoneStart.value.width, zoneStart.value.x + dxPercent))
-  let newY = Math.max(0, Math.min(maxY, zoneStart.value.y + dyPercent))
+  let newX = clampPercent(zoneStart.value.x + dxPercent, 0, 100 - zoneStart.value.width)
+  let newY = clampPercent(zoneStart.value.y + dyPercent, 0, maxY)
 
   // If dragged down while already clamped at bottom edge, transfer to next page early.
   if (pointerDeltaY > 0 && newY >= maxY && moveZoneToAdjacentPage(1, event)) {
@@ -595,14 +800,23 @@ const onDrag = (event) => {
     return
   }
 
-  zone.x = newX
-  zone.y = newY
+  const snapResult = snapMovingZone(zone, {
+    x: newX,
+    y: newY,
+    width: zoneStart.value.width,
+    height: zoneStart.value.height,
+  }, dimensions)
+
+  zone.x = snapResult.rect.x
+  zone.y = snapResult.rect.y
+  setSnapGuides(zone.page, snapResult)
 }
 
 // Stop dragging
 const stopDragging = () => {
   isDragging.value = false
   activeZone.value = null
+  clearSnapGuides()
   document.removeEventListener('mousemove', onDrag)
   document.removeEventListener('mouseup', stopDragging)
 }
@@ -624,25 +838,42 @@ const startResizing = (event, zone) => {
 const onResize = (event) => {
   const zone = getActiveZoneLive()
   if (!isResizing.value || !zone) return
-  const { w, h } = getCanvasDimensions()
-  if (!Number.isFinite(w) || !Number.isFinite(h) || w < 20 || h < 20) return
+  const dimensions = getCanvasDimensions()
+  if (!Number.isFinite(dimensions.w) || !Number.isFinite(dimensions.h) || dimensions.w < 20 || dimensions.h < 20) return
 
   const dx = event.clientX - dragStart.value.x
   const dy = event.clientY - dragStart.value.y
-  const dxPercent = (dx / w) * 100
-  const dyPercent = (dy / h) * 100
+  const dxPercent = (dx / dimensions.w) * 100
+  const dyPercent = (dy / dimensions.h) * 100
 
-  let newWidth = Math.max(5, Math.min(100 - zoneStart.value.x, zoneStart.value.width + dxPercent))
-  let newHeight = Math.max(2, Math.min(100 - zoneStart.value.y, zoneStart.value.height + dyPercent))
+  let newWidth = clampPercent(
+    zoneStart.value.width + dxPercent,
+    MIN_ZONE_WIDTH_PERCENT,
+    100 - zoneStart.value.x
+  )
+  let newHeight = clampPercent(
+    zoneStart.value.height + dyPercent,
+    MIN_ZONE_HEIGHT_PERCENT,
+    100 - zoneStart.value.y
+  )
 
-  zone.width = newWidth
-  zone.height = newHeight
+  const snapResult = snapResizingZone(zone, {
+    x: zoneStart.value.x,
+    y: zoneStart.value.y,
+    width: newWidth,
+    height: newHeight,
+  }, dimensions)
+
+  zone.width = snapResult.rect.width
+  zone.height = snapResult.rect.height
+  setSnapGuides(zone.page, snapResult)
 }
 
 // Stop resizing
 const stopResizing = () => {
   isResizing.value = false
   activeZone.value = null
+  clearSnapGuides()
   document.removeEventListener('mousemove', onResize)
   document.removeEventListener('mouseup', stopResizing)
 }
@@ -677,6 +908,7 @@ watch(lastAddedZoneId, async (zoneId) => {
 
 onUnmounted(() => {
   cancelAllRenderTasks()
+  clearSnapGuides()
   document.removeEventListener('mousemove', onDrag)
   document.removeEventListener('mouseup', stopDragging)
   document.removeEventListener('mousemove', onResize)
@@ -700,5 +932,25 @@ onUnmounted(() => {
 <style scoped>
 .pdf-zone-editor {
   position: relative;
+}
+
+.pdf-zone-text-preview :deep(h1),
+.pdf-zone-text-preview :deep(h2),
+.pdf-zone-text-preview :deep(h3),
+.pdf-zone-text-preview :deep(p),
+.pdf-zone-text-preview :deep(div) {
+  margin: 0;
+}
+
+.pdf-zone-text-preview :deep(h1) {
+  font-size: 2em;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.pdf-zone-text-preview :deep(h2) {
+  font-size: 1.5em;
+  font-weight: 700;
+  line-height: 1;
 }
 </style>

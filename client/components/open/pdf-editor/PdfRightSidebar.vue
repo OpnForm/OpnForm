@@ -155,21 +155,24 @@
         </div>
         
         <!-- Zones list -->
-        <div v-else class="rounded-md border border-neutral-300">
+        <div v-else class="rounded-md border border-neutral-300 dark:border-neutral-700 divide-y divide-neutral-200 dark:divide-neutral-700 overflow-hidden">
           <div
             v-for="zone in currentPageZones"
             :key="zone.id"
-            class="flex items-center justify-between gap-2 p-3 transition-colors cursor-pointer border-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-700"
-            :class="{
-              'border-b': zone !== currentPageZones[currentPageZones.length - 1]
-            }"
+            class="flex items-center justify-between gap-2 px-2 py-2 transition-colors cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-700"
             @click="pdfStore.setSelectedZone(zone.id)"
           >
-            <div class="min-w-0 flex-1">
+            <div class="shrink-0 w-7 h-7 rounded-md bg-neutral-100 dark:bg-neutral-700 flex items-center justify-center">
+              <UIcon
+                :name="getZoneIcon(zone)"
+                class="w-4 h-4 text-neutral-500 dark:text-neutral-300"
+              />
+            </div>
+            <div class="min-w-0 flex-1 leading-none">
               <p class="text-sm font-medium text-neutral-900 dark:text-white truncate">
-                {{ getZoneLabel(zone) }}
+                {{ getZoneListLabel(zone) }}
               </p>
-              <p class="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
+              <p class="text-[11px] text-neutral-500 dark:text-neutral-400 mt-1">
                 Page {{ zone.page }} • {{ zone.font_size }}px
               </p>
             </div>
@@ -180,7 +183,7 @@
               >
                 <Icon
                   name="heroicons:cog-8-tooth-solid"
-                  class="h-5 w-5"
+                  class="h-4 w-4"
                 />
               </button>
             </UTooltip>
@@ -262,11 +265,45 @@ const addZoneMenuItems = computed(() => {
 
 const selectedZoneLabel = computed(() => {
   if (!selectedZone.value) return ''
-  return getZoneLabel(selectedZone.value)
+  return getZoneListLabel(selectedZone.value)
 })
 
 const goBackToZones = () => {
   pdfStore.setSelectedZone(null)
+}
+
+const decodeTextEntities = (value) => {
+  return value
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#039;/g, "'")
+}
+
+const getStaticTextPreview = (zone) => {
+  const text = decodeTextEntities(
+    String(zone.static_text || '')
+      .replace(/<br\s*\/?>/gi, ' ')
+      .replace(/<\/(p|div|h1|h2|h3|h4|h5|h6|li)>/gi, ' ')
+      .replace(/<[^>]*>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+  )
+
+  return text || 'Empty static text'
+}
+
+const getZoneListLabel = (zone) => {
+  if (zone.static_text !== undefined) return getStaticTextPreview(zone)
+  return getZoneLabel(zone)
+}
+
+const getZoneIcon = (zone) => {
+  if (zone.static_text !== undefined) return 'i-heroicons-document-text'
+  if (zone.static_image !== undefined) return 'i-heroicons-photo'
+  return 'i-heroicons-at-symbol'
 }
 
 const richTextOptions = {
