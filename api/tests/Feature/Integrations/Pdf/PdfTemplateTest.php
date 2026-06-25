@@ -119,6 +119,9 @@ describe('PDF Template Create from Scratch', function () {
         $user = $this->actingAsProUser();
         $workspace = $this->createUserWorkspace($user);
         $form = $this->createForm($user, $workspace);
+        $properties = $form->properties;
+        $properties[0]['required'] = true;
+        $form->update(['properties' => $properties]);
 
         $response = $this->postJson(route('open.forms.pdf-templates.store', $form), []);
 
@@ -144,6 +147,15 @@ describe('PDF Template Create from Scratch', function () {
         expect($template->page_count)->toBeGreaterThanOrEqual(1);
         expect($template->zone_mappings)->toBeArray()->not->toBeEmpty();
         expect(Storage::exists($template->file_path))->toBeTrue();
+
+        $titleZone = collect($template->zone_mappings)
+            ->first(fn ($zone) => isset($zone['static_text']) && str_contains($zone['static_text'], '<h1>'));
+        expect($titleZone)->not->toBeNull();
+        expect($titleZone['static_text'])->toBe('<h1>' . e($form->title) . '</h1>');
+
+        $requiredLabelZone = collect($template->zone_mappings)
+            ->first(fn ($zone) => ($zone['static_text'] ?? null) === 'Name <strong style="color: #EF4444">*</strong>');
+        expect($requiredLabelZone)->not->toBeNull();
 
         // Each form input field should have a field_id zone
         $inputFields = collect($form->properties)

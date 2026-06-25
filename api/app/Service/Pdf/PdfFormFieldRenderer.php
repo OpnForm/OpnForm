@@ -12,10 +12,13 @@ class PdfFormFieldRenderer
     private const MARGIN_TOP = 4;
     private const MARGIN_BOTTOM = 4;
     private const FIELD_LABEL_HEIGHT = 2.5;
-    private const FIELD_VALUE_HEIGHT = 5;
-    private const FIELD_GAP = 1;
-    private const FIELD_SPACING = 2;
+    private const FIELD_VALUE_HEIGHT = 3;
+    private const FIELD_GAP = 0.5;
+    private const FIELD_SPACING = 1.5;
     private const DEFAULT_FONT_SIZE = 12;
+    private const TITLE_ZONE_HEIGHT = 7;
+    private const TITLE_BASE_FONT_SIZE = 12;
+    private const REQUIRED_MARK_HTML = '<strong style="color: #EF4444">*</strong>';
 
     private float $cursorY;
     private int $currentPageNum = 0;
@@ -34,8 +37,9 @@ class PdfFormFieldRenderer
         $this->zones = [];
         $this->addPage();
 
-        // Form title as static text zone
-        $this->addStaticTextZone($form->title ?? 'Untitled Form', 3.5, fontSize: 18);
+        // Form title as h1 static text zone
+        $title = htmlspecialchars($form->title ?? 'Untitled Form', ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        $this->addStaticTextZone("<h1>{$title}</h1>", self::TITLE_ZONE_HEIGHT, fontSize: self::TITLE_BASE_FONT_SIZE);
         $this->cursorY += 1;
 
         $properties = collect($form->properties ?? [])
@@ -79,7 +83,8 @@ class PdfFormFieldRenderer
         $required = !empty($field['required']);
 
         // Label zone
-        $label = $required ? $name . ' *' : $name;
+        $escapedName = htmlspecialchars($name, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        $label = $required ? $escapedName . ' ' . self::REQUIRED_MARK_HTML : $escapedName;
         $this->addStaticTextZone($label, self::FIELD_LABEL_HEIGHT, fontSize: 10, fontColor: '#374151');
 
         // Small gap between label and value
@@ -134,8 +139,8 @@ class PdfFormFieldRenderer
     private function getFieldZoneHeight(string $type, array $field): float
     {
         return match ($type) {
-            'text' => !empty($field['multi_lines']) ? 12 : self::FIELD_VALUE_HEIGHT,
-            'rich_text' => 12,
+            'text' => !empty($field['multi_lines']) ? 10 : self::FIELD_VALUE_HEIGHT,
+            'rich_text' => 10,
             'signature' => 10,
             'files' => 8,
             'matrix' => min(5 + count($field['rows'] ?? []) * 3, 20),

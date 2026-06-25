@@ -385,6 +385,60 @@ describe('PdfContentRenderer scalar values', function () {
 
         expect($richTextRenderer->rendered)->toBeFalse();
     });
+
+    it('renders inline rich text segments without dropping styled required marks', function () {
+        $renderer = new PdfRichTextRenderer();
+        $pdf = new class () extends Fpdi {
+            public array $cells = [];
+            private array $currentColor = [0, 0, 0];
+            private string $currentStyle = '';
+
+            public function SetTextColor($r, $g = null, $b = null)
+            {
+                $this->currentColor = [(int) $r, (int) $g, (int) $b];
+                parent::SetTextColor($r, $g, $b);
+            }
+
+            public function SetFont($family, $style = '', $size = 0)
+            {
+                $this->currentStyle = $style;
+                parent::SetFont($family, $style, $size);
+            }
+
+            public function Cell($w, $h = 0, $txt = '', $border = 0, $ln = 0, $align = '', $fill = false, $link = '')
+            {
+                $this->cells[] = [
+                    'text' => $txt,
+                    'x' => $this->GetX(),
+                    'y' => $this->GetY(),
+                    'color' => $this->currentColor,
+                    'style' => $this->currentStyle,
+                ];
+                parent::Cell($w, $h, $txt, $border, $ln, $align, $fill, $link);
+            }
+        };
+        $pdf->AddPage();
+
+        $renderer->render(
+            $pdf,
+            'Name <strong style="color: #EF4444">*</strong>',
+            10,
+            10,
+            80,
+            8,
+            ['font_size' => 10, 'font_color' => '#374151'],
+            210
+        );
+
+        $nameCell = collect($pdf->cells)->firstWhere('text', 'Name');
+        $starCell = collect($pdf->cells)->firstWhere('text', '*');
+
+        expect($nameCell)->not->toBeNull();
+        expect($starCell)->not->toBeNull();
+        expect($starCell['y'])->toBe($nameCell['y']);
+        expect($starCell['color'])->toBe([239, 68, 68]);
+        expect($starCell['style'])->toContain('B');
+    });
 });
 
 /**
