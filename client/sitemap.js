@@ -40,6 +40,16 @@ function getCloudMarketingUrls () {
 
   return [
     {
+      url: '/open-source-form-builder',
+      changefreq: 'monthly',
+      priority: 0.9
+    },
+    {
+      url: '/self-hosted-form-builder',
+      changefreq: 'monthly',
+      priority: 0.9
+    },
+    {
       url: '/self-hosted/license',
       changefreq: 'monthly',
       priority: 0.7

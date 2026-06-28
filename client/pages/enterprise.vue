@@ -28,8 +28,7 @@
               class="pl-4 pr-3.5 py-2.5 rounded-[12px] text-base leading-7 tracking-[-1.1%] font-medium"
             />
             <UButton
-              :to="opnformConfig.links.self_hosting"
-              target="_blank"
+              :to="{ name: 'self-hosted-form-builder' }"
               label="Explore Self-Hosting"
               variant="outline"
               size="lg"
@@ -555,8 +554,7 @@
                 class="w-fit pl-4 pr-3.5 py-2.5 rounded-[12px] text-base leading-7 tracking-[-1.1%] font-medium"
               />
               <UButton
-                :to="opnformConfig.links.self_hosting"
-                target="_blank"
+                :to="{ name: 'self-hosted-form-builder' }"
                 label="Explore Self-Hosting"
                 variant="outline"
                 color="neutral"
