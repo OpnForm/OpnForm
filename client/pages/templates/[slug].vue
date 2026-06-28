@@ -385,6 +385,42 @@ useOpnSeoMeta(
     description: template.value?.short_description,
   })),
 )
+
+const templateSchema = computed(() => {
+  if (!template.value) return null
+
+  return buildSchemaGraph([
+    buildWebPageSchema({
+      name: template.value.name,
+      description: template.value.short_description,
+      path: route.path,
+    }),
+    buildCreativeWorkSchema({
+      name: template.value.name,
+      description: template.value.short_description,
+      path: route.path,
+      image: template.value.image_url,
+    }),
+    buildBreadcrumbSchema([
+      { name: "Home", path: "/" },
+      { name: "Templates", path: "/templates" },
+      { name: template.value.name, path: route.path },
+    ]),
+    buildFaqSchema(template.value.questions || []),
+    buildItemListSchema(
+      relatedTemplates.value.map((relatedTemplate) => ({
+        name: relatedTemplate.name,
+        path: `/templates/${relatedTemplate.slug}`,
+      })),
+      {
+        path: route.path,
+        name: `Related ${template.value.name} templates`,
+      },
+    ),
+  ])
+})
+
+useJsonLd("template-schema", templateSchema)
 </script>
 
 <style>

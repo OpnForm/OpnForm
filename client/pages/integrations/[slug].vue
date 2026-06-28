@@ -134,7 +134,8 @@ import integrationsCatalog from '~/data/forms/integrations.json'
 import { useNotionCmsStore } from '~/stores/notion_cms.js'
 
 const blockOverrides = { code: CustomBlock }
-const slug = computed(() => useRoute().params.slug)
+const route = useRoute()
+const slug = computed(() => route.params.slug)
 const dbId = '1eda631bec208005bd8ed9988b380263'
 
 const crisp = useCrisp()
@@ -226,4 +227,35 @@ useOpnSeoMeta({
   title: () => pageTitle.value,
   description: () => page.value?.['Summary - SEO description'] ?? fallbackDescription.value ?? 'Create beautiful forms for free. Unlimited fields, unlimited submissions.'
 })
+
+const integrationSchema = computed(() => {
+  if (!showNotionPage.value && !showFallbackPage.value) return null
+
+  const description = page.value?.['Summary - SEO description']
+    ?? fallbackDescription.value
+    ?? 'Connect OpnForm with your existing tools and workflows.'
+
+  return buildSchemaGraph([
+    buildWebPageSchema({
+      name: pageTitle.value,
+      description,
+      path: route.path,
+    }),
+    buildBreadcrumbSchema([
+      { name: "Home", path: "/" },
+      { name: "Integrations", path: "/integrations" },
+      { name: pageTitle.value, path: route.path },
+    ]),
+    showFallbackPage.value
+      ? buildHowToSchema({
+          name: `${fallbackIntegration.value.name} setup overview`,
+          description,
+          steps: fallbackSteps.value,
+          path: route.path,
+        })
+      : null,
+  ])
+})
+
+useJsonLd("integration-schema", integrationSchema)
 </script>

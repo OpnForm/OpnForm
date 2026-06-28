@@ -145,6 +145,31 @@ const { data: features, pending: isLoading } = await useAsyncData('features-list
 const sortedFeatures = computed(() => features.value ?? [])
 const categorySections = computed(() => groupFeaturesByCategory(sortedFeatures.value))
 
+const featuresSchema = computed(() => buildSchemaGraph([
+  buildCollectionPageSchema({
+    name: "Form Builder Features",
+    description:
+      "Explore all OpnForm features for building, sharing, automating, and managing beautiful online forms.",
+    path: "/features",
+  }),
+  buildBreadcrumbSchema([
+    { name: "Home", path: "/" },
+    { name: "Features", path: "/features" },
+  ]),
+  buildItemListSchema(
+    sortedFeatures.value.map((feature) => ({
+      name: feature.title,
+      path: `/features/${feature.slug}`,
+    })),
+    {
+      path: "/features",
+      name: "OpnForm features",
+    },
+  ),
+]))
+
+useJsonLd("features-schema", featuresSchema)
+
 function scrollToCategory (categorySlug) {
   document.getElementById(categorySlug)?.scrollIntoView({
     behavior: 'smooth',

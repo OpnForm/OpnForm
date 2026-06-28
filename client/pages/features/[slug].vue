@@ -158,4 +158,33 @@ useOpnSeoMeta({
   title: () => feature.value?.seoTitle ?? feature.value?.title ?? 'Features',
   description: () => feature.value?.seoDescription ?? feature.value?.summary ?? 'Explore OpnForm features for building powerful online forms.',
 })
+
+const featureSchema = computed(() => {
+  if (!feature.value) return null
+
+  return buildSchemaGraph([
+    buildWebPageSchema({
+      name: feature.value.seoTitle ?? feature.value.title,
+      description: feature.value.seoDescription ?? feature.value.summary,
+      path: route.path,
+    }),
+    buildBreadcrumbSchema([
+      { name: "Home", path: "/" },
+      { name: "Features", path: "/features" },
+      { name: feature.value.title, path: route.path },
+    ]),
+    buildItemListSchema(
+      relatedFeatures.value.map((relatedFeature) => ({
+        name: relatedFeature.title,
+        path: `/features/${relatedFeature.slug}`,
+      })),
+      {
+        path: route.path,
+        name: `Related ${feature.value.title} features`,
+      },
+    ),
+  ])
+})
+
+useJsonLd("feature-schema", featureSchema)
 </script>
