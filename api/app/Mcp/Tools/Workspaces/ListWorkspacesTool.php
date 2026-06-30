@@ -27,7 +27,7 @@ class ListWorkspacesTool extends Tool
 
         $workspaces = UserWorkspace::where('user_id', $user->id)->with('workspace')->get();
 
-        $data = $workspaces->map(fn(UserWorkspace $uw) => [
+        $data = $workspaces->map(fn (UserWorkspace $uw) => [
             'id' => $uw->workspace->id,
             'name' => $uw->workspace->name,
             'icon' => $uw->workspace->icon,

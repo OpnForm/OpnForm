@@ -3,7 +3,6 @@
 namespace App\Mcp\Tools\Forms;
 
 use App\Mcp\Concerns\ResolvesForm;
-use App\Models\Forms\Form;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
