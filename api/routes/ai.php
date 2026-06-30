@@ -9,4 +9,4 @@ Mcp::web('/mcp/guest', OpnFormGuestServer::class);
 Mcp::web('/mcp', OpnFormServer::class)
     ->middleware('auth:sanctum');
 
-Mcp::local('opnform', OpnFormServer::class);
+Mcp::local('opnform', OpnFormGuestServer::class);

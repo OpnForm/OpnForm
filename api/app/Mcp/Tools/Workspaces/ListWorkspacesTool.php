@@ -33,7 +33,7 @@ class ListWorkspacesTool extends Tool
             'icon' => $uw->workspace->icon,
         ])->values()->all();
 
-        return Response::structured($data);
+        return Response::structured(['workspaces' => $data]);
     }
 
     public function schema(JsonSchema $schema): array

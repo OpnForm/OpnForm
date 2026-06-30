@@ -16,6 +16,26 @@ use Laravel\Mcp\Server\Tool;
 #[Description('Create a new form in a workspace. Requires workspace_id, title, and properties (array of field objects). Each field needs at minimum: type, name. Use the field-types resource to see available field types and their options.')]
 class CreateFormTool extends Tool
 {
+    private const ALLOWED_FIELDS = [
+        'title',
+        'visibility',
+        'properties',
+        'theme',
+        'color',
+        'dark_mode',
+        'size',
+        'border_radius',
+        'width',
+        'presentation_style',
+        'language',
+        'submit_button_text',
+        'submitted_text',
+        'redirect_url',
+        're_fillable',
+        'use_captcha',
+        'confetti_on_submission',
+    ];
+
     public function handle(Request $request): ResponseFactory
     {
         $validated = $request->validate([
@@ -40,7 +60,7 @@ class CreateFormTool extends Tool
         })->values()->all();
 
         $formData = collect($request->all())
-            ->only((new Form())->getFillable())
+            ->only(self::ALLOWED_FIELDS)
             ->merge([
                 'workspace_id' => $workspace->id,
                 'properties' => $properties,

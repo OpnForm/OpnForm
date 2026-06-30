@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Tools\Forms;
 
+use App\Mcp\Concerns\ResolvesForm;
 use App\Models\Forms\Form;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\Support\Facades\Gate;
@@ -11,10 +12,12 @@ use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 
-#[Description('Permanently delete a form. This cannot be undone. All submissions for this form will also be lost.')]
+#[Description('Delete a form (soft-delete). The form can be recovered by an admin. Submissions are preserved until permanently purged.')]
 #[IsDestructive]
 class DeleteFormTool extends Tool
 {
+    use ResolvesForm;
+
     public function handle(Request $request): Response
     {
         $validated = $request->validate([
@@ -37,16 +40,5 @@ class DeleteFormTool extends Tool
                 ->description('The form ID (integer) or slug to delete.')
                 ->required(),
         ];
-    }
-
-    private function resolveForm(string $formId): Form
-    {
-        $query = Form::with(['workspace.users' => fn ($q) => $q->withPivot('role')]);
-
-        if (is_numeric($formId)) {
-            return $query->findOrFail((int) $formId);
-        }
-
-        return $query->where('slug', $formId)->firstOrFail();
     }
 }

@@ -51,7 +51,7 @@ class ListFormsTool extends Tool
             'updated_at' => $form->updated_at?->toIso8601String(),
         ])->values()->all();
 
-        return Response::structured($data);
+        return Response::structured(['forms' => $data]);
     }
 
     public function schema(JsonSchema $schema): array

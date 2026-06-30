@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Tools\Submissions;
 
+use App\Mcp\Concerns\ResolvesForm;
 use App\Models\Forms\Form;
 use App\Models\Forms\FormSubmission;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
@@ -19,6 +20,8 @@ use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 #[IsIdempotent]
 class ListSubmissionsTool extends Tool
 {
+    use ResolvesForm;
+
     public function handle(Request $request): ResponseFactory
     {
         $validated = $request->validate([
@@ -31,7 +34,7 @@ class ListSubmissionsTool extends Tool
         $form = $this->resolveForm($validated['form_id']);
         Gate::forUser($request->user())->authorize('view', $form);
 
-        $query = $form->submissions()->with('form');
+        $query = $form->submissions();
 
         $status = $validated['status'] ?? 'completed';
         if ($status === 'completed') {
@@ -81,16 +84,5 @@ class ListSubmissionsTool extends Tool
                 ->description('Filter by status. Default: "completed".')
                 ->default('completed'),
         ];
-    }
-
-    private function resolveForm(string $formId): Form
-    {
-        $query = Form::with(['workspace.users' => fn ($q) => $q->withPivot('role')]);
-
-        if (is_numeric($formId)) {
-            return $query->findOrFail((int) $formId);
-        }
-
-        return $query->where('slug', $formId)->firstOrFail();
     }
 }

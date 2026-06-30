@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Tools\Submissions;
 
+use App\Mcp\Concerns\ResolvesForm;
 use App\Models\Forms\Form;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\Support\Facades\Gate;
@@ -18,6 +19,8 @@ use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 #[IsIdempotent]
 class GetSubmissionTool extends Tool
 {
+    use ResolvesForm;
+
     public function handle(Request $request): ResponseFactory
     {
         $validated = $request->validate([
@@ -52,16 +55,5 @@ class GetSubmissionTool extends Tool
                 ->description('The submission ID.')
                 ->required(),
         ];
-    }
-
-    private function resolveForm(string $formId): Form
-    {
-        $query = Form::with(['workspace.users' => fn ($q) => $q->withPivot('role')]);
-
-        if (is_numeric($formId)) {
-            return $query->findOrFail((int) $formId);
-        }
-
-        return $query->where('slug', $formId)->firstOrFail();
     }
 }

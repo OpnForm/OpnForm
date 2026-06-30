@@ -22,6 +22,15 @@ describe('list-workspaces tool', function () {
             ->assertSee($workspace->name);
     });
 
+    it('returns empty list when user has no workspaces', function () {
+        $user = $this->actingAsUser();
+
+        OpnFormServer::actingAs($user)
+            ->tool(ListWorkspacesTool::class)
+            ->assertOk()
+            ->assertSee('workspaces');
+    });
+
     it('rejects unauthenticated access', function () {
         OpnFormServer::tool(ListWorkspacesTool::class)
             ->assertHasErrors();
@@ -40,6 +49,18 @@ describe('list-forms tool', function () {
             ])
             ->assertOk()
             ->assertSee($form->title);
+    });
+
+    it('returns empty list when workspace has no forms', function () {
+        $user = $this->actingAsUser();
+        $workspace = $this->createUserWorkspace($user);
+
+        OpnFormServer::actingAs($user)
+            ->tool(ListFormsTool::class, [
+                'workspace_id' => $workspace->id,
+            ])
+            ->assertOk()
+            ->assertSee('forms');
     });
 
     it('requires workspace_id', function () {

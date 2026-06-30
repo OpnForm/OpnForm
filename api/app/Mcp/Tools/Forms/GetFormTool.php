@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Tools\Forms;
 
+use App\Mcp\Concerns\ResolvesForm;
 use App\Models\Forms\Form;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\Support\Facades\Gate;
@@ -18,6 +19,8 @@ use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 #[IsIdempotent]
 class GetFormTool extends Tool
 {
+    use ResolvesForm;
+
     public function handle(Request $request): ResponseFactory
     {
         $validated = $request->validate([
@@ -67,16 +70,5 @@ class GetFormTool extends Tool
                 ->description('The form ID (integer) or slug (string). Use list-forms to find available forms.')
                 ->required(),
         ];
-    }
-
-    private function resolveForm(string $formId): Form
-    {
-        $query = Form::with(['workspace.users' => fn ($q) => $q->withPivot('role')]);
-
-        if (is_numeric($formId)) {
-            return $query->findOrFail((int) $formId);
-        }
-
-        return $query->where('slug', $formId)->firstOrFail();
     }
 }

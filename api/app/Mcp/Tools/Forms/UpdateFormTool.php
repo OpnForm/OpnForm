@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Tools\Forms;
 
+use App\Mcp\Concerns\ResolvesForm;
 use App\Models\Forms\Form;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\Support\Facades\Gate;
@@ -17,6 +18,28 @@ use Laravel\Mcp\Server\Tools\Annotations\IsIdempotent;
 #[IsIdempotent]
 class UpdateFormTool extends Tool
 {
+    use ResolvesForm;
+
+    private const ALLOWED_FIELDS = [
+        'title',
+        'visibility',
+        'properties',
+        'theme',
+        'color',
+        'dark_mode',
+        'size',
+        'border_radius',
+        'width',
+        'presentation_style',
+        'language',
+        'submit_button_text',
+        'submitted_text',
+        'redirect_url',
+        're_fillable',
+        'use_captcha',
+        'confetti_on_submission',
+    ];
+
     public function handle(Request $request): Response|ResponseFactory
     {
         $validated = $request->validate([
@@ -28,10 +51,7 @@ class UpdateFormTool extends Tool
 
         $updateData = collect($request->all())
             ->except(['form_id'])
-            ->only(array_merge(
-                (new Form())->getFillable(),
-                ['properties']
-            ))
+            ->only(self::ALLOWED_FIELDS)
             ->all();
 
         if (empty($updateData)) {
@@ -80,16 +100,5 @@ class UpdateFormTool extends Tool
             'dark_mode' => $schema->string()
                 ->description('Dark mode setting: auto, light, dark.'),
         ];
-    }
-
-    private function resolveForm(string $formId): Form
-    {
-        $query = Form::with(['workspace.users' => fn ($q) => $q->withPivot('role')]);
-
-        if (is_numeric($formId)) {
-            return $query->findOrFail((int) $formId);
-        }
-
-        return $query->where('slug', $formId)->firstOrFail();
     }
 }
