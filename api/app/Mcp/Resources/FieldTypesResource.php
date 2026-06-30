@@ -6,9 +6,11 @@ use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\MimeType;
+use Laravel\Mcp\Server\Attributes\Name;
 use Laravel\Mcp\Server\Attributes\Uri;
 use Laravel\Mcp\Server\Resource;
 
+#[Name('Field Types')]
 #[Description('Complete catalog of all available form field types with their configurable properties, default values, and presentation modes. Use this to construct valid field definitions for create-form.')]
 #[Uri('opnform://reference/field-types')]
 #[MimeType('application/json')]
