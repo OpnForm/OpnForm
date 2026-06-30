@@ -163,17 +163,26 @@
         </div>
 
         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-6 mt-12 sm:mt-16 max-w-4xl mx-auto">
-          <div
+          <a
             v-for="client in clients"
             :key="client.name"
-            class="flex flex-col items-center gap-3 p-6 rounded-2xl border border-neutral-200 bg-neutral-50 hover:bg-white hover:shadow-md transition-all duration-200"
+            :href="client.link"
+            :target="client.deepLink ? '_self' : '_blank'"
+            :rel="client.deepLink ? undefined : 'noopener noreferrer'"
+            class="relative flex flex-col items-center gap-3 p-6 rounded-2xl border border-neutral-200 bg-neutral-50 hover:bg-white hover:shadow-md hover:border-blue-200 transition-all duration-200 no-underline"
           >
+            <span
+              v-if="client.deepLink"
+              class="absolute -top-2.5 right-3 text-[10px] font-semibold bg-blue-600 text-white px-2 py-0.5 rounded-full"
+            >
+              1-click install
+            </span>
             <Icon
               :name="client.icon"
               class="w-8 h-8 text-neutral-700"
             />
             <span class="text-sm font-medium text-neutral-700">{{ client.name }}</span>
-          </div>
+          </a>
         </div>
       </div>
     </section>
@@ -395,11 +404,31 @@ const steps = [
   },
 ]
 
+const mcpServerUrl = 'https://api.opnform.com/mcp'
+
+function buildCursorLink() {
+  const config = JSON.stringify({
+    url: mcpServerUrl,
+    headers: { Authorization: 'Bearer YOUR_API_TOKEN' },
+  })
+  return `cursor://anysphere.cursor-deeplink/mcp/install?name=opnform&config=${btoa(config)}`
+}
+
+function buildVscodeLink() {
+  const config = JSON.stringify({
+    name: 'opnform',
+    type: 'streamable_http',
+    url: mcpServerUrl,
+    headers: { Authorization: 'Bearer YOUR_API_TOKEN' },
+  })
+  return `vscode:mcp/install?${encodeURIComponent(config)}`
+}
+
 const clients = [
-  { name: 'Claude Desktop', icon: 'i-simple-icons-anthropic' },
-  { name: 'Cursor', icon: 'i-simple-icons-cursor' },
-  { name: 'Windsurf', icon: 'i-heroicons-globe-alt-20-solid' },
-  { name: 'VS Code', icon: 'i-simple-icons-visualstudiocode' },
-  { name: 'Any MCP Client', icon: 'i-heroicons-puzzle-piece-20-solid' },
+  { name: 'Cursor', icon: 'i-simple-icons-cursor', link: buildCursorLink(), deepLink: true },
+  { name: 'VS Code', icon: 'i-simple-icons-visualstudiocode', link: buildVscodeLink(), deepLink: true },
+  { name: 'Claude Desktop', icon: 'i-simple-icons-anthropic', link: 'https://claude.ai/download' },
+  { name: 'Windsurf', icon: 'i-heroicons-globe-alt-20-solid', link: 'https://docs.windsurf.com/windsurf/cascade/mcp' },
+  { name: 'Any MCP Client', icon: 'i-heroicons-puzzle-piece-20-solid', link: 'https://modelcontextprotocol.io/clients' },
 ]
 </script>
