@@ -67,6 +67,15 @@
             "pages": [
               "embedding/javascript-sdk"
             ]
+          },
+          {
+            "group": "MCP Server",
+            "pages": [
+              "mcp/introduction",
+              "mcp/tools",
+              "mcp/resources",
+              "mcp/guest-mode"
+            ]
           }
         ]
       },

@@ -1,0 +1,180 @@
+---
+title: "Field Types Resource"
+description: "Complete catalog of form field types available through the OpnForm MCP server."
+---
+
+The MCP server exposes a `field-types` resource at `opnform://reference/field-types`. AI agents can read this resource to discover all available field types, their configurable options, and examples before calling `create-form` or `draft-form`.
+
+<Tip>
+Most MCP clients automatically read available resources. If your agent doesn't, you can ask it to "read the field-types resource" to load the catalog.
+</Tip>
+
+## Input fields
+
+### text
+
+Single or multi-line text input.
+
+| Option | Type | Default | Description |
+| ------ | ---- | ------- | ----------- |
+| `multi_lines` | boolean | `false` | Allow multi-line input |
+| `max_char_limit` | integer | `2000` | Maximum characters allowed |
+| `placeholder` | string | — | Placeholder text |
+
+### rich_text
+
+Rich text editor with formatting support.
+
+| Option | Type | Default | Description |
+| ------ | ---- | ------- | ----------- |
+| `max_char_limit` | integer | `2000` | Maximum characters |
+| `placeholder` | string | — | Placeholder text |
+
+### email
+
+Email address input with built-in validation.
+
+| Option | Type | Description |
+| ------ | ---- | ----------- |
+| `placeholder` | string | Placeholder text |
+
+### url
+
+URL input with validation.
+
+| Option | Type | Default | Description |
+| ------ | ---- | ------- | ----------- |
+| `placeholder` | string | `https://example.com` | Placeholder text |
+
+### phone_number
+
+Phone number input.
+
+| Option | Type | Description |
+| ------ | ---- | ----------- |
+| `placeholder` | string | Placeholder text |
+
+### number
+
+Numeric input.
+
+| Option | Type | Description |
+| ------ | ---- | ----------- |
+| `placeholder` | string | Placeholder text |
+
+### date
+
+Date picker. No additional options.
+
+### select
+
+Single-select dropdown.
+
+| Option | Type | Description |
+| ------ | ---- | ----------- |
+| `placeholder` | string | Placeholder text |
+| `select.options` | array | Array of `{name, id}` objects — the choices |
+
+```json Example
+{
+  "type": "select",
+  "name": "Favorite color",
+  "select": {
+    "options": [
+      { "name": "Red", "id": "Red" },
+      { "name": "Blue", "id": "Blue" },
+      { "name": "Green", "id": "Green" }
+    ]
+  }
+}
+```
+
+### multi_select
+
+Select multiple options from a dropdown.
+
+| Option | Type | Description |
+| ------ | ---- | ----------- |
+| `placeholder` | string | Placeholder text |
+| `multi_select.options` | array | Array of `{name, id}` objects |
+
+### checkbox
+
+Yes/No checkbox. No additional options.
+
+### rating
+
+Star rating.
+
+| Option | Type | Default | Description |
+| ------ | ---- | ------- | ----------- |
+| `rating_max_value` | integer | `5` | Maximum rating value |
+
+### scale
+
+Numeric scale (e.g. 1–10).
+
+| Option | Type | Default | Description |
+| ------ | ---- | ------- | ----------- |
+| `scale_min_value` | integer | `1` | Minimum value |
+| `scale_max_value` | integer | `5` | Maximum value |
+| `scale_step_value` | integer | `1` | Step increment |
+
+### slider
+
+Slider input for numeric ranges.
+
+| Option | Type | Default | Description |
+| ------ | ---- | ------- | ----------- |
+| `slider_min_value` | integer | `0` | Minimum value |
+| `slider_max_value` | integer | `50` | Maximum value |
+| `slider_step_value` | integer | `1` | Step increment |
+
+### files
+
+File upload field. No additional options.
+
+### signature
+
+Signature pad. No additional options.
+
+### matrix
+
+Grid/matrix question with rows and columns.
+
+| Option | Type | Description |
+| ------ | ---- | ----------- |
+| `rows` | array | Array of strings (row labels) |
+| `columns` | array | Array of values (column labels) |
+
+---
+
+## Layout blocks
+
+Layout blocks are non-input elements that control form presentation.
+
+| Type | Title | Description |
+| ---- | ----- | ----------- |
+| `nf-text` | Text Block | Static text/content block (not an input) |
+| `nf-page-break` | Page Break | Splits form into multiple pages (classic mode only) |
+| `nf-divider` | Divider | Horizontal divider line (classic mode only) |
+| `nf-image` | Image | Image block (classic mode only) |
+
+---
+
+## Common field properties
+
+Every field (both input and layout) supports these properties:
+
+| Property | Type | Default | Description |
+| -------- | ---- | ------- | ----------- |
+| `name` | string | *required* | Field label shown to form respondents |
+| `type` | string | *required* | One of the types listed above |
+| `required` | boolean | `false` | Whether the field is required |
+| `help` | string | — | Help text shown below the field |
+| `hidden` | boolean | `false` | Hide the field from the form |
+| `placeholder` | string | — | Placeholder text (where applicable) |
+
+<Note>
+Field `id` values are auto-generated as UUIDs when omitted. You can provide your own IDs if you need stable references.
+</Note>

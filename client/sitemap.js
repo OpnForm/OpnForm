@@ -40,6 +40,11 @@ function getCloudMarketingUrls () {
       url: '/self-hosted/license',
       changefreq: 'monthly',
       priority: 0.7
+    },
+    {
+      url: '/mcp',
+      changefreq: 'monthly',
+      priority: 0.8
     }
   ]
 }

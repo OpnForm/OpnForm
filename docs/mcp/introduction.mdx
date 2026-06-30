@@ -1,0 +1,163 @@
+---
+title: "MCP Server"
+description: "Connect AI agents to OpnForm using the Model Context Protocol."
+---
+
+OpnForm exposes an [MCP (Model Context Protocol)](https://modelcontextprotocol.io) server so AI clients like Claude Desktop, Cursor, Windsurf, and VS Code Copilot can create, manage, and query forms programmatically — through natural language.
+
+<CardGroup cols={2}>
+  <Card title="Tools Reference" icon="wrench" href="/mcp/tools">
+    All 10 tools your AI agent can call.
+  </Card>
+  <Card title="Field Types Resource" icon="list" href="/mcp/resources">
+    The complete catalog of form field types.
+  </Card>
+  <Card title="Guest Mode" icon="user-plus" href="/mcp/guest-mode">
+    Draft forms without authentication.
+  </Card>
+  <Card title="API Keys" icon="key" href="/api-reference/api-keys">
+    Create a Personal Access Token for the MCP server.
+  </Card>
+</CardGroup>
+
+## Quick start
+
+<Steps>
+<Step title="Create an API token">
+
+Sign in to OpnForm and go to **Settings → Access Tokens**. Create a new token with at least the `forms-read` and `forms-write` abilities. Copy the token — you won't be able to see it again.
+
+See [API Keys](/api-reference/api-keys) for details.
+</Step>
+
+<Step title="Configure your AI client">
+
+Add the OpnForm MCP server to your client's configuration file.
+
+<Tabs>
+<Tab title="Claude Desktop">
+
+Edit `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows):
+
+```json claude_desktop_config.json
+{
+  "mcpServers": {
+    "opnform": {
+      "url": "https://api.opnform.com/mcp",
+      "headers": {
+        "Authorization": "Bearer YOUR_API_TOKEN"
+      }
+    }
+  }
+}
+```
+</Tab>
+
+<Tab title="Cursor">
+
+Edit `.cursor/mcp.json` in your project root (or global settings):
+
+```json .cursor/mcp.json
+{
+  "mcpServers": {
+    "opnform": {
+      "url": "https://api.opnform.com/mcp",
+      "headers": {
+        "Authorization": "Bearer YOUR_API_TOKEN"
+      }
+    }
+  }
+}
+```
+</Tab>
+
+<Tab title="VS Code / Other">
+
+Most MCP clients accept the same JSON format. Add the server entry to your client's MCP configuration:
+
+```json mcp.json
+{
+  "mcpServers": {
+    "opnform": {
+      "url": "https://api.opnform.com/mcp",
+      "headers": {
+        "Authorization": "Bearer YOUR_API_TOKEN"
+      }
+    }
+  }
+}
+```
+</Tab>
+</Tabs>
+
+<Warning>
+Never commit your API token to version control. Use environment variables or a secret manager to inject the token.
+</Warning>
+</Step>
+
+<Step title="Start building">
+
+Restart your AI client and ask it to interact with OpnForm. For example:
+
+- *"List my OpnForm workspaces"*
+- *"Create a contact form with name, email, and message fields"*
+- *"Show me submissions for my feedback form"*
+
+The agent will call the appropriate MCP tools automatically.
+
+<Check>
+If the agent successfully returns your workspaces, the connection is working.
+</Check>
+</Step>
+</Steps>
+
+## Self-hosted setup
+
+If you self-host OpnForm, the MCP server is available at your API domain:
+
+```json
+{
+  "mcpServers": {
+    "opnform": {
+      "url": "https://your-api-domain.com/mcp",
+      "headers": {
+        "Authorization": "Bearer YOUR_API_TOKEN"
+      }
+    }
+  }
+}
+```
+
+<Note>
+The MCP server requires the `laravel/mcp` package, which is included by default since OpnForm v1.x. No additional setup is needed beyond the standard deployment.
+</Note>
+
+## Endpoints
+
+OpnForm provides two MCP endpoints:
+
+| Endpoint | Auth | Description |
+| -------- | ---- | ----------- |
+| `/mcp` | Bearer token (Sanctum) | Full access — all 10 tools and the field-types resource. |
+| `/mcp/guest` | None | Guest access — `draft-form` tool and field-types resource only. |
+
+## Compatible clients
+
+Any client that implements the [MCP specification](https://modelcontextprotocol.io) can connect to OpnForm. Tested clients include:
+
+- **Claude Desktop** — Anthropic's desktop app
+- **Cursor** — AI-powered code editor
+- **Windsurf** — Codeium's IDE
+- **VS Code** — with MCP extensions
+- **Continue** — open-source AI code assistant
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Tools Reference" icon="wrench" href="/mcp/tools">
+    Explore the full list of available tools, their parameters, and example responses.
+  </Card>
+  <Card title="Guest Mode" icon="user-plus" href="/mcp/guest-mode">
+    Let users draft forms without creating an account first.
+  </Card>
+</CardGroup>
