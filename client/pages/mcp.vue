@@ -78,7 +78,7 @@
             Everything your AI agent needs
           </p>
           <p class="text-neutral-500 text-base leading-7 sm:text-lg sm:leading-8 font-medium mt-4">
-            10 tools and a field-types resource — your agent can build forms end-to-end.
+            9 tools and a field-types resource — your agent can build forms end-to-end.
           </p>
         </div>
 
@@ -194,19 +194,11 @@
               Try without signing up
             </h2>
             <p class="mt-4 text-base sm:text-lg text-neutral-500 leading-relaxed">
-              Use the guest MCP endpoint to draft forms instantly — no API token
-              required. When you're ready, register and save your form with a single
-              tool call.
+              Connect to the same <code class="text-sm bg-neutral-200 px-1.5 py-0.5 rounded">/mcp</code> endpoint
+              without a token. Call <code class="text-sm bg-neutral-200 px-1.5 py-0.5 rounded">create-form</code>
+              without a <code class="text-sm bg-neutral-200 px-1.5 py-0.5 rounded">workspace_id</code> to get a draft JSON.
+              When you're ready, register, add your API token, and save the form.
             </p>
-            <div class="mt-6">
-              <UButton
-                variant="outline"
-                :to="{ name: 'register' }"
-                trailing-icon="i-heroicons-arrow-right-20-solid"
-                label="Create free account"
-                class="rounded-xl"
-              />
-            </div>
           </div>
 
           <div class="flex-1 w-full">
@@ -215,12 +207,12 @@
                 <div class="w-3 h-3 rounded-full bg-red-400/80" />
                 <div class="w-3 h-3 rounded-full bg-yellow-400/80" />
                 <div class="w-3 h-3 rounded-full bg-green-400/80" />
-                <span class="ml-2 text-xs text-neutral-400 font-mono">Guest endpoint</span>
+                <span class="ml-2 text-xs text-neutral-400 font-mono">No token needed</span>
               </div>
               <pre class="px-5 py-4 text-sm leading-relaxed overflow-x-auto"><code class="text-neutral-300 font-mono"><span class="text-neutral-500">{</span>
   <span class="text-blue-400">"mcpServers"</span><span class="text-neutral-500">:</span> <span class="text-neutral-500">{</span>
-    <span class="text-blue-400">"opnform-guest"</span><span class="text-neutral-500">:</span> <span class="text-neutral-500">{</span>
-      <span class="text-blue-400">"url"</span><span class="text-neutral-500">:</span> <span class="text-emerald-400">"https://api.opnform.com/mcp/guest"</span>
+    <span class="text-blue-400">"opnform"</span><span class="text-neutral-500">:</span> <span class="text-neutral-500">{</span>
+      <span class="text-blue-400">"url"</span><span class="text-neutral-500">:</span> <span class="text-emerald-400">"https://api.opnform.com/mcp"</span>
     <span class="text-neutral-500">}</span>
   <span class="text-neutral-500">}</span>
 <span class="text-neutral-500">}</span></code></pre>
@@ -337,10 +329,10 @@ const tools = [
   },
   {
     name: 'Create Form',
-    description: 'Create a new form with fields, visibility settings, and theme in a single call.',
+    description: 'Create and save a form with authentication, or get a draft JSON without it — one tool for both flows.',
     icon: 'i-heroicons-plus-circle-20-solid',
     colorClass: 'bg-emerald-100 text-emerald-600',
-    badge: 'Write',
+    badge: 'Write / Guest',
     badgeColor: 'success',
   },
   {
@@ -382,14 +374,6 @@ const tools = [
     colorClass: 'bg-blue-100 text-blue-600',
     badge: 'Read',
     badgeColor: 'neutral',
-  },
-  {
-    name: 'Draft Form',
-    description: 'Build a form draft without authentication. Perfect for trying before signing up.',
-    icon: 'i-heroicons-sparkles-20-solid',
-    colorClass: 'bg-violet-100 text-violet-600',
-    badge: 'Guest',
-    badgeColor: 'info',
   },
 ]
 

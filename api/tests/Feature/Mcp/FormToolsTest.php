@@ -8,7 +8,6 @@ use App\Mcp\Tools\Forms\DuplicateFormTool;
 use App\Mcp\Tools\Forms\GetFormTool;
 use App\Mcp\Tools\Forms\ListFormsTool;
 use App\Mcp\Tools\Forms\UpdateFormTool;
-use App\Mcp\Tools\Guest\DraftFormTool;
 use App\Mcp\Tools\Workspaces\ListWorkspacesTool;
 
 describe('list-workspaces tool', function () {
@@ -289,9 +288,9 @@ describe('duplicate-form tool', function () {
     });
 });
 
-describe('draft-form tool (guest)', function () {
-    it('returns form data without authentication', function () {
-        OpnFormServer::tool(DraftFormTool::class, [
+describe('create-form tool (draft mode)', function () {
+    it('returns draft form data without authentication', function () {
+        OpnFormServer::tool(CreateFormTool::class, [
             'title' => 'Guest Form',
             'properties' => [
                 ['type' => 'text', 'name' => 'Name'],
@@ -304,18 +303,25 @@ describe('draft-form tool (guest)', function () {
             ->assertSee('next_steps');
     });
 
-    it('generates UUIDs for fields without IDs', function () {
-        OpnFormServer::tool(DraftFormTool::class, [
-            'title' => 'UUID Test',
-            'properties' => [
-                ['type' => 'text', 'name' => 'No ID Field'],
-            ],
-        ])
-            ->assertOk();
+    it('returns draft when workspace_id is omitted even if authenticated', function () {
+        $user = $this->actingAsUser();
+
+        OpnFormServer::actingAs($user)
+            ->tool(CreateFormTool::class, [
+                'title' => 'Draft While Logged In',
+                'properties' => [
+                    ['type' => 'text', 'name' => 'Name'],
+                ],
+            ])
+            ->assertOk()
+            ->assertSee('form_data')
+            ->assertSee('next_steps');
+
+        $this->assertDatabaseMissing('forms', ['title' => 'Draft While Logged In']);
     });
 
-    it('does not persist anything to the database', function () {
-        OpnFormServer::tool(DraftFormTool::class, [
+    it('does not persist anything to the database in draft mode', function () {
+        OpnFormServer::tool(CreateFormTool::class, [
             'title' => 'Not Persisted',
             'properties' => [
                 ['type' => 'text', 'name' => 'Temp'],

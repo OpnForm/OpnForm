@@ -3,10 +3,10 @@ title: "Tools Reference"
 description: "Complete reference for all OpnForm MCP tools — parameters, responses, and usage examples."
 ---
 
-The OpnForm MCP server exposes 10 tools. Read-only tools are annotated so AI clients can call them safely without confirmation prompts.
+The OpnForm MCP server exposes 9 tools. Read-only tools are annotated so AI clients can call them safely without confirmation prompts.
 
 <Note>
-All tools except `draft-form` require authentication via a Bearer token. See [MCP Server](/mcp/introduction) for setup instructions.
+All tools except `create-form` (in draft mode) require authentication via a Bearer token. See [MCP Server](/mcp/introduction) for setup instructions.
 </Note>
 
 ## Workspaces
@@ -113,10 +113,10 @@ The form ID (integer) or slug (string).
 
 ### create-form
 
-Create a new form with fields, visibility settings, and theme in a single call.
+Create a new form. With `workspace_id` and authentication the form is saved and a share URL is returned. Without authentication (or without `workspace_id`) a draft JSON is returned that the agent can save later after the user registers.
 
-<ParamField body="workspace_id" type="integer" required>
-The workspace to create the form in.
+<ParamField body="workspace_id" type="integer">
+The workspace to create the form in. Omit to get a draft instead of persisting. Use `list-workspaces` to find workspace IDs.
 </ParamField>
 
 <ParamField body="title" type="string" required>
@@ -135,8 +135,10 @@ Form visibility: `public`, `draft`, or `closed`.
 The agent can read the `field-types` resource to discover all available field types, their options, and examples before calling `create-form`.
 </Tip>
 
+**Authenticated response** (with `workspace_id`):
+
 <ResponseExample>
-```json Success
+```json Saved
 {
   "id": 43,
   "slug": "feedback-survey",
@@ -145,7 +147,24 @@ The agent can read the `field-types` resource to discover all available field ty
   "visibility": "draft"
 }
 ```
+
+```json Draft (no workspace_id)
+{
+  "form_data": {
+    "title": "Feedback Survey",
+    "visibility": "draft",
+    "properties": [
+      { "id": "a1b2c3d4-...", "type": "rating", "name": "How would you rate us?" }
+    ],
+    "theme": "default"
+  },
+  "register_url": "https://opnform.com/register",
+  "next_steps": "1. Tell the user: ..."
+}
+```
 </ResponseExample>
+
+See the [Authentication section](/mcp/introduction#try-without-an-account) for the complete draft-then-save workflow.
 
 ### update-form
 
@@ -312,45 +331,3 @@ The submission ID.
 ```
 </ResponseExample>
 
----
-
-## Guest
-
-### draft-form
-
-Build a form draft without authentication. Returns validated form JSON that the agent holds in memory — nothing is persisted. Available on both the authenticated and guest MCP endpoints.
-
-**Annotations:** `ReadOnly`
-
-<ParamField body="title" type="string" required>
-The form title.
-</ParamField>
-
-<ParamField body="properties" type="array" required>
-Array of form field objects with at least `type` and `name`.
-</ParamField>
-
-See [Guest Mode](/mcp/guest-mode) for the complete workflow.
-
-<ResponseExample>
-```json Success
-{
-  "form_data": {
-    "title": "Quick Survey",
-    "visibility": "draft",
-    "properties": [
-      {
-        "id": "a1b2c3d4-...",
-        "type": "text",
-        "name": "Your Name",
-        "hidden": false,
-        "required": false
-      }
-    ],
-    "theme": "default"
-  },
-  "register_url": "https://opnform.com/register",
-  "next_steps": "1. Tell the user: ..."
-}
-```
-</ResponseExample>

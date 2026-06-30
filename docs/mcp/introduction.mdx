@@ -7,13 +7,10 @@ OpnForm exposes an [MCP (Model Context Protocol)](https://modelcontextprotocol.i
 
 <CardGroup cols={2}>
   <Card title="Tools Reference" icon="wrench" href="/mcp/tools">
-    All 10 tools your AI agent can call.
+    All 9 tools your AI agent can call.
   </Card>
   <Card title="Field Types Resource" icon="list" href="/mcp/resources">
     The complete catalog of form field types.
-  </Card>
-  <Card title="Guest Mode" icon="user-plus" href="/mcp/guest-mode">
-    Draft forms without authentication.
   </Card>
   <Card title="API Keys" icon="key" href="/api-reference/api-keys">
     Create a Personal Access Token for the MCP server.
@@ -132,14 +129,19 @@ If you self-host OpnForm, the MCP server is available at your API domain:
 The MCP server requires the `laravel/mcp` package, which is included by default since OpnForm v1.x. No additional setup is needed beyond the standard deployment.
 </Note>
 
-## Endpoints
+## Authentication
 
-OpnForm provides two MCP endpoints:
+The MCP server uses a single endpoint: `/mcp`. Authentication is optional — the server accepts requests both with and without a Bearer token.
 
-| Endpoint | Auth | Description |
-| -------- | ---- | ----------- |
-| `/mcp` | Bearer token (Sanctum) | Full access — all 10 tools and the field-types resource. |
-| `/mcp/guest` | None | Guest access — `draft-form` tool and field-types resource only. |
+| With token | Without token |
+| ---------- | ------------- |
+| All 9 tools + field-types resource | `create-form` (draft mode) + field-types resource only |
+
+Without a token, calling `create-form` without a `workspace_id` returns a draft JSON with registration instructions instead of persisting the form. All other tools return an authorization error until a token is provided.
+
+### Try without an account
+
+You can connect to `/mcp` without a token to try form building first. The agent calls `create-form` without a `workspace_id` to get a draft JSON, then once the user registers and provides an API token, the agent calls `create-form` again with the `workspace_id` to save it.
 
 ## Compatible clients
 
@@ -157,7 +159,7 @@ Any client that implements the [MCP specification](https://modelcontextprotocol.
   <Card title="Tools Reference" icon="wrench" href="/mcp/tools">
     Explore the full list of available tools, their parameters, and example responses.
   </Card>
-  <Card title="Guest Mode" icon="user-plus" href="/mcp/guest-mode">
-    Let users draft forms without creating an account first.
+  <Card title="Field Types Resource" icon="list" href="/mcp/resources">
+    Browse the complete catalog of form field types.
   </Card>
 </CardGroup>

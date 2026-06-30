@@ -1,12 +1,10 @@
 <?php
 
-use App\Mcp\Servers\OpnFormGuestServer;
+use App\Http\Middleware\OptionalSanctumAuth;
 use App\Mcp\Servers\OpnFormServer;
 use Laravel\Mcp\Facades\Mcp;
 
-Mcp::web('/mcp/guest', OpnFormGuestServer::class);
-
 Mcp::web('/mcp', OpnFormServer::class)
-    ->middleware('auth:sanctum');
+    ->middleware(OptionalSanctumAuth::class);
 
-Mcp::local('opnform', OpnFormGuestServer::class);
+Mcp::local('opnform', OpnFormServer::class);
