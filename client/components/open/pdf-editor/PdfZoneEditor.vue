@@ -896,12 +896,12 @@ watch(lastAddedZoneId, async (zoneId) => {
   await nextTick()
   const pageEl = pageRefs.value[zone.page]
   if (pageEl) {
-    pageEl.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    pageEl.scrollIntoView({ behavior: 'auto', block: 'start' })
   }
   await nextTick()
   const zoneEl = zoneRefs.value[zoneId]
   if (zoneEl) {
-    zoneEl.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' })
+    zoneEl.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'nearest' })
   }
   pdfStore.clearLastAddedZone()
 })
