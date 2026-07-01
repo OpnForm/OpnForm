@@ -137,11 +137,11 @@ The MCP server uses a single endpoint: `/mcp`. Authentication is optional — th
 | ---------- | ------------- |
 | All 9 tools + field-types resource | `create-form` (draft mode) + field-types resource only |
 
-Without a token, calling `create-form` without a `workspace_id` returns a draft JSON with registration instructions instead of persisting the form. All other tools return an authorization error until a token is provided.
+Calling `create-form` returns a draft JSON instead of persisting the form. With authentication, a `workspace_id` can be provided so the draft is validated and cleaned against workspace capabilities. All other tools return an authorization error until a token is provided.
 
 ### Try without an account
 
-You can connect to `/mcp` without a token to try form building first. The agent calls `create-form` without a `workspace_id` to get a draft JSON, then once the user registers and provides an API token, the agent calls `create-form` again with the `workspace_id` to save it.
+You can connect to `/mcp` without a token to try form building first. The agent calls `create-form` to get a draft JSON, then the user reviews and saves the draft inside OpnForm.
 
 ## Compatible clients
 

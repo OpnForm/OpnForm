@@ -71,8 +71,6 @@ class UpdateFormTool extends Tool
 
             $this->validateProperties($updateData['properties'], $form->workspace);
 
-            $this->applyCommonCleaning($updateData);
-
             $newPropertyIds = collect($updateData['properties'])->pluck('id')->flip()->all();
             $updateData['removed_properties'] = array_merge(
                 $form->removed_properties ?? [],
@@ -82,7 +80,7 @@ class UpdateFormTool extends Tool
             );
         }
 
-        $cleaner = (new FormCleaner())->processData($updateData);
+        $cleaner = (new FormCleaner())->processData($updateData, $form);
         $cleaned = $cleaner->performCleaning($form->workspace)->getData();
 
         foreach (array_keys($updateData) as $key) {
@@ -117,20 +115,6 @@ class UpdateFormTool extends Tool
         );
 
         $validator->validate();
-    }
-
-    private function applyCommonCleaning(array &$data): void
-    {
-        if (empty($data['properties']) || !is_array($data['properties'])) {
-            return;
-        }
-
-        foreach ($data['properties'] as $index => &$property) {
-            if (($property['type'] ?? null) === 'nf-text' && isset($property['content'])) {
-                $property['content'] = Purify::clean($property['content']);
-            }
-        }
-        unset($property);
     }
 
     public function schema(JsonSchema $schema): array

@@ -126,7 +126,7 @@ describe('get-form tool', function () {
 });
 
 describe('create-form tool', function () {
-    it('creates a form with valid data', function () {
+    it('returns a draft with valid data even when authenticated with a workspace', function () {
         $user = $this->actingAsUser();
         $workspace = $this->createUserWorkspace($user);
 
@@ -140,12 +140,13 @@ describe('create-form tool', function () {
                 ],
             ])
             ->assertOk()
-            ->assertSee('MCP Test Form');
+            ->assertSee('MCP Test Form')
+            ->assertSee('form_data')
+            ->assertSee('builder_url');
 
-        $this->assertDatabaseHas('forms', [
+        $this->assertDatabaseMissing('forms', [
             'title' => 'MCP Test Form',
             'workspace_id' => $workspace->id,
-            'creator_id' => $user->id,
         ]);
     });
 
@@ -207,7 +208,7 @@ describe('create-form tool', function () {
             ->assertHasErrors();
     });
 
-    it('respects visibility param when creating a form', function () {
+    it('keeps create-form draft-only even when public visibility is requested', function () {
         $user = $this->actingAsUser();
         $workspace = $this->createUserWorkspace($user);
 
@@ -221,11 +222,12 @@ describe('create-form tool', function () {
                 ],
             ])
             ->assertOk()
-            ->assertSee('public');
+            ->assertSee('form_data')
+            ->assertSee('draft');
 
-        $this->assertDatabaseHas('forms', [
+        $this->assertDatabaseMissing('forms', [
             'title' => 'Public Form',
-            'visibility' => 'public',
+            'workspace_id' => $workspace->id,
         ]);
     });
 });
@@ -309,6 +311,56 @@ describe('update-form tool', function () {
                 ],
             ])
             ->assertHasErrors();
+    });
+
+    it('sanitizes nf-text content during update', function () {
+        $user = $this->actingAsUser();
+        $workspace = $this->createUserWorkspace($user);
+        $form = $this->createForm($user, $workspace);
+
+        OpnFormServer::actingAs($user)
+            ->tool(UpdateFormTool::class, [
+                'form_id' => (string) $form->id,
+                'properties' => [
+                    [
+                        'id' => 'text-block',
+                        'type' => 'nf-text',
+                        'name' => 'Intro',
+                        'content' => '<script>alert("x")</script><p>Safe copy</p>',
+                    ],
+                ],
+            ])
+            ->assertOk();
+
+        $form->refresh();
+        $textBlock = collect($form->properties)->firstWhere('id', 'text-block');
+        expect($textBlock['content'])->not()->toContain('<script>')
+            ->and($textBlock['content'])->toContain('Safe copy');
+    });
+
+    it('preserves nf-code blocks for forms with a custom domain', function () {
+        $user = $this->actingAsUser();
+        $workspace = $this->createUserWorkspace($user);
+        $form = $this->createForm($user, $workspace, [
+            'custom_domain' => 'forms.example.com',
+        ]);
+
+        OpnFormServer::actingAs($user)
+            ->tool(UpdateFormTool::class, [
+                'form_id' => (string) $form->id,
+                'properties' => [
+                    [
+                        'id' => 'code-block',
+                        'type' => 'nf-code',
+                        'name' => 'Custom code',
+                        'content' => '<script>window.ok = true</script>',
+                    ],
+                ],
+            ])
+            ->assertOk();
+
+        $form->refresh();
+        expect(collect($form->properties)->pluck('type')->all())->toContain('nf-code');
     });
 });
 

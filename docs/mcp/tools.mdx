@@ -113,10 +113,10 @@ The form ID (integer) or slug (string).
 
 ### create-form
 
-Create a new form. With `workspace_id` and authentication the form is saved and a share URL is returned. Without authentication (or without `workspace_id`) a draft JSON is returned that the agent can save later after the user registers.
+Create a new form draft. This tool never persists a live form. With authentication, `workspace_id` can be provided so the draft is validated and cleaned against workspace capabilities.
 
 <ParamField body="workspace_id" type="integer">
-The workspace to create the form in. Omit to get a draft instead of persisting. Use `list-workspaces` to find workspace IDs.
+Optional workspace used to validate and clean the draft. Use `list-workspaces` to find workspace IDs.
 </ParamField>
 
 <ParamField body="title" type="string" required>
@@ -135,20 +135,10 @@ Form visibility: `public`, `draft`, or `closed`.
 The agent can read the `field-types` resource to discover all available field types, their options, and examples before calling `create-form`.
 </Tip>
 
-**Authenticated response** (with `workspace_id`):
+**Response:**
 
 <ResponseExample>
-```json Saved
-{
-  "id": 43,
-  "slug": "feedback-survey",
-  "title": "Feedback Survey",
-  "share_url": "https://opnform.com/forms/feedback-survey",
-  "visibility": "draft"
-}
-```
-
-```json Draft (no workspace_id)
+```json Draft
 {
   "form_data": {
     "title": "Feedback Survey",
@@ -164,7 +154,7 @@ The agent can read the `field-types` resource to discover all available field ty
 ```
 </ResponseExample>
 
-See the [Authentication section](/mcp/introduction#try-without-an-account) for the complete draft-then-save workflow.
+See the [Authentication section](/mcp/introduction#try-without-an-account) for the draft workflow.
 
 ### update-form
 
@@ -330,4 +320,3 @@ The submission ID.
 }
 ```
 </ResponseExample>
-

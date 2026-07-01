@@ -205,8 +205,7 @@
             <p class="mt-4 text-base sm:text-lg text-neutral-500 leading-relaxed">
               Connect to the same <code class="text-sm bg-neutral-200 px-1.5 py-0.5 rounded">/mcp</code> endpoint
               without a token. Call <code class="text-sm bg-neutral-200 px-1.5 py-0.5 rounded">create-form</code>
-              without a <code class="text-sm bg-neutral-200 px-1.5 py-0.5 rounded">workspace_id</code> to get a draft JSON.
-              When you're ready, register, add your API token, and save the form.
+              to get a draft JSON. When you're ready, review and save the form inside OpnForm.
             </p>
           </div>
 
@@ -338,10 +337,10 @@ const tools = [
   },
   {
     name: 'Create Form',
-    description: 'Create and save a form with authentication, or get a draft JSON without it — one tool for both flows.',
+    description: 'Create a form draft JSON. With authentication, drafts can be validated against workspace capabilities.',
     icon: 'i-heroicons-plus-circle-20-solid',
     colorClass: 'bg-emerald-100 text-emerald-600',
-    badge: 'Write / Guest',
+    badge: 'Draft / Guest',
     badgeColor: 'success',
   },
   {

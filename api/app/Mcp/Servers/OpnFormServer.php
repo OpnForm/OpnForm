@@ -19,7 +19,7 @@ use Laravel\Mcp\Server\Attributes\Version;
 
 #[Name('OpnForm')]
 #[Version('1.0.0')]
-#[Instructions('OpnForm MCP Server. Manage forms, view submissions, and build no-code forms programmatically. Without a Bearer token only draft-form and field-types are available. With a token, use list-workspaces first to get a workspace_id, then list-forms or create-form.')]
+#[Instructions('OpnForm MCP Server. Manage forms, view submissions, and build no-code forms programmatically. Without a Bearer token only create-form draft mode and field-types are available. With a token, use list-workspaces first for workspace context, create-form for draft generation, and update-form/delete-form/duplicate-form only for existing forms.')]
 class OpnFormServer extends Server
 {
     protected array $tools = [
