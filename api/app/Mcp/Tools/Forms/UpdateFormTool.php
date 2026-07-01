@@ -2,9 +2,13 @@
 
 namespace App\Mcp\Tools\Forms;
 
+use App\Concerns\NormalizesFormProperties;
 use App\Mcp\Concerns\ResolvesForm;
+use App\Rules\FormPropertiesRule;
+use App\Service\Forms\FormCleaner;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -17,6 +21,7 @@ use Laravel\Mcp\Server\Tools\Annotations\IsIdempotent;
 #[IsIdempotent]
 class UpdateFormTool extends Tool
 {
+    use NormalizesFormProperties;
     use ResolvesForm;
 
     private const ALLOWED_FIELDS = [
@@ -57,7 +62,17 @@ class UpdateFormTool extends Tool
             return Response::error('No valid fields provided to update. Provide at least one field like title, visibility, or properties.');
         }
 
+        if (isset($updateData['title']) && is_string($updateData['title'])) {
+            $updateData['title'] = Str::substr(trim($updateData['title']), 0, 255);
+        }
+
         if (isset($updateData['properties'])) {
+            $updateData['properties'] = $this->normalizeProperties($updateData['properties'], backfillIds: true);
+
+            $this->validateProperties($updateData['properties'], $form->workspace);
+
+            $this->applyCommonCleaning($updateData);
+
             $newPropertyIds = collect($updateData['properties'])->pluck('id')->flip()->all();
             $updateData['removed_properties'] = array_merge(
                 $form->removed_properties ?? [],
@@ -67,16 +82,55 @@ class UpdateFormTool extends Tool
             );
         }
 
+        $cleaner = (new FormCleaner())->processData($updateData);
+        $cleaned = $cleaner->performCleaning($form->workspace)->getData();
+
+        foreach (array_keys($updateData) as $key) {
+            if (array_key_exists($key, $cleaned)) {
+                $updateData[$key] = $cleaned[$key];
+            }
+        }
+
         $form->update($updateData);
 
-        return Response::structured([
+        $result = [
             'id' => $form->id,
             'slug' => $form->slug,
             'title' => $form->title,
             'share_url' => $form->share_url,
             'visibility' => $form->visibility,
             'updated_at' => $form->updated_at?->toIso8601String(),
-        ]);
+        ];
+
+        if ($cleaner->hasCleaned()) {
+            $result['cleaning_warnings'] = $cleaner->getPerformedCleanings();
+        }
+
+        return Response::structured($result);
+    }
+
+    private function validateProperties(array $properties, $workspace): void
+    {
+        $validator = Validator::make(
+            ['properties' => $properties],
+            ['properties' => ['required', 'array', new FormPropertiesRule($workspace)]]
+        );
+
+        $validator->validate();
+    }
+
+    private function applyCommonCleaning(array &$data): void
+    {
+        if (empty($data['properties']) || !is_array($data['properties'])) {
+            return;
+        }
+
+        foreach ($data['properties'] as $index => &$property) {
+            if (($property['type'] ?? null) === 'nf-text' && isset($property['content'])) {
+                $property['content'] = Purify::clean($property['content']);
+            }
+        }
+        unset($property);
     }
 
     public function schema(JsonSchema $schema): array

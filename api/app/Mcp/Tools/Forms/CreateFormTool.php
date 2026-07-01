@@ -2,40 +2,24 @@
 
 namespace App\Mcp\Tools\Forms;
 
+use App\Concerns\NormalizesFormProperties;
 use App\Models\Forms\Form;
 use App\Models\Workspace;
+use App\Rules\FormPropertiesRule;
+use App\Service\Forms\FormCleaner;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Validator;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('Create a new form. With workspace_id and authentication the form is saved and a share URL is returned. Without authentication (or without workspace_id) a draft JSON is returned that the agent can save later after the user registers.')]
+#[Description('Create a new form. With authentication and a workspace_id the form is saved and a share URL is returned. Without authentication, returns draft JSON for the agent to hold until the user registers.')]
 class CreateFormTool extends Tool
 {
-    private const ALLOWED_FIELDS = [
-        'title',
-        'visibility',
-        'properties',
-        'theme',
-        'color',
-        'dark_mode',
-        'size',
-        'border_radius',
-        'width',
-        'presentation_style',
-        'language',
-        'submit_button_text',
-        'submitted_text',
-        'redirect_url',
-        're_fillable',
-        'use_captcha',
-        'confetti_on_submission',
-    ];
-
+    use NormalizesFormProperties;
     public function handle(Request $request): ResponseFactory
     {
         $validated = $request->validate([
@@ -45,52 +29,72 @@ class CreateFormTool extends Tool
             'visibility' => 'string|in:public,draft,closed',
         ]);
 
-        $properties = collect($validated['properties'])->map(function ($field) {
-            if (empty($field['id'])) {
-                $field['id'] = Str::uuid()->toString();
-            }
-
-            return $field;
-        })->values()->all();
+        $properties = $this->normalizeProperties($validated['properties'], backfillIds: true);
 
         $user = $request->user();
+        $workspace = null;
 
         if ($user && !empty($validated['workspace_id'])) {
-            return $this->persistForm($request, $user, $validated, $properties);
+            $workspace = Workspace::findOrFail($validated['workspace_id']);
+            Gate::forUser($user)->authorize('ownsWorkspace', $workspace);
+            Gate::forUser($user)->authorize('create', [Form::class, $workspace]);
         }
 
-        return $this->draftForm($validated, $properties);
+        $this->validateProperties($properties, $workspace);
+
+        if ($workspace && $user) {
+            return $this->persistForm($user, $workspace, $validated, $properties);
+        }
+
+        return $this->returnDraftJson($validated, $properties);
     }
 
-    private function persistForm(Request $request, $user, array $validated, array $properties): ResponseFactory
+    private function validateProperties(array $properties, ?Workspace $workspace): void
     {
-        $workspace = Workspace::findOrFail($validated['workspace_id']);
+        $validator = Validator::make(
+            ['properties' => $properties],
+            ['properties' => ['required', 'array', new FormPropertiesRule($workspace)]]
+        );
 
-        Gate::forUser($user)->authorize('ownsWorkspace', $workspace);
-        Gate::forUser($user)->authorize('create', [Form::class, $workspace]);
+        $validator->validate();
+    }
 
-        $formData = collect($request->all())
-            ->only(self::ALLOWED_FIELDS)
-            ->merge([
-                'workspace_id' => $workspace->id,
-                'properties' => $properties,
-                'visibility' => $validated['visibility'] ?? 'draft',
-                'creator_id' => $user->id,
-            ])
-            ->all();
+    private function persistForm($user, Workspace $workspace, array $validated, array $properties): ResponseFactory
+    {
+        $formData = [
+            'title' => $validated['title'],
+            'workspace_id' => $workspace->id,
+            'properties' => $properties,
+            'visibility' => $validated['visibility'] ?? 'draft',
+            'creator_id' => $user->id,
+        ];
+
+        $cleaner = (new FormCleaner())->processData($formData);
+        $formData = $cleaner->performCleaning($workspace)->getData();
+        $formData['workspace_id'] = $workspace->id;
+        $formData['creator_id'] = $user->id;
 
         $form = Form::create($formData);
 
-        return Response::structured([
+        $editorUrl = rtrim(config('app.front_url', config('app.url')), '/') . '/forms/' . $form->slug . '/edit';
+
+        $result = [
             'id' => $form->id,
             'slug' => $form->slug,
             'title' => $form->title,
-            'share_url' => $form->share_url,
             'visibility' => $form->visibility,
-        ]);
+            'editor_url' => $editorUrl,
+            'share_url' => $form->share_url,
+        ];
+
+        if ($cleaner->hasCleaned()) {
+            $result['cleaning_warnings'] = $cleaner->getPerformedCleanings();
+        }
+
+        return Response::structured($result);
     }
 
-    private function draftForm(array $validated, array $properties): ResponseFactory
+    private function returnDraftJson(array $validated, array $properties): ResponseFactory
     {
         $properties = collect($properties)->map(function ($field) {
             if (empty($field['hidden'])) {
@@ -135,7 +139,7 @@ class CreateFormTool extends Tool
     {
         return [
             'workspace_id' => $schema->integer()
-                ->description('The workspace to create the form in. Omit to get a draft instead of persisting. Use list-workspaces to find workspace IDs.'),
+                ->description('The workspace to create the form in. Omit to get a draft JSON instead. Use list-workspaces to find workspace IDs.'),
             'title' => $schema->string()
                 ->description('The form title.')
                 ->required(),

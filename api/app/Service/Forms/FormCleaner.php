@@ -106,6 +106,18 @@ class FormCleaner
     }
 
     /**
+     * Ingest raw form data (e.g. from MCP tools) for cleaning.
+     */
+    public function processData(array $data): FormCleaner
+    {
+        $allowOnSelfHosted = config('app.self_hosted', true) && (bool) config('opnform.custom_code.enable_self_hosted', false);
+        $this->allowCustomCode = $allowOnSelfHosted;
+        $this->data = $this->commonCleaning($data);
+
+        return $this;
+    }
+
+    /**
      * Create form cleaner instance from existing form
      */
     public function processForm(Request $request, Form $form): FormCleaner

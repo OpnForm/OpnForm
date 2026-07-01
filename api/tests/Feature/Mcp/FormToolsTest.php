@@ -191,6 +191,43 @@ describe('create-form tool', function () {
             ])
             ->assertHasErrors();
     });
+
+    it('validates properties through FormPropertiesRule', function () {
+        $user = $this->actingAsUser();
+        $workspace = $this->createUserWorkspace($user);
+
+        OpnFormServer::actingAs($user)
+            ->tool(CreateFormTool::class, [
+                'workspace_id' => $workspace->id,
+                'title' => 'Bad Props Form',
+                'properties' => [
+                    ['name' => 'Missing Type'],
+                ],
+            ])
+            ->assertHasErrors();
+    });
+
+    it('respects visibility param when creating a form', function () {
+        $user = $this->actingAsUser();
+        $workspace = $this->createUserWorkspace($user);
+
+        OpnFormServer::actingAs($user)
+            ->tool(CreateFormTool::class, [
+                'workspace_id' => $workspace->id,
+                'title' => 'Public Form',
+                'visibility' => 'public',
+                'properties' => [
+                    ['type' => 'text', 'name' => 'Name'],
+                ],
+            ])
+            ->assertOk()
+            ->assertSee('public');
+
+        $this->assertDatabaseHas('forms', [
+            'title' => 'Public Form',
+            'visibility' => 'public',
+        ]);
+    });
 });
 
 describe('update-form tool', function () {
@@ -235,6 +272,41 @@ describe('update-form tool', function () {
         OpnFormServer::actingAs($user)
             ->tool(UpdateFormTool::class, [
                 'form_id' => (string) $form->id,
+            ])
+            ->assertHasErrors();
+    });
+
+    it('backfills IDs on new properties during update', function () {
+        $user = $this->actingAsUser();
+        $workspace = $this->createUserWorkspace($user);
+        $form = $this->createForm($user, $workspace);
+
+        OpnFormServer::actingAs($user)
+            ->tool(UpdateFormTool::class, [
+                'form_id' => (string) $form->id,
+                'properties' => [
+                    ['type' => 'text', 'name' => 'New Field Without ID'],
+                ],
+            ])
+            ->assertOk();
+
+        $form->refresh();
+        $firstProperty = $form->properties[0];
+        expect($firstProperty['id'])->not()->toBeEmpty();
+        expect($firstProperty['name'])->toBe('New Field Without ID');
+    });
+
+    it('validates properties through FormPropertiesRule on update', function () {
+        $user = $this->actingAsUser();
+        $workspace = $this->createUserWorkspace($user);
+        $form = $this->createForm($user, $workspace);
+
+        OpnFormServer::actingAs($user)
+            ->tool(UpdateFormTool::class, [
+                'form_id' => (string) $form->id,
+                'properties' => [
+                    ['name' => 'Missing Type Field'],
+                ],
             ])
             ->assertHasErrors();
     });
