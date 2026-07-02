@@ -16,7 +16,7 @@
       </div>
 
       <div class="relative z-2 px-8 py-14 sm:px-12 sm:py-24">
-        <div class="mx-auto grid max-w-266 gap-12 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
+        <div class="mx-auto grid max-w-266 gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
           <div>
             <NuxtLink
               :to="{ name: 'self-hosted-form-builder' }"
@@ -24,9 +24,9 @@
             >
               <UIcon
                 name="i-heroicons-server-stack"
-                class="h-4 w-4 text-blue-600"
+                class="h-4 w-4 text-emerald-600"
               />
-              <span>Cloud or self-hosted</span>
+              <span>Self-hosted deployment</span>
             </NuxtLink>
 
             <h1
@@ -80,119 +80,106 @@
             </div>
           </div>
 
-          <div class="relative">
+          <div class="mx-auto w-full max-w-md lg:max-w-none lg:mx-0">
             <div
-              class="rounded-4xl border border-gray-200 bg-white p-4 shadow-2xl shadow-blue-900/10 sm:p-5"
+              class="rounded-4xl border border-gray-200 bg-white p-3 shadow-2xl shadow-blue-900/10 sm:p-4"
             >
-              <div class="rounded-3xl border border-gray-200 bg-gray-950 p-6 text-white sm:p-7">
-                <div class="flex items-center justify-between">
+              <div class="rounded-3xl border border-gray-200 bg-gray-950 p-4 text-white sm:p-5">
+                <div class="flex items-center justify-between gap-3">
                   <div class="flex items-center gap-2">
                     <span class="h-2.5 w-2.5 rounded-full bg-red-400" />
                     <span class="h-2.5 w-2.5 rounded-full bg-amber-300" />
                     <span class="h-2.5 w-2.5 rounded-full bg-emerald-400" />
                   </div>
-                  <span class="text-sm font-medium text-gray-400">opnform/core</span>
+                  <div class="flex items-center gap-2">
+                    <span class="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] font-medium leading-4 text-gray-300">
+                      AGPLv3
+                    </span>
+                    <span class="text-xs font-medium text-gray-400">opnform/core</span>
+                  </div>
                 </div>
 
-                <div class="mt-7 space-y-4">
+                <div class="mt-5 grid gap-3 sm:grid-cols-2">
                   <div
                     v-for="item in sourceSignals"
                     :key="item.label"
-                    class="rounded-2xl border border-white/10 bg-white/5 p-5"
+                    class="rounded-2xl border border-white/10 bg-white/5 p-3.5"
                   >
-                    <div class="flex items-start gap-4">
+                    <div class="flex items-center gap-3">
                       <span
-                        class="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl"
+                        class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
                         :class="item.iconWrapClass"
                       >
                         <UIcon
                           :name="item.icon"
-                          class="h-6 w-6"
+                          class="h-4.5 w-4.5"
                           :class="item.iconClass"
                         />
                       </span>
-                      <div>
-                        <div class="text-base font-semibold leading-6 text-white">
+                      <div class="min-w-0">
+                        <div class="truncate text-sm font-semibold leading-5 text-white">
                           {{ item.label }}
                         </div>
-                        <div
-                          class="mt-1 max-w-sm text-sm font-medium leading-5 text-gray-400"
-                        >
+                        <div class="text-xs font-medium leading-4 text-gray-400">
                           {{ item.description }}
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
+
+                <div class="mt-4 overflow-hidden rounded-2xl border border-white/10 bg-[#0d1117]">
+                  <div class="flex items-center gap-2 border-b border-white/10 px-3 py-2">
+                    <UIcon name="i-simple-icons-github" class="h-3.5 w-3.5 text-gray-400" />
+                    <span class="text-[11px] font-medium text-gray-400">README.md</span>
+                  </div>
+                  <div class="space-y-1.5 px-3 py-3 font-mono text-[11px] leading-4 text-gray-400">
+                    <p><span class="text-emerald-400">#</span> OpnForm</p>
+                    <p class="text-gray-500">Open-source form builder · unlimited submissions</p>
+                    <p><span class="text-blue-300">git clone</span> github.com/OpnForm/OpnForm</p>
+                  </div>
+                </div>
               </div>
 
-              <div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div class="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
                 <div
                   v-for="metric in heroMetrics"
                   :key="metric.label"
-                  class="rounded-2xl border border-gray-200 bg-gray-50 p-4"
+                  class="rounded-2xl border border-gray-200 bg-gray-50 px-3 py-3 text-center"
                 >
-                  <div class="text-2xl font-semibold leading-8 text-gray-950">
+                  <div class="text-lg font-semibold leading-7 tracking-[-0.6%] text-gray-950 sm:text-xl">
                     {{ metric.value }}
                   </div>
-                  <div class="mt-1 text-sm font-medium leading-5 text-gray-500">
+                  <div class="text-xs font-medium leading-4 text-gray-500">
                     {{ metric.label }}
                   </div>
-                </div>
-              </div>
-
-              <div class="mt-4 overflow-hidden rounded-3xl border border-gray-200 bg-gray-50">
-                <div class="border-b border-gray-200 bg-white px-5 py-4">
-                  <div class="flex items-center gap-3">
-                    <img src="/img/logo.svg" alt="OpnForm" class="h-8 w-8" />
-                    <div>
-                      <div class="text-sm font-semibold leading-5 text-gray-950">
-                        Customer intake form
-                      </div>
-                      <div class="text-xs font-medium leading-4 text-gray-500">
-                        Built in OpnForm
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="p-5">
-                  <img
-                    src="/img/pages/welcome/product-cover-half.png"
-                    alt="OpnForm form builder interface"
-                    class="mx-auto w-full max-w-128 rounded-2xl border border-gray-200 bg-white object-cover shadow-sm"
-                  />
                 </div>
               </div>
             </div>
           </div>
         </div>
-
-        <div class="mx-auto mt-10 max-w-266 sm:mt-12">
-          <PillarTrustedLogos />
-        </div>
       </div>
     </section>
 
-    <section class="px-8 py-14 sm:px-12 sm:py-28 bg-white">
+    <section class="px-8 sm:px-12 bg-white">
       <div class="mx-auto max-w-266">
-        <div class="max-w-2xl">
+        <div class="mx-auto max-w-2xl text-center">
           <p class="text-base font-medium leading-7 tracking-[-1.1%] text-blue-600">
             Why open source
           </p>
           <h2
-            class="mt-4 text-4xl font-semibold tracking-[-1%] text-gray-950 sm:text-5xl sm:leading-14"
+            class="my-4 text-4xl font-semibold tracking-[-1%] text-gray-950 sm:text-5xl sm:leading-14"
           >
             Forms should not become a black box
           </h2>
-          <p class="mt-4 text-base font-normal leading-7 tracking-[-1.1%] text-gray-600">
+          <p class="text-base font-normal leading-7 tracking-[-1.1%] text-gray-600">
             Forms collect customer data, applications, payments, support
             requests, and internal workflows. Open-source software gives teams
             a way to inspect how that layer works before they depend on it.
           </p>
         </div>
 
-        <div class="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <div class="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           <div
             v-for="item in openSourceBenefits"
             :key="item.title"
@@ -223,7 +210,7 @@
       note="Competitor positioning is based on public product pages and existing OpnForm comparison research. Pricing and plan limits can change."
     />
 
-    <section class="px-8 py-14 sm:px-12 sm:py-28 bg-white">
+    <section class="px-8 sm:px-12 bg-white">
       <div class="mx-auto max-w-266">
         <div class="mx-auto max-w-2xl text-center">
           <p class="text-base font-medium leading-7 tracking-[-1.1%] text-blue-600">
@@ -246,12 +233,21 @@
             v-for="option in deploymentOptions"
             :key="option.title"
             class="rounded-3xl border border-gray-200 bg-white p-8 shadow-sm"
+            :class="option.highlight ? 'ring-2 ring-blue-500' : ''"
           >
-            <div
-              class="flex h-14 w-14 items-center justify-center rounded-2xl"
-              :class="option.iconWrapClass"
-            >
-              <UIcon :name="option.icon" class="h-7 w-7" :class="option.iconClass" />
+            <div class="flex items-start justify-between gap-4">
+              <div
+                class="flex h-14 w-14 items-center justify-center rounded-2xl"
+                :class="option.iconWrapClass"
+              >
+                <UIcon :name="option.icon" class="h-7 w-7" :class="option.iconClass" />
+              </div>
+              <span
+                v-if="option.badge"
+                class="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold leading-4 text-blue-700"
+              >
+                {{ option.badge }}
+              </span>
             </div>
             <h3 class="mt-7 text-xl font-semibold leading-7 tracking-[-0.6%] text-gray-950">
               {{ option.title }}
@@ -294,6 +290,24 @@
               comparison pages when you need direct switching guidance for a
               specific tool.
             </p>
+            <div class="mt-8 flex flex-col gap-3 sm:flex-row lg:flex-col xl:flex-row">
+              <UButton
+                :to="opnformConfig.links.github_url"
+                target="_blank"
+                size="lg"
+                label="View on GitHub"
+                trailing-icon="i-simple-icons-github"
+                class="w-fit rounded-[12px] py-2.5 pl-4 pr-3.5 text-base font-medium leading-7 tracking-[-1.1%]"
+              />
+              <UButton
+                :to="{ name: 'pricing' }"
+                size="lg"
+                variant="outline"
+                color="neutral"
+                label="Compare plans"
+                class="w-fit rounded-[12px] px-4 py-2.5 text-base font-medium leading-7 tracking-[-1.1%]"
+              />
+            </div>
           </div>
 
           <div class="grid gap-4 sm:grid-cols-2 lg:col-span-7">
@@ -318,6 +332,39 @@
                 />
               </div>
             </NuxtLink>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="px-8 sm:px-12 bg-white">
+      <div class="mx-auto max-w-266">
+        <div
+          class="grid gap-10 rounded-4xl bg-gray-950 px-8 py-10 shadow-2xl lg:grid-cols-12 lg:items-center lg:px-14 lg:py-14"
+        >
+          <div class="lg:col-span-7">
+            <p class="text-base font-medium leading-7 tracking-[-1.1%] text-blue-400">
+              Self-hosted deployment
+            </p>
+            <h2
+              class="mt-4 text-3xl font-semibold tracking-[-1%] text-white sm:text-5xl sm:leading-14"
+            >
+              Need full data control on your own infrastructure?
+            </h2>
+            <p class="mt-4 max-w-2xl text-base font-normal leading-7 tracking-[-1.1%] text-gray-400">
+              The self-hosted form builder page covers Docker deployment,
+              Enterprise licensing, SSO, audit logs, and the operational
+              checklist for running OpnForm yourself.
+            </p>
+          </div>
+          <div class="lg:col-span-5 lg:text-right">
+            <UButton
+              :to="{ name: 'self-hosted-form-builder' }"
+              size="lg"
+              label="Explore self-hosting"
+              trailing-icon="i-heroicons-arrow-up-right-20-solid"
+              class="w-fit rounded-[12px] py-2.5 pl-4 pr-3.5 text-base font-medium leading-7 tracking-[-1.1%]"
+            />
           </div>
         </div>
       </div>
@@ -379,7 +426,6 @@
 <script setup>
 import FaqSection from "~/components/pages/FaqSection.vue"
 import PillarComparisonTable from "~/components/pages/pillars/PillarComparisonTable.vue"
-import PillarTrustedLogos from "~/components/pages/pillars/PillarTrustedLogos.vue"
 import { useIsAuthenticated } from "~/composables/useAuthFlow"
 import opnformConfig from "~/opnform.config.js"
 
@@ -408,21 +454,28 @@ const sourceSignals = [
     iconWrapClass: "bg-white/10",
     iconClass: "text-white",
     label: "Public repository",
-    description: "Inspect the code before you trust it with form data.",
+    description: "Inspect the code before you trust it.",
   },
   {
     icon: "i-heroicons-scale",
     iconWrapClass: "bg-blue-400/15",
     iconClass: "text-blue-300",
     label: "AGPLv3 core",
-    description: "Open-source foundation with Enterprise features separated.",
+    description: "Open-source with Enterprise separated.",
   },
   {
     icon: "i-heroicons-server-stack",
     iconWrapClass: "bg-emerald-400/15",
     iconClass: "text-emerald-300",
     label: "Self-host ready",
-    description: "Deploy the core product yourself when ownership matters.",
+    description: "Deploy when ownership matters.",
+  },
+  {
+    icon: "i-heroicons-code-bracket-square",
+    iconWrapClass: "bg-violet-400/15",
+    iconClass: "text-violet-300",
+    label: "API and webhooks",
+    description: "Connect forms to your stack.",
   },
 ]
 
@@ -532,6 +585,8 @@ const deploymentOptions = [
     iconWrapClass: "bg-blue-50",
     iconClass: "text-blue-600",
     title: "OpnForm Cloud",
+    badge: "Fastest start",
+    highlight: true,
     description:
       "The fastest way to launch forms with managed hosting, updates, support, and unlimited submissions.",
     features: ["No infrastructure work", "Free plan available", "Managed updates"],

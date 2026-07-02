@@ -16,7 +16,7 @@
       </div>
 
       <div class="relative z-2 px-8 py-14 sm:px-12 sm:py-24">
-        <div class="mx-auto grid max-w-266 gap-12 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
+        <div class="mx-auto grid max-w-266 gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
           <div>
             <NuxtLink
               :to="{ name: 'open-source-form-builder' }"
@@ -81,39 +81,44 @@
             </div>
           </div>
 
-          <div>
+          <div class="mx-auto w-full max-w-md lg:max-w-none lg:mx-0">
             <div
-              class="rounded-4xl border border-gray-200 bg-white p-4 shadow-2xl shadow-emerald-900/10"
+              class="rounded-4xl border border-gray-200 bg-white p-3 shadow-2xl shadow-emerald-900/10 sm:p-4"
             >
-              <div class="rounded-3xl border border-gray-200 bg-gray-950 p-5 text-white">
-                <div class="flex items-center justify-between">
+              <div class="rounded-3xl border border-gray-200 bg-gray-950 p-4 text-white sm:p-5">
+                <div class="flex items-center justify-between gap-3">
                   <div class="flex items-center gap-2">
                     <span class="h-2.5 w-2.5 rounded-full bg-red-400" />
                     <span class="h-2.5 w-2.5 rounded-full bg-amber-300" />
                     <span class="h-2.5 w-2.5 rounded-full bg-emerald-400" />
                   </div>
-                  <span class="text-xs font-medium text-gray-400">deployment plan</span>
+                  <div class="flex items-center gap-2">
+                    <span class="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] font-medium leading-4 text-gray-300">
+                      Docker
+                    </span>
+                    <span class="text-xs font-medium text-gray-400">deployment plan</span>
+                  </div>
                 </div>
 
-                <div class="mt-7 grid gap-4 md:grid-cols-2">
+                <div class="mt-5 grid gap-3 sm:grid-cols-2">
                   <div
                     v-for="node in architectureNodes"
                     :key="node.title"
-                    class="rounded-2xl border border-white/10 bg-white/5 p-4"
+                    class="rounded-2xl border border-white/10 bg-white/5 p-3.5"
                   >
                     <div class="flex items-center gap-3">
                       <span
-                        class="inline-flex h-10 w-10 items-center justify-center rounded-xl"
+                        class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
                         :class="node.iconWrapClass"
                       >
                         <UIcon
                           :name="node.icon"
-                          class="h-5 w-5"
+                          class="h-4.5 w-4.5"
                           :class="node.iconClass"
                         />
                       </span>
-                      <div>
-                        <div class="text-sm font-semibold leading-5 text-white">
+                      <div class="min-w-0">
+                        <div class="truncate text-sm font-semibold leading-5 text-white">
                           {{ node.title }}
                         </div>
                         <div class="text-xs font-medium leading-4 text-gray-400">
@@ -124,37 +129,40 @@
                   </div>
                 </div>
 
-                <div class="mt-5 rounded-2xl border border-white/10 bg-white/5 p-4">
-                  <div class="flex flex-wrap items-center gap-2 text-xs font-medium leading-4 text-gray-300">
-                    <span
-                      v-for="step in deploySteps"
-                      :key="step"
-                      class="rounded-full border border-white/10 bg-white/5 px-3 py-1.5"
-                    >
-                      {{ step }}
-                    </span>
+                <div class="mt-4 overflow-hidden rounded-2xl border border-white/10 bg-[#0d1117]">
+                  <div class="flex items-center gap-2 border-b border-white/10 px-3 py-2">
+                    <UIcon name="i-simple-icons-docker" class="h-3.5 w-3.5 text-gray-400" />
+                    <span class="text-[11px] font-medium text-gray-400">docker-compose.yml</span>
+                  </div>
+                  <div class="space-y-1.5 px-3 py-3 font-mono text-[11px] leading-4 text-gray-400">
+                    <p><span class="text-emerald-400">services:</span></p>
+                    <p class="pl-2"><span class="text-blue-300">opnform:</span> image: opnform/opnform</p>
+                    <p class="text-gray-500">$ docker compose up -d</p>
                   </div>
                 </div>
               </div>
 
-              <div class="mt-4 overflow-hidden rounded-3xl border border-gray-200 bg-gray-50">
-                <img
-                  src="/img/pages/welcome/product-cover-half.png"
-                  alt="OpnForm builder running on a self-hosted deployment"
-                  class="mx-auto w-full max-w-142 object-cover"
-                />
+              <div class="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                <div
+                  v-for="metric in heroMetrics"
+                  :key="metric.label"
+                  class="rounded-2xl border border-gray-200 bg-gray-50 px-3 py-3 text-center"
+                >
+                  <div class="text-lg font-semibold leading-7 tracking-[-0.6%] text-gray-950 sm:text-xl">
+                    {{ metric.value }}
+                  </div>
+                  <div class="text-xs font-medium leading-4 text-gray-500">
+                    {{ metric.label }}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
-
-        <div class="mx-auto mt-10 max-w-266 sm:mt-12">
-          <PillarTrustedLogos />
-        </div>
       </div>
     </section>
 
-    <section class="px-8 py-14 sm:px-12 sm:py-28 bg-white">
+    <section class="px-8 sm:px-12 bg-white">
       <div class="mx-auto max-w-266">
         <div class="mx-auto max-w-2xl text-center">
           <p class="text-base font-medium leading-7 tracking-[-1.1%] text-blue-600">
@@ -203,7 +211,7 @@
       :rows="hostingRows"
     />
 
-    <section class="px-8 py-14 sm:px-12 sm:py-28 bg-white">
+    <section class="px-8 sm:px-12 bg-white">
       <div class="mx-auto max-w-266">
         <div class="grid gap-10 lg:grid-cols-12 lg:items-start">
           <div class="lg:col-span-5">
@@ -329,7 +337,7 @@
       </div>
     </section>
 
-    <section class="px-8 py-14 sm:px-12 sm:py-28 bg-white">
+    <section class="px-8 sm:px-12 bg-white">
       <div class="mx-auto max-w-266">
         <div class="mx-auto max-w-2xl text-center">
           <p class="text-base font-medium leading-7 tracking-[-1.1%] text-blue-600">
@@ -492,7 +500,6 @@
 <script setup>
 import FaqSection from "~/components/pages/FaqSection.vue"
 import PillarComparisonTable from "~/components/pages/pillars/PillarComparisonTable.vue"
-import PillarTrustedLogos from "~/components/pages/pillars/PillarTrustedLogos.vue"
 import opnformConfig from "~/opnform.config.js"
 
 definePageMeta({
@@ -512,44 +519,42 @@ const heroProofs = [
   "GDPR-friendly control",
 ]
 
+const heroMetrics = [
+  { value: "Docker", label: "quick start" },
+  { value: "Free", label: "OSS core" },
+  { value: "SSO", label: "Enterprise" },
+  { value: "100%", label: "data control" },
+]
+
 const architectureNodes = [
   {
     icon: "i-heroicons-cube-transparent",
     iconWrapClass: "bg-blue-400/15",
     iconClass: "text-blue-300",
     title: "Application",
-    description: "Run OpnForm where your team operates apps.",
+    description: "Run OpnForm on your stack.",
   },
   {
     icon: "i-heroicons-circle-stack",
     iconWrapClass: "bg-emerald-400/15",
     iconClass: "text-emerald-300",
     title: "Database",
-    description: "Plan storage, backups, retention, and access.",
+    description: "Own storage, backups, access.",
   },
   {
     icon: "i-heroicons-envelope",
     iconWrapClass: "bg-orange-400/15",
     iconClass: "text-orange-300",
     title: "SMTP",
-    description: "Use your mail provider for notifications.",
+    description: "Use your mail provider.",
   },
   {
     icon: "i-heroicons-lock-closed",
     iconWrapClass: "bg-violet-400/15",
     iconClass: "text-violet-300",
     title: "Identity",
-    description: "Add OIDC or Enterprise SSO when needed.",
+    description: "Add OIDC or Enterprise SSO.",
   },
-]
-
-const deploySteps = [
-  "Docker",
-  "domain + SSL",
-  "environment variables",
-  "database",
-  "file storage",
-  "backups",
 ]
 
 const selfHostedReasons = [
