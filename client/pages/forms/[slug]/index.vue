@@ -46,6 +46,7 @@ import {
   useDarkMode
 } from '~/lib/forms/public-page'
 import { FormMode } from "~/lib/forms/FormModeStrategy.js"
+import { normalizePublicPageAssetUrl } from '~/lib/forms/public-page-meta.js'
 import { formsApi } from '~/api'
 import { customDomainUsed } from '~/lib/utils.js'
 
@@ -54,6 +55,7 @@ const appStore = useAppStore()
 const darkMode = useDarkMode()
 const isIframe = useIsIframe()
 const slug = useRoute().params.slug
+const requestUrl = useRequestURL()
 const { t } = useI18n()
 const { performRedirect } = useSubdomainRedirect()
 
@@ -200,6 +202,10 @@ const pageMeta = computed(() => {
   return {}
 })
 
+const pageFaviconUrl = computed(() => {
+  return normalizePublicPageAssetUrl(pageMeta.value.page_favicon, requestUrl.href)
+})
+
 const getFontUrl = computed(() => {
   if(!form.value || !form.value.font_family) return null
   const family = form.value.font_family.replace(/ /g, '+')
@@ -214,19 +220,19 @@ const headLinks = computed(() => {
         href: getFontUrl.value
     })
   }
-  if (pageMeta.value.page_favicon) {
+  if (pageFaviconUrl.value) {
     links.push({
         rel: 'icon', type: 'image/x-icon',
-        href: pageMeta.value.page_favicon
+        href: pageFaviconUrl.value
     })
     links.push({
         rel: 'apple-touch-icon',
         type: 'image/png',
-        href: pageMeta.value.page_favicon
+        href: pageFaviconUrl.value
     })
     links.push({
       rel: 'shortcut icon',
-      href: pageMeta.value.page_favicon
+      href: pageFaviconUrl.value
     })
   }
   return links
@@ -302,7 +308,7 @@ useHead({
     return titleChunk ? `${titleChunk} - OpnForm` : 'OpnForm'
   },
   link: headLinks.value,
-  meta: pageMeta.value.page_favicon ? [
+  meta: pageFaviconUrl.value ? [
     {
       name: 'mobile-web-app-capable',
       content: 'yes'
