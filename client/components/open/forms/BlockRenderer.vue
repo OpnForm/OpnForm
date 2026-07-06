@@ -317,9 +317,9 @@ const boundProps = computed(() => {
     inputProperties.maxScale = parseFloat(field.scale_max_value) ?? 5
     inputProperties.stepScale = parseFloat(field.scale_step_value) ?? 1
   } else if (field.type === 'slider') {
-    inputProperties.minSlider = parseInt(field.slider_min_value) ?? 0
-    inputProperties.maxSlider = parseInt(field.slider_max_value) ?? 50
-    inputProperties.stepSlider = parseInt(field.slider_step_value) ?? 5
+    inputProperties.minSlider = parseFloat(field.slider_min_value) ?? 0
+    inputProperties.maxSlider = parseFloat(field.slider_max_value) ?? 50
+    inputProperties.stepSlider = parseFloat(field.slider_step_value) ?? 5
   } else if (field.type === 'number' || (field.type === 'phone_number' && field.use_simple_text_input)) {
     inputProperties.pattern = '/d*'
   } else if (field.type === 'phone_number' && !field.use_simple_text_input) {
