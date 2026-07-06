@@ -1,0 +1,94 @@
+---
+title: "Editor Embed Events"
+description: "Listen to postMessage events from the OpnForm form editor when embedded in your CMS or application"
+---
+
+When you embed the OpnForm **form editor** in an iframe (for example inside a headless CMS), the editor sends `postMessage` events to the parent window so you can react to save, delete, and back-navigation actions.
+
+<Note>
+These events are separate from the [JavaScript SDK](/embedding/javascript-sdk) events used for **public form** embeds (`submit`, `pageChange`, etc.).
+</Note>
+
+## Message format
+
+All editor events use this structure:
+
+```javascript
+{
+  type: 'opnform:editor:event',
+  event: 'formSaved' | 'formDeleted' | 'navigateBack',
+  payload: { /* event-specific data */ }
+}
+```
+
+## Events
+
+| Event | When it fires | Payload |
+| ----- | ------------- | ------- |
+| `formSaved` | Editor save succeeds (create or update) | `{ form: { id, slug, title, visibility }, isNew: boolean }` |
+| `formDeleted` | Form is permanently deleted | `{ form: { id, slug, title, visibility } }` |
+| `navigateBack` | Editor navbar back button is clicked | `{ from: { view, route }, to: { view, route } }` |
+
+### View identifiers
+
+The `view` field in `navigateBack` payloads uses stable, human-readable IDs:
+
+| Route name | `view` |
+| ---------- | ------ |
+| `home` | `forms_list` |
+| `forms-create` | `create_form` |
+| `forms-slug-edit` | `edit_form` |
+| `forms-slug-show-submissions` | `submissions` |
+| `forms-slug-show-share` | `share` |
+| `forms-slug-show-integrations` | `integrations` |
+| `forms-slug-show-stats` | `stats` |
+| `forms-slug-show-summary` | `summary` |
+| `forms-slug-show-pdf-templates` | `pdf_templates` |
+| (unknown) | raw route name |
+
+## Parent listener example
+
+```javascript
+window.addEventListener('message', (event) => {
+  // Restrict to your OpnForm origin in production
+  if (event.origin !== 'https://your-opnform-domain.com') return
+
+  const { type, event: action, payload } = event.data || {}
+  if (type !== 'opnform:editor:event') return
+
+  switch (action) {
+    case 'formSaved':
+      console.log('Form saved:', payload.form.slug, payload.isNew ? '(new)' : '(updated)')
+      break
+    case 'formDeleted':
+      console.log('Form deleted:', payload.form.id)
+      break
+    case 'navigateBack':
+      console.log('Navigating back:', payload.from.view, '→', payload.to.view)
+      break
+  }
+})
+```
+
+## Origin targeting
+
+By default, messages are sent to the parent with target origin `*`. For stricter security, pass your CMS origin as a query parameter on the iframe URL:
+
+```
+https://your-opnform-domain.com/forms/my-form/edit?_sdkParentOrigin=https%3A%2F%2Fyour-cms.com
+```
+
+The editor will then post messages only to that origin.
+
+## Embedding the editor
+
+Embed authenticated editor pages directly in an iframe:
+
+```html
+<iframe
+  src="https://your-opnform-domain.com/forms/my-form/edit?_sdkParentOrigin=https%3A%2F%2Fyour-cms.com"
+  style="border:none;width:100%;height:100vh;"
+></iframe>
+```
+
+Your users must be authenticated with OpnForm (session cookie) for editor pages to load.

@@ -168,6 +168,8 @@ const showLogicConfirmationModal = ref(false)
 const validationErrorResponse = ref(null)
 const createdFormSlug = ref(null)
 const logicErrors = ref([])
+const route = useRoute()
+const { emitFormSaved, emitNavigateBack } = useEditorEmbedBridge()
 
 // Sidebar resizing using composable
 const { 
@@ -238,10 +240,13 @@ const activeTab = computed(() => workingFormStore.activeTab)
 
 // Methods
 const goBack = () => {
+  const toRoute = props.isEdit ? 'forms-slug-show-submissions' : 'home'
+  emitNavigateBack(route.name, toRoute)
+
   if (props.isEdit) {
-    useRouter().push({ name: 'forms-slug-show-submissions', params: {slug: form.value.slug} })
+    useRouter().push({ name: toRoute, params: { slug: form.value.slug } })
   } else {
-    useRouter().push({ name: 'home' })
+    useRouter().push({ name: toRoute })
   }
 }
 
@@ -312,6 +317,7 @@ const saveFormEdit = () => {
   form.value.mutate(updateMutation).then((response) => {
     const updatedForm = response.form
     emit("on-save")
+    emitFormSaved(updatedForm, { isNew: false })
 
     // Navigate to share page
     useRouter().push({
@@ -369,6 +375,7 @@ const saveFormCreate = () => {
     const newForm = response.form
     emit("on-save")
     createdFormSlug.value = newForm.slug
+    emitFormSaved(newForm, { isNew: true })
 
     try{
       // Analytics / alerts
