@@ -10,14 +10,22 @@ function addAuthHeader(request, options) {
   }
 }
 
+function getFormPasswordCookieOptions() {
+  const usesHttps = import.meta.client && window.location.protocol === 'https:'
+  return {
+    maxAge: 60 * 60 * 24 * 30,
+    // Secure cookies are rejected on plain HTTP self-hosted instances.
+    sameSite: usesHttps ? 'none' : 'lax',
+    secure: usesHttps,
+  }
+}
+
 function addPasswordToFormRequest(request, options) {
   if (!request || !request.startsWith("/forms/")) return
 
   const slug = request.split("/")[2]
 
-  const passwordCookie = useCookie("password-" + slug, {
-    maxAge: 60 * 60 * 24 * 30,
-  }) // 30 days
+  const passwordCookie = useCookie("password-" + slug, getFormPasswordCookieOptions())
   if (slug !== undefined && slug !== "" && passwordCookie.value !== undefined) {
     options.headers["form-password"] = passwordCookie.value
   }
