@@ -92,7 +92,8 @@ class PdfRichTextRenderer
                     continue;
                 }
 
-                $tokenWidth = $pdf->GetStringWidth($token);
+                $encodedToken = $this->encodeTextForFpdf($token);
+                $tokenWidth = $pdf->GetStringWidth($encodedToken);
                 if ($currentLineX > $x && $currentLineX + $tokenWidth > $x + $width) {
                     if (!$this->moveToNextLine($pdf, $lineHeight, $x, $currentLineX, $zoneBottom)) {
                         return;
@@ -107,10 +108,21 @@ class PdfRichTextRenderer
                 }
 
                 $pdf->SetX($currentLineX);
-                $pdf->Cell($tokenWidth, $lineHeight, $token, 0, 0, '', false);
+                $pdf->Cell($tokenWidth, $lineHeight, $encodedToken, 0, 0, '', false);
                 $currentLineX += $tokenWidth;
             }
         }
+    }
+
+    private function encodeTextForFpdf(string $text): string
+    {
+        if (function_exists('mb_convert_encoding')) {
+            return mb_convert_encoding($text, 'Windows-1252', 'UTF-8');
+        }
+
+        $encoded = iconv('UTF-8', 'Windows-1252//TRANSLIT', $text);
+
+        return $encoded === false ? '' : $encoded;
     }
 
     private function moveToNextLine(Fpdi $pdf, float $lineHeight, float $x, float &$currentLineX, float $zoneBottom): bool
