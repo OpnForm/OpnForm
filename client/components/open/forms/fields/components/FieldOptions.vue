@@ -199,7 +199,8 @@
       <text-input
         name="slider_step_value"
         native-type="number"
-        :min="1"
+        :min="0.01"
+        step="any"
         class="mt-4"
         :form="field"
         required
