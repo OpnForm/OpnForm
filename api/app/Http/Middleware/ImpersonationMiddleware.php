@@ -49,6 +49,7 @@ class ImpersonationMiddleware
         'open.forms.pdf-templates.download',
         'open.forms.pdf-templates.submission.signed-url',
         'open.forms.pdf-templates.preview.signed-url',
+        'open.forms.pdf-templates.preview-signed',
 
         // Workspaces
         'open.workspaces.index',
