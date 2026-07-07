@@ -65,7 +65,8 @@
           {
             "group": "Embedding",
             "pages": [
-              "embedding/javascript-sdk"
+              "embedding/javascript-sdk",
+              "embedding/editor-embed"
             ]
           }
         ]
