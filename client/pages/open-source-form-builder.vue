@@ -39,8 +39,9 @@
               class="mt-5 text-lg font-normal leading-7 tracking-[-1.5%] text-gray-600 sm:text-xl sm:leading-8"
             >
               Build forms, surveys, and workflows on an AGPLv3 form builder you
-              can inspect, extend, and self-host. Use OpnForm Cloud for speed,
-              or your own infrastructure when you need full ownership.
+              can inspect, extend, and self-host. Use OpnForm as a free online
+              form builder in the cloud, or run it on your own infrastructure
+              when you need full ownership.
             </p>
 
             <div class="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -436,7 +437,7 @@ definePageMeta({
 useOpnSeoMeta({
   title: "Open Source Form Builder",
   description:
-    "Build forms with an open-source form builder. OpnForm gives unlimited submissions, cloud or self-hosted deployment, API, webhooks, and GDPR-friendly hosting.",
+    "Build forms with an open-source online form builder. OpnForm gives unlimited submissions, cloud or self-hosted deployment, API, webhooks, and GDPR-friendly hosting.",
 })
 
 const { isAuthenticated: authenticated } = useIsAuthenticated()
@@ -499,7 +500,7 @@ const openSourceBenefits = [
     iconClass: "text-emerald-600",
     title: "No response ceiling",
     description:
-      "Collect unlimited submissions without upgrading every time a form performs well.",
+      "Use OpnForm as a free form builder without upgrading every time a form performs well.",
   },
   {
     icon: "i-heroicons-lock-closed",
@@ -616,6 +617,12 @@ const comparisonLinks = [
     to: { name: "opnform-vs-jotform" },
   },
   {
+    label: "Open-source Google Forms alternative",
+    description:
+      "Move beyond basic forms with unlimited submissions, stronger workflows, and optional self-hosting.",
+    to: { name: "opnform-vs-googleforms" },
+  },
+  {
     label: "Open-source Tally alternative",
     description:
       "Evaluate Tally's free form experience against OpnForm's open infrastructure.",
@@ -646,6 +653,11 @@ const openSourceFaqs = [
       "Yes. OpnForm can replace Typeform for many form, survey, lead capture, registration, and workflow use cases, especially when unlimited submissions, API access, and deployment control matter.",
   },
   {
+    question: "Is OpnForm a Google Forms alternative?",
+    answer:
+      "Yes. OpnForm can replace Google Forms when you need a more flexible online form builder with unlimited submissions, custom workflows, API access, webhooks, and the option to self-host.",
+  },
+  {
     question: "What is the difference between open source and self-hosted?",
     answer:
       "Open source means the core product code is publicly available to inspect and modify. Self-hosted means you run the application on your own infrastructure. OpnForm supports both, but you can also use the managed cloud product.",
@@ -674,7 +686,7 @@ useJsonLd("open-source-form-builder-schema", buildSchemaGraph([
   buildWebPageSchema({
     name: "Open Source Form Builder",
     description:
-      "Build forms with an open-source form builder. OpnForm gives unlimited submissions, cloud or self-hosted deployment, API, webhooks, and GDPR-friendly hosting.",
+      "Build forms with an open-source online form builder. OpnForm gives unlimited submissions, cloud or self-hosted deployment, API, webhooks, and GDPR-friendly hosting.",
     path: "/open-source-form-builder",
   }),
   buildBreadcrumbSchema([

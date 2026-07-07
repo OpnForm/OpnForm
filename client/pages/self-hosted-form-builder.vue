@@ -39,9 +39,9 @@
               class="mt-5 text-lg font-normal leading-7 tracking-[-1.5%] text-gray-600 sm:text-xl sm:leading-8"
             >
               Deploy OpnForm on your own infrastructure when forms need to live
-              inside your security, procurement, or data residency model. Start
-              with the free core product, then add Enterprise controls when the
-              rollout grows.
+              inside your security, procurement, or data residency model. Use a
+              secure form builder your team can inspect, operate, and upgrade
+              with Enterprise controls when the rollout grows.
             </p>
 
             <div class="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -216,12 +216,12 @@
         <div class="grid gap-10 lg:grid-cols-12 lg:items-start">
           <div class="lg:col-span-5">
             <p class="text-base font-medium leading-7 tracking-[-1.1%] text-blue-600">
-              Security, identity, and automation
+              Secure form builder controls
             </p>
             <h2
               class="mt-4 text-4xl font-semibold tracking-[-1%] text-gray-950 sm:text-5xl sm:leading-14"
             >
-              Self-hosted forms should still connect to the rest of your stack
+              Secure self-hosted forms should still connect to your stack
             </h2>
             <p class="mt-4 text-base font-normal leading-7 tracking-[-1.1%] text-gray-600">
               Teams usually choose self-hosting for data control, but the
@@ -509,7 +509,7 @@ definePageMeta({
 useOpnSeoMeta({
   title: "Self-Hosted Form Builder",
   description:
-    "Deploy an open-source self-hosted form builder with API access, webhooks, SSO, audit logs, GDPR-friendly data control, unlimited submissions, and Enterprise support.",
+    "Deploy a secure self-hosted form builder with API access, webhooks, SSO, audit logs, GDPR-friendly data control, unlimited submissions, and Enterprise support.",
 })
 
 const heroProofs = [
@@ -679,7 +679,7 @@ const selfHostedCapabilities = [
   {
     icon: "i-heroicons-shield-check",
     iconClass: "text-orange-600",
-    title: "GDPR and data security",
+    title: "Secure forms and GDPR",
     description:
       "Choose where data is stored, who can access it, how backups work, and how retention fits your legal and security policies.",
   },
@@ -800,6 +800,11 @@ const selfHostedFaqs = [
       "Community deployments include OIDC SSO within the 2-user limit. Enterprise is the better fit when you need broader identity controls, more users, roles, permissions, and audit visibility.",
   },
   {
+    question: "Is OpnForm a secure form builder for sensitive data?",
+    answer:
+      "OpnForm is built for teams that need secure forms and clearer data control. Self-hosting lets your team choose the infrastructure, network rules, backups, access controls, and retention policies used for sensitive submissions.",
+  },
+  {
     question: "Is there a Docker deployment?",
     answer:
       "Yes. OpnForm provides Docker deployment documentation covering quick start, architecture, images, and environment variables for self-hosted installs.",
@@ -823,7 +828,7 @@ useJsonLd("self-hosted-form-builder-schema", buildSchemaGraph([
   buildWebPageSchema({
     name: "Self-Hosted Form Builder",
     description:
-      "Deploy an open-source self-hosted form builder with API access, webhooks, SSO, audit logs, GDPR-friendly data control, unlimited submissions, and Enterprise support.",
+      "Deploy a secure self-hosted form builder with API access, webhooks, SSO, audit logs, GDPR-friendly data control, unlimited submissions, and Enterprise support.",
     path: "/self-hosted-form-builder",
   }),
   buildBreadcrumbSchema([
