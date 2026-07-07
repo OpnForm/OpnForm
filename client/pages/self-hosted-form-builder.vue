@@ -11,7 +11,7 @@
           alt=""
         />
         <div
-          class="absolute inset-0 bg-linear-to-b from-white from-30% via-emerald-50 via-62% to-white to-88%"
+          class="absolute inset-0 bg-linear-to-b from-white from-30% via-blue-50 via-62% to-white to-88%"
         />
       </div>
 
@@ -83,7 +83,7 @@
 
           <div class="mx-auto w-full max-w-md lg:max-w-none lg:mx-0">
             <div
-              class="rounded-4xl border border-gray-200 bg-white p-3 shadow-2xl shadow-emerald-900/10 sm:p-4"
+              class="rounded-4xl border border-gray-200 bg-white p-3 shadow-2xl shadow-blue-900/10 sm:p-4"
             >
               <div class="rounded-3xl border border-gray-200 bg-gray-950 p-4 text-white sm:p-5">
                 <div class="flex items-center justify-between gap-3">
