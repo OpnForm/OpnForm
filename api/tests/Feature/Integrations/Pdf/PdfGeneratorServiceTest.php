@@ -439,6 +439,46 @@ describe('PdfContentRenderer scalar values', function () {
         expect($starCell['color'])->toBe([239, 68, 68]);
         expect($starCell['style'])->toContain('B');
     });
+
+    it('encodes rich text cells as Windows-1252 for FPDF core fonts', function () {
+        $renderer = new PdfRichTextRenderer();
+        $pdf = new class () extends Fpdi {
+            public array $cells = [];
+            public array $widthTexts = [];
+
+            public function GetStringWidth($s)
+            {
+                $this->widthTexts[] = $s;
+
+                return parent::GetStringWidth($s);
+            }
+
+            public function Cell($w, $h = 0, $txt = '', $border = 0, $ln = 0, $align = '', $fill = false, $link = '')
+            {
+                $this->cells[] = $txt;
+
+                parent::Cell($w, $h, $txt, $border, $ln, $align, $fill, $link);
+            }
+        };
+        $pdf->AddPage();
+
+        $renderer->render(
+            $pdf,
+            '<p>Délivrée&nbsp;été</p>',
+            10,
+            10,
+            80,
+            8,
+            ['font_size' => 10, 'font_color' => '#374151'],
+            210
+        );
+
+        $cellText = implode('', $pdf->cells);
+
+        expect(bin2hex($cellText))->toBe('44e96c697672e965a0e974e9');
+        expect(mb_convert_encoding($cellText, 'UTF-8', 'Windows-1252'))->toBe("Délivrée\u{00A0}été");
+        expect($pdf->widthTexts)->toBe($pdf->cells);
+    });
 });
 
 /**

@@ -93,13 +93,14 @@ export default {
     },
     sliderLabelsList() {
       const midPoint = (this.maxSlider - this.minSlider) / 2 + this.minSlider
+      const formattedMid = Number.isInteger(midPoint) ? midPoint : parseFloat(midPoint.toFixed(2))
       const labels = [
         {
           label: `${this.minSlider}`,
           style: "flex items-center justify-start",
         },
         {
-          label: Math.floor(midPoint),
+          label: formattedMid,
           style: "flex items-center justify-center",
         },
         {
