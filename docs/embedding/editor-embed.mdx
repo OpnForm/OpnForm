@@ -5,6 +5,10 @@ description: "Listen to postMessage events from the OpnForm form editor when emb
 
 When you embed the OpnForm **form editor** in an iframe (for example inside a headless CMS), the editor sends `postMessage` events to the parent window so you can react to save, delete, and back-navigation actions.
 
+<Warning>
+Editor embedding is available only to approved OpnForm partners with a signed agreement. If OpnForm has not enabled this option for your organization, embedding the editor on your site will not work. To discuss partner access, contact [julien@opnform.com](mailto:julien@opnform.com).
+</Warning>
+
 <Note>
 These events are separate from the [JavaScript SDK](/embedding/javascript-sdk) events used for **public form** embeds (`submit`, `pageChange`, etc.).
 </Note>
