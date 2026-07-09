@@ -457,6 +457,7 @@ Route::prefix('forms')->name('forms.')->group(function () {
     Route::post('ai/generate', [\App\Http\Controllers\Forms\AiFormController::class, 'generateForm'])->name('ai.generate');
     Route::get('ai/{aiFormCompletion}', [\App\Http\Controllers\Forms\AiFormController::class, 'show'])->name('ai.show');
     Route::post('ai/generate-fields', [\App\Http\Controllers\Forms\AiFormController::class, 'generateFields'])->name('ai.generate-fields');
+    Route::post('ai/generate-formula', [\App\Http\Controllers\Forms\AiFormController::class, 'generateFormula'])->name('ai.generate-formula');
 });
 
 /**
