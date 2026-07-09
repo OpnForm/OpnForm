@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Forms;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\AiGenerateFieldsRequest;
 use App\Http\Requests\AiGenerateFormRequest;
+use App\Http\Requests\AiGenerateFormulaRequest;
 use App\Models\Forms\AI\AiFormCompletion;
 
 class AiFormController extends Controller
@@ -46,6 +47,21 @@ class AiFormController extends Controller
                 'form_prompt' => $request->input('fields_prompt'),
                 'context' => $request->input('current_form_structure'),
                 'generation_params' => $request->input('generation_params', []),
+                'ip' => $request->ip(),
+            ])->id,
+        ]);
+    }
+
+    public function generateFormula(AiGenerateFormulaRequest $request)
+    {
+        $this->middleware('throttle:4,1');
+
+        return $this->success([
+            'message' => 'Generating your formula, please wait...',
+            'ai_form_completion_id' => AiFormCompletion::create([
+                'type' => AiFormCompletion::TYPE_FORMULA,
+                'form_prompt' => $request->input('formula_prompt'),
+                'context' => $request->input('context', []),
                 'ip' => $request->ip(),
             ])->id,
         ]);

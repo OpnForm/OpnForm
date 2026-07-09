@@ -36,15 +36,22 @@
           <label class="block text-sm font-medium text-gray-700">
             Formula <span class="text-red-500">*</span>
           </label>
-          <UButton
-            size="xs"
-            color="neutral"
-            variant="ghost"
-            icon="i-heroicons-question-mark-circle"
-            @click="$emit('show-reference')"
-          >
-            Function Reference
-          </UButton>
+          <div class="flex items-center gap-1">
+            <AiFormulaGenerator
+              :form="form"
+              :other-variables="otherVariables"
+              @generated="$emit('update:formula', $event)"
+            />
+            <UButton
+              size="xs"
+              color="neutral"
+              variant="ghost"
+              icon="i-heroicons-question-mark-circle"
+              @click="$emit('show-reference')"
+            >
+              Function Reference
+            </UButton>
+          </div>
         </div>
         
         <FormulaEditor
@@ -90,6 +97,7 @@
 
 <script setup>
 import FormulaEditor from './FormulaEditor.vue'
+import AiFormulaGenerator from './AiFormulaGenerator.vue'
 
 defineProps({
   localVariable: {
