@@ -32,7 +32,7 @@ return new class () extends Migration {
             Schema::table('ai_form_completions', function (Blueprint $table) {
                 $table->enum('type', ['form', 'fields'])->default('form')->change();
             });
-        } else {
+        } elseif ($driver === 'pgsql') {
             DB::statement('ALTER TABLE ai_form_completions DROP CONSTRAINT ai_form_completions_type_check');
             DB::statement("ALTER TABLE ai_form_completions ADD CONSTRAINT ai_form_completions_type_check CHECK (type::text = ANY (ARRAY['form'::text, 'fields'::text]))");
         }
