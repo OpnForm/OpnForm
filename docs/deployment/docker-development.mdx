@@ -66,6 +66,32 @@ After starting the development environment, OpnForm will automatically redirect 
 
 The development setup is intentionally simplified compared to our [Docker Deployment](/deployment/docker) production setup, with a focus on developer experience and faster iteration.
 
+## Codex worktrees
+
+When you create an OpnForm worktree in Codex, Codex uses the repository environment in `.codex/environments` to prepare an isolated local stack automatically. This workflow does not use the shared development containers from `docker-compose.dev.yml`.
+
+The worktree receives its own PostgreSQL Docker volume, API port, and Nuxt port. Laravel and Nuxt run from the current checkout, so the browser always reflects that worktree's files.
+
+Use the Codex actions when available:
+
+- **Start app** starts the database, API, and Nuxt server.
+- **Reset DB** runs migrations and `Database\\Seeders\\E2ETestSeeder` only for the current worktree.
+- **Stop app** stops Laravel and Nuxt while preserving the local database for a fast restart.
+- **Run E2E** resets the worktree database and runs Playwright against its local URLs.
+
+The scripts are also available from the repository root:
+
+```bash
+./scripts/codex-worktree-setup.sh
+./scripts/codex-worktree-up.sh
+```
+
+The startup output contains the exact UI URL. Sign in with `e2e@example.test` and `Abcd@1234`.
+
+<Warning>
+Do not run `docker compose -f docker-compose.dev.yml up` for concurrent Codex worktrees. That stack has shared container names and fixed host ports. Use the Codex worktree actions instead.
+</Warning>
+
 ### Key Simplifications
 
 -   **No .env Files**: All configuration embedded in docker-compose.dev.yml - no environment file generation needed
