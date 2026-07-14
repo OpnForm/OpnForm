@@ -47,6 +47,8 @@ describe('generateKeyForSession', function () {
         expect($key->status)->toBe('active');
         expect($key->plan)->toBe('self_hosted');
         expect($key->features)->toHaveKey('sso');
+        expect($key->features)->toHaveKey('custom_code');
+        expect($key->features['custom_code'])->toBeTrue();
         expect(LicenseCheckoutSession::where('stripe_session_id', 'cs_test_session')->value('license_key_id'))->toBe($key->id);
     });
 
