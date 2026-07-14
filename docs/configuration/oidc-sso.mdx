@@ -35,6 +35,34 @@ Before setting up OIDC SSO, ensure you have:
 3. Admin access to the workspace where you want to configure SSO
 4. The issuer URL from your IdP (typically found in the `.well-known/openid-configuration` endpoint)
 
+### Self-hosted instance setup
+
+Before creating an OIDC connection, make sure that OpnForm is configured with
+its real public URL. This is a deployment prerequisite: it determines the
+callback URL shown in the OIDC connection form.
+
+For the standard Docker deployment where OpnForm is available at
+`https://forms.example.com`, the person who manages the deployment must set:
+
+| File | Variables |
+| --- | --- |
+| `api/.env` | `APP_URL=https://forms.example.com`<br />`FRONT_URL=https://forms.example.com` |
+| `client/.env` | `NUXT_PUBLIC_APP_URL=https://forms.example.com`<br />`NUXT_PUBLIC_API_BASE=https://forms.example.com/api` |
+
+<Warning>
+    Do not configure the callback URI at your IdP if the value displayed in
+    OpnForm contains `localhost`. Ask the person who manages the deployment to
+    set the public instance URL, then recreate the containers before continuing.
+</Warning>
+
+<Note>
+    If deployment and OIDC configuration are handled by different people, share
+    this checklist with the person who manages the instance. See [Public
+    instance URL](./environment-variables#public-instance-url-self-hosted) for
+    the full reference and [Docker Deployment](../deployment/docker#configure-your-public-instance-url)
+    for the Docker steps.
+</Note>
+
 <Note>
     On self-hosted Community instances, OIDC can provision users until the
     instance reaches the free 2-user limit. Existing linked users can continue
@@ -191,8 +219,9 @@ You can edit an existing OIDC connection without deleting it.
 - Leave **Client Secret** empty to retain the current secret. Enter a value only
   when rotating or replacing it.
 - After changing the public URL of a self-hosted instance, update both the
-  backend `APP_URL` and `FRONT_URL`, plus the frontend `NUXT_PUBLIC_APP_URL`.
-  Recreate the relevant containers so the new environment values are loaded.
+  backend `APP_URL` and `FRONT_URL`, plus the frontend `NUXT_PUBLIC_APP_URL`
+  and `NUXT_PUBLIC_API_BASE`. Recreate the relevant containers so the new
+  environment values are loaded.
 - Edit the connection, click **Use current app URL** below its redirect URI,
   then save. Copy the refreshed URL into your IdP's allowed redirect URIs.
 

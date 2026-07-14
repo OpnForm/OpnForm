@@ -49,6 +49,11 @@
 import { oidcApi } from "~/api"
 import { redirectToOidcProvider } from "~/lib/oidc/redirect"
 import {
+  getOidcRetryAfterSeconds,
+  isOidcRateLimitedError,
+  oidcRateLimitMessage,
+} from "~/lib/oidc/rate-limit"
+import {
   canAutomaticallyRetryOidcSignIn,
   clearOidcAutomaticRetry,
   consumeOidcStateVerifier,
@@ -78,14 +83,14 @@ const retryOidcSignIn = (slug) => {
   return oidcApi.redirect(slug)
     .then((response) => {
       if (!response.redirect_url) {
-        return false
+        return { started: false }
       }
 
       storeOidcStateVerifier(slug, response.state, response.state_verifier)
       redirectToOidcProvider(response.redirect_url)
-      return true
+      return { started: true }
     })
-    .catch(() => false)
+    .catch((error) => ({ started: false, error }))
 }
 
 const handleCallback = async () => {
@@ -159,14 +164,18 @@ const handleCallback = async () => {
     if (errorResponse.error === 'oidc_account_link_required' && errorResponse.link_token) {
       error.value = 'An account with this email already exists. Please link your existing account to continue.'
       linkToken.value = errorResponse.link_token
+    } else if (isOidcRateLimitedError(err)) {
+      error.value = oidcRateLimitMessage(getOidcRetryAfterSeconds(err))
     } else if (authorizationCodeWasAlreadyUsed(providerError)) {
       if (canAutomaticallyRetryOidcSignIn(slug)) {
         return retryOidcSignIn(slug)
-          .then((retryStarted) => {
-            if (retryStarted) return
+          .then(({ started, error: retryError }) => {
+            if (started) return
 
             isRetrying.value = false
-            error.value = 'We could not reconnect automatically. Return to sign in to try again, or contact your administrator if the problem continues.'
+            error.value = isOidcRateLimitedError(retryError)
+              ? oidcRateLimitMessage(getOidcRetryAfterSeconds(retryError))
+              : 'We could not reconnect automatically. Return to sign in to try again, or contact your administrator if the problem continues.'
             loading.value = false
           })
       }
