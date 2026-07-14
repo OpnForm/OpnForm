@@ -94,6 +94,7 @@ class GenerateFormFieldsPrompt extends Prompt
                         ['$ref' => '#/definitions/nfDividerProperty'],
                         ['$ref' => '#/definitions/nfImageProperty'],
                         ['$ref' => '#/definitions/nfVideoProperty'],
+                        ['$ref' => '#/definitions/nfAudioProperty'],
                         ['$ref' => '#/definitions/nfCodeProperty']
                     ]
                 ]
@@ -175,6 +176,7 @@ class GenerateFormFieldsPrompt extends Prompt
             'nf-divider' => 'nf-divider: Visual divider (not an input field)',
             'nf-image' => 'nf-image: Image element',
             'nf-video' => 'nf-video: Video element',
+            'nf-audio' => 'nf-audio: Audio element',
             'nf-code' => 'nf-code: Code block',
         ];
 

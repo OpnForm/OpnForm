@@ -20,9 +20,14 @@
         />
       </div>
 
-      <div v-else-if="descriptor.kind === 'audio'">
-        <audio :src="descriptor.src" class="w-full" controls />
-      </div>
+      <NativeAudioPlayer
+        v-else-if="descriptor.kind === 'audio'"
+        :src="descriptor.src"
+        :theme="theme"
+        :size="size"
+        :border-radius="borderRadius"
+        :ui="ui"
+      />
 
       <div v-else-if="descriptor.kind === 'image'" :class="['inline-block', 'max-w-full']">
         <img :src="descriptor.src" :alt="descriptor.title || ''" :class="[roundedClass, 'max-w-full']" />
@@ -43,11 +48,16 @@
 
 <script setup>
 import { resolveEmbed } from 'embedkit'
+import NativeAudioPlayer from './NativeAudioPlayer.vue'
 
 const props = defineProps({
   src: { type: String, required: true },
   isDark: { type: Boolean, default: false },
-  preferLang: { type: String, default: 'en' }
+  preferLang: { type: String, default: 'en' },
+  theme: { type: String, default: null },
+  size: { type: String, default: null },
+  borderRadius: { type: String, default: null },
+  ui: { type: Object, default: () => ({}) },
 })
 
 const result = computed(() => {

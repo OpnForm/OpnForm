@@ -39,6 +39,7 @@ const heavyFormComponentsRegistry = new Map([
   ['SignatureInput', () => import('~/components/forms/heavy/SignatureInput.vue')],
   ['FileInput', () => import('~/components/forms/heavy/FileInput.vue')],
   ['ImageInput', () => import('~/components/forms/heavy/ImageInput.vue')],
+  ['AudioInput', () => import('~/components/forms/heavy/AudioInput.vue')],
   ['LogicConfirmationModal', () => import('~/components/forms/heavy/LogicConfirmationModal.vue')],
   ['MatrixInput', () => import('~/components/forms/heavy/MatrixInput.vue')],
   ['PhoneInput', () => import('~/components/forms/heavy/PhoneInput.vue')],

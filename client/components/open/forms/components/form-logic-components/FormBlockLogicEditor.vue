@@ -266,6 +266,7 @@ export default {
           "nf-divider",
           "nf-image",
           "nf-video",
+          "nf-audio",
         ].includes(this.field.type)
       ) {
         if (this.field.hidden) {
