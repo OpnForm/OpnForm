@@ -4,9 +4,24 @@ import { ref } from 'vue'
 import OidcCallbackPage from '~/pages/auth/[slug]/callback.vue'
 import LoginForm from '~/components/pages/auth/components/LoginForm.vue'
 
-const { startLinkSpy, completeLinkIfNeededSpy } = vi.hoisted(() => ({
+const {
+    startLinkSpy,
+    completeLinkIfNeededSpy,
+    redirectToOidcProviderSpy,
+    canAutomaticallyRetryOidcSignInSpy,
+    clearOidcAutomaticRetrySpy,
+    consumeOidcStateVerifierSpy,
+    markOidcAutomaticRetrySpy,
+    storeOidcStateVerifierSpy,
+} = vi.hoisted(() => ({
     startLinkSpy: vi.fn(),
     completeLinkIfNeededSpy: vi.fn(() => Promise.resolve(true)),
+    redirectToOidcProviderSpy: vi.fn(),
+    canAutomaticallyRetryOidcSignInSpy: vi.fn(() => true),
+    clearOidcAutomaticRetrySpy: vi.fn(),
+    consumeOidcStateVerifierSpy: vi.fn(() => null),
+    markOidcAutomaticRetrySpy: vi.fn(),
+    storeOidcStateVerifierSpy: vi.fn(),
 }))
 
 vi.mock('~/middleware/01.check-auth.global', () => ({
@@ -58,8 +73,21 @@ vi.mock('~/composables/useOidcLinking', () => ({
 vi.mock('~/api', () => ({
     oidcApi: {
         callback: vi.fn(),
+        redirect: vi.fn(),
         link: vi.fn(),
     },
+}))
+
+vi.mock('~/lib/oidc/redirect', () => ({
+    redirectToOidcProvider: redirectToOidcProviderSpy,
+}))
+
+vi.mock('~/lib/oidc/state-verifier', () => ({
+    canAutomaticallyRetryOidcSignIn: canAutomaticallyRetryOidcSignInSpy,
+    clearOidcAutomaticRetry: clearOidcAutomaticRetrySpy,
+    consumeOidcStateVerifier: consumeOidcStateVerifierSpy,
+    markOidcAutomaticRetry: markOidcAutomaticRetrySpy,
+    storeOidcStateVerifier: storeOidcStateVerifierSpy,
 }))
 
 describe('OIDC link flow', () => {
@@ -125,9 +153,11 @@ describe('OIDC link flow', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
+        canAutomaticallyRetryOidcSignInSpy.mockReturnValue(true)
     })
 
     afterEach(() => {
+        sessionStorage.clear()
         vi.unstubAllGlobals()
     })
 
@@ -170,6 +200,90 @@ describe('OIDC link flow', () => {
         await flushPromises()
 
         expect(wrapper.text()).toContain('Link existing account')
+        vi.useRealTimers()
+    })
+
+    it('automatically starts one fresh sign-in when an authorization code was already used', async () => {
+        vi.useFakeTimers()
+        const apiModule = await import('~/api') as { oidcApi: any }
+        const oidcApi = apiModule.oidcApi
+        setupGlobals()
+
+        oidcApi.callback.mockRejectedValue({
+            message: 'AADSTS54005: Authorization code was already redeemed',
+        })
+        oidcApi.redirect.mockResolvedValue({
+            redirect_url: 'https://idp.example.com/authorize',
+            state: 'fresh-state',
+            state_verifier: 'fresh-verifier',
+        })
+
+        const wrapper = mount(OidcCallbackPage, {
+            global: {
+                stubs: {
+                    TwoFactorVerificationModal: true,
+                    Loader: true,
+                    UAlert: {
+                        template: '<div class="alert">{{ title }} {{ description }}</div>',
+                        props: ['title', 'description'],
+                    },
+                    UButton: {
+                        template: '<button>{{ label }}<slot /></button>',
+                        props: ['label', 'color', 'variant', 'to'],
+                        emits: ['click'],
+                    },
+                },
+            },
+        })
+
+        await flushPromises()
+        vi.runAllTimers()
+        await flushPromises()
+
+        expect(wrapper.text()).toContain('Reconnecting securely...')
+        expect(oidcApi.redirect).toHaveBeenCalledOnce()
+        expect(markOidcAutomaticRetrySpy).toHaveBeenCalledOnce()
+        expect(storeOidcStateVerifierSpy).toHaveBeenCalledOnce()
+        expect(redirectToOidcProviderSpy).toHaveBeenCalledWith('https://idp.example.com/authorize')
+        vi.useRealTimers()
+    })
+
+    it('shows a recovery action instead of retrying a second time', async () => {
+        vi.useFakeTimers()
+        const apiModule = await import('~/api') as { oidcApi: any }
+        const oidcApi = apiModule.oidcApi
+        setupGlobals()
+        canAutomaticallyRetryOidcSignInSpy.mockReturnValue(false)
+
+        oidcApi.callback.mockRejectedValue({
+            message: 'AADSTS54005: Authorization code was already redeemed',
+        })
+
+        const wrapper = mount(OidcCallbackPage, {
+            global: {
+                stubs: {
+                    TwoFactorVerificationModal: true,
+                    Loader: true,
+                    UAlert: {
+                        template: '<div class="alert">{{ title }} {{ description }}</div>',
+                        props: ['title', 'description'],
+                    },
+                    UButton: {
+                        template: '<button>{{ label }}<slot /></button>',
+                        props: ['label', 'color', 'variant', 'to'],
+                        emits: ['click'],
+                    },
+                },
+            },
+        })
+
+        await flushPromises()
+        vi.runAllTimers()
+        await flushPromises()
+
+        expect(oidcApi.redirect).not.toHaveBeenCalled()
+        expect(wrapper.text()).toContain('We could not reconnect automatically')
+        expect(wrapper.text()).toContain('Back to sign in')
         vi.useRealTimers()
     })
 
