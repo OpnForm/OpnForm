@@ -53,7 +53,7 @@
       v-if="workspace && workspace.is_admin"
       id="sso"
       label="SSO"
-      icon="i-heroicons-shield-check"
+      icon="i-heroicons-key"
     >
       <LazyWorkspacesSettingsSso />
     </SettingsModalPage>

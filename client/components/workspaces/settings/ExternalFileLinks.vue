@@ -23,7 +23,8 @@
             name="expires_in_hours"
             label="Link validity"
             :options="expirationOptions"
-            :columns="1"
+            :columns="5"
+            seamless
           />
         </div>
 
