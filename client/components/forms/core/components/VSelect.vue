@@ -460,9 +460,9 @@ export default {
           this.setupVirtualizer()
           // Focus the search input or dropdown for keyboard navigation
           if (this.isSearchable && this.$refs.searchInput) {
-            this.$refs.searchInput.focus()
+            this.$refs.searchInput.focus({ preventScroll: true })
           } else if (this.$refs.scrollRef) {
-            this.$refs.scrollRef.focus()
+            this.$refs.scrollRef.focus({ preventScroll: true })
           }
         })
       } else {
@@ -879,7 +879,16 @@ export default {
           const options = scrollContainer.querySelectorAll('[role="option"]')
           const highlightedOption = options[this.highlightedIndex]
           if (highlightedOption) {
-            highlightedOption.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+            const containerTop = scrollContainer.scrollTop
+            const containerBottom = containerTop + scrollContainer.clientHeight
+            const optionTop = highlightedOption.offsetTop
+            const optionBottom = optionTop + highlightedOption.offsetHeight
+
+            if (optionTop < containerTop) {
+              scrollContainer.scrollTop = optionTop
+            } else if (optionBottom > containerBottom) {
+              scrollContainer.scrollTop = optionBottom - scrollContainer.clientHeight
+            }
           }
         }
       })
