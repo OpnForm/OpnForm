@@ -378,4 +378,8 @@ onUnmounted(() => {
 .vc-title:focus, .vc-title:hover {
   background: var(--vc-header-arrow-hover-bg) !important;
 }
+
+[dir="rtl"] .vc-arrow svg {
+  transform: scaleX(-1);
+}
 </style>

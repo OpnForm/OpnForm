@@ -14,7 +14,7 @@
         class="m-10"
       >
         <h3 class="my-6 text-center">
-          {{ showTwoFactorModal ? 'Verifying your code...' : 'Completing sign in...' }}
+          {{ showTwoFactorModal ? 'Verifying your code...' : isRetrying ? 'Reconnecting securely...' : 'Completing sign in...' }}
         </h3>
         <Loader class="h-6 w-6 mx-auto m-10" />
       </div>
@@ -27,6 +27,7 @@
           color="error"
           variant="subtle"
           class="w-full"
+          title="Sign-in could not be completed"
           :description="error"
         />
         <UButton
@@ -37,7 +38,7 @@
         />
         <UButton
           :to="{ name: 'login' }"
-          label="Back to login"
+          label="Back to sign in"
         />
       </div>
     </div>
@@ -46,18 +47,51 @@
 
 <script setup>
 import { oidcApi } from "~/api"
-import { consumeOidcStateVerifier } from "~/lib/oidc/state-verifier"
+import { redirectToOidcProvider } from "~/lib/oidc/redirect"
+import {
+  canAutomaticallyRetryOidcSignIn,
+  clearOidcAutomaticRetry,
+  consumeOidcStateVerifier,
+  markOidcAutomaticRetry,
+  storeOidcStateVerifier,
+} from "~/lib/oidc/state-verifier"
 
 const router = useRouter()
 const route = useRoute()
 const loading = ref(true)
 const error = ref(null)
 const linkToken = ref(null)
+const callbackStarted = ref(false)
+const isRetrying = ref(false)
 const { startLink } = useOidcLinking()
 const authFlow = useAuthFlow()
 const { showTwoFactorModal, pendingAuthToken, handleTwoFactorVerified, handleTwoFactorCancel: handleTwoFactorCancelFromFlow, handleTwoFactorError } = authFlow
 
+const authorizationCodeWasAlreadyUsed = (providerError) => {
+  return providerError.includes('AADSTS54005') || providerError.includes('Authorization code was already redeemed')
+}
+
+const retryOidcSignIn = (slug) => {
+  markOidcAutomaticRetry(slug)
+  isRetrying.value = true
+
+  return oidcApi.redirect(slug)
+    .then((response) => {
+      if (!response.redirect_url) {
+        return false
+      }
+
+      storeOidcStateVerifier(slug, response.state, response.state_verifier)
+      redirectToOidcProvider(response.redirect_url)
+      return true
+    })
+    .catch(() => false)
+}
+
 const handleCallback = async () => {
+  if (callbackStarted.value) return
+
+  callbackStarted.value = true
   const slug = route.params.slug
   
   try {
@@ -88,6 +122,7 @@ const handleCallback = async () => {
     // Handle authentication success (handles both 2FA and non-2FA cases)
     // handleAuthSuccess will check for requires_2fa and show modal if needed
     await authFlow.handleAuthSuccess(response, 'oidc', response.new_user)
+    clearOidcAutomaticRetry(slug)
     
     // If 2FA modal is shown, don't redirect yet (handled in handleTwoFactorVerifiedAndRedirect)
     if (showTwoFactorModal.value) {
@@ -115,12 +150,28 @@ const handleCallback = async () => {
     
     const errorResponse = err.response?._data || {}
     const errorMessage = errorResponse.message || err.message || "Authentication failed"
-    error.value = errorMessage
+    const providerError = [errorResponse.message, errorResponse.error_description, err.message]
+      .filter(Boolean)
+      .join(' ')
+    error.value = 'We could not complete this sign-in. Return to sign in, or contact your administrator if the problem continues.'
     
     // Handle specific error cases
     if (errorResponse.error === 'oidc_account_link_required' && errorResponse.link_token) {
       error.value = 'An account with this email already exists. Please link your existing account to continue.'
       linkToken.value = errorResponse.link_token
+    } else if (authorizationCodeWasAlreadyUsed(providerError)) {
+      if (canAutomaticallyRetryOidcSignIn(slug)) {
+        return retryOidcSignIn(slug)
+          .then((retryStarted) => {
+            if (retryStarted) return
+
+            isRetrying.value = false
+            error.value = 'We could not reconnect automatically. Return to sign in to try again, or contact your administrator if the problem continues.'
+            loading.value = false
+          })
+      }
+
+      error.value = 'We could not reconnect automatically. Return to sign in to try again, or contact your administrator if the problem continues.'
     } else if (errorMessage.includes('more than 2 users')) {
       error.value = 'This self-hosted instance is limited to 2 users without an Enterprise license. Ask the instance admin to activate a license or remove another user.'
     } else if (errorMessage.includes('account with this email already exists')) {

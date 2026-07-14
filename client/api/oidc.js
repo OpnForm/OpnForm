@@ -19,6 +19,9 @@ export const oidcApi = {
 
   // Email-based OIDC lookup (for login flow)
   getOptionsForEmail: (email) => apiService.post('/auth/oidc/options', { email }),
+
+  // Starts a fresh OIDC authorization request for a known connection.
+  redirect: (slug) => apiService.post(`/auth/${slug}/redirect`),
   
   // OIDC callback - processes authorization code and returns token/user
   callback: (slug, queryParams, stateVerifier = null) => {

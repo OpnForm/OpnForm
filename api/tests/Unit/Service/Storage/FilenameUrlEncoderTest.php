@@ -119,4 +119,35 @@ describe('FilenameUrlEncoder', function () {
             }
         });
     });
+
+    describe('isEncoded', function () {
+        it('detects encoded upload filenames', function () {
+            $filename = 'my (file)_550e8400-e29b-41d4-a716-446655440000.png';
+            $encoded = FilenameUrlEncoder::encode($filename);
+
+            expect(FilenameUrlEncoder::isEncoded($encoded))->toBeTrue();
+        });
+
+        it('does not treat unsplash photo ids as encoded filenames', function () {
+            expect(FilenameUrlEncoder::isEncoded('photo-1779638715091-90c701d94efd'))->toBeFalse();
+        });
+
+        it('does not treat plain upload filenames as encoded filenames', function () {
+            expect(FilenameUrlEncoder::isEncoded('avatar-test.png'))->toBeFalse();
+        });
+
+        it('detects encoded filenames with exclamation marks', function () {
+            $filename = 'Important!-document_uuid.pdf';
+            $encoded = FilenameUrlEncoder::encode($filename);
+
+            expect(FilenameUrlEncoder::isEncoded($encoded))->toBeTrue();
+        });
+
+        it('detects encoded filenames with asterisks', function () {
+            $filename = 'star*file_uuid.pdf';
+            $encoded = FilenameUrlEncoder::encode($filename);
+
+            expect(FilenameUrlEncoder::isEncoded($encoded))->toBeTrue();
+        });
+    });
 });
