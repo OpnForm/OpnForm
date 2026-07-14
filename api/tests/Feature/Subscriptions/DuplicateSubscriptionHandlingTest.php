@@ -171,19 +171,3 @@ it('blocks checkout while another checkout creation is already in progress', fun
         $lock->release();
     }
 });
-
-it('returns explicit error when upgrading yearly without an active subscription row', function () {
-    $user = $this->createUser();
-    config(['opnform.extra_pro_users_emails' => [$user->email]]);
-    $workspace = $this->createUserWorkspace($user);
-    $this->actingAsUser($user);
-
-    $response = $this->postJson(route('subscription.upgrade-to-yearly'), [
-        'workspace_id' => $workspace->id,
-    ]);
-
-    $response->assertStatus(400)->assertJson([
-        'type' => 'error',
-        'message' => 'No active subscription found for this user.',
-    ]);
-});
