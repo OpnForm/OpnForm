@@ -153,7 +153,6 @@
     </div>
     <div id="home-portals" class="z-20" />
 
-    <YearlyUpgradeModal />
   </div>
 </template>
 
