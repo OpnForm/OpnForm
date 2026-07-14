@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\Subscriptions\UpdateStripeDetailsRequest;
-use App\Models\Workspace;
 use App\Service\Billing\BillingStateResolver;
 use App\Service\BillingHelper;
 use App\Service\UserHelper;
