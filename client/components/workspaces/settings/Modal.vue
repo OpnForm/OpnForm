@@ -42,6 +42,15 @@
 
     <SettingsModalPage
       v-if="workspace && workspace.is_admin"
+      id="external-file-links"
+      label="Security & data"
+      icon="i-heroicons-shield-check"
+    >
+      <LazyWorkspacesSettingsExternalFileLinks />
+    </SettingsModalPage>
+
+    <SettingsModalPage
+      v-if="workspace && workspace.is_admin"
       id="sso"
       label="SSO"
       icon="i-heroicons-shield-check"
@@ -102,4 +111,4 @@ const localActiveTab = computed({
 const closeModal = () => {
   emit('update:activeTab', null)
 }
-</script> 
+</script>

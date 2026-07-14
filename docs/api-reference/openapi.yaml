@@ -1549,7 +1549,7 @@ components:
                 expires_at:
                     type: string
                     format: date-time
-                    description: "File expiration timestamp (24 hours from completion)"
+                    description: "File expiration timestamp (workspace policy, 24 hours by default)"
                     nullable: true
                 error_message:
                     type: string
