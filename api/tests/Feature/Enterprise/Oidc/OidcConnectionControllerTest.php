@@ -508,11 +508,15 @@ describe('OidcConnectionController - Update Connection', function () {
 
         $response = $this->patchJson(
             "/open/workspaces/{$workspace->id}/oidc-connections/{$connection->id}",
-            ['name' => 'Updated Name']
+            [
+                'name' => 'Updated Name',
+                'redirect_path' => 'https://forms.example.com/auth/company-sso/callback',
+            ]
         );
 
         $response->assertSuccessful();
         expect($connection->fresh()->client_secret)->toBe('old-secret');
+        expect($connection->fresh()->redirect_path)->toBe('https://forms.example.com/auth/company-sso/callback');
     });
 
     it('merges options instead of replacing', function () {
