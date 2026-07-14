@@ -283,7 +283,7 @@ export default {
     },
     showUploadError(error) {
       const data = error?.data || error?.response?._data
-      useAlert().error(data?.message || error?.message || 'Failed to upload audio file. Please try again.')
+      useAlert().error(data?.errors?.url?.[0] || error?.message || 'Failed to upload audio file. Please try again.')
     },
   },
 }
