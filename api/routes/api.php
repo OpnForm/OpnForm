@@ -175,6 +175,7 @@ Route::group(['middleware' => 'auth.multi'], function () {
                 Route::put('/custom-domains', [WorkspaceController::class, 'saveCustomDomain'])->name('save-custom-domains');
                 Route::put('/email-settings', [WorkspaceController::class, 'saveEmailSettings'])->name('save-email-settings');
                 Route::put('/custom-code-settings', [WorkspaceController::class, 'saveCustomCodeSettings'])->name('save-custom-code-settings');
+                Route::put('/external-file-link-settings', [WorkspaceController::class, 'saveExternalFileLinkSettings'])->name('save-external-file-link-settings');
                 Route::put('/', [WorkspaceController::class, 'update'])->name('update');
                 Route::delete('/', [WorkspaceController::class, 'delete'])->name('delete');
 

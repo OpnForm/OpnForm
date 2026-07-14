@@ -2,8 +2,9 @@
 
 use App\Models\User;
 use App\Models\Forms\FormSubmission;
-use App\Service\Forms\FormSubmissionFormatter;
+use App\Service\Forms\FormExportService;
 use App\Service\Storage\FileUploadPathService;
+use Carbon\Carbon;
 use Illuminate\Routing\Middleware\ThrottleRequests;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
@@ -352,9 +353,16 @@ it('does not include status column when partial submissions are disabled', funct
     expect(str_contains($content, 'status'))->toBeFalse();
 });
 
-it('exports file urls with a durable expiration and a valid signature', function () {
+it('exports file urls with the workspace policy expiration and a valid signature', function () {
     $user = $this->actingAsProUser();
     $workspace = $this->createUserWorkspace($user);
+    $workspace->update([
+        'settings' => [
+            'external_file_links' => [
+                'expires_in_hours' => 168,
+            ],
+        ],
+    ]);
     $form = $this->createForm($user, $workspace, [
         'properties' => [
             [
@@ -398,7 +406,7 @@ it('exports file urls with a durable expiration and a valid signature', function
     parse_str(parse_url($exportedFileUrl, PHP_URL_QUERY), $queryParameters);
 
     expect($queryParameters)->toHaveKeys(['expires', 'signature']);
-    expect((int) $queryParameters['expires'])->toBeGreaterThan(now()->addMinutes(FormSubmissionFormatter::SIGNED_FILE_URL_EXPIRATION_MINUTES - 1)->timestamp);
+    expect((int) $queryParameters['expires'])->toBeGreaterThan(now()->addHours(168)->subMinute()->timestamp);
 
     $this->get($exportedFileUrl)->assertOk();
 
@@ -407,6 +415,39 @@ it('exports file urls with a durable expiration and a valid signature', function
     $this->get($exportedFileUrl)->assertOk();
 
     $this->travelBack();
+});
+
+it('uses the workspace policy for asynchronous CSV download links', function () {
+    $user = $this->actingAsProUser();
+    $workspace = $this->createUserWorkspace($user);
+    $workspace->update([
+        'settings' => [
+            'external_file_links' => [
+                'expires_in_hours' => 72,
+            ],
+        ],
+    ]);
+    $form = $this->createForm($user, $workspace);
+    $form->load('workspace');
+
+    Storage::fake();
+    $now = Carbon::parse('2026-07-17 17:00:00');
+    Carbon::setTestNow($now);
+
+    try {
+        $exportService = app(FormExportService::class);
+        $expiresAt = $exportService->fileLinkExpiresAt($form);
+        $fileUrl = $exportService->generateAndUploadCsvFile([
+            ['id' => 'submission-1'],
+        ], 'weekend-submissions.csv', $expiresAt);
+    } finally {
+        Carbon::setTestNow();
+    }
+
+    parse_str((string) parse_url($fileUrl, PHP_URL_QUERY), $queryParameters);
+
+    expect((int) ($queryParameters['expiration'] ?? 0))->toBe($now->copy()->addHours(72)->timestamp);
+    Storage::assertExists(FormExportService::EXPORT_FILE_PATH . 'weekend-submissions.csv');
 });
 
 it('allows export status polling when the general api rate limit is exhausted', function () {

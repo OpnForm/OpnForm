@@ -35,6 +35,8 @@ class FormSubmissionFormatter
 
     private $useSignedUrlForFiles = false;
 
+    private ?Carbon $signedFileUrlExpiration = null;
+
     /**
      * Logic resolver needs an array id => value, so we create it here
      */
@@ -80,9 +82,11 @@ class FormSubmissionFormatter
         return $this;
     }
 
-    public function useSignedUrlForFiles()
+    public function useSignedUrlForFiles(?Carbon $expiresAt = null)
     {
         $this->useSignedUrlForFiles = true;
+        $this->signedFileUrlExpiration = $expiresAt ?? app(ExternalSubmissionFileLinkPolicy::class)
+            ->expiresAt($this->form->workspace);
 
         return $this;
     }
@@ -361,7 +365,7 @@ class FormSubmissionFormatter
 
             return $this->useSignedUrlForFiles ? URL::temporarySignedRoute(
                 'open.forms.submissions.file',
-                now()->addMinutes(self::SIGNED_FILE_URL_EXPIRATION_MINUTES),
+                $this->signedFileUrlExpiration ?? now()->addMinutes(self::SIGNED_FILE_URL_EXPIRATION_MINUTES),
                 [$formId, $encodedFilename]
             ) : route('open.forms.submissions.file', [$formId, $encodedFilename]);
         } catch (\Exception $e) {
