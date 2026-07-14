@@ -157,6 +157,14 @@ import CloudVersion from "/snippets/cloud-version.mdx";
 
 When running OpnForm with Docker, there are some important considerations for handling environment variables:
 
+<Note>
+    Docker Compose uses shell variables, a root `.env` file next to
+    `docker-compose.yml`, or a file passed with `--env-file` when it resolves
+    `${...}` values in the Compose file. The service-level `env_file` entries
+    such as `./api/.env` and `./client/.env` only pass variables into the
+    containers after the Compose file has already been resolved.
+</Note>
+
 ### Updating Environment Variables
 
 When changing environment variables in your `.env` files, you need to recreate the containers for the changes to take effect. Simply restarting the containers is not sufficient as Docker only loads environment variables when containers are created.
