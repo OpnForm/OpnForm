@@ -27,6 +27,16 @@
         @blur="checkOidcOptions"
       />
 
+      <UAlert
+        v-if="isOidcSignIn && isOidcRateLimited"
+        class="mt-3"
+        icon="i-lucide-clock-3"
+        color="warning"
+        variant="subtle"
+        title="Please wait before trying again"
+        :description="oidcRateLimitMessage(oidcRetryAfterSeconds)"
+      />
+
       <!-- Password - hidden if OIDC available and not forced to show -->
       <VTransition name="fadeHeight">
       <text-input
@@ -67,8 +77,9 @@
         block
         size="lg"
         :loading="form.busy"
+        :disabled="form.busy || (isOidcSignIn && isOidcRateLimited)"
         type="submit"
-        :label="oidcAvailable && !showPasswordField ? 'Continue' : 'Log in to continue'"
+        :label="submitButtonLabel"
       />
 
       <UButton
@@ -117,6 +128,11 @@
 import ForgotPasswordModal from "../ForgotPasswordModal.vue"
 import GoogleOneTap from "~/components/vendor/GoogleOneTap.vue"
 import { WindowMessageTypes } from "~/composables/useWindowMessage"
+import {
+  getOidcRetryAfterSeconds,
+  isOidcRateLimitedError,
+  oidcRateLimitMessage,
+} from "~/lib/oidc/rate-limit"
 import { clearOidcAutomaticRetry, storeOidcStateVerifier } from "~/lib/oidc/state-verifier"
 
 // Props
@@ -152,8 +168,48 @@ const form = useForm({
 
 const loginMutation = loginMutationFactory()
 const showForgotModal = ref(false)
-const showPasswordField = ref(!oidcAvailable.value || oidcForced.value)
+const showPasswordField = ref(!oidcAvailable.value)
 const passwordInputRef = ref(null)
+const oidcRetryAfterSeconds = ref(0)
+let oidcRateLimitTimer = null
+
+const isOidcSignIn = computed(() => oidcAvailable.value && !showPasswordField.value)
+const isOidcRateLimited = computed(() => oidcRetryAfterSeconds.value > 0)
+const submitButtonLabel = computed(() => {
+  if (isOidcSignIn.value && isOidcRateLimited.value) {
+    return `Try again in ${oidcRetryAfterSeconds.value}s`
+  }
+
+  return isOidcSignIn.value ? 'Continue' : 'Log in to continue'
+})
+
+const clearOidcRateLimitTimer = () => {
+  if (oidcRateLimitTimer) {
+    clearInterval(oidcRateLimitTimer)
+    oidcRateLimitTimer = null
+  }
+}
+
+const startOidcRateLimitTimer = (error) => {
+  oidcRetryAfterSeconds.value = getOidcRetryAfterSeconds(error)
+  clearOidcRateLimitTimer()
+
+  oidcRateLimitTimer = setInterval(() => {
+    oidcRetryAfterSeconds.value -= 1
+
+    if (oidcRetryAfterSeconds.value <= 0) {
+      oidcRetryAfterSeconds.value = 0
+      clearOidcRateLimitTimer()
+    }
+  }, 1000)
+}
+
+const handleOidcRateLimitError = (error) => {
+  if (!isOidcRateLimitedError(error)) return false
+
+  startOidcRateLimitTimer(error)
+  return true
+}
 
 // Watch for password field visibility to focus it
 watch(showPasswordField, async (newValue) => {
@@ -178,9 +234,13 @@ onMounted(() => {
   })
 })
 
+onBeforeUnmount(() => {
+  clearOidcRateLimitTimer()
+})
+
 // Methods
 const checkOidcOptions = async () => {
-  if (!oidcAvailable.value || !form.email || form.busy) {
+  if (!oidcAvailable.value || !form.email || form.busy || isOidcRateLimited.value) {
     return
   }
 
@@ -200,14 +260,16 @@ const checkOidcOptions = async () => {
           } else if (redirectResponse.error) {
             // Handle error from redirect endpoint
             useAlert().error(redirectResponse.error || 'Failed to initiate OIDC authentication')
-            showPasswordField.value = true
+            if (!oidcForced.value) showPasswordField.value = true
             return
           }
         } catch (error) {
+          if (handleOidcRateLimitError(error)) return
+
           // Handle network or server errors
           const errorMessage = error.response?._data?.error || error.response?._data?.message || 'Failed to initiate OIDC authentication'
           useAlert().error(errorMessage)
-          showPasswordField.value = true
+          if (!oidcForced.value) showPasswordField.value = true
           return
         }
       } else if (response.action === 'blocked') {
@@ -216,13 +278,15 @@ const checkOidcOptions = async () => {
         return
       } else {
         // Fallback to password login
-        showPasswordField.value = true
+        if (!oidcForced.value) showPasswordField.value = true
       }
     })
     .catch((error) => {
+      if (handleOidcRateLimitError(error)) return
+
       // Form automatically handles 422 validation errors (invalid email, etc.)
       // Only show password field as fallback for non-validation errors
-      if (error.response?.status !== 422) {
+      if (error.response?.status !== 422 && !oidcForced.value) {
         showPasswordField.value = true
       }
     })
