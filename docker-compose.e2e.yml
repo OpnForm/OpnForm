@@ -38,7 +38,7 @@ services:
       QUEUE_CONNECTION: sync
       FILESYSTEM_DRIVER: local
       LOCAL_FILESYSTEM_VISIBILITY: public
-      MAIL_MAILER: log
+      MAIL_MAILER: array
       MAIL_FROM_ADDRESS: dev@localhost
       MAIL_FROM_NAME: OpnForm-E2E
       PHP_MEMORY_LIMIT: "1G"
