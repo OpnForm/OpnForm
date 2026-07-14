@@ -86,7 +86,7 @@ The scripts are also available from the repository root:
 ./scripts/codex-worktree-up.sh
 ```
 
-The startup output contains the exact UI URL. Sign in with `e2e@example.test` and `Abcd@1234`.
+The startup output contains the exact UI URL. Opening its root URL automatically signs in the local Codex admin (`e2e@example.test` / `Abcd@1234`). The reset seed creates three sample forms and five completed submissions across two public forms.
 
 <Warning>
 Do not run `docker compose -f docker-compose.dev.yml up` for concurrent Codex worktrees. That stack has shared container names and fixed host ports. Use the Codex worktree actions instead.

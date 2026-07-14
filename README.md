@@ -54,7 +54,7 @@ Use the Codex `Start app`, `Reset DB`, and `Stop app` actions when available. Yo
 ./scripts/codex-worktree-up.sh
 ```
 
-The startup command prints the worktree-specific URL. Sign in with `e2e@example.test` / `Abcd@1234`. Reset only the current worktree database with:
+The startup command prints the worktree-specific URL. Opening its root URL automatically signs in the local Codex admin (`e2e@example.test` / `Abcd@1234`). The seed also creates three forms, including five completed submissions across two public forms, so the dashboard and submission screens are immediately useful. Reset only the current worktree database with:
 
 ```bash
 ./scripts/codex-worktree-reset-db.sh
