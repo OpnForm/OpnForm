@@ -8,6 +8,8 @@ public/.DS_Store
 *.DS_Store
 docker-compose.override.yml
 /.make.*
+/.e2e/
+/.playwright/
 
 # Environment files
 .env

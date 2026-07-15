@@ -12,7 +12,7 @@ class PdfCacheService
 {
     private const CACHE_TTL = 3600; // 1 hour
 
-    private const LOCK_TTL = 30; // 30 seconds max lock time
+    private const LOCK_TTL = 120; // seconds; must exceed slow PDF generation with remote images
 
     // Use same temp folder as generator for lifecycle cleanup
     private const TEMP_FOLDER = 'tmp/pdf-output';
