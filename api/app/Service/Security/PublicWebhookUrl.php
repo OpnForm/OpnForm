@@ -8,7 +8,12 @@ class PublicWebhookUrl
 {
     public static function assertSafe(string $url): void
     {
-        self::validatedIp($url);
+        self::validatedIp($url, self::allowPrivateUrlsFromConfig());
+    }
+
+    public static function assertPublicOnly(string $url): void
+    {
+        self::validatedIp($url, false);
     }
 
     /**
@@ -16,11 +21,38 @@ class PublicWebhookUrl
      */
     public static function requestOptions(string $url): array
     {
+        return self::buildRequestOptions($url, self::allowPrivateUrlsFromConfig());
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public static function requestOptionsPublicOnly(string $url): array
+    {
+        return self::buildRequestOptions($url, false);
+    }
+
+    public static function validate(string $url): ?string
+    {
+        try {
+            self::validatedIp($url, self::allowPrivateUrlsFromConfig());
+        } catch (InvalidArgumentException $e) {
+            return $e->getMessage();
+        }
+
+        return null;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private static function buildRequestOptions(string $url, bool $allowPrivateUrls): array
+    {
         $options = [
             'allow_redirects' => false,
         ];
 
-        $ip = self::validatedIp($url);
+        $ip = self::validatedIp($url, $allowPrivateUrls);
         if ($ip === null) {
             return $options;
         }
@@ -37,20 +69,14 @@ class PublicWebhookUrl
         return $options;
     }
 
-    public static function validate(string $url): ?string
+    private static function allowPrivateUrlsFromConfig(): bool
     {
-        try {
-            self::validatedIp($url);
-        } catch (InvalidArgumentException $e) {
-            return $e->getMessage();
-        }
-
-        return null;
+        return (bool) config('opnform.webhooks.allow_private_urls', false);
     }
 
-    private static function validatedIp(string $url): ?string
+    private static function validatedIp(string $url, bool $allowPrivateUrls): ?string
     {
-        if (config('opnform.webhooks.allow_private_urls', false)) {
+        if ($allowPrivateUrls) {
             self::assertUrlShape($url);
 
             return null;
@@ -74,6 +100,20 @@ class PublicWebhookUrl
         foreach ($ips as $ip) {
             if (!self::isPublicIp($ip)) {
                 throw new InvalidArgumentException('The webhook URL must resolve only to public IP addresses.');
+            }
+        }
+
+        return self::selectPinnedIp($ips);
+    }
+
+    /**
+     * @param  array<int, string>  $ips
+     */
+    private static function selectPinnedIp(array $ips): string
+    {
+        foreach ($ips as $ip) {
+            if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+                return $ip;
             }
         }
 
@@ -149,6 +189,6 @@ class PublicWebhookUrl
 
     private static function formatCurlResolveIp(string $ip): string
     {
-        return str_contains($ip, ':') ? '['.$ip.']' : $ip;
+        return str_contains($ip, ':') ? '[' . $ip . ']' : $ip;
     }
 }

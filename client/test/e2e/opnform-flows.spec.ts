@@ -184,6 +184,9 @@ async function gotoPageWithRetry(page: Page, path: string, readyCheck: () => Pro
       const response = await page.goto(path, { waitUntil: "commit", timeout: 10_000 })
       expect(response?.status(), `unexpected status for ${path} on attempt ${attempt}`).toBeLessThan(500)
       await readyCheck()
+      if (process.env.PLAYWRIGHT_DEV_SERVER === "1") {
+        await page.waitForTimeout(5000)
+      }
       return
     } catch (error) {
       lastError = error
