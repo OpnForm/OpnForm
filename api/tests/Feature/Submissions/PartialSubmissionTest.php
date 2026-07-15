@@ -4,7 +4,7 @@ use App\Models\Forms\FormSubmission;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
-it('can submit form partially and complete it later using submission hash', function () {
+it('can submit form partially and complete it later using submission identifier', function () {
     $user = $this->actingAsBusinessUser();
     $workspace = $this->createUserWorkspace($user);
     $form = $this->createForm($user, $workspace, [
@@ -76,7 +76,7 @@ it('can update partial submission multiple times', function () {
     expect($submission->data[array_key_first($secondData)])->toBe('Second Draft');
 });
 
-it('does not update a partial submission from a raw numeric submission id', function () {
+it('rejects a partial submission update from a raw numeric submission id', function () {
     $user = $this->actingAsBusinessUser();
     $workspace = $this->createUserWorkspace($user);
     $form = $this->createForm($user, $workspace, [
@@ -103,15 +103,15 @@ it('does not update a partial submission from a raw numeric submission id', func
     $attackData['submission_id'] = (string) $victimSubmission->id;
 
     $this->postJson(route('forms.answer', $form->slug), $attackData)
-        ->assertSuccessful();
+        ->assertStatus(404);
 
-    expect($form->submissions()->count())->toBe(2);
+    expect($form->submissions()->count())->toBe(1);
 
     $victimSubmission->refresh();
     expect($victimSubmission->data[$nameField['id']])->toBe('VICTIM_CONFIDENTIAL_DATA');
 });
 
-it('does not update a completed submission from a raw numeric submission id in a partial request', function () {
+it('rejects a completed submission update from a raw numeric submission id in a partial request', function () {
     $user = $this->actingAsBusinessUser();
     $workspace = $this->createUserWorkspace($user);
     $form = $this->createForm($user, $workspace, [
@@ -137,9 +137,9 @@ it('does not update a completed submission from a raw numeric submission id in a
     $attackData['submission_id'] = (string) $completedSubmission->id;
 
     $this->postJson(route('forms.answer', $form->slug), $attackData)
-        ->assertSuccessful();
+        ->assertStatus(404);
 
-    expect($form->submissions()->count())->toBe(2);
+    expect($form->submissions()->count())->toBe(1);
 
     $completedSubmission->refresh();
     expect($completedSubmission->status)->toBe(FormSubmission::STATUS_COMPLETED);

@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full border-b p-2 flex gap-x-2 items-center bg-white">
+  <div class="w-full border-b px-3 py-3 min-h-16 flex gap-x-3 items-center bg-white">
     <a
       v-if="backButton"
       href="#"
@@ -41,13 +41,13 @@
       class="ml-2"
     />
 
-    <div class="flex-grow flex justify-center gap-2">
+    <div class="flex-grow min-w-0 flex justify-center items-center gap-2">
       <EditableTag
         id="form-editor-title"
         v-model="form.title"
-        element="h3"
+        element="h1"
         :max-length="255"
-        class="font-medium py-1 text-md w-48 text-neutral-500 truncate form-editor-title"
+        class="font-semibold py-1 text-xl leading-7 w-72 max-w-full text-neutral-700 truncate form-editor-title"
       />
       <UBadge
         v-if="form.visibility == 'draft'"

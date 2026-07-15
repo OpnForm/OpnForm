@@ -43,15 +43,15 @@ const freePlanComparison = [
   },
   {
     label: "Conditional logic",
-    cells: ["Basic", "Yes"],
+    cells: ["Included", "Included"],
   },
   {
     label: "File uploads",
-    cells: ["Free basic quota", "Free up to 10MB"],
+    cells: ["Included", "Included up to 10MB"],
   },
   {
     label: "Custom branding",
-    cells: ["No", "No"],
+    cells: ["Pro+", "Pro"],
   },
   {
     label: "Custom CSS / styling",
@@ -59,15 +59,23 @@ const freePlanComparison = [
   },
   {
     label: "Native integrations",
-    cells: ["Basic", "Basic"],
+    cells: ["Included", "Included"],
   },
   {
     label: "API access",
-    cells: ["Basic", "Not listed"],
+    cells: ["Included", "Not listed"],
   },
   {
     label: "Webhooks",
-    cells: ["Free", "Free"],
+    cells: ["Included", "Included"],
+  },
+  {
+    label: "Open source",
+    cells: ["Y", "N"],
+  },
+  {
+    label: "Self-hosting option",
+    cells: ["Y", "N"],
   },
 ]
 
@@ -123,11 +131,11 @@ const featureComparison = [
   },
   {
     label: "Developer extensibility (API + webhooks)",
-    cells: ["Free API + webhooks", "Webhooks; API not listed"],
+    cells: ["Included API + webhooks", "Webhooks; API not listed"],
   },
   {
     label: "Native integration ecosystem",
-    cells: ["Basic free; advanced paid", "Selected integrations"],
+    cells: ["Basic included; advanced paid", "Selected integrations"],
   },
   {
     label: "Advanced logic & branching",

@@ -70,6 +70,19 @@
                 :content="redirectUri"
                 label="Copy"
               />
+              <div v-if="isEditing" class="mt-3 border-t border-blue-200 pt-3">
+                <p class="mb-2 text-xs text-blue-700">
+                  If your instance URL changed, refresh this callback URL, update it in your provider, then save this connection.
+                </p>
+                <UButton
+                  type="button"
+                  size="xs"
+                  color="primary"
+                  variant="soft"
+                  label="Use current app URL"
+                  @click="useCurrentAppUrl"
+                />
+              </div>
             </div>
 
             <TextInput
@@ -78,7 +91,7 @@
               label="Issuer URL"
               :required="true"
               placeholder="https://idp.example.com"
-              help="Issued by your OIDC provider. Must match the redirect registered in that provider."
+              help="The issuer published by your OIDC provider, usually available in its OpenID configuration."
             />
 
             <TextInput
@@ -92,10 +105,11 @@
             <TextInput
               name="client_secret"
               :form="form"
-              label="Client Secret"
-              :required="true"
-              type="password"
+              :label="isEditing ? 'Client Secret (optional)' : 'Client Secret'"
+              :required="!isEditing"
+              native-type="password"
               placeholder="your-client-secret"
+              :help="isEditing ? 'Leave blank to keep the existing client secret.' : undefined"
             />
 
             <ToggleSwitchInput
@@ -166,8 +180,9 @@
                     <TextInput
                       :name="`options.group_role_mappings.${index}.idp_group`"
                       :form="form"
-                      label="IdP Group"
-                      placeholder="opnform_admins"
+                      label="Token group value"
+                      placeholder="group-id-or-name"
+                      help="Exact, case-sensitive value from the ID token's groups or group claim."
                       :required="true"
                       size="sm"
                     />
@@ -292,12 +307,21 @@ const showFieldMappings = ref(hasFieldMappings.value)
 const showRoleMapping = ref(roleMappings.value.length > 0)
 
 const redirectUri = computed(() => {
+  if (props.form.redirect_path) {
+    return props.form.redirect_path
+  }
+
   const slug = props.form.slug
   if (!slug) return null
   
   // Use appUrl helper to construct the redirect URI
   return appUrl(`/auth/${slug}/callback`)
 })
+
+const useCurrentAppUrl = () => {
+  if (!props.form.slug) return
+  props.form.redirect_path = appUrl(`/auth/${props.form.slug}/callback`)
+}
 
 watch(hasFieldMappings, (newVal) => {
   if (!showFieldMappings.value && newVal) {
@@ -330,4 +354,3 @@ const handleCancel = () => {
   emit('update:modelValue', false)
 }
 </script>
-

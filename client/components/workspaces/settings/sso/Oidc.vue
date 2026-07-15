@@ -22,7 +22,7 @@
         v-if="canManageConnections && canAccessFeature"
         label="Add Connection"
         icon="i-heroicons-plus"
-        @click="showCreateModal = true"
+        @click="openCreateModal"
       />
       <UButton
         v-else-if="canManageConnections && !canAccessFeature"
@@ -67,7 +67,7 @@
         v-if="canManageConnections && canAccessFeature"
         label="Add Your First Connection"
         icon="i-heroicons-plus"
-        @click="showCreateModal = true"
+        @click="openCreateModal"
       />
       <UButton
         v-else-if="canManageConnections && !canAccessFeature"
@@ -172,15 +172,17 @@ const openSsoLicenseModal = (error) => {
 const showCreateModal = ref(false)
 const editingConnection = ref(null)
 
-const connectionForm = useForm({
+const emptyConnectionData = () => ({
   name: '',
   slug: '',
   issuer: '',
   client_id: '',
   client_secret: '',
   domain: '',
+  redirect_path: '',
   enabled: true,
   options: {
+    require_state: true,
     field_mappings: {
       email: '',
       name: ''
@@ -189,18 +191,33 @@ const connectionForm = useForm({
   }
 })
 
+const connectionForm = useForm(emptyConnectionData())
+
 // Create mutations following useWorkspaces.js pattern
 const createMutation = create()
 const deleteMutation = remove()
+
+const openCreateModal = () => {
+  editingConnection.value = null
+  connectionForm.resetAndFill(emptyConnectionData())
+  showCreateModal.value = true
+}
 
 const saveConnection = () => {
   if (editingConnection.value) {
     // Update existing connection
     const updateMutation = update(editingConnection.value.id)
+    const keepExistingSecret = !connectionForm.client_secret?.trim()
+
+    // The API intentionally preserves the existing secret when it is omitted.
+    // Do not send the empty field shown in the edit form as a replacement.
+    if (keepExistingSecret) {
+      delete connectionForm.client_secret
+    }
+
     connectionForm.mutate(updateMutation)
       .then(() => {
         alert.success('OIDC connection updated successfully')
-        showCreateModal.value = false
         cancelEdit()
       })
       .catch((error) => {
@@ -210,13 +227,17 @@ const saveConnection = () => {
           alert.error(error.response?._data?.message ?? 'Failed to update connection')
         }
       })
+      .finally(() => {
+        if (keepExistingSecret) {
+          connectionForm.client_secret = ''
+        }
+      })
   } else {
     // Create new connection
     connectionForm.mutate(createMutation)
       .then(() => {
         alert.success('OIDC connection created successfully')
-        showCreateModal.value = false
-        connectionForm.reset()
+        cancelEdit()
       })
       .catch((error) => {
         // Form handles validation errors automatically
@@ -238,7 +259,9 @@ const editConnection = (connection) => {
     client_secret: '', // Don't pre-fill secret
     enabled: connection.enabled,
     domain: connection.domain ?? '',
+    redirect_path: connection.redirect_url ?? '',
     options: {
+      require_state: connection.options?.require_state ?? true,
       field_mappings: {
         email: connection.options?.field_mappings?.email ?? '',
         name: connection.options?.field_mappings?.name ?? ''
@@ -267,7 +290,7 @@ const deleteConnection = (connection) => {
 
 const cancelEdit = () => {
   editingConnection.value = null
-  connectionForm.reset()
+  connectionForm.resetAndFill(emptyConnectionData())
   showCreateModal.value = false
 }
 </script>

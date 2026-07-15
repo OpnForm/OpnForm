@@ -9,6 +9,7 @@ use App\Models\OAuthProvider;
 use function PHPUnit\Framework\assertCount;
 use function PHPUnit\Framework\assertEquals;
 use function PHPUnit\Framework\assertSame;
+use function PHPUnit\Framework\assertTrue;
 
 test('build columns', function () {
     /** @var \App\Models\User $user */
@@ -161,4 +162,61 @@ test('build row', function () {
     $row = $manager->buildRow($submission);
 
     assertSame(['First value', '', 'Third value'], $row);
+});
+
+test('build row uses the workspace policy for file links', function () {
+    /** @var \App\Models\User $user */
+    $user = $this->createUser();
+
+    /** @var \App\Models\Workspace $workspace */
+    $workspace = $this->createUserWorkspace($user);
+    $workspace->update([
+        'settings' => [
+            'external_file_links' => [
+                'expires_in_hours' => 72,
+            ],
+        ],
+    ]);
+
+    /** @var \App\Models\Forms\Form $form */
+    $form = $this->createForm($user, $workspace, [
+        'properties' => [
+            ['id' => 'upload', 'name' => 'Upload', 'type' => 'files'],
+        ],
+    ]);
+    $form->load('workspace');
+
+    /** @var \App\Models\OAuthProvider $provider */
+    $provider = OAuthProvider::factory()
+        ->for($user)
+        ->create();
+
+    /** @var FormIntegration $integration */
+    $integration = FormIntegration::factory()
+        ->for($form)
+        ->for($provider, 'provider')
+        ->create([
+            'data' => new SpreadsheetData(
+                url: 'https://google.com',
+                spreadsheet_id: 'sp_test',
+                columns: [
+                    ['id' => 'upload', 'name' => 'Upload'],
+                ]
+            )
+        ]);
+
+    $now = \Carbon\Carbon::parse('2026-07-17 17:00:00');
+    \Carbon\Carbon::setTestNow($now);
+
+    try {
+        $manager = new SpreadsheetManager(new Google($integration), $integration);
+        $row = $manager->buildRow(['upload' => ['weekend-upload.png']]);
+    } finally {
+        \Carbon\Carbon::setTestNow();
+    }
+
+    parse_str((string) parse_url($row[0], PHP_URL_QUERY), $queryParameters);
+
+    assertSame($now->copy()->addHours(72)->timestamp, (int) $queryParameters['expires']);
+    assertTrue(isset($queryParameters['signature']));
 });

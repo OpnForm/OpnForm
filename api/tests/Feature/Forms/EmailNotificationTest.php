@@ -30,6 +30,58 @@ it('send email with the submitted data', function () {
     expect(trim($renderedMail->render()))->toContain('Test body');
 });
 
+it('uses the workspace policy for file links in email notifications', function () {
+    $user = $this->actingAsUser();
+    $workspace = $this->createUserWorkspace($user);
+    $workspace->update([
+        'settings' => [
+            'external_file_links' => [
+                'expires_in_hours' => 168,
+            ],
+        ],
+    ]);
+    $form = $this->createForm($user, $workspace, [
+        'properties' => [
+            [
+                'id' => 'attachment',
+                'name' => 'Attachment',
+                'type' => 'files',
+                'required' => false,
+            ],
+        ],
+    ]);
+    $form->load('workspace', 'creator');
+    $integrationData = $this->createFormIntegration('email', $form->id, [
+        'send_to' => $user->email,
+        'sender_name' => 'OpnForm',
+        'subject' => 'New form submission',
+        'email_content' => 'New submission',
+        'include_submission_data' => true,
+    ]);
+
+    $now = \Carbon\Carbon::parse('2026-07-17 17:00:00');
+    \Carbon\Carbon::setTestNow($now);
+
+    try {
+        $mailable = new FormEmailNotification(
+            new \App\Events\Forms\FormSubmitted($form, ['attachment' => ['weekend-upload.png']]),
+            $integrationData,
+            'mail'
+        );
+        $notifiable = new AnonymousNotifiable();
+        $notifiable->route('mail', $user->email);
+        $renderedMail = html_entity_decode($mailable->toMail($notifiable)->render());
+    } finally {
+        \Carbon\Carbon::setTestNow();
+    }
+
+    preg_match('/href="([^"]*submissions\/file[^"]*)"/', $renderedMail, $matches);
+    parse_str((string) parse_url($matches[1] ?? '', PHP_URL_QUERY), $queryParameters);
+
+    expect((int) ($queryParameters['expires'] ?? 0))->toBe($now->copy()->addHours(168)->timestamp);
+    expect($queryParameters['signature'] ?? null)->not->toBeEmpty();
+});
+
 it('sends a email if needed', function () {
     $user = $this->actingAsProUser();
     $workspace = $this->createUserWorkspace($user);

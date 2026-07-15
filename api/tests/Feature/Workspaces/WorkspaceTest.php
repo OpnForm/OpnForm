@@ -325,6 +325,53 @@ describe('Custom Code Settings', function () {
     });
 });
 
+describe('External File Link Settings', function () {
+    it('defaults external file links to 24 hours', function () {
+        $user = $this->actingAsUser();
+        $workspace = $this->createUserWorkspace($user);
+
+        expect(app(\App\Service\Forms\ExternalSubmissionFileLinkPolicy::class)->expirationHours($workspace))
+            ->toBe(24);
+    });
+
+    it('can save external file link settings for a workspace', function () {
+        $user = $this->actingAsUser();
+        $workspace = $this->createUserWorkspace($user);
+        $workspace->update(['settings' => ['custom_code' => '<script>test</script>']]);
+
+        $this->putJson(route('open.workspaces.save-external-file-link-settings', $workspace), [
+            'expires_in_hours' => 168,
+        ])->assertSuccessful();
+
+        $workspace->refresh();
+
+        expect($workspace->settings['external_file_links']['expires_in_hours'])->toBe(168);
+        expect($workspace->settings['custom_code'])->toBe('<script>test</script>');
+    });
+
+    it('validates external file link settings', function () {
+        $user = $this->actingAsUser();
+        $workspace = $this->createUserWorkspace($user);
+
+        $this->putJson(route('open.workspaces.save-external-file-link-settings', $workspace), [
+            'expires_in_hours' => 48,
+        ])->assertUnprocessable()->assertJsonValidationErrors('expires_in_hours');
+    });
+
+    it('prevents non-admin users from saving external file link settings', function () {
+        $admin = $this->createUser();
+        $workspace = $this->createUserWorkspace($admin);
+
+        $member = $this->createUser();
+        $workspace->users()->attach($member, ['role' => 'user']);
+        $this->actingAsUser($member);
+
+        $this->putJson(route('open.workspaces.save-external-file-link-settings', $workspace), [
+            'expires_in_hours' => 168,
+        ])->assertForbidden();
+    });
+});
+
 describe('SMTP settings redaction', function () {
     it('exposes email_settings to admin users', function () {
         $admin = $this->actingAsProUser();

@@ -13,14 +13,39 @@ This page explains how to configure a custom domain for your OpnForm instance.
 
 ## Custom Domain Setup
 
-To use a custom domain (or subdomain)with OpnForm:
+To use a custom domain (or subdomain) with OpnForm:
 
-1. Purchase a domain (if needed) 
+1. Purchase a domain (if needed)
 2. Configure DNS records to point to your OpnForm instance
 3. Update OpnForm configuration:
-   - Set `APP_URL` in `.env`
+   - Set both `APP_URL` and `FRONT_URL` in `api/.env`
    - Set `NUXT_PUBLIC_APP_URL` and `NUXT_PUBLIC_API_BASE` in `client/.env`
 4. Secure with SSL certificate
+
+For example, when the public URL is `https://forms.example.com`:
+
+```bash
+# api/.env
+APP_URL=https://forms.example.com
+FRONT_URL=https://forms.example.com
+
+# client/.env
+NUXT_PUBLIC_APP_URL=https://forms.example.com
+NUXT_PUBLIC_API_BASE=https://forms.example.com/api
+```
+
+`FRONT_URL` is used by the backend when it creates frontend callback URLs,
+including OIDC callbacks. Keep it aligned with the public frontend URL.
+
+After changing these files, recreate the containers; a restart alone does not
+load new environment values. See [Updating Environment Variables](./environment-variables#updating-environment-variables).
+
+<Note>
+    If an OIDC connection already exists, edit it afterwards, use **Use current
+    app URL** to refresh its redirect URI, save it, and update the URI in your
+    identity provider. Existing connections retain their previous redirect URI
+    until you save a new one.
+</Note>
 
 import CloudVersion from "/snippets/cloud-version.mdx";
 
