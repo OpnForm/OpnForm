@@ -44,6 +44,7 @@ class ImpersonationMiddleware
         'open.providers',
         'open.forms.integrations.index',
         'open.forms.integrations.events',
+        'open.forms.integrations.events.retry',
         'open.forms.pdf-templates.index',
         'open.forms.pdf-templates.show',
         'open.forms.pdf-templates.download',
