@@ -34,31 +34,31 @@ useOpnSeoMeta({
 const freePlanComparison = [
   {
     label: "Unlimited submissions",
-    cells: ["Yes", "Yes"],
+    cells: ["Y", "Y"],
   },
   {
     label: "Unlimited forms",
-    cells: ["Yes", "Yes"],
+    cells: ["Y", "Y"],
   },
   {
     label: "Conditional logic",
-    cells: ["Yes", "Yes (basic logic jumps)"],
+    cells: ["Included", "Basic logic jumps"],
   },
   {
     label: "Multi-page forms",
-    cells: ["Yes", "Yes"],
+    cells: ["Included", "Included"],
   },
   {
     label: "File uploads",
-    cells: ["Free basic quota", "Yes (requires Google account)"],
+    cells: ["Included", "Requires Google account"],
   },
   {
     label: "Custom branding",
-    cells: ["No", "No"],
+    cells: ["Pro+", "Limited themes"],
   },
   {
     label: "Custom CSS",
-    cells: ["No", "No"],
+    cells: ["Business+", "N"],
   },
   {
     label: "Analytics dashboard",
@@ -66,7 +66,19 @@ const freePlanComparison = [
   },
   {
     label: "Integrations",
-    cells: ["Via integrations", "Google ecosystem + Apps Script"],
+    cells: ["Basic included; advanced paid", "Google ecosystem + Apps Script"],
+  },
+  {
+    label: "API access",
+    cells: ["Included", "Forms API"],
+  },
+  {
+    label: "Open source",
+    cells: ["Y", "N"],
+  },
+  {
+    label: "Self-hosting option",
+    cells: ["Y", "N"],
   },
 ]
 
@@ -114,7 +126,7 @@ const featureComparison = [
   },
   {
     label: "API + webhooks",
-    cells: ["Free API + webhooks", "API + Apps Script"],
+    cells: ["Included API + webhooks", "API + Apps Script"],
   },
   {
     label: "Custom domains",
@@ -134,7 +146,7 @@ const featureComparison = [
   },
   {
     label: "Ecosystem integrations",
-    cells: ["Basic free; advanced paid", "Google ecosystem"],
+    cells: ["Basic included; advanced paid", "Google ecosystem"],
   },
 ]
 </script>

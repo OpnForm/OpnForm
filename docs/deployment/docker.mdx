@@ -46,6 +46,51 @@ import CloudVersion from "/snippets/cloud-version.mdx";
 
 3. Access your OpnForm instance at `http://localhost`
 
+### Configure your public instance URL
+
+The setup script creates the environment files, but it cannot know the public
+domain where your instance will be available. Before configuring OIDC, OAuth,
+or using the instance in production, set the public URL in both files:
+
+| File | Required variables |
+| --- | --- |
+| `api/.env` | `APP_URL` and `FRONT_URL` |
+| `client/.env` | `NUXT_PUBLIC_APP_URL` and `NUXT_PUBLIC_API_BASE` |
+
+For example, an instance available at `https://forms.example.com` uses
+`https://forms.example.com` for `APP_URL`, `FRONT_URL`, and
+`NUXT_PUBLIC_APP_URL`, plus `https://forms.example.com/api` for
+`NUXT_PUBLIC_API_BASE`.
+
+After changing these variables, recreate the containers; `docker compose
+restart` does not load new environment values.
+
+```bash
+docker compose down
+docker compose up -d
+```
+
+See [Public instance URL](/configuration/environment-variables#public-instance-url-self-hosted)
+for the complete example and [OIDC SSO Configuration](/configuration/oidc-sso#prerequisites)
+before setting up SSO.
+
+### If a reverse proxy is in front of OpnForm
+
+When Caddy, Traefik, Cloudflare, or another reverse proxy forwards traffic to
+the Docker ingress, set `TRUSTED_PROXIES` in `api/.env` to the IP address or
+CIDR range from which that proxy connects to the ingress. This lets OpnForm use
+the real client IP for OIDC and other rate limits.
+
+```bash
+# Example only: use the actual address or CIDR of your own reverse proxy.
+TRUSTED_PROXIES=192.0.2.10,2001:db8:1234::/48
+```
+
+Leave it empty when users connect directly to the Docker ingress. Do not set
+it to `*`: doing so would make a direct client-provided forwarding header
+trustworthy and allow rate-limit bypasses. Recreate the API container after
+changing it.
+
 ### Initial Setup
 
 After deployment, OpnForm will automatically redirect you to a setup page where you can create your admin account. Simply visit `http://localhost` and you'll be guided through the setup process.

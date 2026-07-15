@@ -115,10 +115,13 @@ describe('PDF Template Upload', function () {
 });
 
 describe('PDF Template Create from Scratch', function () {
-    it('can create a template with 1 blank page', function () {
+    it('can create a template from scratch with form fields rendered', function () {
         $user = $this->actingAsProUser();
         $workspace = $this->createUserWorkspace($user);
         $form = $this->createForm($user, $workspace);
+        $properties = $form->properties;
+        $properties[0]['required'] = true;
+        $form->update(['properties' => $properties]);
 
         $response = $this->postJson(route('open.forms.pdf-templates.store', $form), []);
 
@@ -141,9 +144,38 @@ describe('PDF Template Create from Scratch', function () {
 
         $template = PdfTemplate::where('form_id', $form->id)->first();
         expect($template->name)->toBe('My PDF Template 1');
-        expect($template->page_count)->toBe(1);
-        expect($template->zone_mappings)->toBe([]);
+        expect($template->page_count)->toBeGreaterThanOrEqual(1);
+        expect($template->zone_mappings)->toBeArray()->not->toBeEmpty();
         expect(Storage::exists($template->file_path))->toBeTrue();
+
+        $titleZone = collect($template->zone_mappings)
+            ->first(fn ($zone) => isset($zone['static_text']) && str_contains($zone['static_text'], '<h1>'));
+        expect($titleZone)->not->toBeNull();
+        expect($titleZone['static_text'])->toBe('<h1>' . e($form->title) . '</h1>');
+
+        $requiredLabelZone = collect($template->zone_mappings)
+            ->first(fn ($zone) => ($zone['static_text'] ?? null) === 'Name <strong style="color: #EF4444">*</strong>');
+        expect($requiredLabelZone)->not->toBeNull();
+
+        // Each form input field should have a field_id zone
+        $inputFields = collect($form->properties)
+            ->filter(fn ($f) => !str_starts_with($f['type'], 'nf-'))
+            ->pluck('id')
+            ->toArray();
+        $zoneFieldIds = collect($template->zone_mappings)
+            ->pluck('field_id')
+            ->filter()
+            ->values()
+            ->toArray();
+        foreach ($inputFields as $fieldId) {
+            expect($zoneFieldIds)->toContain($fieldId);
+        }
+
+        // Every zone must reference a valid page_id from the manifest
+        $manifestIds = collect($template->page_manifest)->pluck('id')->toArray();
+        foreach ($template->zone_mappings as $zone) {
+            expect($manifestIds)->toContain($zone['page_id']);
+        }
     });
 
     it('uses incremental default name when creating from scratch', function () {

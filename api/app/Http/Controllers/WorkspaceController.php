@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\Workspace\CustomDomainRequest;
 use App\Http\Requests\Workspace\CustomCodeSettingsRequest;
 use App\Http\Requests\Workspace\EmailSettingsRequest;
+use App\Http\Requests\Workspace\ExternalFileLinkSettingsRequest;
 use App\Http\Resources\WorkspaceResource;
 use App\Models\User;
 use App\Models\UserWorkspace;
@@ -77,6 +78,20 @@ class WorkspaceController extends Controller
                 'custom_css' => $validated['custom_css'] ?? null,
             ]),
         ]);
+
+        return new WorkspaceResource($request->workspace);
+    }
+
+    public function saveExternalFileLinkSettings(ExternalFileLinkSettingsRequest $request)
+    {
+        $this->authorize('adminAction', $request->workspace);
+
+        $settings = $request->workspace->settings ?? [];
+        $settings['external_file_links'] = [
+            'expires_in_hours' => $request->validated('expires_in_hours'),
+        ];
+
+        $request->workspace->update(['settings' => $settings]);
 
         return new WorkspaceResource($request->workspace);
     }

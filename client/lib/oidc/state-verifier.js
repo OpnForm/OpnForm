@@ -1,4 +1,5 @@
 const stateVerifierStorageKey = (slug, state) => `oidc_state_verifier:${slug}:${state}`
+const automaticRetryStorageKey = (slug) => `oidc_automatic_retry:${slug}`
 
 export const storeOidcStateVerifier = (slug, state, verifier) => {
   if (import.meta.server || !slug || !state || !verifier) {
@@ -28,5 +29,41 @@ export const consumeOidcStateVerifier = (slug, state) => {
     return verifier
   } catch {
     return null
+  }
+}
+
+export const canAutomaticallyRetryOidcSignIn = (slug) => {
+  if (import.meta.server || !slug) {
+    return false
+  }
+
+  try {
+    return !sessionStorage.getItem(automaticRetryStorageKey(slug))
+  } catch {
+    return false
+  }
+}
+
+export const markOidcAutomaticRetry = (slug) => {
+  if (import.meta.server || !slug) {
+    return
+  }
+
+  try {
+    sessionStorage.setItem(automaticRetryStorageKey(slug), '1')
+  } catch {
+    // Ignore storage failures and fall back to the manual recovery screen.
+  }
+}
+
+export const clearOidcAutomaticRetry = (slug) => {
+  if (import.meta.server || !slug) {
+    return
+  }
+
+  try {
+    sessionStorage.removeItem(automaticRetryStorageKey(slug))
+  } catch {
+    // Ignore storage failures. A fresh manual login can still continue normally.
   }
 }

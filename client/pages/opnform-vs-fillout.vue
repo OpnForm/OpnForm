@@ -32,19 +32,19 @@ useOpnSeoMeta({
 
 const freePlanComparison = [
   {
-    label: "Monthly Responses",
+    label: "Monthly responses",
     cells: ["Unlimited submissions per month", "1,000 / month"],
   },
   {
-    label: "Forms Allowed",
+    label: "Forms allowed",
     cells: ["Unlimited forms", "Unlimited forms"],
   },
   {
-    label: "Branding Removal",
-    cells: ["Not available on free", "Not available"],
+    label: "Branding removal",
+    cells: ["Pro+", "Starter+"],
   },
   {
-    label: "Conditional Logic",
+    label: "Conditional logic",
     cells: ["Included", "Included"],
   },
   {
@@ -52,20 +52,24 @@ const freePlanComparison = [
     cells: ["Included", "Included"],
   },
   {
-    label: "File Uploads",
-    cells: ["Free basic quota", "Included"],
+    label: "File uploads",
+    cells: ["Included", "Included"],
   },
   {
     label: "Custom CSS",
-    cells: ["No direct custom CSS", "Pro+"],
-  },
-  {
-    label: "Self-hosting Option",
-    cells: ["Available", "No self-hosting"],
+    cells: ["Business+", "Pro+"],
   },
   {
     label: "API access",
-    cells: ["Free", "Included"],
+    cells: ["Included", "Included"],
+  },
+  {
+    label: "Open source",
+    cells: ["Y", "N"],
+  },
+  {
+    label: "Self-hosting option",
+    cells: ["Y", "N"],
   },
 ]
 
@@ -129,7 +133,7 @@ const featureComparison = [
   },
   {
     label: "Integrations",
-    cells: ["Basic free; advanced paid", "50+ included"],
+    cells: ["Basic included; advanced paid", "50+ included"],
   },
   {
     label: "Analytics dashboard",
@@ -145,7 +149,7 @@ const featureComparison = [
   },
   {
     label: "API access",
-    cells: ["Free", "Y"],
+    cells: ["Included", "Y"],
   },
   {
     label: "GDPR compliance",

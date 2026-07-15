@@ -1,4 +1,4 @@
-import { computed, toValue } from 'vue'
+import { computed } from 'vue'
 import { useTableColumnPreferences } from './useTableColumnPreferences'
 import debounce from 'debounce'
 
@@ -24,9 +24,7 @@ export function useTableState(form, withActions = false) {
   )
 
   const { getColumnPreference, setColumnPreference } = columnPreferences
-  const isProForm = computed(() => {
-    return Boolean(toValue(form)?.is_pro)
-  })
+  const { hasFeature } = usePlanFeatures()
 
   /* -------------------------------------------------------------------------- */
   /*                               Column config                               */
@@ -88,7 +86,7 @@ export function useTableState(form, withActions = false) {
          })
        }
 
-       if (isProForm.value && (form.value?.enable_partial_submissions ?? false)) {
+       if (hasFeature('enable_partial_submissions') && (form.value?.enable_partial_submissions ?? false)) {
          if (!baseColumns.find(property => property.id === 'status')) {
            baseColumns.push({
             id: 'status',
@@ -104,7 +102,7 @@ export function useTableState(form, withActions = false) {
          }
        }
 
-       if (isProForm.value && (form.value?.enable_ip_tracking ?? false)) {
+       if (hasFeature('enable_ip_tracking') && (form.value?.enable_ip_tracking ?? false)) {
          if (!baseColumns.find(property => property.id === 'ip_address')) {
            baseColumns.push({
             id: 'ip_address',

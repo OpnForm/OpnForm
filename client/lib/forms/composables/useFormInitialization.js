@@ -209,8 +209,7 @@ export function useFormInitialization(formConfig, form, pendingSubmission) {
 
   /**
    * Attempts to load form data from an existing submission.
-   * Supports both UUID (new format) and Hashid (legacy format) identifiers.
-   * @param {String} submissionId - UUID or Hashid of the submission to load
+   * @param {String} submissionId - UUID of the submission to load
    * @returns {Promise<Boolean>} - Whether loading was successful
    */
   const tryLoadFromSubmissionId = async (submissionId) => {
@@ -289,4 +288,4 @@ export function useFormInitialization(formConfig, form, pendingSubmission) {
     applyDefaultValues,
     resetAndFill // Export our wrapped function for use elsewhere
   }
-} 
+}
