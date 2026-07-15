@@ -57,6 +57,7 @@ export const formsApi = {
     generate: (data) => apiService.post('/forms/ai/generate', data),
     generateFields: (data) => apiService.post('/forms/ai/generate-fields', data),
     generateFormula: (data) => apiService.post('/forms/ai/generate-formula', data),
+    getFormula: (generationId, options) => apiService.get(`/forms/ai/formula/${generationId}`, options),
     get: (generationId, options) => apiService.get(`/forms/ai/${generationId}`, options)
   },
 

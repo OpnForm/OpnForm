@@ -67,6 +67,24 @@ describe('Formula Validator', () => {
       expect(result.valid).toBe(false)
       expect(result.errors[0].message).toContain('Did you mean')
     })
+
+    it('rejects function calls with too few arguments', () => {
+      const result = validateFormula('MOD({field1})', {
+        availableFields: [{ id: 'field1', name: 'Field 1' }]
+      })
+
+      expect(result.valid).toBe(false)
+      expect(result.errors[0].message).toBe('Function MOD() requires exactly 2 arguments, but got 1.')
+    })
+
+    it('rejects function calls with too many arguments', () => {
+      const result = validateFormula('COUNT({field1}, 1)', {
+        availableFields: [{ id: 'field1', name: 'Field 1' }]
+      })
+
+      expect(result.valid).toBe(false)
+      expect(result.errors[0].message).toBe('Function COUNT() accepts at most 1 argument, but got 2.')
+    })
   })
 
   describe('computed variable validation', () => {

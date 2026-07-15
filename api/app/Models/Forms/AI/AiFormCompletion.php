@@ -5,8 +5,10 @@ namespace App\Models\Forms\AI;
 use App\Jobs\Form\GenerateAiForm;
 use App\Jobs\Form\GenerateAiFormFields;
 use App\Jobs\Form\GenerateAiFormula;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class AiFormCompletion extends Model
 {
@@ -25,6 +27,7 @@ class AiFormCompletion extends Model
 
     protected $fillable = [
         'form_prompt',
+        'user_id',
         'status',
         'result',
         'ip',
@@ -45,6 +48,11 @@ class AiFormCompletion extends Model
             'context' => 'array',
             'generation_params' => 'array',
         ];
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 
     protected static function booted()

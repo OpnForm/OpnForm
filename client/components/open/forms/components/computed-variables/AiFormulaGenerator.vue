@@ -125,7 +125,7 @@ const fetchGeneratedFormula = (generationId) => {
       return
     }
 
-    formsApi.ai.get(generationId).then(data => {
+    formsApi.ai.getFormula(generationId).then(data => {
       if (data.ai_form_completion.status === 'completed') {
         if (aiRequestId.value) {
           const result = JSON.parse(data.ai_form_completion.result)
