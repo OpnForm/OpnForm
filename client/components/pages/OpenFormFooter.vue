@@ -320,8 +320,9 @@ const linkGroups = computed(() => [
   {
     title: "Developers",
     links: [
-      { label: "Open-source", href: opnformConfig.links.github_url },
-      { label: "Self-hosting", href: opnformConfig.links.self_hosting },
+      { label: "Open-source", to: { name: "open-source-form-builder" } },
+      { label: "Self-hosted", to: { name: "self-hosted-form-builder" } },
+      { label: "Self-hosting docs", href: opnformConfig.links.self_hosting },
       { label: "Documentation", href: opnformConfig.links.tech_docs },
       { label: "GitHub", href: opnformConfig.links.github_url },
     ],
