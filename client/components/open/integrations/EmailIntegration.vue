@@ -183,6 +183,18 @@
       label="Include submission data"
       help="If enabled the email will contain form submission answers"
     />
+    <p
+      v-if="integrationData.data.include_submission_data"
+      class="mt-2 text-xs text-neutral-500"
+    >
+      Uploaded-file links follow your workspace security policy ({{ externalFileLinkExpirationLabel }}).
+      <a
+        class="cursor-pointer underline"
+        @click="openWorkspaceSettings('external-file-links')"
+      >
+        Change policy
+      </a>
+    </p>
     <toggle-switch-input
       v-if="integrationData.data.include_submission_data"
       :form="integrationData"
@@ -245,6 +257,12 @@ const showGoogleFontPicker = ref(false)
 const workspaceFeatures = computed(() => props.form?.workspace?.features ?? [])
 const canUseAdvancedEmail = computed(() => workspaceFeatures.value.includes('integrations.email.advanced'))
 const canUseAdvancedBranding = computed(() => workspaceFeatures.value.includes('branding.advanced'))
+const externalFileLinkExpirationHours = computed(() => props.form?.workspace?.settings?.external_file_links?.expires_in_hours || 24)
+const externalFileLinkExpirationLabel = computed(() => {
+  const hours = externalFileLinkExpirationHours.value
+
+  return hours % 24 === 0 ? `${hours / 24} day${hours === 24 ? '' : 's'}` : `${hours} hours`
+})
 
 function onApplyFont(val) {
   if (props.integrationData.data) {

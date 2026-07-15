@@ -18,7 +18,7 @@ class FormSpamCheckListener implements ShouldQueue
 
     public function handle(FormSaved $event): void
     {
-        if (App::environment('testing')) {
+        if (App::environment(['testing', 'e2e'])) {
             return;
         }
 

@@ -5,7 +5,7 @@ namespace App\Service\Pdf;
 use App\Exceptions\PdfNotSupportedException;
 use Illuminate\Support\Facades\Storage;
 use setasign\Fpdi\Fpdi;
-use setasign\Fpdi\PdfParser\CrossReference\CrossReferenceException;
+use Throwable;
 
 /**
  * Rebuilds template PDF files from explicit logical page manifests.
@@ -54,7 +54,9 @@ class PdfTemplateRebuildService
             }
 
             return $pdf->Output('S');
-        } catch (CrossReferenceException $e) {
+        } catch (PdfNotSupportedException $e) {
+            throw $e;
+        } catch (Throwable $e) {
             throw new PdfNotSupportedException();
         } finally {
             @unlink($tempFile);

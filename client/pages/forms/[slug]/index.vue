@@ -80,10 +80,12 @@ const onFormSubmitted = () => {
 }
 
 const passwordEntered = function (password) {
+  const usesHttps = import.meta.client && window.location.protocol === 'https:'
   const cookie = useCookie('password-' + slug, {
     maxAge: 60 * 60 * 7,
-    sameSite: 'none',
-    secure: true
+    // Secure cookies are rejected on plain HTTP self-hosted instances.
+    sameSite: usesHttps ? 'none' : 'lax',
+    secure: usesHttps
   })
   cookie.value = sha256(password)
   

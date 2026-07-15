@@ -67,12 +67,12 @@
                     class="h-5 w-5 text-primary-600"
                   />
                 </div>
-                <div>
+                <div class="min-w-0">
                   <h3 class="font-medium text-neutral-900">
                     {{ template.name }}
                   </h3>
-                  <p class="text-sm text-neutral-500">
-                    {{ template.original_filename }} •
+                  <p class="text-sm text-neutral-500 truncate">
+                    Format: {{ getFilenamePatternPreview(template) }}.pdf •
                     {{ template.page_count }} page{{ template.page_count > 1 ? 's' : '' }} •
                     {{ template.zone_mappings?.length || 0 }} zone{{ template.zone_mappings?.length >= 1 ? 's' : '' }}
                   </p>
@@ -165,6 +165,29 @@ const uploadTemplate = upload(() => props.form?.id)
 const deleteTemplate = remove(() => props.form?.id)
 
 const templates = computed(() => templatesData.value?.data || [])
+
+const decodeTextEntities = (value) => {
+  return value
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#039;/g, "'")
+}
+
+const getFilenamePatternPreview = (template) => {
+  const pattern = template.filename_pattern || template.original_filename || template.filename || 'PDF template'
+  return decodeTextEntities(
+    String(pattern)
+      .replace(/<span[^>]*mention-field-name="([^"]*)"[^>]*>.*?<\/span>/gi, '$1')
+      .replace(/<span[^>]*>(.*?)<\/span>/gi, '$1')
+      .replace(/<[^>]*>/g, '')
+      .replace(/\.pdf$/i, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+  ) || 'PDF template'
+}
 
 // Create menu items (Upload PDF, Create from scratch)
 const createMenuItems = [

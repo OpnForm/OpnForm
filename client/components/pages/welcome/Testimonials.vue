@@ -1,7 +1,7 @@
 <template>
-  <div class="relative px-6 py-8 sm:px-8 sm:py-10">
+  <div class="relative px-4 py-8 sm:px-8 sm:py-10">
     <div
-      class="pointer-events-none absolute left-1/2 top-8 h-[21.75rem] w-[72rem] max-w-[145%] -translate-x-1/2 rounded-full bg-blue-100/70 blur-3xl"
+      class="pointer-events-none absolute left-1/2 top-8 h-[21.75rem] w-full max-w-full -translate-x-1/2 rounded-full bg-blue-100/70 blur-3xl sm:w-[72rem] sm:max-w-[145%]"
       aria-hidden="true"
     ></div>
 

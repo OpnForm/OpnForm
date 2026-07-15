@@ -55,6 +55,7 @@
               "configuration/environment-variables",
               "configuration/oauth-setup",
               "configuration/aws-s3",
+              "configuration/external-file-links",
               "configuration/email-setup",
               "configuration/custom-domain",
               "configuration/subdomain-redirect",
@@ -65,7 +66,8 @@
           {
             "group": "Embedding",
             "pages": [
-              "embedding/javascript-sdk"
+              "embedding/javascript-sdk",
+              "embedding/editor-embed"
             ]
           },
           {

@@ -220,8 +220,14 @@ describe('PdfGeneratorService', function () {
         expect(Storage::exists($resultPath))->toBeTrue();
     });
 
-    it('generates pdf without fetching static image urls unavailable in storage', function () {
-        Http::fake();
+    it('generates pdf with static image from unsplash-like url', function () {
+        Http::fake([
+            'https://images.unsplash.com/*' => Http::response(
+                tinyPngBytes(),
+                200,
+                ['Content-Type' => 'image/png']
+            ),
+        ]);
 
         $pdfContent = createTestPdf();
         $templatePath = 'pdf-templates/1/template.pdf';
@@ -263,7 +269,7 @@ describe('PdfGeneratorService', function () {
 
         expect(Storage::exists($resultPath))->toBeTrue();
         expect(Storage::get($resultPath))->toStartWith('%PDF');
-        Http::assertNothingSent();
+        Http::assertSentCount(1);
     });
 });
 
@@ -294,23 +300,23 @@ describe('Image resolving', function () {
         expect($content)->toBe('img-bytes');
     });
 
-    it('does not fetch remote image urls', function () {
+    it('does not fetch unsafe remote image urls', function () {
         Http::fake();
 
         $resolver = new PdfImageResolver();
 
-        $content = $resolver->resolveContent('https://example.com/image.png');
+        $content = $resolver->resolveContent('https://169.254.169.254/latest/meta-data/');
 
         expect($content)->toBeNull();
         Http::assertNothingSent();
     });
 
-    it('resolves url-shaped image values by storage filename only', function () {
+    it('resolves local asset urls from storage without remote fetch', function () {
         Http::fake();
         Storage::put('assets/forms/image.png', 'stored-image-bytes');
 
         $resolver = new PdfImageResolver();
-        $content = $resolver->resolveContent('https://example.com/image.png');
+        $content = $resolver->resolveContent(route('forms.assets.show', ['image.png']));
 
         expect($content)->toBe('stored-image-bytes');
         Http::assertNothingSent();
@@ -384,6 +390,100 @@ describe('PdfContentRenderer scalar values', function () {
         );
 
         expect($richTextRenderer->rendered)->toBeFalse();
+    });
+
+    it('renders inline rich text segments without dropping styled required marks', function () {
+        $renderer = new PdfRichTextRenderer();
+        $pdf = new class () extends Fpdi {
+            public array $cells = [];
+            private array $currentColor = [0, 0, 0];
+            private string $currentStyle = '';
+
+            public function SetTextColor($r, $g = null, $b = null)
+            {
+                $this->currentColor = [(int) $r, (int) $g, (int) $b];
+                parent::SetTextColor($r, $g, $b);
+            }
+
+            public function SetFont($family, $style = '', $size = 0)
+            {
+                $this->currentStyle = $style;
+                parent::SetFont($family, $style, $size);
+            }
+
+            public function Cell($w, $h = 0, $txt = '', $border = 0, $ln = 0, $align = '', $fill = false, $link = '')
+            {
+                $this->cells[] = [
+                    'text' => $txt,
+                    'x' => $this->GetX(),
+                    'y' => $this->GetY(),
+                    'color' => $this->currentColor,
+                    'style' => $this->currentStyle,
+                ];
+                parent::Cell($w, $h, $txt, $border, $ln, $align, $fill, $link);
+            }
+        };
+        $pdf->AddPage();
+
+        $renderer->render(
+            $pdf,
+            'Name <strong style="color: #EF4444">*</strong>',
+            10,
+            10,
+            80,
+            8,
+            ['font_size' => 10, 'font_color' => '#374151'],
+            210
+        );
+
+        $nameCell = collect($pdf->cells)->firstWhere('text', 'Name');
+        $starCell = collect($pdf->cells)->firstWhere('text', '*');
+
+        expect($nameCell)->not->toBeNull();
+        expect($starCell)->not->toBeNull();
+        expect($starCell['y'])->toBe($nameCell['y']);
+        expect($starCell['color'])->toBe([239, 68, 68]);
+        expect($starCell['style'])->toContain('B');
+    });
+
+    it('encodes rich text cells as Windows-1252 for FPDF core fonts', function () {
+        $renderer = new PdfRichTextRenderer();
+        $pdf = new class () extends Fpdi {
+            public array $cells = [];
+            public array $widthTexts = [];
+
+            public function GetStringWidth($s)
+            {
+                $this->widthTexts[] = $s;
+
+                return parent::GetStringWidth($s);
+            }
+
+            public function Cell($w, $h = 0, $txt = '', $border = 0, $ln = 0, $align = '', $fill = false, $link = '')
+            {
+                $this->cells[] = $txt;
+
+                parent::Cell($w, $h, $txt, $border, $ln, $align, $fill, $link);
+            }
+        };
+        $pdf->AddPage();
+
+        $renderer->render(
+            $pdf,
+            '<p>Délivrée&nbsp;été</p>',
+            10,
+            10,
+            80,
+            8,
+            ['font_size' => 10, 'font_color' => '#374151'],
+            210
+        );
+
+        $cellText = implode('', $pdf->cells);
+
+        expect(bin2hex($cellText))->toBe('44e96c697672e965a0e974e9');
+        expect(mb_convert_encoding($cellText, 'UTF-8', 'Windows-1252'))->toBe("Délivrée\u{00A0}été");
+        expect($pdf->widthTexts)->toBe($pdf->cells);
     });
 });
 

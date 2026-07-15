@@ -74,47 +74,7 @@ export function useDarkMode (elem = ref(null)) {
 }
 
 export function darkModeEnabled (elem = ref(null)) {
-  if (import.meta.server)
-    return ref(false)
-
-  // TODO: replace this with a function that returns a watcher for the given of dark class element
-  // Simplify this
-  const isDark = ref(false)
-
-  // Update isDark based on the current class
-  const updateIsDark = () => {
-    const finalElement = elem.value ?? document.documentElement
-    isDark.value = finalElement.classList.contains('dark')
-  }
-
-  // MutationObserver callback to react to class changes
-  let observer = new MutationObserver(updateIsDark)
-
-  // Initialize and clean up the observer
-  const initObserver = (element) => {
-    if (observer) {
-      observer.disconnect()
-    }
-    if (element) {
-      observer = new MutationObserver(updateIsDark)
-      observer.observe(element, { attributes: true, attributeFilter: ['class'] })
-    }
-  }
-
-  onMounted(() => {
-    if (!import.meta.server) {
-      initObserver(elem)
-    }
-  })
-
-  onUnmounted(() => {
-    if (observer) {
-      observer.disconnect()
-    }
-  })
-
-  // Return a computed ref that depends on isDark
-  return computed(() => isDark.value)
+  return useDarkMode(elem)
 }
 
 function handleDarkModeToggle (enabled) {
