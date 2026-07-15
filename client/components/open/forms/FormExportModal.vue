@@ -1,14 +1,16 @@
 <template>
   <div>
     <!-- Export Button -->
-    <UButton
-      size="sm"
-      color="neutral"
-      variant="ghost"
-      label="Export"
-      :loading="isExporting"
-      @click="startExport"
-    />
+    <UTooltip :text="`Uploaded-file links in this export remain available for ${fileLinkExpirationLabel}.`">
+      <UButton
+        size="sm"
+        color="neutral"
+        variant="ghost"
+        label="Export"
+        :loading="isExporting"
+        @click="startExport"
+      />
+    </UTooltip>
 
     <!-- Export Progress Modal -->
     <UModal v-model:open="showModal">
@@ -124,6 +126,13 @@ const exportProgress = ref(0)
 const exportStatus = ref(null)
 const exportError = ref(null)
 const pollingInterval = ref(null)
+
+const fileLinkExpirationHours = computed(() => props.form?.workspace?.settings?.external_file_links?.expires_in_hours || 24)
+const fileLinkExpirationLabel = computed(() => {
+  const hours = fileLinkExpirationHours.value
+
+  return hours % 24 === 0 ? `${hours / 24} day${hours === 24 ? '' : 's'}` : `${hours} hours`
+})
 
 // Continuous progress system
 const learnedSpeed = ref(0) // Real speed learned from API calls (% per second)

@@ -4,6 +4,7 @@ namespace App\Jobs\Form;
 
 use App\Models\Forms\Form;
 use App\Service\Forms\FormExportService;
+use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -53,13 +54,15 @@ class ExportFormSubmissionsJob implements ShouldQueue
         $chunkSize = 500;
         $processedCount = 0;
         $allRows = [];
+        $fileLinkExpiresAt = $exportService->fileLinkExpiresAt($this->form);
 
-        $submissionQuery->chunk($chunkSize, function ($submissions) use (&$processedCount, &$allRows, $totalSubmissions, $exportService) {
+        $submissionQuery->chunk($chunkSize, function ($submissions) use (&$processedCount, &$allRows, $totalSubmissions, $exportService, $fileLinkExpiresAt) {
             foreach ($submissions as $submission) {
                 $formattedRow = $exportService->formatSubmissionForExport(
                     $this->form,
                     $submission,
-                    $this->columns
+                    $this->columns,
+                    $fileLinkExpiresAt
                 );
                 $allRows[] = $formattedRow;
                 $processedCount++;
@@ -74,10 +77,10 @@ class ExportFormSubmissionsJob implements ShouldQueue
         $this->updateJobStatus('processing', 95, 'Generating export file...');
 
         $fileName = $this->form->slug . '-submissions-' . now()->format('Y-m-d-H-i-s') . '.csv';
-        $fileUrl = $exportService->generateAndUploadCsvFile($allRows, $fileName);
+        $fileUrl = $exportService->generateAndUploadCsvFile($allRows, $fileName, $fileLinkExpiresAt);
 
         // Mark as completed
-        $this->updateJobStatus('completed', 100, null, $totalSubmissions, $totalSubmissions, $fileUrl);
+        $this->updateJobStatus('completed', 100, null, $totalSubmissions, $totalSubmissions, $fileUrl, $fileLinkExpiresAt);
 
         Log::info("Export job {$this->jobId} completed successfully", [
             'form_id' => $this->form->id,
@@ -102,7 +105,8 @@ class ExportFormSubmissionsJob implements ShouldQueue
         ?string $errorMessage = null,
         ?int $processedSubmissions = null,
         ?int $totalSubmissions = null,
-        ?string $fileUrl = null
+        ?string $fileUrl = null,
+        ?Carbon $fileExpiresAt = null
     ): void {
         $exportService = app(FormExportService::class);
         $cacheKey = $exportService->getCacheKey($this->jobId);
@@ -133,7 +137,7 @@ class ExportFormSubmissionsJob implements ShouldQueue
 
         if ($fileUrl) {
             $data['file_url'] = $fileUrl;
-            $data['expires_at'] = now()->addDay()->toISOString(); // File expires in 24 hours
+            $data['expires_at'] = ($fileExpiresAt ?? now()->addDay())->toISOString();
         }
 
         // Cache for 2 hours

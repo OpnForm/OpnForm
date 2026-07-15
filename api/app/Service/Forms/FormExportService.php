@@ -4,6 +4,7 @@ namespace App\Service\Forms;
 
 use App\Models\Forms\Form;
 use App\Models\Forms\FormSubmission;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
@@ -14,6 +15,15 @@ class FormExportService
     public const SYNC_EXPORT_THRESHOLD = 1000;
     public const CACHE_KEY_PREFIX = 'form_export_job';
     public const EXPORT_FILE_PATH = 'exports/temp/';
+
+    public function __construct(private ExternalSubmissionFileLinkPolicy $externalFileLinkPolicy)
+    {
+    }
+
+    public function fileLinkExpiresAt(Form $form): Carbon
+    {
+        return $this->externalFileLinkPolicy->expiresAt($form->workspace);
+    }
 
     /**
      * Determine if export should be processed synchronously or asynchronously
@@ -28,14 +38,18 @@ class FormExportService
     /**
      * Format a single submission for export
      */
-    public function formatSubmissionForExport(Form $form, FormSubmission $submission, array $displayColumns): array
-    {
+    public function formatSubmissionForExport(
+        Form $form,
+        FormSubmission $submission,
+        array $displayColumns,
+        ?Carbon $fileLinkExpiresAt = null
+    ): array {
         $formatter = (new FormSubmissionFormatter($form, $submission->data))
             ->outputStringsOnly()
             ->setEmptyForNoValue()
             ->showRemovedFields()
             ->showHiddenFields()
-            ->useSignedUrlForFiles();
+            ->useSignedUrlForFiles($fileLinkExpiresAt ?? $this->fileLinkExpiresAt($form));
 
         $formattedData = $formatter->getCleanKeyValue();
         $filteredData = ['id' => Hashids::encode($submission->id)];
@@ -64,7 +78,7 @@ class FormExportService
     /**
      * Generate CSV content from rows and upload to storage
      */
-    public function generateAndUploadCsvFile(array $rows, string $fileName): string
+    public function generateAndUploadCsvFile(array $rows, string $fileName, Carbon $expiresAt): string
     {
         if (empty($rows)) {
             throw new \Exception('No data to export');
@@ -84,7 +98,7 @@ class FormExportService
         ]);
 
         // Generate temporary URL for download (works for all storage types)
-        return $disk->temporaryUrl($filePath, now()->addDay());
+        return $disk->temporaryUrl($filePath, $expiresAt);
     }
 
     /**

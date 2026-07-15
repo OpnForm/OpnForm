@@ -39,6 +39,15 @@ Instructions for AI coding agents working in this repository.
 - If backend code changed, run relevant `php artisan test --filter=...` and broaden only if needed.
 - Report what was run and what could not be run.
 
+## Codex Worktrees
+
+- Codex worktrees use the managed environment in `.codex/environments`.
+- The setup action provisions an isolated PostgreSQL Docker volume and seeded local Laravel/Nuxt stack for the current checkout.
+- Use the `Start app`, `Reset DB`, `Stop app`, and `Run E2E` actions, or their `scripts/codex-worktree-*.sh` equivalents.
+- The scripts print the worktree-specific UI URL. Verify this URL before trusting browser results; do not use the shared `docker-compose.dev.yml` stack for worktree checks.
+- Opening the worktree root URL signs in the seeded global and workspace admin automatically. Its credentials are `e2e@example.test` / `Abcd@1234` for manual and automated tests.
+- The seed includes three sample forms and five completed submissions across two public forms.
+
 ## Project Conventions
 
 - Frontend:

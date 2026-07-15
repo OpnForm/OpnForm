@@ -175,6 +175,7 @@ Route::group(['middleware' => 'auth.multi'], function () {
                 Route::put('/custom-domains', [WorkspaceController::class, 'saveCustomDomain'])->name('save-custom-domains');
                 Route::put('/email-settings', [WorkspaceController::class, 'saveEmailSettings'])->name('save-email-settings');
                 Route::put('/custom-code-settings', [WorkspaceController::class, 'saveCustomCodeSettings'])->name('save-custom-code-settings');
+                Route::put('/external-file-link-settings', [WorkspaceController::class, 'saveExternalFileLinkSettings'])->name('save-external-file-link-settings');
                 Route::put('/', [WorkspaceController::class, 'update'])->name('update');
                 Route::delete('/', [WorkspaceController::class, 'delete'])->name('delete');
 
@@ -423,8 +424,16 @@ Route::prefix('oauth')->name('oauth.')->group(function () {
 /*
  * OIDC SSO routes (public - authentication handled in controller)
  */
-Route::prefix('auth')->name('sso.')->middleware('throttle:10,1')->group(function () {
-    Route::post('/{slug}/redirect', [\App\Http\Controllers\Auth\SsoController::class, 'redirect'])->name('redirect');
+Route::prefix('auth')->name('sso.')->group(function () {
+    // Starting an authorization request allocates server-side state. Keep this
+    // separate from the callback so a stale callback cannot lock out a user.
+    Route::post('/{slug}/redirect', [\App\Http\Controllers\Auth\SsoController::class, 'redirect'])
+        ->middleware('throttle:oidc-init')
+        ->name('redirect');
+
+    // The callback remains behind the API limit. With the default connection
+    // settings, it validates a single-use state and verifier before exchanging
+    // the authorization code, so it must not share the smaller bucket above.
     Route::get('/{slug}/callback', [\App\Http\Controllers\Auth\SsoController::class, 'callback'])->name('callback');
 });
 

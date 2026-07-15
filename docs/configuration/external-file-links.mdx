@@ -1,0 +1,36 @@
+---
+title: External File Link Validity
+description: Control how long uploaded-file links remain accessible outside your workspace
+---
+
+File links shared outside a workspace are bearer links: anyone who has the link
+can download the file until the link expires. Each workspace admin can choose
+how long those links remain valid.
+
+## Configure the validity period
+
+1. Open the workspace settings.
+2. Select **Security & data**.
+3. Under **External file links**, choose 24 hours, 3 days, 7 days, 14 days, or
+   30 days, then save.
+
+New workspaces use a 24-hour validity period by default.
+
+## Where the policy applies
+
+The selected period is used for new uploaded-file links included in:
+
+- Form email notifications
+- CSV exports, including the download link for asynchronous exports
+- Webhooks, Activepieces, n8n, and Zapier
+- Slack, Discord, and Telegram notifications
+- Google Sheets rows
+
+Existing links keep their original expiration. Internal dashboard file previews
+and form assets are not changed by this workspace setting.
+
+<Warning>
+    Choose the shortest period that still fits the recipient's workflow. For
+    example, a team that processes weekend submissions on Monday can select
+    72 hours so links sent on Friday remain available through Monday.
+</Warning>

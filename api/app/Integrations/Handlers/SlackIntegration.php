@@ -53,7 +53,11 @@ class SlackIntegration extends AbstractIntegrationHandler
         }
 
         $formattedData = $this->escapeFormattedDataForSlack(
-            (new FormSubmissionFormatter($this->form, $this->submissionData))->outputStringsOnly()->showHiddenFields()->getFieldsWithValue()
+            (new FormSubmissionFormatter($this->form, $this->submissionData))
+                ->outputStringsOnly()
+                ->showHiddenFields()
+                ->useSignedUrlForFiles()
+                ->getFieldsWithValue()
         );
         $message = Arr::get($settings, 'message', 'New form submission');
         $blocks = [
@@ -67,7 +71,9 @@ class SlackIntegration extends AbstractIntegrationHandler
         ];
 
         if (Arr::get($settings, 'include_submission_data', true)) {
-            $formatter = (new FormSubmissionFormatter($this->form, $this->submissionData))->outputStringsOnly();
+            $formatter = (new FormSubmissionFormatter($this->form, $this->submissionData))
+                ->outputStringsOnly()
+                ->useSignedUrlForFiles();
             if (Arr::get($settings, 'include_hidden_fields_submission_data', false)) {
                 $formatter->showHiddenFields();
             }

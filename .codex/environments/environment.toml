@@ -1,0 +1,46 @@
+version = 1
+name = "opnform"
+
+[setup]
+script = '''
+cd "${CODEX_WORKTREE_PATH:-$PWD}"
+./scripts/codex-worktree-setup.sh
+'''
+
+[cleanup]
+script = '''
+cd "${CODEX_WORKTREE_PATH:-$PWD}"
+./scripts/codex-worktree-destroy.sh
+'''
+
+[[actions]]
+name = "Start app"
+icon = "run"
+command = '''
+cd "${CODEX_WORKTREE_PATH:-$PWD}"
+./scripts/codex-worktree-up.sh
+'''
+
+[[actions]]
+name = "Reset DB"
+icon = "test"
+command = '''
+cd "${CODEX_WORKTREE_PATH:-$PWD}"
+./scripts/codex-worktree-reset-db.sh
+'''
+
+[[actions]]
+name = "Stop app"
+icon = "debug"
+command = '''
+cd "${CODEX_WORKTREE_PATH:-$PWD}"
+./scripts/codex-worktree-down.sh
+'''
+
+[[actions]]
+name = "Run E2E"
+icon = "test"
+command = '''
+cd "${CODEX_WORKTREE_PATH:-$PWD}"
+./scripts/codex-worktree-test-e2e.sh
+'''
