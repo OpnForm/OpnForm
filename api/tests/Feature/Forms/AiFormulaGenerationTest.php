@@ -4,6 +4,7 @@ use App\Jobs\Form\GenerateAiFormula;
 use App\Models\Forms\AI\AiFormCompletion;
 use App\Service\AI\Prompts\Form\GenerateFormulaPrompt;
 use App\Service\OpenAi\GptCompleter;
+use Illuminate\Routing\Middleware\ThrottleRequests;
 use Illuminate\Support\Facades\Queue;
 
 $testFields = [
@@ -27,8 +28,14 @@ describe('AI Formula Generation', function () use ($testFields, $testVariables) 
             Queue::fake();
         });
 
+        it('requires authentication', function () {
+            $this->postJson(route('forms.ai.generate-formula'), [
+                'formula_prompt' => 'Multiply price by quantity',
+            ])->assertUnauthorized();
+        });
+
         it('creates an ai_form_completion with formula type', function () {
-            $this->actingAsUser();
+            $user = $this->actingAsUser();
 
             $response = $this->postJson(route('forms.ai.generate-formula'), [
                 'formula_prompt' => 'Multiply price by quantity',
@@ -49,6 +56,7 @@ describe('AI Formula Generation', function () use ($testFields, $testVariables) 
                 'id' => $completionId,
                 'type' => 'formula',
                 'form_prompt' => 'Multiply price by quantity',
+                'user_id' => $user->id,
             ]);
         });
 
@@ -108,6 +116,21 @@ describe('AI Formula Generation', function () use ($testFields, $testVariables) 
             ]);
 
             $response->assertSuccessful();
+        });
+
+        it('throttles formula generation to four requests per minute', function () {
+            $this->withMiddleware(ThrottleRequests::class);
+            $this->actingAsUser();
+
+            for ($attempt = 0; $attempt < 4; $attempt++) {
+                $this->postJson(route('forms.ai.generate-formula'), [
+                    'formula_prompt' => "Add {$attempt} + 1",
+                ])->assertSuccessful();
+            }
+
+            $this->postJson(route('forms.ai.generate-formula'), [
+                'formula_prompt' => 'This request should be throttled',
+            ])->assertStatus(429);
         });
     });
 
@@ -324,6 +347,25 @@ describe('AI Formula Generation', function () use ($testFields, $testVariables) 
             expect($result['formula'])->toBe('{uuid-price} + 1');
         });
 
+        it('retries on an invalid function argument count then returns a valid formula', function () use ($testFields, $testVariables) {
+            $prompt = new GenerateFormulaPrompt('test', $testFields, $testVariables);
+
+            $mockCompleter = Mockery::mock(GptCompleter::class);
+            $mockCompleter->shouldReceive('setJsonSchema')->andReturnSelf();
+            $mockCompleter->shouldReceive('setSystemMessage')->andReturnSelf();
+            $mockCompleter->shouldReceive('completeChat')->andReturnSelf();
+            $mockCompleter->shouldReceive('getArray')
+                ->andReturn(
+                    ['formula' => 'MOD({Price})'],
+                    ['formula' => 'MOD({Price}, 2)'],
+                );
+
+            $prompt->setGptCompleter($mockCompleter);
+            $result = $prompt->execute();
+
+            expect($result['formula'])->toBe('MOD({uuid-price}, 2)');
+        });
+
         it('throws RuntimeException after max retries with invalid formulas', function () use ($testFields, $testVariables) {
             $prompt = new GenerateFormulaPrompt('test', $testFields, $testVariables);
 
@@ -408,18 +450,32 @@ describe('AI Formula Generation', function () use ($testFields, $testVariables) 
         });
     });
 
-    describe('Polling GET /forms/ai/{completion}', function () {
+    describe('Polling GET /forms/ai/formula/{completion}', function () {
         beforeEach(function () {
             Queue::fake();
         });
 
+        it('requires authentication', function () {
+            $owner = $this->createUser();
+            $completion = AiFormCompletion::create([
+                'type' => AiFormCompletion::TYPE_FORMULA,
+                'form_prompt' => 'Sum fields',
+                'user_id' => $owner->id,
+                'ip' => request()->ip(),
+            ]);
+
+            $this->getJson(route('forms.ai.formula.show', $completion->id))
+                ->assertUnauthorized();
+        });
+
         it('returns completed formula result', function () {
-            $this->actingAsUser();
+            $user = $this->actingAsUser();
 
             $completion = AiFormCompletion::create([
                 'type' => AiFormCompletion::TYPE_FORMULA,
                 'form_prompt' => 'Sum fields',
                 'context' => ['fields' => [['id' => 'f1', 'name' => 'A', 'type' => 'number']]],
+                'user_id' => $user->id,
                 'ip' => request()->ip(),
             ]);
             $completion->update([
@@ -427,7 +483,7 @@ describe('AI Formula Generation', function () use ($testFields, $testVariables) 
                 'result' => json_encode(['formula' => '{f1} + 1']),
             ]);
 
-            $response = $this->getJson(route('forms.ai.show', $completion->id));
+            $response = $this->getJson(route('forms.ai.formula.show', $completion->id));
 
             $response->assertSuccessful()
                 ->assertJsonPath('ai_form_completion.status', 'completed')
@@ -435,29 +491,31 @@ describe('AI Formula Generation', function () use ($testFields, $testVariables) 
         });
 
         it('returns processing status while in progress', function () {
-            $this->actingAsUser();
+            $user = $this->actingAsUser();
 
             $completion = AiFormCompletion::create([
                 'type' => AiFormCompletion::TYPE_FORMULA,
                 'form_prompt' => 'Something',
                 'context' => ['fields' => []],
+                'user_id' => $user->id,
                 'ip' => request()->ip(),
             ]);
             $completion->update(['status' => AiFormCompletion::STATUS_PROCESSING]);
 
-            $response = $this->getJson(route('forms.ai.show', $completion->id));
+            $response = $this->getJson(route('forms.ai.formula.show', $completion->id));
 
             $response->assertSuccessful()
                 ->assertJsonPath('ai_form_completion.status', 'processing');
         });
 
         it('returns failed status with error', function () {
-            $this->actingAsUser();
+            $user = $this->actingAsUser();
 
             $completion = AiFormCompletion::create([
                 'type' => AiFormCompletion::TYPE_FORMULA,
                 'form_prompt' => 'Invalid thing',
                 'context' => ['fields' => []],
+                'user_id' => $user->id,
                 'ip' => request()->ip(),
             ]);
             $completion->update([
@@ -465,28 +523,46 @@ describe('AI Formula Generation', function () use ($testFields, $testVariables) 
                 'error' => 'Failed to generate a valid formula after 3 attempts.',
             ]);
 
-            $response = $this->getJson(route('forms.ai.show', $completion->id));
+            $response = $this->getJson(route('forms.ai.formula.show', $completion->id));
 
             $response->assertSuccessful()
                 ->assertJsonPath('ai_form_completion.status', 'failed');
         });
 
-        it('rejects access from a different IP', function () {
+        it('rejects a different user on the same IP', function () {
+            $this->withServerVariables(['REMOTE_ADDR' => '192.0.2.10']);
+            $owner = $this->createUser();
+            $otherUser = $this->createUser();
             $completion = AiFormCompletion::create([
                 'type' => AiFormCompletion::TYPE_FORMULA,
                 'form_prompt' => 'test',
                 'context' => ['fields' => []],
-                'ip' => '10.0.0.99',
+                'user_id' => $owner->id,
+                'ip' => '192.0.2.10',
             ]);
             $completion->update([
                 'status' => AiFormCompletion::STATUS_COMPLETED,
                 'result' => json_encode(['formula' => '1 + 1']),
             ]);
 
-            $response = $this->getJson(route('forms.ai.show', $completion->id));
+            $this->actingAsUser($otherUser);
 
-            // Controller returns non-200 for IP mismatch
-            expect($response->status())->not->toBe(200);
+            $this->getJson(route('forms.ai.formula.show', $completion->id))
+                ->assertNotFound();
+        });
+
+        it('does not expose formula results through legacy public polling', function () {
+            $owner = $this->createUser();
+            $completion = AiFormCompletion::create([
+                'type' => AiFormCompletion::TYPE_FORMULA,
+                'form_prompt' => 'Sum fields',
+                'context' => ['fields' => []],
+                'user_id' => $owner->id,
+                'ip' => request()->ip(),
+            ]);
+
+            $this->getJson(route('forms.ai.show', $completion->id))
+                ->assertNotFound();
         });
     });
 });
