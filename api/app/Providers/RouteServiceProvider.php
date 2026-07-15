@@ -51,6 +51,24 @@ class RouteServiceProvider extends ServiceProvider
             return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
         });
 
+        RateLimiter::for('oidc-init', function (Request $request) {
+            $connection = (string) ($request->route('slug') ?? 'unknown');
+            $key = hash('sha256', $request->ip() . '|' . $connection);
+            $limit = max(1, (int) config('oidc.rate_limit_per_minute', 30));
+
+            return Limit::perMinute($limit)
+                ->by('oidc-init:' . $key)
+                ->response(function (Request $request, array $headers) {
+                    $retryAfter = max(1, (int) ($headers['Retry-After'] ?? 60));
+
+                    return response()->json([
+                        'error' => 'oidc_rate_limited',
+                        'message' => "Too many sign-in requests. Please try again in {$retryAfter} seconds.",
+                        'retry_after' => $retryAfter,
+                    ], 429, $headers);
+                });
+        });
+
         // Rate limit for summary endpoints: 30 requests per minute per user
         RateLimiter::for('summary', function (Request $request) {
             return Limit::perMinute(30)->by($request->user()?->id ?: $request->ip());

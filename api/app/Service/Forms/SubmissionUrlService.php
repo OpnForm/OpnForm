@@ -5,25 +5,32 @@ namespace App\Service\Forms;
 use App\Models\Forms\Form;
 use App\Models\Forms\FormSubmission;
 use Illuminate\Support\Str;
-use Vinkla\Hashids\Facades\Hashids;
 
 class SubmissionUrlService
 {
     /**
-     * Get the submission identifier (UUID or Hashid) for a submission.
-     * Returns UUID if available, otherwise falls back to Hashid.
+     * Get the public submission identifier for a submission.
      *
      * @param FormSubmission $submission
      * @return string
      */
     public static function getSubmissionIdentifier(FormSubmission $submission): string
     {
-        return $submission->public_id ?? Hashids::encode($submission->id);
+        if (!$submission->public_id) {
+            $publicId = Str::uuid()->toString();
+            $updated = FormSubmission::query()
+                ->whereKey($submission->id)
+                ->whereNull('public_id')
+                ->update(['public_id' => $publicId]);
+
+            $submission->public_id = $updated ? $publicId : $submission->refresh()->public_id;
+        }
+
+        return $submission->public_id;
     }
 
     /**
      * Get the submission identifier by submission ID.
-     * Fetches the submission and returns UUID if available, otherwise Hashid.
      *
      * @param Form $form
      * @param int $submissionId
@@ -34,42 +41,28 @@ class SubmissionUrlService
         $submission = $form->submissions()->find($submissionId);
 
         if (!$submission) {
-            // Fallback to Hashid if submission not found (shouldn't happen in normal flow)
-            return Hashids::encode($submissionId);
+            abort(404, 'Submission not found');
         }
 
         return self::getSubmissionIdentifier($submission);
     }
 
     /**
-     * Resolve a submission from its identifier (UUID or Hashid).
+     * Resolve a submission from its public UUID identifier.
      *
      * @param Form $form
-     * @param string $identifier UUID or Hashid
+     * @param string $identifier UUID
      * @return FormSubmission|null
      */
     public static function resolveSubmission(Form $form, string $identifier): ?FormSubmission
     {
-        // Try UUID lookup first (new format)
-        if (Str::isUuid($identifier)) {
-            return $form->submissions()
-                ->where('public_id', $identifier)
-                ->first();
+        if (!Str::isUuid($identifier)) {
+            return null;
         }
 
-        // Fallback to Hashid decode (backward compatibility)
-        $decodedId = Hashids::decode($identifier);
-        $numericId = !empty($decodedId) ? (int)($decodedId[0]) : false;
-
-        if ($numericId) {
-            $submission = $form->submissions()->find($numericId);
-
-            if ($submission && $submission->form_id === $form->id) {
-                return $submission;
-            }
-        }
-
-        return null;
+        return $form->submissions()
+            ->where('public_id', $identifier)
+            ->first();
     }
 
     /**

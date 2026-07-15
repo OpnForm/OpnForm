@@ -5,7 +5,10 @@ namespace App\Http\Controllers;
 use App\Http\Requests\Workspace\CustomDomainRequest;
 use App\Http\Requests\Workspace\CustomCodeSettingsRequest;
 use App\Http\Requests\Workspace\EmailSettingsRequest;
+use App\Http\Requests\Workspace\ExternalFileLinkSettingsRequest;
 use App\Http\Resources\WorkspaceResource;
+use App\Models\User;
+use App\Models\UserWorkspace;
 use App\Models\Workspace;
 use App\Service\Billing\Feature;
 use Illuminate\Http\Request;
@@ -79,6 +82,20 @@ class WorkspaceController extends Controller
         return new WorkspaceResource($request->workspace);
     }
 
+    public function saveExternalFileLinkSettings(ExternalFileLinkSettingsRequest $request)
+    {
+        $this->authorize('adminAction', $request->workspace);
+
+        $settings = $request->workspace->settings ?? [];
+        $settings['external_file_links'] = [
+            'expires_in_hours' => $request->validated('expires_in_hours'),
+        ];
+
+        $request->workspace->update(['settings' => $settings]);
+
+        return new WorkspaceResource($request->workspace);
+    }
+
     public function delete(Workspace $workspace)
     {
         $this->authorize('delete', $workspace);
@@ -108,12 +125,14 @@ class WorkspaceController extends Controller
             'icon' => ($request->emoji) ? $request->emoji : '',
         ]);
 
-        // Add relation with user
-        $user->workspaces()->sync([
-            $workspace->id => [
-                'role' => 'admin',
-            ],
-        ], false);
+        // Add relation with user. Use the pivot model so workspace entitlement listeners run.
+        UserWorkspace::create([
+            'workspace_id' => $workspace->id,
+            'user_id' => $user->id,
+            'role' => User::ROLE_ADMIN,
+        ]);
+
+        $workspace->refresh();
 
         return $this->success([
             'message' => 'Workspace created.',

@@ -94,6 +94,7 @@ const showFormWorkspaceModal = ref(false)
 
 const deleteFormMutation = remove()
 const duplicateFormMutation = duplicate()
+const { emitFormDeleted } = useEditorEmbedBridge()
 
 const items = computed(() => {
   return [
@@ -179,6 +180,7 @@ const deleteForm = () => {
   deleteFormMutation.mutateAsync(props.form.id).then((data) => {
     useAlert().success(data.message)
     showDeleteFormModal.value = false
+    emitFormDeleted(props.form)
     router.push({ name: "home" })
   }).catch((error) => {
     useAlert().error(error.data?.message || "Failed to delete form")

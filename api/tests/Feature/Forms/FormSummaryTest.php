@@ -239,6 +239,33 @@ describe('Form Summary', function () {
             ->and($ratingField['data']['distribution'][1])->toBe(1);
     });
 
+    it('excludes skipped rating values from averages and answered count', function () {
+        $ratingProperty = collect($this->form->properties)->firstWhere('name', 'Rating');
+
+        $this->form->submissions()->createMany([
+            ['data' => [$ratingProperty['id'] => 5], 'status' => FormSubmission::STATUS_COMPLETED],
+            ['data' => [$ratingProperty['id'] => 5], 'status' => FormSubmission::STATUS_COMPLETED],
+            ['data' => [$ratingProperty['id'] => 4], 'status' => FormSubmission::STATUS_COMPLETED],
+            ['data' => [$ratingProperty['id'] => 3], 'status' => FormSubmission::STATUS_COMPLETED],
+            ['data' => [$ratingProperty['id'] => 1], 'status' => FormSubmission::STATUS_COMPLETED],
+            ['data' => [$ratingProperty['id'] => 0], 'status' => FormSubmission::STATUS_COMPLETED],
+            ['data' => [], 'status' => FormSubmission::STATUS_COMPLETED],
+        ]);
+
+        $response = $this->getJson(route('open.workspaces.form.summary', [$this->workspace, $this->form]))
+            ->assertSuccessful();
+
+        $fields = collect($response->json('fields'));
+        $ratingField = $fields->firstWhere('type', 'rating');
+
+        expect($ratingField['answered_count'])->toBe(5)
+            ->and($ratingField['total_submissions'])->toBe(7)
+            ->and($ratingField['data']['average'])->toBe(3.6)
+            ->and($ratingField['data']['count'])->toBe(5)
+            ->and($ratingField['data']['distribution'][5])->toBe(2)
+            ->and($ratingField['data']['distribution'][1])->toBe(1);
+    });
+
     it('tracks answered count per field', function () {
         $nameProperty = collect($this->form->properties)->firstWhere('name', 'Name');
         $numberProperty = collect($this->form->properties)->firstWhere('name', 'Number');

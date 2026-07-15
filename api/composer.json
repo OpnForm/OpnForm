@@ -104,7 +104,8 @@
         "psr-4": {
           "App\\": "app/",
           "Database\\Factories\\": "database/factories/",
-          "Database\\Seeders\\": "database/seeders/"
+          "Database\\Seeders\\": "database/seeders/",
+          "setasign\\FpdiPdfParser\\": "app/Service/Pdf/Compat/SetasignFpdiPdfParser/"
         },
         "files": [
           "app/helpers.php"

@@ -90,7 +90,7 @@ class TallyImporter extends AbstractImporter
             throw new FormImportException('Could not find Tally form blocks in the page data.');
         }
 
-        $title = $this->sanitizeText($pageProps['name'] ?? $pageProps['title'] ?? 'Imported Tally Form', 60);
+        $title = $this->sanitizeText($pageProps['name'] ?? $pageProps['title'] ?? 'Imported Tally Form', 255);
         ['properties' => $properties, 'settings' => $settings] = $this->mapBlocks($blocks);
 
         return [

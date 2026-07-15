@@ -153,6 +153,7 @@ class FormSubmissionController extends Controller
     private function processSyncExport(Form $form, array $displayColumns, array $submissionIds, FormExportService $exportService)
     {
         $allRows = [];
+        $fileLinkExpiresAt = $exportService->fileLinkExpiresAt($form);
         // Use query builder with orderBy for consistency with async export
         $submissionQuery = $form->submissions()->orderByDesc('created_at');
         if (!empty($submissionIds)) {
@@ -160,7 +161,7 @@ class FormSubmissionController extends Controller
         }
 
         foreach ($submissionQuery->get() as $submission) {
-            $allRows[] = $exportService->formatSubmissionForExport($form, $submission, $displayColumns);
+            $allRows[] = $exportService->formatSubmissionForExport($form, $submission, $displayColumns, $fileLinkExpiresAt);
         }
 
         $csvExport = (new FormSubmissionExport($allRows));

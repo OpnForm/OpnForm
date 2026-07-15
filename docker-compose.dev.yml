@@ -84,7 +84,7 @@ services:
       POSTGRES_USER: ${DB_USERNAME:-forge}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-forge}
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-forge}"]
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
       interval: 5s
       timeout: 5s
       retries: 5

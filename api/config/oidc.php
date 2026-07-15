@@ -24,6 +24,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | OIDC Sign-in Initiation Rate Limit
+    |--------------------------------------------------------------------------
+    |
+    | Limits how often one client IP address can start a sign-in for a given
+    | connection. When OpnForm is behind a reverse proxy, configure
+    | TRUSTED_PROXIES so Laravel can determine the real client IP safely. The
+    | callback is protected by its single-use state verifier and deliberately
+    | does not share this bucket.
+    |
+    */
+    'rate_limit_per_minute' => env('OIDC_RATE_LIMIT_PER_MINUTE', 100),
+
+    /*
+    |--------------------------------------------------------------------------
     | Blocked Email Providers
     |--------------------------------------------------------------------------
     |

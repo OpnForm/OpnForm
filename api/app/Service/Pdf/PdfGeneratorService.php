@@ -11,7 +11,7 @@ use App\Service\Forms\FormSubmissionFormatter;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use setasign\Fpdi\Fpdi;
-use setasign\Fpdi\PdfParser\CrossReference\CrossReferenceException;
+use Throwable;
 
 class PdfGeneratorService
 {
@@ -71,7 +71,7 @@ class PdfGeneratorService
             // Create FPDI instance
             $pdf = new Fpdi();
             $sourcePageCount = $pdf->setSourceFile($tempFile);
-        } catch (CrossReferenceException $e) {
+        } catch (Throwable $e) {
             @unlink($tempFile);
             throw new PdfNotSupportedException();
         }
@@ -101,16 +101,21 @@ class PdfGeneratorService
             $sourcePage = isset($entry['source_page']) ? (int) $entry['source_page'] : null;
             $pageId = $entry['id'] ?? null;
 
-            if ($type === 'source' && $sourcePage !== null && $sourcePage >= 1 && $sourcePage <= $sourcePageCount) {
-                $templateId = $pdf->importPage($sourcePage);
-                $size = $pdf->getTemplateSize($templateId);
-                $pdf->AddPage($size['orientation'], [$size['width'], $size['height']]);
-                $pdf->useTemplate($templateId, 0, 0, $size['width'], $size['height']);
-            } else {
-                // Blank pages inherit dimensions from first source page.
-                $templateId = $pdf->importPage(1);
-                $size = $pdf->getTemplateSize($templateId);
-                $pdf->AddPage($size['orientation'], [$size['width'], $size['height']]);
+            try {
+                if ($type === 'source' && $sourcePage !== null && $sourcePage >= 1 && $sourcePage <= $sourcePageCount) {
+                    $templateId = $pdf->importPage($sourcePage);
+                    $size = $pdf->getTemplateSize($templateId);
+                    $pdf->AddPage($size['orientation'], [$size['width'], $size['height']]);
+                    $pdf->useTemplate($templateId, 0, 0, $size['width'], $size['height']);
+                } else {
+                    // Blank pages inherit dimensions from first source page.
+                    $templateId = $pdf->importPage(1);
+                    $size = $pdf->getTemplateSize($templateId);
+                    $pdf->AddPage($size['orientation'], [$size['width'], $size['height']]);
+                }
+            } catch (Throwable $e) {
+                @unlink($tempFile);
+                throw new PdfNotSupportedException();
             }
 
             if (is_string($pageId) && isset($zonesByPage[$pageId])) {

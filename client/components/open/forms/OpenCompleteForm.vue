@@ -168,7 +168,7 @@ const workingFormStore = useWorkingFormStore()
 const { data: user } = useAuth().user()
 const passwordForm = useForm({ password: null })
 // Removed unused hidePasswordDisabledMsg (was always false and unused)
-// submission_id can be UUID (new secure format) or Hashid (legacy format)
+// submission_id is a public UUID identifier
 const submissionId = ref(route.query.submission_id || null)
 const submittedData = ref(null)
 const showFirstSubmissionModal = ref(false)

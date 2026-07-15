@@ -8,6 +8,7 @@ use App\Http\Requests\Pdf\CreatePdfTemplateRequest;
 use App\Http\Requests\Pdf\UpdatePdfTemplateRequest;
 use App\Models\Forms\Form;
 use App\Models\PdfTemplate;
+use App\Service\Pdf\PdfFormFieldRenderer;
 use App\Service\Pdf\PdfTemplateRebuildService;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -61,13 +62,10 @@ class PdfTemplateController extends Controller
             $originalFilename = $file->getClientOriginalName();
             $message = 'PDF template uploaded successfully. Let\'s customize as per your needs.';
         } else {
-            $pdf = new Fpdi();
-            $pdf->AddPage();
-            $pdfContent = $pdf->Output('S');
-
-            Storage::put($path, $pdfContent);
-            $pageCount = 1;
-            $fileSize = strlen($pdfContent);
+            $result = (new PdfFormFieldRenderer())->generate($form);
+            Storage::put($path, $result['pdf_content']);
+            $pageCount = $result['page_count'];
+            $fileSize = strlen($result['pdf_content']);
             $originalFilename = $filename;
             $message = 'PDF template created. Let\'s customize as per your needs.';
         }
@@ -82,8 +80,8 @@ class PdfTemplateController extends Controller
             'file_path' => $path,
             'file_size' => $fileSize,
             'page_count' => $pageCount,
-            'page_manifest' => PdfTemplate::buildDefaultPageManifest($pageCount),
-            'zone_mappings' => [],
+            'page_manifest' => isset($result) ? $result['pages'] : PdfTemplate::buildDefaultPageManifest($pageCount),
+            'zone_mappings' => isset($result) ? $result['zones'] : [],
             'filename_pattern' => PdfTemplate::DEFAULT_FILENAME_PATTERN,
             'remove_branding' => false,
         ]);

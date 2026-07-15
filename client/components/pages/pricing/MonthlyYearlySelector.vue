@@ -26,7 +26,10 @@
       </button>
     </div>
 
-    <div class="absolute top-1/2 left-full ml-1.5 hidden -translate-y-1/2 sm:block">
+    <div
+      v-if="showSavingsBadge"
+      class="absolute top-1/2 left-full ml-1.5 hidden -translate-y-1/2 sm:block"
+    >
       <div
         class="inline-flex items-center whitespace-nowrap rounded-[7px] bg-purple-50 px-2 py-1 pr-2.5 text-xs font-medium text-purple-600"
       >
@@ -39,6 +42,7 @@
 <script setup>
 defineProps({
   modelValue: { type: Boolean, required: true },
+  showSavingsBadge: { type: Boolean, default: true },
 })
 const emit = defineEmits(['update:modelValue'])
 

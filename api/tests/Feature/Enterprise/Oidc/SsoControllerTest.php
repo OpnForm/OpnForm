@@ -2,6 +2,7 @@
 
 use App\Enterprise\Oidc\Models\IdentityConnection;
 use App\Models\User;
+use Illuminate\Routing\Middleware\ThrottleRequests;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\URL;
 use Tests\TestHelpers;
@@ -193,6 +194,89 @@ describe('SsoController - Redirect', function () {
         // Restore original env and scheme
         config(['app.env' => $originalEnv]);
         URL::forceScheme('https');
+    });
+});
+
+describe('SsoController - Rate limiting', function () {
+    it('limits OIDC sign-in initiation per connection and returns the retry delay', function () {
+        config(['oidc.rate_limit_per_minute' => 2]);
+        $this->withMiddleware(ThrottleRequests::class);
+        $this->withServerVariables(['REMOTE_ADDR' => '192.0.2.20']);
+
+        $this->postJson('/auth/company-sso/redirect')->assertNotFound();
+        $this->postJson('/auth/company-sso/redirect')->assertNotFound();
+
+        $response = $this->postJson('/auth/company-sso/redirect');
+
+        $retryAfter = (int) $response->headers->get('Retry-After');
+        $response->assertStatus(429)
+            ->assertJson([
+                'error' => 'oidc_rate_limited',
+                'retry_after' => $retryAfter,
+            ]);
+
+        expect($retryAfter)->toBeGreaterThan(0)
+            ->and($response->json('message'))->toContain("{$retryAfter} seconds");
+
+        $this->postJson('/auth/another-company-sso/redirect')->assertNotFound();
+    });
+
+    it('does not put callbacks in the OIDC initiation bucket', function () {
+        config(['oidc.rate_limit_per_minute' => 1]);
+        $this->withMiddleware(ThrottleRequests::class);
+        $this->withServerVariables(['REMOTE_ADDR' => '192.0.2.21']);
+
+        $this->getJson('/auth/company-sso/callback')->assertNotFound();
+        $this->getJson('/auth/company-sso/callback')->assertNotFound();
+
+        $this->postJson('/auth/company-sso/redirect')->assertNotFound();
+        $this->postJson('/auth/company-sso/redirect')->assertStatus(429);
+    });
+
+    it('uses the forwarded client IP when the reverse proxy is explicitly trusted', function () {
+        config([
+            'oidc.rate_limit_per_minute' => 1,
+            'trustedproxy.proxies' => '192.0.2.30',
+        ]);
+        $this->withMiddleware(ThrottleRequests::class);
+
+        $this->withServerVariables([
+            'REMOTE_ADDR' => '192.0.2.30',
+            'HTTP_X_FORWARDED_FOR' => '198.51.100.30',
+        ]);
+        $this->postJson('/auth/company-sso/redirect')->assertNotFound();
+
+        $this->withServerVariables([
+            'REMOTE_ADDR' => '192.0.2.30',
+            'HTTP_X_FORWARDED_FOR' => '198.51.100.31',
+        ]);
+        $this->postJson('/auth/company-sso/redirect')->assertNotFound();
+
+        $this->withServerVariables([
+            'REMOTE_ADDR' => '192.0.2.30',
+            'HTTP_X_FORWARDED_FOR' => '198.51.100.30',
+        ]);
+        $this->postJson('/auth/company-sso/redirect')->assertStatus(429);
+    });
+
+    it('does not trust a forwarded client IP from an untrusted sender', function () {
+        config([
+            'oidc.rate_limit_per_minute' => 1,
+            'trustedproxy.proxies' => '192.0.2.40',
+        ]);
+        $this->withMiddleware(ThrottleRequests::class);
+
+        $this->withServerVariables([
+            'REMOTE_ADDR' => '192.0.2.41',
+            'HTTP_X_FORWARDED_FOR' => '198.51.100.40',
+        ]);
+        $this->postJson('/auth/company-sso/redirect')->assertNotFound();
+
+        $this->withServerVariables([
+            'REMOTE_ADDR' => '192.0.2.41',
+            'HTTP_X_FORWARDED_FOR' => '198.51.100.41',
+        ]);
+        $this->postJson('/auth/company-sso/redirect')->assertStatus(429);
     });
 });
 

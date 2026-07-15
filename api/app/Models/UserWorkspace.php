@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Events\Models\UserWorkspaceCreated;
 use App\Traits\EnsureUserHasWorkspace;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -17,6 +18,10 @@ class UserWorkspace extends Model
         'user_id',
         'workspace_id',
         'role',
+    ];
+
+    protected $dispatchesEvents = [
+        'created' => UserWorkspaceCreated::class,
     ];
 
     public function user()

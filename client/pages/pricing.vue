@@ -453,9 +453,9 @@
               <UButton
                 class="w-fit sm:w-full justify-center px-4 py-2.5 rounded-[12px] text-base leading-7 tracking-[-1.1%] font-medium"
                 variant="outline"
-                label="Request a quote"
+                label="Get started free"
                 color="neutral"
-                @click.prevent="contactUs"
+                @click.prevent="handleEnterpriseCta"
               />
             </div>
 
@@ -555,8 +555,9 @@
           <p
             class="mt-4 text-base font-normal tracking-[-1.1%] leading-7 text-gray-600"
           >
-            The self-hosted commercial licenses are the same price as hosted
-            plans.
+            Self-host the core product for free. Upgrade to a self-hosted
+            Enterprise license when you need more users, advanced identity
+            controls, branding, and support.
           </p>
         </div>
 
@@ -598,8 +599,9 @@
                     size="lg"
                     variant="outline"
                     color="neutral"
-                    label="Request a quote"
-                    @click.prevent="contactUs"
+                    label="View self-hosting docs"
+                    href="https://docs.opnform.com/deployment/docker"
+                    target="_blank"
                     class="px-4 py-2.5 rounded-[12px] text-base leading-7 tracking-[-1.1%] font-medium"
                   />
                 </div>
@@ -667,11 +669,20 @@
                 <div class="mt-6">
                   <UButton
                     size="lg"
-                    variant="outline"
-                    color="neutral"
-                    label="Request a quote"
-                    @click.prevent="contactUs"
+                    label="Buy license"
+                    :to="{ name: 'self-hosted-license' }"
                     class="px-4 py-2.5 rounded-[12px] text-base leading-7 tracking-[-1.1%] font-medium"
+                  />
+                  <p class="mt-3 text-sm leading-5 tracking-[-0.6%] font-medium text-gray-600">
+                    Self-service checkout. License key delivered by email.
+                  </p>
+                  <UButton
+                    size="sm"
+                    variant="link"
+                    color="neutral"
+                    label="Need invoice or procurement?"
+                    class="mt-1 p-0 text-sm font-medium"
+                    @click.prevent="contactUs"
                   />
                 </div>
               </div>
@@ -814,7 +825,9 @@ const communityEditionFeatures = [
   "Unlimited forms & submissions",
   "File uploads, logic, computed fields",
   "Pre-fills, URL parameters",
-  "Unlimited workspaces",
+  "Up to 2 users across the instance",
+  "Core workspace management",
+  "OIDC SSO within the 2-user limit",
   "Branding required",
   "Community support",
 ]
@@ -908,6 +921,7 @@ const handlePlanCta = (plan) => {
 
 const handleProCta = () => handlePlanCta("pro")
 const handleBusinessCta = () => handlePlanCta("business")
+const handleEnterpriseCta = () => handlePlanCta("enterprise")
 
 const contactUs = () => {
   useCrisp().openAndShowChat()

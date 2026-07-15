@@ -413,6 +413,7 @@ jobs:
         if: ${{ failure() && !cancelled() }}
         run: |
           docker compose -f docker-compose.e2e.yml logs --no-color > e2e-docker.log
+          docker compose -f docker-compose.e2e.yml exec -T api cat storage/logs/laravel.log > e2e-laravel.log || true
           if [ -f .e2e-ui.log ]; then
             cp .e2e-ui.log e2e-ui.log
           fi
@@ -442,6 +443,7 @@ jobs:
           name: e2e-debug-logs
           path: |
             e2e-docker.log
+            e2e-laravel.log
             e2e-ui.log
           if-no-files-found: ignore
           retention-days: 14

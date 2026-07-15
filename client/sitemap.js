@@ -2,8 +2,18 @@ import templateIndustries from './data/forms/templates/industries.json'
 import templateTypes from './data/forms/templates/types.json'
 import opnformConfig from './opnform.config.js'
 
+const isSelfHostedBuild = process.env.SELF_HOSTED === 'true'
+  || process.env.NUXT_PUBLIC_SELF_HOSTED === 'true'
+  || process.env.NUXT_PUBLIC_API_BASE === '/api'
+
 export default {
-  exclude: ['/subscriptions/**', '/templates/my-templates', '/setup'],
+  exclude: [
+    '/subscriptions/**',
+    '/templates/my-templates',
+    '/setup',
+    '/self-hosted/checkout/**',
+    ...(isSelfHostedBuild ? ['/self-hosted/license'] : []),
+  ],
   sources: [`${process.env.NUXT_PUBLIC_API_BASE}sitemap-urls`],
   cacheMaxAgeSeconds: 60 * 60 * 2, // 2 hours
   xslColumns: [
@@ -16,9 +26,22 @@ export default {
     return [
       ...getTemplateIndustriesUrls(),
       ...getTemplateTypesUrls(),
+      ...getCloudMarketingUrls(),
       ...(await getIntegrationsPages().catch(() => [])),
     ]
   }
+}
+
+function getCloudMarketingUrls () {
+  if (isSelfHostedBuild) return []
+
+  return [
+    {
+      url: '/self-hosted/license',
+      changefreq: 'monthly',
+      priority: 0.7
+    }
+  ]
 }
 
 function getTemplateTypesUrls () {
