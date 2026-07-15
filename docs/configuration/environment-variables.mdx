@@ -5,6 +5,37 @@ description: Detailed guide on configuring environment variables for OpnForm
 
 OpnForm uses two `.env` files for configuration: one for the Laravel backend located in the `api` directory, and one for the Nuxt front-end located in the `client` directory.
 
+## Public instance URL (self-hosted)
+
+Set these variables before exposing a self-hosted instance publicly or
+configuring OIDC, OAuth, emails, or any feature that generates links back to
+your OpnForm instance. They must use the real public URL, never `localhost` in
+production.
+
+For a standard Docker deployment available at `https://forms.example.com`:
+
+| File | Variable | Value |
+| --- | --- | --- |
+| `api/.env` | `APP_URL` | `https://forms.example.com` |
+| `api/.env` | `FRONT_URL` | `https://forms.example.com` |
+| `client/.env` | `NUXT_PUBLIC_APP_URL` | `https://forms.example.com` |
+| `client/.env` | `NUXT_PUBLIC_API_BASE` | `https://forms.example.com/api` |
+
+`APP_URL`, `FRONT_URL`, and `NUXT_PUBLIC_APP_URL` normally have the same
+public origin. In the standard Docker setup, the API is served through that
+same origin under `/api`, which is why `NUXT_PUBLIC_API_BASE` ends in `/api`.
+If your API is exposed on a separate public origin, use that browser-accessible
+API URL instead.
+
+<Warning>
+    After changing either `.env` file in Docker, recreate the affected
+    containers. `docker compose restart` does not reload environment values.
+    See [Updating Environment Variables](#updating-environment-variables).
+</Warning>
+
+For the deployment workflow, see [Docker Deployment](../deployment/docker#configure-your-public-instance-url).
+For the OIDC-specific checklist, see [OIDC SSO Configuration](./oidc-sso#prerequisites).
+
 ## Backend Environment Variables
 
 The following environment variables are used to [configure the Laravel](https://laravel.com/docs/11.x/configuration) application (OpnForm's API).
@@ -31,6 +62,7 @@ There are dedicated configuration pages available for more detailed setup instru
 | `OPEN_AI_API_KEY`                | API key for accessing OpenAI services.                                                                                                                                                    |
 | `UNSPLASH_ACCESS_KEY`            | Access key for Unsplash API.                                                                                                                                                              |
 | `UNSPLASH_SECRET_KEY`            | Secret key for Unsplash API.                                                                                                                                                              |
+| `APP_URL`                        | Public URL of the Laravel application. For a standard self-hosted deployment, set it to the public OpnForm URL.                                                                         |
 | `FRONT_URL`                      | Public facing URL of the front-end.                                                                                                                                                       |
 | `FRONT_API_SECRET`               | Shared secret with the front-end.                                                                                                                                                         |
 | `JWT_TTL`                        | Time to live for JSON Web Tokens (JWT).                                                                                                                                                   |
@@ -39,6 +71,8 @@ There are dedicated configuration pages available for more detailed setup instru
 | `PUBLIC_UPLOADS_RATE_LIMIT_PER_MINUTE` | Maximum public upload requests allowed per client IP or authenticated user per route each minute. Defaults to `30`.                                                                 |
 | `PUBLIC_UPLOADS_RATE_LIMIT_PER_HOUR`   | Maximum public upload requests allowed per client IP or authenticated user per route each hour. Defaults to `300`.                                                                  |
 | `OIDC_FORCE_LOGIN`               | When set to `true`, password-based authentication is disabled and users must authenticate via OIDC SSO. See [Force Login Mode](../configuration/oidc-sso#7-force-login-mode) for details. |
+| `OIDC_RATE_LIMIT_PER_MINUTE`     | Maximum OIDC sign-in initiations allowed per client IP and OIDC connection each minute. Defaults to `100`. OIDC callbacks use the normal API limit and are protected by their single-use state verifier. |
+| `TRUSTED_PROXIES`                | Comma-separated IP addresses or CIDR ranges of reverse proxies allowed to provide `X-Forwarded-*` headers. Leave empty for a direct Docker deployment. Never use `*`; it would allow a direct client to spoof its IP. |
 | `CUSTOM_CODE_ENABLE_SELF_HOSTED` | Enables execution of user-provided custom code on self-hosted deployments. Defaults to `false` for safety reasons (XSS etc.).                                                             |
 | `LICENSE_API_ENDPOINT`           | Cloud API endpoint used by self-hosted instances for Enterprise license validation. Defaults to `https://api.opnform.com`.                                                                |
 | `LICENSE_CHECKOUT_SUCCESS_URL`   | Cloud checkout success URL used when creating self-hosted Enterprise license Stripe sessions.                                                                                             |
@@ -156,6 +190,14 @@ import CloudVersion from "/snippets/cloud-version.mdx";
 ## Docker Environment Variables
 
 When running OpnForm with Docker, there are some important considerations for handling environment variables:
+
+<Note>
+    Docker Compose uses shell variables, a root `.env` file next to
+    `docker-compose.yml`, or a file passed with `--env-file` when it resolves
+    `${...}` values in the Compose file. The service-level `env_file` entries
+    such as `./api/.env` and `./client/.env` only pass variables into the
+    containers after the Compose file has already been resolved.
+</Note>
 
 ### Updating Environment Variables
 

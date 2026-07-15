@@ -11,12 +11,11 @@ description: Complete guide to configuring OpenID Connect Single Sign-On for you
     Enterprise license is required to add more users.
 </Info>
 
-OpnForm supports OpenID Connect (OIDC) based Single Sign-On (SSO), allowing users to authenticate using their organization's identity provider (IdP) such as Azure Entra ID, Authentik, Okta, or any OIDC-compliant provider.
+OpnForm supports OpenID Connect (OIDC) based Single Sign-On (SSO), allowing users to authenticate using any OIDC-compliant identity provider (IdP).
 
 <Info>
-    OpnForm handles OIDC redirect URLs automatically. You don't need to manually
-    configure redirect URLs in your OIDC provider - the system generates them
-    dynamically and displays them in the connection settings.
+    OpnForm displays the exact callback URL for each connection. Copy that URL
+    into your IdP's allowed redirect URIs; it must match exactly.
 </Info>
 
 ## Features
@@ -36,6 +35,34 @@ Before setting up OIDC SSO, ensure you have:
 3. Admin access to the workspace where you want to configure SSO
 4. The issuer URL from your IdP (typically found in the `.well-known/openid-configuration` endpoint)
 
+### Self-hosted instance setup
+
+Before creating an OIDC connection, make sure that OpnForm is configured with
+its real public URL. This is a deployment prerequisite: it determines the
+callback URL shown in the OIDC connection form.
+
+For the standard Docker deployment where OpnForm is available at
+`https://forms.example.com`, the person who manages the deployment must set:
+
+| File | Variables |
+| --- | --- |
+| `api/.env` | `APP_URL=https://forms.example.com`<br />`FRONT_URL=https://forms.example.com` |
+| `client/.env` | `NUXT_PUBLIC_APP_URL=https://forms.example.com`<br />`NUXT_PUBLIC_API_BASE=https://forms.example.com/api` |
+
+<Warning>
+    Do not configure the callback URI at your IdP if the value displayed in
+    OpnForm contains `localhost`. Ask the person who manages the deployment to
+    set the public instance URL, then recreate the containers before continuing.
+</Warning>
+
+<Note>
+    If deployment and OIDC configuration are handled by different people, share
+    this checklist with the person who manages the instance. See [Public
+    instance URL](./environment-variables#public-instance-url-self-hosted) for
+    the full reference and [Docker Deployment](../deployment/docker#configure-your-public-instance-url)
+    for the Docker steps.
+</Note>
+
 <Note>
     On self-hosted Community instances, OIDC can provision users until the
     instance reaches the free 2-user limit. Existing linked users can continue
@@ -49,7 +76,7 @@ Before setting up OIDC SSO, ensure you have:
 <Step title="Get OIDC Provider Information">
     From your identity provider, collect the following information:
 
-    -   **Issuer URL**: The base URL of your IdP (e.g., `https://idp.company.com` or `https://login.microsoftonline.com/{tenant-id}/v2.0`)
+    -   **Issuer URL**: The base URL of your IdP (e.g., `https://idp.company.com`)
     -   **Client ID**: OAuth client identifier
     -   **Client Secret**: OAuth client secret
     -   **Email Domain**: The domain you want to use for routing (e.g., `company.com`)
@@ -92,17 +119,31 @@ Before setting up OIDC SSO, ensure you have:
 </Step>
 
 <Step title="Configure Group-to-Role Mapping (Optional)">
-    If your IdP provides group information in the ID token, you can map IdP groups to workspace roles:
+    If your IdP provides group information in the **ID token**, you can map
+    groups to workspace roles:
 
     1. In the connection settings, expand **Role Mappings**
     2. Click **Add Mapping**
-    3. Enter the IdP group name (as it appears in your ID token)
+    3. Enter the exact value from the token's `groups` (or `group`) claim
     4. Select the corresponding workspace role (owner, admin, editor, or member)
     5. Repeat for each group you want to map
 
     <Info>
         If a user belongs to multiple groups, the highest privilege role will be assigned. Role priority: owner > admin > editor > member.
     </Info>
+
+    <Warning>
+        Matching is exact and case-sensitive. Copy the raw value emitted in the
+        ID token, not a display name from your IdP's administration interface
+        unless that display name is itself the claim value. Many IdPs emit an
+        immutable group identifier rather than a human-readable name.
+    </Warning>
+
+    <Note>
+        OpnForm reads only the `groups` or `group` claim. Configure your IdP to
+        include one of these claims in the **ID token**. A custom claim name or
+        a claim named `roles` is not used for role mapping.
+    </Note>
 
 </Step>
 
@@ -171,27 +212,20 @@ When enabled:
 
 For more details, see the [Environment Variables](../configuration/environment-variables#oidc_force_login) documentation.
 
-## Supported Providers
+## Updating a connection or changing the instance URL
 
-OpnForm is compatible with any OIDC-compliant identity provider, including:
+You can edit an existing OIDC connection without deleting it.
 
--   **Azure Entra ID** (formerly Azure AD)
--   **Authentik**
--   **Okta**
--   **Keycloak**
--   **Google Workspace** (via OIDC)
--   Any other OIDC-compliant provider
+- Leave **Client Secret** empty to retain the current secret. Enter a value only
+  when rotating or replacing it.
+- After changing the public URL of a self-hosted instance, update both the
+  backend `APP_URL` and `FRONT_URL`, plus the frontend `NUXT_PUBLIC_APP_URL`
+  and `NUXT_PUBLIC_API_BASE`. Recreate the relevant containers so the new
+  environment values are loaded.
+- Edit the connection, click **Use current app URL** below its redirect URI,
+  then save. Copy the refreshed URL into your IdP's allowed redirect URIs.
 
-### Azure Entra ID Specific Notes
-
--   May require additional scopes (e.g., `groups`) to include groups in the ID token
--   Configure group claims in Azure AD app registration → Token configuration
--   Choose "Security groups" or "Directory roles" as needed
-
-### Authentik Specific Notes
-
--   Groups are typically included automatically in ID tokens
--   Standard OIDC configuration works out of the box
+See [Custom Domain](../configuration/custom-domain) and [Environment Variables](../configuration/environment-variables#updating-environment-variables) for the instance URL and container steps.
 
 ## Troubleshooting
 
@@ -214,7 +248,7 @@ OpnForm is compatible with any OIDC-compliant identity provider, including:
     -   Redirect URI copied incorrectly
     -   HTTPS/HTTP mismatch
 
-    **Solution**: Copy the exact redirect URI from the connection settings and ensure it's added to your IdP's allowed redirect URIs. Verify HTTPS is used in production.
+    **Solution**: Copy the exact redirect URI from the connection settings and ensure it's added to your IdP's allowed redirect URIs. Verify HTTPS is used in production. If the instance URL changed, edit the connection, click **Use current app URL**, save it, and update the URL at the IdP.
 
 </Accordion>
 
@@ -222,10 +256,24 @@ OpnForm is compatible with any OIDC-compliant identity provider, including:
     **Possible causes:**
 
     -   Groups not included in ID token
-    -   Group names don't match exactly
-    -   Group claim not configured in IdP
+    -   The mapping value does not exactly match the value in the token
+    -   The IdP sent a display name where OpnForm expects an identifier, or vice versa
+    -   The group claim is not configured in the ID token
+    -   The IdP omitted groups because the user belongs to too many groups
 
-    **Solution**: Verify groups are included in your ID token. Check group names match exactly (case-sensitive). For Azure AD, configure group claims in app registration settings.
+    **Solution**: Inspect the decoded **ID token** returned for the user. Confirm it contains a `groups` or `group` claim, then copy one of its raw values exactly (including case) into the mapping. Configure the IdP to emit only the groups needed by this application if it omits a large group list.
+
+</Accordion>
+
+<Accordion title="Callback Says the Sign-in Attempt Was Already Used">
+    OAuth authorization codes can only be exchanged once. This commonly happens
+    when the callback URL is refreshed, revisited from history, or opened in a
+    second tab.
+
+    **Solution**: OpnForm starts one fresh sign-in automatically. If that
+    cannot be completed, select **Back to sign in** and try again. Do not
+    refresh or reuse the callback URL. Clearing the browser cache is not
+    necessary.
 
 </Accordion>
 

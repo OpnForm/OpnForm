@@ -7,7 +7,7 @@
           Configure a custom SMTP sender for this workspace.
         </p>
         <PlanTag
-          required-tier="self_hosted"
+          :required-tier="isSelfHosted ? 'self_hosted' : 'pro'"
         />
       </div>
 

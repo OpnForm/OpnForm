@@ -66,6 +66,7 @@ class LicenseKey extends Model
             'custom_smtp' => true,
             'audit_logs' => true,
             'external_storage' => true,
+            'custom_code' => true,
         ];
     }
 }

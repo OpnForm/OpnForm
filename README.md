@@ -43,6 +43,29 @@ The easiest way to get started with OpnForm is through our [official managed ser
 
 For self-hosted installations, please refer to our [Deployment Guides](https://docs.opnform.com/deployment). For local development, we provide a minimal Docker-based setup - check out our [Docker Development Guide](https://docs.opnform.com/deployment/docker-development).
 
+## Codex worktrees
+
+Codex creates an isolated local environment for each worktree. It uses a dedicated PostgreSQL Docker volume and local Laravel/Nuxt processes, so sibling worktrees do not share ports, data, or API configuration.
+
+Use the Codex `Start app`, `Reset DB`, and `Stop app` actions when available. You can also run the scripts directly:
+
+```bash
+./scripts/codex-worktree-setup.sh
+./scripts/codex-worktree-up.sh
+```
+
+The startup command prints the worktree-specific URL. Opening its root URL automatically signs in the local Codex admin (`e2e@example.test` / `Abcd@1234`). The seed also creates three forms, including five completed submissions across two public forms, so the dashboard and submission screens are immediately useful. Reset only the current worktree database with:
+
+```bash
+./scripts/codex-worktree-reset-db.sh
+```
+
+Run the browser suite against the running worktree with:
+
+```bash
+./scripts/codex-worktree-test-e2e.sh
+```
+
 ## Support & Community
 
 If you need help or have questions, please join our [Discord community](https://discord.gg/YTSjU2a9TS). For more information and assistance, check out the following resources:

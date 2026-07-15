@@ -61,7 +61,7 @@ class UpdateOidcConnectionRequest extends FormRequest
             'options.group_role_mappings' => ['nullable', 'array'],
             'options.group_role_mappings.*.idp_group' => ['required_with:options.group_role_mappings', 'string', 'max:255'],
             'options.group_role_mappings.*.role' => ['required_with:options.group_role_mappings', 'string', Rule::in(['owner', 'admin', 'editor', 'member'])],
-            'redirect_path' => ['nullable', 'string', 'max:255'],
+            'redirect_path' => ['nullable', 'url', 'max:255'],
             'enabled' => ['sometimes', 'boolean'],
         ];
     }

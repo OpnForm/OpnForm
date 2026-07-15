@@ -88,7 +88,7 @@ Authorization: Bearer <token>
 | `processed_submissions` | number | Number of submissions processed so far               |
 | `total_submissions`     | number | Total number of submissions to process               |
 | `file_url`              | string | Download URL for completed exports                   |
-| `expires_at`            | string | File expiration timestamp (24 hours from completion) |
+| `expires_at`            | string | File expiration timestamp (workspace policy, 24 hours by default) |
 | `error_message`         | string | Error description for failed exports                 |
 | `created_at`            | string | Job creation timestamp                               |
 | `updated_at`            | string | Last update timestamp                                |
@@ -99,8 +99,8 @@ Authorization: Bearer <token>
 </Note>
 
 <Warning>
-    Export files are automatically deleted after 24 hours for security and
-    storage management.
+    The download URL is a bearer link. It remains valid until `expires_at`,
+    according to the workspace file-link policy (24 hours by default).
 </Warning>
 
 ## Error Responses
@@ -130,7 +130,7 @@ After initiating an export that returns `is_async: true`, poll this endpoint to 
     When status is `completed`, use the `file_url` to download your CSV file.
     
     <Warning>
-    Download the file promptly as it expires in 24 hours.
+    Download the file before the `expires_at` timestamp. The workspace policy is 24 hours by default.
     </Warning>
 </Step>
 </Steps>
