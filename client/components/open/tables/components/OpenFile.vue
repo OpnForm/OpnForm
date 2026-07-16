@@ -1,5 +1,5 @@
 <template>
-  <p class="text-xs">
+  <div class="text-xs">
     <span
       v-for="file in parsedFiles"
       :key="file.file_url"
@@ -9,39 +9,140 @@
         'open-file-img': file.is_image,
       }"
     >
-      <a
-        class="text-neutral-700 dark:text-neutral-300"
-        :href="file.file_url"
-        target="_blank"
-        rel="nofollow"
+      <button
+        v-if="file.is_image"
+        type="button"
+        class="block h-8 w-8 overflow-hidden rounded border border-neutral-200 transition-opacity hover:opacity-80 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
+        :aria-label="`Preview ${file.displayed_file_name}`"
+        @click="openFilePreview(file)"
       >
-        <div
-          v-if="file.is_image"
-          class="w-8 h-8 rounded border border-neutral-200"
+        <img
+          class="h-full w-full object-cover"
+          :src="file.file_url"
+          :alt="file.file_name"
+          @error="failedImages.push(file.file_url)"
         >
-          <img
-            class="object-cover h-full w-full"
-            :src="file.file_url"
-            @error="failedImages.push(file.file_url)"
-          >
-        </div>
+      </button>
+      <button
+        v-else-if="file.is_pdf"
+        type="button"
+        class="rounded focus:outline-hidden focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
+        :aria-label="`Preview ${file.displayed_file_name}`"
+        @click="openFilePreview(file)"
+      >
         <UBadge
-          v-else
           size="sm"
           color="neutral"
           variant="ghost"
+          icon="i-material-symbols-picture-as-pdf-rounded"
         >
-          <a
-            :href="file.file_url"
-            target="_blank"
-            download
-          >{{
-            file.displayed_file_name
-          }}</a>
+          {{ file.displayed_file_name }}
         </UBadge>
-      </a>
+      </button>
+      <UBadge
+        v-else
+        size="sm"
+        color="neutral"
+        variant="ghost"
+      >
+        <a
+          :href="file.file_url"
+          target="_blank"
+          rel="nofollow"
+          download
+        >
+          {{ file.displayed_file_name }}
+        </a>
+      </UBadge>
     </span>
-  </p>
+  </div>
+
+  <UModal
+    v-model:open="isFilePreviewOpen"
+    :title="selectedFile?.file_name"
+    :ui="{ content: 'sm:max-w-5xl', body: 'p-0!' }"
+    :dismissible="true"
+  >
+    <template #header>
+      <div class="flex w-full min-w-0 items-center justify-between gap-3">
+        <h3 class="truncate text-sm font-semibold text-neutral-900 dark:text-white">
+          {{ selectedFile?.file_name }}
+        </h3>
+        <div class="flex shrink-0 items-center gap-2">
+          <UButton
+            :href="selectedFile?.file_url"
+            :download="selectedFile?.file_name"
+            target="_blank"
+            color="neutral"
+            variant="outline"
+            size="sm"
+            icon="i-heroicons-arrow-down-tray-20-solid"
+            label="Download"
+          />
+          <UButton
+            color="neutral"
+            variant="ghost"
+            size="sm"
+            icon="i-heroicons-x-mark-20-solid"
+            aria-label="Close file preview"
+            @click="isFilePreviewOpen = false"
+          />
+        </div>
+      </div>
+    </template>
+
+    <template #body>
+      <div
+        v-if="selectedFile?.is_image"
+        class="flex min-h-64 items-center justify-center bg-neutral-950"
+      >
+        <img
+          class="max-h-[75vh] w-full object-contain"
+          :src="selectedFile.file_url"
+          :alt="selectedFile.file_name"
+        >
+      </div>
+      <div
+        v-else-if="selectedFile?.is_pdf"
+        class="h-[75vh] overflow-y-auto bg-neutral-200 p-4 dark:bg-neutral-900"
+      >
+        <div
+          v-if="hasPdfError"
+          class="flex h-full flex-col items-center justify-center gap-3 text-center text-neutral-600 dark:text-neutral-300"
+        >
+          <Icon
+            name="i-heroicons-document-text"
+            class="h-10 w-10"
+          />
+          <span>Unable to preview this PDF.</span>
+        </div>
+        <div
+          v-else
+          class="relative min-h-full"
+        >
+          <div
+            v-if="isPdfLoading"
+            class="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 text-neutral-600 dark:text-neutral-300"
+          >
+            <Loader class="h-8 w-8 text-blue-600" />
+            <span>Loading PDF...</span>
+          </div>
+          <div
+            class="mx-auto flex max-w-4xl flex-col items-center gap-4 transition-opacity"
+            :class="isPdfLoading ? 'opacity-0' : 'opacity-100'"
+          >
+            <canvas
+              v-for="pageNumber in pdfPages"
+              :key="pageNumber"
+              :ref="(element) => setPdfCanvasRef(element, pageNumber)"
+              class="h-auto max-w-full bg-white shadow"
+              :aria-label="`Page ${pageNumber}`"
+            />
+          </div>
+        </div>
+      </div>
+    </template>
+  </UModal>
 </template>
 
 <script setup>
@@ -53,6 +154,122 @@ const props = defineProps({
 })
 
 const failedImages = ref([])
+const isFilePreviewOpen = ref(false)
+const selectedFile = ref(null)
+const isPdfLoading = ref(false)
+const hasPdfError = ref(false)
+const pdfPages = ref([])
+const pdfCanvasRefs = {}
+const pdfDocument = shallowRef(null)
+const pdfjsLibRef = shallowRef(null)
+let pdfLoadId = 0
+
+const openFilePreview = (file) => {
+  selectedFile.value = file
+  isFilePreviewOpen.value = true
+}
+
+const setPdfCanvasRef = (element, pageNumber) => {
+  if (element) {
+    pdfCanvasRefs[pageNumber] = element
+  }
+}
+
+const initPdfJs = () => {
+  if (pdfjsLibRef.value) {
+    return Promise.resolve(pdfjsLibRef.value)
+  }
+
+  return Promise.all([
+    import("pdfjs-dist"),
+    import("pdfjs-dist/build/pdf.worker.min.mjs?url"),
+  ]).then(([pdfjsLib, pdfjsWorker]) => {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker.default
+    pdfjsLibRef.value = pdfjsLib
+    return pdfjsLib
+  })
+}
+
+const renderPdfPage = (document, pageNumber, loadId) => {
+  return document.getPage(pageNumber).then((page) => {
+    if (loadId !== pdfLoadId) return
+
+    const canvas = pdfCanvasRefs[pageNumber]
+    if (!canvas) return
+
+    const viewport = page.getViewport({ scale: 1.5 })
+    const context = canvas.getContext("2d")
+    canvas.width = viewport.width
+    canvas.height = viewport.height
+
+    return page.render({
+      canvasContext: context,
+      viewport,
+    }).promise
+  })
+}
+
+const renderPdfPages = (document, loadId) => {
+  return pdfPages.value.reduce((promise, pageNumber) => {
+    return promise.then(() => renderPdfPage(document, pageNumber, loadId))
+  }, Promise.resolve())
+}
+
+const loadPdfPreview = () => {
+  const loadId = ++pdfLoadId
+  isPdfLoading.value = true
+  hasPdfError.value = false
+  pdfPages.value = []
+
+  initPdfJs()
+    .then((pdfjsLib) => {
+      return pdfjsLib.getDocument(selectedFile.value.file_url).promise
+    })
+    .then((document) => {
+      if (loadId !== pdfLoadId) {
+        return document.destroy()
+      }
+
+      pdfDocument.value = document
+      pdfPages.value = Array.from(
+        { length: document.numPages },
+        (_, index) => index + 1,
+      )
+
+      return nextTick().then(() => renderPdfPages(document, loadId))
+    })
+    .catch((error) => {
+      if (loadId !== pdfLoadId) return
+
+      console.error("Failed to load PDF preview:", error)
+      hasPdfError.value = true
+    })
+    .finally(() => {
+      if (loadId === pdfLoadId) {
+        isPdfLoading.value = false
+      }
+    })
+}
+
+const resetPdfPreview = () => {
+  pdfLoadId++
+  pdfPages.value = []
+  hasPdfError.value = false
+  isPdfLoading.value = false
+
+  if (pdfDocument.value) {
+    pdfDocument.value.destroy()
+    pdfDocument.value = null
+  }
+}
+
+watch(isFilePreviewOpen, (isOpen) => {
+  if (isOpen && selectedFile.value?.is_pdf) {
+    loadPdfPreview()
+  } else if (!isOpen) {
+    resetPdfPreview()
+  }
+})
 
 const parsedFiles = computed(() => {
   return props.value && Array.isArray(props.value)
@@ -64,15 +281,24 @@ const parsedFiles = computed(() => {
           is_image:
             !failedImages.value.includes(file.file_url) &&
             isImage(file.file_name),
+          is_pdf: isPdf(file.file_name),
         }
       })
     : []
 })
 
 const isImage = (fileName) => {
-  return ["png", "gif", "jpg", "jpeg", "tif"].some((suffix) => {
-    return fileName && fileName.endsWith(suffix)
-  })
+  return ["png", "gif", "jpg", "jpeg", "tif"].includes(
+    getFileExtension(fileName),
+  )
+}
+
+const isPdf = (fileName) => {
+  return getFileExtension(fileName) === "pdf"
+}
+
+const getFileExtension = (fileName) => {
+  return fileName?.split(".").pop()?.toLowerCase()
 }
 
 const displayedFileName = (fileName) => {
