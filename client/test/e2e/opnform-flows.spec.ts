@@ -540,6 +540,111 @@ test("editing an existing form title persists after save", async ({ page, reques
   await expect(page.getByRole("heading", { name: updatedTitle, exact: true })).toBeVisible()
 })
 
+test("form save errors open the invalid field section and computed variable", async ({ page, request }) => {
+  const form = await apiCreateForm(request, {
+    title: uniqueTitle("Save Error Form"),
+    payloadOverrides: {
+      properties: [
+        {
+          type: "nf-text",
+          content: "<h1>Save error form</h1>",
+          name: "Title",
+          id: "save_error_title",
+        },
+        buildTextField("contact_name", "Contact name"),
+        buildSelectField("problematic-dropdown", "Problematic dropdown", ["Temporary option"]),
+      ],
+      computed_variables: [{
+        id: "cv_order_total",
+        name: "Order total",
+        formula: "1 + 1",
+        result_type: "number",
+      }],
+    },
+  })
+
+  await loginUi(page)
+  let saveAttempt = 0
+  await page.route("**/open/forms/*", async (route) => {
+    if (route.request().method() !== "PUT") {
+      await route.continue()
+      return
+    }
+
+    saveAttempt += 1
+
+    const responseBody = saveAttempt === 1
+      ? {
+          message: "At least one option is required. (and 1 more error)",
+          errors: {
+            "properties.2.select.options": ["At least one option is required."],
+            properties: ["One or more properties have validation errors."],
+          },
+        }
+      : saveAttempt === 2
+        ? {
+            message: "The logic actions for Problematic dropdown are not valid. (and 1 more error)",
+            errors: {
+              "properties.2.logic": ["The logic actions for Problematic dropdown are not valid."],
+              properties: ["One or more properties have validation errors."],
+            },
+          }
+        : {
+            message: "The formula is required. (and 1 more error)",
+            errors: {
+              "computed_variables.0.formula": ["The formula is required."],
+              computed_variables: ["One or more computed variables have validation errors."],
+            },
+          }
+
+    await route.fulfill({
+      status: 422,
+      contentType: "application/json",
+      body: JSON.stringify(responseBody),
+    })
+  })
+
+  await page.goto(`/forms/${form.slug}/edit`)
+  await expect(page.locator("#form-editor")).toBeVisible()
+  await page.getByTestId("save-form-button").click()
+
+  const errorModal = page.getByTestId("form-save-error-modal")
+  await expect(errorModal).toBeVisible()
+  await expect(page.getByText("Fix 1 field before saving", { exact: true })).toBeVisible()
+  await expect(errorModal).toContainText("Problematic dropdown")
+  await expect(errorModal).toContainText("At least one option is required.")
+  await expect(errorModal).not.toContainText("One or more properties have validation errors.")
+  await expect(errorModal).not.toContainText("and 1 more error")
+
+  await page.getByTestId("edit-form-field-problematic-dropdown").click()
+
+  await expect(errorModal).toBeHidden()
+  const fieldSettings = page.getByTestId("form-field-settings")
+  await expect(fieldSettings).toBeVisible()
+  await expect(fieldSettings).toBeFocused()
+  await expect(fieldSettings).toContainText("Select Options")
+
+  await page.getByTestId("save-form-button").click()
+  await expect(errorModal).toBeVisible()
+  await expect(errorModal).toContainText("The logic actions for Problematic dropdown are not valid.")
+  await page.getByTestId("edit-form-field-problematic-dropdown").click()
+
+  await expect(errorModal).toBeHidden()
+  await expect(fieldSettings).toContainText("When following condition(s) are true")
+
+  await page.getByTestId("save-form-button").click()
+  await expect(errorModal).toBeVisible()
+  await expect(page.getByText("Fix 1 variable before saving", { exact: true })).toBeVisible()
+  await expect(errorModal).toContainText("Order total")
+  await expect(errorModal).toContainText("The formula is required.")
+  await page.getByTestId("edit-computed-variable-cv_order_total").click()
+
+  const variableModal = page.getByTestId("computed-variable-modal")
+  await expect(variableModal).toBeVisible()
+  await expect(variableModal.getByText("Edit Variable", { exact: true })).toBeVisible()
+  await expect(variableModal.getByPlaceholder("e.g., Total Price, Dog Age")).toHaveValue("Order total")
+})
+
 test("public submissions are accepted and visible in the submissions dashboard", async ({ page, request }) => {
   const form = await apiCreateForm(request, { title: uniqueTitle("Submission Form") })
   const { visitorName, visitorEmail } = await submitPublicForm(page, form.slug)

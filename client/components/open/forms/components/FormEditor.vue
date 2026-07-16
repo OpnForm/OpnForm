@@ -37,6 +37,7 @@
       </div>
 
       <FormEditorNavbar
+        ref="formEditorNavbar"
         :back-button="backButton"
         :update-form-loading="form.busy"
         :save-button-class="saveButtonClass"
@@ -91,8 +92,10 @@
       <!-- Form Error Modal -->
       <FormErrorModal
         :show="showFormErrorModal"
-        :validation-error-response="validationErrorResponse"
-        @close="showFormErrorModal = false"
+        :error-summary="saveErrorSummary"
+        @close="handleFormErrorModalClose"
+        @edit-field="editInvalidField"
+        @edit-computed-variable="editInvalidComputedVariable"
       />
 
       <!-- Logic Confirmation Modal -->
@@ -129,6 +132,7 @@ import LogicConfirmationModal from '~/components/forms/heavy/LogicConfirmationMo
 import { formsApi } from "~/api"
 import { useResizable } from '~/composables/components/useResizable'
 import ResizeHandle from '~/components/global/ResizeHandle.vue'
+import { normalizeFormSaveErrors } from '~/lib/forms/form-save-errors'
 
 // Define props
 const props = defineProps({
@@ -168,6 +172,7 @@ const showLogicConfirmationModal = ref(false)
 const validationErrorResponse = ref(null)
 const createdFormSlug = ref(null)
 const logicErrors = ref([])
+const formEditorNavbar = ref(null)
 const route = useRoute()
 const { emitFormSaved, emitNavigateBack } = useEditorEmbedBridge()
 
@@ -195,6 +200,14 @@ watch(isVisible, (newValue) => {
 
 // Composables
 const { content: form } = storeToRefs(useWorkingFormStore())
+
+const saveErrorSummary = computed(() => {
+  return normalizeFormSaveErrors(
+    validationErrorResponse.value,
+    form.value?.properties || [],
+    form.value?.computed_variables || [],
+  )
+})
 
 watch(
   () => form.value,
@@ -265,6 +278,61 @@ const displayFormModificationAlert = (responseData) => {
 
 const showValidationErrors = () => {
   showFormErrorModal.value = true
+}
+
+const handleFormErrorModalClose = () => {
+  showFormErrorModal.value = false
+
+  nextTick(() => {
+    document.querySelector('[data-testid="save-form-button"]')?.focus()
+  })
+}
+
+const editInvalidField = ({ fieldId, fieldIndex, targetTab }) => {
+  const properties = form.value?.properties || []
+  const indexedField = Number.isInteger(fieldIndex) ? properties[fieldIndex] : null
+  const indexedFieldMatches = indexedField && (!fieldId || indexedField.id === fieldId)
+  const currentFieldIndex = indexedFieldMatches
+    ? fieldIndex
+    : properties.findIndex(property => property?.id === fieldId)
+  const targetIndex = currentFieldIndex >= 0 ? currentFieldIndex : fieldIndex
+
+  if (!Number.isInteger(targetIndex) || !properties[targetIndex]) {
+    handleFormErrorModalClose()
+    return
+  }
+
+  showFormErrorModal.value = false
+  workingFormStore.activeTab = 'build'
+  workingFormStore.openSettingsForField(targetIndex, true, targetTab)
+
+  nextTick(() => {
+    document.getElementById('form-field-settings')?.focus()
+    document.getElementById(`block-${properties[targetIndex].id}`)?.scrollIntoView({
+      block: 'center',
+      behavior: 'auto',
+    })
+  })
+}
+
+const editInvalidComputedVariable = ({ variableId, variableIndex }) => {
+  const computedVariables = form.value?.computed_variables || []
+  const indexedVariable = computedVariables[variableIndex]
+  const targetVariable = indexedVariable || computedVariables.find(variable => variable?.id === variableId)
+
+  if (!targetVariable) {
+    handleFormErrorModalClose()
+    return
+  }
+
+  showFormErrorModal.value = false
+
+  nextTick(() => {
+    formEditorNavbar.value?.openComputedVariable({
+      variableId: targetVariable.id,
+      variableIndex: computedVariables.indexOf(targetVariable),
+    })
+  })
 }
 
 const saveForm = () => {
