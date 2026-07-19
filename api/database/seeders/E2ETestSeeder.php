@@ -6,9 +6,11 @@ use App\Models\Forms\Form;
 use App\Models\Forms\FormSubmission;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Service\Storage\FileUploadPathService;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class E2ETestSeeder extends Seeder
@@ -105,6 +107,32 @@ class E2ETestSeeder extends Seeder
             ],
         ]);
 
+        $uploadProperties = $this->formProperties([
+            ['name' => 'Requester name', 'type' => 'text', 'required' => true],
+            [
+                'name' => 'Reference image',
+                'type' => 'files',
+                'required' => true,
+                'allowed_file_types' => 'png,jpg,jpeg,webp',
+                'max_file_size' => 5,
+            ],
+            ['name' => 'Notes', 'type' => 'text'],
+        ]);
+        $uploadForm = $this->createForm($user, $workspace, [
+            'title' => 'File upload sample',
+            'properties' => $uploadProperties,
+            'presentation_style' => 'classic',
+            'visibility' => 'public',
+        ]);
+        $logoFileName = $this->seedSubmissionFile($uploadForm, 'opnform-logo.png');
+        $this->createSubmissions($uploadForm, [
+            [
+                $uploadProperties[0]['id'] => 'Julien Local',
+                $uploadProperties[1]['id'] => [$logoFileName],
+                $uploadProperties[2]['id'] => 'Seeded with the repository logo for upload previews.',
+            ],
+        ]);
+
         $this->createForm($user, $workspace, [
             'title' => 'Website redesign intake',
             'properties' => $this->formProperties([
@@ -137,6 +165,16 @@ class E2ETestSeeder extends Seeder
                 'public_id' => Str::uuid()->toString(),
             ]);
         }
+    }
+
+    private function seedSubmissionFile(Form $form, string $fileName): string
+    {
+        Storage::put(
+            FileUploadPathService::getFileUploadPath($form->id, $fileName),
+            file_get_contents(resource_path('images/logo.png'))
+        );
+
+        return $fileName;
     }
 
     private function formProperties(array $fields): array
