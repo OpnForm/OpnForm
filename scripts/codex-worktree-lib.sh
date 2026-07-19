@@ -36,16 +36,49 @@ ensure_codex_state_dir() {
   mkdir -p "$CODEX_STATE_DIR"
 }
 
+detect_docker_compose() {
+  if [ -n "${CODEX_COMPOSE_STYLE:-}" ]; then
+    return 0
+  fi
+
+  if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
+    CODEX_COMPOSE_STYLE=plugin
+    return 0
+  fi
+
+  if command -v docker-compose >/dev/null 2>&1 && docker-compose version >/dev/null 2>&1; then
+    CODEX_COMPOSE_STYLE=standalone
+    return 0
+  fi
+
+  return 1
+}
+
 codex_compose() {
-  docker compose \
-    --project-name "$CODEX_COMPOSE_PROJECT" \
-    --file "$ROOT_DIR/docker-compose.codex.yml" \
-    "$@"
+  if ! detect_docker_compose; then
+    echo "Docker Compose is required for the Codex worktree database." >&2
+    exit 1
+  fi
+
+  case "$CODEX_COMPOSE_STYLE" in
+    plugin)
+      docker compose \
+        --project-name "$CODEX_COMPOSE_PROJECT" \
+        --file "$ROOT_DIR/docker-compose.codex.yml" \
+        "$@"
+      ;;
+    standalone)
+      docker-compose \
+        --project-name "$CODEX_COMPOSE_PROJECT" \
+        --file "$ROOT_DIR/docker-compose.codex.yml" \
+        "$@"
+      ;;
+  esac
 }
 
 ensure_docker_compose() {
-  if ! command -v docker >/dev/null 2>&1 || ! docker compose version >/dev/null 2>&1; then
-    echo "Docker Compose v2 is required for the Codex worktree database." >&2
+  if ! detect_docker_compose; then
+    echo "Docker Compose is required for the Codex worktree database." >&2
     exit 1
   fi
 

@@ -55,94 +55,86 @@
         </a>
       </UBadge>
     </span>
-  </div>
 
-  <UModal
-    v-model:open="isFilePreviewOpen"
-    :title="selectedFile?.file_name"
-    :ui="{ content: 'sm:max-w-5xl', body: 'p-0!' }"
-    :dismissible="true"
-  >
-    <template #header>
-      <div class="flex w-full min-w-0 items-center justify-between gap-3">
-        <h3 class="truncate text-sm font-semibold text-neutral-900 dark:text-white">
-          {{ selectedFile?.file_name }}
-        </h3>
-        <div class="flex shrink-0 items-center gap-2">
-          <UButton
-            :href="selectedFile?.file_url"
-            :download="selectedFile?.file_name"
-            target="_blank"
-            color="neutral"
-            variant="outline"
-            size="sm"
-            icon="i-heroicons-arrow-down-tray-20-solid"
-            label="Download"
-          />
-          <UButton
-            color="neutral"
-            variant="ghost"
-            size="sm"
-            icon="i-heroicons-x-mark-20-solid"
-            aria-label="Close file preview"
-            @click="isFilePreviewOpen = false"
-          />
-        </div>
-      </div>
-    </template>
+    <UModal
+      v-model:open="isFilePreviewOpen"
+      :title="selectedFile?.file_name"
+      :description="selectedFile ? `Preview ${selectedFile.file_name}` : undefined"
+      :ui="{ content: 'sm:max-w-5xl', body: 'p-0!', description: 'sr-only' }"
+      :dismissible="true"
+    >
+      <template #actions>
+        <UButton
+          :href="selectedFile?.file_url"
+          :download="selectedFile?.file_name"
+          target="_blank"
+          color="neutral"
+          variant="outline"
+          size="sm"
+          icon="i-heroicons-arrow-down-tray-20-solid"
+          label="Download"
+        />
+      </template>
 
-    <template #body>
-      <div
-        v-if="selectedFile?.is_image"
-        class="flex min-h-64 items-center justify-center bg-neutral-950"
-      >
-        <img
-          class="max-h-[75vh] w-full object-contain"
-          :src="selectedFile.file_url"
-          :alt="selectedFile.file_name"
-        >
-      </div>
-      <div
-        v-else-if="selectedFile?.is_pdf"
-        class="h-[75vh] overflow-y-auto bg-neutral-200 p-4 dark:bg-neutral-900"
-      >
+      <template #body>
         <div
-          v-if="hasPdfError"
-          class="flex h-full flex-col items-center justify-center gap-3 text-center text-neutral-600 dark:text-neutral-300"
+          v-if="selectedFile?.is_image"
+          class="flex min-h-64 items-center justify-center bg-neutral-950"
         >
-          <Icon
-            name="i-heroicons-document-text"
-            class="h-10 w-10"
-          />
-          <span>Unable to preview this PDF.</span>
+          <img
+            class="max-h-[75vh] w-full object-contain"
+            :src="selectedFile.file_url"
+            :alt="selectedFile.file_name"
+          >
         </div>
         <div
-          v-else
-          class="relative min-h-full"
+          v-else-if="selectedFile?.is_pdf"
+          class="h-[75vh] overflow-y-auto bg-neutral-200 p-4 dark:bg-neutral-900"
         >
           <div
-            v-if="isPdfLoading"
-            class="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 text-neutral-600 dark:text-neutral-300"
+            v-if="hasPdfError"
+            class="flex h-full flex-col items-center justify-center gap-3 text-center text-neutral-600 dark:text-neutral-300"
           >
-            <Loader class="h-8 w-8 text-blue-600" />
-            <span>Loading PDF...</span>
-          </div>
-          <div
-            class="mx-auto flex max-w-4xl flex-col items-center gap-4 transition-opacity"
-            :class="isPdfLoading ? 'opacity-0' : 'opacity-100'"
-          >
-            <canvas
-              v-for="pageNumber in pdfPages"
-              :key="pageNumber"
-              :ref="(element) => setPdfCanvasRef(element, pageNumber)"
-              class="h-auto max-w-full bg-white shadow"
-              :aria-label="`Page ${pageNumber}`"
+            <Icon
+              name="i-heroicons-document-text"
+              class="h-10 w-10"
             />
+            <span>Unable to preview this PDF.</span>
+          </div>
+          <div
+            v-else
+            class="relative min-h-full"
+          >
+            <div
+              v-if="isPdfLoading"
+              class="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 text-neutral-600 dark:text-neutral-300"
+            >
+              <Loader class="h-8 w-8 text-blue-600" />
+              <span>Loading PDF...</span>
+            </div>
+            <div
+              class="mx-auto flex max-w-4xl flex-col items-center gap-4 transition-opacity"
+              :class="isPdfLoading ? 'opacity-0' : 'opacity-100'"
+            >
+              <div
+                v-if="hasHiddenPdfPages"
+                class="w-full rounded bg-white px-4 py-3 text-center text-sm text-neutral-600 shadow dark:bg-neutral-800 dark:text-neutral-300"
+              >
+                Showing first {{ pdfPages.length }} of {{ pdfTotalPages }} pages.
+              </div>
+              <canvas
+                v-for="pageNumber in pdfPages"
+                :key="pageNumber"
+                :ref="(element) => setPdfCanvasRef(element, pageNumber)"
+                class="h-auto max-w-full bg-white shadow"
+                :aria-label="`Page ${pageNumber}`"
+              />
+            </div>
           </div>
         </div>
-      </div>
-    </template>
-  </UModal>
+      </template>
+    </UModal>
+  </div>
 </template>
 
 <script setup>
@@ -151,7 +143,14 @@ const props = defineProps({
     type: Array,
     required: false,
   },
+  property: {
+    type: Object,
+    required: false,
+    default: null,
+  },
 })
+
+const PDF_PREVIEW_PAGE_LIMIT = 10
 
 const failedImages = ref([])
 const isFilePreviewOpen = ref(false)
@@ -159,6 +158,7 @@ const selectedFile = ref(null)
 const isPdfLoading = ref(false)
 const hasPdfError = ref(false)
 const pdfPages = ref([])
+const pdfTotalPages = ref(0)
 const pdfCanvasRefs = {}
 const pdfDocument = shallowRef(null)
 const pdfjsLibRef = shallowRef(null)
@@ -173,6 +173,12 @@ const setPdfCanvasRef = (element, pageNumber) => {
   if (element) {
     pdfCanvasRefs[pageNumber] = element
   }
+}
+
+const clearPdfCanvasRefs = () => {
+  Object.keys(pdfCanvasRefs).forEach((pageNumber) => {
+    delete pdfCanvasRefs[pageNumber]
+  })
 }
 
 const initPdfJs = () => {
@@ -199,13 +205,17 @@ const renderPdfPage = (document, pageNumber, loadId) => {
 
     const viewport = page.getViewport({ scale: 1.5 })
     const context = canvas.getContext("2d")
+    if (!context) return
+
     canvas.width = viewport.width
     canvas.height = viewport.height
 
-    return page.render({
+    const renderTask = page.render({
       canvasContext: context,
       viewport,
-    }).promise
+    })
+
+    return renderTask.promise.finally(() => page.cleanup())
   })
 }
 
@@ -220,6 +230,8 @@ const loadPdfPreview = () => {
   isPdfLoading.value = true
   hasPdfError.value = false
   pdfPages.value = []
+  pdfTotalPages.value = 0
+  clearPdfCanvasRefs()
 
   initPdfJs()
     .then((pdfjsLib) => {
@@ -231,8 +243,9 @@ const loadPdfPreview = () => {
       }
 
       pdfDocument.value = document
+      pdfTotalPages.value = document.numPages
       pdfPages.value = Array.from(
-        { length: document.numPages },
+        { length: Math.min(document.numPages, PDF_PREVIEW_PAGE_LIMIT) },
         (_, index) => index + 1,
       )
 
@@ -254,8 +267,10 @@ const loadPdfPreview = () => {
 const resetPdfPreview = () => {
   pdfLoadId++
   pdfPages.value = []
+  pdfTotalPages.value = 0
   hasPdfError.value = false
   isPdfLoading.value = false
+  clearPdfCanvasRefs()
 
   if (pdfDocument.value) {
     pdfDocument.value.destroy()
@@ -269,6 +284,10 @@ watch(isFilePreviewOpen, (isOpen) => {
   } else if (!isOpen) {
     resetPdfPreview()
   }
+})
+
+const hasHiddenPdfPages = computed(() => {
+  return pdfTotalPages.value > pdfPages.value.length
 })
 
 const parsedFiles = computed(() => {
