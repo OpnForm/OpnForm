@@ -32,6 +32,8 @@
     />
     <FormSettingsModal
       v-model="settingsModal"
+      v-model:active-tab="settingsModalActiveTab"
+      :computed-variable-edit-request="computedVariableEditRequest"
       @close="settingsModal = false"
       hydrate-on-interaction
     />
@@ -157,6 +159,22 @@ const form = computed(() => workingFormStore.content)
 const { activeTab } = storeToRefs(workingFormStore)
 
 const settingsModal = ref(false)
+const settingsModalActiveTab = ref('general')
+const computedVariableEditRequest = ref(null)
+let computedVariableEditRequestId = 0
+
+function openComputedVariable({ variableId, variableIndex }) {
+  computedVariableEditRequestId += 1
+  computedVariableEditRequest.value = {
+    variableId,
+    variableIndex,
+    requestId: computedVariableEditRequestId,
+  }
+  settingsModalActiveTab.value = 'variables'
+  settingsModal.value = true
+}
+
+defineExpose({ openComputedVariable })
 
 const isSelfHosted = computed(() => useFeatureFlag('self_hosted'))
 </script>

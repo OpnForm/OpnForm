@@ -4,7 +4,10 @@
     :ui="{ content: 'sm:max-w-5xl' }"
   >
     <template #content>
-      <div class="flex flex-col h-[80vh] bg-white">
+      <div
+        data-testid="computed-variable-modal"
+        class="flex flex-col h-[80vh] bg-white"
+      >
         <!-- Header -->
         <div class="flex items-center justify-between p-4 border-b flex-shrink-0">
           <h3 class="text-lg font-semibold">

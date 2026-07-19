@@ -1,5 +1,8 @@
 <template>
-  <div class="p-4">
+  <div
+    data-testid="computed-variables-tab"
+    class="p-4"
+  >
     <div class="flex justify-between items-start gap-4 mb-4">
       <div class="min-w-0">
         <h3 class="text-lg font-semibold text-gray-900">
@@ -98,6 +101,13 @@ import ComputedVariableCard from './ComputedVariableCard.vue'
 import ComputedVariableModal from './ComputedVariableModal.vue'
 import { generateUUID } from '~/lib/utils.js'
 
+const props = defineProps({
+  editRequest: {
+    type: Object,
+    default: null,
+  },
+})
+
 const workingFormStore = useWorkingFormStore()
 const form = computed(() => workingFormStore.content)
 
@@ -122,6 +132,22 @@ function openEditModal(variable) {
   editingVariable.value = { ...variable }
   showModal.value = true
 }
+
+watch(() => props.editRequest, (request) => {
+  if (!request) {
+    return
+  }
+
+  const indexedVariable = Number.isInteger(request.variableIndex)
+    ? computedVariables.value[request.variableIndex]
+    : null
+  const variable = indexedVariable
+    || computedVariables.value.find(item => item?.id === request.variableId)
+
+  if (variable) {
+    openEditModal(variable)
+  }
+}, { immediate: true })
 
 function saveVariable(variable) {
   const variables = [...computedVariables.value]

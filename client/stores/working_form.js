@@ -14,6 +14,7 @@ export const useWorkingFormStore = defineStore("working_form", {
     
     // Field being edited
     selectedFieldIndex: null,
+    selectedFieldTab: 'options',
     showEditFieldSidebar: null,
     showAddFieldSidebar: null,
     blockForm: null,
@@ -103,9 +104,15 @@ export const useWorkingFormStore = defineStore("working_form", {
     setEditingField(field) {
       this.selectedFieldIndex = this.objectToIndex(field)
     },
-    openSettingsForField(field, triggerBounce = false) {
+    openSettingsForField(field, triggerBounce = false, targetTab = null) {
       const targetIndex = this.objectToIndex(field)
       const previousIndex = this.selectedFieldIndex
+
+      if (targetTab) {
+        this.selectedFieldTab = targetTab
+      } else if (targetIndex !== previousIndex || !this.showEditFieldSidebar) {
+        this.selectedFieldTab = 'options'
+      }
       
       // Check if sidebar is already open for the same field and bounce is requested
       if (triggerBounce && this.showEditFieldSidebar && targetIndex === previousIndex) {
@@ -153,6 +160,7 @@ export const useWorkingFormStore = defineStore("working_form", {
     reset() {
       this.content = null
       this.selectedFieldIndex = null
+      this.selectedFieldTab = 'options'
       this.showEditFieldSidebar = false
       this.showAddFieldSidebar = false
       this.blockForm = null
