@@ -12,6 +12,7 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Foundation\Auth\RegistersUsers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use App\Rules\ValidReCaptcha;
@@ -115,25 +116,29 @@ class RegisterController extends Controller
             app(SelfHostedSeatLimitService::class)->assertCanCreateUser($data['email']);
         }
 
-        [$workspace, $role] = app(WorkspaceInviteService::class)->getWorkspaceAndRole($data);
+        $user = DB::transaction(function () use ($data) {
+            [$workspace, $role] = app(WorkspaceInviteService::class)->getWorkspaceAndRole($data);
 
-        $user = User::create([
-            'name' => $data['name'],
-            'email' => strtolower($data['email']),
-            'password' => bcrypt($data['password']),
-            'hear_about_us' => $data['hear_about_us'],
-            'utm_data' => array_key_exists('utm_data', $data) ? $data['utm_data'] : null,
-            'meta' => ['registration_ip' => request()->ip()],
-        ]);
+            $user = User::create([
+                'name' => $data['name'],
+                'email' => strtolower($data['email']),
+                'password' => bcrypt($data['password']),
+                'hear_about_us' => $data['hear_about_us'],
+                'utm_data' => array_key_exists('utm_data', $data) ? $data['utm_data'] : null,
+                'meta' => ['registration_ip' => request()->ip()],
+            ]);
 
-        $this->appsumoLicense = AppSumoAuthController::registerWithLicense($user, $data['appsumo_license'] ?? null);
+            $this->appsumoLicense = AppSumoAuthController::registerWithLicense($user, $data['appsumo_license'] ?? null);
 
-        // Add relation with user. Use the pivot model so workspace entitlement listeners run.
-        UserWorkspace::create([
-            'workspace_id' => $workspace->id,
-            'user_id' => $user->id,
-            'role' => $role,
-        ]);
+            // Use the pivot model so workspace entitlement listeners run.
+            UserWorkspace::create([
+                'workspace_id' => $workspace->id,
+                'user_id' => $user->id,
+                'role' => $role,
+            ]);
+
+            return $user;
+        });
 
         // Clear feature flags cache when first user is created (affects setup_required flag)
         if (config('app.self_hosted') && $user->id === 1) {
