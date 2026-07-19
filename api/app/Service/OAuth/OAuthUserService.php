@@ -4,6 +4,7 @@ namespace App\Service\OAuth;
 
 use App\Integrations\OAuth\OAuthProviderService;
 use App\Models\User;
+use App\Models\UserWorkspace;
 use App\Enterprise\Oidc\ExternalUserFactory;
 use App\Service\WorkspaceInviteService;
 use Illuminate\Http\Exceptions\HttpResponseException;
@@ -92,11 +93,11 @@ class OAuthUserService
             'invite_token' => $inviteToken
         ]);
 
-        $user->workspaces()->sync([
-            $workspace->id => [
-                'role' => $role,
-            ],
-        ], false);
+        UserWorkspace::create([
+            'workspace_id' => $workspace->id,
+            'user_id' => $user->id,
+            'role' => $role,
+        ]);
 
         $user->new_user = true;
 

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\UserResource;
 use App\Models\User;
+use App\Models\UserWorkspace;
 use App\Service\License\SelfHostedSeatLimitService;
 use App\Service\WorkspaceInviteService;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -125,14 +126,14 @@ class RegisterController extends Controller
             'meta' => ['registration_ip' => request()->ip()],
         ]);
 
-        // Add relation with user
-        $user->workspaces()->sync([
-            $workspace->id => [
-                'role' => $role,
-            ],
-        ], false);
-
         $this->appsumoLicense = AppSumoAuthController::registerWithLicense($user, $data['appsumo_license'] ?? null);
+
+        // Add relation with user. Use the pivot model so workspace entitlement listeners run.
+        UserWorkspace::create([
+            'workspace_id' => $workspace->id,
+            'user_id' => $user->id,
+            'role' => $role,
+        ]);
 
         // Clear feature flags cache when first user is created (affects setup_required flag)
         if (config('app.self_hosted') && $user->id === 1) {
