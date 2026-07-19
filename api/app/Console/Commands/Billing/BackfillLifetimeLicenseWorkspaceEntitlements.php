@@ -15,7 +15,7 @@ class BackfillLifetimeLicenseWorkspaceEntitlements extends Command
         {--user-id= : Restrict to workspaces where this user is an admin.}
         {--workspace-id= : Restrict to one workspace.}';
 
-    protected $description = 'Apply legacy AppSumo lifetime workspace entitlements to eligible workspaces.';
+    protected $description = 'Apply legacy lifetime and extra-pro workspace entitlements to eligible workspaces.';
 
     public function handle(LifetimeLicenseWorkspaceEntitlements $entitlements): int
     {
@@ -23,13 +23,19 @@ class BackfillLifetimeLicenseWorkspaceEntitlements extends Command
         $updated = 0;
         $skipped = 0;
 
+        $extraProEmails = $entitlements->extraProEmails();
+
         $query = Workspace::query()
-            ->whereHas('owners', function (Builder $query) {
+            ->whereHas('owners', function (Builder $query) use ($extraProEmails) {
                 $query->whereHas('licenses', function (Builder $licenseQuery) {
                     $licenseQuery
                         ->where('license_provider', 'appsumo')
                         ->where('status', License::STATUS_ACTIVE);
                 });
+
+                if ($extraProEmails !== []) {
+                    $query->orWhereIn('email', $extraProEmails);
+                }
             })
             ->with(['users' => function ($query) {
                 $query->withPivot('role');

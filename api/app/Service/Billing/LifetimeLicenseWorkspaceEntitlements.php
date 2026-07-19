@@ -11,6 +11,8 @@ class LifetimeLicenseWorkspaceEntitlements
 {
     public const SOURCE_LIFETIME_LICENSE = 'lifetime_license';
 
+    public const SOURCE_EXTRA_PRO_USER = 'extra_pro_user';
+
     public const MARKER_KEY = 'legacy_pro_grandfathering';
 
     private const LEGACY_PRO_FEATURES = [
@@ -33,21 +35,43 @@ class LifetimeLicenseWorkspaceEntitlements
 
     public function applyForUser(Workspace $workspace, User $user): bool
     {
-        $license = $user->activeLicense();
-        if (!$license || $license->license_provider !== 'appsumo') {
+        $source = $this->sourceForUser($user);
+        if (!$source) {
             return false;
         }
 
-        return $this->apply($workspace);
+        return $this->apply($workspace, $source);
+    }
+
+    public function sourceForUser(User $user): ?string
+    {
+        $license = $user->activeLicense();
+        if ($license && $license->license_provider === 'appsumo') {
+            return self::SOURCE_LIFETIME_LICENSE;
+        }
+
+        if ($this->isExtraProUser($user)) {
+            return self::SOURCE_EXTRA_PRO_USER;
+        }
+
+        return null;
     }
 
     public function applyForEligibleWorkspace(Workspace $workspace): bool
     {
+        $extraProEmails = $this->extraProEmails();
+
         $admin = $workspace->owners()
-            ->whereHas('licenses', function (Builder $query) {
-                $query
-                    ->where('license_provider', 'appsumo')
-                    ->where('status', License::STATUS_ACTIVE);
+            ->where(function (Builder $query) use ($extraProEmails) {
+                $query->whereHas('licenses', function (Builder $licenseQuery) {
+                    $licenseQuery
+                        ->where('license_provider', 'appsumo')
+                        ->where('status', License::STATUS_ACTIVE);
+                });
+
+                if ($extraProEmails !== []) {
+                    $query->orWhereIn('email', $extraProEmails);
+                }
             })
             ->first();
 
@@ -55,7 +79,7 @@ class LifetimeLicenseWorkspaceEntitlements
             return false;
         }
 
-        return $this->apply($workspace);
+        return $this->applyForUser($workspace, $admin);
     }
 
     public function isComplete(Workspace $workspace): bool
@@ -65,7 +89,15 @@ class LifetimeLicenseWorkspaceEntitlements
         return array_diff($this->features(), $features) === [];
     }
 
-    private function apply(Workspace $workspace): bool
+    public function extraProEmails(): array
+    {
+        return array_values(array_unique(array_filter(array_map(
+            fn (mixed $email) => is_string($email) ? strtolower(trim($email)) : '',
+            (array) config('opnform.extra_pro_users_emails', []),
+        ))));
+    }
+
+    private function apply(Workspace $workspace, string $source): bool
     {
         $overrides = is_array($workspace->plan_overrides) ? $workspace->plan_overrides : [];
         $features = $this->normalizeStringList($overrides['features'] ?? []);
@@ -81,7 +113,7 @@ class LifetimeLicenseWorkspaceEntitlements
 
         $overrides['features'] = array_values(array_unique(array_merge($features, $featuresToAdd)));
         $overrides[self::MARKER_KEY] = [
-            'source' => self::SOURCE_LIFETIME_LICENSE,
+            'source' => $source,
             'subscription_id' => null,
             'features' => array_values(array_unique(array_merge(
                 $this->normalizeStringList($marker['features'] ?? []),
@@ -97,6 +129,11 @@ class LifetimeLicenseWorkspaceEntitlements
         $workspace->flushWithOwners();
 
         return true;
+    }
+
+    private function isExtraProUser(User $user): bool
+    {
+        return in_array(strtolower($user->email), $this->extraProEmails(), true);
     }
 
     private function normalizeStringList(mixed $value): array

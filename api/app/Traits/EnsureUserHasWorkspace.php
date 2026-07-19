@@ -3,6 +3,7 @@
 namespace App\Traits;
 
 use App\Models\User;
+use App\Models\UserWorkspace;
 use App\Models\Workspace;
 use Illuminate\Support\Facades\Log;
 
@@ -24,11 +25,11 @@ trait EnsureUserHasWorkspace
                 'name' => 'My Workspace',
             ]);
 
-            $user->workspaces()->sync([
-                $newWorkspace->id => [
-                    'role' => 'admin',
-                ],
-            ], false);
+            UserWorkspace::create([
+                'workspace_id' => $newWorkspace->id,
+                'user_id' => $user->id,
+                'role' => User::ROLE_ADMIN,
+            ]);
         }
     }
 }
