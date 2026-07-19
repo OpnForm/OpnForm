@@ -76,6 +76,11 @@ start_client() {
     exit 1
   fi
 
+  # Vite's optimized dependency cache is transient. It can retain references
+  # to chunks removed by npm ci, causing the Nuxt dev server to crash on first
+  # navigation in a freshly created worktree.
+  rm -rf "$ROOT_DIR/client/node_modules/.cache/vite"
+
   if command -v screen >/dev/null 2>&1; then
     rm -f "$CODEX_STATE_DIR/client.pid"
     screen -dmS "$CODEX_CLIENT_SCREEN" sh -c "cd '$ROOT_DIR/client' && set -a && . '$CODEX_CLIENT_ENV_FILE' && set +a && echo \$\$ >'$CODEX_STATE_DIR/client.pid' && exec env PATH='$PATH' RUNNER_TRACKING_ID= NUXT_HOST='$CODEX_APP_HOST' NUXT_PORT='$CODEX_APP_PORT' '$CODEX_NPM_BIN' run dev -- --host '$CODEX_APP_HOST' --port '$CODEX_APP_PORT' >'$CODEX_STATE_DIR/client.log' 2>&1"

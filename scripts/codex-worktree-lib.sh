@@ -261,10 +261,12 @@ select_node_runtime() {
   fi
 
   herd_node="$HOME/Library/Application Support/Herd/config/nvm/versions/node/v20.20.1/bin/node"
+  homebrew_node="/opt/homebrew/bin/node"
+  local_node="/usr/local/bin/node"
   bundled_node="$HOME/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node"
   path_node=$(command -v node 2>/dev/null || true)
 
-  for candidate in "$herd_node" "$bundled_node" "$path_node"; do
+  for candidate in "$herd_node" "$homebrew_node" "$local_node" "$bundled_node" "$path_node"; do
     if select_node_candidate "$candidate"; then
       return 0
     fi
