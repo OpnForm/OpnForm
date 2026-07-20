@@ -42,6 +42,8 @@ class FormResource extends JsonResource
                 'removed_properties' => $this->removed_properties,
                 'last_edited_human' => $this->updated_at?->diffForHumans(),
                 'seo_meta' => $this->seo_meta,
+                'submission_retention_value' => $this->submission_retention_value,
+                'submission_retention_unit' => $this->submission_retention_unit,
             ];
 
             if ($this->userIsReadonly()) {

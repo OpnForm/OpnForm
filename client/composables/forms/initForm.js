@@ -41,6 +41,8 @@ export const initForm = (defaultValue = {}, withDefaultProperties = false) => {
     max_submissions_count: null,
     max_submissions_reached_text:
       "This form has now reached the maximum number of allowed submissions and is now closed.",
+    submission_retention_value: null,
+    submission_retention_unit: null,
     editable_submissions_button_text: "Edit submission",
     confetti_on_submission: false,
 

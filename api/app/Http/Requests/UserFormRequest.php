@@ -218,6 +218,18 @@ abstract class UserFormRequest extends \Illuminate\Foundation\Http\FormRequest
             'auto_focus' => 'boolean',
             'enable_partial_submissions' => 'boolean',
             'enable_ip_tracking' => 'boolean',
+            'submission_retention_value' => [
+                'nullable',
+                'integer',
+                'min:1',
+                'max:3650',
+                'required_with:submission_retention_unit',
+            ],
+            'submission_retention_unit' => [
+                'nullable',
+                Rule::in(Form::SUBMISSION_RETENTION_UNITS),
+                'required_with:submission_retention_value',
+            ],
 
             // Properties - Single-pass validation for performance
             // Replaces ~35 wildcard rules (properties.*) with one efficient rule

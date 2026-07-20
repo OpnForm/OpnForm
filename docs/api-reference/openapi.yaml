@@ -1302,6 +1302,17 @@ components:
                     type: boolean
                 show_progress_bar:
                     type: boolean
+                submission_retention_value:
+                    type: integer
+                    minimum: 1
+                    maximum: 3650
+                    nullable: true
+                    description: Number of retention units before a submission is permanently deleted. Set this and submission_retention_unit to null to disable automatic deletion.
+                submission_retention_unit:
+                    type: string
+                    enum: [day, week, month, year]
+                    nullable: true
+                    description: Calendar unit used by submission_retention_value. Both retention fields must be provided together.
 
                 # Form closure and limits
                 closes_at:
