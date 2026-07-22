@@ -77,6 +77,17 @@
     "is_editable": false,
     "url": "https://www.activepieces.com/pieces/opnform"
   },
+  "make": {
+    "name": "Make",
+    "icon": "simple-icons:make",
+    "section_name": "Automation",
+    "file_name": "MakeIntegration",
+    "actions_file_name": "MakeIntegrationActions",
+    "required_tier": "free",
+    "is_external": true,
+    "is_editable": false,
+    "url": "https://www.make.com/en/integrations/opnform"
+  },
   "google_sheets": {
     "name": "Google Sheets",
     "icon": "mdi:google-spreadsheet",
