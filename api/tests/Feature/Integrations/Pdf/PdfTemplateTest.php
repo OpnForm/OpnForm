@@ -704,6 +704,217 @@ describe('PDF From-Scratch Default Filename Pattern', function () {
     });
 });
 
+describe('PDF Template Update - source_page renormalization', function () {
+    it('renormalizes source_page after removing pages from manifest', function () {
+        $user = $this->actingAsProUser();
+        $workspace = $this->createUserWorkspace($user);
+        $form = $this->createForm($user, $workspace);
+
+        $pdfContent = createMultiPagePdf(6);
+        $filePath = "pdf-templates/{$form->id}/template.pdf";
+        Storage::put($filePath, $pdfContent);
+
+        $template = PdfTemplate::create([
+            'form_id' => $form->id,
+            'name' => 'Master Template',
+            'filename' => 'template.pdf',
+            'original_filename' => 'master.pdf',
+            'file_path' => $filePath,
+            'file_size' => strlen($pdfContent),
+            'page_count' => 6,
+            'page_manifest' => PdfTemplate::buildDefaultPageManifest(6),
+            'zone_mappings' => [],
+        ]);
+
+        // Keep only original pages 1 and 6 (remove 2-5)
+        $response = $this->putJson(
+            route('open.forms.pdf-templates.update', [$form, $template]),
+            [
+                'page_manifest' => [
+                    ['id' => 'p1', 'type' => 'source', 'source_page' => 1],
+                    ['id' => 'p6', 'type' => 'source', 'source_page' => 6],
+                ],
+                'zone_mappings' => [],
+            ]
+        );
+
+        $response->assertSuccessful();
+        $template->refresh();
+
+        expect($template->page_count)->toBe(2);
+        expect($template->page_manifest)->toHaveCount(2);
+        expect($template->page_manifest[0]['source_page'])->toBe(1);
+        expect($template->page_manifest[1]['source_page'])->toBe(2);
+    });
+
+    it('renormalizes source_page with mixed source and blank pages', function () {
+        $user = $this->actingAsProUser();
+        $workspace = $this->createUserWorkspace($user);
+        $form = $this->createForm($user, $workspace);
+
+        $pdfContent = createMultiPagePdf(4);
+        $filePath = "pdf-templates/{$form->id}/template.pdf";
+        Storage::put($filePath, $pdfContent);
+
+        $template = PdfTemplate::create([
+            'form_id' => $form->id,
+            'name' => 'Mixed Template',
+            'filename' => 'template.pdf',
+            'original_filename' => 'mixed.pdf',
+            'file_path' => $filePath,
+            'file_size' => strlen($pdfContent),
+            'page_count' => 4,
+            'page_manifest' => PdfTemplate::buildDefaultPageManifest(4),
+            'zone_mappings' => [],
+        ]);
+
+        $response = $this->putJson(
+            route('open.forms.pdf-templates.update', [$form, $template]),
+            [
+                'page_manifest' => [
+                    ['id' => 'p1', 'type' => 'source', 'source_page' => 1],
+                    ['id' => 'pb', 'type' => 'blank', 'source_page' => null],
+                    ['id' => 'p4', 'type' => 'source', 'source_page' => 4],
+                ],
+                'zone_mappings' => [],
+            ]
+        );
+
+        $response->assertSuccessful();
+        $template->refresh();
+
+        expect($template->page_count)->toBe(3);
+        expect($template->page_manifest[0]['source_page'])->toBe(1);
+        expect($template->page_manifest[1]['source_page'])->toBeNull();
+        expect($template->page_manifest[2]['source_page'])->toBe(2);
+    });
+
+    it('allows a second save after page removal without error', function () {
+        $user = $this->actingAsProUser();
+        $workspace = $this->createUserWorkspace($user);
+        $form = $this->createForm($user, $workspace);
+
+        $pdfContent = createMultiPagePdf(6);
+        $filePath = "pdf-templates/{$form->id}/template.pdf";
+        Storage::put($filePath, $pdfContent);
+
+        $template = PdfTemplate::create([
+            'form_id' => $form->id,
+            'name' => 'Resave Template',
+            'filename' => 'template.pdf',
+            'original_filename' => 'resave.pdf',
+            'file_path' => $filePath,
+            'file_size' => strlen($pdfContent),
+            'page_count' => 6,
+            'page_manifest' => PdfTemplate::buildDefaultPageManifest(6),
+            'zone_mappings' => [],
+        ]);
+
+        // First save: keep pages 1 and 6
+        $this->putJson(
+            route('open.forms.pdf-templates.update', [$form, $template]),
+            [
+                'page_manifest' => [
+                    ['id' => 'p1', 'type' => 'source', 'source_page' => 1],
+                    ['id' => 'p6', 'type' => 'source', 'source_page' => 6],
+                ],
+                'zone_mappings' => [],
+            ]
+        )->assertSuccessful();
+
+        $template->refresh();
+
+        // Second save: use the renormalized manifest (source_page 1,2)
+        $response = $this->putJson(
+            route('open.forms.pdf-templates.update', [$form, $template]),
+            [
+                'page_manifest' => $template->page_manifest,
+                'zone_mappings' => [],
+            ]
+        );
+
+        $response->assertSuccessful();
+        $template->refresh();
+
+        expect($template->page_count)->toBe(2);
+        expect($template->page_manifest[0]['source_page'])->toBe(1);
+        expect($template->page_manifest[1]['source_page'])->toBe(2);
+    });
+
+    it('exports correctly after page removal with zones on second page', function () {
+        $user = $this->actingAsProUser();
+        $workspace = $this->createUserWorkspace($user);
+        $form = $this->createForm($user, $workspace, [
+            'properties' => [
+                ['id' => 'name', 'name' => 'Name', 'type' => 'text'],
+            ],
+        ]);
+
+        $pdfContent = createMultiPagePdf(6);
+        $filePath = "pdf-templates/{$form->id}/template.pdf";
+        Storage::put($filePath, $pdfContent);
+
+        $template = PdfTemplate::create([
+            'form_id' => $form->id,
+            'name' => 'Export Template',
+            'filename' => 'template.pdf',
+            'original_filename' => 'export.pdf',
+            'file_path' => $filePath,
+            'file_size' => strlen($pdfContent),
+            'page_count' => 6,
+            'page_manifest' => PdfTemplate::buildDefaultPageManifest(6),
+            'zone_mappings' => [],
+        ]);
+
+        // Save: keep pages 1 and 6, add a zone on page 2 (originally page 6)
+        $this->putJson(
+            route('open.forms.pdf-templates.update', [$form, $template]),
+            [
+                'page_manifest' => [
+                    ['id' => 'p1', 'type' => 'source', 'source_page' => 1],
+                    ['id' => 'p6', 'type' => 'source', 'source_page' => 6],
+                ],
+                'zone_mappings' => [
+                    [
+                        'id' => 'z1',
+                        'page_id' => 'p6',
+                        'x' => 10,
+                        'y' => 10,
+                        'width' => 30,
+                        'height' => 5,
+                        'field_id' => 'name',
+                        'font_size' => 12,
+                        'font_color' => '#000000',
+                    ],
+                ],
+            ]
+        )->assertSuccessful();
+
+        $template->refresh();
+
+        // Generate PDF from this template
+        $submission = $form->submissions()->create([
+            'data' => ['name' => 'John Doe'],
+        ]);
+
+        $service = new \App\Service\Pdf\PdfGeneratorService();
+        $resultPath = $service->generateFromTemplate($form, $submission, $template);
+
+        expect(Storage::exists($resultPath))->toBeTrue();
+        $content = Storage::get($resultPath);
+        expect($content)->toStartWith('%PDF');
+
+        // Verify the generated PDF has exactly 2 pages
+        $verifyPdf = new \setasign\Fpdi\Fpdi();
+        $verifyTmp = tempnam(sys_get_temp_dir(), 'pdf_verify_');
+        file_put_contents($verifyTmp, $content);
+        $pageCount = $verifyPdf->setSourceFile($verifyTmp);
+        @unlink($verifyTmp);
+
+        expect($pageCount)->toBe(2);
+    });
+});
+
 /**
  * Helper function to create a valid PDF using FPDF.
  */
@@ -713,6 +924,18 @@ function createValidPdf(): string
     $pdf->AddPage();
     $pdf->SetFont('Helvetica', '', 12);
     $pdf->Cell(0, 10, 'Test PDF Template');
+
+    return $pdf->Output('S');
+}
+
+function createMultiPagePdf(int $pageCount): string
+{
+    $pdf = new \setasign\Fpdi\Fpdi();
+    $pdf->SetFont('Helvetica', '', 12);
+    for ($i = 1; $i <= $pageCount; $i++) {
+        $pdf->AddPage();
+        $pdf->Cell(0, 10, "Page {$i} Content");
+    }
 
     return $pdf->Output('S');
 }

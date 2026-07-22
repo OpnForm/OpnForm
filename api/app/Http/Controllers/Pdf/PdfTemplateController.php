@@ -139,6 +139,20 @@ class PdfTemplateController extends Controller
                     'errors' => ['file' => [$e->getMessage()]],
                 ], 422);
             }
+
+            // Renormalize source_page to sequential 1-based indices matching
+            // the rebuilt file. Without this, stale source_page values (from the
+            // original upload) cause wrong/blank pages on export and re-edit.
+            $sequentialPage = 1;
+            foreach ($pageManifest as &$entry) {
+                if (($entry['type'] ?? 'source') === 'source') {
+                    $entry['source_page'] = $sequentialPage++;
+                } else {
+                    $entry['source_page'] = null;
+                }
+            }
+            unset($entry);
+            $validated['page_manifest'] = $pageManifest;
             $validated['page_count'] = count($pageManifest);
         }
         $pdfTemplate->update($validated);
