@@ -140,13 +140,13 @@ class PdfTemplateController extends Controller
                 ], 422);
             }
 
-            // Renormalize source_page to sequential 1-based indices matching
-            // the rebuilt file. Without this, stale source_page values (from the
-            // original upload) cause wrong/blank pages on export and re-edit.
-            $sequentialPage = 1;
-            foreach ($pageManifest as &$entry) {
+            // Renormalize source_page to match the physical position in the
+            // rebuilt file. The rebuild writes one physical page per manifest
+            // entry (source and blank alike), so the correct value is the
+            // 1-based index of the entry in the manifest.
+            foreach ($pageManifest as $index => &$entry) {
                 if (($entry['type'] ?? 'source') === 'source') {
-                    $entry['source_page'] = $sequentialPage++;
+                    $entry['source_page'] = $index + 1;
                 } else {
                     $entry['source_page'] = null;
                 }

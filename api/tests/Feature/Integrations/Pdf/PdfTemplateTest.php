@@ -786,7 +786,7 @@ describe('PDF Template Update - source_page renormalization', function () {
         expect($template->page_count)->toBe(3);
         expect($template->page_manifest[0]['source_page'])->toBe(1);
         expect($template->page_manifest[1]['source_page'])->toBeNull();
-        expect($template->page_manifest[2]['source_page'])->toBe(2);
+        expect($template->page_manifest[2]['source_page'])->toBe(3);
     });
 
     it('allows a second save after page removal without error', function () {
@@ -839,6 +839,101 @@ describe('PDF Template Update - source_page renormalization', function () {
         expect($template->page_count)->toBe(2);
         expect($template->page_manifest[0]['source_page'])->toBe(1);
         expect($template->page_manifest[1]['source_page'])->toBe(2);
+    });
+
+    it('preserves correct page content after blank with distinct page sizes', function () {
+        $user = $this->actingAsProUser();
+        $workspace = $this->createUserWorkspace($user);
+        $form = $this->createForm($user, $workspace, [
+            'properties' => [
+                ['id' => 'name', 'name' => 'Name', 'type' => 'text'],
+            ],
+        ]);
+
+        // Pages with different dimensions so we can distinguish them
+        $pdfContent = createMultiPagePdfWithSizes([
+            ['w' => 120, 'h' => 160],
+            ['w' => 140, 'h' => 200],
+            ['w' => 180, 'h' => 250],
+            ['w' => 200, 'h' => 280],
+        ]);
+        $filePath = "pdf-templates/{$form->id}/template.pdf";
+        Storage::put($filePath, $pdfContent);
+
+        $template = PdfTemplate::create([
+            'form_id' => $form->id,
+            'name' => 'Sized Template',
+            'filename' => 'template.pdf',
+            'original_filename' => 'sized.pdf',
+            'file_path' => $filePath,
+            'file_size' => strlen($pdfContent),
+            'page_count' => 4,
+            'page_manifest' => PdfTemplate::buildDefaultPageManifest(4),
+            'zone_mappings' => [],
+        ]);
+
+        // Keep page 1 (120mm), insert blank, keep page 4 (200mm)
+        $this->putJson(
+            route('open.forms.pdf-templates.update', [$form, $template]),
+            [
+                'page_manifest' => [
+                    ['id' => 'p1', 'type' => 'source', 'source_page' => 1],
+                    ['id' => 'pb', 'type' => 'blank', 'source_page' => null],
+                    ['id' => 'p4', 'type' => 'source', 'source_page' => 4],
+                ],
+                'zone_mappings' => [],
+            ]
+        )->assertSuccessful();
+
+        $template->refresh();
+        expect($template->page_manifest[0]['source_page'])->toBe(1);
+        expect($template->page_manifest[1]['source_page'])->toBeNull();
+        expect($template->page_manifest[2]['source_page'])->toBe(3);
+
+        // Export and verify page 3 has the 200mm-wide page, not the 120mm blank
+        $submission = $form->submissions()->create(['data' => ['name' => 'Test']]);
+        $service = new \App\Service\Pdf\PdfGeneratorService();
+        $resultPath = $service->generateFromTemplate($form, $submission, $template);
+        $content = Storage::get($resultPath);
+
+        $verifyTmp = tempnam(sys_get_temp_dir(), 'pdf_sizes_');
+        file_put_contents($verifyTmp, $content);
+        $verifyPdf = new \setasign\Fpdi\Fpdi();
+        $pageCount = $verifyPdf->setSourceFile($verifyTmp);
+        expect($pageCount)->toBe(3);
+
+        // Page 3 should have the 200mm-wide dimensions from original page 4
+        $tid = $verifyPdf->importPage(3);
+        $size = $verifyPdf->getTemplateSize($tid);
+        expect(round($size['width']))->toBe(200.0);
+        @unlink($verifyTmp);
+
+        // Second save with the renormalized manifest should also succeed
+        $response = $this->putJson(
+            route('open.forms.pdf-templates.update', [$form, $template]),
+            [
+                'page_manifest' => $template->page_manifest,
+                'zone_mappings' => [],
+            ]
+        );
+        $response->assertSuccessful();
+
+        $template->refresh();
+        expect($template->page_manifest[0]['source_page'])->toBe(1);
+        expect($template->page_manifest[1]['source_page'])->toBeNull();
+        expect($template->page_manifest[2]['source_page'])->toBe(3);
+
+        // Export again after second save — page 3 dimensions must still match
+        $resultPath2 = $service->generateFromTemplate($form, $submission, $template->refresh());
+        $content2 = Storage::get($resultPath2);
+        $verifyTmp2 = tempnam(sys_get_temp_dir(), 'pdf_sizes2_');
+        file_put_contents($verifyTmp2, $content2);
+        $verifyPdf2 = new \setasign\Fpdi\Fpdi();
+        $verifyPdf2->setSourceFile($verifyTmp2);
+        $tid2 = $verifyPdf2->importPage(3);
+        $size2 = $verifyPdf2->getTemplateSize($tid2);
+        expect(round($size2['width']))->toBe(200.0);
+        @unlink($verifyTmp2);
     });
 
     it('exports correctly after page removal with zones on second page', function () {
@@ -935,6 +1030,18 @@ function createMultiPagePdf(int $pageCount): string
     for ($i = 1; $i <= $pageCount; $i++) {
         $pdf->AddPage();
         $pdf->Cell(0, 10, "Page {$i} Content");
+    }
+
+    return $pdf->Output('S');
+}
+
+function createMultiPagePdfWithSizes(array $pages): string
+{
+    $pdf = new \setasign\Fpdi\Fpdi();
+    $pdf->SetFont('Helvetica', '', 12);
+    foreach ($pages as $i => $page) {
+        $pdf->AddPage('P', [$page['w'], $page['h']]);
+        $pdf->Cell(0, 10, 'Page ' . ($i + 1));
     }
 
     return $pdf->Output('S');
