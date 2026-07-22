@@ -64,6 +64,8 @@ class Form extends Model implements CachableAttributes, VersionableNestedDiff
 
     public const VISIBILITY = ['public', 'draft', 'closed'];
 
+    public const SUBMISSION_RETENTION_UNITS = ['day', 'week', 'month', 'year'];
+
     public const LANGUAGES = [
         'ar',
         'bn',
@@ -162,6 +164,8 @@ class Form extends Model implements CachableAttributes, VersionableNestedDiff
         'auto_focus',
         'enable_partial_submissions',
         'enable_ip_tracking',
+        'submission_retention_value',
+        'submission_retention_unit',
 
         // Security & Privacy
         'can_be_indexed',
@@ -188,6 +192,7 @@ class Form extends Model implements CachableAttributes, VersionableNestedDiff
             'translations' => 'array',
             'enable_partial_submissions' => 'boolean',
             'enable_ip_tracking' => 'boolean',
+            'submission_retention_value' => 'integer',
             'auto_save' => 'boolean',
             'pdf_download_enabled' => 'boolean',
             'clear_empty_fields_on_update' => 'boolean',
@@ -208,6 +213,8 @@ class Form extends Model implements CachableAttributes, VersionableNestedDiff
         'password',
         'tags',
         'removed_properties',
+        'submission_retention_value',
+        'submission_retention_unit',
     ];
 
     protected $cachableAttributes = [
