@@ -18,6 +18,7 @@ export default defineNuxtConfig({
       '@vueuse/nuxt', 
       '@vueuse/motion/nuxt', 
       '@nuxtjs/sitemap',
+      '@nuxt/content',
       '@nuxt/ui', 
       'nuxt-utm', 
       '@nuxtjs/i18n',

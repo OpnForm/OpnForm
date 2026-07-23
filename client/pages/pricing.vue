@@ -743,7 +743,7 @@ definePageMeta({
 useOpnSeoMeta({
   title: "Pricing",
   description:
-    "All of our core features are free, and there is no quantity limit. You can also created more advanced and customized forms with OpnForms Pro.",
+    "Start free with unlimited forms and submissions. Upgrade to OpnForm Pro, Business, or Enterprise for advanced branding, collaboration, and self-hosted options.",
 })
 
 const { openSubscriptionModal } = useAppModals()
@@ -918,6 +918,32 @@ const faqs = [
       "Yes — multi-user collaboration is supported. Higher tiers add roles and permissions for larger teams.",
   },
 ]
+
+const pricingSchema = computed(() => buildSchemaGraph([
+  buildOrganizationSchema(),
+  buildWebsiteSchema(),
+  buildSoftwareApplicationSchema({
+    offers: buildOfferCatalogSchema([
+      { name: "Free", price: 0 },
+      { name: "Pro", price: getPlanPrice("pro", false) },
+      { name: "Business", price: getPlanPrice("business", false) },
+      { name: "Enterprise", price: getPlanPrice("enterprise", false) },
+    ]),
+  }),
+  buildWebPageSchema({
+    name: "Pricing",
+    description:
+      "Start free with unlimited forms and submissions. Upgrade to OpnForm Pro, Business, or Enterprise for advanced branding, collaboration, and self-hosted options.",
+    path: "/pricing",
+  }),
+  buildBreadcrumbSchema([
+    { name: "Home", path: "/" },
+    { name: "Pricing", path: "/pricing" },
+  ]),
+  buildFaqSchema(faqs),
+]))
+
+useJsonLd("pricing-schema", pricingSchema)
 
 const handlePlanCta = (plan) => {
   if (!authenticated.value) {
