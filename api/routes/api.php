@@ -463,8 +463,14 @@ Route::prefix('forms')->name('forms.')->group(function () {
 
     // AI
     Route::post('ai/generate', [\App\Http\Controllers\Forms\AiFormController::class, 'generateForm'])->name('ai.generate');
+    Route::get('ai/formula/{aiFormCompletion}', [\App\Http\Controllers\Forms\AiFormController::class, 'showFormula'])
+        ->middleware('auth.multi')
+        ->name('ai.formula.show');
     Route::get('ai/{aiFormCompletion}', [\App\Http\Controllers\Forms\AiFormController::class, 'show'])->name('ai.show');
     Route::post('ai/generate-fields', [\App\Http\Controllers\Forms\AiFormController::class, 'generateFields'])->name('ai.generate-fields');
+    Route::post('ai/generate-formula', [\App\Http\Controllers\Forms\AiFormController::class, 'generateFormula'])
+        ->middleware(['auth.multi', 'throttle:4,1'])
+        ->name('ai.generate-formula');
 });
 
 /**
