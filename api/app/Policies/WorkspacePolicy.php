@@ -132,23 +132,22 @@ class WorkspacePolicy
             return Response::deny('You need to be an admin of this workspace to do this.');
         }
 
-        if (!$workspace->hasFeature('invite_user')) {
-            return Response::deny('A Pro plan is required to invite users.');
+        $planAccess = app(PlanAccessService::class);
+        if (!$planAccess->hasFeature($workspace, 'invite_user')) {
+            return Response::deny('A Business plan is required to invite users.');
         }
 
-        // In case of special license, check license limit
-        $billingOwner = $workspace->billingOwners()->first();
-        if ($billingOwner && ($license = $billingOwner->activeLicense())) {
-            $userActiveMembers = (new UserHelper($billingOwner))->getActiveMembersCount();
+        if ($planAccess->featureUsesLicenseGrant($workspace, 'invite_user')) {
+            $grant = $planAccess->licenseFeatureGrant($workspace, 'invite_user');
+            if (!$grant) {
+                return Response::deny('A Business plan is required to invite users.');
+            }
+
+            $license = $grant['license'];
+            $owner = $grant['owner'];
+            $userActiveMembers = (new UserHelper($owner))->getActiveMembersCount();
             if ($userActiveMembers >= $license->max_users_limit_count) {
                 return Response::deny('You have reached the maximum number of users allowed with your license.');
-            }
-        }
-
-        // If using Sanctum token, require write ability first
-        if ($token = $user->currentAccessToken()) {
-            if (! $token->can('workspaces-write')) {
-                return Response::deny('Token lacks workspaces:write ability.');
             }
         }
 

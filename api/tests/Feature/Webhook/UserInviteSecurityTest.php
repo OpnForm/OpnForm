@@ -91,7 +91,7 @@ describe('Invite token redaction', function () {
     });
 
     it('does not expose token when creating an invite', function () {
-        $admin = $this->actingAsProUser();
+        $admin = $this->actingAsBusinessUser();
         $workspace = $this->createUserWorkspace($admin);
 
         $response = $this->postJson(route('open.workspaces.users.add', $workspace), [

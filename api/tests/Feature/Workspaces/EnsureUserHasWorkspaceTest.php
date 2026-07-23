@@ -151,6 +151,52 @@ test('removing guest from last workspace via job creates a default one', functio
     expect($pivotData->role)->toBe('admin');
 });
 
+test('keeps workspace members when another billing owner still grants invite_user', function () {
+    $formerBusinessOwner = $this->createBusinessUser();
+    $remainingBusinessOwner = $this->createBusinessUser();
+    $workspace = Workspace::factory()->create();
+    $member = User::factory()->create();
+
+    $workspace->users()->attach($formerBusinessOwner, ['role' => 'admin']);
+    $workspace->users()->attach($remainingBusinessOwner, ['role' => 'admin']);
+    $workspace->users()->attach($member, ['role' => 'user']);
+    $workspace->flush();
+
+    $formerBusinessOwner->subscriptions()->update([
+        'stripe_status' => 'canceled',
+        'ends_at' => now()->subDay(),
+    ]);
+    $formerBusinessOwner->flushCache();
+    $workspace->flush();
+
+    RemoveWorkspaceGuests::dispatchSync($formerBusinessOwner);
+
+    expect($workspace->fresh()->users()->whereKey($member->id)->exists())->toBeTrue();
+});
+
+test('removes workspace members when no billing owner still grants invite_user', function () {
+    $formerBusinessOwner = $this->createBusinessUser();
+    $remainingProOwner = $this->createProUser();
+    $workspace = Workspace::factory()->create();
+    $member = User::factory()->create();
+
+    $workspace->users()->attach($formerBusinessOwner, ['role' => 'admin']);
+    $workspace->users()->attach($remainingProOwner, ['role' => 'admin']);
+    $workspace->users()->attach($member, ['role' => 'user']);
+    $workspace->flush();
+
+    $formerBusinessOwner->subscriptions()->update([
+        'stripe_status' => 'canceled',
+        'ends_at' => now()->subDay(),
+    ]);
+    $formerBusinessOwner->flushCache();
+    $workspace->flush();
+
+    RemoveWorkspaceGuests::dispatchSync($formerBusinessOwner);
+
+    expect($workspace->fresh()->users()->whereKey($member->id)->exists())->toBeFalse();
+});
+
 test('removing guest from one workspace when they have others via job does not create default one', function () {
     // Arrange: Guest user with two workspaces, Admin user
     $admin = User::factory()->create();

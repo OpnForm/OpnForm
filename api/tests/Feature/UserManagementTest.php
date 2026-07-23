@@ -7,7 +7,7 @@ use App\Rules\ValidReCaptcha;
 use Illuminate\Support\Facades\Http;
 
 beforeEach(function () {
-    $this->user = $this->actingAsProUser();
+    $this->user = $this->actingAsBusinessUser();
     $this->workspace = $this->createUserWorkspace($this->user);
     Http::fake([
         ValidHCaptcha::H_CAPTCHA_VERIFY_URL => Http::response(['success' => true]),
