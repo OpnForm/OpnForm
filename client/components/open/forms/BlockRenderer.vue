@@ -94,6 +94,30 @@
         :is-dark="darkMode"
       />
     </div>
+    <div
+      v-else-if="block.type === 'nf-audio' && (isAdminPreview || (!isAdminPreview && block.audio_block))"
+      :id="block.id"
+      :key="'audio-' + block.id"
+      class="my-4 w-full"
+      :class="[getFieldAlignClasses(block)]"
+      @dblclick="editFieldOptions"
+    >
+      <div
+        v-if="!block.audio_block"
+        class="p-4 border border-dashed text-center"
+      >
+        <a
+          href="#"
+          class="text-blue-800 dark:text-blue-200"
+          @click.prevent="editFieldOptions"
+        >Open block settings to add audio.</a>
+      </div>
+      <EmbedMedia
+        v-else
+        :src="block.audio_block"
+        :is-dark="darkMode"
+      />
+    </div>
   </div>
 </template>
 

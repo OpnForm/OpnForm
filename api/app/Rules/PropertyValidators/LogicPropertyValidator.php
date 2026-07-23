@@ -223,7 +223,7 @@ class LogicPropertyValidator implements PropertyValidatorInterface
             return;
         }
 
-        $layoutBlocks = ['nf-text', 'nf-code', 'nf-page-break', 'nf-divider', 'nf-image', 'nf-video'];
+        $layoutBlocks = ['nf-text', 'nf-code', 'nf-page-break', 'nf-divider', 'nf-image', 'nf-video', 'nf-audio'];
         $fieldType = $this->field['type'] ?? null;
         $isHidden = $this->field['hidden'] ?? false;
         $isRequired = $this->field['required'] ?? false;
