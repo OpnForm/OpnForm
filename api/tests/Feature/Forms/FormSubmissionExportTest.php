@@ -450,6 +450,22 @@ it('uses the workspace policy for asynchronous CSV download links', function () 
     Storage::assertExists(FormExportService::EXPORT_FILE_PATH . 'weekend-submissions.csv');
 });
 
+it('includes a UTF-8 BOM in asynchronous CSV exports', function () {
+    Storage::fake();
+    $exportService = app(FormExportService::class);
+    $fileName = 'unicode-submissions.csv';
+
+    $exportService->generateAndUploadCsvFile([
+        ['name' => 'பெயர்'],
+    ], $fileName, now()->addHour());
+
+    $csv = Storage::get(FormExportService::EXPORT_FILE_PATH . $fileName);
+
+    expect($csv)
+        ->toStartWith("\xEF\xBB\xBF")
+        ->toContain('பெயர்');
+});
+
 it('allows export status polling when the general api rate limit is exhausted', function () {
     $this->withMiddleware(ThrottleRequests::class);
 
