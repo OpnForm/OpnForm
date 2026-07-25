@@ -139,6 +139,20 @@ class PdfTemplateController extends Controller
                     'errors' => ['file' => [$e->getMessage()]],
                 ], 422);
             }
+
+            // Renormalize source_page to match the physical position in the
+            // rebuilt file. The rebuild writes one physical page per manifest
+            // entry (source and blank alike), so the correct value is the
+            // 1-based index of the entry in the manifest.
+            foreach ($pageManifest as $index => &$entry) {
+                if (($entry['type'] ?? 'source') === 'source') {
+                    $entry['source_page'] = $index + 1;
+                } else {
+                    $entry['source_page'] = null;
+                }
+            }
+            unset($entry);
+            $validated['page_manifest'] = $pageManifest;
             $validated['page_count'] = count($pageManifest);
         }
         $pdfTemplate->update($validated);
