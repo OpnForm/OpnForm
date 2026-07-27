@@ -175,7 +175,7 @@ function areValidNumbers(condition, fieldValue) {
 function checkEquals(condition, fieldValue) {
   const conditionValue = condition.value
   // For numeric values, convert to numbers before comparison
-  if (areValidNumbers(condition, fieldValue) && typeof conditionValue === 'number' && typeof fieldValue === 'number') {
+  if (areValidNumbers(condition, fieldValue) && typeof conditionValue === 'number') {
     return parseFloat(conditionValue) === parseFloat(fieldValue)
   }
   return conditionValue === fieldValue
