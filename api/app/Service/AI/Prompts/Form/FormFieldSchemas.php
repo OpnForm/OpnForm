@@ -220,7 +220,7 @@ class FormFieldSchemas
         ],
         'numberProperty' => [
             'type' => 'object',
-            'required' => ['core', 'type', 'number_format'],
+            'required' => ['core', 'type'],
             'additionalProperties' => false,
             'properties' => [
                 'type' => ['type' => 'string', 'enum' => ['number']],
