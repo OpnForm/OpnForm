@@ -535,4 +535,48 @@ describe('OIDC link flow', () => {
         expect(vm.form.oidc_link_token).toBe('link-token-123')
         expect(vm.form.mutate).toHaveBeenCalledOnce()
     })
+
+    it('does not restart OIDC when an account-linking request checks the email field', async () => {
+        linkTokenValue.value = 'link-token-123'
+        setupGlobals({}, {
+            featureFlags: {
+                'oidc.available': true,
+                'oidc.forced': true,
+            },
+        })
+
+        const wrapper = mount(LoginForm, {
+            global: {
+                stubs: {
+                    ForgotPasswordModal: true,
+                    TwoFactorVerificationModal: true,
+                    VForm: {
+                        template: '<form><slot /></form>',
+                        props: ['form'],
+                    },
+                    TextInput: {
+                        template: '<input :name="name" />',
+                        props: ['name'],
+                    },
+                    CheckboxInput: true,
+                    UAlert: true,
+                    UButton: true,
+                    VTransition: {
+                        template: '<div><slot /></div>',
+                    },
+                    NuxtLink: true,
+                    ClientOnly: true,
+                    GoogleOneTap: true,
+                },
+            },
+        })
+
+        const vm = wrapper.vm as any
+        vm.form.email = 'existing@example.com'
+        vm.form.post = vi.fn()
+
+        await vm.checkOidcOptions()
+
+        expect(vm.form.post).not.toHaveBeenCalled()
+    })
 })
