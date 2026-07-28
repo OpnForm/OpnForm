@@ -455,3 +455,35 @@ test('email notification escapes submission html while keeping generated links c
     expect($html)->toContain('href="https://example.com/path"');
     expect($html)->toContain('>https://example.com/path<');
 });
+
+test('email notification renders plain submission values once in the submission data block', function () {
+    $user = $this->actingAsProUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace);
+
+    $textField = collect($form->properties)->firstWhere('name', 'Name');
+    $submissionData = [
+        $textField['id'] => "Café d'Art & <b>test</b>",
+    ];
+
+    $integrationData = (object) [
+        'sender_name' => 'Test Sender',
+        'subject' => 'Test Subject',
+        'email_content' => '<p>Body</p>',
+        'include_submission_data' => true,
+    ];
+
+    $notification = new FormEmailNotification(
+        new \App\Events\Forms\FormSubmitted($form, $submissionData),
+        $integrationData
+    );
+
+    $html = (string) $notification->toMail(new AnonymousNotifiable())->render();
+
+    expect($html)->toContain('Café d');
+    expect($html)->toContain('&lt;b&gt;test&lt;/b&gt;');
+    expect($html)->not->toContain('&amp;#039;');
+    expect($html)->not->toContain('&amp;amp;');
+    expect($html)->not->toContain('&amp;lt;b&amp;gt;test&amp;lt;/b&amp;gt;');
+    expect($html)->not->toContain("Café d'Art & <b>test</b>");
+});
