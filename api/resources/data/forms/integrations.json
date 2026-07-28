@@ -77,6 +77,17 @@
     "is_editable": false,
     "url": "https://www.activepieces.com/pieces/opnform"
   },
+  "pabbly": {
+    "name": "Pabbly",
+    "icon": "opnform:pabbly",
+    "section_name": "Automation",
+    "file_name": "PabblyIntegration",
+    "actions_file_name": "PabblyIntegrationActions",
+    "required_tier": "free",
+    "is_external": true,
+    "is_editable": false,
+    "url": "https://connect.pabbly.com/integrations/opnform"
+  },
   "google_sheets": {
     "name": "Google Sheets",
     "icon": "mdi:google-spreadsheet",
