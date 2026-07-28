@@ -21,7 +21,10 @@ CODEX_API_PORT="${CODEX_API_PORT:-$((26000 + CODEX_HASH))}"
 CODEX_APP_PORT="${CODEX_APP_PORT:-$((32000 + CODEX_HASH))}"
 CODEX_API_SCREEN="opnform-codex-api-$CODEX_HASH"
 CODEX_CLIENT_SCREEN="opnform-codex-client-$CODEX_HASH"
-CODEX_CLIENT_NODE_STAMP="$CODEX_STATE_DIR/client-node.version"
+CODEX_CLIENT_DEPENDENCY_STAMP="$CODEX_STATE_DIR/client-dependencies.sha256"
+CODEX_CLIENT_INSTALL_LOCK="$CODEX_STATE_DIR/client-install.lock"
+CODEX_CLIENT_NUXT_DIR="$CODEX_STATE_DIR/client/nuxt"
+CODEX_CLIENT_VITE_CACHE_DIR="$CODEX_STATE_DIR/client/vite"
 
 CODEX_API_BASE_URL="http://$CODEX_API_HOST:$CODEX_API_PORT"
 CODEX_APP_URL="http://$CODEX_APP_HOST:$CODEX_APP_PORT"
@@ -147,6 +150,8 @@ NUXT_PUBLIC_ENV=codex
 NUXT_PUBLIC_CODEX_AUTO_LOGIN=true
 NUXT_PUBLIC_CODEX_AUTO_LOGIN_EMAIL=e2e@example.test
 NUXT_PUBLIC_CODEX_AUTO_LOGIN_PASSWORD=Abcd@1234
+NUXT_BUILD_DIR="$CODEX_CLIENT_NUXT_DIR"
+NUXT_VITE_CACHE_DIR="$CODEX_CLIENT_VITE_CACHE_DIR"
 EOF
 
   cat >"$CODEX_ENV_FILE" <<EOF
@@ -163,6 +168,8 @@ CODEX_API_BASE_URL=$CODEX_API_BASE_URL
 CODEX_APP_URL=$CODEX_APP_URL
 CODEX_API_HEALTH_URL=$CODEX_API_HEALTH_URL
 CODEX_APP_HEALTH_URL=$CODEX_APP_HEALTH_URL
+CODEX_CLIENT_NUXT_DIR="$CODEX_CLIENT_NUXT_DIR"
+CODEX_CLIENT_VITE_CACHE_DIR="$CODEX_CLIENT_VITE_CACHE_DIR"
 EOF
 }
 
@@ -183,12 +190,86 @@ print_codex_environment_summary() {
 }
 
 ensure_php_dependencies() {
+  select_php_runtime
+
   if [ ! -f "$ROOT_DIR/api/vendor/autoload.php" ]; then
+    composer_bin="${CODEX_COMPOSER_BIN:-$(command -v composer 2>/dev/null || true)}"
+    if [ -z "$composer_bin" ] || [ ! -f "$composer_bin" ]; then
+      echo "Composer is required to install the Codex API dependencies." >&2
+      exit 1
+    fi
+
     (
       cd "$ROOT_DIR/api"
-      composer install --no-interaction --prefer-dist
+      "$CODEX_PHP_BIN" "$composer_bin" install --no-interaction --prefer-dist
     )
   fi
+}
+
+php_version_is_supported() {
+  version="$1"
+  major=${version%%.*}
+  remainder=${version#*.}
+  minor=${remainder%%.*}
+
+  case "$major.$minor" in
+    *[!0-9.]*|.*|*.) return 1 ;;
+  esac
+
+  [ "$major" -eq 8 ] && [ "$minor" -ge 3 ]
+}
+
+select_php_candidate() {
+  candidate="$1"
+
+  [ -n "$candidate" ] && [ -x "$candidate" ] || return 1
+
+  version=$("$candidate" -r 'echo PHP_VERSION;' 2>/dev/null || true)
+  php_version_is_supported "$version" || return 1
+
+  php_dir=$(dirname "$candidate")
+  PATH="$php_dir:$PATH"
+
+  CODEX_PHP_BIN="$candidate"
+  CODEX_PHP_VERSION="$version"
+  export PATH CODEX_PHP_BIN CODEX_PHP_VERSION
+  return 0
+}
+
+select_php_runtime() {
+  if [ -n "${CODEX_PHP_BIN:-}" ]; then
+    if select_php_candidate "$CODEX_PHP_BIN"; then
+      return 0
+    fi
+
+    echo "CODEX_PHP_BIN must point to a PHP ^8.3 runtime." >&2
+    exit 1
+  fi
+
+  homebrew_php="/opt/homebrew/bin/php"
+  homebrew_php_84="/opt/homebrew/opt/php@8.4/bin/php"
+  homebrew_php_83="/opt/homebrew/opt/php@8.3/bin/php"
+  local_php="/usr/local/bin/php"
+  local_php_84="/usr/local/opt/php@8.4/bin/php"
+  local_php_83="/usr/local/opt/php@8.3/bin/php"
+  herd_php_84="$HOME/Library/Application Support/Herd/bin/php84"
+  herd_php_83="$HOME/Library/Application Support/Herd/bin/php83"
+  herd_php="$HOME/Library/Application Support/Herd/bin/php"
+  bundled_php="$HOME/.cache/codex-runtimes/codex-primary-runtime/dependencies/php/bin/php"
+  path_php=$(command -v php 2>/dev/null || true)
+
+  for candidate in \
+    "$homebrew_php" "$homebrew_php_84" "$homebrew_php_83" \
+    "$local_php" "$local_php_84" "$local_php_83" \
+    "$herd_php_84" "$herd_php_83" "$herd_php" \
+    "$bundled_php" "$path_php"; do
+    if select_php_candidate "$candidate"; then
+      return 0
+    fi
+  done
+
+  echo "A PHP runtime compatible with ^8.3 is required." >&2
+  exit 1
 }
 
 remove_node_modules() {
@@ -208,6 +289,89 @@ remove_node_modules() {
     echo "Could not remove stale client/node_modules after $attempt attempts." >&2
     exit 1
   fi
+}
+
+hash_stdin() {
+  if command -v shasum >/dev/null 2>&1; then
+    shasum -a 256 | awk '{ print $1 }'
+    return 0
+  fi
+
+  if command -v sha256sum >/dev/null 2>&1; then
+    sha256sum | awk '{ print $1 }'
+    return 0
+  fi
+
+  if command -v openssl >/dev/null 2>&1; then
+    openssl dgst -sha256 | awk '{ print $NF }'
+    return 0
+  fi
+
+  echo "A SHA-256 utility is required to fingerprint Codex client dependencies." >&2
+  return 1
+}
+
+client_dependencies_fingerprint() {
+  lock_file="$ROOT_DIR/client/package-lock.json"
+  if [ ! -f "$lock_file" ]; then
+    echo "client/package-lock.json is required for deterministic Codex installs." >&2
+    return 1
+  fi
+
+  lock_hash=$(hash_stdin <"$lock_file")
+  printf 'version=1\nnode=%s\nlock=%s\n' "$CODEX_NODE_VERSION" "$lock_hash" | hash_stdin
+}
+
+acquire_client_install_lock() {
+  ensure_codex_state_dir
+  attempt=0
+
+  while ! mkdir "$CODEX_CLIENT_INSTALL_LOCK" 2>/dev/null; do
+    attempt=$((attempt + 1))
+    lock_pid=$(cat "$CODEX_CLIENT_INSTALL_LOCK/pid" 2>/dev/null || true)
+
+    case "$lock_pid" in
+      ''|*[!0-9]*)
+        if [ "$attempt" -ge 5 ]; then
+          echo "Removing incomplete Codex client install lock." >&2
+          rm -rf "$CODEX_CLIENT_INSTALL_LOCK"
+          attempt=0
+          continue
+        fi
+        ;;
+      *)
+        if ! kill -0 "$lock_pid" >/dev/null 2>&1; then
+          echo "Removing stale Codex client install lock from process $lock_pid." >&2
+          rm -rf "$CODEX_CLIENT_INSTALL_LOCK"
+          attempt=0
+          continue
+        fi
+        ;;
+    esac
+
+    if [ "$attempt" -eq 1 ]; then
+      echo "Waiting for another Codex client dependency install to finish."
+    elif [ "$attempt" -ge "${CODEX_CLIENT_INSTALL_LOCK_TIMEOUT:-600}" ]; then
+      echo "Timed out waiting for the Codex client dependency install lock." >&2
+      return 1
+    fi
+
+    sleep 1
+  done
+
+  CODEX_CLIENT_INSTALL_LOCK_ACQUIRED=1
+  printf '%s\n' "$$" >"$CODEX_CLIENT_INSTALL_LOCK/pid"
+}
+
+release_client_install_lock() {
+  if [ "${CODEX_CLIENT_INSTALL_LOCK_ACQUIRED:-0}" = "1" ]; then
+    rm -rf "$CODEX_CLIENT_INSTALL_LOCK"
+    CODEX_CLIENT_INSTALL_LOCK_ACQUIRED=0
+  fi
+}
+
+invalidate_client_artifacts() {
+  rm -rf "$CODEX_CLIENT_NUXT_DIR" "$CODEX_CLIENT_VITE_CACHE_DIR"
 }
 
 node_version_is_supported() {
@@ -278,33 +442,45 @@ select_node_runtime() {
 
 ensure_node_dependencies() {
   select_node_runtime
-  node_version="v$CODEX_NODE_VERSION"
 
-  install_reason=""
-  if [ ! -d "$ROOT_DIR/client/node_modules" ]; then
-    install_reason="missing node_modules"
-  elif [ ! -x "$ROOT_DIR/client/node_modules/.bin/nuxt" ]; then
-    install_reason="Nuxt binary missing"
-  elif [ ! -f "$CODEX_CLIENT_NODE_STAMP" ]; then
-    install_reason="Node runtime stamp missing"
-  elif [ "$(cat "$CODEX_CLIENT_NODE_STAMP" 2>/dev/null || true)" != "$node_version" ]; then
-    install_reason="Node runtime changed"
-  fi
+  (
+    CODEX_CLIENT_INSTALL_LOCK_ACQUIRED=0
+    trap 'release_client_install_lock' EXIT
+    trap 'exit 1' HUP INT TERM
+    acquire_client_install_lock
 
-  if [ -n "$install_reason" ]; then
-    echo "Installing client dependencies with Node $node_version and npm $("$CODEX_NPM_BIN" --version) ($install_reason)."
+    fingerprint=$(client_dependencies_fingerprint)
+    install_reason=""
+    if [ ! -d "$ROOT_DIR/client/node_modules" ]; then
+      install_reason="missing node_modules"
+    elif [ ! -x "$ROOT_DIR/client/node_modules/.bin/nuxt" ]; then
+      install_reason="Nuxt binary missing"
+    elif [ ! -f "$CODEX_CLIENT_DEPENDENCY_STAMP" ]; then
+      install_reason="dependency fingerprint missing"
+    elif [ "$(cat "$CODEX_CLIENT_DEPENDENCY_STAMP" 2>/dev/null || true)" != "$fingerprint" ]; then
+      install_reason="dependency fingerprint changed"
+    fi
+
+    if [ -z "$install_reason" ]; then
+      exit 0
+    fi
+
+    echo "Installing client dependencies with Node v$CODEX_NODE_VERSION and npm $("$CODEX_NPM_BIN" --version) ($install_reason)."
+    invalidate_client_artifacts
     if [ -d "$ROOT_DIR/client/node_modules" ]; then
       remove_node_modules
     fi
 
+    mkdir -p "$CODEX_CLIENT_NUXT_DIR" "$CODEX_CLIENT_VITE_CACHE_DIR"
     (
       cd "$ROOT_DIR/client"
-      "$CODEX_NPM_BIN" ci --no-audit --no-fund
+      NUXT_BUILD_DIR="$CODEX_CLIENT_NUXT_DIR" \
+        NUXT_VITE_CACHE_DIR="$CODEX_CLIENT_VITE_CACHE_DIR" \
+        "$CODEX_NPM_BIN" ci --no-audit --no-fund
     )
-  fi
 
-  ensure_codex_state_dir
-  printf '%s\n' "$node_version" >"$CODEX_CLIENT_NODE_STAMP"
+    printf '%s\n' "$fingerprint" >"$CODEX_CLIENT_DEPENDENCY_STAMP"
+  )
 }
 
 port_is_listening() {

@@ -295,6 +295,7 @@ class FormSubmissionFormatter
 
             if ($this->createLinks && empty($field['value_is_html'])) {
                 $field['value'] = $this->escapeHtmlValue($field['value']);
+                $field['value_is_html'] = true;
             }
 
             $transformedFields[] = $field;

@@ -5,6 +5,9 @@ set -eu
 ROOT_DIR=$(cd -- "$(dirname "$0")/.." && pwd)
 . "$ROOT_DIR/scripts/codex-worktree-lib.sh"
 
+select_php_runtime
+select_node_runtime
+
 if [ ! -f "$CODEX_API_ENV_FILE" ] || [ ! -f "$CODEX_CLIENT_ENV_FILE" ]; then
   "$ROOT_DIR/scripts/codex-worktree-setup.sh"
   CODEX_ENV_SUMMARY_PRINTED=1
@@ -45,13 +48,13 @@ start_api() {
 
   if command -v screen >/dev/null 2>&1; then
     rm -f "$CODEX_STATE_DIR/api.pid"
-    screen -dmS "$CODEX_API_SCREEN" sh -lc "cd '$ROOT_DIR/api' && echo \$\$ >'$CODEX_STATE_DIR/api.pid' && exec env RUNNER_TRACKING_ID= APP_ENV=codex php artisan serve --host='$CODEX_API_HOST' --port='$CODEX_API_PORT' --env=codex >'$CODEX_STATE_DIR/api.log' 2>&1"
+    screen -dmS "$CODEX_API_SCREEN" sh -lc "cd '$ROOT_DIR/api' && echo \$\$ >'$CODEX_STATE_DIR/api.pid' && exec env RUNNER_TRACKING_ID= APP_ENV=codex '$CODEX_PHP_BIN' artisan serve --host='$CODEX_API_HOST' --port='$CODEX_API_PORT' --env=codex >'$CODEX_STATE_DIR/api.log' 2>&1"
     echo "$CODEX_API_SCREEN" >"$CODEX_STATE_DIR/api.screen"
   else
     rm -f "$CODEX_STATE_DIR/api.screen"
     (
       cd "$ROOT_DIR/api"
-      exec nohup env RUNNER_TRACKING_ID= APP_ENV=codex php artisan serve --host="$CODEX_API_HOST" --port="$CODEX_API_PORT" --env=codex
+      exec nohup env RUNNER_TRACKING_ID= APP_ENV=codex "$CODEX_PHP_BIN" artisan serve --host="$CODEX_API_HOST" --port="$CODEX_API_PORT" --env=codex
     ) >"$CODEX_STATE_DIR/api.log" 2>&1 &
     echo "$!" >"$CODEX_STATE_DIR/api.pid"
   fi
@@ -75,11 +78,6 @@ start_client() {
     echo "Port $CODEX_APP_PORT is already in use, but the Codex Nuxt UI is not responding." >&2
     exit 1
   fi
-
-  # Vite's optimized dependency cache is transient. It can retain references
-  # to chunks removed by npm ci, causing the Nuxt dev server to crash on first
-  # navigation in a freshly created worktree.
-  rm -rf "$ROOT_DIR/client/node_modules/.cache/vite"
 
   if command -v screen >/dev/null 2>&1; then
     rm -f "$CODEX_STATE_DIR/client.pid"

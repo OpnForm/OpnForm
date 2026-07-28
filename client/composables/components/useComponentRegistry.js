@@ -28,6 +28,7 @@ const actionRegistry = new Map([
   ['N8nIntegrationActions', () => import('~/components/open/integrations/components/N8nIntegrationActions.vue')],
   ['ActivepiecesIntegrationActions', () => import('~/components/open/integrations/components/ActivepiecesIntegrationActions.vue')],
   ['MakeIntegrationActions', () => import('~/components/open/integrations/components/MakeIntegrationActions.vue')],
+  ['PabblyIntegrationActions', () => import('~/components/open/integrations/components/PabblyIntegrationActions.vue')],
 ])
 
 const providerRegistry = new Map([
