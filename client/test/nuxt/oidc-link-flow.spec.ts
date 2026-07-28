@@ -536,7 +536,7 @@ describe('OIDC link flow', () => {
         expect(vm.form.mutate).toHaveBeenCalledOnce()
     })
 
-    it('does not restart OIDC when an account-linking request checks the email field', async () => {
+    it('does not restart OIDC when the email field loses focus during account linking', async () => {
         linkTokenValue.value = 'link-token-123'
         setupGlobals({}, {
             featureFlags: {
@@ -555,8 +555,9 @@ describe('OIDC link flow', () => {
                         props: ['form'],
                     },
                     TextInput: {
-                        template: '<input :name="name" />',
+                        template: '<input :name="name" @blur="$emit(\'blur\')" />',
                         props: ['name'],
+                        emits: ['blur'],
                     },
                     CheckboxInput: true,
                     UAlert: true,
@@ -573,9 +574,10 @@ describe('OIDC link flow', () => {
 
         const vm = wrapper.vm as any
         vm.form.email = 'existing@example.com'
-        vm.form.post = vi.fn()
+        vm.form.post = vi.fn(() => Promise.resolve({ action: 'none' }))
 
-        await vm.checkOidcOptions()
+        await wrapper.find('input[name="email"]').trigger('blur')
+        await flushPromises()
 
         expect(vm.form.post).not.toHaveBeenCalled()
     })
