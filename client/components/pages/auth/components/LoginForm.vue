@@ -28,6 +28,16 @@
       />
 
       <UAlert
+        v-if="isLinkingExistingAccount"
+        class="mt-3"
+        icon="i-lucide-link"
+        color="primary"
+        variant="subtle"
+        title="Link your existing account"
+        description="Sign in once with your existing OpnForm password to link it to your SSO account."
+      />
+
+      <UAlert
         v-if="isOidcSignIn && isOidcRateLimited"
         class="mt-3"
         icon="i-lucide-clock-3"
@@ -153,7 +163,7 @@ const router = useRouter()
 const { login: loginMutationFactory } = useAuth()
 const authFlow = useAuthFlow()
 const { showTwoFactorModal, pendingAuthToken, handleTwoFactorVerified, handleTwoFactorCancel, handleTwoFactorError } = authFlow
-const { completeLinkIfNeeded } = useOidcLinking()
+const { linkToken, completeLinkIfNeeded } = useOidcLinking()
 
 // Feature flags
 const oidcAvailable = computed(() => useFeatureFlag('oidc.available', false))
@@ -168,7 +178,8 @@ const form = useForm({
 
 const loginMutation = loginMutationFactory()
 const showForgotModal = ref(false)
-const showPasswordField = ref(!oidcAvailable.value)
+const isLinkingExistingAccount = computed(() => Boolean(linkToken.value))
+const showPasswordField = ref(!oidcAvailable.value || isLinkingExistingAccount.value)
 const passwordInputRef = ref(null)
 const oidcRetryAfterSeconds = ref(0)
 let oidcRateLimitTimer = null
@@ -220,6 +231,12 @@ watch(showPasswordField, async (newValue) => {
     if (passwordInput) {
       passwordInput.focus()
     }
+  }
+})
+
+watch(linkToken, (newToken) => {
+  if (newToken) {
+    showPasswordField.value = true
   }
 })
 
@@ -303,6 +320,12 @@ const login = () => {
   if (!form.password && showPasswordField.value) {
     useAlert().error('Password is required')
     return
+  }
+
+  if (linkToken.value) {
+    form.oidc_link_token = linkToken.value
+  } else {
+    delete form.oidc_link_token
   }
 
   form.mutate(loginMutation).then(() => {

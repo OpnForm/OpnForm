@@ -12,6 +12,7 @@ const {
     clearOidcAutomaticRetrySpy,
     consumeOidcStateVerifierSpy,
     featureFlagValues,
+    linkTokenValue,
     markOidcAutomaticRetrySpy,
     storeOidcStateVerifierSpy,
 } = vi.hoisted(() => ({
@@ -22,6 +23,7 @@ const {
     clearOidcAutomaticRetrySpy: vi.fn(),
     consumeOidcStateVerifierSpy: vi.fn(() => null),
     featureFlagValues: {},
+    linkTokenValue: { value: null },
     markOidcAutomaticRetrySpy: vi.fn(),
     storeOidcStateVerifierSpy: vi.fn(),
 }))
@@ -65,7 +67,7 @@ vi.mock('~/composables/query/useAuth', () => ({
 
 vi.mock('~/composables/useOidcLinking', () => ({
     useOidcLinking: () => ({
-        linkToken: ref(null),
+        linkToken: ref(linkTokenValue.value),
         startLink: startLinkSpy,
         clearLinkToken: vi.fn(),
         completeLinkIfNeeded: completeLinkIfNeededSpy,
@@ -163,6 +165,7 @@ describe('OIDC link flow', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         Object.keys(featureFlagValues).forEach((key) => delete featureFlagValues[key])
+        linkTokenValue.value = null
         canAutomaticallyRetryOidcSignInSpy.mockReturnValue(true)
     })
 
@@ -210,6 +213,7 @@ describe('OIDC link flow', () => {
         await flushPromises()
 
         expect(wrapper.text()).toContain('Link existing account')
+        expect(oidcApi.callback).toHaveBeenCalledOnce()
         vi.useRealTimers()
     })
 
@@ -478,5 +482,57 @@ describe('OIDC link flow', () => {
         await vm.handleTwoFactorVerifiedAndRedirect({ token: 'verified-token' })
 
         expect(completeLinkIfNeededSpy).toHaveBeenCalled()
+    })
+
+    it('shows password sign-in for a valid account-linking request even when OIDC is forced', async () => {
+        linkTokenValue.value = 'link-token-123'
+        setupGlobals({}, {
+            featureFlags: {
+                'oidc.available': true,
+                'oidc.forced': true,
+            },
+        })
+
+        const wrapper = mount(LoginForm, {
+            global: {
+                stubs: {
+                    ForgotPasswordModal: true,
+                    TwoFactorVerificationModal: true,
+                    VForm: {
+                        template: '<form><slot /></form>',
+                        props: ['form'],
+                    },
+                    TextInput: {
+                        template: '<input :name="name" />',
+                        props: ['name'],
+                    },
+                    CheckboxInput: true,
+                    UAlert: {
+                        template: '<div class="alert">{{ title }} {{ description }}</div>',
+                        props: ['title', 'description'],
+                    },
+                    UButton: true,
+                    VTransition: {
+                        template: '<div><slot /></div>',
+                    },
+                    NuxtLink: true,
+                    ClientOnly: true,
+                    GoogleOneTap: true,
+                },
+            },
+        })
+
+        const vm = wrapper.vm as any
+        vm.form.email = 'existing@example.com'
+        vm.form.password = 'Abcd@1234'
+        vm.form.mutate = vi.fn(() => Promise.resolve())
+
+        vm.login()
+        await flushPromises()
+
+        expect(wrapper.text()).toContain('Link your existing account')
+        expect(wrapper.find('input[name="password"]').exists()).toBe(true)
+        expect(vm.form.oidc_link_token).toBe('link-token-123')
+        expect(vm.form.mutate).toHaveBeenCalledOnce()
     })
 })
