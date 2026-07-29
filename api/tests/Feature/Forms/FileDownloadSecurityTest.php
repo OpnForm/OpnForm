@@ -43,6 +43,45 @@ it('forces attachment download with safe headers for submission files', function
         ->toBe('nosniff');
 });
 
+it('serves generated signatures inline with a safe image content type', function () {
+    $user = $this->actingAsUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace);
+    $signatureId = 'signature_' . uniqid();
+    $form->properties = array_merge($form->properties, [
+        ['id' => $signatureId, 'name' => 'Signature', 'type' => 'signature'],
+    ]);
+    $form->save();
+
+    Storage::fake();
+
+    $fileName = 'sign_' . uniqid() . '.png';
+    Storage::put(
+        FileUploadPathService::getFileUploadPath($form->id, $fileName),
+        base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/w8AAgMBAQEAAP8AAAAASUVORK5CYII=', true)
+    );
+
+    $form->submissions()->create([
+        'form_id' => $form->id,
+        'data' => [$signatureId => $fileName],
+        'status' => FormSubmission::STATUS_COMPLETED,
+    ]);
+
+    $submissions = $this->getJson(route('open.forms.submissions.index', [$form->id]))
+        ->assertOk();
+    $signatureUrl = $submissions->json('data.0.data.' . $signatureId . '.0.file_url');
+
+    expect($signatureUrl)->toContain('inline=1');
+
+    $response = $this->get($signatureUrl)->assertOk();
+    expect($response->headers->get('content-disposition'))
+        ->toStartWith('inline;');
+    expect(strtolower($response->headers->get('content-type')))
+        ->toStartWith('image/png');
+    expect($response->headers->get('x-content-type-options'))
+        ->toBe('nosniff');
+});
+
 it('does not eager load workspace users for signed submission file downloads', function () {
     $user = $this->actingAsUser();
     $workspace = $this->createUserWorkspace($user);

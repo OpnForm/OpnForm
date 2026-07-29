@@ -173,7 +173,7 @@ class FormSubmissionController extends Controller
         );
     }
 
-    public function submissionFile(Form $form, $filename)
+    public function submissionFile(Request $request, Form $form, $filename)
     {
         // Decode the base64url encoded filename
         // See: https://github.com/OpnForm/OpnForm/issues/1024
@@ -186,6 +186,33 @@ class FormSubmissionController extends Controller
             return $this->error([
                 'message' => 'File not found.',
             ], 404);
+        }
+
+        $isInlineSignature = $request->boolean('inline')
+            && str_starts_with($decodedFilename, 'sign_')
+            && strtolower(pathinfo($decodedFilename, PATHINFO_EXTENSION)) === 'png';
+
+        if ($isInlineSignature) {
+            $headers = [
+                'Content-Type' => 'image/png',
+                'X-Content-Type-Options' => 'nosniff',
+                'Content-Disposition' => 'inline; filename="' . basename($filePath) . '"',
+            ];
+
+            if (config('filesystems.default') !== 's3') {
+                return response()->file(Storage::path($filePath), $headers);
+            }
+
+            return redirect(
+                Storage::temporaryUrl(
+                    $filePath,
+                    now()->addMinute(),
+                    [
+                        'ResponseContentDisposition' => $headers['Content-Disposition'],
+                        'ResponseContentType' => $headers['Content-Type'],
+                    ]
+                )
+            );
         }
 
         if (config('filesystems.default') !== 's3') {

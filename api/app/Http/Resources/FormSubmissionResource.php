@@ -83,7 +83,7 @@ class FormSubmissionResource extends JsonResource
                 $fileItems = is_array($value) ? $value : [$value];
                 $mapped = collect($fileItems)
                     ->filter(fn ($file) => !is_null($file) && $file !== '')
-                    ->map(function ($file) {
+                    ->map(function ($file) use ($type) {
                         $file = (string) $file;
                         if (FilenameUrlEncoder::isEncoded($file)) {
                             $file = FilenameUrlEncoder::decode($file);
@@ -93,12 +93,13 @@ class FormSubmissionResource extends JsonResource
                         // See: https://github.com/OpnForm/OpnForm/issues/1024
                         $encodedFilename = FilenameUrlEncoder::encode($file);
 
+                        $routeParameters = [$this->form_id, $encodedFilename];
+                        if ($type === 'signature') {
+                            $routeParameters['inline'] = 1;
+                        }
+
                         return [
-                            'file_url' => URL::signedRoute(
-                                'open.forms.submissions.file',
-                                [$this->form_id, $encodedFilename],
-                                now()->addMinutes(10)
-                            ),
+                            'file_url' => URL::signedRoute('open.forms.submissions.file', $routeParameters, now()->addMinutes(10)),
                             'file_name' => $file,
                         ];
                     });
