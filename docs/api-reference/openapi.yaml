@@ -385,6 +385,15 @@ paths:
                       minimum: 1
                       default: 1
                   description: "Pagination page number"
+                - name: per_page
+                  in: query
+                  required: false
+                  schema:
+                      type: number
+                      minimum: 1
+                      maximum: 100
+                      default: 10
+                  description: "Number of forms per page"
             responses:
                 "200":
                     description: Successful
@@ -879,7 +888,7 @@ paths:
             tags:
                 - Integrations
             summary: Create Webhook Integration
-            description: "Create a new webhook integration for a form. Requires `manage-integrations` ability."
+            description: "Create a new generic webhook or provider-specific Make integration for a form. Requires `manage-integrations` ability."
             security:
                 - bearerAuth: []
             parameters:
@@ -901,8 +910,8 @@ paths:
                             properties:
                                 integration_id:
                                     type: string
-                                    enum: [webhook]
-                                    description: Must be "webhook"
+                                    enum: [webhook, make]
+                                    description: Use "webhook" for a generic webhook or "make" for the official OpnForm app on Make
                                 status:
                                     type: string
                                     enum: [active, inactive]
@@ -917,6 +926,11 @@ paths:
                                             type: string
                                             format: uri
                                             description: The URL where submissions will be sent
+                                        provider_url:
+                                            type: string
+                                            format: uri
+                                            nullable: true
+                                            description: Optional Make scenario URL stored with a Make integration
             responses:
                 "200":
                     description: Webhook created successfully
@@ -1576,7 +1590,7 @@ components:
                     readOnly: true
                 integration_id:
                     type: string
-                    description: Type of integration (currently only "webhook" is exposed via API).
+                    description: Type of integration exposed via API, including "webhook" and the provider-specific "make" integration.
                     example: "webhook"
                 status:
                     type: string

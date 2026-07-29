@@ -17,7 +17,9 @@ This endpoint requires a **Personal Access Token** with the `manage-integrations
 </ParamField>
 
 <ParamField body="integration_id" type="string" required>
-    Must be set to `"webhook"` for webhook integrations.
+    Use `"webhook"` for a generic webhook integration or `"make"` for the
+    official OpnForm app on Make. Both values are registered integration
+    handlers exposed by this endpoint.
 </ParamField>
 
 <ParamField body="status" type="string" required>
@@ -54,6 +56,11 @@ Example:
 ```
 
 </ParamField>
+
+<ParamField body="provider_url" type="string">
+Optional Make scenario URL. This property is accepted by the `"make"`
+integration and is ignored by generic webhook integrations.
+</ParamField>
 </Expandable>
 </ParamField>
 
@@ -77,6 +84,25 @@ curl -X POST 'https://api.opnform.com/open/forms/123/integrations' \
         "X-API-Key": "my-api-key",
         "X-Custom-Header": "custom-value"
       }
+    }
+  }'
+```
+</RequestExample>
+
+For the official OpnForm app on Make, the attach request uses the same endpoint
+with the provider-specific integration identifier:
+
+<RequestExample>
+```bash cURL Make
+curl -X POST 'https://api.opnform.com/open/forms/123/integrations' \
+  -H 'Authorization: Bearer YOUR_PAT' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "integration_id": "make",
+    "status": "active",
+    "logic": null,
+    "data": {
+      "webhook_url": "https://hook.eu1.make.com/example"
     }
   }'
 ```
@@ -155,6 +181,32 @@ For security reasons, the following headers cannot be customized:
 -   `X-Real-IP`
 
 See [Validating Webhook Signatures](/api-reference/integrations/webhook-security) for implementation examples.
+
+## Make payload
+
+The `"make"` handler sends a provider-specific payload matching the output
+interface of the OpnForm Make app:
+
+```json
+{
+  "form_id": 123,
+  "form_title": "Contact Form",
+  "form_slug": "contact-form",
+  "submission_id": 456,
+  "edit_link": "https://opnform.com/forms/contact-form?submission_id=example",
+  "data": {
+    "field-id": {
+      "value": "Jane Doe",
+      "name": "Name",
+      "type": "text"
+    }
+  }
+}
+```
+
+`edit_link` is present only when editable submissions are enabled. Unlike the
+generic webhook payload, the Make payload omits the deprecated `submission` and
+`message` properties.
 
 <Warning>
     Do not commit webhook secrets to version control. Use environment variables

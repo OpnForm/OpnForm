@@ -11,6 +11,7 @@ test('make integration fires webhook on form submission with correct payload', f
     $user = $this->actingAsProUser();
     $workspace = $this->createUserWorkspace($user);
     $form = $this->createForm($user, $workspace, [
+        'editable_submissions' => true,
         'properties' => [
             [
                 'id' => 'name',
@@ -41,8 +42,12 @@ test('make integration fires webhook on form submission with correct payload', f
 
         return $request->url() === 'https://example.com/make-hook/test123'
             && $payload['form_id'] === $form->id
-            && isset($payload['data'])
-            && isset($payload['form_title'])
+            && $payload['form_title'] === $form->title
+            && $payload['form_slug'] === $form->slug
+            && is_int($payload['submission_id'])
+            && isset($payload['edit_link'])
+            && $payload['data']['name']['name'] === 'Name'
+            && $payload['data']['name']['type'] === 'text'
             && !isset($payload['submission'])
             && !isset($payload['message']);
     });
