@@ -257,7 +257,7 @@ onBeforeUnmount(() => {
 
 // Methods
 const checkOidcOptions = async () => {
-  if (!oidcAvailable.value || !form.email || form.busy || isOidcRateLimited.value) {
+  if (isLinkingExistingAccount.value || !oidcAvailable.value || !form.email || form.busy || isOidcRateLimited.value) {
     return
   }
 
