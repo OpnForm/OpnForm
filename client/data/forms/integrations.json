@@ -88,6 +88,17 @@
     "is_editable": false,
     "url": "https://connect.pabbly.com/integrations/opnform"
   },
+  "albato": {
+    "name": "Albato",
+    "icon": "opnform:albato",
+    "section_name": "Automation",
+    "file_name": "AlbatoIntegration",
+    "actions_file_name": "AlbatoIntegrationActions",
+    "required_tier": "free",
+    "is_external": true,
+    "is_editable": false,
+    "url": "https://albato.com/apps/opnform"
+  },
   "google_sheets": {
     "name": "Google Sheets",
     "icon": "mdi:google-spreadsheet",
