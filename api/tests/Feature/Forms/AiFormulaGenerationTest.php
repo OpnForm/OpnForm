@@ -5,6 +5,7 @@ use App\Models\Forms\AI\AiFormCompletion;
 use App\Service\AI\Prompts\Form\GenerateFormulaPrompt;
 use App\Service\OpenAi\GptCompleter;
 use Illuminate\Routing\Middleware\ThrottleRequests;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Queue;
 
 $testFields = [
@@ -118,11 +119,12 @@ describe('AI Formula Generation', function () use ($testFields, $testVariables) 
             $response->assertSuccessful();
         });
 
-        it('throttles formula generation to four requests per minute', function () {
+        it('throttles formula generation to ten requests per minute', function () {
             $this->withMiddleware(ThrottleRequests::class);
             $this->actingAsUser();
+            Cache::flush();
 
-            for ($attempt = 0; $attempt < 4; $attempt++) {
+            for ($attempt = 0; $attempt < 10; $attempt++) {
                 $this->postJson(route('forms.ai.generate-formula'), [
                     'formula_prompt' => "Add {$attempt} + 1",
                 ])->assertSuccessful();
@@ -131,6 +133,13 @@ describe('AI Formula Generation', function () use ($testFields, $testVariables) 
             $this->postJson(route('forms.ai.generate-formula'), [
                 'formula_prompt' => 'This request should be throttled',
             ])->assertStatus(429);
+        });
+
+        it('uses the dedicated formula generation rate limiter', function () {
+            $route = app('router')->getRoutes()->getByName('forms.ai.generate-formula');
+
+            expect($route->middleware())
+                ->toContain('throttle:ai-formula-generation');
         });
     });
 
