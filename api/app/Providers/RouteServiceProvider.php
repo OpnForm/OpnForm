@@ -84,6 +84,17 @@ class RouteServiceProvider extends ServiceProvider
             return Limit::perMinute(180)->by($request->user()?->id ?: $request->ip());
         });
 
+        RateLimiter::for('ai-formula-generation', function (Request $request) {
+            $identifier = $request->user()
+                ? 'user:' . $request->user()->getAuthIdentifier()
+                : 'ip:' . $request->ip();
+
+            return [
+                Limit::perMinute(10)->by('ai-formula-generation:minute:' . $identifier),
+                Limit::perHour(100)->by('ai-formula-generation:hour:' . $identifier),
+            ];
+        });
+
         RateLimiter::for('public-uploads', function (Request $request) {
             $identifier = $request->user()
                 ? 'user:' . $request->user()->getAuthIdentifier()
