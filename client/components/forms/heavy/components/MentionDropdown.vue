@@ -69,6 +69,24 @@
               </div>
             </div>
           </div>
+
+          <div
+            v-if="canCreateComputedVariable"
+            class="w-full max-w-xs border-t pt-2 mt-2"
+          >
+            <UButton
+              color="neutral"
+              variant="soft"
+              icon="i-heroicons-variable"
+              block
+              @click="createComputedVariable"
+            >
+              Create variable
+            </UButton>
+            <p class="mt-1 text-xs text-neutral-500">
+              Calculate a value to insert here.
+            </p>
+          </div>
         </div>
           
         <div class="flex border-t pt-2 -mx-2 px-2 justify-end space-x-2">
@@ -126,6 +144,8 @@ defineShortcuts({
 
 const selectedField = ref(null)
 const fallbackValue = ref('')
+const openComputedVariableCreator = inject('openComputedVariableCreator', null)
+const canCreateComputedVariable = computed(() => typeof openComputedVariableCreator === 'function')
 
 const filteredMentions = computed(() => {
   return props.mentions.filter(mention => blocksTypes[mention.type]?.is_input ?? false)
@@ -136,6 +156,11 @@ function selectField(field, insert = false) {
   if (insert) {
     insertMention()
   }
+}
+
+function createComputedVariable() {
+  cancel()
+  openComputedVariableCreator()
 }
 
 watch(() => props.mentionState.open, (newValue) => {

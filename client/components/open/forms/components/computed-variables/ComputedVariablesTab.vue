@@ -138,6 +138,11 @@ watch(() => props.editRequest, (request) => {
     return
   }
 
+  if (request.create) {
+    openCreateModal()
+    return
+  }
+
   const indexedVariable = Number.isInteger(request.variableIndex)
     ? computedVariables.value[request.variableIndex]
     : null

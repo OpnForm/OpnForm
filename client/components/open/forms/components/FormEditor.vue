@@ -176,6 +176,10 @@ const formEditorNavbar = ref(null)
 const route = useRoute()
 const { emitFormSaved, emitNavigateBack } = useEditorEmbedBridge()
 
+provide('openComputedVariableCreator', () => {
+  formEditorNavbar.value?.openComputedVariableCreator()
+})
+
 // Sidebar resizing using composable
 const { 
   elementRef, 

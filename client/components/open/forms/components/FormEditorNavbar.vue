@@ -174,7 +174,17 @@ function openComputedVariable({ variableId, variableIndex }) {
   settingsModal.value = true
 }
 
-defineExpose({ openComputedVariable })
+function openComputedVariableCreator() {
+  computedVariableEditRequestId += 1
+  computedVariableEditRequest.value = {
+    create: true,
+    requestId: computedVariableEditRequestId,
+  }
+  settingsModalActiveTab.value = 'variables'
+  settingsModal.value = true
+}
+
+defineExpose({ openComputedVariable, openComputedVariableCreator })
 
 const isSelfHosted = computed(() => useFeatureFlag('self_hosted'))
 </script>
