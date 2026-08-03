@@ -39,6 +39,8 @@
           <div class="flex items-center gap-1">
             <AiFormulaGenerator
               :form="form"
+              :current-formula="currentFormula"
+              :current-variable="localVariable"
               :other-variables="otherVariables"
               @generated="$emit('update:formula', $event)"
             />
@@ -128,4 +130,3 @@ defineProps({
 
 defineEmits(['update:name', 'update:formula', 'validation', 'show-reference'])
 </script>
-

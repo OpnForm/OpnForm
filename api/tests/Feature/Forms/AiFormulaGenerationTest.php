@@ -109,6 +109,27 @@ describe('AI Formula Generation', function () use ($testFields, $testVariables) 
             expect($completion->type)->toBe('formula');
         });
 
+        it('stores the existing formula context when updating a formula', function () {
+            $this->actingAsUser();
+
+            $context = [
+                'fields' => [],
+                'computed_variables' => [],
+                'current_formula' => '{Price} * {Quantity}',
+                'current_variable' => ['name' => 'Total Price'],
+            ];
+
+            $response = $this->postJson(route('forms.ai.generate-formula'), [
+                'formula_prompt' => 'Apply a 10% discount',
+                'context' => $context,
+            ]);
+
+            $response->assertSuccessful();
+
+            $completion = AiFormCompletion::find($response->json('ai_form_completion_id'));
+            expect($completion->context)->toBe($context);
+        });
+
         it('accepts request without context', function () {
             $this->actingAsUser();
 
@@ -285,6 +306,23 @@ describe('AI Formula Generation', function () use ($testFields, $testVariables) 
             $method->setAccessible(true);
 
             expect($method->invoke($prompt))->toBe('No other computed variables available');
+        });
+
+        it('includes the current formula when updating a computed variable', function () use ($testFields, $testVariables) {
+            $prompt = new GenerateFormulaPrompt(
+                'Apply a discount',
+                $testFields,
+                $testVariables,
+                '{Price} * {Quantity}',
+                'Total Price',
+            );
+
+            $method = new ReflectionMethod($prompt, 'formatCurrentFormula');
+            $method->setAccessible(true);
+
+            expect($method->invoke($prompt))
+                ->toContain('Current formula for the variable "Total Price"')
+                ->toContain('{Price} * {Quantity}');
         });
 
         it('lists available functions', function () use ($testFields, $testVariables) {

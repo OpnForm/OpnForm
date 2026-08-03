@@ -31,11 +31,16 @@ class GenerateAiFormula implements ShouldQueue
             $context = $this->completion->context ?? [];
             $fields = $context['fields'] ?? [];
             $computedVariables = $context['computed_variables'] ?? [];
+            $currentFormula = $context['current_formula'] ?? null;
+            $currentVariable = $context['current_variable'] ?? [];
+            $currentVariableName = is_array($currentVariable) ? ($currentVariable['name'] ?? null) : null;
 
             $result = GenerateFormulaPrompt::run(
                 $this->completion->form_prompt,
                 $fields,
                 $computedVariables,
+                $currentFormula,
+                $currentVariableName,
             );
 
             $this->completion->update([

@@ -30,9 +30,14 @@ class GenerateFormulaPrompt extends Prompt
         {availableVariables}
         </available_computed_variables>
 
+        <current_formula>
+        {currentFormulaContext}
+        </current_formula>
+
         <critical_rules>
         - ONLY reference fields and variables from the lists above — never invent field names
         - Every dynamic value MUST be wrapped in curly braces as a mention: {Field Name}
+        - When a current formula is provided, modify it according to the requirement and preserve its intent unless the user asks to replace it
         - The formula MUST be syntactically valid:
           * Every opening parenthesis "(" must have a matching closing ")"
           * Function calls always end with a closing parenthesis, e.g. IF(cond, a, b)
@@ -83,6 +88,8 @@ class GenerateFormulaPrompt extends Prompt
         public string $formulaPrompt,
         public array $fields = [],
         public array $computedVariables = [],
+        public ?string $currentFormula = null,
+        public ?string $currentVariableName = null,
     ) {
         parent::__construct();
     }
@@ -152,6 +159,7 @@ class GenerateFormulaPrompt extends Prompt
         $variables = parent::getPromptVariables();
         $variables['{availableFields}'] = $this->formatFields();
         $variables['{availableVariables}'] = $this->formatComputedVariables();
+        $variables['{currentFormulaContext}'] = $this->formatCurrentFormula();
         $variables['{availableFunctions}'] = $this->formatFunctions();
 
         return $variables;
@@ -231,6 +239,19 @@ class GenerateFormulaPrompt extends Prompt
         }
 
         return implode("\n", $lines);
+    }
+
+    private function formatCurrentFormula(): string
+    {
+        if (blank($this->currentFormula)) {
+            return 'No current formula is available. Generate a new formula.';
+        }
+
+        $variableName = filled($this->currentVariableName)
+            ? " for the variable \"{$this->currentVariableName}\""
+            : '';
+
+        return "Current formula{$variableName}:\n{$this->currentFormula}";
     }
 
     private function formatFunctions(): string

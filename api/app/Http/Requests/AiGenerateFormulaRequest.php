@@ -13,6 +13,9 @@ class AiGenerateFormulaRequest extends FormRequest
             'context' => 'nullable|array',
             'context.fields' => 'nullable|array',
             'context.computed_variables' => 'nullable|array',
+            'context.current_formula' => 'nullable|string|max:10000',
+            'context.current_variable' => 'nullable|array',
+            'context.current_variable.name' => 'nullable|string|max:255',
         ];
     }
 }
