@@ -356,6 +356,46 @@ describe('AI Formula Generation', function () use ($testFields, $testVariables) 
             expect($result['formula'])->toBe('{uuid-price} * {uuid-quantity}');
         });
 
+        it('returns an AI-generated variable name when the variable is unnamed', function () use ($testFields, $testVariables) {
+            $prompt = new GenerateFormulaPrompt('multiply price by quantity', $testFields, $testVariables);
+
+            $mockCompleter = Mockery::mock(GptCompleter::class);
+            $mockCompleter->shouldReceive('setJsonSchema')->andReturnSelf();
+            $mockCompleter->shouldReceive('setSystemMessage')->andReturnSelf();
+            $mockCompleter->shouldReceive('completeChat')->andReturnSelf();
+            $mockCompleter->shouldReceive('getArray')->andReturn([
+                'formula' => '{Price} * {Quantity}',
+                'variable_name' => 'Total Price',
+            ]);
+
+            $prompt->setGptCompleter($mockCompleter);
+            $result = $prompt->execute();
+
+            expect($result)
+                ->toMatchArray([
+                    'formula' => '{uuid-price} * {uuid-quantity}',
+                    'variable_name' => 'Total Price',
+                ]);
+        });
+
+        it('does not return a generated variable name when the variable is already named', function () use ($testFields, $testVariables) {
+            $prompt = new GenerateFormulaPrompt('multiply price by quantity', $testFields, $testVariables, null, 'Order Total');
+
+            $mockCompleter = Mockery::mock(GptCompleter::class);
+            $mockCompleter->shouldReceive('setJsonSchema')->andReturnSelf();
+            $mockCompleter->shouldReceive('setSystemMessage')->andReturnSelf();
+            $mockCompleter->shouldReceive('completeChat')->andReturnSelf();
+            $mockCompleter->shouldReceive('getArray')->andReturn([
+                'formula' => '{Price} * {Quantity}',
+                'variable_name' => null,
+            ]);
+
+            $prompt->setGptCompleter($mockCompleter);
+            $result = $prompt->execute();
+
+            expect($result['variable_name'])->toBeNull();
+        });
+
         it('retries on syntax error then returns valid formula', function () use ($testFields, $testVariables) {
             $prompt = new GenerateFormulaPrompt('discount formula', $testFields, $testVariables);
 

@@ -43,6 +43,7 @@
               :current-variable="localVariable"
               :other-variables="otherVariables"
               @generated="$emit('update:formula', $event)"
+              @generated-name="$emit('update:name', $event)"
             />
             <UButton
               size="xs"

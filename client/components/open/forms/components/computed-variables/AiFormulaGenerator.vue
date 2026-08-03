@@ -66,7 +66,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['generated'])
+const emit = defineEmits(['generated', 'generated-name'])
 
 const unsupportedFieldTypes = ['matrix']
 const isPopoverOpen = ref(false)
@@ -107,7 +107,10 @@ const formulaContext = computed(() => {
     })),
     computed_variables: props.otherVariables.map(variable => ({
       name: variable.name
-    }))
+    })),
+    current_variable: {
+      name: props.currentVariable?.name ?? ''
+    }
   }
 
   if (hasExistingFormula.value) {
@@ -116,9 +119,6 @@ const formulaContext = computed(() => {
       availableFields.value,
       props.otherVariables
     )
-    context.current_variable = {
-      name: props.currentVariable?.name ?? ''
-    }
   }
 
   return context
@@ -170,6 +170,9 @@ const fetchGeneratedFormula = (generationId) => {
             props.otherVariables
           )
           emit('generated', storageFormula)
+          if (!props.currentVariable?.name?.trim() && result.variable_name?.trim()) {
+            emit('generated-name', result.variable_name.trim())
+          }
         }
         loading.value = false
         isPopoverOpen.value = false

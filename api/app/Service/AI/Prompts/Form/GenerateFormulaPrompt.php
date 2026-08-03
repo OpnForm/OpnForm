@@ -38,6 +38,7 @@ class GenerateFormulaPrompt extends Prompt
         - ONLY reference fields and variables from the lists above — never invent field names
         - Every dynamic value MUST be wrapped in curly braces as a mention: {Field Name}
         - When a current formula is provided, modify it according to the requirement and preserve its intent unless the user asks to replace it
+        - When no current variable name is provided, generate a concise, descriptive variable name (2 to 5 words)
         - The formula MUST be syntactically valid:
           * Every opening parenthesis "(" must have a matching closing ")"
           * Function calls always end with a closing parenthesis, e.g. IF(cond, a, b)
@@ -69,17 +70,21 @@ class GenerateFormulaPrompt extends Prompt
         - Nested IF: IF({Score} > 90, "A", IF({Score} > 80, "B", "C"))
         </examples>
 
-        Return ONLY the formula string. No explanations, no markdown, no code blocks.
+        Return a JSON object with the formula and variable_name. Set variable_name to null when a current variable name is already provided.
     EOD;
 
     protected ?array $jsonSchema = [
         'type' => 'object',
-        'required' => ['formula'],
+        'required' => ['formula', 'variable_name'],
         'additionalProperties' => false,
         'properties' => [
             'formula' => [
                 'type' => 'string',
                 'description' => 'The generated formula using field/variable names in curly braces',
+            ],
+            'variable_name' => [
+                'type' => ['string', 'null'],
+                'description' => 'A concise name for a new computed variable, or null when it already has a name',
             ],
         ],
     ];
@@ -112,6 +117,9 @@ class GenerateFormulaPrompt extends Prompt
         for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
             $result = parent::execute();
             $formula = trim($result['formula'] ?? '');
+            $variableName = blank($this->currentVariableName)
+                ? trim($result['variable_name'] ?? '')
+                : null;
 
             // Strip markdown code fences if AI wraps the formula
             $formula = preg_replace('/^```[a-z]*\s*/i', '', $formula);
@@ -148,6 +156,7 @@ class GenerateFormulaPrompt extends Prompt
 
             return [
                 'formula' => $storageFormula,
+                'variable_name' => $variableName ?: null,
             ];
         }
 
