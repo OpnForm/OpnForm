@@ -76,16 +76,13 @@
           >
             <UButton
               color="neutral"
-              variant="soft"
+              variant="ghost"
               icon="i-heroicons-variable"
               block
               @click="createComputedVariable"
             >
               Create variable
             </UButton>
-            <p class="mt-1 text-xs text-neutral-500">
-              Calculate a value to insert here.
-            </p>
           </div>
         </div>
           
