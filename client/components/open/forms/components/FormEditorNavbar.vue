@@ -175,6 +175,11 @@ function openComputedVariable({ variableId, variableIndex }) {
 }
 
 function openComputedVariableCreator() {
+  computedVariableEditRequestId += 1
+  computedVariableEditRequest.value = {
+    create: true,
+    requestId: computedVariableEditRequestId,
+  }
   settingsModalActiveTab.value = 'variables'
   settingsModal.value = true
 }
