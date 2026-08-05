@@ -84,6 +84,11 @@ class FormSubmissionResource extends JsonResource
                 $mapped = collect($fileItems)
                     ->filter(fn ($file) => !is_null($file) && $file !== '')
                     ->map(function ($file) {
+                        $file = (string) $file;
+                        if (FilenameUrlEncoder::isEncoded($file)) {
+                            $file = FilenameUrlEncoder::decode($file);
+                        }
+
                         // Use base64url encoding to avoid URL encoding issues with special characters
                         // See: https://github.com/OpnForm/OpnForm/issues/1024
                         $encodedFilename = FilenameUrlEncoder::encode($file);

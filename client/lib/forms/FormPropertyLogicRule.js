@@ -137,7 +137,8 @@ class FormPropertyLogicRule {
             "nf-page-break",
             "nf-divider",
             "nf-image",
-            "nf-video"
+            "nf-video",
+            "nf-audio"
           ].indexOf(this.property["type"]) > -1 &&
             ["hide-block", "show-block"].indexOf(val) === -1) ||
           (this.property["hidden"] !== undefined &&

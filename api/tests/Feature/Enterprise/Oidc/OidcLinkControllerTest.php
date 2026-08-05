@@ -14,6 +14,43 @@ afterEach(function () {
 });
 
 describe('OidcLinkController', function () {
+    it('completes an account link after the one-time password login allowed by forced OIDC', function () {
+        $connection = IdentityConnection::factory()->create([
+            'enabled' => true,
+            'type' => IdentityConnection::TYPE_OIDC,
+        ]);
+        $user = $this->createUser();
+        $linkToken = app(OidcLinkService::class)->createLinkToken(
+            connectionId: $connection->id,
+            subject: 'existing-account-subject',
+            email: $user->email,
+            claims: ['email' => $user->email],
+        );
+        config(['oidc.force_login' => true]);
+
+        $loginResponse = $this->postJson('/login', [
+            'email' => $user->email,
+            'password' => 'Abcd@1234',
+            'oidc_link_token' => $linkToken,
+        ])->assertSuccessful();
+
+        $this->withToken($loginResponse->json('token'))
+            ->postJson('/auth/oidc/link', [
+                'link_token' => $linkToken,
+            ])
+            ->assertSuccessful()
+            ->assertJson(['linked' => true]);
+
+        $this->assertDatabaseHas('user_identities', [
+            'user_id' => $user->id,
+            'connection_id' => $connection->id,
+            'subject' => 'existing-account-subject',
+            'email' => $user->email,
+        ]);
+
+        config(['oidc.force_login' => false]);
+    });
+
     it('links an existing account with a valid token', function () {
         $user = $this->actingAsUser();
         $connection = IdentityConnection::factory()->create();

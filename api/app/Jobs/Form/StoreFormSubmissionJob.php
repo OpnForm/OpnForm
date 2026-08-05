@@ -11,6 +11,7 @@ use App\Models\Forms\FormSubmission;
 use App\Service\Billing\Feature;
 use App\Service\Forms\FormAutoIncrementSequence;
 use App\Service\Forms\FormLogicPropertyResolver;
+use App\Service\Storage\FilenameUrlEncoder;
 use App\Service\Storage\StorageFileNameParser;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -373,6 +374,18 @@ class StoreFormSubmissionJob implements ShouldQueue
         // Handle pre-existing full URLs (e.g., from prefill)
         if (filter_var($value, FILTER_VALIDATE_URL) !== false && str_contains($value, parse_url(config('app.url'))['host'])) {
             $fileName = explode('?', basename($value))[0];
+            if (FilenameUrlEncoder::isEncoded($fileName)) {
+                $fileName = FilenameUrlEncoder::decode($fileName);
+            }
+
+            // Existing submission uploads are returned as signed URLs. Keep their
+            // canonical storage name when an edit submits that URL back to us.
+            if ($this->isSkipForUpload($fileName)) {
+                $parser = StorageFileNameParser::parse($fileName);
+
+                return $parser->getMovedFileName() ?? $fileName;
+            }
+
             $path = FormController::ASSETS_UPLOAD_PATH . '/' . $fileName; // Assuming assets are in a defined path
             $newPath = FileUploadPathService::getFileUploadPath($this->form->id, $fileName);
             Storage::move($path, $newPath);

@@ -7,7 +7,7 @@ ROOT_DIR=$(cd -- "$(dirname "$0")/.." && pwd)
 
 "$ROOT_DIR/scripts/codex-worktree-down.sh"
 
-if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
+if detect_docker_compose && docker info >/dev/null 2>&1; then
   codex_compose down --volumes --remove-orphans
 fi
 

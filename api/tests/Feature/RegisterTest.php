@@ -1,7 +1,9 @@
 <?php
 
 use App\Models\User;
+use App\Models\Workspace;
 use App\Rules\ValidReCaptcha;
+use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Support\Facades\Http;
 
 it('can register', function () {
@@ -50,6 +52,25 @@ it('cannot register with existing email', function () {
     ])
         ->assertStatus(422)
         ->assertJsonValidationErrors(['email']);
+});
+
+it('rolls back registration when the AppSumo license token is invalid', function () {
+    $workspaceCount = Workspace::count();
+
+    $this->withoutExceptionHandling();
+
+    expect(fn () => $this->postJson('/register', [
+        'name' => 'Test User',
+        'email' => 'invalid-license@test.app',
+        'hear_about_us' => 'google',
+        'password' => 'Abcd@1234',
+        'password_confirmation' => 'Abcd@1234',
+        'agree_terms' => true,
+        'appsumo_license' => 'invalid-license-token',
+    ]))->toThrow(DecryptException::class);
+
+    expect(User::where('email', 'invalid-license@test.app')->exists())->toBeFalse()
+        ->and(Workspace::count())->toBe($workspaceCount);
 });
 
 it('blocks registering a third user on a free self-hosted instance', function () {

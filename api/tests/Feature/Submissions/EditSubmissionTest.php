@@ -1,5 +1,11 @@
 <?php
 
+use App\Models\Forms\FormSubmission;
+use App\Service\Storage\FilenameUrlEncoder;
+use App\Service\Storage\FileUploadPathService;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\URL;
+
 it('can update form submission', function () {
     $user = $this->actingAsUser();
     $workspace = $this->createUserWorkspace($user);
@@ -54,4 +60,38 @@ it('cannot update form submission as non admin', function () {
     $this->actingAs($secondUser);
     $updateResponse = $this->putJson(route('open.forms.submissions.update', ['form' => $form, 'submission_id' => $submission->id]), $updatedFormData)
         ->assertStatus(403);
+});
+
+it('keeps an existing upload canonical when an edited submission submits its signed URL', function () {
+    Storage::fake('local');
+
+    $user = $this->actingAsUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace);
+    $fileFieldId = collect($form->properties)->firstWhere('type', 'files')['id'];
+
+    $fileName = 'receipt_550e8400-e29b-41d4-a716-446655440000.png';
+    Storage::put(
+        FileUploadPathService::getFileUploadPath($form->id, $fileName),
+        base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/w8AAgMBAQEAAP8AAAAASUVORK5CYII=', true)
+    );
+
+    $submission = $form->submissions()->create([
+        'data' => [$fileFieldId => [$fileName]],
+        'status' => FormSubmission::STATUS_COMPLETED,
+    ]);
+
+    $signedUploadUrl = URL::signedRoute(
+        'open.forms.submissions.file',
+        [$form->id, FilenameUrlEncoder::encode($fileName)]
+    );
+
+    $this->putJson(route('open.forms.submissions.update', [
+        'form' => $form,
+        'submission_id' => $submission->id,
+    ]), [
+        $fileFieldId => [$signedUploadUrl],
+    ])->assertSuccessful();
+
+    expect($submission->fresh()->data[$fileFieldId])->toBe([$fileName]);
 });

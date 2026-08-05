@@ -13,6 +13,7 @@ use App\Jobs\Form\ExportFormSubmissionsJob;
 use App\Models\Forms\Form;
 use App\Models\Forms\FormSubmission;
 use App\Service\Forms\FormExportService;
+use App\Service\Forms\DeleteFormSubmission;
 use App\Service\Storage\FileUploadPathService;
 use App\Service\Storage\FilenameUrlEncoder;
 use Illuminate\Support\Facades\Storage;
@@ -213,19 +214,20 @@ class FormSubmissionController extends Controller
         );
     }
 
-    public function destroy(Form $form, $submission_id)
+    public function destroy(Form $form, $submission_id, DeleteFormSubmission $deleteSubmission)
     {
         $this->authorize('delete', $form);
 
-        $submission = $form->submissions()->where('id', $submission_id)->firstOrFail();
-        $submission->delete();
+        if (!$deleteSubmission->execute($form, (int) $submission_id)) {
+            abort(404);
+        }
 
         return $this->success([
             'message' => 'Record successfully removed.',
         ]);
     }
 
-    public function destroyMulti(Request $request, Form $form)
+    public function destroyMulti(Request $request, Form $form, DeleteFormSubmission $deleteSubmission)
     {
         $request->validate([
             'submissionIds' => 'required|array',
@@ -238,14 +240,7 @@ class FormSubmissionController extends Controller
 
         $this->authorize('delete', $form);
 
-        $submissionIds = $request->submissionIds;
-        $form->submissions()
-            ->whereIn('id', $submissionIds)
-            ->chunk(100, function ($submissions) {
-                foreach ($submissions as $submission) {
-                    $submission->delete();
-                }
-            });
+        $deleteSubmission->executeMany($form, $request->submissionIds);
 
         return $this->success([
             'message' => 'Records successfully removed.',

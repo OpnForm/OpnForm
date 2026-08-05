@@ -6,10 +6,14 @@ const isUnitTestMode = !!process.env.VITEST
 const isE2EMode = process.env.E2E === '1'
 const isDevtoolsEnabled =
   process.env.NUXT_DEVTOOLS === '1' && !isE2EMode && process.env.NODE_ENV !== 'production'
+const buildDir = process.env.NUXT_BUILD_DIR
+const viteCacheDir = process.env.NUXT_VITE_CACHE_DIR
 
 export default defineNuxtConfig({
   loglevel: process.env.NUXT_LOG_LEVEL || 'info',
   devtools: {enabled: isDevtoolsEnabled},
+  ...(buildDir ? {buildDir} : {}),
+  ...(viteCacheDir ? {vite: {cacheDir: viteCacheDir}} : {}),
   css: ['~/css/app.css'],
 
   // Disable certain plugins during testing

@@ -191,10 +191,25 @@ X-Custom-Header: custom-value
 {
   "form_id": 123,
   "form_title": "Contact Form",
+  "form_slug": "contact-form",
   "submission_id": 456,
-  "submission": { ... }
+  "edit_link": "https://opnform.com/forms/contact-form?submission_id=example",
+  "submission": { "Name": "Jane Doe" },
+  "data": {
+    "field-id": {
+      "value": "Jane Doe",
+      "name": "Name",
+      "type": "text"
+    }
+  }
 }
 ```
+
+The generic `"webhook"` integration keeps the legacy `submission` property for
+backward compatibility. Provider-specific integrations such as `"make"` expose
+the same `form_id`, `form_title`, `form_slug`, `submission_id`, optional
+`edit_link`, and `data` properties while omitting the deprecated `submission`
+and `message` properties.
 
 ## Security Best Practices
 
