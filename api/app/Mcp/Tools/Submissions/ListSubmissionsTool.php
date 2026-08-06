@@ -12,11 +12,13 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsIdempotent;
+use Laravel\Mcp\Server\Tools\Annotations\IsOpenWorld;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Description('List submissions for a form. Returns paginated submission data including all field responses. Supports filtering by status and searching within submission values.')]
 #[IsReadOnly]
 #[IsIdempotent]
+#[IsOpenWorld(false)]
 class ListSubmissionsTool extends Tool
 {
     use ResolvesForm;

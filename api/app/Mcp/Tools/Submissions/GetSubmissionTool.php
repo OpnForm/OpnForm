@@ -11,11 +11,13 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsIdempotent;
+use Laravel\Mcp\Server\Tools\Annotations\IsOpenWorld;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Description('Get a single submission by ID for a specific form. Returns the full submission data including all field responses.')]
 #[IsReadOnly]
 #[IsIdempotent]
+#[IsOpenWorld(false)]
 class GetSubmissionTool extends Tool
 {
     use ResolvesForm;

@@ -14,8 +14,10 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsOpenWorld;
 
 #[Description('Create a new form draft. This tool never persists a live form; authenticated users may provide workspace_id so the draft can be validated and cleaned against workspace capabilities.')]
+#[IsOpenWorld(false)]
 class CreateFormTool extends Tool
 {
     use NormalizesFormProperties;

@@ -11,11 +11,13 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsIdempotent;
+use Laravel\Mcp\Server\Tools\Annotations\IsOpenWorld;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Description('Get full details of a specific form including all fields (properties), settings, and customization. Accepts form ID (integer) or slug (string).')]
 #[IsReadOnly]
 #[IsIdempotent]
+#[IsOpenWorld(false)]
 class GetFormTool extends Tool
 {
     use ResolvesForm;

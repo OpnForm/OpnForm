@@ -13,11 +13,13 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsIdempotent;
+use Laravel\Mcp\Server\Tools\Annotations\IsOpenWorld;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Description('List all forms in a workspace. Returns form IDs, titles, slugs, visibility, submission/view counts, and share URLs.')]
 #[IsReadOnly]
 #[IsIdempotent]
+#[IsOpenWorld(false)]
 class ListFormsTool extends Tool
 {
     public function handle(Request $request): ResponseFactory

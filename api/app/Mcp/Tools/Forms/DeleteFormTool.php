@@ -10,9 +10,11 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
+use Laravel\Mcp\Server\Tools\Annotations\IsOpenWorld;
 
 #[Description('Delete a form (soft-delete). The form can be recovered by an admin. Submissions are preserved until permanently purged.')]
 #[IsDestructive]
+#[IsOpenWorld(false)]
 class DeleteFormTool extends Tool
 {
     use ResolvesForm;

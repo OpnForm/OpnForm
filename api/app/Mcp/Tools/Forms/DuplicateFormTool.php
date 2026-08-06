@@ -11,8 +11,10 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsOpenWorld;
 
 #[Description('Create a copy of an existing form. The duplicate gets a new slug and "Copy of" prefix in its title.')]
+#[IsOpenWorld(false)]
 class DuplicateFormTool extends Tool
 {
     use ResolvesForm;
