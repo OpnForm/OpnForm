@@ -69,6 +69,14 @@
               "embedding/javascript-sdk",
               "embedding/editor-embed"
             ]
+          },
+          {
+            "group": "MCP Server",
+            "pages": [
+              "mcp/introduction",
+              "mcp/tools",
+              "mcp/resources"
+            ]
           }
         ]
       },

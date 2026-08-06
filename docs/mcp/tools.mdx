@@ -1,0 +1,322 @@
+---
+title: "Tools Reference"
+description: "Complete reference for all OpnForm MCP tools — parameters, responses, and usage examples."
+---
+
+The OpnForm MCP server exposes 9 tools. Read-only tools are annotated so AI clients can call them safely without confirmation prompts.
+
+<Note>
+All tools except `create-form` (in draft mode) require authentication via a Bearer token. See [MCP Server](/mcp/introduction) for setup instructions.
+</Note>
+
+## Workspaces
+
+### list-workspaces
+
+List all workspaces the authenticated user belongs to. This is typically the first tool an agent calls to obtain a `workspace_id` for subsequent operations.
+
+**Annotations:** `ReadOnly`, `Idempotent`
+
+**Parameters:** None
+
+<ResponseExample>
+```json Success
+{
+  "workspaces": [
+    {
+      "id": 1,
+      "name": "My Workspace",
+      "icon": "📋"
+    }
+  ]
+}
+```
+</ResponseExample>
+
+---
+
+## Forms
+
+### list-forms
+
+List all forms in a workspace with submission counts, view stats, and share URLs.
+
+**Annotations:** `ReadOnly`, `Idempotent`
+
+<ParamField body="workspace_id" type="integer" required>
+The workspace ID. Use `list-workspaces` to find available IDs.
+</ParamField>
+
+<ResponseExample>
+```json Success
+{
+  "forms": [
+    {
+      "id": 42,
+      "title": "Contact Form",
+      "slug": "contact-form",
+      "visibility": "public",
+      "submissions_count": 128,
+      "views_count": 1540,
+      "share_url": "https://opnform.com/forms/contact-form",
+      "created_at": "2025-03-10T14:30:00+00:00",
+      "updated_at": "2025-06-20T09:15:00+00:00"
+    }
+  ]
+}
+```
+</ResponseExample>
+
+### get-form
+
+Retrieve full form details — fields, settings, theme, and customization options.
+
+**Annotations:** `ReadOnly`, `Idempotent`
+
+<ParamField body="form_id" type="string" required>
+The form ID (integer) or slug (string).
+</ParamField>
+
+<ResponseExample>
+```json Success
+{
+  "id": 42,
+  "title": "Contact Form",
+  "slug": "contact-form",
+  "visibility": "public",
+  "share_url": "https://opnform.com/forms/contact-form",
+  "workspace_id": 1,
+  "properties": [
+    {
+      "id": "a1b2c3",
+      "type": "text",
+      "name": "Full Name",
+      "required": true
+    },
+    {
+      "id": "d4e5f6",
+      "type": "email",
+      "name": "Email Address",
+      "required": true
+    }
+  ],
+  "theme": "default",
+  "color": "#3B82F6",
+  "dark_mode": "auto",
+  "submissions_count": 128,
+  "views_count": 1540,
+  "created_at": "2025-03-10T14:30:00+00:00",
+  "updated_at": "2025-06-20T09:15:00+00:00"
+}
+```
+</ResponseExample>
+
+### create-form
+
+Create a new form draft. This tool never persists a live form. With authentication, `workspace_id` can be provided so the draft is validated and cleaned against workspace capabilities.
+
+<ParamField body="workspace_id" type="integer">
+Optional workspace used to validate and clean the draft. Use `list-workspaces` to find workspace IDs.
+</ParamField>
+
+<ParamField body="title" type="string" required>
+The form title (max 255 characters).
+</ParamField>
+
+<ParamField body="properties" type="array" required>
+Array of form field objects. Each field needs at least `type` and `name`. Use the [field-types resource](/mcp/resources) for available types.
+</ParamField>
+
+<ParamField body="visibility" type="string" default="draft">
+Form visibility: `public`, `draft`, or `closed`.
+</ParamField>
+
+<Tip>
+The agent can read the `field-types` resource to discover all available field types, their options, and examples before calling `create-form`.
+</Tip>
+
+**Response:**
+
+<ResponseExample>
+```json Draft
+{
+  "form_data": {
+    "title": "Feedback Survey",
+    "visibility": "draft",
+    "properties": [
+      { "id": "a1b2c3d4-...", "type": "rating", "name": "How would you rate us?" }
+    ],
+    "theme": "default"
+  },
+  "register_url": "https://opnform.com/register",
+  "next_steps": "1. Tell the user: ..."
+}
+```
+</ResponseExample>
+
+See the [Authentication section](/mcp/introduction#try-without-an-account) for the draft workflow.
+
+### update-form
+
+Update any form attribute — title, fields, theme, colors, or visibility. Only provided fields are changed.
+
+**Annotations:** `Idempotent`
+
+<ParamField body="form_id" type="string" required>
+The form ID (integer) or slug to update.
+</ParamField>
+
+<ParamField body="title" type="string">
+New form title.
+</ParamField>
+
+<ParamField body="visibility" type="string">
+`public`, `draft`, or `closed`.
+</ParamField>
+
+<ParamField body="properties" type="array">
+Updated array of form fields. Replaces all existing fields. Fields removed from the array are tracked in `removed_properties`.
+</ParamField>
+
+<ParamField body="theme" type="string">
+Form theme: `default`, `simple`, `notion`, `minimal`, or `transparent`.
+</ParamField>
+
+<ParamField body="color" type="string">
+Primary color hex code (e.g. `#3B82F6`).
+</ParamField>
+
+<ParamField body="dark_mode" type="string">
+Dark mode setting: `auto`, `light`, or `dark`.
+</ParamField>
+
+<Warning>
+When you update `properties`, the entire field array is replaced. Include all fields you want to keep — any field omitted from the new array is treated as removed.
+</Warning>
+
+<ResponseExample>
+```json Success
+{
+  "id": 42,
+  "slug": "contact-form",
+  "title": "Updated Contact Form",
+  "share_url": "https://opnform.com/forms/contact-form",
+  "visibility": "public",
+  "updated_at": "2025-06-25T10:00:00+00:00"
+}
+```
+</ResponseExample>
+
+### delete-form
+
+Soft-delete a form. The form can be recovered by an admin if needed.
+
+**Annotations:** `Destructive`
+
+<ParamField body="form_id" type="string" required>
+The form ID (integer) or slug to delete.
+</ParamField>
+
+<ResponseExample>
+```json Success
+"Form \"Contact Form\" has been deleted."
+```
+</ResponseExample>
+
+### duplicate-form
+
+Create an exact copy of a form with a new slug and a "Copy of" title prefix.
+
+<ParamField body="form_id" type="string" required>
+The form ID (integer) or slug to duplicate.
+</ParamField>
+
+<ResponseExample>
+```json Success
+{
+  "id": 44,
+  "slug": "d3f1a2b4-...",
+  "title": "Copy of Contact Form",
+  "share_url": "https://opnform.com/forms/d3f1a2b4-..."
+}
+```
+</ResponseExample>
+
+---
+
+## Submissions
+
+### list-submissions
+
+Retrieve paginated submissions for a form, with status filtering.
+
+**Annotations:** `ReadOnly`, `Idempotent`
+
+<ParamField body="form_id" type="string" required>
+The form ID (integer) or slug.
+</ParamField>
+
+<ParamField body="page" type="integer" default="1">
+Page number.
+</ParamField>
+
+<ParamField body="per_page" type="integer" default="50">
+Results per page (max 100).
+</ParamField>
+
+<ParamField body="status" type="string" default="completed">
+Filter by status: `completed`, `partial`, or `all`.
+</ParamField>
+
+<ResponseExample>
+```json Success
+{
+  "submissions": [
+    {
+      "id": 101,
+      "data": {
+        "Full Name": "Jane Doe",
+        "Email Address": "jane@example.com"
+      },
+      "status": "completed",
+      "created_at": "2025-06-24T08:45:00+00:00",
+      "completion_time": 32
+    }
+  ],
+  "total": 128,
+  "current_page": 1,
+  "last_page": 3,
+  "per_page": 50
+}
+```
+</ResponseExample>
+
+### get-submission
+
+Fetch a single submission with all field responses and metadata.
+
+**Annotations:** `ReadOnly`, `Idempotent`
+
+<ParamField body="form_id" type="string" required>
+The form ID (integer) or slug.
+</ParamField>
+
+<ParamField body="submission_id" type="integer" required>
+The submission ID.
+</ParamField>
+
+<ResponseExample>
+```json Success
+{
+  "id": 101,
+  "form_id": 42,
+  "data": {
+    "Full Name": "Jane Doe",
+    "Email Address": "jane@example.com"
+  },
+  "status": "completed",
+  "created_at": "2025-06-24T08:45:00+00:00",
+  "completion_time": 32
+}
+```
+</ResponseExample>

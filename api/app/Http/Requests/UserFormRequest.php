@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Concerns\NormalizesFormProperties;
 use App\Http\Requests\Workspace\CustomDomainRequest;
 use App\Models\Forms\Form;
 use App\Rules\CustomSlugRule;
@@ -14,7 +15,6 @@ use Illuminate\Validation\Rule;
 use Illuminate\Http\Request;
 use App\Rules\CssOnlyRule;
 use Illuminate\Support\Str;
-use Stevebauman\Purify\Facades\Purify;
 
 /**
  * Abstract class to validate create/update forms
@@ -23,6 +23,8 @@ use Stevebauman\Purify\Facades\Purify;
  */
 abstract class UserFormRequest extends \Illuminate\Foundation\Http\FormRequest
 {
+    use NormalizesFormProperties;
+
     public ?Form $form;
 
     public function __construct(Request $request)
@@ -40,57 +42,10 @@ abstract class UserFormRequest extends \Illuminate\Foundation\Http\FormRequest
         }
 
         if (isset($data['properties']) && is_array($data['properties'])) {
-            $data['properties'] = array_map(function ($property) {
-                if (!is_array($property)) {
-                    return $property;
-                }
-
-                if (isset($property['name']) && is_string($property['name'])) {
-                    $property['name'] = trim(strip_tags($property['name']));
-                }
-
-                if (isset($property['help']) && is_string($property['help'])) {
-                    $property['help'] = Purify::clean($property['help']);
-                    if (strip_tags($property['help']) === '') {
-                        $property['help'] = null;
-                    }
-                }
-                $property = $this->normalizeSelectOptionIds($property);
-                return $property;
-            }, $data['properties']);
+            $data['properties'] = $this->normalizeProperties($data['properties']);
         }
 
         $this->merge($data);
-    }
-
-    /**
-     * Backfill option ids for legacy select fields before strict property validation runs.
-     */
-    private function normalizeSelectOptionIds(array $property): array
-    {
-        $type = $property['type'] ?? null;
-
-        if (!in_array($type, ['select', 'multi_select'], true)) {
-            return $property;
-        }
-
-        if (!isset($property[$type]['options']) || !is_array($property[$type]['options'])) {
-            return $property;
-        }
-
-        $property[$type]['options'] = array_map(function ($option) {
-            if (!is_array($option) || !empty($option['id'] ?? null)) {
-                return $option;
-            }
-
-            if (!empty($option['name'] ?? null) && is_string($option['name'])) {
-                $option['id'] = $option['name'];
-            }
-
-            return $option;
-        }, $property[$type]['options']);
-
-        return $property;
     }
 
     /**

@@ -324,6 +324,7 @@ const linkGroups = computed(() => [
       { label: "Self-hosting", href: opnformConfig.links.self_hosting },
       { label: "Documentation", href: opnformConfig.links.tech_docs },
       { label: "GitHub", href: opnformConfig.links.github_url },
+      { label: "MCP", to: { name: "mcp" } },
     ],
   },
   {
