@@ -21,6 +21,11 @@ export default {
     amplitudeCode: process.env.NUXT_PUBLIC_AMPLITUDE_CODE || null,
     crispWebsiteId: process.env.NUXT_PUBLIC_CRISP_WEBSITE_ID || null,
     rootRedirectUrl: process.env.NUXT_PUBLIC_ROOT_REDIRECT_URL || null,
+
+    /** Holostaff in-product copilot. Both ids come from a Holostaff
+     *  workspace; leave either unset and the plugin never loads. */
+    holostaffTenantId: process.env.NUXT_PUBLIC_HOLOSTAFF_TENANT_ID || null,
+    holostaffSourceId: process.env.NUXT_PUBLIC_HOLOSTAFF_SOURCE_ID || null,
     
     featureBaseOrganization: process.env.NUXT_PUBLIC_FEATURE_BASE_ORGANISATION || null,
 

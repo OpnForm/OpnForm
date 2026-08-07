@@ -54,6 +54,7 @@
   },
   "dependencies": {
     "@codemirror/lang-html": "^6.4.9",
+    "@holostaff/sdk": "^0.10.9",
     "@iconify-json/material-symbols": "^1.2.4",
     "@microsoft/clarity": "^1.0.0",
     "@nuxt/ui": "^3.2.0",
