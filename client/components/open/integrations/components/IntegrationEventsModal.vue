@@ -27,6 +27,23 @@
           />
           <span v-else>-</span>
         </template>
+        <template #actions-cell="{ row }">
+          <div
+            v-if="row.original.can_retry"
+            class="flex justify-end"
+          >
+            <UButton
+              color="primary"
+              variant="soft"
+              size="sm"
+              icon="i-heroicons-arrow-path"
+              label="Retry"
+              :loading="retryingEventId === row.original.id"
+              :disabled="retryingEventId !== null && retryingEventId !== row.original.id"
+              @click="retryEvent(row.original)"
+            />
+          </div>
+        </template>
       </UTable>
     </template>
 
@@ -54,6 +71,8 @@ const props = defineProps({
 
 const emit = defineEmits(["close"])
 
+const alert = useAlert()
+
 // Modal state
 const isOpen = computed({
   get() {
@@ -69,9 +88,11 @@ const columns = [
   { accessorKey: "date", header: "Date" },
   { accessorKey: "status", header: "Status" },
   { accessorKey: "data", header: "Info" },
+  { id: "actions", header: "" },
 ]
 const integrationEvents = ref([])
 const integrationEventsLoading = ref(false)
+const retryingEventId = ref(null)
 
 watch(
   () => props.show,
@@ -91,6 +112,24 @@ const fetchEvents = () => {
       })
     })
   }
+}
+
+const retryEvent = (event) => {
+  alert.confirm("Retry this failed integration event?", () => {
+    retryingEventId.value = event.id
+    formsApi.integrations.retryEvent(props.form.id, props.formIntegrationId, event.id).then((data) => {
+      if (data.event?.status === "Error") {
+        alert.error(data.message || "Failed to retry event.")
+      } else {
+        alert.success(data.message)
+      }
+      fetchEvents()
+    }).catch((error) => {
+      alert.error(error.data?.message || "Failed to retry event.")
+    }).finally(() => {
+      retryingEventId.value = null
+    })
+  })
 }
 
 const close = () => {

@@ -39,4 +39,43 @@ class FormIntegrationsEvent extends Model
     {
         return $this->belongsTo(FormIntegration::class, 'integration_id');
     }
+
+    public function getSubmissionId(): ?int
+    {
+        $data = (array) ($this->data ?? []);
+
+        return isset($data['submission_id']) ? (int) $data['submission_id'] : null;
+    }
+
+    public function canRetry(?iterable $siblingEvents = null): bool
+    {
+        if ($this->status !== self::STATUS_ERROR) {
+            return false;
+        }
+
+        $submissionId = $this->getSubmissionId();
+        if (!$submissionId) {
+            return false;
+        }
+
+        if ($siblingEvents === null) {
+            return true;
+        }
+
+        foreach ($siblingEvents as $event) {
+            if ($event->id <= $this->id) {
+                continue;
+            }
+
+            if ($event->status !== self::STATUS_SUCCESS) {
+                continue;
+            }
+
+            if ($event->getSubmissionId() === $submissionId) {
+                return false;
+            }
+        }
+
+        return true;
+    }
 }
