@@ -88,6 +88,7 @@
     "esbuild": "^0.23.1",
     "fuse.js": "^7.0.0",
     "js-sha256": "^0.10.1",
+    "livekit-client": ">=2",
     "libphonenumber-js": "^1.11.12",
     "object-to-formdata": "^4.5.1",
     "overlayscrollbars": "^2.15.1",
