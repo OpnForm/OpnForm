@@ -13,6 +13,7 @@
         v-if="file.is_image"
         type="button"
         class="block h-8 w-8 overflow-hidden rounded border border-neutral-200 transition-opacity hover:opacity-80 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
+        :class="{ 'bg-white': isSignature }"
         :aria-label="`Preview ${file.displayed_file_name}`"
         @click="openFilePreview(file)"
       >
@@ -79,7 +80,8 @@
       <template #body>
         <div
           v-if="selectedFile?.is_image"
-          class="flex min-h-64 items-center justify-center bg-neutral-950"
+          class="flex min-h-64 items-center justify-center"
+          :class="isSignature ? 'bg-white' : 'bg-neutral-950'"
         >
           <img
             class="max-h-[75vh] w-full object-contain"
@@ -151,6 +153,10 @@ const props = defineProps({
 })
 
 const PDF_PREVIEW_PAGE_LIMIT = 10
+
+// Signatures are saved as transparent PNGs, so the dark preview backdrop used for
+// photos hides the ink. Show them on white, matching the downloaded file.
+const isSignature = computed(() => props.property?.type === "signature")
 
 const failedImages = ref([])
 const isFilePreviewOpen = ref(false)
