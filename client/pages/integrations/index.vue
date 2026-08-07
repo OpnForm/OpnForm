@@ -275,6 +275,31 @@ const setupGuides = [
   }
 ]
 
+const integrationsSchema = computed(() => buildSchemaGraph([
+  buildCollectionPageSchema({
+    name: "OpnForm Integrations",
+    description:
+      "Connect OpnForm with notification, automation, and database tools to send submissions into your existing workflows.",
+    path: "/integrations",
+  }),
+  buildBreadcrumbSchema([
+    { name: "Home", path: "/" },
+    { name: "Integrations", path: "/integrations" },
+  ]),
+  buildItemListSchema(
+    integrationsList.value.map((integration) => ({
+      name: integration.title,
+      path: `/integrations/${integration.slug}`,
+    })),
+    {
+      path: "/integrations",
+      name: "OpnForm integrations",
+    },
+  ),
+]))
+
+useJsonLd("integrations-schema", integrationsSchema)
+
 </script>
 
 <style lang='scss'>
