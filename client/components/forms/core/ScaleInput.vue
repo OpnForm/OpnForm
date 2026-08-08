@@ -118,7 +118,8 @@ export default {
     btnStyle(isSelected) {
       const style = {
         '--bg-form-color': this.color,
-        '--form-color': this.color
+        '--form-color': this.color,
+        '--form-focus-color': this.hasError ? 'var(--color-red-500)' : this.color
       }
       if (!isSelected) return style
       return {

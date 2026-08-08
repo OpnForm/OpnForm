@@ -6,31 +6,37 @@ export const formControlTransition = [
 
 export const formControlFocus = [
   'focus:ring-0',
-  'focus:border-form',
-  'focus:shadow-[0_0_0_3px_color-mix(in_srgb,var(--form-color)_24%,transparent)]'
+  'focus:border-[var(--form-focus-color)]',
+  'focus:shadow-[0_0_0_3px_color-mix(in_srgb,var(--form-focus-color)_24%,transparent)]'
 ]
 
 export const formControlFocusVisible = [
   'focus-visible:ring-0',
-  'focus-visible:border-form',
-  'focus-visible:shadow-[0_0_0_3px_color-mix(in_srgb,var(--form-color)_24%,transparent)]'
+  'focus-visible:border-[var(--form-focus-color)]',
+  'focus-visible:shadow-[0_0_0_3px_color-mix(in_srgb,var(--form-focus-color)_24%,transparent)]'
+]
+
+export const formControlFocusVisibleHalo = [
+  'focus-visible:ring-0',
+  'focus-visible:outline-none',
+  'focus-visible:shadow-[0_0_0_3px_color-mix(in_srgb,var(--form-focus-color)_24%,transparent)]'
 ]
 
 export const formControlFocusWithin = [
   'focus-within:ring-0',
-  'focus-within:border-form',
-  'focus-within:shadow-[0_0_0_3px_color-mix(in_srgb,var(--form-color)_24%,transparent)]'
+  'focus-within:border-[var(--form-focus-color)]',
+  'focus-within:shadow-[0_0_0_3px_color-mix(in_srgb,var(--form-focus-color)_24%,transparent)]'
 ]
 
 export const formControlFocusVisibleInset = [
   'focus-visible:ring-0',
-  'focus-visible:border-form',
-  'focus-visible:shadow-[inset_0_0_0_2px_color-mix(in_srgb,var(--form-color)_44%,transparent)]'
+  'focus-visible:border-[var(--form-focus-color)]',
+  'focus-visible:shadow-[inset_0_0_0_2px_color-mix(in_srgb,var(--form-focus-color)_44%,transparent)]'
 ]
 
 export const formControlActive = [
   'ring-0',
-  'border-form',
-  'shadow-[0_0_0_3px_color-mix(in_srgb,var(--form-color)_24%,transparent)]',
+  'border-[var(--form-focus-color)]',
+  'shadow-[0_0_0_3px_color-mix(in_srgb,var(--form-focus-color)_24%,transparent)]',
   'outline-none'
 ]

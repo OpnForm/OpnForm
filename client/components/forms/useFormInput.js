@@ -63,14 +63,6 @@ export function useFormInput(props, context, options = {}) {
     return props.form || injectedForm?.value || null
   })
 
-  const inputStyle = computed(() => {
-    return {
-      "--tw-ring-color": props.color,
-      "--form-color": props.color,
-      "--bg-form-color": props.color,
-    }
-  })
-
   const hasValidation = computed(() => {
     return (
       resolvedForm.value !== null &&
@@ -81,6 +73,15 @@ export function useFormInput(props, context, options = {}) {
 
   const hasError = computed(() => {
     return hasValidation.value && resolvedForm.value?.errors?.has(props.name)
+  })
+
+  const inputStyle = computed(() => {
+    return {
+      "--tw-ring-color": props.color,
+      "--form-color": props.color,
+      "--form-focus-color": hasError.value ? "var(--color-red-500)" : props.color,
+      "--bg-form-color": props.color,
+    }
   })
 
   const compVal = computed({
