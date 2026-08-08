@@ -660,4 +660,90 @@ describe('FormPropertiesRule', function () {
             expect($validator->errors()->has('properties.0.logic'))->toBeTrue();
         });
     });
+
+    describe('number formatting validation', function () {
+        it('passes with valid number formatting properties', function () {
+            $rules = [
+                'properties' => ['required', 'array', new FormPropertiesRule()],
+            ];
+
+            $data = [
+                'properties' => [
+                    [
+                        'id' => 'budget',
+                        'name' => 'Budget',
+                        'type' => 'number',
+                        'number_format' => 'us_dollar',
+                        'number_decimal_separator' => '.',
+                        'number_thousands_separator' => ',',
+                    ],
+                ],
+            ];
+
+            $validator = $this->app['validator']->make($data, $rules);
+            expect($validator->passes())->toBeTrue();
+        });
+
+        it('passes when number fields omit formatting properties', function () {
+            $rules = [
+                'properties' => ['required', 'array', new FormPropertiesRule()],
+            ];
+
+            $data = [
+                'properties' => [
+                    [
+                        'id' => 'budget',
+                        'name' => 'Budget',
+                        'type' => 'number',
+                    ],
+                ],
+            ];
+
+            $validator = $this->app['validator']->make($data, $rules);
+            expect($validator->passes())->toBeTrue();
+        });
+
+        it('fails with invalid number format preset', function () {
+            $rules = [
+                'properties' => ['required', 'array', new FormPropertiesRule()],
+            ];
+
+            $data = [
+                'properties' => [
+                    [
+                        'id' => 'budget',
+                        'name' => 'Budget',
+                        'type' => 'number',
+                        'number_format' => 'invalid_format',
+                    ],
+                ],
+            ];
+
+            $validator = $this->app['validator']->make($data, $rules);
+            expect($validator->passes())->toBeFalse();
+            expect($validator->errors()->has('properties.0.number_format'))->toBeTrue();
+        });
+
+        it('fails when custom prefix exceeds max length', function () {
+            $rules = [
+                'properties' => ['required', 'array', new FormPropertiesRule()],
+            ];
+
+            $data = [
+                'properties' => [
+                    [
+                        'id' => 'budget',
+                        'name' => 'Budget',
+                        'type' => 'number',
+                        'number_format' => 'custom',
+                        'number_prefix' => str_repeat('a', 11),
+                    ],
+                ],
+            ];
+
+            $validator = $this->app['validator']->make($data, $rules);
+            expect($validator->passes())->toBeFalse();
+            expect($validator->errors()->has('properties.0.number_prefix'))->toBeTrue();
+        });
+    });
 });

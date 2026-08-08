@@ -188,7 +188,10 @@
     "is_input": true,
     "summary_type": "numeric_stats",
     "default_values": {
-      "placeholder": "Type a number"
+      "placeholder": "Type a number",
+      "number_format": "number",
+      "number_decimal_separator": ".",
+      "number_thousands_separator": "none"
     }
   },
   "rating": {
