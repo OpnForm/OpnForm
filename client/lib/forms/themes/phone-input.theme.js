@@ -62,7 +62,7 @@ export const phoneInputTheme = {
           'shadow-[inset_0_-1px_0_0_rgb(212_212_212)] dark:shadow-[inset_0_-1px_0_0_rgb(82_82_82)]',
           '!rounded-none',
           'transition-shadow duration-200',
-          'focus:ring-0 focus:shadow-[inset_0_-2px_0_0_var(--color-form)]'
+          'focus:ring-0 focus:shadow-[inset_0_-2px_0_0_var(--form-focus-color)]'
         ]
       }
     },

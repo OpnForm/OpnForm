@@ -4,6 +4,7 @@ import { imageInputTheme } from '../../lib/forms/themes/image-input.theme.js'
 import { ratingInputTheme } from '../../lib/forms/themes/rating-input.theme.js'
 import { signatureInputTheme } from '../../lib/forms/themes/signature-input.theme.js'
 import { sliderInputTheme } from '../../lib/forms/themes/slider-input.theme.js'
+import { textInputTheme } from '../../lib/forms/themes/text-input.theme.js'
 
 describe('form focus themes', () => {
   it.each([
@@ -15,5 +16,12 @@ describe('form focus themes', () => {
     expect(classes).toContain('duration-200')
     expect(classes).toContain('var(--form-focus-color)')
     expect(classes).toMatch(/focus(?:-visible)?:shadow-/)
+  })
+
+  it('uses the validation-aware focus color for the transparent underline', () => {
+    const classes = tv(textInputTheme)({ theme: 'transparent' }).input()
+
+    expect(classes).toContain('var(--form-focus-color)')
+    expect(classes).not.toContain('var(--color-form)')
   })
 })

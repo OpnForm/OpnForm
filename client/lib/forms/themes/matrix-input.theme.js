@@ -59,7 +59,7 @@ export const matrixInputTheme = {
           'shadow-[inset_0_-1px_0_0_rgb(212_212_212)] dark:shadow-[inset_0_-1px_0_0_rgb(82_82_82)]',
           '!rounded-none',
           'transition-shadow duration-200',
-          'focus-within:ring-0 focus-within:shadow-[inset_0_-2px_0_0_var(--color-form)]'
+          'focus-within:ring-0 focus-within:shadow-[inset_0_-2px_0_0_var(--form-focus-color)]'
         ],
         cell: 'border-transparent',
         cellHover: 'hover:backdrop-brightness-[0.97] dark:hover:backdrop-brightness-90',

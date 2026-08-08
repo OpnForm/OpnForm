@@ -52,7 +52,7 @@ export const dateInputTheme = {
           'shadow-[inset_0_-1px_0_0_rgb(212_212_212)] dark:shadow-[inset_0_-1px_0_0_rgb(82_82_82)]',
           '!rounded-none',
           'transition-shadow duration-200',
-          'focus-visible:ring-0 focus-visible:shadow-[inset_0_-2px_0_0_var(--color-form)]'
+          'focus-visible:ring-0 focus-visible:shadow-[inset_0_-2px_0_0_var(--form-focus-color)]'
         ],
         clearButton: 'border-none',
         inner: '!px-0'
@@ -92,7 +92,7 @@ export const dateInputTheme = {
     {
       theme: 'transparent',
       isOpen: true,
-      class: { input: 'ring-0 shadow-[inset_0_-2px_0_0_var(--color-form)] outline-none' }
+      class: { input: 'ring-0 shadow-[inset_0_-2px_0_0_var(--form-focus-color)] outline-none' }
     }
   ],
   defaultVariants: {
