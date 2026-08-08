@@ -1,3 +1,5 @@
+import { formControlActive, formControlFocusVisible, formControlTransition } from './focus-ring.theme.js'
+
 /**
  * DateInput tailwind-variants configuration
  */
@@ -6,7 +8,8 @@ export const dateInputTheme = {
     input: [
       'w-full border bg-white dark:bg-notion-dark-light',
       'text-neutral-700 dark:text-neutral-300',
-      'focus-visible:outline-none focus-visible:ring-2 focus-visible:border-transparent'
+      'focus-visible:outline-none',
+      formControlTransition
     ],
     clearButton: 'hover:bg-neutral-50 dark:hover:bg-neutral-900 ltr:border-l rtl:border-r px-2 flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-form/100 focus-visible:ring-inset',
     inner: ''
@@ -16,13 +19,13 @@ export const dateInputTheme = {
       default: { 
         input: [
           'border-neutral-300 dark:border-neutral-600',
-          'focus-visible:ring-form/100'
+          formControlFocusVisible
         ]
       },
       simple: { 
         input: [
           'border-neutral-300 dark:border-neutral-600',
-          'focus-visible:ring-form/100'
+          formControlFocusVisible
         ]
       },
       notion: {
@@ -30,7 +33,7 @@ export const dateInputTheme = {
           'border-notion-input-border dark:border-notion-input-borderDark',
           'bg-notion-input-background dark:bg-notion-dark-light',
           'text-neutral-900 dark:text-neutral-100',
-          'focus-visible:ring-form/40'
+          formControlFocusVisible
         ]
       },
       minimal: {
@@ -38,7 +41,7 @@ export const dateInputTheme = {
           'border-2 border-transparent',
           'bg-neutral-100 dark:bg-notion-dark-light',
           'text-neutral-700 dark:text-neutral-300',
-          'focus-visible:ring-0 focus-visible:border-form'
+          formControlFocusVisible
         ]
       },
       transparent: {
@@ -58,7 +61,7 @@ export const dateInputTheme = {
     // Open state styling used when popover is open (even if trigger is not focused)
     isOpen: {
       true: {
-        input: 'ring-2 ring-form/100 outline-none'
+        input: formControlActive
       }
     },
     size: {

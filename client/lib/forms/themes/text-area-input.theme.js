@@ -1,3 +1,5 @@
+import { formControlFocus, formControlTransition } from './focus-ring.theme.js'
+
 /**
  * TextAreaInput tailwind-variants configuration
  */
@@ -11,6 +13,7 @@ export const textAreaInputTheme = {
       'placeholder-neutral-400 dark:placeholder-neutral-500',
       'focus:outline-hidden',
       'disabled:cursor-not-allowed disabled:opacity-75',
+      formControlTransition,
       'min-h-[100px] resize-y block'
     ],
     help: 'text-neutral-500'
@@ -21,13 +24,13 @@ export const textAreaInputTheme = {
         input: [
           'border-neutral-300 dark:border-neutral-600',
           'shadow-xs',
-          'focus:ring-2 focus:ring-form/100 focus:border-transparent'
+          formControlFocus
         ]
       },
       simple: {
         input: [
           'border-neutral-300 dark:border-neutral-600',
-          'focus:ring-2 focus:ring-form/100 focus:border-transparent'
+          formControlFocus
         ]
       },
       notion: {
@@ -35,7 +38,7 @@ export const textAreaInputTheme = {
           'border-notion-input-border dark:border-notion-input-borderDark',
           'bg-notion-input-background dark:bg-notion-dark-light',
           'text-neutral-900 dark:text-neutral-100',
-          'focus:ring-2 focus:ring-form/40 focus:border-transparent'
+          formControlFocus
         ]
       },
       minimal: {
@@ -43,7 +46,7 @@ export const textAreaInputTheme = {
           'border-2 border-transparent',
           'bg-neutral-100 dark:bg-notion-dark-light',
           'text-neutral-700 dark:text-neutral-300',
-          'focus:ring-0 focus:border-form'
+          formControlFocus
         ]
       },
       transparent: {
@@ -85,4 +88,3 @@ export const textAreaInputTheme = {
     disabled: false
   }
 }
-

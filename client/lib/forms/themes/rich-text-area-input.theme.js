@@ -1,10 +1,13 @@
+import { formControlFocusWithin, formControlTransition } from './focus-ring.theme.js'
+
 /**
  * RichTextAreaInput tailwind-variants configuration
  */
 export const richTextAreaInputTheme = {
   slots: {
     container: [
-      'rich-editor resize-y notranslate relative'
+      'rich-editor resize-y notranslate relative',
+      formControlTransition
     ],
     help: 'text-neutral-500'
   },
@@ -66,7 +69,7 @@ export const richTextAreaInputTheme = {
       true: { container: '!cursor-not-allowed !bg-neutral-200 dark:!bg-neutral-800' }
     },
     focused: {
-      true: { container: 'focus-within:ring-2 focus-within:ring-form/100 focus-within:border-transparent' }
+      true: { container: formControlFocusWithin }
     }
   },
   compoundVariants: [
@@ -85,4 +88,3 @@ export const richTextAreaInputTheme = {
     focused: false
   }
 }
-

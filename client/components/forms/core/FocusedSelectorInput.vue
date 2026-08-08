@@ -161,6 +161,7 @@ const animatingOption = ref(null) // Track which option is animating
 // Computed properties
 const optionStyle = computed(() => ({
   '--bg-form-color': props.color,
+  '--form-color': props.color,
   '--text-form-color': props.color
 }))
 

@@ -1,3 +1,5 @@
+import { formControlFocusVisibleInset, formControlTransition } from './focus-ring.theme.js'
+
 /**
  * FlatSelectInput tailwind-variants configuration
  */
@@ -7,15 +9,17 @@ export const flatSelectInputTheme = {
       'relative overflow-hidden',
       'border bg-white dark:bg-notion-dark-light',
       'text-neutral-700 dark:text-neutral-300',
-      'focus-within:outline-hidden'
+      'focus-within:outline-hidden',
+      formControlTransition
     ],
     // Keep base minimal; theme variants add interaction + spacing
     option: [
       'relative',
-      'focus-visible:ring-2 focus-visible:ring-form/100 focus-visible:outline-none',
+      'focus-visible:outline-none',
+      formControlFocusVisibleInset,
       'flex items-center',
       'border-t first:border-t-0 px-2',
-      'transition-colors duration-150'
+      formControlTransition
     ],
     help: 'text-neutral-500'
   },
@@ -29,7 +33,6 @@ export const flatSelectInputTheme = {
         ],
         option: [
           'relative',
-          'focus-visible:ring-2 focus-visible:ring-form/100 focus-visible:outline-none',
           'border-neutral-300 dark:border-neutral-600',
           'gap-x-2'
         ]
@@ -41,7 +44,6 @@ export const flatSelectInputTheme = {
         ],
         option: [
           'relative',
-          'focus-visible:ring-2 focus-visible:ring-form/100 focus-visible:outline-none',
           'border-neutral-300 dark:border-neutral-600',
           'gap-x-2'
         ]
@@ -55,7 +57,6 @@ export const flatSelectInputTheme = {
         ],
         option: [
           'relative',
-          'focus-visible:ring-2 focus-visible:ring-form/100 focus-visible:outline-none',
           'border-notion-input-border dark:border-notion-input-borderDark',
           'space-x-2'
         ]
@@ -69,7 +70,6 @@ export const flatSelectInputTheme = {
         ],
         option: [
           'relative',
-          'focus-visible:ring-2 focus-visible:ring-form/100 focus-visible:outline-none',
           'border-neutral-200 dark:border-neutral-700',
           'gap-x-2'
         ]
@@ -87,7 +87,6 @@ export const flatSelectInputTheme = {
         ],
         option: [
           'relative',
-          'focus-visible:ring-2 focus-visible:ring-form/100 focus-visible:outline-none',
           'border-neutral-200 dark:border-neutral-700',
           'gap-x-2',
           '!px-0'

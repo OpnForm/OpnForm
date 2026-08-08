@@ -207,6 +207,8 @@ const handleCompValChange = () => {
 const setInputColor = () => {
   if (triggerButton.value) {
     triggerButton.value.style.setProperty('--tw-ring-color', props.color)
+    triggerButton.value.style.setProperty('--form-color', props.color)
+    triggerButton.value.style.setProperty('--bg-form-color', props.color)
   }
 }
 

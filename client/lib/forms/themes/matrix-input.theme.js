@@ -1,3 +1,5 @@
+import { formControlFocusVisibleInset, formControlTransition } from './focus-ring.theme.js'
+
 /**
  * MatrixInput tailwind-variants configuration
  */
@@ -6,7 +8,7 @@ export const matrixInputTheme = {
     container: 'border overflow-x-auto',
     cell: '',
     cellHover: '',
-    option: 'relative cursor-pointer',
+    option: ['relative cursor-pointer focus-visible:outline-none', formControlTransition],
     iconWrapper: 'flex items-center justify-center h-full w-full',
     headerCell: 'w-full flex items-center justify-center text-neutral-900 dark:text-neutral-100',
     rowCell: 'w-full text-neutral-900 dark:text-neutral-100'
@@ -21,7 +23,7 @@ export const matrixInputTheme = {
         ],
         cell: 'border-neutral-300 dark:border-neutral-600',
         cellHover: 'hover:bg-neutral-50 dark:hover:bg-neutral-900',
-        option: 'hover:bg-neutral-50 dark:hover:bg-neutral-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-form/100 focus-visible:ring-inset'
+        option: ['hover:bg-neutral-50 dark:hover:bg-neutral-900', formControlFocusVisibleInset]
       },
       simple: {
         container: [
@@ -30,7 +32,7 @@ export const matrixInputTheme = {
         ],
         cell: 'border-neutral-300 dark:border-neutral-600',
         cellHover: 'hover:bg-neutral-50 dark:hover:bg-neutral-900',
-        option: 'hover:bg-neutral-50 dark:hover:bg-neutral-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-form/100 focus-visible:ring-inset'
+        option: ['hover:bg-neutral-50 dark:hover:bg-neutral-900', formControlFocusVisibleInset]
       },
       notion: {
         container: [
@@ -39,7 +41,7 @@ export const matrixInputTheme = {
         ],
         cell: 'border-notion-input-border dark:border-notion-input-borderDark',
         cellHover: 'hover:backdrop-brightness-95',
-        option: 'hover:backdrop-brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-form/40 focus-visible:ring-inset'
+        option: ['hover:backdrop-brightness-95', formControlFocusVisibleInset]
       },
       minimal: {
         container: [
@@ -48,7 +50,7 @@ export const matrixInputTheme = {
         ],
         cell: 'border-transparent',
         cellHover: 'hover:bg-neutral-200/50 dark:hover:bg-neutral-900',
-        option: 'border-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-form focus-visible:outline-offset-[-2px] focus-visible:ring-0'
+        option: ['border-0', formControlFocusVisibleInset]
       },
       transparent: {
         container: [
@@ -61,7 +63,7 @@ export const matrixInputTheme = {
         ],
         cell: 'border-transparent',
         cellHover: 'hover:backdrop-brightness-[0.97] dark:hover:backdrop-brightness-90',
-        option: 'focus-visible:outline-none focus-visible:ring-0',
+        option: formControlFocusVisibleInset,
         rowCell: '!px-0'
       }
     },
@@ -114,4 +116,3 @@ export const matrixInputTheme = {
     disabled: false
   }
 }
-

@@ -1,3 +1,5 @@
+import { formControlFocusVisible, formControlTransition } from './focus-ring.theme.js'
+
 /**
  * ScaleInput tailwind-variants configuration
  */
@@ -5,7 +7,10 @@ export const scaleInputTheme = {
   slots: {
     button: [
       'cursor-pointer inline-block grow text-center border',
-      'text-neutral-700 dark:text-neutral-300'
+      'text-neutral-700 dark:text-neutral-300',
+      'focus-visible:outline-none',
+      formControlTransition,
+      formControlFocusVisible
     ],
     buttonUnselected: [
       'bg-white dark:bg-notion-dark-light'

@@ -66,6 +66,8 @@ export function useFormInput(props, context, options = {}) {
   const inputStyle = computed(() => {
     return {
       "--tw-ring-color": props.color,
+      "--form-color": props.color,
+      "--bg-form-color": props.color,
     }
   })
 
@@ -196,4 +198,3 @@ export function useFormInput(props, context, options = {}) {
     ui,
   }
 }
-

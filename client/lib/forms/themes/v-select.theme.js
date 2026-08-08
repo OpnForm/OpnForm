@@ -1,3 +1,5 @@
+import { formControlActive, formControlFocusWithin, formControlTransition } from './focus-ring.theme.js'
+
 /**
  * VSelect tailwind-variants configuration
  * Used for select dropdown components
@@ -5,7 +7,7 @@
 export const vSelectTheme = {
   slots: {
     container: 'v-select relative',
-    anchor: 'w-full flex overflow-hidden',
+    anchor: ['w-full flex overflow-hidden', formControlTransition],
     button: [
       'cursor-pointer w-full grow relative focus:outline-hidden min-w-0 truncate'
     ],
@@ -107,7 +109,7 @@ export const vSelectTheme = {
     // Open state styling for when popover is open (even if not focused)
     isOpen: {
       true: {
-        anchor: 'ring-2 ring-form/100 outline-none'
+        anchor: formControlActive
       }
     },
     size: {
@@ -169,7 +171,7 @@ export const vSelectTheme = {
     },
     focused: {
       true: {
-        anchor: 'focus-within:ring-2 focus-within:ring-form/100 focus-within:border-transparent'
+        anchor: formControlFocusWithin
       }
     },
     multiple: {
