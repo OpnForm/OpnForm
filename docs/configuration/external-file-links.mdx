@@ -29,6 +29,28 @@ The selected period is used for new uploaded-file links included in:
 Existing links keep their original expiration. Internal dashboard file previews
 and form assets are not changed by this workspace setting.
 
+## Show uploaded images in notification emails
+
+Each email integration can display uploaded images and signatures directly in
+the message:
+
+1. Open the form editor and select **Integrations**.
+2. Create or edit an email integration.
+3. Enable **Include submission data**.
+4. Enable **Display uploaded images inline**.
+
+The setting is disabled by default. GIF, JPEG, and PNG files up to 6 MB each
+appear vertically in the email and remain clickable through their secure file
+links. Images that are too large or incompatible stay available as readable
+file links without blocking the notification. Other uploaded file types also
+appear with their filename instead of exposing the raw API URL.
+
+<Warning>
+    An image embedded in an email remains available in the recipient's mailbox.
+    The external file link can expire, but the embedded copy cannot be revoked
+    from a message that has already been sent.
+</Warning>
+
 <Warning>
     Choose the shortest period that still fits the recipient's workflow. For
     example, a team that processes weekend submissions on Monday can select
