@@ -145,6 +145,9 @@ const renderPassId = ref(0)
 const zoomRenderTimeout = ref(null)
 const pendingRenderAfterInteraction = ref(false)
 const INITIAL_FIT_HORIZONTAL_PADDING = 48
+// US Letter at 72dpi, used to size templates that contain only blank pages.
+const BLANK_PAGE_WIDTH = 612
+const BLANK_PAGE_HEIGHT = 792
 const SNAP_THRESHOLD_PX = 6
 const MIN_ZONE_WIDTH_PERCENT = 5
 const MIN_ZONE_HEIGHT_PERCENT = 2
@@ -489,7 +492,14 @@ const renderAllPages = async (options = {}) => {
   const { zoomOnlyVisible = false } = options
   const thisPassId = ++renderPassId.value
   const targetPages = zoomOnlyVisible ? getPriorityZoomPages() : pageList.value.filter((p) => !isNewPage(p))
-  if (!targetPages.length) return
+  if (!targetPages.length) {
+    // Templates built entirely from blank pages have no source page to measure, so the
+    // canvas would stay at 0x0 and every zone would collapse to the top-left corner.
+    // Fall back to US Letter, matching the blank page placeholder in the sidebar.
+    canvasWidth.value = BLANK_PAGE_WIDTH * zoomScale.value
+    canvasHeight.value = BLANK_PAGE_HEIGHT * zoomScale.value
+    return
+  }
 
   // Get dimensions from first physical page (for new pages and initial layout)
   const firstPhysical = targetPages[0]

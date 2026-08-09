@@ -93,8 +93,13 @@ export const formsApi = {
     getDownloadRequest: (formId, templateId) => {
       const endpoint = `/open/forms/${formId}/pdf-templates/${templateId}/download`
       const requestOptions = getOpnRequestsOptions(endpoint, {})
+      // baseURL is relative on self-hosted installs (NUXT_PUBLIC_API_BASE=/api), and
+      // the URL constructor rejects a relative base. Resolve against the page origin
+      // so both relative and absolute API bases work.
+      const base = (requestOptions.baseURL || '').replace(/\/$/, '')
+      const origin = import.meta.client ? window.location.origin : undefined
       return {
-        url: new URL(endpoint, requestOptions.baseURL).toString(),
+        url: new URL(base + endpoint, origin).toString(),
         httpHeaders: requestOptions.headers,
       }
     },
