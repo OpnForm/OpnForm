@@ -112,6 +112,9 @@ class FormExportService
 
         $output = fopen('php://temp', 'r+');
 
+        // Help spreadsheet applications such as Excel detect UTF-8 correctly.
+        fwrite($output, "\xEF\xBB\xBF");
+
         // Write header row (clean column names)
         $headers = $this->cleanColumnNames(array_keys($rows[0]));
         fputcsv($output, $headers);

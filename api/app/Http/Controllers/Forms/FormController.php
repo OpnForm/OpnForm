@@ -18,6 +18,7 @@ use App\Service\Forms\FormCleaner;
 use App\Service\Storage\FileUploadPathService;
 use App\Service\Storage\StorageFileNameParser;
 use App\Service\Storage\UploadSecurityService;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -35,10 +36,12 @@ class FormController extends Controller
         $this->formCleaner = new FormCleaner();
     }
 
-    public function index(Workspace $workspace)
+    public function index(Request $request, Workspace $workspace)
     {
         $this->authorize('ownsWorkspace', $workspace);
         $this->authorize('viewAny', Form::class);
+
+        $perPage = min(max($request->integer('per_page', 10), 1), 100);
 
         // Select only columns needed for FormListResource (excludes heavy 'properties' and 'removed_properties')
         $forms = $workspace->forms()
@@ -59,7 +62,8 @@ class FormController extends Controller
             ->withCount(['submissions as submissions_count' => fn ($q) => $q->where('status', FormSubmission::STATUS_COMPLETED)])
             ->withTotalViews()
             ->orderByDesc('updated_at')
-            ->paginate(10);
+            ->paginate($perPage)
+            ->withQueryString();
 
         return FormListResource::collection($forms);
     }

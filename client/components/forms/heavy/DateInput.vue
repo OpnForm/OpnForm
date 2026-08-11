@@ -379,7 +379,8 @@ onUnmounted(() => {
   background: var(--vc-header-arrow-hover-bg) !important;
 }
 
-[dir="rtl"] .vc-arrow svg {
+:dir(rtl) .vc-arrow svg,
+:dir(rtl) .vc-nav-arrow svg {
   transform: scaleX(-1);
 }
 </style>

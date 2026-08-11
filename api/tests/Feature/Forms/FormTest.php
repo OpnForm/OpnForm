@@ -35,6 +35,42 @@ it('can fetch forms', function () {
         ->assertJsonPath('data.0.title', $form->title);
 });
 
+it('supports a bounded form list page size', function () {
+    $user = $this->actingAsUser();
+    $workspace = $this->createUserWorkspace($user);
+
+    foreach (range(1, 15) as $index) {
+        $this->createForm($user, $workspace, [
+            'title' => "Pagination test form {$index}",
+        ]);
+    }
+
+    $this->getJson(route('open.workspaces.forms.index', [
+        'workspace' => $workspace->id,
+        'per_page' => 20,
+    ]))
+        ->assertSuccessful()
+        ->assertJsonCount(15, 'data')
+        ->assertJsonPath('meta.per_page', 20);
+
+    $this->getJson(route('open.workspaces.forms.index', [
+        'workspace' => $workspace->id,
+        'per_page' => 5,
+    ]))
+        ->assertSuccessful()
+        ->assertJsonPath('meta.per_page', 5)
+        ->assertJsonPath('meta.last_page', 3)
+        ->assertJsonPath('links.next', fn (string $url) => str_contains($url, 'per_page=5'));
+
+    $this->getJson(route('open.workspaces.forms.index', [
+        'workspace' => $workspace->id,
+        'per_page' => 1000,
+    ]))
+        ->assertSuccessful()
+        ->assertJsonCount(15, 'data')
+        ->assertJsonPath('meta.per_page', 100);
+});
+
 it('returns lightweight form list without properties', function () {
     $user = $this->actingAsUser();
     $workspace = $this->createUserWorkspace($user);

@@ -26,6 +26,25 @@ it('applies legacy AppSumo entitlements when a licensed user creates a workspace
         ->and($response->json('workspace.features'))->toContain(Feature::CUSTOM_CODE, Feature::SSO_OIDC);
 });
 
+it('applies legacy entitlements when an extra pro user creates a workspace', function () {
+    $user = $this->createUser(['email' => 'development@steamtalmark.nl']);
+    config(['opnform.extra_pro_users_emails' => [$user->email]]);
+    $this->actingAsUser($user);
+
+    $response = $this->postJson(route('open.workspaces.create'), [
+        'name' => 'Embedded Product',
+        'icon' => 'E',
+    ])->assertSuccessful();
+
+    $workspace = Workspace::findOrFail($response->json('workspace_id'));
+
+    expect($workspace->plan_overrides['features'])
+        ->toContain(Feature::CUSTOM_CODE, Feature::SSO_OIDC)
+        ->and($workspace->plan_overrides['legacy_pro_grandfathering']['source'])->toBe('extra_pro_user')
+        ->and(app(PlanAccessService::class)->hasFeature($workspace, Feature::CUSTOM_CODE))->toBeTrue()
+        ->and($response->json('workspace.features'))->toContain(Feature::CUSTOM_CODE, Feature::SSO_OIDC);
+});
+
 it('does not apply legacy entitlements for regular users creating a workspace', function () {
     $user = $this->actingAsProUser();
 
@@ -79,4 +98,31 @@ it('backfills missing AppSumo lifetime workspace entitlements only when applied'
 
     expect($workspace->fresh()->plan_overrides['features'])
         ->toContain(Feature::CUSTOM_CODE, Feature::SSO_OIDC);
+});
+
+it('backfills missing extra pro user workspace entitlements only when applied', function () {
+    $user = $this->createUser(['email' => 'development@steamtalmark.nl']);
+    config(['opnform.extra_pro_users_emails' => [$user->email]]);
+    $workspace = $this->createUserWorkspace($user);
+
+    $this->artisan('billing:backfill-lifetime-license-workspace-entitlements', [
+        '--workspace-id' => $workspace->id,
+    ])
+        ->expectsOutput("would_update workspace={$workspace->id}")
+        ->assertSuccessful();
+
+    expect($workspace->fresh()->plan_overrides)->toBeNull();
+
+    $this->artisan('billing:backfill-lifetime-license-workspace-entitlements', [
+        '--workspace-id' => $workspace->id,
+        '--apply' => true,
+    ])
+        ->expectsOutput("updated workspace={$workspace->id}")
+        ->assertSuccessful();
+
+    $workspace = $workspace->fresh();
+
+    expect($workspace->plan_overrides['features'])
+        ->toContain(Feature::CUSTOM_CODE, Feature::SSO_OIDC)
+        ->and($workspace->plan_overrides['legacy_pro_grandfathering']['source'])->toBe('extra_pro_user');
 });

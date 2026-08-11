@@ -391,6 +391,16 @@
     "is_input": false,
     "default_values": {}
   },
+  "nf-audio": {
+    "name": "nf-audio",
+    "title": "Audio",
+    "icon": "i-heroicons-speaker-wave",
+    "default_block_name": "Audio Block",
+    "bg_class": "bg-yellow-100",
+    "text_class": "text-yellow-900",
+    "is_input": false,
+    "default_values": {}
+  },
   "nf-code": {
     "name": "nf-code",
     "title": "Code",

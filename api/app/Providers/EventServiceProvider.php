@@ -6,6 +6,8 @@ use App\Events\Billing\SubscriptionCreated;
 use App\Events\Billing\SubscriptionUpdated;
 use App\Events\Forms\FormSubmitted;
 use App\Events\Models\FormSubmissionDeleting;
+use App\Events\Models\FormSubmissionSaved;
+use App\Events\Models\FormSubmissionUpdating;
 use App\Events\Forms\FormSaved;
 use App\Events\Models\FormCreated;
 use App\Events\Models\FormIntegrationCreated;
@@ -20,6 +22,8 @@ use App\Listeners\Forms\FormIntegrationCreatedHandler;
 use App\Listeners\Forms\FormIntegrationsEventListener;
 use App\Listeners\Forms\NotifyFormSubmission;
 use App\Listeners\Forms\DeleteFormSubmissionFiles;
+use App\Listeners\Forms\TrackFormSubmissionFiles;
+use App\Listeners\Forms\TrackOriginalFormSubmissionFiles;
 use App\Listeners\Forms\FormSpamCheckListener;
 use App\Listeners\Integration\FormIntegrationSpamCheckListener;
 use Illuminate\Auth\Events\Registered;
@@ -49,6 +53,12 @@ class EventServiceProvider extends ServiceProvider
         ],
         FormSubmissionDeleting::class => [
             DeleteFormSubmissionFiles::class,
+        ],
+        FormSubmissionSaved::class => [
+            TrackFormSubmissionFiles::class,
+        ],
+        FormSubmissionUpdating::class => [
+            TrackOriginalFormSubmissionFiles::class,
         ],
         FormIntegrationCreated::class => [
             FormIntegrationCreatedHandler::class,

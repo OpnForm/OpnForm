@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Enterprise\Oidc\OidcLinkService;
 use App\Exceptions\VerifyEmailException;
 use App\Http\Controllers\Auth\Traits\ManagesJWT;
 use App\Http\Controllers\Controller;
@@ -22,7 +23,7 @@ class LoginController extends Controller
      *
      * @return void
      */
-    public function __construct()
+    public function __construct(private OidcLinkService $oidcLinkService)
     {
         $this->middleware('guest')->except('logout');
     }
@@ -40,7 +41,7 @@ class LoginController extends Controller
                 ->where('type', \App\Enterprise\Oidc\Models\IdentityConnection::TYPE_OIDC)
                 ->exists();
 
-            if ($hasOidcConnection) {
+            if ($hasOidcConnection && ! $this->canUsePasswordLoginToLinkOidcAccount($request)) {
                 throw ValidationException::withMessages([
                     $this->username() => ['Password-based login is disabled. Please use OIDC authentication.'],
                 ]);
@@ -70,6 +71,30 @@ class LoginController extends Controller
         $guard->setToken($token);
 
         return true;
+    }
+
+    /**
+     * A valid, email-bound link token permits one password sign-in so an
+     * existing account can be securely linked to its OIDC identity. The token
+     * is still consumed by OidcLinkController after authentication succeeds.
+     */
+    protected function canUsePasswordLoginToLinkOidcAccount(Request $request): bool
+    {
+        $linkToken = (string) $request->input('oidc_link_token');
+        if ($linkToken === '') {
+            return false;
+        }
+
+        $payload = $this->oidcLinkService->getLinkToken($linkToken);
+        $tokenEmail = $payload['email'] ?? null;
+        if (! is_string($tokenEmail)) {
+            return false;
+        }
+
+        return hash_equals(
+            strtolower($tokenEmail),
+            strtolower((string) $request->input($this->username()))
+        );
     }
 
     /**
