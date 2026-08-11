@@ -37,6 +37,9 @@ class RouteServiceProvider extends ServiceProvider
             Route::middleware('api-external')
                 ->namespace($this->namespace)
                 ->group(base_path('routes/api-external.php'));
+
+            Route::middleware('web')
+                ->group(base_path('routes/mcp-oauth.php'));
         });
     }
 

@@ -42,6 +42,10 @@ class Handler extends ExceptionHandler
      */
     protected function unauthenticated($request, AuthenticationException $exception)
     {
+        if ($request->is('oauth/authorize') || $request->is('oauth/authorize/*')) {
+            return redirect('/oauth/login?' . http_build_query(['intended' => $request->fullUrl()]));
+        }
+
         return response()->json(['message' => $exception->getMessage()], 401);
     }
 

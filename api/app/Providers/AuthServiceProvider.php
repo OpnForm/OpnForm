@@ -16,6 +16,7 @@ use App\Policies\PersonalAccessTokenPolicy;
 use App\Policies\TemplatePolicy;
 use App\Policies\WorkspacePolicy;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
+use Laravel\Passport\Passport;
 use Laravel\Sanctum\PersonalAccessToken;
 
 class AuthServiceProvider extends ServiceProvider
@@ -43,6 +44,11 @@ class AuthServiceProvider extends ServiceProvider
      */
     public function boot()
     {
+        Passport::tokensCan([
+            'forms:read' => 'View your forms and submissions',
+            'forms:write' => 'Create, update, and delete forms',
+        ]);
+
         \Illuminate\Support\Facades\Gate::define('viewMailcoach', function ($user = null) {
             return optional($user)->admin;
         });

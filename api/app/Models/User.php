@@ -17,7 +17,8 @@ use Illuminate\Support\Facades\Hash;
 use Laragear\TwoFactor\Contracts\TwoFactorAuthenticatable as TwoFactorAuthenticatableContract;
 use Laragear\TwoFactor\TwoFactorAuthentication;
 use Laravel\Cashier\Billable;
-use Laravel\Sanctum\HasApiTokens;
+use Laravel\Passport\HasApiTokens as PassportHasApiTokens;
+use Laravel\Sanctum\HasApiTokens as SanctumHasApiTokens;
 use Tymon\JWTAuth\Contracts\JWTSubject;
 
 class User extends Authenticatable implements JWTSubject, CachableAttributes, TwoFactorAuthenticatableContract
@@ -25,7 +26,14 @@ class User extends Authenticatable implements JWTSubject, CachableAttributes, Tw
     use Billable;
     use HasFactory;
     use Notifiable;
-    use HasApiTokens;
+    use SanctumHasApiTokens, PassportHasApiTokens {
+        SanctumHasApiTokens::tokens insteadof PassportHasApiTokens;
+        SanctumHasApiTokens::tokenCan insteadof PassportHasApiTokens;
+        SanctumHasApiTokens::createToken insteadof PassportHasApiTokens;
+        SanctumHasApiTokens::withAccessToken insteadof PassportHasApiTokens;
+        PassportHasApiTokens::tokens as passportTokens;
+        PassportHasApiTokens::token as passportToken;
+    }
     use CachesAttributes;
     use TwoFactorAuthentication;
 
