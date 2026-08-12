@@ -6,5 +6,9 @@ export default defineContentConfig({
       source: 'features/*.md',
       type: 'page',
     }),
+    integrations: defineCollection({
+      source: 'integrations/*.md',
+      type: 'page',
+    }),
   },
 })

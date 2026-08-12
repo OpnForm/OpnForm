@@ -1,261 +1,193 @@
 <template>
-  <div class="relative">
-    <div
-      v-if="showNotionPage || loading"
-      class="w-full flex justify-center"
-    >
-      <div class="w-full md:max-w-3xl md:mx-auto px-4 pt-8 md:pt-16 pb-10">
-        <p class="mb-4 text-sm">
-          <UButton
-            :to="{ name: 'integrations' }"
-            variant="ghost"
-            color="neutral"
-            class="mb-4"
-            icon="i-heroicons-arrow-left"
-          >
-            Other Integrations
-          </UButton>
-        </p>
-        <h1 class="text-3xl mb-2">
-          {{ pageTitle }}
-        </h1>
-        <NotionPage
-          :block-map="page.blocks"
-          :loading="loading"
-          :block-overrides="blockOverrides"
-          :map-page-url="mapPageUrl"
-        />
-        <p class="text-sm">
-          <NuxtLink
-            :to="{ name: 'integrations' }"
-            class="text-blue-500 hover:text-blue-700 inline-block"
-          >
-            Discover our other Integrations
-          </NuxtLink>
-        </p>
-      </div>
-    </div>
-    <div
-      v-else-if="showFallbackPage"
-      class="w-full md:max-w-3xl md:mx-auto px-4 pt-8 md:pt-16 pb-10"
-    >
-      <p class="mb-4 text-sm">
-        <UButton
-          :to="{ name: 'integrations' }"
-          variant="ghost"
-          color="neutral"
-          class="mb-4"
-          icon="i-heroicons-arrow-left"
-        >
-          Other Integrations
-        </UButton>
-      </p>
+  <div class="min-h-full bg-white">
+    <template v-if="integration">
+      <section class="relative overflow-hidden border-b border-neutral-200">
+        <div class="pointer-events-none absolute inset-0 bg-linear-to-b from-white from-35% via-blue-50 via-60% to-white to-85%" />
+        <div class="relative z-2 px-5 py-10 sm:px-8 sm:py-16 lg:px-12">
+          <div class="mx-auto max-w-4xl">
+            <UButton
+              :to="{ name: 'integrations' }"
+              variant="ghost"
+              color="neutral"
+              icon="i-heroicons-arrow-left"
+              class="-ml-3 mb-10 animate-fade-in-up"
+            >
+              All integrations
+            </UButton>
 
-      <div class="rounded-3xl border border-neutral-200 bg-white p-8 shadow-sm">
-        <div class="flex items-start gap-4">
-          <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-neutral-200 bg-neutral-50">
-            <Icon
-              :name="fallbackIntegration.icon"
-              class="h-8 w-8"
-              dynamic
+            <div class="text-center">
+              <div class="relative mx-auto mb-8 inline-flex animate-feature-float">
+                <div
+                  class="relative flex h-20 w-20 items-center justify-center rounded-[28px] shadow-lg ring-4 sm:h-24 sm:w-24"
+                  :class="[colorClasses.iconBg, colorClasses.iconText, colorClasses.ring]"
+                >
+                  <UIcon
+                    :name="integration.icon"
+                    class="h-10 w-10 sm:h-11 sm:w-11"
+                  />
+                </div>
+              </div>
+
+              <h1 class="mt-7 text-4xl font-semibold leading-tight tracking-[-1.2%] text-neutral-950 sm:text-5xl lg:text-[56px] lg:leading-[1.1]">
+                {{ integration.title }}
+              </h1>
+
+              <p class="mx-auto mt-6 max-w-2xl text-lg leading-8 text-neutral-600 sm:text-xl">
+                {{ integration.summary }}
+              </p>
+
+              <div class="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
+                <UButton
+                  :to="{ name: authenticated ? 'forms-create' : 'forms-create-guest' }"
+                  size="lg"
+                  trailing-icon="i-heroicons-arrow-up-right-20-solid"
+                  label="Create a form"
+                  class="w-fit rounded-[12px] py-2.5 pl-4 pr-3.5 text-base font-medium leading-7 tracking-[-1.1%]"
+                />
+                <UButton
+                  :to="{ name: 'integrations' }"
+                  size="lg"
+                  variant="outline"
+                  color="neutral"
+                  label="View all integrations"
+                  class="w-fit rounded-[12px] px-4 py-2.5 text-base font-medium leading-7 tracking-[-1.1%]"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="px-5 py-12 sm:px-8 sm:py-16 lg:px-12">
+        <div class="mx-auto max-w-3xl">
+          <article class="min-w-0 animate-fade-in-up animation-delay-200">
+            <ContentRenderer
+              :value="integration"
+              class="feature-content"
+            />
+          </article>
+        </div>
+      </section>
+
+      <section
+        v-if="otherIntegrations.length"
+        class="border-t border-neutral-200 px-5 py-12 sm:px-8 sm:py-16 lg:px-12"
+      >
+        <div class="mx-auto max-w-7xl">
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p class="text-sm font-semibold uppercase tracking-[0.16em] text-blue-600">
+                Keep exploring
+              </p>
+              <h2 class="mt-3 text-3xl font-semibold tracking-[-1%] text-neutral-950">
+                More integrations
+              </h2>
+            </div>
+            <UButton
+              :to="{ name: 'integrations' }"
+              color="neutral"
+              variant="outline"
+              label="View all integrations"
             />
           </div>
 
-          <div class="min-w-0">
-            <p class="text-sm font-medium text-blue-600">
-              {{ fallbackIntegration.section_name }}
-            </p>
-            <h1 class="mt-1 text-3xl font-semibold text-neutral-900">
-              {{ fallbackIntegration.name }}
-            </h1>
-            <p class="mt-3 text-base text-neutral-600">
-              {{ fallbackDescription }}
-            </p>
+          <div class="mt-8 grid gap-5 sm:grid-cols-3">
+            <IntegrationCard
+              v-for="otherIntegration in otherIntegrations"
+              :key="otherIntegration.slug"
+              :integration="otherIntegration"
+            />
           </div>
         </div>
+      </section>
+    </template>
 
-        <div class="mt-8">
-          <h2 class="text-lg font-semibold text-neutral-900">
-            Setup overview
-          </h2>
-          <ul class="mt-4 space-y-3">
-            <li
-              v-for="step in fallbackSteps"
-              :key="step"
-              class="flex items-start gap-3 text-neutral-700"
-            >
-              <span class="mt-1 text-green-500">✔</span>
-              <span>{{ step }}</span>
-            </li>
-          </ul>
-        </div>
-
-        <div class="mt-8 flex flex-wrap gap-3">
-          <UButton
-            v-if="fallbackIntegration.url"
-            :href="fallbackIntegration.url"
-            target="_blank"
-            external
-          >
-            Open {{ fallbackIntegration.name }}
-          </UButton>
-
-          <UButton
-            v-if="fallbackIntegration.crisp_help_page_slug"
-            color="neutral"
-            variant="outline"
-            @click="crisp.openHelpdeskArticle(fallbackIntegration.crisp_help_page_slug)"
-          >
-            View Help Article
-          </UButton>
-        </div>
-      </div>
-    </div>
-    <div
+    <section
       v-else
-      class="w-full md:max-w-3xl md:mx-auto px-4 pt-8 md:pt-16 pb-10"
+      class="px-5 py-20 sm:px-8 lg:px-12"
     >
-      <h1 class="text-3xl">
-        Whoops - Page not found
-      </h1>
-      <UButton
-        :to="{name: 'index'}"
-        class="mt-4"
-        label="Go Home"
-      />
-    </div>
+      <div class="mx-auto max-w-2xl rounded-[32px] border border-neutral-200 bg-neutral-50 p-8 text-center sm:p-12">
+        <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-neutral-950">
+          <UIcon
+            name="i-heroicons-magnifying-glass"
+            class="h-7 w-7"
+          />
+        </div>
+        <h1 class="mt-6 text-3xl font-semibold tracking-[-1%] text-neutral-950">
+          Integration not found
+        </h1>
+        <p class="mt-4 text-base leading-7 text-neutral-600">
+          This integration guide may have moved, or the content has not been published yet.
+        </p>
+        <UButton
+          :to="{ name: 'integrations' }"
+          label="Browse all integrations"
+          class="mt-7 rounded-xl"
+        />
+      </div>
+    </section>
+
     <OpenFormFooter class="border-t" />
   </div>
 </template>
 
 <script setup>
-import CustomBlock from '~/components/pages/notion/CustomBlock.vue'
-import integrationsCatalog from '~/data/forms/integrations.json'
-import { useNotionCmsStore } from '~/stores/notion_cms.js'
-
-const blockOverrides = { code: CustomBlock }
-const route = useRoute()
-const slug = computed(() => route.params.slug)
-const dbId = '1eda631bec208005bd8ed9988b380263'
-
-const crisp = useCrisp()
-const notionCmsStore = useNotionCmsStore()
-const loading = computed(() => notionCmsStore.loading)
-
-await notionCmsStore.loadDatabase(dbId)
-await notionCmsStore.loadPageBySlug(slug.value)
-
-const page = notionCmsStore.pageBySlug(slug.value)
-const fallbackIntegration = computed(() => integrationsCatalog[slug.value] ?? null)
-const showNotionPage = computed(() => {
-  return !!(page.value && page.value.blocks && published.value)
-})
-const showFallbackPage = computed(() => {
-  return !!(!showNotionPage.value && fallbackIntegration.value)
-})
-const published = computed(() => {
-  if (!page.value) return false
-  return page.value.Published ?? page.value.published ?? false
-})
-const pageTitle = computed(() => {
-  return page.value?.Title
-    ?? page.value?.['Integration Name']
-    ?? page.value?.Name
-    ?? fallbackIntegration.value?.name
-    ?? 'Integration'
-})
-
-function buildFallbackSteps (integration) {
-  if (!integration) return []
-
-  if (integration.is_external) {
-    return [
-      'Open the integration provider',
-      'Connect your OpnForm account',
-      'Configure your automation',
-      'Test and activate it'
-    ]
-  }
-
-  return [
-    'Open your form integrations',
-    'Choose this integration',
-    'Configure the connection settings',
-    'Save and test it'
-  ]
-}
-
-function buildFallbackDescription (integration) {
-  if (!integration) return ''
-
-  if (integration.section_name === 'Notifications') {
-    return 'Send submission alerts to your team in real time.'
-  }
-
-  if (integration.section_name === 'Databases') {
-    return 'Sync form submissions with your spreadsheet or database tools.'
-  }
-
-  return 'Connect OpnForm with your automation tools and workflows.'
-}
-
-const fallbackSteps = computed(() => buildFallbackSteps(fallbackIntegration.value))
-const fallbackDescription = computed(() => buildFallbackDescription(fallbackIntegration.value))
-
-const mapPageUrl = (pageId) => {
-  // Get everything before the ?
-  pageId = pageId.split('?')[0]
-  const page = notionCmsStore.pages[pageId]
-  const slug = page?.slug ?? page?.Slug ?? null
-
-  if (!slug) {
-    return useRouter().resolve({ name: 'integrations' }).href
-  }
-
-  return useRouter().resolve({ name: 'integrations-slug', params: { slug } }).href
-}
+import { filterPublishedIntegrations, getIntegrationColorClasses, getOtherIntegrations, normalizeIntegration, sortIntegrations } from '~/lib/integrations.js'
 
 defineRouteRules({
-  swr: 3600
-})
-definePageMeta({
-  stickyNavbar: true,
-  middleware: ['root-redirect','self-hosted']
+  swr: 3600,
 })
 
+const route = useRoute()
+const slug = computed(() => String(route.params.slug ?? ''))
+const { isAuthenticated: authenticated } = useIsAuthenticated()
+
+const { data: integration } = await useAsyncData(`integration-${slug.value}`, () => {
+  return queryCollection('integrations')
+    .path(`/integrations/${slug.value}`)
+    .first()
+    .then((document) => {
+      if (!document) return null
+      const normalized = normalizeIntegration(document)
+      if (!normalized || normalized.published === false) return null
+      return normalized
+    })
+})
+
+const { data: allIntegrations } = await useAsyncData('integrations-related-list', () => {
+  return queryCollection('integrations').all().then((documents) => {
+    return filterPublishedIntegrations(documents).sort(sortIntegrations)
+  })
+})
+
+const colorClasses = computed(() => getIntegrationColorClasses(integration.value?.color))
+const otherIntegrations = computed(() => getOtherIntegrations(integration.value, allIntegrations.value ?? []))
+
 useOpnSeoMeta({
-  title: () => pageTitle.value,
-  description: () => page.value?.['Summary - SEO description'] ?? fallbackDescription.value ?? 'Create beautiful forms for free. Unlimited fields, unlimited submissions.'
+  title: () => integration.value?.seoTitle ?? integration.value?.title ?? 'Integrations',
+  description: () => integration.value?.seoDescription ?? integration.value?.summary ?? 'Connect OpnForm with your existing tools and workflows.',
 })
 
 const integrationSchema = computed(() => {
-  if (!showNotionPage.value && !showFallbackPage.value) return null
+  if (!integration.value) return null
 
-  const description = page.value?.['Summary - SEO description']
-    ?? fallbackDescription.value
+  const description = integration.value.seoDescription
+    ?? integration.value.summary
     ?? 'Connect OpnForm with your existing tools and workflows.'
 
   return buildSchemaGraph([
     buildWebPageSchema({
-      name: pageTitle.value,
+      name: integration.value.title,
       description,
       path: route.path,
     }),
     buildBreadcrumbSchema([
-      { name: "Home", path: "/" },
-      { name: "Integrations", path: "/integrations" },
-      { name: pageTitle.value, path: route.path },
+      { name: 'Home', path: '/' },
+      { name: 'Integrations', path: '/integrations' },
+      { name: integration.value.title, path: route.path },
     ]),
-    showFallbackPage.value
-      ? buildHowToSchema({
-          name: `${fallbackIntegration.value.name} setup overview`,
-          description,
-          steps: fallbackSteps.value,
-          path: route.path,
-        })
-      : null,
   ])
 })
 
-useJsonLd("integration-schema", integrationSchema)
+useJsonLd('integration-schema', integrationSchema)
 </script>

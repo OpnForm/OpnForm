@@ -1,311 +1,143 @@
 <template>
-  <div class="relative">
-    <div class="mt-2 flex flex-col">
-      <div
-        v-if="loading"
-        class="bg-white py-12 px-4 sm:px-6 lg:px-8"
-      >
-        <loader class="mx-auto h-6 w-6" />
-      </div>
-      <div
-        v-else
-        class="bg-white py-12 px-4 sm:px-6 lg:px-8"
-      >
-        <div class="max-w-6xl mx-auto">
-          <h1 class="text-3xl font-bold text-center text-neutral-900">
-            Available Integrations
+  <div>
+    <section class="relative">
+      <div class="relative z-2 px-8 py-14 sm:px-12 sm:py-16">
+        <div class="mx-auto max-w-3xl text-center">
+          <h1 class="text-4xl font-semibold tracking-[-1%] text-neutral-950 sm:text-[56px] sm:leading-16">
+            Connect OpnForm to your workflow.
           </h1>
-          <p class="text-center text-neutral-600 mt-2 mb-10">
-            Explore our powerful Integrations
+          <p class="mt-4 text-lg font-normal leading-7 tracking-[-1.5%] text-neutral-600 sm:text-xl sm:leading-8">
+            Send responses instantly to your tools. Automate notifications, sync data, and connect your forms to the apps your team already uses.
           </p>
 
-          <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            <div
-              v-for="integration in integrationsList"
-              :key="integration.title"
-              class="relative rounded-2xl bg-neutral-50 p-6 shadow-sm border border-neutral-200 hover:shadow-lg transition-all duration-300 hover:bg-white"
-            >
-              <a
-                :href="`/integrations/${integration.slug}`"
-                class="absolute inset-0"
-              />
-              <div
-                v-if="integration.popular"
-                class="absolute -top-2 -left-3 -rotate-12 bg-blue-500 text-white text-xs font-semibold px-2 py-1 rounded-sm shadow-sm"
-              >
-                Most Popular
-              </div>
-              <div class="flex justify-between items-start">
-                <div class="w-10 h-10 bg-white border border-neutral-200 rounded-xl flex items-center justify-center">
-                  <Icon
-                    :name="integration.icon"
-                    class="w-8 h-8"
-                    dynamic
-                  />
-                </div>
-                <a
-                  href="#"
-                  class="text-sm text-blue-500 font-medium hover:underline flex items-center gap-1"
-                >
-                  Setup Guide
-                  <Icon
-                    name="heroicons:arrow-top-right-on-square"
-                    class="w-4 h-4 flex-shrink-0"
-                    dynamic
-                  />
-                </a>
-              </div>
-
-              <h3 class="mt-4 text-lg font-semibold text-neutral-900">
-                {{ integration.title }}
-              </h3>
-              <p class="text-sm text-neutral-500 mt-1">
-                {{ integration.description }}
-              </p>
-
-              <ul class="mt-4 space-y-2 text-sm text-neutral-700">
-                <li
-                  v-for="step in integration.steps"
-                  :key="step" 
-                  class="flex items-center gap-2"
-                >
-                  <span class="text-green-500">✔</span> {{ step }}
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </div>
-
-
-      <div class="bg-white p-10 max-w-6xl mx-auto">
-        <h2 class="text-4xl font-bold text-center text-neutral-900 mb-2">
-          Integration General Setup Guides
-        </h2>
-        <p class="text-center text-neutral-600 mb-12">
-          This can be another text
-        </p>
-
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-10 text-neutral-800 max-w-6xl mx-auto">
-          <div
-            v-for="guide in setupGuides"
-            :key="guide.title"
-          >
-            <h2 class="text-xl font-semibold mb-4">
-              {{ guide.title }}
-            </h2>
-            <ol class="space-y-4 text-base">
-              <li
-                v-for="(step, index) in guide.steps"
-                :key="step"
-                class="flex items-start gap-3"
-              >
-                <span class="w-8 h-8 flex items-center justify-center rounded-full bg-blue-100 text-blue-700 font-bold">{{ index + 1 }}</span>
-                <span v-html="step" />
-              </li>
-            </ol>
-          </div>
-        </div>
-      </div>
-
-      <div class="bg-[#f4f9ff] max-w-6xl mx-auto rounded-3xl m-10 p-10 flex justify-between items-center">
-        <div class="max-w-md">
-          <h2 class="text-3xl font-bold text-neutral-900">
-            Need help?
-          </h2>
-          <p class="mt-2 text-neutral-500 text-lg">
-            Visit our Help Center for detailed documentation!
-          </p>
-          <a
-            href="#"
-                            class="inline-flex items-center gap-2 mt-6 px-4 py-2 bg-blue-500 text-white text-sm font-semibold rounded-lg shadow-sm hover:bg-blue-600 transition"
-            @click.prevent="crisp.openHelpdesk()"
-          >
-            Help Center
-            <Icon
-              name="heroicons:arrow-top-right-on-square"
-              class="w-4 h-4 flex-shrink-0"
-              dynamic
+          <div class="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
+            <UButton
+              :to="{ name: authenticated ? 'forms-create' : 'forms-create-guest' }"
+              size="lg"
+              trailing-icon="i-heroicons-arrow-up-right-20-solid"
+              label="Create a form"
+              class="w-fit rounded-[12px] py-2.5 pl-4 pr-3.5 text-base font-medium leading-7 tracking-[-1.1%]"
             />
-          </a>
-        </div>
-        <div class="hidden lg:grid grid-cols-2 gap-4">
-          <div class="space-y-4">
-            <div class="bg-white p-4 rounded-2xl shadow-sm w-64 h-20">
-              <div class="bg-neutral-200 w-24 h-3 mb-2 rounded-sm" />
-              <div class="bg-neutral-200 w-full h-6 rounded-full" />
-            </div>
-            <div class="bg-white p-4 rounded-2xl shadow-sm w-64 h-20">
-              <div class="bg-neutral-200 w-24 h-3 mb-2 rounded-sm" />
-              <div class="bg-neutral-200 w-full h-6 rounded-full" />
-            </div>
-            <div class="bg-white p-4 rounded-2xl shadow-sm w-64 h-20">
-              <div class="bg-neutral-200 w-24 h-3 mb-2 rounded-sm" />
-              <div class="bg-neutral-200 w-full h-6 rounded-full" />
-            </div>
-          </div>
-          <div class="space-y-4 pt-8">
-            <div class="bg-white p-4 rounded-2xl shadow-sm w-64 h-20">
-              <div class="bg-neutral-200 w-24 h-3 mb-2 rounded-sm" />
-              <div class="bg-neutral-200 w-full h-6 rounded-full" />
-            </div>
-            <div class="bg-white p-4 rounded-2xl shadow-sm w-64 h-20">
-              <div class="bg-neutral-200 w-24 h-3 mb-2 rounded-sm" />
-              <div class="bg-neutral-200 w-full h-6 rounded-full" />
-            </div>
+            <UButton
+              :to="{ name: 'pricing' }"
+              size="lg"
+              variant="outline"
+              color="neutral"
+              label="View pricing"
+              class="w-fit rounded-[12px] px-4 py-2.5 text-base font-medium leading-7 tracking-[-1.1%]"
+            />
           </div>
         </div>
       </div>
-    </div>
-    <OpenFormFooter />
+      <div class="pointer-events-none absolute inset-0 h-full w-full bg-linear-to-b from-white from-35% via-blue-50 via-60% to-white to-85%" />
+    </section>
+
+    <section class="px-5 pb-12 sm:px-8 sm:pb-16 lg:px-12">
+      <div class="mx-auto max-w-7xl">
+        <div
+          v-if="isLoading"
+          class="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3"
+        >
+          <USkeleton
+            v-for="index in 6"
+            :key="index"
+            class="h-60 rounded-[24px]"
+          />
+        </div>
+
+        <div
+          v-else-if="sortedIntegrations.length"
+          class="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3"
+        >
+          <IntegrationCard
+            v-for="integration in sortedIntegrations"
+            :key="integration.slug"
+            :integration="integration"
+          />
+        </div>
+
+        <div
+          v-else
+          class="mt-12 rounded-[28px] border border-neutral-200 bg-neutral-50 p-8 text-center"
+        >
+          <h3 class="text-xl font-semibold text-neutral-950">
+            No integrations found
+          </h3>
+          <p class="mt-2 text-neutral-600">
+            Integration guides will appear here once they are published.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="border-y border-neutral-200 bg-neutral-50 px-5 py-12 sm:px-8 sm:py-16 lg:px-12">
+      <div class="mx-auto max-w-4xl text-center">
+        <p class="text-sm font-semibold uppercase tracking-[0.16em] text-blue-600">
+          Need help?
+        </p>
+        <h2 class="mt-3 text-3xl font-semibold tracking-[-1%] text-neutral-950 sm:text-4xl">
+          Want help connecting your tools?
+        </h2>
+        <p class="mx-auto mt-4 max-w-2xl text-base leading-7 text-neutral-600">
+          Visit our Help Center for detailed documentation, setup guidance, and troubleshooting tips.
+        </p>
+        <UButton
+          label="Open Help Center"
+          trailing-icon="i-heroicons-arrow-up-right-20-solid"
+          class="mt-8 rounded-xl"
+          @click="crisp.openHelpdesk()"
+        />
+      </div>
+    </section>
+
+    <OpenFormFooter class="border-t" />
   </div>
 </template>
 
 <script setup>
-import integrationsCatalog from '~/data/forms/integrations.json'
-import { useNotionCmsStore } from '~/stores/notion_cms.js'
+import { filterPublishedIntegrations, sortIntegrations } from '~/lib/integrations.js'
+
+defineRouteRules({
+  swr: 3600,
+})
 
 useOpnSeoMeta({
   title: 'Integrations',
-  description:
-    'Create beautiful forms for free. Unlimited fields, unlimited submissions.'
-})
-defineRouteRules({
-  swr: 3600
-})
-definePageMeta({
-  stickyNavbar: true,
-  middleware: ['root-redirect','self-hosted']
+  description: 'Connect OpnForm with notification, automation, payment, and database tools to send submissions into your existing workflows.',
 })
 
 const crisp = useCrisp()
+const { isAuthenticated: authenticated } = useIsAuthenticated()
 
-const dbId = '1eda631bec208005bd8ed9988b380263'
-const notionCmsStore = useNotionCmsStore()
-const loading = computed(() => notionCmsStore.loading)
-await notionCmsStore.loadDatabase(dbId).catch(() => null)
-const pages = notionCmsStore.databasePages(dbId)
-
-function buildFallbackSteps (integration) {
-  if (integration.is_external) {
-    return [
-      'Open the integration provider',
-      'Connect your OpnForm account',
-      'Configure your automation',
-      'Test and activate it'
-    ]
-  }
-
-  return [
-    'Open your form integrations',
-    'Choose this integration',
-    'Configure the connection settings',
-    'Save and test it'
-  ]
-}
-
-function buildFallbackDescription (integration) {
-  if (integration.section_name === 'Notifications') {
-    return 'Send submission alerts to your team in real time.'
-  }
-
-  if (integration.section_name === 'Databases') {
-    return 'Sync form submissions with your spreadsheet or database tools.'
-  }
-
-  return 'Connect OpnForm with your automation tools and workflows.'
-}
-
-const fallbackIntegrationsList = computed(() => {
-  return Object.entries(integrationsCatalog).map(([slug, integration]) => ({
-    title: integration.name,
-    description: buildFallbackDescription(integration),
-    icon: integration.icon,
-    slug,
-    steps: buildFallbackSteps(integration),
-    popular: ['webhook', 'zapier', 'google_sheets'].includes(slug)
-  }))
+const { data: integrations, pending: isLoading } = await useAsyncData('integrations-list', () => {
+  return queryCollection('integrations').all().then((documents) => {
+    return filterPublishedIntegrations(documents).sort(sortIntegrations)
+  })
 })
 
-const integrationsList = computed(() => {
-  const publishedPages = Object.values(pages.value || {}).filter(page => page.Published)
-
-  if (!publishedPages.length) {
-    return fallbackIntegrationsList.value
-  }
-
-  return publishedPages.map(page => ({
-    title: page['Integration Name'] ?? page.Name,
-    description: page.Summary ?? '',
-    icon: page.Icon ?? 'i-heroicons-envelope-20-solid',
-    slug: page.slug,
-    steps: (page.Steps) ? page.Steps.split('\n') : [],
-    popular: page['Most Popular'] ?? false
-  }))
-})
-
-
-const setupGuides = [
-  {
-    title: 'Email Integration Setup',
-    steps: [
-      'Navigate to <b>OpnForm</b> > <b>Integrations</b>.',
-      'Select <b>Email</b> and configure SMTP settings.',
-      'Set up email rules for notifications.',
-      'Save & activate email alerts.'
-    ]
-  },
-  {
-    title: 'Slack Integration Setup',
-    steps: [
-      'Navigate to <b>OpnForm</b> > <b>Integrations</b>.',
-      'Select <b>Slack</b> and authorize your workspace.',
-      'Choose a channel & customize messages.',
-      'Save & activate Slack alerts.'
-    ]
-  },
-  {
-    title: 'WebHook Integration Setup',
-    steps: [
-      'Navigate to <b>OpnForm</b> > <b>Integrations</b>.',
-      'Select <b>WebHook</b> and enter your endpoint URL.',
-      'Map fields & configure triggers.',
-      'Save & activate WebHook alerts.'
-    ]
-  }
-]
+const sortedIntegrations = computed(() => integrations.value ?? [])
 
 const integrationsSchema = computed(() => buildSchemaGraph([
   buildCollectionPageSchema({
-    name: "OpnForm Integrations",
-    description:
-      "Connect OpnForm with notification, automation, and database tools to send submissions into your existing workflows.",
-    path: "/integrations",
+    name: 'OpnForm Integrations',
+    description: 'Connect OpnForm with notification, automation, payment, and database tools to send submissions into your existing workflows.',
+    path: '/integrations',
   }),
   buildBreadcrumbSchema([
-    { name: "Home", path: "/" },
-    { name: "Integrations", path: "/integrations" },
+    { name: 'Home', path: '/' },
+    { name: 'Integrations', path: '/integrations' },
   ]),
   buildItemListSchema(
-    integrationsList.value.map((integration) => ({
+    sortedIntegrations.value.map((integration) => ({
       name: integration.title,
       path: `/integrations/${integration.slug}`,
     })),
     {
-      path: "/integrations",
-      name: "OpnForm integrations",
+      path: '/integrations',
+      name: 'OpnForm integrations',
     },
   ),
 ]))
 
-useJsonLd("integrations-schema", integrationsSchema)
-
+useJsonLd('integrations-schema', integrationsSchema)
 </script>
-
-<style lang='scss'>
-.integration-page {
-  .notion-asset-wrapper {
-    max-width: 200px;
-  }
-}
-</style>

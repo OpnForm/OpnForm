@@ -2,7 +2,6 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import templateIndustries from './data/forms/templates/industries.json'
 import templateTypes from './data/forms/templates/types.json'
-import opnformConfig from './opnform.config.js'
 
 const isSelfHostedBuild = process.env.SELF_HOSTED === 'true'
   || process.env.NUXT_PUBLIC_SELF_HOSTED === 'true'
@@ -30,7 +29,7 @@ export default {
       ...getTemplateTypesUrls(),
       ...getFeaturePagesUrls(),
       ...getCloudMarketingUrls(),
-      ...(await getIntegrationsPages().catch(() => [])),
+      ...getIntegrationsPages(),
     ]
   }
 }
@@ -116,32 +115,25 @@ function getTemplateIndustriesUrls () {
   })
 }
 
-async function getIntegrationsPages () {
-  try {
-    const databaseId = '1eda631bec208005bd8ed9988b380263'
-    const apiUrl = opnformConfig.notion.worker
-    if (!apiUrl) return []
-    
-    const response = await fetch(`${apiUrl}/table/${databaseId}`, {
-      timeout: 5000,
-      headers: { 'Cache-Control': 'no-cache' }
-    })
-    
-    if (!response.ok) return []
-    
-    const pages = await response.json()
-    return pages.map((page) => {
-      const slug = page.Slug ?? page.slug ?? null
-      const published = page.Published ?? page.published ?? false
-      if (!slug || !published) return null
+function getIntegrationsPages () {
+  const integrationsDir = join(process.cwd(), 'content/integrations')
+
+  if (!existsSync(integrationsDir)) return []
+
+  return readdirSync(integrationsDir)
+    .filter((fileName) => fileName.endsWith('.md'))
+    .map((fileName) => {
+      const frontmatter = getMarkdownFrontmatter(join(integrationsDir, fileName))
+      if (frontmatter.published === false) return null
+
+      const fallbackSlug = fileName.replace(/\.md$/, '')
+      const slug = frontmatter.slug || fallbackSlug
+
       return {
         url: `/integrations/${slug}`,
         changefreq: 'monthly',
         priority: 0.9
       }
-    }).filter((page) => page)
-  } catch (error) {
-    console.warn('Error fetching integrations pages for sitemap:', error.message)
-    return []
-  }
+    })
+    .filter((page) => page)
 }
