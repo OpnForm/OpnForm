@@ -19,6 +19,11 @@ const INTEGRATION_COLORS = {
     iconText: 'text-white',
     ring: 'ring-amber-200/80',
   },
+  orange: {
+    iconBg: 'bg-orange-500',
+    iconText: 'text-white',
+    ring: 'ring-orange-200/80',
+  },
   rose: {
     iconBg: 'bg-rose-500',
     iconText: 'text-white',

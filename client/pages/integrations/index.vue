@@ -84,7 +84,8 @@
         <UButton
           label="Open Help Center"
           trailing-icon="i-heroicons-arrow-up-right-20-solid"
-          class="mt-8 rounded-xl"
+          class="mt-8"
+          size="lg"
           @click="crisp.openHelpdesk()"
         />
       </div>
