@@ -692,6 +692,13 @@ export function useSdkBridge(options) {
 
   const isIframe = useIsIframe()
   let messageHandler = null
+  let handshakeReceived = !isIframe
+  let resolveHandshake = null
+  const handshakePromise = handshakeReceived
+    ? Promise.resolve()
+    : new Promise((resolve) => {
+        resolveHandshake = resolve
+      })
 
   const initialSdkToken = typeof window !== 'undefined' ? readSdkTokenFromUrl() : null
   const initialTrustedOrigin = typeof window !== 'undefined'
@@ -919,8 +926,23 @@ export function useSdkBridge(options) {
     onCommand: handleCommand,
     onHandshake: (trackingParameters) => {
       formManager?.mergeParentAttribution?.(trackingParameters)
+      handshakeReceived = true
+      resolveHandshake?.()
+      resolveHandshake = null
     },
   })
+
+  function waitForHandshake(timeoutMs = 500) {
+    if (!import.meta.client || handshakeReceived) return Promise.resolve()
+
+    return new Promise((resolve) => {
+      const timeoutId = setTimeout(resolve, timeoutMs)
+      handshakePromise.then(() => {
+        clearTimeout(timeoutId)
+        resolve()
+      })
+    })
+  }
 
   /**
    * Handle incoming messages
@@ -1085,6 +1107,7 @@ export function useSdkBridge(options) {
     onSubmitSuccess,
     onSubmitError,
     onReset,
+    waitForHandshake,
     EVENTS
   }
 }

@@ -251,7 +251,8 @@ watch(darkModeRef, (newDarkMode) => {
 onMounted(() => {
   if (isAutoSubmit.value && formManager) {
     // Using nextTick to ensure form is fully rendered and initialized
-    nextTick(() => {
+    nextTick(async () => {
+      await sdkBridge?.waitForHandshake?.()
       triggerSubmit()
     })
   }

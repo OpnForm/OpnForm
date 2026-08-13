@@ -116,7 +116,13 @@
   const resolvedFormUrl = new URL(formUrl, window.location.href)
   const parentParams = new URLSearchParams(window.location.search)
   attributionParameters.forEach((parameter) => {
-    if (resolvedFormUrl.searchParams.has(parameter)) return
+    const iframeValue = resolvedFormUrl.searchParams.getAll(parameter).find(candidate => (
+      candidate.trim() !== '' && candidate.length <= 2048
+    ))
+    if (iframeValue !== undefined) {
+      resolvedFormUrl.searchParams.set(parameter, iframeValue)
+      return
+    }
 
     const value = parentParams.getAll(parameter).find(candidate => (
       candidate.trim() !== '' && candidate.length <= 2048

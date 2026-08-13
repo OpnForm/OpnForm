@@ -24,7 +24,8 @@
     const f = new URL(e, window.location.href)
     const m = new URLSearchParams(window.location.search)
     u.forEach((n) => {
-      if (f.searchParams.has(n)) return
+      const t = f.searchParams.getAll(n).find((n) => n.trim() !== "" && n.length <= 2048)
+      if (t !== undefined) return void f.searchParams.set(n, t)
       const e = m.getAll(n).find((n) => n.trim() !== "" && n.length <= 2048)
       e !== undefined && f.searchParams.set(n, e)
     })

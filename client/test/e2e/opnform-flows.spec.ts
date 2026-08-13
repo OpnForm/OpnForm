@@ -356,6 +356,18 @@ async function apiCreateForm(request: APIRequestContext, options: {
   throw new Error(`Failed to create form via API (${lastFailure?.status}): ${lastFailure?.body}`)
 }
 
+async function apiListSubmissions(request: APIRequestContext, token: string, slug: string) {
+  const response = await request.get(`${API_BASE_URL}/open/forms/${slug}/submissions`, {
+    headers: {
+      Accept: "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  })
+
+  expect(response.ok()).toBeTruthy()
+  return response.json()
+}
+
 async function submitPublicForm(page: Page, slug: string, visitorName = "Playwright Visitor") {
   const visitorEmail = uniqueEmail("visitor")
 
@@ -701,6 +713,72 @@ test("public form URL attribution is stored separately from submitted answers", 
       gclid: "browser-click",
     },
   })
+})
+
+test("SDK parent attribution is captured before an embedded auto-submit", async ({ page, request }) => {
+  const form = await apiCreateForm(request, {
+    title: uniqueTitle("SDK Auto Submit Attribution"),
+    payloadOverrides: {
+      properties: [
+        {
+          type: "nf-text",
+          content: "<h1>SDK auto-submit attribution</h1>",
+          name: "Title",
+          id: "default_title",
+        },
+        buildTextField("sdk_auto_name", "Name"),
+      ],
+    },
+  })
+  const token = await apiLogin(request)
+  const iframeUrl = `/forms/${form.slug}?auto_submit=true&sdk_auto_name=Auto%20SDK`
+
+  await page.goto("/?utm_source=sdk-parent&utm_campaign=auto-submit")
+  await page.setContent(`
+    <!doctype html>
+    <html>
+      <body>
+        <iframe id="${form.slug}" src="${iframeUrl}"></iframe>
+        <script src="/widgets/opnform-sdk.js"></script>
+        <script>window.opnform.init({ autoResize: false, preventRedirect: true })</script>
+      </body>
+    </html>
+  `)
+
+  let submission: { meta?: { attribution?: Record<string, string> } } | undefined
+  await expect.poll(async () => {
+    const submissions = await apiListSubmissions(request, token, form.slug)
+    submission = submissions.data.find((record: { data: Record<string, unknown> }) => (
+      record.data.sdk_auto_name === "Auto SDK"
+    ))
+    return submission
+  }, { timeout: 20_000 }).toBeTruthy()
+
+  expect(submission?.meta?.attribution).toEqual({
+    utm_source: "sdk-parent",
+    utm_campaign: "auto-submit",
+  })
+})
+
+test("popup embed falls back to valid parent attribution when its form URL value is empty", async ({ page, request }) => {
+  const form = await apiCreateForm(request, { title: uniqueTitle("Popup Attribution") })
+  const formUrl = `/forms/${form.slug}?utm_source=`
+  const widgetData = JSON.stringify({ formurl: formUrl }).replaceAll('"', '&quot;')
+
+  await page.goto("/?utm_source=popup-parent&utm_campaign=popup-test")
+  await page.setContent(`
+    <!doctype html>
+    <html>
+      <body>
+        <script data-nf="${widgetData}" src="/widgets/embed.js"></script>
+      </body>
+    </html>
+  `)
+  await page.locator(".nf-emoji").click()
+
+  const popupUrl = new URL(await page.locator(".nf-popup iframe").getAttribute("src") || "", page.url())
+  expect(popupUrl.searchParams.get("utm_source")).toBe("popup-parent")
+  expect(popupUrl.searchParams.get("utm_campaign")).toBe("popup-test")
 })
 
 test("classic public form submits successfully with mixed field components", async ({ page, request }) => {

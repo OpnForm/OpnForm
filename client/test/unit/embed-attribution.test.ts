@@ -34,4 +34,28 @@ describe.each(embedSources)('popup embed attribution (%s)', (_variant, embedSour
     expect(iframeUrl.searchParams.get('email')).toBeNull()
     expect(iframeUrl.searchParams.get('popup')).toBe('true')
   })
+
+  it('falls back to valid parent attribution when the iframe value is invalid', () => {
+    const dom = new JSDOM('<!doctype html><html><head></head><body></body></html>', {
+      url: 'https://embedder.example.test/?utm_source=parent&utm_campaign=launch',
+      runScripts: 'outside-only',
+    })
+    const script = dom.window.document.createElement('script')
+    script.setAttribute('data-nf', JSON.stringify({
+      formurl: `https://forms.example.test/forms/demo?utm_source=&utm_campaign=${'x'.repeat(2049)}`,
+    }))
+    Object.defineProperty(dom.window.document, 'currentScript', {
+      configurable: true,
+      value: script,
+    })
+
+    dom.window.eval(embedSource)
+    const button = dom.window.document.querySelector('.nf-emoji') as HTMLElement
+    button.click()
+
+    const iframe = dom.window.document.querySelector('iframe') as HTMLIFrameElement
+    const iframeUrl = new URL(iframe.src)
+    expect(iframeUrl.searchParams.get('utm_source')).toBe('parent')
+    expect(iframeUrl.searchParams.get('utm_campaign')).toBe('launch')
+  })
 })
