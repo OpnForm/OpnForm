@@ -331,8 +331,8 @@ const linkGroups = computed(() => [
     links: [
       { label: "Feedback", href: "https://feedback.opnform.com/" },
       { label: "Changelog", href: "https://feedback.opnform.com/changelog" },
-      // { label: "Privacy Policy", to: { name: "privacy-policy" } },
-      // { label: "Terms & Conditions", to: { name: "terms-conditions" } },
+      { label: "Privacy Policy", to: { name: "privacy-policy" } },
+      { label: "Terms & Conditions", to: { name: "terms-conditions" } },
     ],
   },
 ])
