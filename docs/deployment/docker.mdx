@@ -298,3 +298,32 @@ Fix storage permissions:
 docker compose exec api chown -R www-data:www-data storage
 docker compose exec api chmod -R 775 storage
 ```
+
+### Synology Container Manager
+
+When deploying through Synology Container Manager, set the project **Path** to
+the cloned OpnForm directory instead of uploading `docker-compose.yml` by
+itself. The Compose file also references the generated `api/.env` and
+`client/.env` files, as well as `docker/nginx.conf`, using paths relative to the
+project directory. Keep this directory structure intact:
+
+```text
+OpnForm/
+├── docker-compose.yml
+├── api/
+│   └── .env
+├── client/
+│   └── .env
+└── docker/
+    └── nginx.conf
+```
+
+Make sure `docker/nginx.conf` exists as a file before starting the project and
+is mounted to `/etc/nginx/templates/default.conf.template`. Mounting the
+containing directory instead can leave the ingress container with the default
+Nginx configuration. If port 80 is already in use on the NAS, change the
+ingress port mapping from `80:80` to another host port, such as `8800:80`.
+
+See [GitHub issue #1005](https://github.com/OpnForm/OpnForm/issues/1005) for a
+working Synology Container Manager configuration and its troubleshooting
+history.
