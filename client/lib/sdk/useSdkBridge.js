@@ -686,7 +686,8 @@ export function useSdkBridge(options) {
     formData,
     formErrors,
     formManager,
-    darkMode
+    darkMode,
+    attribution,
   } = options
 
   const isIframe = useIsIframe()
@@ -916,6 +917,9 @@ export function useSdkBridge(options) {
       postMessageSafe(window.parent, message, origin)
     },
     onCommand: handleCommand,
+    onHandshake: (trackingParameters) => {
+      formManager?.mergeParentAttribution?.(trackingParameters)
+    },
   })
 
   /**
@@ -1023,10 +1027,14 @@ export function useSdkBridge(options) {
   }
 
   function onSubmitSuccess(submissionData) {
+    const trackingParameters = toValue(attribution) || {}
     emitEvent(EVENTS.SUBMIT, {
       data: submissionData.data || toValue(formData),
       submissionId: submissionData.submissionId,
-      completionTime: submissionData.completionTime
+      completionTime: submissionData.completionTime,
+      ...(Object.keys(trackingParameters).length > 0
+        ? { meta: { attribution: trackingParameters } }
+        : {}),
     })
   }
 

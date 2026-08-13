@@ -657,6 +657,52 @@ test("public submissions are accepted and visible in the submissions dashboard",
   await expect(page.getByText(visitorEmail)).toBeVisible()
 })
 
+test("public form URL attribution is stored separately from submitted answers", async ({ page, request }) => {
+  const form = await apiCreateForm(request, { title: uniqueTitle("Attributed Submission") })
+  const visitorName = `Attributed Visitor ${Date.now()}`
+  const visitorEmail = uniqueEmail("attributed")
+
+  await gotoPageWithRetry(
+    page,
+    `/forms/${form.slug}?utm_source=playwright&utm_campaign=e2e&gclid=browser-click&email=must-not-track`,
+    async () => {
+      await expect(page.getByTestId("public-form-page")).toBeVisible()
+    },
+  )
+  await fillFieldInput(page, "default_name", visitorName)
+  await fillFieldInput(page, "default_email", visitorEmail)
+  await fillFieldInput(page, "default_message", "Attribution browser test")
+  await page.getByRole("button", { name: /submit/i }).click()
+  await expectSubmissionSuccess(page)
+
+  const token = await apiLogin(request)
+  const submissionsResponse = await request.get(
+    `${API_BASE_URL}/open/forms/${form.slug}/submissions`,
+    {
+      headers: {
+        Accept: "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  )
+
+  expect(submissionsResponse.ok()).toBeTruthy()
+  const submissions = await submissionsResponse.json()
+  const submission = submissions.data.find((record: {
+    data: Record<string, unknown>,
+  }) => record.data.default_name === visitorName)
+
+  expect(submission).toBeTruthy()
+  expect(submission.data).not.toHaveProperty("tracking_parameters")
+  expect(submission.meta).toEqual({
+    attribution: {
+      utm_source: "playwright",
+      utm_campaign: "e2e",
+      gclid: "browser-click",
+    },
+  })
+})
+
 test("classic public form submits successfully with mixed field components", async ({ page, request }) => {
   const form = await apiCreateForm(request, {
     title: uniqueTitle("Mixed Components"),
