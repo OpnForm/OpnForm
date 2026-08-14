@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "opnform": {
+      "type": "http",
+      "url": "https://api.opnform.com/mcp"
+    }
+  }
+}

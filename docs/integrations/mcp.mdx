@@ -48,15 +48,20 @@ In a ChatGPT plan that supports custom MCP apps, enable developer mode and creat
 
 ChatGPT requires HTTPS for nested form previews and external editor destinations. During local development, expose the frontend and API through HTTPS development URLs before testing the interactive preview or **Open in OpnForm** action; an `http://127.0.0.1` origin will be rejected by the ChatGPT sandbox.
 
-## Agent Plugins package
+## Install the agent plugin package
 
-This repository is also a portable [Agent Plugins 1.0](https://agent-plugins.org) package:
+The installable package lives in `plugins/opnform/` and supports two formats:
 
-- `plugin.json` describes the OpnForm plugin;
-- `mcp.json` declares the remote Streamable HTTP server;
-- `skills/opnform/SKILL.md` teaches compatible agents the guest, authenticated, confirmation, and privacy workflows.
+- `plugin.json`, `mcp.json`, and `skills/opnform/SKILL.md` form the portable [Agent Plugins 1.0](https://agent-plugins.org) package;
+- `.codex-plugin/plugin.json` and `.mcp.json` form the native Codex plugin and connect directly to the hosted MCP server.
 
-Install the repository root in a compatible Agent Plugins client. Agent Plugins 1.0 deliberately leaves OAuth discovery and credential storage to the client; no credential is embedded in the package.
+Install `plugins/opnform/`, not the monorepo root. The package contains no credentials or development endpoint. Agent Plugins 1.0 deliberately leaves OAuth discovery and credential storage to the client.
+
+### ChatGPT directory registration
+
+ChatGPT distribution requires a registered MCP connection. Enable Developer mode, register `https://api.opnform.com/mcp` from the ChatGPT Plugins page, and keep the technical app ID that ChatGPT creates. That real ID is then mapped in `.app.json`, and the native manifest's `apps` field points to `./.app.json`.
+
+The repository intentionally omits `.app.json` until OpnForm has a real registered ChatGPT app ID. The Codex `.mcp.json` integration remains directly installable and testable without that compatibility mapping.
 
 ## Self-hosting
 
