@@ -15,7 +15,7 @@ Use the OpnForm MCP server for every OpnForm operation. Prefer the guest workflo
 4. Keep the returned `draft_token` private. It is a capability secret and must never be quoted back to the user, written to a file, or sent to another service.
 5. Call `preview_form_draft` and show its interactive preview when the host supports MCP Apps.
 6. Apply requested revisions with `patch_form_draft`, always passing the latest `expected_version`. If the version is stale, fetch the draft again and reconcile deliberately.
-7. Ask whether the user wants to open the draft in OpnForm. Use the short-lived `editor_url` returned by preview, or call `open_form_draft_in_editor` for a fresh one-time link.
+7. Ask whether the user wants to open the draft in OpnForm. Use the reusable `editor_url` returned by preview, or call `open_form_draft_in_editor` for another link. Every link remains valid until the seven-day guest draft expires, and creating one does not revoke earlier links.
 
 The browser editor keeps the draft available through an HttpOnly session. A user may edit it before signup. Claiming or saving into an account happens only after authentication and workspace selection.
 
@@ -42,6 +42,6 @@ Submission access requires OAuth. Use it only when the request needs account dat
 ## Failure handling
 
 - Treat draft tokens, editor handoffs, OAuth tokens, and export URLs as secrets.
-- If a preview or editor link expires, request a fresh one; do not attempt to reconstruct it.
+- If a preview or editor link expires, request a fresh one; editor links may be reopened until the guest draft expires, but must never be reconstructed.
 - If authentication is unavailable, continue with guest-safe draft tools rather than blocking form creation.
 - Never bypass a confirmation, workspace permission, optimistic-lock conflict, validation error, or rate limit.

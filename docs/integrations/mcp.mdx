@@ -20,9 +20,9 @@ No sign-in is required to create a guest draft. A capable agent will:
 3. Create a private draft that expires after seven days.
 4. Render an interactive preview, when the client supports MCP Apps.
 5. Revise the draft with optimistic version checks.
-6. Give you a short-lived, one-time link to open it in the full OpnForm editor.
+6. Give you a reusable link to open it in the full OpnForm editor until the guest draft expires.
 
-The draft remains private and unpublished. The capability token returned to the agent is stored hashed by OpnForm and should never be shared. Preview URLs are signed for 15 minutes; editor handoff links expire after 10 minutes and can be used only once.
+The draft remains private and unpublished. The capability token returned to the agent is stored hashed by OpnForm and should never be shared. Preview URLs are signed for 15 minutes; every editor link remains reusable for the draft's seven-day lifetime. Creating a new link does not revoke an earlier one.
 
 After the handoff, the browser stores an HttpOnly draft session. You can edit before signing up. Saving the draft into OpnForm requires authentication and a writable workspace. When several workspaces are available, you choose where the form is created.
 
@@ -45,6 +45,8 @@ Workspace administration and submission mutations are intentionally unavailable.
 ## ChatGPT
 
 In a ChatGPT plan that supports custom MCP apps, enable developer mode and create a custom app using `https://api.opnform.com/mcp`. ChatGPT discovers OAuth and the interactive draft preview from the endpoint. Availability and admin controls depend on the ChatGPT plan and workspace settings.
+
+ChatGPT requires HTTPS for nested form previews and external editor destinations. During local development, expose the frontend and API through HTTPS development URLs before testing the interactive preview or **Open in OpnForm** action; an `http://127.0.0.1` origin will be rejected by the ChatGPT sandbox.
 
 ## Agent Plugins package
 
