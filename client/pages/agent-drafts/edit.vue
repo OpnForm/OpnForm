@@ -84,6 +84,7 @@ const workspaces = ref([])
 const selectedWorkspaceId = ref(null)
 const workspaceModalOpen = ref(false)
 const claimAfterLogin = ref(false)
+const hydratingEditor = ref(true)
 let syncTimer = null
 let syncPromise = null
 
@@ -164,7 +165,7 @@ const syncDraft = (data) => performSync(data).then(() => {
 })
 
 const scheduleSync = () => {
-  if (loading.value || claiming.value) return
+  if (loading.value || claiming.value || hydratingEditor.value) return
   clearTimeout(syncTimer)
   syncTimer = setTimeout(() => performSync().catch(() => {}), 900)
 }
@@ -238,6 +239,12 @@ onMounted(() => {
     fatalError.value = exception?.data?.message || 'This editor link is invalid, expired, or already used. Ask the agent for a fresh link.'
   }).finally(() => {
     loading.value = false
+    if (!fatalError.value) {
+      nextTick().then(() => {
+        lastSavedFingerprint.value = JSON.stringify(cleanDefinition(workingFormStore.content?.data()))
+        hydratingEditor.value = false
+      })
+    }
   })
 
   useWindowMessage(WindowMessageTypes.AFTER_LOGIN).listen(() => {
