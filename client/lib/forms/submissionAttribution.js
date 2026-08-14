@@ -23,6 +23,10 @@ export function attributionColumnId(parameter) {
   return `meta.attribution.${parameter}`
 }
 
+export function attributionColumnAccessor(parameter) {
+  return row => row?.[attributionColumnId(parameter)]
+}
+
 export function sanitizeAttribution(parameters) {
   if (!parameters || typeof parameters !== 'object' || Array.isArray(parameters)) return {}
 

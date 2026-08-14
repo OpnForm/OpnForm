@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   ATTRIBUTION_MAX_VALUE_LENGTH,
   ATTRIBUTION_PARAMETERS,
+  attributionColumnAccessor,
   attributionColumnId,
   extractAttribution,
   mergeAttribution,
@@ -53,5 +54,11 @@ describe('submission attribution', () => {
 
   it('uses namespaced table column identifiers', () => {
     expect(attributionColumnId('utm_source')).toBe('meta.attribution.utm_source')
+  })
+
+  it('reads namespaced attribution columns from flat table rows', () => {
+    const row = { 'meta.attribution.utm_source': 'newsletter' }
+
+    expect(attributionColumnAccessor('utm_source')(row)).toBe('newsletter')
   })
 })

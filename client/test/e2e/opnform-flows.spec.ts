@@ -713,6 +713,17 @@ test("public form URL attribution is stored separately from submitted answers", 
       gclid: "browser-click",
     },
   })
+
+  await loginUi(page)
+  await page.goto(`/forms/${form.slug}/show/submissions`)
+  await expect(page.getByTestId("form-submissions-page")).toBeVisible()
+  await page.getByRole("button", { name: "Columns", exact: true }).click()
+  await page.getByRole("button", { name: "Show All", exact: true }).click()
+
+  const attributedRow = page.getByRole("row").filter({ hasText: visitorName })
+  await expect(attributedRow).toContainText("playwright")
+  await expect(attributedRow).toContainText("e2e")
+  await expect(attributedRow).toContainText("browser-click")
 })
 
 test("SDK parent attribution is captured before an embedded auto-submit", async ({ page, request }) => {

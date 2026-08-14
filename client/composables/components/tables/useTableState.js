@@ -3,6 +3,7 @@ import { useTableColumnPreferences } from './useTableColumnPreferences'
 import debounce from 'debounce'
 import {
   ATTRIBUTION_PARAMETERS,
+  attributionColumnAccessor,
   attributionColumnId,
 } from '~/lib/forms/submissionAttribution'
 
@@ -91,9 +92,10 @@ export function useTableState(form, withActions = false) {
        }
 
        ATTRIBUTION_PARAMETERS.forEach((parameter) => {
+         const columnId = attributionColumnId(parameter)
          baseColumns.push({
-           id: attributionColumnId(parameter),
-           accessorKey: attributionColumnId(parameter),
+           id: columnId,
+           accessorFn: attributionColumnAccessor(parameter),
            header: parameter,
            type: 'text',
            hiddenByDefault: true,
