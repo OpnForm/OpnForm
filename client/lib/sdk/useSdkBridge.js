@@ -932,7 +932,7 @@ export function useSdkBridge(options) {
     },
   })
 
-  function waitForHandshake(timeoutMs = 500) {
+  function waitForHandshake(timeoutMs = 3000) {
     if (!import.meta.client || handshakeReceived) return Promise.resolve()
 
     return new Promise((resolve) => {

@@ -8,6 +8,7 @@ import {
   attributionParameterFromColumnId,
   detectedAttributionParameters,
   extractAttribution,
+  isColumnVisibilityTransition,
   mergeAttribution,
   sanitizeAttribution,
 } from '../../lib/forms/submissionAttribution.js'
@@ -82,5 +83,12 @@ describe('submission attribution', () => {
         'meta.attribution.gclid': 'google-click',
       },
     ])).toEqual(['utm_source', 'gclid'])
+  })
+
+  it('changes visibility only when dragging between visible and hidden sections', () => {
+    expect(isColumnVisibilityTransition('hidden', 'visible')).toBe(true)
+    expect(isColumnVisibilityTransition('visible', 'hidden')).toBe(true)
+    expect(isColumnVisibilityTransition('hidden', 'hidden')).toBe(false)
+    expect(isColumnVisibilityTransition(undefined, 'hidden')).toBe(false)
   })
 })

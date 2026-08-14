@@ -63,6 +63,12 @@ export function detectedAttributionParameters(rows) {
   }))
 }
 
+export function isColumnVisibilityTransition(fromSectionType, toSectionType) {
+  return ['visible', 'hidden'].includes(fromSectionType)
+    && ['visible', 'hidden'].includes(toSectionType)
+    && fromSectionType !== toSectionType
+}
+
 export function sanitizeAttribution(parameters) {
   if (!parameters || typeof parameters !== 'object' || Array.isArray(parameters)) return {}
 

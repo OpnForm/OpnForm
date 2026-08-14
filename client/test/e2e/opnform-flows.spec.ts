@@ -760,8 +760,14 @@ test("SDK parent attribution is captured before an embedded auto-submit", async 
     <html>
       <body>
         <iframe id="${form.slug}" src="${iframeUrl}"></iframe>
-        <script src="/widgets/opnform-sdk.js"></script>
-        <script>window.opnform.init({ autoResize: false, preventRedirect: true })</script>
+        <script>
+          setTimeout(() => {
+            const sdk = document.createElement('script')
+            sdk.src = '/widgets/opnform-sdk.js'
+            sdk.onload = () => window.opnform.init({ autoResize: false, preventRedirect: true })
+            document.body.appendChild(sdk)
+          }, 750)
+        </script>
       </body>
     </html>
   `)

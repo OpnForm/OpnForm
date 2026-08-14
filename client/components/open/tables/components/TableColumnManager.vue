@@ -87,7 +87,7 @@
                       size="xs"
                       variant="soft"
                       color="neutral"
-                      :label="`${detectedAttributionCount} detected`"
+                      :label="`${detectedAttributionCount} on this page`"
                     />
                   </span>
                   <span class="block mt-0.5 text-xs text-neutral-500 leading-4">
@@ -120,7 +120,7 @@
 
                 <div v-if="hiddenDetectedAttributionColumns.length > 0">
                   <div class="flex items-center justify-between px-2">
-                    <h5 class="text-xs text-neutral-500">Detected in submissions</h5>
+                    <h5 class="text-xs text-neutral-500">Detected on this page</h5>
                     <UButton
                       size="xs"
                       variant="link"
@@ -238,6 +238,7 @@ import {
   ATTRIBUTION_PARAMETER_LABELS,
   attributionParameterFromColumnId,
   detectedAttributionParameters,
+  isColumnVisibilityTransition,
 } from '~/lib/forms/submissionAttribution'
 
 const props = defineProps({
@@ -369,7 +370,12 @@ const columnSections = computed(() => [
 const handleColumnAdd = async (evt) => {
   const column = evt.data || evt.clonedData
   if (!column) return
-  const isVisibleTarget = evt.to?.dataset?.sectionType === 'visible'
+
+  const sourceSectionType = evt.from?.dataset?.sectionType
+  const targetSectionType = evt.to?.dataset?.sectionType
+  if (!isColumnVisibilityTransition(sourceSectionType, targetSectionType)) return
+
+  const isVisibleTarget = targetSectionType === 'visible'
   if (isVisibleTarget) {
     props.tableState.toggleColumnVisibility(column.id)
     await nextTick()
