@@ -729,6 +729,11 @@ test("public form URL attribution is stored separately from submitted answers", 
   await expect(attributedRow).toContainText("playwright")
   await expect(attributedRow).toContainText("e2e")
   await expect(attributedRow).toContainText("browser-click")
+
+  await columnsDialog.getByRole("button", { name: "Hide URL parameters", exact: true }).click()
+  await expect(page.getByRole("columnheader", { name: "utm_source", exact: true })).toHaveCount(0)
+  await expect(page.getByRole("columnheader", { name: "utm_campaign", exact: true })).toHaveCount(0)
+  await expect(page.getByRole("columnheader", { name: "gclid", exact: true })).toHaveCount(0)
 })
 
 test("SDK parent attribution is captured before an embedded auto-submit", async ({ page, request }) => {

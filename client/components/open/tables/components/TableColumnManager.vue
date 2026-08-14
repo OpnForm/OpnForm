@@ -102,6 +102,22 @@
               </button>
 
               <div v-if="attributionGroupExpanded" id="attribution-column-options" class="mt-1 pl-2">
+                <div
+                  v-if="visibleAttributionColumns.length > 0"
+                  class="flex items-center justify-between px-2 py-1"
+                >
+                  <span class="text-xs text-neutral-500">
+                    {{ visibleAttributionColumns.length }} shown in table
+                  </span>
+                  <UButton
+                    size="xs"
+                    variant="link"
+                    color="neutral"
+                    label="Hide URL parameters"
+                    @click="setColumnsVisibility(visibleAttributionColumns, false)"
+                  />
+                </div>
+
                 <div v-if="hiddenDetectedAttributionColumns.length > 0">
                   <div class="flex items-center justify-between px-2">
                     <h5 class="text-xs text-neutral-500">Detected in submissions</h5>
@@ -295,6 +311,13 @@ const filteredColumns = computed(() => {
   return columns.filter(column => column.id !== 'actions' && columnMatchesQuery(column))
 })
 
+const attributionColumns = computed(() => {
+  const columns = props.tableState.orderedColumns.value || []
+  if (!Array.isArray(columns)) return []
+
+  return columns.filter(column => column.id !== 'actions' && isAttributionColumn(column))
+})
+
 const visibleColumns = computed(() => filteredColumns.value.filter(column => (
   columnVisibilityMap.value[column.id] !== false
 )))
@@ -305,6 +328,10 @@ const hiddenColumns = computed(() => filteredColumns.value.filter(column => (
 
 const hiddenAttributionColumns = computed(() => filteredColumns.value.filter(column => (
   columnVisibilityMap.value[column.id] === false && isAttributionColumn(column)
+)))
+
+const visibleAttributionColumns = computed(() => attributionColumns.value.filter(column => (
+  columnVisibilityMap.value[column.id] !== false
 )))
 
 const detectedAttributionParameterSet = computed(() => new Set(detectedAttributionParameters(props.data)))
@@ -318,7 +345,7 @@ const hiddenOtherAttributionColumns = computed(() => hiddenAttributionColumns.va
   !detectedAttributionParameterSet.value.has(columnAttributionParameter(column))
 )))
 
-const showAttributionGroup = computed(() => hiddenAttributionColumns.value.length > 0)
+const showAttributionGroup = computed(() => filteredColumns.value.some(isAttributionColumn))
 const attributionGroupExpanded = computed(() => isAttributionExpanded.value || normalizedSearchQuery.value.length > 0)
 const otherAttributionExpanded = computed(() => isOtherAttributionExpanded.value || normalizedSearchQuery.value.length > 0)
 
