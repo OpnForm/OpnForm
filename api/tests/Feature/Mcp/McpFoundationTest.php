@@ -6,6 +6,7 @@ use App\Mcp\Servers\OpnFormServer;
 use App\Mcp\Tools\ValidateFormDefinitionTool;
 use App\Service\Forms\AgentFormDefinition;
 use Illuminate\Testing\Fluent\AssertableJson;
+use Illuminate\Support\Facades\RateLimiter;
 
 it('exposes the OpnForm MCP endpoint and initializes the protocol', function () {
     $response = $this->postJson('/mcp', [
@@ -28,6 +29,14 @@ it('exposes the OpnForm MCP endpoint and initializes the protocol', function () 
         ->assertJsonPath('result.serverInfo.name', 'OpnForm')
         ->assertJsonPath('result.serverInfo.version', '1.0.0')
         ->assertJsonPath('result.protocolVersion', '2025-06-18');
+});
+
+it('registers a permissive dedicated rate limiter for MCP traffic', function () {
+    $limits = RateLimiter::limiter('mcp')(request());
+
+    expect($limits)->toHaveCount(2)
+        ->and($limits[0]->maxAttempts)->toBe(120)
+        ->and($limits[1]->maxAttempts)->toBe(3000);
 });
 
 it('publishes the versioned form definition schema', function () {

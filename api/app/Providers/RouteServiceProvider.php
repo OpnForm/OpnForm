@@ -109,6 +109,19 @@ class RouteServiceProvider extends ServiceProvider
                     ->by('public-uploads:hour:' . $key),
             ];
         });
+
+        RateLimiter::for('mcp', function (Request $request) {
+            $identifier = $request->user()
+                ? 'user:'.$request->user()->getAuthIdentifier()
+                : 'ip:'.$request->ip();
+
+            return [
+                Limit::perMinute(max(1, config('opnform.mcp.rate_limit.per_minute', 120)))
+                    ->by('mcp:minute:'.$identifier),
+                Limit::perHour(max(1, config('opnform.mcp.rate_limit.per_hour', 3000)))
+                    ->by('mcp:hour:'.$identifier),
+            ];
+        });
     }
 
     protected function registerGlobalRouteParamConstraints()
