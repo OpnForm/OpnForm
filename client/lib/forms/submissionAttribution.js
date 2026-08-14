@@ -19,12 +19,48 @@ export const ATTRIBUTION_PARAMETERS = Object.freeze([
   'msclkid',
 ])
 
+export const ATTRIBUTION_PARAMETER_LABELS = Object.freeze({
+  utm_source: 'Source',
+  utm_medium: 'Medium',
+  utm_campaign: 'Campaign',
+  utm_id: 'Campaign ID',
+  utm_term: 'Search term',
+  utm_content: 'Content',
+  utm_source_platform: 'Source platform',
+  utm_creative_format: 'Creative format',
+  utm_marketing_tactic: 'Marketing tactic',
+  gclid: 'Google Click ID',
+  gbraid: 'Google GBRAID',
+  wbraid: 'Google WBRAID',
+  dclid: 'Google Display Click ID',
+  fbclid: 'Meta Click ID',
+  ttclid: 'TikTok Click ID',
+  msclkid: 'Microsoft Ads Click ID',
+})
+
 export function attributionColumnId(parameter) {
   return `meta.attribution.${parameter}`
 }
 
 export function attributionColumnAccessor(parameter) {
   return row => row?.[attributionColumnId(parameter)]
+}
+
+export function attributionParameterFromColumnId(columnId) {
+  const prefix = 'meta.attribution.'
+  if (typeof columnId !== 'string' || !columnId.startsWith(prefix)) return null
+
+  const parameter = columnId.slice(prefix.length)
+  return ATTRIBUTION_PARAMETERS.includes(parameter) ? parameter : null
+}
+
+export function detectedAttributionParameters(rows) {
+  if (!Array.isArray(rows)) return []
+
+  return ATTRIBUTION_PARAMETERS.filter(parameter => rows.some((row) => {
+    const value = row?.[attributionColumnId(parameter)]
+    return value !== undefined && value !== null && value !== ''
+  }))
 }
 
 export function sanitizeAttribution(parameters) {

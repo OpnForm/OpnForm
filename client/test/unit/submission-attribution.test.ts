@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import {
   ATTRIBUTION_MAX_VALUE_LENGTH,
+  ATTRIBUTION_PARAMETER_LABELS,
   ATTRIBUTION_PARAMETERS,
   attributionColumnAccessor,
   attributionColumnId,
+  attributionParameterFromColumnId,
+  detectedAttributionParameters,
   extractAttribution,
   mergeAttribution,
   sanitizeAttribution,
@@ -60,5 +63,24 @@ describe('submission attribution', () => {
     const row = { 'meta.attribution.utm_source': 'newsletter' }
 
     expect(attributionColumnAccessor('utm_source')(row)).toBe('newsletter')
+  })
+
+  it('identifies attribution columns and provides readable labels', () => {
+    expect(attributionParameterFromColumnId('meta.attribution.utm_campaign')).toBe('utm_campaign')
+    expect(attributionParameterFromColumnId('utm_campaign')).toBeNull()
+    expect(attributionParameterFromColumnId('default_email')).toBeNull()
+    expect(ATTRIBUTION_PARAMETER_LABELS.utm_campaign).toBe('Campaign')
+  })
+
+  it('detects only parameters containing submission values', () => {
+    expect(detectedAttributionParameters([
+      {
+        'meta.attribution.utm_source': 'newsletter',
+        'meta.attribution.utm_medium': '',
+      },
+      {
+        'meta.attribution.gclid': 'google-click',
+      },
+    ])).toEqual(['utm_source', 'gclid'])
   })
 })

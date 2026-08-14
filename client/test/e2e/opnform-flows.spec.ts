@@ -718,7 +718,12 @@ test("public form URL attribution is stored separately from submitted answers", 
   await page.goto(`/forms/${form.slug}/show/submissions`)
   await expect(page.getByTestId("form-submissions-page")).toBeVisible()
   await page.getByRole("button", { name: "Columns", exact: true }).click()
-  await page.getByRole("button", { name: "Show All", exact: true }).click()
+
+  const columnsDialog = page.getByRole("dialog", { name: "Columns" })
+  await expect(columnsDialog.getByText("utm_source", { exact: true })).toHaveCount(0)
+  await columnsDialog.getByRole("button", { name: /Attribution & tracking/ }).click()
+  await expect(columnsDialog.getByText("utm_source", { exact: true })).toBeVisible()
+  await columnsDialog.getByRole("button", { name: "Show detected", exact: true }).click()
 
   const attributedRow = page.getByRole("row").filter({ hasText: visitorName })
   await expect(attributedRow).toContainText("playwright")
