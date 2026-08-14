@@ -21,6 +21,7 @@ use App\Http\Middleware\EnsureCloudInstance;
 use App\Http\Middleware\EnsureSelfHostedInstance;
 use App\Http\Middleware\ConsumeMcpOAuthLoginTicket;
 use App\Http\Middleware\AuthenticateOptionalMcpOAuth;
+use App\Http\Middleware\RecordMcpUsage;
 
 class Kernel extends HttpKernel
 {
@@ -136,6 +137,7 @@ class Kernel extends HttpKernel
         'ability' => \Laravel\Sanctum\Http\Middleware\CheckForAnyAbility::class,
         'auth.multi' => \App\Http\Middleware\AuthenticateWithJwtOrSanctum::class,
         'auth.mcp.optional' => AuthenticateOptionalMcpOAuth::class,
+        'observe.mcp' => RecordMcpUsage::class,
 
         'cloud' => EnsureCloudInstance::class,  // Allow cloud instances only
         'self-hosted' => EnsureSelfHostedInstance::class, // Allow self-hosted instances only

@@ -79,7 +79,13 @@
                 </div>
                 <button id="open-editor" disabled>Open in OpnForm</button>
             </header>
-            <iframe id="preview" title="OpnForm draft preview" hidden></iframe>
+            <iframe
+                id="preview"
+                title="OpnForm draft preview"
+                sandbox="allow-forms allow-modals allow-popups allow-scripts allow-same-origin"
+                referrerpolicy="no-referrer"
+                hidden
+            ></iframe>
             <ol id="fields"></ol>
         </section>
     </main>

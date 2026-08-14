@@ -19,6 +19,7 @@ return [
     'mcp' => [
         // Cloud instances expose MCP by default. Self-hosted instances must opt in.
         'enabled' => env('MCP_ENABLED', false),
+        'observability_enabled' => env('MCP_OBSERVABILITY_ENABLED', true),
         'rate_limit' => [
             'per_minute' => (int) env('MCP_RATE_LIMIT_PER_MINUTE', 120),
             'per_hour' => (int) env('MCP_RATE_LIMIT_PER_HOUR', 3000),

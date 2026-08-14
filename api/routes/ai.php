@@ -13,6 +13,6 @@ if (app(McpAvailability::class)->enabled()) {
             ->middleware('throttle:mcp-oauth-registration');
     }
 
-    Mcp::web('/mcp', OpnFormServer::class)->middleware(['auth.mcp.optional', 'throttle:mcp']);
+    Mcp::web('/mcp', OpnFormServer::class)->middleware(['auth.mcp.optional', 'throttle:mcp', 'observe.mcp']);
     Mcp::local('opnform', OpnFormServer::class);
 }
