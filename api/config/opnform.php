@@ -24,6 +24,8 @@ return [
             'per_hour' => (int) env('MCP_RATE_LIMIT_PER_HOUR', 3000),
             'draft_creates_per_minute' => (int) env('MCP_DRAFT_CREATES_PER_MINUTE', 20),
             'draft_creates_per_hour' => (int) env('MCP_DRAFT_CREATES_PER_HOUR', 200),
+            'submission_exports_per_minute' => (int) env('MCP_SUBMISSION_EXPORTS_PER_MINUTE', 5),
+            'submission_exports_per_hour' => (int) env('MCP_SUBMISSION_EXPORTS_PER_HOUR', 30),
         ],
     ],
     'webhooks' => [
