@@ -20,5 +20,5 @@ $customSchemes = array_values(array_filter(array_map(
 return [
     'redirect_domains' => $redirectDomains,
     'custom_schemes' => $customSchemes,
-    'authorization_server' => env('MCP_AUTHORIZATION_SERVER'),
+    'authorization_server' => env('MCP_AUTHORIZATION_SERVER') ?: null,
 ];
