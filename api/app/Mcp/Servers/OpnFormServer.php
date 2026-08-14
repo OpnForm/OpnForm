@@ -4,9 +4,12 @@ namespace App\Mcp\Servers;
 
 use App\Mcp\Resources\FormDefinitionSchemaResource;
 use App\Mcp\Resources\FormFieldCatalogResource;
+use App\Mcp\Apps\FormDraftPreviewApp;
 use App\Mcp\Tools\CreateFormDraftTool;
 use App\Mcp\Tools\GetFormDraftTool;
 use App\Mcp\Tools\PatchFormDraftTool;
+use App\Mcp\Tools\PreviewFormDraftTool;
+use App\Mcp\Tools\OpenFormDraftInEditorTool;
 use App\Mcp\Tools\ValidateFormDefinitionTool;
 use Laravel\Mcp\Server;
 use Laravel\Mcp\Server\Attributes\Instructions;
@@ -23,10 +26,13 @@ class OpnFormServer extends Server
         CreateFormDraftTool::class,
         GetFormDraftTool::class,
         PatchFormDraftTool::class,
+        PreviewFormDraftTool::class,
+        OpenFormDraftInEditorTool::class,
     ];
 
     protected array $resources = [
         FormDefinitionSchemaResource::class,
         FormFieldCatalogResource::class,
+        FormDraftPreviewApp::class,
     ];
 }

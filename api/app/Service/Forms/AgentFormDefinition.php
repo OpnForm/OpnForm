@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use JsonException;
+use Stevebauman\Purify\Facades\Purify;
 
 class AgentFormDefinition
 {
@@ -79,15 +80,25 @@ class AgentFormDefinition
         $definition = array_replace($this->defaults(), $definition);
         $definition = $this->normalizeAliases($definition);
         $definition = $this->normalizer->normalize($definition, backfillPropertyIds: true);
-        $definition['properties'] = collect($definition['properties'])->map(fn ($property) => is_array($property)
-            ? array_replace([
+        $definition['properties'] = collect($definition['properties'])->map(function ($property) {
+            if (! is_array($property)) {
+                return $property;
+            }
+
+            $property = array_replace([
                 'help' => null,
                 'hidden' => false,
                 'required' => false,
                 'placeholder' => null,
                 'width' => 'full',
-            ], $property)
-            : $property)->values()->all();
+            ], $property);
+
+            if (($property['type'] ?? null) === 'nf-text' && isset($property['content'])) {
+                $property['content'] = Purify::clean((string) $property['content']);
+            }
+
+            return $property;
+        })->values()->all();
 
         $this->validate($definition, $workspace);
 

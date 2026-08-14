@@ -185,6 +185,22 @@ it('rejects oversized draft definitions before persistence', function () {
     $this->assertDatabaseCount('agent_form_drafts', 0);
 });
 
+it('sanitizes rich text html before an agent draft can be rendered', function () {
+    $created = app(AgentFormDraftService::class)->create(guestDraftDefinition([
+        'properties' => [[
+            'id' => 'rich-text',
+            'name' => 'Introduction',
+            'type' => 'nf-text',
+            'content' => '<p>Hello</p><img src=x onerror="alert(1)"><script>alert(2)</script>',
+        ]],
+    ]));
+
+    $content = $created['draft']->definition['properties'][0]['content'];
+    expect($content)->toContain('<p>Hello</p>')
+        ->not->toContain('onerror')
+        ->not->toContain('<script');
+});
+
 it('rate limits only excessive draft creation bursts', function () {
     config()->set('opnform.mcp.rate_limit.draft_creates_per_minute', 2);
     config()->set('opnform.mcp.rate_limit.draft_creates_per_hour', 10);

@@ -3,7 +3,12 @@
 namespace App\Service\Forms;
 
 use App\Models\Forms\AgentFormDraft;
+use App\Models\Forms\Form;
+use App\Models\User;
+use App\Models\Workspace;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Validation\ValidationException;
 
 class AgentFormDraftService
@@ -13,6 +18,7 @@ class AgentFormDraftService
     public function __construct(
         private readonly AgentFormDefinition $formDefinition,
         private readonly AgentFormDraftPatcher $patcher,
+        private readonly FormCreationService $formCreation,
     ) {
     }
 
@@ -78,11 +84,138 @@ class AgentFormDraftService
         ];
     }
 
+    /**
+     * @return array{handoff_token: string, editor_url: string, expires_at: string}
+     */
+    public function issueEditorHandoff(string $draftToken): array
+    {
+        return DB::transaction(function () use ($draftToken) {
+            $draft = $this->resolveActive($draftToken, lock: true);
+            $handoffToken = $this->generateToken();
+            $expiresAt = now()->addMinutes(10);
+
+            $draft->forceFill([
+                'handoff_token_hash' => $this->hashToken($handoffToken),
+                'handoff_expires_at' => $expiresAt,
+                'handoff_consumed_at' => null,
+            ])->save();
+
+            return [
+                'handoff_token' => $handoffToken,
+                'editor_url' => front_url('/agent-drafts/edit#handoff='.$handoffToken),
+                'expires_at' => $expiresAt->toIso8601String(),
+            ];
+        });
+    }
+
+    /**
+     * @return array{draft: AgentFormDraft, editor_session: string}
+     */
+    public function consumeEditorHandoff(string $handoffToken): array
+    {
+        return DB::transaction(function () use ($handoffToken) {
+            $this->assertTokenShape($handoffToken, 'handoff_token');
+
+            $draft = AgentFormDraft::query()
+                ->where('handoff_token_hash', $this->hashToken($handoffToken))
+                ->whereNull('handoff_consumed_at')
+                ->where('handoff_expires_at', '>', now())
+                ->active()
+                ->lockForUpdate()
+                ->first();
+
+            if (! $draft) {
+                throw ValidationException::withMessages([
+                    'handoff_token' => ['This editor link is invalid, expired, or already used.'],
+                ]);
+            }
+
+            $editorSession = $this->generateToken();
+            $draft->forceFill([
+                'handoff_consumed_at' => now(),
+                'handoff_token_hash' => null,
+                'editor_session_hash' => $this->hashToken($editorSession),
+                'editor_session_expires_at' => $draft->expires_at,
+            ])->save();
+
+            return ['draft' => $draft->refresh(), 'editor_session' => $editorSession];
+        });
+    }
+
+    public function getForEditor(string $editorSession): AgentFormDraft
+    {
+        return $this->resolveEditorSession($editorSession);
+    }
+
+    public function replaceFromEditor(string $editorSession, int $expectedVersion, array $definition): AgentFormDraft
+    {
+        return DB::transaction(function () use ($editorSession, $expectedVersion, $definition) {
+            $draft = $this->resolveEditorSession($editorSession, lock: true);
+            $this->assertActiveVersion($draft, $expectedVersion);
+
+            $definition['visibility'] = 'draft';
+            $definition = $this->formDefinition->normalizeAndValidate($definition);
+            $draft->forceFill([
+                'definition' => $definition,
+                'schema_version' => AgentFormDefinition::SCHEMA_VERSION,
+                'version' => $draft->version + 1,
+            ])->save();
+
+            return $draft->refresh();
+        });
+    }
+
+    /**
+     * @return array{form: Form, cleanings: array, already_claimed: bool}
+     */
+    public function claim(string $editorSession, int $expectedVersion, Workspace $workspace, User $user): array
+    {
+        return DB::transaction(function () use ($editorSession, $expectedVersion, $workspace, $user) {
+            $draft = $this->resolveEditorSession($editorSession, lock: true, activeOnly: false);
+
+            if ($draft->status === AgentFormDraft::STATUS_CLAIMED && $draft->claimed_form_id) {
+                $form = Form::query()->findOrFail($draft->claimed_form_id);
+                Gate::forUser($user)->authorize('view', $form);
+
+                return ['form' => $form, 'cleanings' => [], 'already_claimed' => true];
+            }
+
+            $this->assertActiveVersion($draft, $expectedVersion);
+            Gate::forUser($user)->authorize('ownsWorkspace', $workspace);
+            Gate::forUser($user)->authorize('create', [Form::class, $workspace]);
+
+            $definition = $draft->definition;
+            $definition['visibility'] = 'draft';
+            $created = $this->formCreation->create($definition, $user, $workspace);
+
+            $draft->forceFill([
+                'status' => AgentFormDraft::STATUS_CLAIMED,
+                'claimed_form_id' => $created['form']->id,
+                'claimed_at' => now(),
+            ])->save();
+
+            return [
+                'form' => $created['form'],
+                'cleanings' => $created['cleanings'],
+                'already_claimed' => false,
+            ];
+        });
+    }
+
+    public function previewUrl(AgentFormDraft $draft): string
+    {
+        $sourceUrl = URL::temporarySignedRoute(
+            'agent-drafts.preview',
+            now()->addMinutes(15),
+            ['draft' => $draft->id],
+        );
+
+        return front_url('/agent-drafts/preview?source='.rawurlencode($sourceUrl));
+    }
+
     private function resolveActive(string $token, bool $lock = false): AgentFormDraft
     {
-        if (! preg_match('/^[A-Za-z0-9_-]{43}$/', $token)) {
-            throw $this->unavailable();
-        }
+        $this->assertTokenShape($token, 'draft_token');
 
         $query = AgentFormDraft::query()
             ->where('token_hash', $this->hashToken($token))
@@ -99,6 +232,52 @@ class AgentFormDraftService
         }
 
         return $draft;
+    }
+
+    private function resolveEditorSession(string $token, bool $lock = false, bool $activeOnly = true): AgentFormDraft
+    {
+        $this->assertTokenShape($token, 'editor_session');
+        $query = AgentFormDraft::query()
+            ->where('editor_session_hash', $this->hashToken($token))
+            ->where('editor_session_expires_at', '>', now())
+            ->where('expires_at', '>', now());
+
+        if ($activeOnly) {
+            $query->where('status', AgentFormDraft::STATUS_ACTIVE);
+        }
+        if ($lock) {
+            $query->lockForUpdate();
+        }
+
+        $draft = $query->first();
+        if (! $draft) {
+            throw ValidationException::withMessages([
+                'editor_session' => ['Editor session not found or expired.'],
+            ]);
+        }
+
+        return $draft;
+    }
+
+    private function assertActiveVersion(AgentFormDraft $draft, int $expectedVersion): void
+    {
+        if (! $draft->isAvailable()) {
+            throw $this->unavailable();
+        }
+        if ($draft->version !== $expectedVersion) {
+            throw ValidationException::withMessages([
+                'expected_version' => ["Draft version conflict. Current version is {$draft->version}. Fetch the draft and retry."],
+            ]);
+        }
+    }
+
+    private function assertTokenShape(string $token, string $field): void
+    {
+        if (! preg_match('/^[A-Za-z0-9_-]{43}$/', $token)) {
+            throw ValidationException::withMessages([
+                $field => ['Invalid or unavailable capability token.'],
+            ]);
+        }
     }
 
     private function generateToken(): string

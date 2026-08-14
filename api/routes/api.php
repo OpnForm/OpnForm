@@ -35,6 +35,7 @@ use Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\HealthCheckController;
+use App\Http\Controllers\AgentFormDraftController;
 
 /*
 |--------------------------------------------------------------------------
@@ -50,6 +51,24 @@ use App\Http\Controllers\HealthCheckController;
 if (config('app.self_hosted')) {
     Route::get('/healthcheck', [HealthCheckController::class, 'apiCheck']);
 }
+
+Route::prefix('agent-drafts')->name('agent-drafts.')->group(function () {
+    Route::get('/preview/{draft}', [AgentFormDraftController::class, 'preview'])
+        ->middleware(['signed', 'throttle:60,1'])
+        ->name('preview');
+    Route::post('/handoff/consume', [AgentFormDraftController::class, 'consume'])
+        ->middleware('throttle:30,1')
+        ->name('handoff.consume');
+    Route::get('/editor/current', [AgentFormDraftController::class, 'current'])
+        ->middleware('throttle:120,1')
+        ->name('editor.current');
+    Route::put('/editor/current', [AgentFormDraftController::class, 'replace'])
+        ->middleware('throttle:120,1')
+        ->name('editor.replace');
+    Route::post('/editor/claim', [AgentFormDraftController::class, 'claim'])
+        ->middleware(['auth.multi', 'throttle:30,1'])
+        ->name('editor.claim');
+});
 
 Route::prefix('open')->name('open.')->group(function () {
     Route::prefix('forms')->name('forms.')->group(function () {
