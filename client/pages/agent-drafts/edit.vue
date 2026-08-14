@@ -236,7 +236,7 @@ onMounted(() => {
   }).then((response) => {
     applyDraft(response.draft)
   }).catch((exception) => {
-    fatalError.value = exception?.data?.message || 'This editor link is invalid, expired, or already used. Ask the agent for a fresh link.'
+    fatalError.value = exception?.data?.message || 'This editor link is invalid or expired. Ask the agent for a fresh link.'
   }).finally(() => {
     loading.value = false
     if (!fatalError.value) {

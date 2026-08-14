@@ -4,6 +4,7 @@ namespace App\Models\Forms;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class AgentFormDraft extends Model
 {
@@ -20,9 +21,6 @@ class AgentFormDraft extends Model
         'claimed_form_id',
         'claim_receipt_hash',
         'claimed_at',
-        'handoff_token_hash',
-        'handoff_expires_at',
-        'handoff_consumed_at',
         'editor_session_hash',
         'editor_session_expires_at',
         'expires_at',
@@ -31,7 +29,6 @@ class AgentFormDraft extends Model
     protected $hidden = [
         'token_hash',
         'claim_receipt_hash',
-        'handoff_token_hash',
         'editor_session_hash',
     ];
 
@@ -43,8 +40,6 @@ class AgentFormDraft extends Model
             'version' => 'integer',
             'claimed_form_id' => 'integer',
             'claimed_at' => 'datetime',
-            'handoff_expires_at' => 'datetime',
-            'handoff_consumed_at' => 'datetime',
             'editor_session_expires_at' => 'datetime',
             'expires_at' => 'datetime',
         ];
@@ -60,5 +55,10 @@ class AgentFormDraft extends Model
     public function isAvailable(): bool
     {
         return $this->status === self::STATUS_ACTIVE && $this->expires_at->isFuture();
+    }
+
+    public function editorHandoffs(): HasMany
+    {
+        return $this->hasMany(AgentFormDraftHandoff::class);
     }
 }

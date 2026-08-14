@@ -3,6 +3,7 @@
 namespace App\Service\Forms;
 
 use App\Models\Forms\AgentFormDraft;
+use App\Models\Forms\AgentFormDraftHandoff;
 use App\Models\Forms\Form;
 use App\Models\User;
 use App\Models\Workspace;
@@ -92,13 +93,12 @@ class AgentFormDraftService
         return DB::transaction(function () use ($draftToken) {
             $draft = $this->resolveActive($draftToken, lock: true);
             $handoffToken = $this->generateToken();
-            $expiresAt = now()->addMinutes(10);
+            $expiresAt = $draft->expires_at->copy();
 
-            $draft->forceFill([
-                'handoff_token_hash' => $this->hashToken($handoffToken),
-                'handoff_expires_at' => $expiresAt,
-                'handoff_consumed_at' => null,
-            ])->save();
+            $draft->editorHandoffs()->create([
+                'token_hash' => $this->hashToken($handoffToken),
+                'expires_at' => $expiresAt,
+            ]);
 
             return [
                 'handoff_token' => $handoffToken,
@@ -116,24 +116,33 @@ class AgentFormDraftService
         return DB::transaction(function () use ($handoffToken) {
             $this->assertTokenShape($handoffToken, 'handoff_token');
 
+            $handoff = AgentFormDraftHandoff::query()
+                ->where('token_hash', $this->hashToken($handoffToken))
+                ->where('expires_at', '>', now())
+                ->lockForUpdate()
+                ->first();
+
+            if (! $handoff) {
+                throw ValidationException::withMessages([
+                    'handoff_token' => ['This editor link is invalid or expired.'],
+                ]);
+            }
+
             $draft = AgentFormDraft::query()
-                ->where('handoff_token_hash', $this->hashToken($handoffToken))
-                ->whereNull('handoff_consumed_at')
-                ->where('handoff_expires_at', '>', now())
+                ->whereKey($handoff->agent_form_draft_id)
                 ->active()
                 ->lockForUpdate()
                 ->first();
 
             if (! $draft) {
                 throw ValidationException::withMessages([
-                    'handoff_token' => ['This editor link is invalid, expired, or already used.'],
+                    'handoff_token' => ['This editor link is invalid or expired.'],
                 ]);
             }
 
-            $editorSession = $this->generateToken();
+            $editorSession = $this->editorSessionToken($draft);
+            $handoff->forceFill(['last_used_at' => now()])->save();
             $draft->forceFill([
-                'handoff_consumed_at' => now(),
-                'handoff_token_hash' => null,
                 'editor_session_hash' => $this->hashToken($editorSession),
                 'editor_session_expires_at' => $draft->expires_at,
             ])->save();
@@ -283,6 +292,18 @@ class AgentFormDraftService
     private function generateToken(): string
     {
         return rtrim(strtr(base64_encode(random_bytes(32)), '+/', '-_'), '=');
+    }
+
+    private function editorSessionToken(AgentFormDraft $draft): string
+    {
+        $token = hash_hmac(
+            'sha256',
+            'agent-form-draft-editor:'.$draft->getKey(),
+            (string) config('app.key'),
+            true,
+        );
+
+        return rtrim(strtr(base64_encode($token), '+/', '-_'), '=');
     }
 
     private function hashToken(string $token): string

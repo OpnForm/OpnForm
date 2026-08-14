@@ -24,7 +24,7 @@ beforeEach(function () {
     config()->set('app.front_url', 'https://opnform.test');
 });
 
-it('renders an MCP App preview with short-lived preview and editor links', function () {
+it('renders an MCP App preview with short-lived preview and reusable editor links', function () {
     $created = app(AgentFormDraftService::class)->create(editorDraftDefinition());
 
     OpnFormServer::tool(PreviewFormDraftTool::class, [
@@ -36,15 +36,48 @@ it('renders an MCP App preview with short-lived preview and editor links', funct
 
     OpnFormServer::resource(\App\Mcp\Apps\FormDraftPreviewApp::class)
         ->assertOk()
-        ->assertSee('Open in OpnForm editor')
+        ->assertSee('Open in OpnForm')
+        ->assertSee('window.openai?.openExternal')
         ->assertSee('<iframe');
 
     $draft = $created['draft']->refresh();
-    expect($draft->handoff_token_hash)->toMatch('/^[a-f0-9]{64}$/')
-        ->and($draft->handoff_expires_at->isFuture())->toBeTrue()
+    $handoff = $draft->editorHandoffs()->sole();
+    expect($handoff->token_hash)->toMatch('/^[a-f0-9]{64}$/')
+        ->and($handoff->expires_at->isSameSecond($draft->expires_at))->toBeTrue()
         ->and(app(AgentFormDraftService::class)->issueEditorHandoff($created['token'])['editor_url'])
         ->toStartWith('https://opnform.test/agent-drafts/edit#handoff=')
         ->and(app(\App\Mcp\Apps\FormDraftPreviewApp::class)->resolvedAppMeta()['csp']['frameDomains'])
+        ->toBe(['https://opnform.test']);
+});
+
+it('publishes standard and ChatGPT-compatible CSP metadata with the full frontend origin', function () {
+    config()->set('app.front_url', 'http://127.0.0.1:33676');
+    $previewApp = app(\App\Mcp\Apps\FormDraftPreviewApp::class);
+    $resource = $previewApp->handle(new \Laravel\Mcp\Request())
+        ->content()
+        ->toResource($previewApp);
+
+    expect($previewApp->uri())->toBe('ui://opnform/form-draft-preview-v3')
+        ->and($previewApp->resolvedAppMeta()['csp']['frameDomains'])
+        ->toBe(['http://127.0.0.1:33676'])
+        ->and($resource['text'])->not->toContain('native-preview')
+        ->and($resource['_meta']['openai/widgetCSP'])
+        ->toBe([
+            'connect_domains' => [],
+            'resource_domains' => [],
+            'frame_domains' => ['http://127.0.0.1:33676'],
+            'redirect_domains' => ['http://127.0.0.1:33676'],
+        ]);
+
+    config()->set('app.front_url', 'https://opnform.test');
+    $secureApp = app(\App\Mcp\Apps\FormDraftPreviewApp::class);
+    $secureResource = $secureApp->handle(new \Laravel\Mcp\Request())
+        ->content()
+        ->toResource($secureApp);
+
+    expect($secureApp->resolvedAppMeta()['csp']['frameDomains'])
+        ->toBe(['https://opnform.test'])
+        ->and($secureResource['_meta']['openai/widgetCSP']['frame_domains'])
         ->toBe(['https://opnform.test']);
 });
 
@@ -61,30 +94,62 @@ it('serves preview data only through a valid signed URL without exposing capabil
     $this->getJson(route('agent-drafts.preview', $draft))->assertForbidden();
 });
 
-it('consumes editor handoffs once and stores only a hashed editor session', function () {
+it('keeps every guest editor link reusable until the draft expires', function () {
+    $this->freezeTime();
     $drafts = app(AgentFormDraftService::class);
     $created = $drafts->create(editorDraftDefinition());
-    $handoff = $drafts->issueEditorHandoff($created['token']);
+    $firstHandoff = $drafts->issueEditorHandoff($created['token']);
+    $draft = $created['draft']->refresh();
+    $firstCapability = $draft->editorHandoffs()->sole();
+
+    expect($firstCapability->expires_at->isSameSecond($draft->expires_at))->toBeTrue();
 
     $response = $this->withHeader('x-api-secret', 'test-front-secret')
         ->postJson(route('agent-drafts.handoff.consume'), [
-            'handoff_token' => $handoff['handoff_token'],
+            'handoff_token' => $firstHandoff['handoff_token'],
         ])
         ->assertOk()
         ->assertJsonPath('draft.version', 1);
 
     $editorSession = $response->json('editor_session');
-    $draft = $created['draft']->refresh();
+    $draft->refresh();
     expect($editorSession)->toHaveLength(43)
         ->and($draft->editor_session_hash)->toBe(hash('sha256', $editorSession))
-        ->and($draft->handoff_token_hash)->toBeNull()
-        ->and($draft->handoff_consumed_at)->not->toBeNull();
+        ->and($firstCapability->refresh()->last_used_at)->not->toBeNull();
+
+    $this->travel(1)->day();
+    $secondHandoff = $drafts->issueEditorHandoff($created['token']);
+    $this->withHeader('x-api-secret', 'test-front-secret')
+        ->postJson(route('agent-drafts.handoff.consume'), [
+            'handoff_token' => $secondHandoff['handoff_token'],
+        ])
+        ->assertOk()
+        ->assertJsonPath('editor_session', $editorSession);
 
     $this->withHeader('x-api-secret', 'test-front-secret')
         ->postJson(route('agent-drafts.handoff.consume'), [
-            'handoff_token' => $handoff['handoff_token'],
+            'handoff_token' => $firstHandoff['handoff_token'],
         ])
-        ->assertUnprocessable();
+        ->assertOk()
+        ->assertJsonPath('editor_session', $editorSession);
+
+    $this->assertDatabaseCount('agent_form_draft_handoffs', 2);
+
+    $this->travel(5)->days();
+    $this->travel(23)->hours();
+    $this->withHeader('x-api-secret', 'test-front-secret')
+        ->postJson(route('agent-drafts.handoff.consume'), [
+            'handoff_token' => $firstHandoff['handoff_token'],
+        ])
+        ->assertOk();
+
+    $this->travel(2)->hours();
+    $this->withHeader('x-api-secret', 'test-front-secret')
+        ->postJson(route('agent-drafts.handoff.consume'), [
+            'handoff_token' => $firstHandoff['handoff_token'],
+        ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('handoff_token');
 });
 
 it('requires the trusted frontend secret for editor endpoints', function () {

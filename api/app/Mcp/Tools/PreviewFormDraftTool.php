@@ -15,7 +15,7 @@ use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsOpenWorld;
 
 #[Name('preview_form_draft')]
-#[Description('Render the current guest draft, return a short-lived browser preview, and create a one-time link for opening it in the OpnForm editor.')]
+#[Description('Render the current guest draft, return a short-lived browser preview, and create a reusable editor link that remains valid for the guest draft lifetime.')]
 #[RendersApp(resource: FormDraftPreviewApp::class)]
 #[IsOpenWorld]
 class PreviewFormDraftTool extends Tool

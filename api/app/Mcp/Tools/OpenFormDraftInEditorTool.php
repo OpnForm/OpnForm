@@ -13,7 +13,7 @@ use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsOpenWorld;
 
 #[Name('open_form_draft_in_editor')]
-#[Description('Create a fresh one-time OpnForm editor link for a guest draft. Use when the previous editor link expired or was consumed.')]
+#[Description('Create a reusable OpnForm editor link that remains valid until the guest draft expires.')]
 #[IsOpenWorld]
 class OpenFormDraftInEditorTool extends Tool
 {
