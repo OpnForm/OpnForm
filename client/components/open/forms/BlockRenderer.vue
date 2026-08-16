@@ -173,7 +173,7 @@ const componentInfo = computed(() => {
     componentName = {
       text: 'TextInput',
       rich_text: 'RichTextAreaInput',
-      number: 'TextInput',
+      number: 'NumberInput',
       rating: 'RatingInput',
       scale: 'ScaleInput',
       slider: 'SliderInput',
@@ -345,7 +345,14 @@ const boundProps = computed(() => {
     inputProperties.minSlider = parseFloat(field.slider_min_value) ?? 0
     inputProperties.maxSlider = parseFloat(field.slider_max_value) ?? 50
     inputProperties.stepSlider = parseFloat(field.slider_step_value) ?? 5
-  } else if (field.type === 'number' || (field.type === 'phone_number' && field.use_simple_text_input)) {
+  } else if (field.type === 'number') {
+    inputProperties.pattern = '/d*'
+    inputProperties.numberFormat = field.number_format || 'number'
+    inputProperties.numberDecimalSeparator = field.number_decimal_separator || '.'
+    inputProperties.numberThousandsSeparator = field.number_thousands_separator || 'none'
+    inputProperties.numberPrefix = field.number_prefix || ''
+    inputProperties.numberSuffix = field.number_suffix || ''
+  } else if (field.type === 'phone_number' && field.use_simple_text_input) {
     inputProperties.pattern = '/d*'
   } else if (field.type === 'phone_number' && !field.use_simple_text_input) {
     inputProperties.unavailableCountries = field.unavailable_countries ?? []

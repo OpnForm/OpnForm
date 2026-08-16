@@ -62,6 +62,15 @@ class TypePropertyValidator implements PropertyValidatorInterface
         'checkbox' => [
             'use_toggle_switch' => ['type' => 'boolean'],
         ],
+
+        // Number field rules
+        'number' => [
+            'number_format' => ['type' => 'string', 'in' => ['number', 'percent', 'us_dollar', 'euro', 'pound', 'custom']],
+            'number_decimal_separator' => ['type' => 'string', 'in' => ['.', ',']],
+            'number_thousands_separator' => ['type' => 'string', 'in' => ['none', ',', '.', ' ']],
+            'number_prefix' => ['type' => 'string', 'max' => 10, 'nullable'],
+            'number_suffix' => ['type' => 'string', 'max' => 10, 'nullable'],
+        ],
     ];
 
     /**
@@ -171,6 +180,22 @@ class TypePropertyValidator implements PropertyValidatorInterface
                     return "The {$field} field cannot be a letter or number.";
                 }
                 break;
+
+            case 'string':
+                if (!is_string($value)) {
+                    return "The {$field} field must be a string.";
+                }
+                if (isset($config['min']) && mb_strlen($value) < $config['min']) {
+                    return "The {$field} field must be at least {$config['min']} characters.";
+                }
+                if (isset($config['max']) && mb_strlen($value) > $config['max']) {
+                    return "The {$field} field must not be greater than {$config['max']} characters.";
+                }
+                break;
+        }
+
+        if (isset($config['in']) && is_array($config['in']) && !in_array($value, $config['in'], true)) {
+            return "The {$field} field must be one of: " . implode(', ', $config['in']) . '.';
         }
 
         return null;
