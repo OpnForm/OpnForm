@@ -14,6 +14,8 @@ use App\Models\OAuthProvider;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Service\Forms\AgentFormDefinition;
+use Illuminate\Database\Events\QueryExecuted;
+use Illuminate\Support\Facades\DB;
 use Laravel\Passport\Passport;
 
 function managedFormDefinition(array $overrides = []): array
@@ -198,6 +200,10 @@ it('updates a canonical form without changing publication state and rejects stal
     $form = managedForm($user, $workspace, ['visibility' => 'public']);
     $management = app(\App\Service\Forms\McpFormManagementService::class);
     $expectedRevision = $management->serializeForm($management->form($user, $form->id))['revision'];
+    $queries = [];
+    DB::listen(function (QueryExecuted $query) use (&$queries) {
+        $queries[] = $query->sql;
+    });
 
     OpnFormServer::actingAs($user, 'oauth')->tool(UpdateFormTool::class, [
         'form_id' => $form->id,
@@ -209,6 +215,10 @@ it('updates a canonical form without changing publication state and rejects stal
     ])->assertOk()->assertSee('Updated by agent');
 
     expect($form->refresh()->visibility)->toBe('public');
+
+    if (DB::connection()->getDriverName() !== 'sqlite') {
+        expect(collect($queries)->contains(fn (string $query) => str_contains(strtolower($query), 'for update')))->toBeTrue();
+    }
 
     OpnFormServer::actingAs($user, 'oauth')->tool(UpdateFormTool::class, [
         'form_id' => $form->id,

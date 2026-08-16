@@ -46,8 +46,8 @@ After authentication, use the account context to choose a workspace. If exactly 
 - Use form listing and lookup tools to identify the target before changing it.
 - `create_form` creates a draft. After creation, ask whether the user wants it published.
 - Before `update_form`, fetch the form and pass its current `revision`. On conflict, fetch, reconcile, and retry instead of overwriting newer changes.
-- Call `publish_form` only after the user explicitly confirms publication, then pass `confirm: true`.
-- Call `trash_form` only after the user explicitly confirms moving the form to trash, then pass `confirm: true`. MCP does not expose form restoration or permanent deletion.
+- Call `publish_form` only after the user explicitly confirms publication, then pass `confirm_publish: true`.
+- Call `trash_form` only after the user explicitly confirms moving the form to trash, then pass `confirm_trash: true`. MCP does not expose form restoration or permanent deletion.
 - Premium fields may appear in previews. On save, preserve and explain any `disabled_features` and warnings returned by OpnForm; never imply that MCP bypasses the workspace plan.
 
 ## Read submissions

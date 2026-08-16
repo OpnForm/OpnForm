@@ -24,8 +24,8 @@ class GetSubmissionStatsTool extends AuthenticatedMcpTool
         $validated = $request->validate([
             'form_id' => ['required', 'integer', 'min:1'],
             'status' => ['nullable', Rule::in(['all', 'completed', 'partial'])],
-            'date_from' => ['nullable', 'date', 'before_or_equal:date_to'],
-            'date_to' => ['nullable', 'date', 'after_or_equal:date_from'],
+            'date_from' => ['nullable', 'date', Rule::when($request->filled('date_to'), 'before_or_equal:date_to')],
+            'date_to' => ['nullable', 'date', Rule::when($request->filled('date_from'), 'after_or_equal:date_from')],
         ]);
 
         return Response::structured($submissions->stats(

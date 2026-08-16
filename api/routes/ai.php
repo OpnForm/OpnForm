@@ -1,10 +1,10 @@
 <?php
 
 use App\Mcp\Servers\OpnFormServer;
+use App\Http\Controllers\McpOAuthRegisterController;
 use App\Support\Mcp\McpAvailability;
 use Illuminate\Support\Facades\Route;
 use Laravel\Mcp\Facades\Mcp;
-use Laravel\Mcp\Server\Http\Controllers\OAuthRegisterController;
 
 if (app(McpAvailability::class)->enabled()) {
     if (config('oauth.enabled', false)) {
@@ -21,7 +21,7 @@ if (app(McpAvailability::class)->enabled()) {
         ]))->name('mcp.oauth.authorization-server');
 
         Mcp::oauthRoutes();
-        Route::post('/oauth/register', OAuthRegisterController::class)
+        Route::post('/oauth/register', McpOAuthRegisterController::class)
             ->middleware('throttle:mcp-oauth-registration');
     }
 

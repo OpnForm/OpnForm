@@ -149,6 +149,8 @@ it('ships a discoverable OpnForm skill with the complete safety workflow', funct
             'may not hot-reload OAuth credentials',
             'do not loop or claim the connection succeeded',
         )
+        ->and($skill)->toContain('confirm_publish: true', 'confirm_trash: true')
+        ->and($skill)->not->toContain('`confirm: true`')
         ->and($skill)->toContain('Submission access is read-only')
         ->and(substr_count($skill, "\n"))->toBeLessThan(500);
 });

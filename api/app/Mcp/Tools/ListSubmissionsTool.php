@@ -25,8 +25,8 @@ class ListSubmissionsTool extends AuthenticatedMcpTool
             'form_id' => ['required', 'integer', 'min:1'],
             'search' => ['nullable', 'string', 'max:255'],
             'status' => ['nullable', Rule::in(['all', 'completed', 'partial'])],
-            'date_from' => ['nullable', 'date', 'before_or_equal:date_to'],
-            'date_to' => ['nullable', 'date', 'after_or_equal:date_from'],
+            'date_from' => ['nullable', 'date', Rule::when($request->filled('date_to'), 'before_or_equal:date_to')],
+            'date_to' => ['nullable', 'date', Rule::when($request->filled('date_from'), 'after_or_equal:date_from')],
             'page' => ['nullable', 'integer', 'min:1'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
         ]);

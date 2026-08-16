@@ -6,6 +6,8 @@ use App\Jobs\Form\ExportFormSubmissionsJob;
 use App\Models\Forms\Form;
 use App\Models\Forms\FormSubmission;
 use App\Models\User;
+use App\Service\Billing\Feature;
+use App\Service\Billing\PlanAccessService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -18,6 +20,8 @@ class McpSubmissionService
         private readonly FormSummaryService $summaries,
         private readonly FormExportService $exports,
         private readonly McpSubmissionExportRateLimiter $exportRateLimiter,
+        private readonly FormSummaryRateLimiter $summaryRateLimiter,
+        private readonly PlanAccessService $planAccess,
     ) {
     }
 
@@ -92,6 +96,13 @@ class McpSubmissionService
         ?string $dateTo,
     ): array {
         $form = $this->forms->form($user, $formId);
+        $this->planAccess->requireFeature($form->workspace, Feature::FORM_ANALYTICS);
+        $this->planAccess->requireFeature($form->workspace, Feature::FORM_SUMMARY);
+        if (! $this->summaryRateLimiter->attempt($user->id)) {
+            throw ValidationException::withMessages([
+                'form_id' => ['Too many submission statistics requests. Try again later.'],
+            ]);
+        }
         $filtered = $this->submissionQuery($form, $status, $dateFrom, $dateTo);
         $filteredCount = (clone $filtered)->count();
         $averageDuration = (clone $filtered)->whereNotNull('completion_time')->avg('completion_time');

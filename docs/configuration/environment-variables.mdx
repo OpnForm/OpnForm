@@ -188,6 +188,7 @@ Cloud instances expose the OpnForm MCP endpoint automatically. Self-hosted insta
 | `MCP_DRAFT_CREATES_PER_HOUR` | `200` | Guest drafts allowed per hour per IP. |
 | `MCP_SUBMISSION_EXPORTS_PER_MINUTE` | `5` | Submission exports allowed per minute per user and form. |
 | `MCP_SUBMISSION_EXPORTS_PER_HOUR` | `30` | Submission exports allowed per hour per user and form. |
+| `FORM_SUMMARY_RATE_LIMIT_PER_MINUTE` | `30` | REST and MCP submission summary requests allowed per minute in one shared per-user bucket. |
 | `MCP_OAUTH_REDIRECT_DOMAINS` | See `.env.example` | Comma-separated HTTPS or loopback callback origins accepted during dynamic client registration. |
 | `MCP_OAUTH_CUSTOM_SCHEMES` | `chatgpt,claude,cursor,vscode` | Comma-separated callback URI schemes accepted for trusted native clients. |
 | `MCP_AUTHORIZATION_SERVER` | Application URL | Optional external OAuth authorization-server URL advertised by MCP discovery. |

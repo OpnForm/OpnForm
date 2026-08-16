@@ -40,7 +40,11 @@ After OAuth, an agent can:
 - list, inspect, create, update, publish, and soft-trash forms;
 - list, search, filter, inspect, summarize, and export submissions.
 
-Workspace administration and submission mutations are intentionally unavailable. Form creation always starts as a draft. Publishing and trashing require explicit confirmation, and MCP exposes neither permanent deletion nor restoration.
+Workspace administration and submission mutations are intentionally unavailable. Form creation always starts as a draft. Publishing and trashing require explicit confirmation, and MCP exposes neither permanent deletion nor restoration. Submission field summaries follow the workspace plan and require access to OpnForm's form summary feature.
+
+OAuth clients must use authorization code flow with PKCE `S256`. The consent screen displays the callback destination before approval. A connected client can revoke its current access and refresh tokens by sending an authenticated `DELETE` request to `/mcp-oauth/session`.
+
+MCP OAuth authorization requests and login tickets use atomic cache locks. Horizontally scaled and serverless installations must configure Laravel's default cache as a shared, lock-capable store such as Redis or DynamoDB; local file and array stores are suitable only for single-instance development.
 
 ## ChatGPT
 
@@ -63,6 +67,12 @@ ChatGPT distribution requires a registered MCP connection. Enable Developer mode
 
 The repository intentionally omits `.app.json` until OpnForm has a real registered ChatGPT app ID. The Codex `.mcp.json` integration remains directly installable and testable without that compatibility mapping.
 
+## Vapor OAuth keys
+
+The Vapor deployment requires one stable Passport key pair per environment. Generate the pair once in a secure workspace, add it to the environment file with `vapor env:passport`, and encrypt that file before updating the `ENCRYPTED_ENV_FILE` GitHub secret used by the deployment workflow. Never commit the plaintext environment or Passport keys.
+
+Every Vapor deploy runs `php artisan mcp:check-oauth-keys --environment-only` before migrations. The deployment stops if either encrypted environment key is missing, malformed, or belongs to a different pair; local storage keys cannot satisfy this production check. Keep the same production pair across deployments because rotating it invalidates existing OAuth tokens.
+
 ## Self-hosting
 
 MCP is disabled by default on self-hosted instances. Enable it explicitly and point your client at your public API origin:
@@ -84,6 +94,7 @@ The default limits are intentionally permissive for normal agent use:
 | `MCP_DRAFT_CREATES_PER_HOUR` | `200` | Guest draft creation, per IP |
 | `MCP_SUBMISSION_EXPORTS_PER_MINUTE` | `5` | Exports, per user and form |
 | `MCP_SUBMISSION_EXPORTS_PER_HOUR` | `30` | Exports, per user and form |
+| `FORM_SUMMARY_RATE_LIMIT_PER_MINUTE` | `30` | REST and MCP submission summaries, shared per user |
 
 ## Privacy and observability
 

@@ -38,6 +38,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\HealthCheckController;
 use App\Http\Controllers\AgentFormDraftController;
 use App\Http\Controllers\McpOAuthSessionController;
+use App\Http\Controllers\RevokeMcpOAuthSessionController;
 
 /*
 |--------------------------------------------------------------------------
@@ -78,6 +79,9 @@ if (app(McpAvailability::class)->enabled() && config('oauth.enabled', false)) {
     Route::post('/mcp-oauth/session', McpOAuthSessionController::class)
         ->middleware(['auth.multi', 'throttle:30,1'])
         ->name('mcp-oauth.session');
+    Route::delete('/mcp-oauth/session', RevokeMcpOAuthSessionController::class)
+        ->middleware(['auth.mcp.optional', 'throttle:30,1'])
+        ->name('mcp-oauth.session.revoke');
 }
 
 Route::prefix('open')->name('open.')->group(function () {
@@ -223,7 +227,7 @@ Route::group(['middleware' => 'auth.multi'], function () {
                 });
 
                 // Summary endpoints - Pro plan required, with rate limiting
-                Route::middleware(['feature:form_summary', 'throttle:summary'])->group(function () {
+                Route::middleware(['feature:form_summary', 'throttle.form-summary'])->group(function () {
                     Route::get('form-summary/{form}', [FormSummaryController::class, 'getSummary'])->name('form.summary');
                     Route::get('form-summary/{form}/field/{fieldId}/values', [FormSummaryController::class, 'getFieldValues'])->name('form.summary.field-values');
                 });

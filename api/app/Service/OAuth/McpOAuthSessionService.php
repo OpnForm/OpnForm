@@ -37,7 +37,7 @@ class McpOAuthSessionService
 
     public function issueLoginTicket(string $authorizationRequestToken, User $user): string
     {
-        $requestUri = Cache::pull(
+        $requestUri = $this->pullOnce(
             self::AUTHORIZATION_REQUEST_PREFIX.hash('sha256', $authorizationRequestToken)
         );
 
@@ -61,7 +61,7 @@ class McpOAuthSessionService
 
     public function consumeLoginTicket(string $ticket, Request $request): void
     {
-        $ticketData = Cache::pull(self::LOGIN_TICKET_PREFIX.hash('sha256', $ticket));
+        $ticketData = $this->pullOnce(self::LOGIN_TICKET_PREFIX.hash('sha256', $ticket));
         $expectedRequestUri = is_array($ticketData) ? ($ticketData['request_uri'] ?? null) : null;
         $userId = is_array($ticketData) ? ($ticketData['user_id'] ?? null) : null;
 
@@ -112,5 +112,20 @@ class McpOAuthSessionService
         $path = (string) ($parts['path'] ?? '');
 
         return $path.($query === [] ? '' : '?'.http_build_query($query));
+    }
+
+    private function pullOnce(string $key): mixed
+    {
+        $lock = Cache::lock('mcp:oauth:consume:'.hash('sha256', $key), 5);
+
+        if (! $lock->get()) {
+            return null;
+        }
+
+        try {
+            return Cache::pull($key);
+        } finally {
+            $lock->release();
+        }
     }
 }
