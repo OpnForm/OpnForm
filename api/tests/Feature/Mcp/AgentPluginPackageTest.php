@@ -164,11 +164,15 @@ it('does not expose plugin package files from the monorepo root', function () {
         ->and(base_path('../.agents/plugins/marketplace.json'))->not->toBeFile();
 });
 
-it('hardens the nested form preview frame', function () {
+it('renders a flattened and hardened form preview frame', function () {
     $view = file_get_contents(resource_path('views/mcp/form-draft-preview-app.blade.php'));
 
     expect($view)
+        ->toContain('class="preview-surface"')
+        ->toContain('<p class="eyebrow">Private preview</p>')
+        ->toContain("previewUrl.searchParams.set('embedded', '1')")
         ->toContain('sandbox="allow-forms allow-modals allow-popups allow-scripts allow-same-origin"')
         ->toContain('referrerpolicy="no-referrer"')
+        ->not->toContain('class="card"')
         ->not->toContain('allow-top-navigation');
 });

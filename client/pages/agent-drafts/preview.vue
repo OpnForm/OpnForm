@@ -1,31 +1,25 @@
 <template>
-  <div class="min-h-screen bg-neutral-100 p-3 sm:p-6">
+  <div class="min-h-screen bg-transparent pt-2">
     <div class="mx-auto max-w-5xl">
-      <header class="mb-3 flex min-h-8 items-center justify-between gap-3">
-        <p class="flex shrink-0 items-center gap-2 whitespace-nowrap text-sm font-medium text-neutral-700">
+      <header v-if="!isEmbedded || isSubmitted" class="mb-2 flex min-h-8 items-center gap-3">
+        <p v-if="!isEmbedded" class="flex items-center gap-2 text-sm font-medium text-neutral-700">
           <span class="size-2 rounded-full bg-blue-500" aria-hidden="true" />
           Private preview
         </p>
-        <div class="ml-auto flex shrink-0 items-center gap-2">
-          <UBadge color="neutral" variant="subtle" class="whitespace-nowrap">
-            <span class="sm:hidden">15 min remaining</span>
-            <span class="hidden sm:inline">Expires in 15 minutes</span>
-          </UBadge>
-          <UButton
-            v-if="isSubmitted"
-            color="neutral"
-            variant="outline"
-            size="sm"
-            icon="i-lucide-rotate-ccw"
-            :loading="isResetting"
-            :disabled="isResetting"
-            aria-label="Reset form"
-            @click="resetForm"
-          >
-            <span class="sm:hidden">Reset</span>
-            <span class="hidden sm:inline">Reset form</span>
-          </UButton>
-        </div>
+        <UButton
+          v-if="isSubmitted"
+          color="neutral"
+          variant="outline"
+          size="sm"
+          icon="i-lucide-rotate-ccw"
+          class="ml-auto"
+          :loading="isResetting"
+          :disabled="isResetting"
+          aria-label="Reset form"
+          @click="resetForm"
+        >
+          Reset form
+        </UButton>
       </header>
 
       <div v-if="loading" class="rounded-xl border bg-white p-12 text-center">
@@ -42,7 +36,7 @@
           ref="formPreview"
           :form="form"
           :mode="FormMode.TEST"
-          class="min-h-[650px] w-full"
+          class="min-h-[650px] w-full pt-3 sm:pt-4"
           @submitted="isSubmitted = true"
           @restarted="isSubmitted = false"
         />
@@ -67,6 +61,7 @@ const form = ref(null)
 const formPreview = ref(null)
 const isSubmitted = ref(false)
 const isResetting = ref(false)
+const isEmbedded = computed(() => route.query.embedded === '1')
 provide('disableCustomCodeExecution', true)
 
 const resetForm = () => {
@@ -94,6 +89,7 @@ onMounted(() => {
     $fetch(source.toString()).then((response) => {
       form.value = {
         ...response.draft.definition,
+        no_branding: true,
         plan_tier: 'pro',
         is_trialing: false,
         max_file_size: 10,
