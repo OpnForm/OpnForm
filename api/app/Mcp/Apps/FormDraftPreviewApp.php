@@ -24,7 +24,7 @@ class FormDraftPreviewApp extends AppResource
         if ($origin !== null) {
             $response->withMeta('openai/widgetCSP', [
                 'connect_domains' => [],
-                'resource_domains' => [],
+                'resource_domains' => [$origin],
                 'frame_domains' => [$origin],
                 'redirect_domains' => [$origin],
             ]);
@@ -41,7 +41,9 @@ class FormDraftPreviewApp extends AppResource
         }
 
         return AppMeta::make()->csp(
-            Csp::make()->frameDomains([$origin]),
+            Csp::make()
+                ->resourceDomains([$origin])
+                ->frameDomains([$origin]),
         );
     }
 

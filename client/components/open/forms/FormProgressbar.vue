@@ -35,25 +35,29 @@ const isSubmitted = computed(() => props.formManager?.state?.isSubmitted ?? fals
 
 // Wrapper classes - different positioning for iframe vs standalone
 const wrapperClasses = computed(() => {
-  return isIframe.value 
-    ? 'mb-4 p-2' 
+  if (isIframe && isFocusedMode.value) {
+    return 'shrink-0'
+  }
+
+  return isIframe
+    ? 'mb-4 p-2'
     : 'fixed top-0 left-0 right-0 z-50'
 })
 
 // Bar container classes - border/rounded for iframe, height varies by mode
 const barContainerClasses = computed(() => {
-  const heightClass = isIframe.value
+  const heightClass = isIframe
     ? (isFocusedMode.value ? 'h-1' : 'h-1')
     : (isFocusedMode.value ? 'h-1' : 'h-[0.2rem]')
   
-  const borderClass = isIframe.value ? 'border rounded-full' : ''
+  const borderClass = isIframe && !isFocusedMode.value ? 'border rounded-full' : ''
   
   return [heightClass, borderClass].filter(Boolean).join(' ')
 })
 
 // Bar fill classes - rounded for iframe
 const barFillClasses = computed(() => {
-  return isIframe.value ? 'rounded-r-full' : ''
+  return isIframe && !isFocusedMode.value ? 'rounded-r-full' : ''
 })
 
 const formProgress = computed(() => {
@@ -86,4 +90,4 @@ const formProgress = computed(() => {
     return Math.round(progress)
   }
 })
-</script> 
+</script>

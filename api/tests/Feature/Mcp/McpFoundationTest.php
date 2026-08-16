@@ -28,7 +28,16 @@ it('exposes the OpnForm MCP endpoint and initializes the protocol', function () 
     $response->assertOk()
         ->assertJsonPath('result.serverInfo.name', 'OpnForm')
         ->assertJsonPath('result.serverInfo.version', '1.0.0')
-        ->assertJsonPath('result.protocolVersion', '2025-06-18');
+        ->assertJsonPath('result.protocolVersion', '2025-06-18')
+        ->assertJsonPath('result.instructions', function (string $instructions): bool {
+            $discoveryInstructions = substr($instructions, 0, 512);
+
+            return str_contains($discoveryInstructions, 'Never invoke Codex or ChatGPT recursively')
+                && str_contains($discoveryInstructions, 'OpnForm selected before the first message')
+                && str_contains($discoveryInstructions, 'account, form, and submission tools require OAuth')
+                && str_contains($discoveryInstructions, 'Enabling the plugin is not OAuth authentication')
+                && str_contains($discoveryInstructions, 'start a new conversation after OAuth');
+        });
 });
 
 it('registers a permissive dedicated rate limiter for MCP traffic', function () {
@@ -65,6 +74,10 @@ it('publishes the canonical form field catalog', function () {
         ->assertSee('input_types')
         ->assertSee('nf-page-break')
         ->assertSee('payment')
+        ->assertSee('presentation_modes')
+        ->assertSee('focused')
+        ->assertSee('block_media')
+        ->assertSee('trycloudflare.com')
         ->assertSee('save');
 });
 
@@ -90,6 +103,17 @@ it('requires public durable HTTPS URLs for agent-provided media', function () {
 
     expect($validated['cover_picture'])->toBe('https://cdn.example.com/cover.png')
         ->and($validated['logo_picture'])->toBe('https://cdn.example.com/logo.png');
+});
+
+it('documents block media in the published form definition schema', function () {
+    $schema = app(AgentFormDefinition::class)->jsonSchema();
+
+    expect($schema['$defs']['block']['properties']['image']['$ref'])
+        ->toBe('#/$defs/blockImage')
+        ->and($schema['$defs']['blockImage'])->not->toHaveKey('required')
+        ->and($schema['$defs']['blockImage']['properties']['url']['type'])->toBe(['string', 'null'])
+        ->and($schema['$defs']['blockImage']['properties']['layout']['enum'])
+        ->toContain('right-split', 'background');
 });
 it('normalizes and validates a form definition without persistence', function () {
     OpnFormServer::tool(ValidateFormDefinitionTool::class, [

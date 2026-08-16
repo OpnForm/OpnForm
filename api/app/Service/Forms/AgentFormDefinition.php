@@ -352,6 +352,28 @@ class AgentFormDefinition
                         'required' => ['type' => 'boolean', 'default' => false],
                         'placeholder' => ['type' => ['string', 'null']],
                         'width' => ['type' => 'string', 'enum' => ['full', '1/2', '1/3', '2/3', '1/4', '3/4'], 'default' => 'full'],
+                        'image' => ['$ref' => '#/$defs/blockImage'],
+                    ],
+                ],
+                'blockImage' => [
+                    'type' => 'object',
+                    'additionalProperties' => true,
+                    'properties' => [
+                        'url' => ['type' => ['string', 'null'], 'format' => 'uri'],
+                        'alt' => ['type' => ['string', 'null'], 'maxLength' => 125],
+                        'layout' => [
+                            'type' => ['string', 'null'],
+                            'enum' => ['between', 'left-small', 'right-small', 'left-split', 'right-split', 'background', null],
+                        ],
+                        'focal_point' => [
+                            'type' => ['object', 'null'],
+                            'properties' => [
+                                'x' => ['type' => 'number', 'minimum' => 0, 'maximum' => 100],
+                                'y' => ['type' => 'number', 'minimum' => 0, 'maximum' => 100],
+                            ],
+                        ],
+                        'brightness' => ['type' => 'integer', 'minimum' => -100, 'maximum' => 100],
+                        'fade' => ['type' => 'boolean'],
                     ],
                 ],
             ],

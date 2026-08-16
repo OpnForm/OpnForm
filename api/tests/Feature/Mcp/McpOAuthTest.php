@@ -73,6 +73,7 @@ it('publishes OAuth 2.1 discovery metadata for the unified MCP endpoint', functi
         ->assertJsonPath('token_endpoint', route('passport.token'))
         ->assertJsonPath('registration_endpoint', url('/oauth/register'))
         ->assertJsonPath('code_challenge_methods_supported.0', 'S256')
+        ->assertJsonPath('token_endpoint_auth_methods_supported.0', 'none')
         ->assertJsonPath('scopes_supported.0', 'mcp:use');
 });
 
@@ -89,14 +90,74 @@ it('requires S256 PKCE for every delegated authorization request', function (arr
     ]],
 ]);
 
+it('returns a tool-level OAuth challenge when an account tool is called anonymously', function () {
+    $response = $this->postJson('/mcp', [
+        'jsonrpc' => '2.0',
+        'id' => 1,
+        'method' => 'tools/call',
+        'params' => [
+            'name' => 'list_forms',
+            'arguments' => [],
+        ],
+    ], mcpHeaders())->assertOk()
+        ->assertJsonPath('result.isError', true);
+
+    $challenge = $response->json('result._meta.mcp/www_authenticate.0');
+
+    expect($challenge)
+        ->toContain('Bearer resource_metadata="'.route('mcp.oauth.protected-resource.nested', ['path' => 'mcp']).'"')
+        ->toContain('scope="mcp:use"')
+        ->toContain('error="insufficient_scope"')
+        ->toContain('error_description="Connect your OpnForm account to continue"');
+});
+
+it('does not treat a normal OpnForm web session as MCP authentication', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user, 'web')->postJson('/mcp', [
+        'jsonrpc' => '2.0',
+        'id' => 1,
+        'method' => 'tools/call',
+        'params' => [
+            'name' => 'get_account_context',
+            'arguments' => [],
+        ],
+    ], mcpHeaders())->assertOk()
+        ->assertJsonPath('result.isError', true)
+        ->assertJsonPath('result._meta.mcp/www_authenticate.0', fn (string $challenge) => str_contains(
+            $challenge,
+            'error="insufficient_scope"',
+        ));
+});
+
+it('uses a scoped MCP bearer token for account tool calls', function () {
+    $user = User::factory()->create();
+    Passport::actingAs($user, ['mcp:use'], 'oauth');
+
+    $this->postJson('/mcp', [
+        'jsonrpc' => '2.0',
+        'id' => 1,
+        'method' => 'tools/call',
+        'params' => [
+            'name' => 'get_account_context',
+            'arguments' => [],
+        ],
+    ], mcpHeaders([
+        'Authorization' => 'Bearer scoped-account-token',
+    ]))->assertOk()
+        ->assertJsonPath('result.isError', false)
+        ->assertJsonPath('result.structuredContent.account.id', $user->id)
+        ->assertJsonMissingPath('result._meta.mcp/www_authenticate');
+});
+
 it('dynamically registers public PKCE clients only for allowed redirects', function () {
     $this->postJson('/oauth/register', [
         'client_name' => 'ChatGPT',
-        'redirect_uris' => ['https://chatgpt.com/connector_platform_oauth_redirect'],
+        'redirect_uris' => ['https://chatgpt.com/connector/oauth/local-test'],
     ])->assertCreated()
         ->assertJsonPath('token_endpoint_auth_method', 'none')
         ->assertJsonPath('scope', 'mcp:use')
-        ->assertJsonPath('redirect_uris.0', 'https://chatgpt.com/connector_platform_oauth_redirect');
+        ->assertJsonPath('redirect_uris.0', 'https://chatgpt.com/connector/oauth/local-test');
 
     $this->assertDatabaseCount('oauth_clients', 1);
 
@@ -147,6 +208,7 @@ it('completes PKCE authorization and uses the issued bearer token on the same en
         ->assertSee('Connect MCP integration test')
         ->assertSee('Use OpnForm MCP features')
         ->assertSee('http://localhost/callback')
+        ->assertSee('aria-label="OpnForm"', false)
         ->assertHeader('Content-Security-Policy', "frame-ancestors 'none'")
         ->assertHeader('X-Frame-Options', 'DENY')
         ->assertHeader('Referrer-Policy', 'no-referrer')

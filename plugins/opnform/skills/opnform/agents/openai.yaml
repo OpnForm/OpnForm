@@ -1,0 +1,14 @@
+interface:
+  display_name: "OpnForm"
+  short_description: "Create and manage OpnForm forms through MCP"
+  brand_color: "#2563EB"
+  default_prompt: "Use $opnform to create, preview, or manage an OpnForm form directly through MCP."
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "opnform"
+      description: "Create, preview, and manage OpnForm forms and read submissions"
+      transport: "streamable_http"
+      url: "https://api.opnform.com/mcp"
+policy:
+  allow_implicit_invocation: true

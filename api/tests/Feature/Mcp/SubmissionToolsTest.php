@@ -28,7 +28,7 @@ function submissionFixture(array $completedValues = ['Alice', 'Bob']): array
     return compact('user', 'workspace', 'form', 'fieldId', 'submissions');
 }
 
-it('advertises submission tools only to scoped OAuth accounts and no mutation tools', function () {
+it('advertises OAuth-protected submission tools and no submission mutation tools', function () {
     $payload = [
         'jsonrpc' => '2.0',
         'id' => 1,
@@ -37,9 +37,18 @@ it('advertises submission tools only to scoped OAuth accounts and no mutation to
     ];
     $headers = ['Accept' => 'application/json, text/event-stream'];
 
-    $this->postJson('/mcp', $payload, $headers)
-        ->assertOk()
-        ->assertDontSee('list_submissions');
+    $response = $this->postJson('/mcp', $payload, $headers)->assertOk();
+    $tools = collect($response->json('result.tools'))->keyBy('name');
+
+    expect($tools)->toHaveKeys(['list_submissions', 'get_submission_stats', 'export_submissions'])
+        ->and($tools['list_submissions']['securitySchemes'])->toBe([
+            [
+                'type' => 'oauth2',
+                'scopes' => ['mcp:use'],
+            ],
+        ]);
+
+    $response->assertDontSee(['update_submission', 'delete_submission', 'create_submission']);
 
     $user = User::factory()->create();
     Passport::actingAs($user, ['mcp:use'], 'oauth');

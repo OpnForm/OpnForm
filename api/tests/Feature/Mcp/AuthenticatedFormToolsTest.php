@@ -57,16 +57,19 @@ function managedFormRevision(User $user, Form $form): string
     return $management->serializeForm($management->form($user, $form->id))['revision'];
 }
 
-it('registers account tools only for an authenticated MCP account', function () {
-    expect(app(ListFormsTool::class)->eligibleForRegistration())->toBeFalse();
+it('always advertises account tools as OAuth protected', function () {
+    $tool = app(ListFormsTool::class);
 
-    $user = User::factory()->create();
-    auth('oauth')->setUser($user);
-
-    expect(app(ListFormsTool::class)->eligibleForRegistration())->toBeTrue();
+    expect($tool->eligibleForRegistration())->toBeTrue()
+        ->and($tool->toArray()['securitySchemes'])->toBe([
+            [
+                'type' => 'oauth2',
+                'scopes' => ['mcp:use'],
+            ],
+        ]);
 });
 
-it('advertises guest tools anonymously and account tools only with scoped OAuth', function () {
+it('advertises guest and account tools with explicit per-tool auth policies', function () {
     $payload = [
         'jsonrpc' => '2.0',
         'id' => 1,
@@ -75,10 +78,19 @@ it('advertises guest tools anonymously and account tools only with scoped OAuth'
     ];
     $headers = ['Accept' => 'application/json, text/event-stream'];
 
-    $this->postJson('/mcp', $payload, $headers)
-        ->assertOk()
-        ->assertSee('create_form_draft')
-        ->assertDontSee('list_forms');
+    $response = $this->postJson('/mcp', $payload, $headers)->assertOk();
+    $tools = collect($response->json('result.tools'))->keyBy('name');
+
+    expect($tools)->toHaveKeys(['create_form_draft', 'list_forms', 'trash_form'])
+        ->and($tools['create_form_draft']['securitySchemes'])->toBe([
+            ['type' => 'noauth'],
+        ])
+        ->and($tools['list_forms']['securitySchemes'])->toBe([
+            [
+                'type' => 'oauth2',
+                'scopes' => ['mcp:use'],
+            ],
+        ]);
 
     $user = User::factory()->create();
     Passport::actingAs($user, ['mcp:use'], 'oauth');

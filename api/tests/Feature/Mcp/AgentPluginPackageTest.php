@@ -81,6 +81,7 @@ it('ships a valid native OpenAI plugin wrapper for the hosted MCP server', funct
         ->and($nativeMcp['mcpServers']['opnform'])->toBe([
             'type' => 'http',
             'url' => $portableMcp['mcpServers']['opnform']['url'],
+            'auth' => 'oauth',
         ])
         ->and(array_diff(array_keys($nativeMcp), ['mcpServers']))->toBe([])
         ->and(opnformPluginPath('.app.json'))->not->toBeFile();
@@ -135,8 +136,36 @@ it('ships a discoverable OpnForm skill with the complete safety workflow', funct
             'expected_version',
             'revision',
         )
+        ->and($skill)->toContain(
+            'Authenticated tools remain discoverable before the account is connected',
+            'Do not report that account tools are unavailable',
+            'Never launch another Codex or ChatGPT agent',
+            'run `codex exec`',
+            'OpnForm is not attached to the current conversation',
+            'Distinguish missing tools from missing authentication',
+            'Enabling or selecting the plugin is not OAuth authentication',
+            'Settings → MCP servers → OpnForm → Authenticate',
+            'start a new conversation with OpnForm selected before the first message',
+            'may not hot-reload OAuth credentials',
+            'do not loop or claim the connection succeeded',
+        )
         ->and($skill)->toContain('Submission access is read-only')
         ->and(substr_count($skill, "\n"))->toBeLessThan(500);
+});
+
+it('declares the hosted OpnForm MCP dependency in native skill metadata', function () {
+    $metadataPath = opnformPluginPath('skills/opnform/agents/openai.yaml');
+    $metadata = file_get_contents($metadataPath);
+
+    expect($metadataPath)->toBeFile()
+        ->and($metadata)->toContain(
+            'display_name: "OpnForm"',
+            'default_prompt: "Use $opnform',
+            'type: "mcp"',
+            'value: "opnform"',
+            'transport: "streamable_http"',
+            'url: "https://api.opnform.com/mcp"',
+        );
 });
 
 it('contains valid JSON and no local endpoints or fabricated ChatGPT app IDs', function () {
@@ -164,6 +193,16 @@ it('does not expose plugin package files from the monorepo root', function () {
         ->and(base_path('../.agents/plugins/marketplace.json'))->not->toBeFile();
 });
 
+it('teaches agents how to change presentation and media without repository inspection', function () {
+    $skill = file_get_contents(opnformPluginPath('skills/opnform/SKILL.md'));
+
+    expect($skill)
+        ->toContain('Re-read the field reference before changing presentation style, fields, layout, or media')
+        ->toContain('every visible block becomes one step automatically')
+        ->toContain('add an `image` object to that input or `nf-text` block')
+        ->toContain('Never persist localhost, private addresses, temporary tunnel domains');
+});
+
 it('renders a flattened and hardened form preview frame', function () {
     $view = file_get_contents(resource_path('views/mcp/form-draft-preview-app.blade.php'));
 
@@ -171,8 +210,19 @@ it('renders a flattened and hardened form preview frame', function () {
         ->toContain('class="preview-surface"')
         ->toContain('<p class="eyebrow">Private preview</p>')
         ->toContain("previewUrl.searchParams.set('embedded', '1')")
+        ->toContain('/widgets/iframeResize.min.js')
+        ->toContain('checkOrigin: [previewUrl.origin]')
+        ->toContain('scrolling: false')
+        ->toContain('const canvasWidth = 1280')
+        ->toContain('const focusedHeight = 720')
+        ->toContain('const defaultZoom = 0.8')
+        ->toContain('availableWidth / canvasWidth')
+        ->toContain('new ResizeObserver(applyPreviewLayout).observe(previewViewport)')
+        ->toContain("sizeHeight: presentationStyle !== 'focused'")
+        ->toContain('aria-label="Preview zoom"')
         ->toContain('sandbox="allow-forms allow-modals allow-popups allow-scripts allow-same-origin"')
         ->toContain('referrerpolicy="no-referrer"')
         ->not->toContain('class="card"')
+        ->not->toContain('border-radius: 10px')
         ->not->toContain('allow-top-navigation');
 });
