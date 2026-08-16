@@ -337,6 +337,9 @@ const boundProps = computed(() => {
     inputProperties.accept = field.allowed_file_types || ''
   } else if (field.type === 'rating') {
     inputProperties.numberOfStars = parseInt(field.rating_max_value) ?? 5
+    // Prefer per-rating arrays when present, otherwise single icon/image
+    inputProperties.ratingIcon = field.rating_icons || field.rating_icon || null
+    inputProperties.ratingImage = field.rating_images || field.rating_image || null
   } else if (field.type === 'scale') {
     inputProperties.minScale = parseFloat(field.scale_min_value) ?? 1
     inputProperties.maxScale = parseFloat(field.scale_max_value) ?? 5
