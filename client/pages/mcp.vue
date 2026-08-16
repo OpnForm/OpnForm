@@ -96,28 +96,76 @@
                 </div>
               </div>
               <span
-                class="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700"
+                class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition-colors duration-300"
+                :class="
+                  isHeroDemoWorking
+                    ? 'bg-blue-50 text-blue-700'
+                    : 'bg-emerald-50 text-emerald-700'
+                "
               >
-                Ready
+                <span
+                  class="h-1.5 w-1.5 rounded-full"
+                  :class="isHeroDemoWorking ? 'animate-pulse bg-blue-500' : 'bg-emerald-500'"
+                />
+                {{ heroDemoStatusLabel }}
               </span>
-            </div>
-
-            <div class="mt-5 max-w-[88%] rounded-2xl rounded-tl-sm bg-neutral-100 p-4">
-              <p class="text-sm leading-6 text-neutral-700">
-                Create a friendly event registration form. Ask for a name, email,
-                dietary requirements, and one guest.
-              </p>
-            </div>
-
-            <div class="mt-4 flex items-center gap-3 text-sm font-medium text-blue-700">
-              <span class="flex h-8 w-8 items-center justify-center rounded-full bg-blue-50">
-                <UIcon name="i-heroicons-arrow-turn-down-right-20-solid" class="h-4 w-4" />
-              </span>
-              Draft created. Here is your preview.
             </div>
 
             <div
-              class="mt-4 overflow-hidden rounded-2xl border border-neutral-200 bg-[#fffdf9] shadow-lg shadow-neutral-950/5"
+              class="mt-5 min-h-[88px] max-w-[88%] rounded-2xl rounded-tl-sm bg-neutral-100 p-4"
+            >
+              <p class="text-sm leading-6 text-neutral-700" :aria-label="heroPrompt">
+                <span aria-hidden="true">{{ displayedHeroPrompt }}</span>
+                <span
+                  v-if="heroDemoPhase === 'typing'"
+                  aria-hidden="true"
+                  class="ml-0.5 inline-block h-4 w-px translate-y-0.5 animate-pulse bg-neutral-500"
+                />
+              </p>
+            </div>
+
+            <div class="mt-4 min-h-8">
+              <Transition name="hero-demo-status" mode="out-in">
+                <div
+                  v-if="heroDemoPhase === 'building'"
+                  key="building"
+                  class="flex items-center gap-3 text-sm font-medium text-neutral-600"
+                >
+                  <span class="flex h-8 w-8 items-center justify-center rounded-full bg-blue-50">
+                    <span class="relative h-4 w-4">
+                      <span class="absolute inset-0 rounded-full border-2 border-blue-200" />
+                      <span
+                        class="absolute inset-0 animate-spin rounded-full border-2 border-transparent border-t-blue-600 motion-reduce:animate-none"
+                      />
+                    </span>
+                  </span>
+                  Building your private draft
+                  <span class="flex gap-1" aria-hidden="true">
+                    <span class="hero-demo-dot" />
+                    <span class="hero-demo-dot [animation-delay:120ms]" />
+                    <span class="hero-demo-dot [animation-delay:240ms]" />
+                  </span>
+                </div>
+                <div
+                  v-else-if="heroDemoPhase === 'complete'"
+                  key="complete"
+                  class="flex items-center gap-3 text-sm font-medium text-blue-700"
+                >
+                  <span class="flex h-8 w-8 items-center justify-center rounded-full bg-blue-50">
+                    <UIcon name="i-heroicons-arrow-turn-down-right-20-solid" class="h-4 w-4" />
+                  </span>
+                  Draft created. Here is your preview.
+                </div>
+              </Transition>
+            </div>
+
+            <div
+              class="mt-4 min-h-[314px] overflow-hidden rounded-2xl border bg-[#fffdf9] transition-all duration-300"
+              :class="
+                isHeroPreviewVisible
+                  ? 'translate-y-0 border-neutral-200 opacity-100 shadow-lg shadow-neutral-950/5'
+                  : 'translate-y-2 border-neutral-100 opacity-0 shadow-none'
+              "
             >
               <div class="flex items-center justify-between border-b border-neutral-200 px-5 py-3">
                 <div class="flex items-center gap-2">
@@ -130,7 +178,10 @@
                 </span>
               </div>
               <div class="p-5 sm:p-6">
-                <div class="flex items-start justify-between gap-4">
+                <div
+                  class="flex items-start justify-between gap-4 transition-all duration-300"
+                  :class="heroDemoBlockClass(1)"
+                >
                   <div>
                     <p class="text-xl font-semibold tracking-tight text-neutral-950">
                       Summer dinner registration
@@ -145,14 +196,18 @@
                 </div>
                 <div class="mt-6 grid gap-3 sm:grid-cols-2">
                   <div
-                    v-for="field in previewFields"
+                    v-for="(field, index) in previewFields"
                     :key="field"
-                    class="rounded-xl border border-neutral-200 bg-white px-3.5 py-3 text-sm text-neutral-500"
+                    class="rounded-xl border border-neutral-200 bg-white px-3.5 py-3 text-sm text-neutral-500 transition-all duration-300"
+                    :class="heroDemoBlockClass(index + 2)"
                   >
                     {{ field }}
                   </div>
                 </div>
-                <div class="mt-5 flex justify-center">
+                <div
+                  class="mt-5 flex justify-center transition-all duration-300"
+                  :class="heroDemoBlockClass(6)"
+                >
                   <span
                     class="rounded-lg bg-blue-600 px-6 py-2 text-sm font-medium text-white shadow-sm"
                   >
@@ -428,10 +483,123 @@ defineRouteRules({
 
 const { isAuthenticated: authenticated } = useIsAuthenticated()
 const isHydrated = ref(false)
+const heroPrompt =
+  "Create a friendly event registration form. Ask for a name, email, dietary requirements, and one guest."
+const displayedHeroPrompt = ref(heroPrompt)
+const heroDemoPhase = ref("complete")
+const isHeroPreviewVisible = ref(true)
+const visibleHeroBlocks = ref(6)
+const heroDemoTimeouts = []
+let reducedMotionQuery
 
 onMounted(() => {
   isHydrated.value = true
+  reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)")
+  reducedMotionQuery.addEventListener("change", handleReducedMotionChange)
+
+  if (!reducedMotionQuery.matches) {
+    scheduleHeroDemo(startHeroDemo, 1200)
+  }
 })
+
+onBeforeUnmount(() => {
+  clearHeroDemoTimeouts()
+  reducedMotionQuery?.removeEventListener("change", handleReducedMotionChange)
+})
+
+const isHeroDemoWorking = computed(() =>
+  ["typing", "building"].includes(heroDemoPhase.value),
+)
+
+const heroDemoStatusLabel = computed(() => {
+  if (heroDemoPhase.value === "typing") return "Listening"
+  if (heroDemoPhase.value === "building") return "Building"
+
+  return "Ready"
+})
+
+function scheduleHeroDemo(callback, delay) {
+  const timeoutId = window.setTimeout(callback, delay)
+  heroDemoTimeouts.push(timeoutId)
+}
+
+function clearHeroDemoTimeouts() {
+  heroDemoTimeouts.splice(0).forEach((timeoutId) => window.clearTimeout(timeoutId))
+}
+
+function showCompletedHeroDemo() {
+  displayedHeroPrompt.value = heroPrompt
+  heroDemoPhase.value = "complete"
+  isHeroPreviewVisible.value = true
+  visibleHeroBlocks.value = 6
+}
+
+function handleReducedMotionChange(event) {
+  clearHeroDemoTimeouts()
+
+  if (event.matches) {
+    showCompletedHeroDemo()
+    return
+  }
+
+  startHeroDemo()
+}
+
+function startHeroDemo() {
+  clearHeroDemoTimeouts()
+  displayedHeroPrompt.value = ""
+  heroDemoPhase.value = "typing"
+  isHeroPreviewVisible.value = false
+  visibleHeroBlocks.value = 0
+  typeHeroPrompt(1)
+}
+
+function typeHeroPrompt(characterCount) {
+  displayedHeroPrompt.value = heroPrompt.slice(0, characterCount)
+
+  if (characterCount < heroPrompt.length) {
+    scheduleHeroDemo(() => typeHeroPrompt(characterCount + 1), 12)
+    return
+  }
+
+  scheduleHeroDemo(buildHeroPreview, 180)
+}
+
+function buildHeroPreview() {
+  heroDemoPhase.value = "building"
+  isHeroPreviewVisible.value = true
+  scheduleHeroDemo(() => revealHeroBlock(1), 180)
+}
+
+function revealHeroBlock(blockNumber) {
+  visibleHeroBlocks.value = blockNumber
+
+  if (blockNumber < 6) {
+    scheduleHeroDemo(() => revealHeroBlock(blockNumber + 1), 150)
+    return
+  }
+
+  scheduleHeroDemo(completeHeroDemo, 260)
+}
+
+function completeHeroDemo() {
+  heroDemoPhase.value = "complete"
+  scheduleHeroDemo(resetHeroDemo, 2300)
+}
+
+function resetHeroDemo() {
+  heroDemoPhase.value = "resetting"
+  isHeroPreviewVisible.value = false
+  visibleHeroBlocks.value = 0
+  displayedHeroPrompt.value = ""
+  scheduleHeroDemo(startHeroDemo, 320)
+}
+
+function heroDemoBlockClass(blockNumber) {
+  return visibleHeroBlocks.value >= blockNumber
+    ? "translate-y-0 scale-100 opacity-100"
+    : "translate-y-2 scale-[0.985] opacity-0"
+}
 
 const createFormTarget = computed(() => ({
   name: isHydrated.value && authenticated.value ? "forms-create" : "forms-create-guest",
@@ -590,3 +758,47 @@ useHead({
   ],
 })
 </script>
+
+<style scoped>
+.hero-demo-status-enter-active,
+.hero-demo-status-leave-active {
+  transition:
+    opacity 180ms ease,
+    transform 180ms ease;
+}
+
+.hero-demo-status-enter-from,
+.hero-demo-status-leave-to {
+  opacity: 0;
+  transform: translateY(4px);
+}
+
+.hero-demo-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 9999px;
+  background: rgb(96 165 250);
+  animation: hero-demo-dot 720ms ease-in-out infinite alternate;
+}
+
+@keyframes hero-demo-dot {
+  from {
+    opacity: 0.35;
+    transform: translateY(1px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(-1px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-demo-status-enter-active,
+  .hero-demo-status-leave-active,
+  .hero-demo-dot {
+    animation: none;
+    transition: none;
+  }
+}
+</style>
