@@ -9,7 +9,7 @@
             .heading { min-width: 0; }
             h1 { margin: 0 0 8px; font-size: 20px; }
             .meta { margin: 0; color: var(--color-text-secondary, #6b7280); font-size: 13px; }
-            iframe { width: 100%; height: 620px; margin: 16px 0; border: 1px solid var(--color-border-primary, #d1d5db); border-radius: 10px; background: white; }
+            iframe { display: block; width: 100%; height: 620px; margin: 16px 0 0; border: 0; border-radius: 10px; background: #f5f5f5; }
             ol { padding-left: 22px; margin: 18px 0; }
             li { margin: 10px 0; }
             button { flex: none; border: 0; border-radius: 8px; padding: 7px 10px; background: #2563eb; color: white; font-size: 12px; font-weight: 650; cursor: pointer; }

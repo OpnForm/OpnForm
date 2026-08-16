@@ -1,13 +1,32 @@
 <template>
-  <div class="min-h-screen bg-neutral-50 p-4 sm:p-8">
+  <div class="min-h-screen bg-neutral-100 p-3 sm:p-6">
     <div class="mx-auto max-w-5xl">
-      <div class="mb-4 flex items-center justify-between">
-        <div>
-          <p class="text-sm font-medium text-blue-600">Private draft preview</p>
-          <h1 class="text-xl font-semibold text-neutral-900">{{ form?.title || 'OpnForm draft' }}</h1>
+      <header class="mb-3 flex min-h-8 items-center justify-between gap-3">
+        <p class="flex shrink-0 items-center gap-2 whitespace-nowrap text-sm font-medium text-neutral-700">
+          <span class="size-2 rounded-full bg-blue-500" aria-hidden="true" />
+          Private preview
+        </p>
+        <div class="ml-auto flex shrink-0 items-center gap-2">
+          <UBadge color="neutral" variant="subtle" class="whitespace-nowrap">
+            <span class="sm:hidden">15 min remaining</span>
+            <span class="hidden sm:inline">Expires in 15 minutes</span>
+          </UBadge>
+          <UButton
+            v-if="isSubmitted"
+            color="neutral"
+            variant="outline"
+            size="sm"
+            icon="i-lucide-rotate-ccw"
+            :loading="isResetting"
+            :disabled="isResetting"
+            aria-label="Reset form"
+            @click="resetForm"
+          >
+            <span class="sm:hidden">Reset</span>
+            <span class="hidden sm:inline">Reset form</span>
+          </UButton>
         </div>
-        <UBadge color="neutral" variant="subtle">Expires in 15 minutes</UBadge>
-      </div>
+      </header>
 
       <div v-if="loading" class="rounded-xl border bg-white p-12 text-center">
         <Loader class="mx-auto h-6 w-6 text-blue-500" />
@@ -18,11 +37,14 @@
         title="This preview is unavailable"
         :description="error"
       />
-      <div v-else class="min-h-[650px] overflow-hidden rounded-xl border bg-white shadow-sm">
+      <div v-else class="min-h-[650px] overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm">
         <OpenCompleteForm
+          ref="formPreview"
           :form="form"
-          :mode="FormMode.PREVIEW"
+          :mode="FormMode.TEST"
           class="min-h-[650px] w-full"
+          @submitted="isSubmitted = true"
+          @restarted="isSubmitted = false"
         />
       </div>
     </div>
@@ -38,10 +60,27 @@ useOpnSeoMeta({ title: 'Private form draft preview' })
 
 const route = useRoute()
 const config = useRuntimeConfig()
+const alert = useAlert()
 const loading = ref(true)
 const error = ref(null)
 const form = ref(null)
+const formPreview = ref(null)
+const isSubmitted = ref(false)
+const isResetting = ref(false)
 provide('disableCustomCodeExecution', true)
+
+const resetForm = () => {
+  if (!formPreview.value?.restart || isResetting.value) return
+
+  isResetting.value = true
+  formPreview.value.restart()
+    .catch(() => {
+      alert.error('The form could not be reset. Please try again.')
+    })
+    .finally(() => {
+      isResetting.value = false
+    })
+}
 
 onMounted(() => {
   try {
