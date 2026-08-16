@@ -1,3 +1,5 @@
+import { existsSync, readdirSync, readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import templateIndustries from './data/forms/templates/industries.json'
 import templateTypes from './data/forms/templates/types.json'
 import opnformConfig from './opnform.config.js'
@@ -26,6 +28,7 @@ export default {
     return [
       ...getTemplateIndustriesUrls(),
       ...getTemplateTypesUrls(),
+      ...getFeaturePagesUrls(),
       ...getCloudMarketingUrls(),
       ...(await getIntegrationsPages().catch(() => [])),
     ]
@@ -42,6 +45,55 @@ function getCloudMarketingUrls () {
       priority: 0.7
     }
   ]
+}
+
+function getFeaturePagesUrls () {
+  const featuresDir = join(process.cwd(), 'content/features')
+
+  if (!existsSync(featuresDir)) return []
+
+  return readdirSync(featuresDir)
+    .filter((fileName) => fileName.endsWith('.md'))
+    .map((fileName) => {
+      const frontmatter = getMarkdownFrontmatter(join(featuresDir, fileName))
+      if (frontmatter.published === false) return null
+
+      const fallbackSlug = fileName.replace(/\.md$/, '')
+      const slug = frontmatter.slug || fallbackSlug
+
+      return {
+        url: `/features/${slug}`,
+        changefreq: 'monthly',
+        priority: 0.75
+      }
+    })
+    .filter((page) => page)
+}
+
+function getMarkdownFrontmatter (filePath) {
+  const content = readFileSync(filePath, 'utf8')
+  const match = content.match(/^---\n([\s\S]*?)\n---/)
+  if (!match) return {}
+
+  return match[1].split('\n').reduce((frontmatter, line) => {
+    const separatorIndex = line.indexOf(':')
+    if (separatorIndex === -1) return frontmatter
+
+    const key = line.slice(0, separatorIndex).trim()
+    const rawValue = line.slice(separatorIndex + 1).trim()
+
+    if (!key) return frontmatter
+
+    frontmatter[key] = parseFrontmatterValue(rawValue)
+    return frontmatter
+  }, {})
+}
+
+function parseFrontmatterValue (value) {
+  if (value === 'true') return true
+  if (value === 'false') return false
+
+  return value.replace(/^['"]|['"]$/g, '')
 }
 
 function getTemplateTypesUrls () {
