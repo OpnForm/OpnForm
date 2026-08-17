@@ -42,7 +42,7 @@ it('advertises submission tools only to scoped OAuth accounts and no mutation to
         ->assertDontSee('list_submissions');
 
     $user = User::factory()->create();
-    Passport::actingAs($user, ['mcp:use'], 'mcp');
+    Passport::actingAs($user, ['mcp:use'], 'oauth');
 
     $this->postJson('/mcp', $payload, array_merge($headers, [
         'Authorization' => 'Bearer submission-scope-token',
@@ -59,7 +59,7 @@ it('searches response values and filters submission status without leaking other
     ]);
     $other = submissionFixture(['Alice Secret']);
 
-    OpnFormServer::actingAs($fixture['user'], 'mcp')->tool(ListSubmissionsTool::class, [
+    OpnFormServer::actingAs($fixture['user'], 'oauth')->tool(ListSubmissionsTool::class, [
         'form_id' => $fixture['form']->id,
         'search' => 'Alice',
         'status' => 'completed',
@@ -67,7 +67,7 @@ it('searches response values and filters submission status without leaking other
         ->assertSee('Alice Example')
         ->assertDontSee(['Bob Example', 'Alice Partial', 'Alice Secret']);
 
-    OpnFormServer::actingAs($fixture['user'], 'mcp')->tool(ListSubmissionsTool::class, [
+    OpnFormServer::actingAs($fixture['user'], 'oauth')->tool(ListSubmissionsTool::class, [
         'form_id' => $fixture['form']->id,
         'status' => 'partial',
     ])->assertOk()->assertSee((string) $partial->id)->assertSee('Alice Partial');
@@ -81,13 +81,13 @@ it('lets readonly workspace members read submissions and rejects cross-form IDs'
     $fixture['workspace']->users()->attach($readonly, ['role' => User::ROLE_READONLY]);
     $submission = $fixture['submissions']->first();
 
-    OpnFormServer::actingAs($readonly, 'mcp')->tool(GetSubmissionTool::class, [
+    OpnFormServer::actingAs($readonly, 'oauth')->tool(GetSubmissionTool::class, [
         'form_id' => $fixture['form']->id,
         'submission_id' => $submission->id,
     ])->assertOk()->assertSee('Alice');
 
     $other = submissionFixture(['Outside']);
-    OpnFormServer::actingAs($readonly, 'mcp')->tool(GetSubmissionTool::class, [
+    OpnFormServer::actingAs($readonly, 'oauth')->tool(GetSubmissionTool::class, [
         'form_id' => $fixture['form']->id,
         'submission_id' => $other['submissions']->first()->id,
     ])->assertHasErrors(['not found or not accessible']);
@@ -101,7 +101,7 @@ it('returns bounded existing form analytics with filtered field summaries', func
         'completion_time' => 10,
     ]);
 
-    OpnFormServer::actingAs($fixture['user'], 'mcp')->tool(GetSubmissionStatsTool::class, [
+    OpnFormServer::actingAs($fixture['user'], 'oauth')->tool(GetSubmissionStatsTool::class, [
         'form_id' => $fixture['form']->id,
         'status' => 'completed',
     ])->assertOk()
@@ -115,7 +115,7 @@ it('queues private CSV exports and scopes status polling to the requesting accou
     $fixture = submissionFixture();
     $selectedId = $fixture['submissions']->first()->id;
 
-    $response = OpnFormServer::actingAs($fixture['user'], 'mcp')->tool(ExportSubmissionsTool::class, [
+    $response = OpnFormServer::actingAs($fixture['user'], 'oauth')->tool(ExportSubmissionsTool::class, [
         'form_id' => $fixture['form']->id,
         'submission_ids' => [$selectedId],
     ]);
@@ -129,14 +129,14 @@ it('queues private CSV exports and scopes status polling to the requesting accou
     $job = Cache::get('form_export_job:'.$jobId);
     expect($job['status'])->toBe('queued');
 
-    OpnFormServer::actingAs($fixture['user'], 'mcp')->tool(GetSubmissionExportTool::class, [
+    OpnFormServer::actingAs($fixture['user'], 'oauth')->tool(GetSubmissionExportTool::class, [
         'form_id' => $fixture['form']->id,
         'job_id' => $jobId,
     ])->assertOk()->assertSee(['queued', 'progress']);
 
     $otherMember = User::factory()->create();
     $fixture['workspace']->users()->attach($otherMember, ['role' => User::ROLE_USER]);
-    OpnFormServer::actingAs($otherMember, 'mcp')->tool(GetSubmissionExportTool::class, [
+    OpnFormServer::actingAs($otherMember, 'oauth')->tool(GetSubmissionExportTool::class, [
         'form_id' => $fixture['form']->id,
         'job_id' => $jobId,
     ])->assertHasErrors(['not accessible']);
@@ -147,7 +147,7 @@ it('rejects exports containing submission IDs from another form', function () {
     $fixture = submissionFixture();
     $other = submissionFixture(['Secret']);
 
-    OpnFormServer::actingAs($fixture['user'], 'mcp')->tool(ExportSubmissionsTool::class, [
+    OpnFormServer::actingAs($fixture['user'], 'oauth')->tool(ExportSubmissionsTool::class, [
         'form_id' => $fixture['form']->id,
         'submission_ids' => [$other['submissions']->first()->id],
     ])->assertHasErrors(['not found in this form']);
@@ -161,15 +161,15 @@ it('rate limits repeated heavy export requests without affecting submission read
     config()->set('opnform.mcp.rate_limit.submission_exports_per_hour', 10);
     $fixture = submissionFixture();
 
-    OpnFormServer::actingAs($fixture['user'], 'mcp')->tool(ExportSubmissionsTool::class, [
+    OpnFormServer::actingAs($fixture['user'], 'oauth')->tool(ExportSubmissionsTool::class, [
         'form_id' => $fixture['form']->id,
     ])->assertOk();
 
-    OpnFormServer::actingAs($fixture['user'], 'mcp')->tool(ExportSubmissionsTool::class, [
+    OpnFormServer::actingAs($fixture['user'], 'oauth')->tool(ExportSubmissionsTool::class, [
         'form_id' => $fixture['form']->id,
     ])->assertHasErrors(['Too many submission exports']);
 
-    OpnFormServer::actingAs($fixture['user'], 'mcp')->tool(ListSubmissionsTool::class, [
+    OpnFormServer::actingAs($fixture['user'], 'oauth')->tool(ListSubmissionsTool::class, [
         'form_id' => $fixture['form']->id,
     ])->assertOk()->assertSee('Alice');
 });
