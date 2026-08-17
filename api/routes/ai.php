@@ -1,11 +1,10 @@
 <?php
 
 use App\Mcp\Servers\OpnFormServer;
+use App\Support\Mcp\McpAvailability;
 use Laravel\Mcp\Facades\Mcp;
 
-$mcpEnabled = ! config('app.self_hosted') || config('opnform.mcp.enabled', false);
-
-if ($mcpEnabled) {
+if (app(McpAvailability::class)->enabled()) {
     Mcp::web('/mcp', OpnFormServer::class)->middleware('throttle:mcp');
     Mcp::local('opnform', OpnFormServer::class);
 }
