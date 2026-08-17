@@ -74,7 +74,7 @@ if (app(McpAvailability::class)->enabled()) {
     });
 }
 
-if (! config('app.self_hosted') || config('opnform.mcp.enabled', false)) {
+if (app(McpAvailability::class)->enabled() && config('oauth.enabled', false)) {
     Route::post('/mcp-oauth/session', McpOAuthSessionController::class)
         ->middleware(['auth.multi', 'throttle:30,1'])
         ->name('mcp-oauth.session');

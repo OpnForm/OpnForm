@@ -3,7 +3,6 @@
 namespace App\Providers;
 
 use App\Models\Billing\Subscription;
-use App\Service\OAuth\McpPassportClientRepository;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
@@ -13,12 +12,6 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Cashier\Cashier;
-use Laravel\Passport\ClientRepository;
-use Laravel\Passport\Http\Controllers\AccessTokenController;
-use Laravel\Passport\Http\Controllers\ApproveAuthorizationController;
-use Laravel\Passport\Http\Controllers\AuthorizationController;
-use Laravel\Passport\Http\Controllers\DenyAuthorizationController;
-use Laravel\Passport\Passport;
 use RuntimeException;
 use Stripe\StripeClient;
 
@@ -31,14 +24,6 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        if ($this->mcpEnabled()) {
-            Passport::authorizationView('mcp.authorize');
-            Passport::tokensExpireIn(now()->addMinutes((int) config('jwt.ttl', 1440)));
-            Passport::refreshTokensExpireIn(now()->addDays(30));
-
-            $this->registerMcpPassportRoutes();
-        }
-
         if (config('filesystems.default') === 'local') {
             Storage::disk('local')->buildTemporaryUrlsUsing(function ($path, $expiration, $options) {
                 return URL::temporarySignedRoute(
@@ -102,17 +87,6 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        Passport::ignoreRoutes();
-
-        $this->app->singleton(ClientRepository::class, function () {
-            $personalAccessClient = config('passport.personal_access_client', []);
-
-            return new McpPassportClientRepository(
-                $personalAccessClient['id'] ?? null,
-                $personalAccessClient['secret'] ?? null
-            );
-        });
-
         $this->app->singleton(StripeClient::class, function () {
             return new StripeClient(config('cashier.secret'));
         });
@@ -156,30 +130,4 @@ class AppServiceProvider extends ServiceProvider
         throw new RuntimeException('Unsafe testing sqlite configuration detected.');
     }
 
-    private function mcpEnabled(): bool
-    {
-        return ! config('app.self_hosted') || config('opnform.mcp.enabled', false);
-    }
-
-    private function registerMcpPassportRoutes(): void
-    {
-        Route::prefix(config('passport.path', 'oauth'))
-            ->as('passport.')
-            ->group(function () {
-                Route::post('/token', [AccessTokenController::class, 'issueToken'])
-                    ->middleware('throttle')
-                    ->name('token');
-
-                Route::get('/authorize', [AuthorizationController::class, 'authorize'])
-                    ->middleware('web')
-                    ->name('authorizations.authorize');
-
-                Route::middleware(['web', 'auth:web'])->group(function () {
-                    Route::post('/authorize', [ApproveAuthorizationController::class, 'approve'])
-                        ->name('authorizations.approve');
-                    Route::delete('/authorize', [DenyAuthorizationController::class, 'deny'])
-                        ->name('authorizations.deny');
-                });
-            });
-    }
 }

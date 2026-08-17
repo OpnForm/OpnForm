@@ -12,7 +12,7 @@
         .mark { display: grid; place-items: center; width: 48px; height: 48px; margin: 0 auto; border-radius: 14px; background: #eff6ff; color: #2563eb; font-size: 24px; }
         h1 { margin: 20px 0 8px; text-align: center; font-size: 24px; line-height: 1.2; }
         .intro { margin: 0; text-align: center; color: #64748b; line-height: 1.5; }
-        .account, .permission { margin-top: 24px; padding: 16px; border-radius: 12px; background: #f8fafc; }
+        .account, .destination, .permission { margin-top: 24px; padding: 16px; border-radius: 12px; background: #f8fafc; }
         .label { margin: 0 0 6px; color: #64748b; font-size: 13px; }
         .value { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
         .permission { display: flex; gap: 10px; align-items: flex-start; margin-top: 12px; }
@@ -36,10 +36,17 @@
         <p class="value">{{ $user->email }}</p>
     </section>
 
-    <section class="permission">
-        <span aria-hidden="true">●</span>
-        <p>Use OpnForm MCP features to access the forms and submissions you explicitly ask the assistant to manage.</p>
+    <section class="destination">
+        <p class="label">Callback destination</p>
+        <p class="value">{{ $request->query('redirect_uri') }}</p>
     </section>
+
+    @foreach ($scopes as $scope)
+        <section class="permission">
+            <span aria-hidden="true">●</span>
+            <p>{{ $scope->description }}</p>
+        </section>
+    @endforeach
 
     <div class="actions">
         <form method="POST" action="{{ route('passport.authorizations.deny') }}">

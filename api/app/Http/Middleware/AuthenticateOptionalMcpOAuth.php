@@ -16,11 +16,11 @@ class AuthenticateOptionalMcpOAuth
             return $next($request);
         }
 
-        $guard = Auth::guard('mcp');
+        $guard = Auth::guard('oauth');
         $user = $guard->user();
 
         if (! $user || ! $user->tokenCan('mcp:use')) {
-            throw new AuthenticationException('Invalid or insufficient MCP access token.', ['mcp']);
+            throw new AuthenticationException('Invalid or insufficient MCP access token.', ['oauth']);
         }
 
         if ($user->is_blocked) {
@@ -29,7 +29,7 @@ class AuthenticateOptionalMcpOAuth
             ], 403);
         }
 
-        Auth::shouldUse('mcp');
+        Auth::shouldUse('oauth');
         Auth::setUser($user);
 
         return $next($request);

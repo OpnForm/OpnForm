@@ -2,7 +2,9 @@
 
 use App\Models\User;
 use App\Service\OAuth\McpOAuthSessionService;
+use App\Service\OAuth\McpPassportClientRepository;
 use Illuminate\Http\Request;
+use Laravel\Passport\ClientRepository;
 use Laravel\Passport\Passport;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
@@ -17,6 +19,21 @@ beforeEach(function () {
 
     config()->set('passport.private_key', $privateKey);
     config()->set('passport.public_key', $publicKey);
+});
+
+it('configures delegated OAuth through its dedicated provider', function () {
+    $jwtTtl = config('jwt.ttl');
+
+    expect(app(ClientRepository::class))->toBeInstanceOf(McpPassportClientRepository::class)
+        ->and(route('passport.token'))->toEndWith('/oauth/token')
+        ->and(route('passport.authorizations.authorize'))->toEndWith('/oauth/authorize')
+        ->and(config('auth.guards.oauth.driver'))->toBe('passport')
+        ->and(config('auth.guards.mcp'))->toBeNull()
+        ->and(config('auth.guards.api.driver'))->toBe('jwt');
+
+    config()->set('oauth.access_token_ttl', (int) $jwtTtl + 1);
+
+    expect(config('jwt.ttl'))->toBe($jwtTtl);
 });
 
 function mcpInitializePayload(): array
@@ -59,6 +76,19 @@ it('publishes OAuth 2.1 discovery metadata for the unified MCP endpoint', functi
         ->assertJsonPath('scopes_supported.0', 'mcp:use');
 });
 
+it('requires S256 PKCE for every delegated authorization request', function (array $query) {
+    $this->getJson('/oauth/authorize?'.http_build_query($query))
+        ->assertBadRequest()
+        ->assertJsonPath('error', 'invalid_request')
+        ->assertJsonPath('error_description', 'The code_challenge_method must be S256.');
+})->with([
+    'missing method' => [['code_challenge' => 'challenge']],
+    'plain method' => [[
+        'code_challenge' => 'challenge',
+        'code_challenge_method' => 'plain',
+    ]],
+]);
+
 it('dynamically registers public PKCE clients only for allowed redirects', function () {
     $this->postJson('/oauth/register', [
         'client_name' => 'ChatGPT',
@@ -84,7 +114,7 @@ it('keeps guest MCP available while accepting properly scoped Passport users', f
         ->assertOk();
 
     $user = User::factory()->create();
-    Passport::actingAs($user, ['mcp:use'], 'mcp');
+    Passport::actingAs($user, ['mcp:use'], 'oauth');
 
     $this->postJson('/mcp', mcpInitializePayload(), mcpHeaders([
         'Authorization' => 'Bearer test-passport-token',
@@ -114,7 +144,13 @@ it('completes PKCE authorization and uses the issued bearer token on the same en
     $consent = $this->actingAs($user, 'web')
         ->get('/oauth/authorize?'.$authorizationQuery)
         ->assertOk()
-        ->assertSee('Connect MCP integration test');
+        ->assertSee('Connect MCP integration test')
+        ->assertSee('Use OpnForm MCP features')
+        ->assertSee('http://localhost/callback')
+        ->assertHeader('Content-Security-Policy', "frame-ancestors 'none'")
+        ->assertHeader('X-Frame-Options', 'DENY')
+        ->assertHeader('Referrer-Policy', 'no-referrer')
+        ->assertHeader('Cache-Control', 'no-store, private');
 
     preg_match('/name="auth_token" value="([^"]+)"/', $consent->getContent(), $authTokenMatch);
 
@@ -140,7 +176,7 @@ it('completes PKCE authorization and uses the issued bearer token on the same en
 
 it('rejects an OAuth token without the MCP scope and advertises discovery', function () {
     $user = User::factory()->create();
-    Passport::actingAs($user, [], 'mcp');
+    Passport::actingAs($user, [], 'oauth');
 
     $this->postJson('/mcp', mcpInitializePayload(), mcpHeaders([
         'Authorization' => 'Bearer insufficient-token',
@@ -150,7 +186,7 @@ it('rejects an OAuth token without the MCP scope and advertises discovery', func
 
 it('rejects MCP access for blocked authenticated accounts', function () {
     $user = User::factory()->create(['blocked_at' => now()]);
-    Passport::actingAs($user, ['mcp:use'], 'mcp');
+    Passport::actingAs($user, ['mcp:use'], 'oauth');
 
     $this->postJson('/mcp', mcpInitializePayload(), mcpHeaders([
         'Authorization' => 'Bearer blocked-user-token',

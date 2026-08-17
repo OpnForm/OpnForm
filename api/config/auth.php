@@ -47,7 +47,7 @@ return [
             'hash' => false,
         ],
 
-        'mcp' => [
+        'oauth' => [
             'driver' => 'passport',
             'provider' => 'users',
         ],
