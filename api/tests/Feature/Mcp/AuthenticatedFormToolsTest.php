@@ -53,7 +53,7 @@ it('registers account tools only for an authenticated MCP account', function () 
     expect(app(ListFormsTool::class)->eligibleForRegistration())->toBeFalse();
 
     $user = User::factory()->create();
-    auth('mcp')->setUser($user);
+    auth('oauth')->setUser($user);
 
     expect(app(ListFormsTool::class)->eligibleForRegistration())->toBeTrue();
 });
@@ -73,7 +73,7 @@ it('advertises guest tools anonymously and account tools only with scoped OAuth'
         ->assertDontSee('list_forms');
 
     $user = User::factory()->create();
-    Passport::actingAs($user, ['mcp:use'], 'mcp');
+    Passport::actingAs($user, ['mcp:use'], 'oauth');
 
     $this->postJson('/mcp', $payload, array_merge($headers, [
         'Authorization' => 'Bearer scoped-account-token',
@@ -87,13 +87,13 @@ it('lists only the connected account workspaces with form write capability', fun
     $readonly = managedWorkspace($user, User::ROLE_READONLY);
     Workspace::factory()->create(['name' => 'Other account workspace']);
 
-    OpnFormServer::actingAs($user, 'mcp')
+    OpnFormServer::actingAs($user, 'oauth')
         ->tool(GetAccountContextTool::class)
         ->assertOk()
         ->assertSee([$user->email, $writable->name, $readonly->name])
         ->assertDontSee('Other account workspace');
 
-    OpnFormServer::actingAs($user, 'mcp')
+    OpnFormServer::actingAs($user, 'oauth')
         ->tool(ListWorkspacesTool::class)
         ->assertOk()
         ->assertSee(['can_write_forms', User::ROLE_READONLY]);
@@ -103,7 +103,7 @@ it('creates an unpublished form automatically when the account has one workspace
     $user = User::factory()->create();
     $workspace = managedWorkspace($user);
 
-    OpnFormServer::actingAs($user, 'mcp')->tool(CreateFormTool::class, [
+    OpnFormServer::actingAs($user, 'oauth')->tool(CreateFormTool::class, [
         'definition' => managedFormDefinition(['visibility' => 'public']),
     ])->assertOk()
         ->assertSee(['unpublished draft', 'Agent-managed intake', 'publish_form']);
@@ -119,11 +119,11 @@ it('requires workspace selection only when multiple workspaces are available', f
     $selected = managedWorkspace($user);
     managedWorkspace($user);
 
-    OpnFormServer::actingAs($user, 'mcp')->tool(CreateFormTool::class, [
+    OpnFormServer::actingAs($user, 'oauth')->tool(CreateFormTool::class, [
         'definition' => managedFormDefinition(),
     ])->assertHasErrors(['multiple workspaces']);
 
-    OpnFormServer::actingAs($user, 'mcp')->tool(CreateFormTool::class, [
+    OpnFormServer::actingAs($user, 'oauth')->tool(CreateFormTool::class, [
         'workspace_id' => $selected->id,
         'definition' => managedFormDefinition(),
     ])->assertOk();
@@ -138,16 +138,16 @@ it('allows readonly members to inspect forms but rejects every mutation', functi
     $workspace->users()->attach($readonly, ['role' => User::ROLE_READONLY]);
     $form = managedForm($owner, $workspace);
 
-    OpnFormServer::actingAs($readonly, 'mcp')->tool(GetFormTool::class, [
+    OpnFormServer::actingAs($readonly, 'oauth')->tool(GetFormTool::class, [
         'form_id' => $form->id,
     ])->assertOk()->assertSee('Existing managed form');
 
-    OpnFormServer::actingAs($readonly, 'mcp')->tool(CreateFormTool::class, [
+    OpnFormServer::actingAs($readonly, 'oauth')->tool(CreateFormTool::class, [
         'workspace_id' => $workspace->id,
         'definition' => managedFormDefinition(),
     ])->assertHasErrors(['read-only']);
 
-    OpnFormServer::actingAs($readonly, 'mcp')->tool(PublishFormTool::class, [
+    OpnFormServer::actingAs($readonly, 'oauth')->tool(PublishFormTool::class, [
         'form_id' => $form->id,
         'confirm_publish' => true,
     ])->assertHasErrors(['read-only']);
@@ -163,7 +163,7 @@ it('lists and searches only accessible non-trashed forms', function () {
     $other = User::factory()->create();
     managedForm($other, managedWorkspace($other), ['title' => 'Customer survey secret']);
 
-    OpnFormServer::actingAs($user, 'mcp')->tool(ListFormsTool::class, [
+    OpnFormServer::actingAs($user, 'oauth')->tool(ListFormsTool::class, [
         'search' => 'customer',
         'visibility' => 'draft',
     ])->assertOk()
@@ -178,7 +178,7 @@ it('updates a canonical form without changing publication state and rejects stal
     $management = app(\App\Service\Forms\McpFormManagementService::class);
     $expectedRevision = $management->serializeForm($management->form($user, $form->id))['revision'];
 
-    OpnFormServer::actingAs($user, 'mcp')->tool(UpdateFormTool::class, [
+    OpnFormServer::actingAs($user, 'oauth')->tool(UpdateFormTool::class, [
         'form_id' => $form->id,
         'expected_revision' => $expectedRevision,
         'definition' => managedFormDefinition([
@@ -189,7 +189,7 @@ it('updates a canonical form without changing publication state and rejects stal
 
     expect($form->refresh()->visibility)->toBe('public');
 
-    OpnFormServer::actingAs($user, 'mcp')->tool(UpdateFormTool::class, [
+    OpnFormServer::actingAs($user, 'oauth')->tool(UpdateFormTool::class, [
         'form_id' => $form->id,
         'expected_revision' => $expectedRevision,
         'definition' => managedFormDefinition(['title' => 'Stale overwrite']),
@@ -202,14 +202,14 @@ it('publishes only with confirmation and exposes no publication through update_f
     $user = User::factory()->create();
     $form = managedForm($user, managedWorkspace($user));
 
-    OpnFormServer::actingAs($user, 'mcp')->tool(PublishFormTool::class, [
+    OpnFormServer::actingAs($user, 'oauth')->tool(PublishFormTool::class, [
         'form_id' => $form->id,
         'confirm_publish' => false,
     ])->assertHasErrors(['explicit confirmation']);
 
     expect($form->refresh()->visibility)->toBe('draft');
 
-    OpnFormServer::actingAs($user, 'mcp')->tool(PublishFormTool::class, [
+    OpnFormServer::actingAs($user, 'oauth')->tool(PublishFormTool::class, [
         'form_id' => $form->id,
         'confirm_publish' => true,
     ])->assertOk()->assertSee('Form published');
@@ -221,14 +221,14 @@ it('moves forms to soft-delete trash only with confirmation', function () {
     $user = User::factory()->create();
     $form = managedForm($user, managedWorkspace($user));
 
-    OpnFormServer::actingAs($user, 'mcp')->tool(TrashFormTool::class, [
+    OpnFormServer::actingAs($user, 'oauth')->tool(TrashFormTool::class, [
         'form_id' => $form->id,
         'confirm_trash' => false,
     ])->assertHasErrors(['explicit confirmation']);
 
     $this->assertNotSoftDeleted($form);
 
-    OpnFormServer::actingAs($user, 'mcp')->tool(TrashFormTool::class, [
+    OpnFormServer::actingAs($user, 'oauth')->tool(TrashFormTool::class, [
         'form_id' => $form->id,
         'confirm_trash' => true,
     ])->assertOk()->assertSee(['moved to trash', 'does not expose restore']);

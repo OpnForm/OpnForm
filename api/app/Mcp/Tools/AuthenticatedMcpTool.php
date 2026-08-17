@@ -11,7 +11,7 @@ abstract class AuthenticatedMcpTool extends Tool
 {
     public function shouldRegister(): bool
     {
-        return auth('mcp')->check();
+        return auth('oauth')->check();
     }
 
     protected function user(Request $request): User
