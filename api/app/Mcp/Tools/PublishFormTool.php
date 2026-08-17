@@ -12,7 +12,7 @@ use Laravel\Mcp\Server\Attributes\Name;
 use Laravel\Mcp\Server\Tools\Annotations\IsOpenWorld;
 
 #[Name('publish_form')]
-#[Description('Publish an accessible writable form. Call only after showing the result or preview and receiving explicit confirmation from the user.')]
+#[Description('Publish an accessible writable form at its current revision. Call only after showing the result or preview and receiving explicit confirmation from the user.')]
 #[IsOpenWorld]
 class PublishFormTool extends AuthenticatedMcpTool
 {
@@ -20,12 +20,14 @@ class PublishFormTool extends AuthenticatedMcpTool
     {
         $validated = $request->validate([
             'form_id' => ['required', 'integer', 'min:1'],
+            'expected_revision' => ['required', 'string', 'size:64'],
             'confirm_publish' => ['required', 'boolean'],
         ]);
 
         return Response::structured($forms->publish(
             $this->user($request),
             $validated['form_id'],
+            $validated['expected_revision'],
             $validated['confirm_publish'],
         ));
     }
@@ -34,6 +36,7 @@ class PublishFormTool extends AuthenticatedMcpTool
     {
         return [
             'form_id' => $schema->integer()->min(1)->required(),
+            'expected_revision' => $schema->string()->description('Exact 64-character revision returned by get_form.')->min(64)->max(64)->required(),
             'confirm_publish' => $schema->boolean()->description('True only after the user explicitly confirms publication.')->required(),
         ];
     }

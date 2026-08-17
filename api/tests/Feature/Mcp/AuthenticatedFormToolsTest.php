@@ -10,6 +10,7 @@ use App\Mcp\Tools\PublishFormTool;
 use App\Mcp\Tools\TrashFormTool;
 use App\Mcp\Tools\UpdateFormTool;
 use App\Models\Forms\Form;
+use App\Models\OAuthProvider;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Service\Forms\AgentFormDefinition;
@@ -47,6 +48,13 @@ function managedForm(User $user, Workspace $workspace, array $overrides = []): F
             'computed_variables' => [],
             'settings' => [],
         ], $overrides));
+}
+
+function managedFormRevision(User $user, Form $form): string
+{
+    $management = app(\App\Service\Forms\McpFormManagementService::class);
+
+    return $management->serializeForm($management->form($user, $form->id))['revision'];
 }
 
 it('registers account tools only for an authenticated MCP account', function () {
@@ -149,6 +157,7 @@ it('allows readonly members to inspect forms but rejects every mutation', functi
 
     OpnFormServer::actingAs($readonly, 'oauth')->tool(PublishFormTool::class, [
         'form_id' => $form->id,
+        'expected_revision' => managedFormRevision($readonly, $form),
         'confirm_publish' => true,
     ])->assertHasErrors(['read-only']);
 });
@@ -198,19 +207,63 @@ it('updates a canonical form without changing publication state and rejects stal
     expect($form->refresh()->title)->toBe('Updated by agent');
 });
 
+it('rejects Stripe accounts outside the selected workspace on create and update', function () {
+    $user = User::factory()->create();
+    $workspace = managedWorkspace($user);
+    $form = managedForm($user, $workspace);
+    $foreignProvider = OAuthProvider::factory()->for(User::factory()->create())->create([
+        'provider' => 'stripe',
+        'provider_user_id' => 'acct_foreign',
+    ]);
+    $definition = managedFormDefinition([
+        'properties' => [[
+            'id' => 'payment-field',
+            'name' => 'Payment',
+            'type' => 'payment',
+            'amount' => 10,
+            'currency' => 'USD',
+            'stripe_account_id' => $foreignProvider->id,
+        ]],
+    ]);
+
+    OpnFormServer::actingAs($user, 'oauth')->tool(CreateFormTool::class, [
+        'workspace_id' => $workspace->id,
+        'definition' => $definition,
+    ])->assertHasErrors(['not associated with this workspace']);
+
+    OpnFormServer::actingAs($user, 'oauth')->tool(UpdateFormTool::class, [
+        'form_id' => $form->id,
+        'expected_revision' => managedFormRevision($user, $form),
+        'definition' => $definition,
+    ])->assertHasErrors(['not associated with this workspace']);
+
+    expect(Form::query()->count())->toBe(1)
+        ->and($form->refresh()->properties)->toBe(managedFormDefinition()['properties']);
+});
+
 it('publishes only with confirmation and exposes no publication through update_form', function () {
     $user = User::factory()->create();
     $form = managedForm($user, managedWorkspace($user));
+    $expectedRevision = managedFormRevision($user, $form);
 
     OpnFormServer::actingAs($user, 'oauth')->tool(PublishFormTool::class, [
         'form_id' => $form->id,
+        'expected_revision' => $expectedRevision,
         'confirm_publish' => false,
     ])->assertHasErrors(['explicit confirmation']);
 
     expect($form->refresh()->visibility)->toBe('draft');
 
+    $form->update(['title' => 'Changed after confirmation context']);
     OpnFormServer::actingAs($user, 'oauth')->tool(PublishFormTool::class, [
         'form_id' => $form->id,
+        'expected_revision' => $expectedRevision,
+        'confirm_publish' => true,
+    ])->assertHasErrors(['changed since it was fetched']);
+
+    OpnFormServer::actingAs($user, 'oauth')->tool(PublishFormTool::class, [
+        'form_id' => $form->id,
+        'expected_revision' => managedFormRevision($user, $form),
         'confirm_publish' => true,
     ])->assertOk()->assertSee('Form published');
 
@@ -220,16 +273,26 @@ it('publishes only with confirmation and exposes no publication through update_f
 it('moves forms to soft-delete trash only with confirmation', function () {
     $user = User::factory()->create();
     $form = managedForm($user, managedWorkspace($user));
+    $expectedRevision = managedFormRevision($user, $form);
 
     OpnFormServer::actingAs($user, 'oauth')->tool(TrashFormTool::class, [
         'form_id' => $form->id,
+        'expected_revision' => $expectedRevision,
         'confirm_trash' => false,
     ])->assertHasErrors(['explicit confirmation']);
 
     $this->assertNotSoftDeleted($form);
 
+    $form->update(['title' => 'Changed after confirmation context']);
     OpnFormServer::actingAs($user, 'oauth')->tool(TrashFormTool::class, [
         'form_id' => $form->id,
+        'expected_revision' => $expectedRevision,
+        'confirm_trash' => true,
+    ])->assertHasErrors(['changed since it was fetched']);
+
+    OpnFormServer::actingAs($user, 'oauth')->tool(TrashFormTool::class, [
+        'form_id' => $form->id,
+        'expected_revision' => managedFormRevision($user, $form),
         'confirm_trash' => true,
     ])->assertOk()->assertSee(['moved to trash', 'does not expose restore']);
 

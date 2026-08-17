@@ -7,6 +7,7 @@ use App\Models\Forms\FormSubmission;
 use App\Models\User;
 use App\Models\Workspace;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -100,9 +101,12 @@ class McpFormManagementService
         ];
     }
 
-    public function form(User $user, int $formId): Form
+    public function form(User $user, int $formId, bool $lockForUpdate = false): Form
     {
-        $form = Form::query()->with('workspace')->find($formId);
+        $form = Form::query()
+            ->with('workspace')
+            ->when($lockForUpdate, fn (Builder $query) => $query->lockForUpdate())
+            ->find($formId);
 
         if (! $form || ! $user->ownsForm($form)) {
             throw ValidationException::withMessages([
@@ -119,7 +123,7 @@ class McpFormManagementService
         $workspace = $this->resolveCreationWorkspace($user, $workspaceId);
         $this->assertWritable($workspace, $user);
 
-        $definition = $this->definitions->normalizeAndValidate($definition);
+        $definition = $this->definitions->normalizeAndValidate($definition, $workspace);
         $definition['visibility'] = 'draft';
         $created = $this->formCreation->create($definition, $user, $workspace);
 
@@ -134,36 +138,38 @@ class McpFormManagementService
     /** @return array<string, mixed> */
     public function update(User $user, int $formId, string $expectedRevision, array $definition): array
     {
-        $form = $this->form($user, $formId);
-        $this->assertWritable($form->workspace, $user);
-        $this->assertFresh($form, $expectedRevision);
+        return DB::transaction(function () use ($user, $formId, $expectedRevision, $definition) {
+            $form = $this->form($user, $formId, lockForUpdate: true);
+            $this->assertWritable($form->workspace, $user);
+            $this->assertFresh($form, $expectedRevision);
 
-        $definition = $this->definitions->normalizeAndValidate($definition);
-        $definition['visibility'] = $form->visibility;
+            $definition = $this->definitions->normalizeAndValidate($definition, $form->workspace);
+            $definition['visibility'] = $form->visibility;
 
-        $cleaner = (new FormCleaner())
-            ->processData($definition, $form)
-            ->simulateCleaning($form->workspace);
-        $formData = $cleaner->getData();
-        unset($formData['schema_version']);
+            $cleaner = (new FormCleaner())
+                ->processData($definition, $form)
+                ->simulateCleaning($form->workspace);
+            $formData = $cleaner->getData();
+            unset($formData['schema_version']);
 
-        $newPropertyIds = collect($formData['properties'])->pluck('id')->flip()->all();
-        $formData['removed_properties'] = array_merge(
-            $form->removed_properties ?? [],
-            collect($form->properties)->filter(fn (array $field) => ! Str::of($field['type'])->startsWith('nf-') && ! isset($newPropertyIds[$field['id']]))->all(),
-        );
+            $newPropertyIds = collect($formData['properties'])->pluck('id')->flip()->all();
+            $formData['removed_properties'] = array_merge(
+                $form->removed_properties ?? [],
+                collect($form->properties)->filter(fn (array $field) => ! Str::of($field['type'])->startsWith('nf-') && ! isset($newPropertyIds[$field['id']]))->all(),
+            );
 
-        $form->update($formData);
+            $form->update($formData);
 
-        return [
-            'message' => 'Form updated.',
-            'form' => $this->serializeForm($form->refresh()->load('workspace')),
-            'disabled_features' => $cleaner->getPerformedCleanings(),
-        ];
+            return [
+                'message' => 'Form updated.',
+                'form' => $this->serializeForm($form->refresh()->load('workspace')),
+                'disabled_features' => $cleaner->getPerformedCleanings(),
+            ];
+        });
     }
 
     /** @return array<string, mixed> */
-    public function publish(User $user, int $formId, bool $confirmed): array
+    public function publish(User $user, int $formId, string $expectedRevision, bool $confirmed): array
     {
         if (! $confirmed) {
             throw ValidationException::withMessages([
@@ -171,18 +177,21 @@ class McpFormManagementService
             ]);
         }
 
-        $form = $this->form($user, $formId);
-        $this->assertWritable($form->workspace, $user);
-        $form->update(['visibility' => 'public']);
+        return DB::transaction(function () use ($user, $formId, $expectedRevision) {
+            $form = $this->form($user, $formId, lockForUpdate: true);
+            $this->assertWritable($form->workspace, $user);
+            $this->assertFresh($form, $expectedRevision);
+            $form->update(['visibility' => 'public']);
 
-        return [
-            'message' => 'Form published.',
-            'form' => $this->serializeForm($form->refresh()->load('workspace')),
-        ];
+            return [
+                'message' => 'Form published.',
+                'form' => $this->serializeForm($form->refresh()->load('workspace')),
+            ];
+        });
     }
 
     /** @return array<string, mixed> */
-    public function trash(User $user, int $formId, bool $confirmed): array
+    public function trash(User $user, int $formId, string $expectedRevision, bool $confirmed): array
     {
         if (! $confirmed) {
             throw ValidationException::withMessages([
@@ -190,15 +199,18 @@ class McpFormManagementService
             ]);
         }
 
-        $form = $this->form($user, $formId);
-        $this->assertWritable($form->workspace, $user);
-        $summary = $this->serializeFormSummary($form);
-        $form->delete();
+        return DB::transaction(function () use ($user, $formId, $expectedRevision) {
+            $form = $this->form($user, $formId, lockForUpdate: true);
+            $this->assertWritable($form->workspace, $user);
+            $this->assertFresh($form, $expectedRevision);
+            $summary = $this->serializeFormSummary($form);
+            $form->delete();
 
-        return [
-            'message' => 'Form moved to trash. This MCP integration does not expose restore or permanent deletion.',
-            'form' => $summary,
-        ];
+            return [
+                'message' => 'Form moved to trash. This MCP integration does not expose restore or permanent deletion.',
+                'form' => $summary,
+            ];
+        });
     }
 
     /** @return array<string, mixed> */

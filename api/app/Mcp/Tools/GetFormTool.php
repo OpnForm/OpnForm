@@ -13,7 +13,7 @@ use Laravel\Mcp\Server\Tools\Annotations\IsOpenWorld;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Name('get_form')]
-#[Description('Fetch an accessible form as the canonical agent form definition. Use its revision value when calling update_form.')]
+#[Description('Fetch an accessible form as the canonical agent form definition. Use its revision value when calling update_form, publish_form, or trash_form.')]
 #[IsReadOnly]
 #[IsOpenWorld(false)]
 class GetFormTool extends AuthenticatedMcpTool

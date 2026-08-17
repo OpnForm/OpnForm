@@ -13,7 +13,7 @@ use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 use Laravel\Mcp\Server\Tools\Annotations\IsOpenWorld;
 
 #[Name('trash_form')]
-#[Description('Move an accessible writable form to soft-delete trash. Call only after explicit user confirmation. Restore and permanent deletion are intentionally not exposed.')]
+#[Description('Move an accessible writable form at its current revision to soft-delete trash. Call only after explicit user confirmation. Restore and permanent deletion are intentionally not exposed.')]
 #[IsDestructive]
 #[IsOpenWorld(false)]
 class TrashFormTool extends AuthenticatedMcpTool
@@ -22,12 +22,14 @@ class TrashFormTool extends AuthenticatedMcpTool
     {
         $validated = $request->validate([
             'form_id' => ['required', 'integer', 'min:1'],
+            'expected_revision' => ['required', 'string', 'size:64'],
             'confirm_trash' => ['required', 'boolean'],
         ]);
 
         return Response::structured($forms->trash(
             $this->user($request),
             $validated['form_id'],
+            $validated['expected_revision'],
             $validated['confirm_trash'],
         ));
     }
@@ -36,6 +38,7 @@ class TrashFormTool extends AuthenticatedMcpTool
     {
         return [
             'form_id' => $schema->integer()->min(1)->required(),
+            'expected_revision' => $schema->string()->description('Exact 64-character revision returned by get_form.')->min(64)->max(64)->required(),
             'confirm_trash' => $schema->boolean()->description('True only after the user explicitly confirms moving the form to trash.')->required(),
         ];
     }
