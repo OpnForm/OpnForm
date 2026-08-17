@@ -19,6 +19,8 @@ use Illuminate\Routing\Router;
 use App\Http\Middleware\CheckUserIsBlocked;
 use App\Http\Middleware\EnsureCloudInstance;
 use App\Http\Middleware\EnsureSelfHostedInstance;
+use App\Http\Middleware\ConsumeMcpOAuthLoginTicket;
+use App\Http\Middleware\AuthenticateOptionalMcpOAuth;
 
 class Kernel extends HttpKernel
 {
@@ -78,6 +80,7 @@ class Kernel extends HttpKernel
             \App\Http\Middleware\EncryptCookies::class,
             \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
             \Illuminate\Session\Middleware\StartSession::class,
+            ConsumeMcpOAuthLoginTicket::class,
             // \Illuminate\Session\Middleware\AuthenticateSession::class,
             \Illuminate\View\Middleware\ShareErrorsFromSession::class,
             \App\Http\Middleware\VerifyCsrfToken::class,
@@ -132,6 +135,7 @@ class Kernel extends HttpKernel
         'abilities' => \Laravel\Sanctum\Http\Middleware\CheckAbilities::class,
         'ability' => \Laravel\Sanctum\Http\Middleware\CheckForAnyAbility::class,
         'auth.multi' => \App\Http\Middleware\AuthenticateWithJwtOrSanctum::class,
+        'auth.mcp.optional' => AuthenticateOptionalMcpOAuth::class,
 
         'cloud' => EnsureCloudInstance::class,  // Allow cloud instances only
         'self-hosted' => EnsureSelfHostedInstance::class, // Allow self-hosted instances only

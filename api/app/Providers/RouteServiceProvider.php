@@ -122,6 +122,10 @@ class RouteServiceProvider extends ServiceProvider
                     ->by('mcp:hour:'.$identifier),
             ];
         });
+
+        RateLimiter::for('mcp-oauth-registration', function (Request $request) {
+            return Limit::perHour(20)->by('mcp-oauth-registration:'.$request->ip());
+        });
     }
 
     protected function registerGlobalRouteParamConstraints()
