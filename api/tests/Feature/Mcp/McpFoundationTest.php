@@ -120,6 +120,34 @@ it('rejects unknown field types and top-level keys', function () {
     ])->assertHasErrors();
 });
 
+it('applies the same custom CSS and settings validation as the form API', function () {
+    $definition = [
+        'title' => 'Unsafe customization',
+        'properties' => [
+            ['name' => 'Name', 'type' => 'text'],
+        ],
+    ];
+
+    OpnFormServer::tool(ValidateFormDefinitionTool::class, [
+        'definition' => array_merge($definition, [
+            'custom_css' => '</style><script>alert(1)</script>',
+        ]),
+    ])->assertHasErrors(['valid CSS']);
+
+    OpnFormServer::tool(ValidateFormDefinitionTool::class, [
+        'definition' => array_merge($definition, [
+            'settings' => ['auto_next' => 'yes'],
+        ]),
+    ])->assertHasErrors(['true or false']);
+
+    OpnFormServer::tool(ValidateFormDefinitionTool::class, [
+        'definition' => array_merge($definition, [
+            'custom_css' => '.form-root { color: #2563eb; }',
+            'settings' => ['auto_next' => true],
+        ]),
+    ])->assertOk();
+});
+
 it('rejects unsupported schema versions', function () {
     OpnFormServer::tool(ValidateFormDefinitionTool::class, [
         'definition' => [

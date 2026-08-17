@@ -5,6 +5,7 @@ namespace App\Service\Forms;
 use App\Models\Forms\Form;
 use App\Models\Workspace;
 use App\Rules\ComputedVariablesRule;
+use App\Rules\CssOnlyRule;
 use App\Rules\FormPropertiesRule;
 use App\Service\Forms\AgentFormFieldCatalog as FieldCatalog;
 use Illuminate\Support\Arr;
@@ -107,6 +108,7 @@ class AgentFormDefinition
             'properties.*.type' => ['required', Rule::in(FieldCatalog::types())],
             'computed_variables' => ['nullable', 'array', new ComputedVariablesRule()],
             'language' => ['required', Rule::in(Form::LANGUAGES)],
+            'font_family' => ['nullable', 'string'],
             'theme' => ['required', Rule::in(Form::THEMES)],
             'presentation_style' => ['required', Rule::in(Form::PRESENTATION_STYLES)],
             'width' => ['required', Rule::in(Form::WIDTHS)],
@@ -118,7 +120,25 @@ class AgentFormDefinition
             'uppercase_labels' => ['required', 'boolean'],
             'no_branding' => ['required', 'boolean'],
             'transparent_background' => ['required', 'boolean'],
+            'translations' => ['nullable', 'array'],
+            'cover_picture' => ['nullable', 'url'],
+            'cover_settings' => ['nullable', 'array'],
+            'cover_settings.focal_point' => ['sometimes', 'nullable', 'array'],
+            'cover_settings.focal_point.x' => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:100'],
+            'cover_settings.focal_point.y' => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:100'],
+            'cover_settings.brightness' => ['sometimes', 'nullable', 'integer', 'min:-100', 'max:100'],
+            'logo_picture' => ['nullable', 'url'],
+            'custom_code' => ['nullable', 'string'],
+            'custom_css' => ['nullable', 'string', new CssOnlyRule()],
+            'submit_button_text' => ['nullable', 'string', 'max:50'],
             're_fillable' => ['required', 'boolean'],
+            're_fill_button_text' => ['nullable', 'string', 'max:50'],
+            'submitted_text' => ['required', 'string', 'max:10000'],
+            'redirect_url' => ['nullable', 'string'],
+            'max_submissions_count' => ['nullable', 'integer', 'min:1'],
+            'max_submissions_reached_text' => ['nullable', 'string'],
+            'editable_submissions' => ['required', 'boolean'],
+            'editable_submissions_button_text' => ['required', 'string', 'min:1', 'max:50'],
             'confetti_on_submission' => ['required', 'boolean'],
             'show_progress_bar' => ['required', 'boolean'],
             'auto_save' => ['required', 'boolean'],
@@ -128,7 +148,19 @@ class AgentFormDefinition
             'can_be_indexed' => ['required', 'boolean'],
             'use_captcha' => ['required', 'boolean'],
             'captcha_provider' => ['required', Rule::in(['recaptcha', 'hcaptcha'])],
+            'seo_meta' => ['nullable', 'array'],
             'settings' => ['present', 'array'],
+            'settings.navigation_arrows' => ['sometimes', 'boolean'],
+            'settings.auto_next' => ['sometimes', 'boolean'],
+            'analytics' => ['nullable', 'array'],
+            'analytics.provider' => ['nullable', Rule::in(['meta_pixel', 'google_analytics', 'gtm'])],
+            'analytics.tracking_id' => [
+                'nullable',
+                'string',
+                'max:50',
+                'regex:/^[A-Za-z0-9\-_\.]+$/',
+                'required_if:analytics.provider,meta_pixel,google_analytics,gtm',
+            ],
         ])->validate();
     }
 
