@@ -105,7 +105,7 @@ Self-hosted anonymous telemetry still follows `OPNFORM_ANONYMOUS_TELEMETRY_DISAB
 ## Safety behavior for agents
 
 - Never reveal or persist a draft capability token, OAuth token, handoff token, or export URL.
-- Re-fetch and reconcile on a draft version or form revision conflict.
+- Fetch the current form revision before updating, publishing, or trashing it; re-fetch and reconcile on any version or revision conflict.
 - Ask before publishing or trashing a form, even if the MCP client also displays an approval dialog.
 - Use submission data only when it is needed for the user's request.
 - Respect validation, permissions, plan cleaning, rate limits, and expired links instead of attempting to bypass them.
