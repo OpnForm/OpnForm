@@ -44,11 +44,16 @@ it('advertises submission tools only to scoped OAuth accounts and no mutation to
     $user = User::factory()->create();
     Passport::actingAs($user, ['mcp:use'], 'oauth');
 
-    $this->postJson('/mcp', $payload, array_merge($headers, [
+    $response = $this->postJson('/mcp', $payload, array_merge($headers, [
         'Authorization' => 'Bearer submission-scope-token',
     ]))->assertOk()
         ->assertSee(['list_submissions', 'get_submission_stats', 'export_submissions'])
         ->assertDontSee(['update_submission', 'delete_submission', 'create_submission']);
+
+    $tools = collect($response->json('result.tools'))->keyBy('name');
+
+    expect($tools['list_submissions']['annotations']['readOnlyHint'])->toBeTrue()
+        ->and($tools['export_submissions']['annotations']['readOnlyHint'] ?? false)->toBeFalse();
 });
 
 it('searches response values and filters submission status without leaking other forms', function () {
