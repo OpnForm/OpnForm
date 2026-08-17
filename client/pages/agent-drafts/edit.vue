@@ -64,6 +64,7 @@
 import FormEditor from '~/components/open/forms/components/FormEditor.vue'
 import { workspaceApi } from '~/api'
 import { WindowMessageTypes } from '~/composables/useWindowMessage'
+import { getAgentDraftSessionRequest } from '~/lib/forms/agent-draft-session'
 
 definePageMeta({ layout: 'empty' })
 useOpnSeoMeta({ title: 'Edit private form draft' })
@@ -228,12 +229,11 @@ const claimDraft = () => {
 }
 
 onMounted(() => {
-  const fragment = new URL(window.location.href).hash.replace(/^#handoff=/, '')
-  window.history.replaceState({}, '', '/agent-drafts/edit')
-  $fetch('/api/agent-drafts/handoff', {
-    method: 'POST',
-    body: { handoff_token: fragment },
-  }).then((response) => {
+  const sessionRequest = getAgentDraftSessionRequest(window.location.hash)
+  if (sessionRequest.consumesHandoff) {
+    window.history.replaceState({}, '', '/agent-drafts/edit')
+  }
+  $fetch(sessionRequest.url, sessionRequest.options).then((response) => {
     applyDraft(response.draft)
   }).catch((exception) => {
     fatalError.value = exception?.data?.message || 'This editor link is invalid or expired. Ask the agent for a fresh link.'

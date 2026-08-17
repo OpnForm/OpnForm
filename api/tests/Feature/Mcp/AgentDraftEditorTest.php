@@ -4,6 +4,7 @@ use App\Http\Controllers\AgentFormDraftController;
 use App\Mcp\Servers\OpnFormServer;
 use App\Mcp\Tools\PreviewFormDraftTool;
 use App\Models\Forms\AgentFormDraft;
+use App\Models\OAuthProvider;
 use App\Models\User;
 use App\Service\Forms\AgentFormDraftService;
 use Illuminate\Support\Facades\URL;
@@ -267,6 +268,43 @@ it('refuses claim into another users workspace', function () {
             'workspace_id' => $foreignWorkspace->id,
         ])
         ->assertForbidden();
+
+    $this->assertDatabaseCount('forms', 0);
+});
+
+it('refuses a guest payment account that does not belong to the claim workspace', function () {
+    $user = User::factory()->create();
+    $workspace = createUserWorkspace($user);
+    $foreignProvider = OAuthProvider::factory()->for(User::factory()->create())->create([
+        'provider' => 'stripe',
+        'provider_user_id' => 'acct_foreign',
+    ]);
+    $drafts = app(AgentFormDraftService::class);
+    $created = $drafts->create(editorDraftDefinition([
+        'properties' => [[
+            'id' => 'payment-field',
+            'name' => 'Payment',
+            'type' => 'payment',
+            'amount' => 10,
+            'currency' => 'USD',
+            'stripe_account_id' => $foreignProvider->id,
+        ]],
+    ]));
+    $session = $drafts->consumeEditorHandoff(
+        $drafts->issueEditorHandoff($created['token'])['handoff_token'],
+    )['editor_session'];
+
+    $this->actingAs($user, 'api')
+        ->withHeaders([
+            'x-api-secret' => 'test-front-secret',
+            AgentFormDraftController::SESSION_HEADER => $session,
+        ])
+        ->postJson(route('agent-drafts.editor.claim'), [
+            'expected_version' => 1,
+            'workspace_id' => $workspace->id,
+        ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('properties.0.stripe_account_id');
 
     $this->assertDatabaseCount('forms', 0);
 });

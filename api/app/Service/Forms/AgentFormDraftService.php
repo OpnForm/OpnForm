@@ -195,6 +195,7 @@ class AgentFormDraftService
 
             $definition = $draft->definition;
             $definition['visibility'] = 'draft';
+            $definition = $this->formDefinition->normalizeAndValidate($definition, $workspace);
             $created = $this->formCreation->create($definition, $user, $workspace);
 
             $draft->forceFill([
