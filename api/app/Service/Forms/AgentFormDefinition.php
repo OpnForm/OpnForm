@@ -3,6 +3,7 @@
 namespace App\Service\Forms;
 
 use App\Models\Forms\Form;
+use App\Models\Workspace;
 use App\Rules\ComputedVariablesRule;
 use App\Rules\FormPropertiesRule;
 use App\Service\Forms\AgentFormFieldCatalog as FieldCatalog;
@@ -67,7 +68,7 @@ class AgentFormDefinition
     {
     }
 
-    public function normalizeAndValidate(array $definition): array
+    public function normalizeAndValidate(array $definition, ?Workspace $workspace = null): array
     {
         $definition = $this->migrate($definition);
         $definition = array_replace($this->defaults(), $definition);
@@ -83,12 +84,12 @@ class AgentFormDefinition
             ], $property)
             : $property)->values()->all();
 
-        $this->validate($definition);
+        $this->validate($definition, $workspace);
 
         return Arr::only($definition, self::ALLOWED_TOP_LEVEL_KEYS);
     }
 
-    public function validate(array $definition): void
+    public function validate(array $definition, ?Workspace $workspace = null): void
     {
         $unknownKeys = array_values(array_diff(array_keys($definition), self::ALLOWED_TOP_LEVEL_KEYS));
 
@@ -102,7 +103,7 @@ class AgentFormDefinition
             'schema_version' => ['required', 'integer', Rule::in([self::SCHEMA_VERSION])],
             'title' => ['required', 'string', 'max:255'],
             'visibility' => ['required', Rule::in(Form::VISIBILITY)],
-            'properties' => ['required', 'array', 'min:1', 'max:500', new FormPropertiesRule()],
+            'properties' => ['required', 'array', 'min:1', 'max:500', new FormPropertiesRule($workspace)],
             'properties.*.type' => ['required', Rule::in(FieldCatalog::types())],
             'computed_variables' => ['nullable', 'array', new ComputedVariablesRule()],
             'language' => ['required', Rule::in(Form::LANGUAGES)],
