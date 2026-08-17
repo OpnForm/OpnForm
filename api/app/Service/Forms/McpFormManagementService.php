@@ -16,6 +16,7 @@ class McpFormManagementService
     public function __construct(
         private readonly AgentFormDefinition $definitions,
         private readonly FormCreationService $formCreation,
+        private readonly FormUpdateService $formUpdate,
     ) {
     }
 
@@ -146,24 +147,12 @@ class McpFormManagementService
             $definition = $this->definitions->normalizeAndValidate($definition, $form->workspace);
             $definition['visibility'] = $form->visibility;
 
-            $cleaner = (new FormCleaner())
-                ->processData($definition, $form)
-                ->simulateCleaning($form->workspace);
-            $formData = $cleaner->getData();
-            unset($formData['schema_version']);
-
-            $newPropertyIds = collect($formData['properties'])->pluck('id')->flip()->all();
-            $formData['removed_properties'] = array_merge(
-                $form->removed_properties ?? [],
-                collect($form->properties)->filter(fn (array $field) => ! Str::of($field['type'])->startsWith('nf-') && ! isset($newPropertyIds[$field['id']]))->all(),
-            );
-
-            $form->update($formData);
+            $updated = $this->formUpdate->update($form, $definition);
 
             return [
                 'message' => 'Form updated.',
-                'form' => $this->serializeForm($form->refresh()->load('workspace')),
-                'disabled_features' => $cleaner->getPerformedCleanings(),
+                'form' => $this->serializeForm($updated['form']->refresh()->load('workspace')),
+                'disabled_features' => $updated['cleanings'],
             ];
         });
     }
