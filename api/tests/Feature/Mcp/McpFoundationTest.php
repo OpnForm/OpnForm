@@ -68,6 +68,29 @@ it('publishes the canonical form field catalog', function () {
         ->assertSee('save');
 });
 
+it('requires public durable HTTPS URLs for agent-provided media', function () {
+    $definition = app(AgentFormDefinition::class);
+
+    expect(fn () => $definition->normalizeAndValidate([
+        'title' => 'Unsafe media',
+        'cover_picture' => 'http://127.0.0.1/cover.png',
+        'properties' => [
+            ['name' => 'Name', 'type' => 'text'],
+        ],
+    ]))->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    $validated = $definition->normalizeAndValidate([
+        'title' => 'Safe media',
+        'cover_picture' => 'https://cdn.example.com/cover.png',
+        'logo_picture' => 'https://cdn.example.com/logo.png',
+        'properties' => [
+            ['name' => 'Name', 'type' => 'text'],
+        ],
+    ]);
+
+    expect($validated['cover_picture'])->toBe('https://cdn.example.com/cover.png')
+        ->and($validated['logo_picture'])->toBe('https://cdn.example.com/logo.png');
+});
 it('normalizes and validates a form definition without persistence', function () {
     OpnFormServer::tool(ValidateFormDefinitionTool::class, [
         'definition' => [

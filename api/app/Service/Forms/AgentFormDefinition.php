@@ -7,6 +7,7 @@ use App\Models\Workspace;
 use App\Rules\ComputedVariablesRule;
 use App\Rules\CssOnlyRule;
 use App\Rules\FormPropertiesRule;
+use App\Rules\PublicMediaUrlRule;
 use App\Service\Forms\AgentFormFieldCatalog as FieldCatalog;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Validator;
@@ -121,13 +122,13 @@ class AgentFormDefinition
             'no_branding' => ['required', 'boolean'],
             'transparent_background' => ['required', 'boolean'],
             'translations' => ['nullable', 'array'],
-            'cover_picture' => ['nullable', 'url'],
+            'cover_picture' => ['nullable', new PublicMediaUrlRule()],
             'cover_settings' => ['nullable', 'array'],
             'cover_settings.focal_point' => ['sometimes', 'nullable', 'array'],
             'cover_settings.focal_point.x' => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:100'],
             'cover_settings.focal_point.y' => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:100'],
             'cover_settings.brightness' => ['sometimes', 'nullable', 'integer', 'min:-100', 'max:100'],
-            'logo_picture' => ['nullable', 'url'],
+            'logo_picture' => ['nullable', new PublicMediaUrlRule()],
             'custom_code' => ['nullable', 'string'],
             'custom_css' => ['nullable', 'string', new CssOnlyRule()],
             'submit_button_text' => ['nullable', 'string', 'max:50'],
@@ -249,9 +250,9 @@ class AgentFormDefinition
                 'no_branding' => ['type' => 'boolean', 'default' => false],
                 'transparent_background' => ['type' => 'boolean', 'default' => false],
                 'translations' => ['type' => ['object', 'array'], 'default' => (object) []],
-                'cover_picture' => ['type' => ['string', 'null'], 'format' => 'uri'],
+                'cover_picture' => ['type' => ['string', 'null'], 'format' => 'uri', 'pattern' => '^https://'],
                 'cover_settings' => ['type' => ['object', 'array'], 'default' => (object) []],
-                'logo_picture' => ['type' => ['string', 'null'], 'format' => 'uri'],
+                'logo_picture' => ['type' => ['string', 'null'], 'format' => 'uri', 'pattern' => '^https://'],
                 'custom_code' => ['type' => ['string', 'null']],
                 'custom_css' => ['type' => ['string', 'null']],
                 'submit_button_text' => ['type' => ['string', 'null'], 'maxLength' => 50],
