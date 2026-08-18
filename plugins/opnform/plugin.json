@@ -1,0 +1,20 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "opnform",
+  "version": "1.0.0",
+  "description": "Create, preview, and manage OpnForm forms and read their submissions with an AI agent.",
+  "author": {
+    "name": "OpnForm",
+    "url": "https://opnform.com"
+  },
+  "homepage": "https://docs.opnform.com/integrations/mcp",
+  "repository": "https://github.com/OpnForm/OpnForm",
+  "license": "AGPL-3.0-or-later",
+  "keywords": [
+    "forms",
+    "mcp",
+    "agent",
+    "submissions",
+    "no-code"
+  ]
+}

@@ -1,7 +1,10 @@
 <template>
   <div class="flex min-h-screen items-center justify-center bg-neutral-50 px-6">
     <div class="w-full max-w-md rounded-2xl border border-neutral-200 bg-white p-8 text-center shadow-sm">
-      <UIcon name="i-heroicons-shield-check" class="mx-auto h-10 w-10 text-blue-600" />
+      <div class="mx-auto flex w-fit items-center gap-2.5" aria-label="OpnForm">
+        <img src="/img/logo.svg" alt="" class="h-10 w-10">
+        <span class="text-lg font-semibold tracking-tight text-neutral-950">OpnForm</span>
+      </div>
       <h1 class="mt-4 text-xl font-semibold text-neutral-950">Connecting your OpnForm account</h1>
       <p class="mt-2 text-sm text-neutral-600">
         You will be redirected to review the access requested by your AI assistant.

@@ -2,9 +2,10 @@
 
 namespace App\Mcp\Servers;
 
+use App\Mcp\Apps\FormDraftPreviewApp;
+use App\Mcp\Methods\CallTool;
 use App\Mcp\Resources\FormDefinitionSchemaResource;
 use App\Mcp\Resources\FormFieldCatalogResource;
-use App\Mcp\Apps\FormDraftPreviewApp;
 use App\Mcp\Tools\CreateFormDraftTool;
 use App\Mcp\Tools\GetFormDraftTool;
 use App\Mcp\Tools\GetAccountContextTool;
@@ -32,7 +33,7 @@ use Laravel\Mcp\Server\Attributes\Version;
 
 #[Name('OpnForm')]
 #[Version('1.0.0')]
-#[Instructions('Build and manage OpnForm forms. Guest-safe draft tools are available without authentication; account, form, and submission tools require OAuth. Read the schema and field catalog before generating a form definition, and validate definitions before saving them.')]
+#[Instructions('Use OpnForm MCP tools directly. Never invoke Codex or ChatGPT recursively, run `codex exec`, use shell or raw HTTP, inspect repositories or caches, or switch connectors. If required OpnForm tools or resources are missing, stop and ask the user to start a new conversation with OpnForm selected before the first message. Guest draft tools need no login; account, form, and submission tools require OAuth. Enabling the plugin is not OAuth authentication. In local Codex, start a new conversation after OAuth so the MCP client loads the stored credential. If an account tool challenges, ask the user to authenticate the OpnForm MCP server in the host; do not repeatedly retry from the guest conversation. Read the schema and field catalog before generating a form or changing its presentation, fields, layout, or media, then validate before saving. Focused presentation creates one step per block automatically: use full-width blocks, no page breaks or standalone media blocks, and attach optional media through the block image property. Use only durable public HTTPS asset URLs, never localhost or temporary tunnel URLs.')]
 class OpnFormServer extends Server
 {
     public int $maxPaginationLength = 100;
@@ -67,4 +68,9 @@ class OpnFormServer extends Server
         FormFieldCatalogResource::class,
         FormDraftPreviewApp::class,
     ];
+
+    protected function boot(): void
+    {
+        $this->addMethod('tools/call', CallTool::class);
+    }
 }

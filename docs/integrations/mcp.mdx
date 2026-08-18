@@ -1,0 +1,111 @@
+---
+title: "MCP and AI agent integration"
+description: "Create and preview forms as a guest, then connect an OpnForm account to manage forms and read submissions."
+---
+
+OpnForm exposes a remote [Model Context Protocol](https://modelcontextprotocol.io) server at:
+
+```text
+https://api.opnform.com/mcp
+```
+
+The same endpoint supports two modes. Guest tools let an agent build a form before you create or connect an account. OAuth unlocks account-scoped form management and read-only submission access.
+
+## Guest form creation
+
+No sign-in is required to create a guest draft. A capable agent will:
+
+1. Read the versioned form schema and field catalog.
+2. Validate the proposed JSON form definition.
+3. Create a private draft that expires after seven days.
+4. Render an interactive preview, when the client supports MCP Apps.
+5. Revise the draft with optimistic version checks.
+6. Give you a reusable link to open it in the full OpnForm editor until the guest draft expires.
+
+The draft remains private and unpublished. The capability token returned to the agent is stored hashed by OpnForm and should never be shared. Preview URLs are signed for 60 minutes; every editor link remains reusable for the draft's seven-day lifetime. Creating a new link does not revoke an earlier one.
+
+After the handoff, the browser stores an HttpOnly draft session. You can edit before signing up. Saving the draft into OpnForm requires authentication and a writable workspace. When several workspaces are available, you choose where the form is created.
+
+<Note>
+Premium form features can appear in the preview. When the draft is saved to a workspace, normal OpnForm plan rules apply and the response identifies any disabled features. MCP does not bypass plan enforcement.
+</Note>
+
+## Connect an account
+
+MCP clients discover OpnForm's OAuth metadata from the server. The authorization flow uses PKCE and requests the dedicated `mcp:use` scope. You do not paste an API key or password into the conversation.
+
+After OAuth, an agent can:
+
+- list and inspect accessible workspaces;
+- list, inspect, create, update, publish, and soft-trash forms;
+- list, search, filter, inspect, summarize, and export submissions.
+
+Workspace administration and submission mutations are intentionally unavailable. Form creation always starts as a draft. Publishing and trashing require explicit confirmation, and MCP exposes neither permanent deletion nor restoration. Submission field summaries follow the workspace plan and require access to OpnForm's form summary feature.
+
+OAuth clients must use authorization code flow with PKCE `S256`. The consent screen displays the callback destination before approval. A connected client can revoke its current access and refresh tokens by sending an authenticated `DELETE` request to `/mcp-oauth/session`.
+
+MCP OAuth authorization requests and login tickets use atomic cache locks. Horizontally scaled and serverless installations must configure Laravel's default cache as a shared, lock-capable store such as Redis or DynamoDB; local file and array stores are suitable only for single-instance development.
+
+## ChatGPT
+
+In a ChatGPT plan that supports custom MCP apps, enable developer mode and create a custom app using `https://api.opnform.com/mcp`. ChatGPT discovers OAuth and the interactive draft preview from the endpoint. Availability and admin controls depend on the ChatGPT plan and workspace settings.
+
+ChatGPT requires HTTPS for nested form previews and external editor destinations. During local development, expose the frontend and API through HTTPS development URLs before testing the interactive preview or **Open in OpnForm** action; an `http://127.0.0.1` origin will be rejected by the ChatGPT sandbox.
+
+## Install the agent plugin package
+
+The installable package lives in `plugins/opnform/` and supports two formats:
+
+- `plugin.json`, `mcp.json`, and `skills/opnform/SKILL.md` form the portable [Agent Plugins 1.0](https://agent-plugins.org) package;
+- `.codex-plugin/plugin.json` and `.mcp.json` form the native Codex plugin and connect directly to the hosted MCP server.
+
+Install `plugins/opnform/`, not the monorepo root. The package contains no credentials or development endpoint. Agent Plugins 1.0 deliberately leaves OAuth discovery and credential storage to the client.
+
+### ChatGPT directory registration
+
+ChatGPT distribution requires a registered MCP connection. Enable Developer mode, register `https://api.opnform.com/mcp` from the ChatGPT Plugins page, and keep the technical app ID that ChatGPT creates. That real ID is then mapped in `.app.json`, and the native manifest's `apps` field points to `./.app.json`.
+
+The repository intentionally omits `.app.json` until OpnForm has a real registered ChatGPT app ID. The Codex `.mcp.json` integration remains directly installable and testable without that compatibility mapping.
+
+## Vapor OAuth keys
+
+The Vapor deployment requires one stable Passport key pair per environment. Generate the pair once in a secure workspace, add it to the environment file with `vapor env:passport`, and encrypt that file before updating the `ENCRYPTED_ENV_FILE` GitHub secret used by the deployment workflow. Never commit the plaintext environment or Passport keys.
+
+Every Vapor deploy runs `php artisan mcp:check-oauth-keys --environment-only` before migrations. The deployment stops if either encrypted environment key is missing, malformed, or belongs to a different pair; local storage keys cannot satisfy this production check. Keep the same production pair across deployments because rotating it invalidates existing OAuth tokens.
+
+## Self-hosting
+
+MCP is disabled by default on self-hosted instances. Enable it explicitly and point your client at your public API origin:
+
+```dotenv
+MCP_ENABLED=true
+MCP_OBSERVABILITY_ENABLED=true
+```
+
+For example, use `https://forms.example.com/mcp`. The endpoint must be reachable by the agent client over HTTPS. Configure the allowed OAuth callback domains and custom URI schemes for the clients you trust.
+
+The default limits are intentionally permissive for normal agent use:
+
+| Variable | Default | Scope |
+| --- | ---: | --- |
+| `MCP_RATE_LIMIT_PER_MINUTE` | `120` | All MCP requests, per user or guest IP |
+| `MCP_RATE_LIMIT_PER_HOUR` | `3000` | All MCP requests, per user or guest IP |
+| `MCP_DRAFT_CREATES_PER_MINUTE` | `20` | Guest draft creation, per IP |
+| `MCP_DRAFT_CREATES_PER_HOUR` | `200` | Guest draft creation, per IP |
+| `MCP_SUBMISSION_EXPORTS_PER_MINUTE` | `5` | Exports, per user and form |
+| `MCP_SUBMISSION_EXPORTS_PER_HOUR` | `30` | Exports, per user and form |
+| `FORM_SUMMARY_RATE_LIMIT_PER_MINUTE` | `30` | REST and MCP submission summaries, shared per user |
+
+## Privacy and observability
+
+When `MCP_OBSERVABILITY_ENABLED=true`, OpnForm records only the MCP method, tool name, guest/OAuth mode, outcome, HTTP status, and duration. Request arguments, draft and OAuth tokens, form definitions, submission values, export URLs, user identifiers, and IP addresses are not included in MCP telemetry or structured request logs.
+
+Self-hosted anonymous telemetry still follows `OPNFORM_ANONYMOUS_TELEMETRY_DISABLED`. Turning off MCP observability disables both the MCP usage event and its structured log.
+
+## Safety behavior for agents
+
+- Never reveal or persist a draft capability token, OAuth token, handoff token, or export URL.
+- Fetch the current form revision before updating, publishing, or trashing it; re-fetch and reconcile on any version or revision conflict.
+- Ask before publishing or trashing a form, even if the MCP client also displays an approval dialog.
+- Use submission data only when it is needed for the user's request.
+- Respect validation, permissions, plan cleaning, rate limits, and expired links instead of attempting to bypass them.

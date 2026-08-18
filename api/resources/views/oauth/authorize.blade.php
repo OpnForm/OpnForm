@@ -9,8 +9,10 @@
         * { box-sizing: border-box; }
         body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 24px; background: #f8fafc; color: #0f172a; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
         .card { width: 100%; max-width: 440px; padding: 32px; border: 1px solid #e2e8f0; border-radius: 20px; background: white; box-shadow: 0 20px 50px rgba(15, 23, 42, .08); }
-        .mark { display: grid; place-items: center; width: 48px; height: 48px; margin: 0 auto; border-radius: 14px; background: #eff6ff; color: #2563eb; font-size: 24px; }
-        h1 { margin: 20px 0 8px; text-align: center; font-size: 24px; line-height: 1.2; }
+        .brand { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 20px; }
+        .brand-logo { display: block; width: 42px; height: 42px; }
+        .brand-name { font-size: 18px; font-weight: 700; letter-spacing: -.02em; }
+        h1 { margin: 0 0 8px; text-align: center; font-size: 24px; line-height: 1.2; }
         .intro { margin: 0; text-align: center; color: #64748b; line-height: 1.5; }
         .account, .destination, .permission { margin-top: 24px; padding: 16px; border-radius: 12px; background: #f8fafc; }
         .label { margin: 0 0 6px; color: #64748b; font-size: 13px; }
@@ -27,7 +29,16 @@
 </head>
 <body>
 <main class="card">
-    <div class="mark" aria-hidden="true">✓</div>
+    <div class="brand" aria-label="OpnForm">
+        <svg class="brand-logo" aria-hidden="true" fill="none" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+            <linearGradient id="opnform-gradient" gradientUnits="userSpaceOnUse" x1="60" x2="60" y1="2" y2="118.352">
+                <stop offset="0" stop-color="#2563eb"/>
+                <stop offset="1" stop-color="#60a5fa"/>
+            </linearGradient>
+            <path clip-rule="evenodd" d="m80.6502 118.352c22.9638-8.418 39.3498-30.4712 39.3498-56.352 0-33.1371-26.8629-60-60-60s-60 26.8629-60 60c0 25.8808 16.3862 47.934 39.3498 56.352l16.631-38.9411c-7.4746-1.9924-12.9808-8.8086-12.9808-16.9109 0-9.665 7.835-17.5 17.5-17.5s17.5 7.835 17.5 17.5c0 8.4269-5.9563 15.4627-13.8885 17.1269z" fill="url(#opnform-gradient)" fill-rule="evenodd"/>
+        </svg>
+        <span class="brand-name">OpnForm</span>
+    </div>
     <h1>Connect {{ $client->name }}</h1>
     <p class="intro">Review the access requested for your OpnForm account.</p>
 

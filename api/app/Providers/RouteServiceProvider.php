@@ -69,11 +69,6 @@ class RouteServiceProvider extends ServiceProvider
                 });
         });
 
-        // Rate limit for summary endpoints: 30 requests per minute per user
-        RateLimiter::for('summary', function (Request $request) {
-            return Limit::perMinute(30)->by($request->user()?->id ?: $request->ip());
-        });
-
         // Export endpoints use dedicated buckets so long-running CSV exports
         // are not blocked by the general API rate limit.
         RateLimiter::for('export', function (Request $request) {

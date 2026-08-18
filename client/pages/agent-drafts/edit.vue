@@ -66,6 +66,7 @@ import { workspaceApi } from '~/api'
 import { WindowMessageTypes } from '~/composables/useWindowMessage'
 import { createAgentDraftAutosave } from '~/lib/forms/agent-draft-autosave'
 import { getAgentDraftSessionRequest } from '~/lib/forms/agent-draft-session'
+import { isAgentDraftVersionConflict } from '~/lib/forms/agent-draft-errors.js'
 
 definePageMeta({ layout: 'empty' })
 useOpnSeoMeta({ title: 'Edit private form draft' })
@@ -147,7 +148,7 @@ const performSync = (rawData, keepalive = false) => {
     syncState.value = 'saved'
   }).catch((exception) => {
     syncState.value = 'error'
-    if (exception?.statusCode === 422 || exception?.status === 422) {
+    if (isAgentDraftVersionConflict(exception)) {
       return refreshDraft().then(() => {
         useAlert().warning('The draft changed in the conversation. The editor was refreshed with the latest version.')
       })

@@ -9,13 +9,14 @@ use App\Mcp\Tools\GetSubmissionTool;
 use App\Mcp\Tools\ListSubmissionsTool;
 use App\Models\Forms\FormSubmission;
 use App\Models\User;
+use App\Service\Billing\Feature;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Queue;
 use Laravel\Passport\Passport;
 
-function submissionFixture(array $completedValues = ['Alice', 'Bob']): array
+function submissionFixture(array $completedValues = ['Alice', 'Bob'], ?User $user = null): array
 {
-    $user = User::factory()->create();
+    $user ??= User::factory()->create();
     $workspace = createUserWorkspace($user);
     $form = createForm($user, $workspace, ['enable_partial_submissions' => true]);
     $fieldId = $form->properties[0]['id'];
@@ -28,7 +29,7 @@ function submissionFixture(array $completedValues = ['Alice', 'Bob']): array
     return compact('user', 'workspace', 'form', 'fieldId', 'submissions');
 }
 
-it('advertises submission tools only to scoped OAuth accounts and no mutation tools', function () {
+it('advertises OAuth-protected submission tools and no submission mutation tools', function () {
     $payload = [
         'jsonrpc' => '2.0',
         'id' => 1,
@@ -37,9 +38,18 @@ it('advertises submission tools only to scoped OAuth accounts and no mutation to
     ];
     $headers = ['Accept' => 'application/json, text/event-stream'];
 
-    $this->postJson('/mcp', $payload, $headers)
-        ->assertOk()
-        ->assertDontSee('list_submissions');
+    $response = $this->postJson('/mcp', $payload, $headers)->assertOk();
+    $tools = collect($response->json('result.tools'))->keyBy('name');
+
+    expect($tools)->toHaveKeys(['list_submissions', 'get_submission_stats', 'export_submissions'])
+        ->and($tools['list_submissions']['securitySchemes'])->toBe([
+            [
+                'type' => 'oauth2',
+                'scopes' => ['mcp:use'],
+            ],
+        ]);
+
+    $response->assertDontSee(['update_submission', 'delete_submission', 'create_submission']);
 
     $user = User::factory()->create();
     Passport::actingAs($user, ['mcp:use'], 'oauth');
@@ -99,7 +109,7 @@ it('lets readonly workspace members read submissions and rejects cross-form IDs'
 });
 
 it('returns bounded existing form analytics with filtered field summaries', function () {
-    $fixture = submissionFixture(['Alice', 'Bob']);
+    $fixture = submissionFixture(['Alice', 'Bob'], $this->createProUser());
     $fixture['form']->submissions()->create([
         'data' => [$fixture['fieldId'] => 'In progress'],
         'status' => FormSubmission::STATUS_PARTIAL,
@@ -113,6 +123,70 @@ it('returns bounded existing form analytics with filtered field summaries', func
         ->assertSee(['completed_submissions', 'partial_submissions', 'field_summary', 'processed_submissions'])
         ->assertSee('Alice')
         ->assertDontSee('In progress');
+});
+
+it('preserves the form summary plan entitlement', function () {
+    $fixture = submissionFixture();
+
+    OpnFormServer::actingAs($fixture['user'], 'oauth')->tool(GetSubmissionStatsTool::class, [
+        'form_id' => $fixture['form']->id,
+    ])->assertHasErrors(['Pro plan is required']);
+});
+
+it('requires both analytics and summary feature entitlements', function (string $grantedFeature) {
+    $fixture = submissionFixture();
+    $fixture['workspace']->update([
+        'plan_overrides' => ['features' => [$grantedFeature]],
+    ]);
+
+    OpnFormServer::actingAs($fixture['user'], 'oauth')->tool(GetSubmissionStatsTool::class, [
+        'form_id' => $fixture['form']->id,
+    ])->assertHasErrors(['Pro plan is required']);
+})->with([
+    'summary only' => Feature::FORM_SUMMARY,
+    'analytics only' => Feature::FORM_ANALYTICS,
+]);
+
+it('accepts open-ended submission date filters', function () {
+    $dateFrom = now()->subDay()->toDateString();
+    $fixture = submissionFixture(['Alice'], $this->createProUser());
+
+    OpnFormServer::actingAs($fixture['user'], 'oauth')->tool(ListSubmissionsTool::class, [
+        'form_id' => $fixture['form']->id,
+        'date_from' => $dateFrom,
+    ])->assertOk()->assertSee('Alice');
+
+    OpnFormServer::actingAs($fixture['user'], 'oauth')->tool(GetSubmissionStatsTool::class, [
+        'form_id' => $fixture['form']->id,
+        'date_from' => $dateFrom,
+    ])->assertOk()->assertSee('field_summary');
+});
+
+it('rate limits repeated submission statistics requests', function () {
+    config()->set('opnform.form_summary_rate_limit_per_minute', 1);
+    $fixture = submissionFixture(['Alice'], $this->createProUser());
+
+    OpnFormServer::actingAs($fixture['user'], 'oauth')->tool(GetSubmissionStatsTool::class, [
+        'form_id' => $fixture['form']->id,
+    ])->assertOk();
+
+    OpnFormServer::actingAs($fixture['user'], 'oauth')->tool(GetSubmissionStatsTool::class, [
+        'form_id' => $fixture['form']->id,
+    ])->assertHasErrors(['Too many submission statistics requests']);
+});
+
+it('shares the form summary rate limit between MCP and REST', function () {
+    config()->set('opnform.form_summary_rate_limit_per_minute', 1);
+    $fixture = submissionFixture(['Alice'], $this->createProUser());
+
+    $this->actingAsUser($fixture['user']);
+    $this->getJson(route('open.workspaces.form.summary', [$fixture['workspace'], $fixture['form']]))
+        ->assertOk()
+        ->assertHeader('X-RateLimit-Remaining', '0');
+
+    OpnFormServer::actingAs($fixture['user'], 'oauth')->tool(GetSubmissionStatsTool::class, [
+        'form_id' => $fixture['form']->id,
+    ])->assertHasErrors(['Too many submission statistics requests']);
 });
 
 it('queues private CSV exports and scopes status polling to the requesting account', function () {

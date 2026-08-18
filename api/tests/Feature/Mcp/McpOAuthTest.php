@@ -4,6 +4,7 @@ use App\Models\User;
 use App\Service\OAuth\McpOAuthSessionService;
 use App\Service\OAuth\McpPassportClientRepository;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Laravel\Passport\ClientRepository;
 use Laravel\Passport\Passport;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
@@ -73,6 +74,7 @@ it('publishes OAuth 2.1 discovery metadata for the unified MCP endpoint', functi
         ->assertJsonPath('token_endpoint', route('passport.token'))
         ->assertJsonPath('registration_endpoint', url('/oauth/register'))
         ->assertJsonPath('code_challenge_methods_supported.0', 'S256')
+        ->assertJsonPath('token_endpoint_auth_methods_supported.0', 'none')
         ->assertJsonPath('scopes_supported.0', 'mcp:use');
 });
 
@@ -89,14 +91,74 @@ it('requires S256 PKCE for every delegated authorization request', function (arr
     ]],
 ]);
 
+it('returns a tool-level OAuth challenge when an account tool is called anonymously', function () {
+    $response = $this->postJson('/mcp', [
+        'jsonrpc' => '2.0',
+        'id' => 1,
+        'method' => 'tools/call',
+        'params' => [
+            'name' => 'list_forms',
+            'arguments' => [],
+        ],
+    ], mcpHeaders())->assertOk()
+        ->assertJsonPath('result.isError', true);
+
+    $challenge = $response->json('result._meta.mcp/www_authenticate.0');
+
+    expect($challenge)
+        ->toContain('Bearer resource_metadata="'.route('mcp.oauth.protected-resource.nested', ['path' => 'mcp']).'"')
+        ->toContain('scope="mcp:use"')
+        ->toContain('error="insufficient_scope"')
+        ->toContain('error_description="Connect your OpnForm account to continue"');
+});
+
+it('does not treat a normal OpnForm web session as MCP authentication', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user, 'web')->postJson('/mcp', [
+        'jsonrpc' => '2.0',
+        'id' => 1,
+        'method' => 'tools/call',
+        'params' => [
+            'name' => 'get_account_context',
+            'arguments' => [],
+        ],
+    ], mcpHeaders())->assertOk()
+        ->assertJsonPath('result.isError', true)
+        ->assertJsonPath('result._meta.mcp/www_authenticate.0', fn (string $challenge) => str_contains(
+            $challenge,
+            'error="insufficient_scope"',
+        ));
+});
+
+it('uses a scoped MCP bearer token for account tool calls', function () {
+    $user = User::factory()->create();
+    Passport::actingAs($user, ['mcp:use'], 'oauth');
+
+    $this->postJson('/mcp', [
+        'jsonrpc' => '2.0',
+        'id' => 1,
+        'method' => 'tools/call',
+        'params' => [
+            'name' => 'get_account_context',
+            'arguments' => [],
+        ],
+    ], mcpHeaders([
+        'Authorization' => 'Bearer scoped-account-token',
+    ]))->assertOk()
+        ->assertJsonPath('result.isError', false)
+        ->assertJsonPath('result.structuredContent.account.id', $user->id)
+        ->assertJsonMissingPath('result._meta.mcp/www_authenticate');
+});
+
 it('dynamically registers public PKCE clients only for allowed redirects', function () {
     $this->postJson('/oauth/register', [
         'client_name' => 'ChatGPT',
-        'redirect_uris' => ['https://chatgpt.com/connector_platform_oauth_redirect'],
+        'redirect_uris' => ['https://chatgpt.com/connector/oauth/local-test'],
     ])->assertCreated()
         ->assertJsonPath('token_endpoint_auth_method', 'none')
         ->assertJsonPath('scope', 'mcp:use')
-        ->assertJsonPath('redirect_uris.0', 'https://chatgpt.com/connector_platform_oauth_redirect');
+        ->assertJsonPath('redirect_uris.0', 'https://chatgpt.com/connector/oauth/local-test');
 
     $this->assertDatabaseCount('oauth_clients', 1);
 
@@ -107,6 +169,43 @@ it('dynamically registers public PKCE clients only for allowed redirects', funct
         ->assertJsonPath('error', 'invalid_redirect_uri');
 
     $this->assertDatabaseCount('oauth_clients', 1);
+
+    $this->postJson('/oauth/register', [
+        'client_name' => 'Delimiter injection',
+        'redirect_uris' => ['https://chatgpt.com/callback,https://attacker.example/callback'],
+    ])->assertBadRequest()
+        ->assertJsonPath('error', 'invalid_redirect_uri');
+
+    $this->assertDatabaseCount('oauth_clients', 1);
+
+    $this->postJson('/oauth/register', [
+        'client_name' => 'Loopback userinfo injection',
+        'redirect_uris' => ['http://localhost:123@attacker.example/callback'],
+    ])->assertBadRequest()
+        ->assertJsonPath('error', 'invalid_redirect_uri');
+
+    $this->assertDatabaseCount('oauth_clients', 1);
+});
+
+it('rejects PKCE methods other than S256', function () {
+    $registration = $this->postJson('/oauth/register', [
+        'client_name' => 'Plain PKCE client',
+        'redirect_uris' => ['http://localhost/callback'],
+    ])->assertCreated();
+
+    $this->actingAs(User::factory()->create(), 'web')
+        ->get('/oauth/authorize?'.http_build_query([
+            'client_id' => $registration->json('client_id'),
+            'redirect_uri' => 'http://localhost/callback',
+            'response_type' => 'code',
+            'scope' => 'mcp:use',
+            'state' => 'oauth-state',
+            'code_challenge' => str_repeat('a', 64),
+            'code_challenge_method' => 'plain',
+        ]))
+        ->assertBadRequest()
+        ->assertJsonPath('error', 'invalid_request')
+        ->assertJsonPath('error_description', 'The code_challenge_method must be S256.');
 });
 
 it('keeps guest MCP available while accepting properly scoped Passport users', function () {
@@ -147,6 +246,7 @@ it('completes PKCE authorization and uses the issued bearer token on the same en
         ->assertSee('Connect MCP integration test')
         ->assertSee('Use OpnForm MCP features')
         ->assertSee('http://localhost/callback')
+        ->assertSee('aria-label="OpnForm"', false)
         ->assertHeader('Content-Security-Policy', "frame-ancestors 'none'")
         ->assertHeader('X-Frame-Options', 'DENY')
         ->assertHeader('Referrer-Policy', 'no-referrer')
@@ -169,9 +269,20 @@ it('completes PKCE authorization and uses the issued bearer token on the same en
         'code' => $callbackQuery['code'],
     ])->assertOk();
 
-    $this->postJson('/mcp', mcpInitializePayload(), mcpHeaders([
-        'Authorization' => 'Bearer '.$token->json('access_token'),
-    ]))->assertOk();
+    $authorizationHeader = ['Authorization' => 'Bearer '.$token->json('access_token')];
+
+    $this->postJson('/mcp', mcpInitializePayload(), mcpHeaders($authorizationHeader))->assertOk();
+
+    $this->deleteJson('/mcp-oauth/session', [], $authorizationHeader)->assertNoContent();
+
+    $this->app['auth']->forgetGuards();
+    $this->postJson('/mcp', mcpInitializePayload(), mcpHeaders($authorizationHeader))->assertUnauthorized();
+
+    $this->post('/oauth/token', [
+        'grant_type' => 'refresh_token',
+        'client_id' => $clientId,
+        'refresh_token' => $token->json('refresh_token'),
+    ])->assertUnauthorized();
 });
 
 it('rejects an OAuth token without the MCP scope and advertises discovery', function () {
@@ -244,6 +355,31 @@ it('consumes login tickets once and removes them from the authorization URL', fu
 
     expect(fn () => $sessions->consumeLoginTicket($authorizationQuery['mcp_login_ticket'], $request))
         ->toThrow(AccessDeniedHttpException::class);
+});
+
+it('does not consume an authorization request while its atomic lock is held', function () {
+    config()->set('app.front_url', 'https://opnform.test');
+    $sessions = app(McpOAuthSessionService::class);
+    $oauthRequest = Request::create(
+        '/oauth/authorize?client_id=7&state=state-1&code_challenge='.str_repeat('a', 64).'&code_challenge_method=S256',
+        'GET'
+    );
+    $frontendUrl = $sessions->beginAuthorization($oauthRequest);
+    parse_str((string) parse_url($frontendUrl, PHP_URL_QUERY), $frontendQuery);
+
+    $cacheKey = 'mcp:oauth:authorization-request:'.hash('sha256', $frontendQuery['request']);
+    $lock = Cache::lock('mcp:oauth:consume:'.hash('sha256', $cacheKey), 5);
+    expect($lock->get())->toBeTrue();
+
+    try {
+        expect(fn () => $sessions->issueLoginTicket($frontendQuery['request'], User::factory()->create()))
+            ->toThrow(\Symfony\Component\HttpKernel\Exception\BadRequestHttpException::class);
+    } finally {
+        $lock->release();
+    }
+
+    expect($sessions->issueLoginTicket($frontendQuery['request'], User::factory()->create()))
+        ->toContain('mcp_login_ticket=');
 });
 
 it('binds each login ticket to the exact OAuth authorization request', function () {

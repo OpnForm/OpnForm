@@ -14,6 +14,8 @@ use App\Models\OAuthProvider;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Service\Forms\AgentFormDefinition;
+use Illuminate\Database\Events\QueryExecuted;
+use Illuminate\Support\Facades\DB;
 use Laravel\Passport\Passport;
 
 function managedFormDefinition(array $overrides = []): array
@@ -57,16 +59,19 @@ function managedFormRevision(User $user, Form $form): string
     return $management->serializeForm($management->form($user, $form->id))['revision'];
 }
 
-it('registers account tools only for an authenticated MCP account', function () {
-    expect(app(ListFormsTool::class)->eligibleForRegistration())->toBeFalse();
+it('always advertises account tools as OAuth protected', function () {
+    $tool = app(ListFormsTool::class);
 
-    $user = User::factory()->create();
-    auth('oauth')->setUser($user);
-
-    expect(app(ListFormsTool::class)->eligibleForRegistration())->toBeTrue();
+    expect($tool->eligibleForRegistration())->toBeTrue()
+        ->and($tool->toArray()['securitySchemes'])->toBe([
+            [
+                'type' => 'oauth2',
+                'scopes' => ['mcp:use'],
+            ],
+        ]);
 });
 
-it('advertises guest tools anonymously and account tools only with scoped OAuth', function () {
+it('advertises guest and account tools with explicit per-tool auth policies', function () {
     $payload = [
         'jsonrpc' => '2.0',
         'id' => 1,
@@ -75,10 +80,19 @@ it('advertises guest tools anonymously and account tools only with scoped OAuth'
     ];
     $headers = ['Accept' => 'application/json, text/event-stream'];
 
-    $this->postJson('/mcp', $payload, $headers)
-        ->assertOk()
-        ->assertSee('create_form_draft')
-        ->assertDontSee('list_forms');
+    $response = $this->postJson('/mcp', $payload, $headers)->assertOk();
+    $tools = collect($response->json('result.tools'))->keyBy('name');
+
+    expect($tools)->toHaveKeys(['create_form_draft', 'list_forms', 'trash_form'])
+        ->and($tools['create_form_draft']['securitySchemes'])->toBe([
+            ['type' => 'noauth'],
+        ])
+        ->and($tools['list_forms']['securitySchemes'])->toBe([
+            [
+                'type' => 'oauth2',
+                'scopes' => ['mcp:use'],
+            ],
+        ]);
 
     $user = User::factory()->create();
     Passport::actingAs($user, ['mcp:use'], 'oauth');
@@ -186,6 +200,10 @@ it('updates a canonical form without changing publication state and rejects stal
     $form = managedForm($user, $workspace, ['visibility' => 'public']);
     $management = app(\App\Service\Forms\McpFormManagementService::class);
     $expectedRevision = $management->serializeForm($management->form($user, $form->id))['revision'];
+    $queries = [];
+    DB::listen(function (QueryExecuted $query) use (&$queries) {
+        $queries[] = $query->sql;
+    });
 
     OpnFormServer::actingAs($user, 'oauth')->tool(UpdateFormTool::class, [
         'form_id' => $form->id,
@@ -197,6 +215,10 @@ it('updates a canonical form without changing publication state and rejects stal
     ])->assertOk()->assertSee('Updated by agent');
 
     expect($form->refresh()->visibility)->toBe('public');
+
+    if (DB::connection()->getDriverName() !== 'sqlite') {
+        expect(collect($queries)->contains(fn (string $query) => str_contains(strtolower($query), 'for update')))->toBeTrue();
+    }
 
     OpnFormServer::actingAs($user, 'oauth')->tool(UpdateFormTool::class, [
         'form_id' => $form->id,

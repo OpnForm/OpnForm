@@ -59,13 +59,15 @@ it('publishes standard and ChatGPT-compatible CSP metadata with the full fronten
         ->toResource($previewApp);
 
     expect($previewApp->uri())->toBe('ui://opnform/form-draft-preview-v3')
+        ->and($previewApp->resolvedAppMeta()['csp']['resourceDomains'])
+        ->toBe(['http://127.0.0.1:33676'])
         ->and($previewApp->resolvedAppMeta()['csp']['frameDomains'])
         ->toBe(['http://127.0.0.1:33676'])
         ->and($resource['text'])->not->toContain('native-preview')
         ->and($resource['_meta']['openai/widgetCSP'])
         ->toBe([
             'connect_domains' => [],
-            'resource_domains' => [],
+            'resource_domains' => ['http://127.0.0.1:33676'],
             'frame_domains' => ['http://127.0.0.1:33676'],
             'redirect_domains' => ['http://127.0.0.1:33676'],
         ]);
@@ -77,6 +79,8 @@ it('publishes standard and ChatGPT-compatible CSP metadata with the full fronten
         ->toResource($secureApp);
 
     expect($secureApp->resolvedAppMeta()['csp']['frameDomains'])
+        ->toBe(['https://opnform.test'])
+        ->and($secureApp->resolvedAppMeta()['csp']['resourceDomains'])
         ->toBe(['https://opnform.test'])
         ->and($secureResource['_meta']['openai/widgetCSP']['frame_domains'])
         ->toBe(['https://opnform.test']);
@@ -93,6 +97,17 @@ it('serves preview data only through a valid signed URL without exposing capabil
         ->assertJsonMissing(['token_hash' => $draft->token_hash]);
 
     $this->getJson(route('agent-drafts.preview', $draft))->assertForbidden();
+});
+
+it('keeps each generated browser preview link valid for one hour', function () {
+    $this->freezeTime();
+    $draft = app(AgentFormDraftService::class)->create(editorDraftDefinition())['draft'];
+    $previewUrl = app(AgentFormDraftService::class)->previewUrl($draft);
+    parse_str((string) parse_url($previewUrl, PHP_URL_QUERY), $previewQuery);
+    parse_str((string) parse_url($previewQuery['source'], PHP_URL_QUERY), $sourceQuery);
+
+    expect((int) $sourceQuery['expires'])
+        ->toBe(now()->addMinutes(AgentFormDraftService::PREVIEW_URL_TTL_MINUTES)->timestamp);
 });
 
 it('keeps every guest editor link reusable until the draft expires', function () {

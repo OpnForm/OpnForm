@@ -11,14 +11,13 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
 use Laravel\Mcp\Server\Attributes\RendersApp;
-use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsOpenWorld;
 
 #[Name('preview_form_draft')]
-#[Description('Render the current guest draft, return a short-lived browser preview, and create a reusable editor link that remains valid for the guest draft lifetime.')]
+#[Description('Render the current guest draft, return a browser preview valid for one hour, and create a reusable editor link that remains valid for the seven-day guest draft lifetime. Call this tool again whenever a fresh preview link is needed.')]
 #[RendersApp(resource: FormDraftPreviewApp::class)]
 #[IsOpenWorld]
-class PreviewFormDraftTool extends Tool
+class PreviewFormDraftTool extends GuestMcpTool
 {
     public function handle(Request $request, AgentFormDraftService $drafts): ResponseFactory
     {
