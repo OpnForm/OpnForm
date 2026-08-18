@@ -13,10 +13,13 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use JsonException;
 
 class AgentFormDefinition
 {
     public const SCHEMA_VERSION = 1;
+
+    public const MAX_DEFINITION_BYTES = 1_000_000;
 
     private const ALLOWED_TOP_LEVEL_KEYS = [
         'schema_version',
@@ -101,12 +104,39 @@ class AgentFormDefinition
             ]);
         }
 
+        try {
+            $encodedDefinition = json_encode($definition, JSON_THROW_ON_ERROR);
+        } catch (JsonException) {
+            throw ValidationException::withMessages([
+                'definition' => ['The form definition must contain valid JSON values.'],
+            ]);
+        }
+
+        if (strlen($encodedDefinition) > self::MAX_DEFINITION_BYTES) {
+            throw ValidationException::withMessages([
+                'definition' => ['The form definition must not exceed 1 MB.'],
+            ]);
+        }
+
+        $propertyIds = collect($definition['properties'] ?? [])
+            ->pluck('id')
+            ->filter(fn ($id) => is_string($id) && $id !== '');
+
+        if ($propertyIds->duplicates()->isNotEmpty()) {
+            throw ValidationException::withMessages([
+                'properties' => ['Every form block must have a unique id.'],
+            ]);
+        }
+
         Validator::make($definition, [
             'schema_version' => ['required', 'integer', Rule::in([self::SCHEMA_VERSION])],
             'title' => ['required', 'string', 'max:255'],
             'visibility' => ['required', Rule::in(Form::VISIBILITY)],
             'properties' => ['required', 'array', 'min:1', 'max:500', new FormPropertiesRule($workspace)],
+            'properties.*.id' => ['required', 'string', 'max:255'],
+            'properties.*.name' => ['required', 'string', 'max:500'],
             'properties.*.type' => ['required', Rule::in(FieldCatalog::types())],
+            'properties.*.help' => ['nullable', 'string'],
             'computed_variables' => ['nullable', 'array', new ComputedVariablesRule()],
             'language' => ['required', Rule::in(Form::LANGUAGES)],
             'font_family' => ['nullable', 'string'],
@@ -294,6 +324,7 @@ class AgentFormDefinition
                     ],
                 ],
             ],
+            'x-opnform-max-bytes' => self::MAX_DEFINITION_BYTES,
         ];
     }
 
