@@ -68,6 +68,9 @@ There are dedicated configuration pages available for more detailed setup instru
 | `JWT_TTL`                        | Time to live for JSON Web Tokens (JWT).                                                                                                                                                   |
 | `JWT_SECRET`                     | Secret key used to sign JWTs.                                                                                                                                                             |
 | `JWT_SKIP_IP_UA_VALIDATION`      | Set to `true` to disable JWT User Agent validation (defaults to `false`). Keep this disabled in production and Docker deployments. For local Docker development, `docker-compose.dev.yml` sets this to `true` automatically. |
+| `OAUTH_ENABLED`                  | Overrides delegated OAuth 2.1 availability. By default, OAuth is enabled on OpnForm Cloud and when MCP is enabled on a self-hosted instance. |
+| `OAUTH_ACCESS_TOKEN_TTL`         | Passport access token lifetime in minutes. Defaults to `10080` (7 days) and does not change the first-party JWT lifetime. |
+| `OAUTH_REFRESH_TOKEN_TTL_DAYS`   | Passport refresh token lifetime in days. Defaults to `30`. |
 | `PUBLIC_UPLOADS_RATE_LIMIT_PER_MINUTE` | Maximum public upload requests allowed per client IP or authenticated user per route each minute. Defaults to `30`.                                                                 |
 | `PUBLIC_UPLOADS_RATE_LIMIT_PER_HOUR`   | Maximum public upload requests allowed per client IP or authenticated user per route each hour. Defaults to `300`.                                                                  |
 | `OIDC_FORCE_LOGIN`               | When set to `true`, password-based authentication is disabled and users must authenticate via OIDC SSO. See [Force Login Mode](../configuration/oidc-sso#7-force-login-mode) for details. |

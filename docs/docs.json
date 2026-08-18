@@ -156,6 +156,7 @@
             "group": "Contributing",
             "pages": [
               "contributing/getting-started",
+              "contributing/authentication-architecture",
               "contributing/new-form-block",
               "contributing/new-integration"
             ]
