@@ -128,3 +128,19 @@ describe('non-payment blocks', function () {
         expect($errors)->toBeEmpty();
     });
 });
+
+describe('guest validation', function () {
+    it('defers provider lookup when no workspace security boundary exists', function () {
+        $validator = new PaymentPropertyValidator();
+        $property = [
+            'type' => 'payment',
+            'amount' => 10,
+            'currency' => 'USD',
+            'stripe_account_id' => 999999,
+        ];
+
+        $errors = $validator->validate($property, 0, ['properties' => [$property]]);
+
+        expect($errors)->toBeEmpty();
+    });
+});
