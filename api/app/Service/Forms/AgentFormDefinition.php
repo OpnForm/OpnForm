@@ -148,6 +148,7 @@ class AgentFormDefinition
             'properties.*.name' => ['required', 'string', 'max:500'],
             'properties.*.type' => ['required', Rule::in(FieldCatalog::types())],
             'properties.*.help' => ['nullable', 'string'],
+            'properties.*.image.url' => ['nullable', new PublicMediaUrlRule()],
             'computed_variables' => ['nullable', 'array', new ComputedVariablesRule()],
             'language' => ['required', Rule::in(Form::LANGUAGES)],
             'font_family' => ['nullable', 'string'],
@@ -359,7 +360,7 @@ class AgentFormDefinition
                     'type' => 'object',
                     'additionalProperties' => true,
                     'properties' => [
-                        'url' => ['type' => ['string', 'null'], 'format' => 'uri'],
+                        'url' => ['type' => ['string', 'null'], 'format' => 'uri', 'pattern' => '^https://'],
                         'alt' => ['type' => ['string', 'null'], 'maxLength' => 125],
                         'layout' => [
                             'type' => ['string', 'null'],

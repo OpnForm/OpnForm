@@ -115,6 +115,36 @@ it('documents block media in the published form definition schema', function () 
         ->and($schema['$defs']['blockImage']['properties']['layout']['enum'])
         ->toContain('right-split', 'background');
 });
+
+it('applies the public media URL policy to block images', function () {
+    $definition = app(AgentFormDefinition::class);
+
+    expect(fn () => $definition->normalizeAndValidate([
+        'title' => 'Unsafe block image',
+        'properties' => [
+            [
+                'name' => 'Introduction',
+                'type' => 'nf-text',
+                'content' => '<p>Welcome</p>',
+                'image' => ['url' => 'https://draft.trycloudflare.com/image.png'],
+            ],
+        ],
+    ]))->toThrow(\Illuminate\Validation\ValidationException::class);
+
+    $validated = $definition->normalizeAndValidate([
+        'title' => 'Safe block image',
+        'properties' => [
+            [
+                'name' => 'Introduction',
+                'type' => 'nf-text',
+                'content' => '<p>Welcome</p>',
+                'image' => ['url' => 'https://cdn.example.com/image.png'],
+            ],
+        ],
+    ]);
+
+    expect($validated['properties'][0]['image']['url'])->toBe('https://cdn.example.com/image.png');
+});
 it('normalizes and validates a form definition without persistence', function () {
     OpnFormServer::tool(ValidateFormDefinitionTool::class, [
         'definition' => [
