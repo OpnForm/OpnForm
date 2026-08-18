@@ -7,6 +7,15 @@ use App\Mcp\Resources\FormFieldCatalogResource;
 use App\Mcp\Apps\FormDraftPreviewApp;
 use App\Mcp\Tools\CreateFormDraftTool;
 use App\Mcp\Tools\GetFormDraftTool;
+use App\Mcp\Tools\GetAccountContextTool;
+use App\Mcp\Tools\ListWorkspacesTool;
+use App\Mcp\Tools\GetWorkspaceTool;
+use App\Mcp\Tools\ListFormsTool;
+use App\Mcp\Tools\GetFormTool;
+use App\Mcp\Tools\CreateFormTool;
+use App\Mcp\Tools\UpdateFormTool;
+use App\Mcp\Tools\PublishFormTool;
+use App\Mcp\Tools\TrashFormTool;
 use App\Mcp\Tools\PatchFormDraftTool;
 use App\Mcp\Tools\PreviewFormDraftTool;
 use App\Mcp\Tools\OpenFormDraftInEditorTool;
@@ -28,6 +37,15 @@ class OpnFormServer extends Server
         PatchFormDraftTool::class,
         PreviewFormDraftTool::class,
         OpenFormDraftInEditorTool::class,
+        GetAccountContextTool::class,
+        ListWorkspacesTool::class,
+        GetWorkspaceTool::class,
+        ListFormsTool::class,
+        GetFormTool::class,
+        CreateFormTool::class,
+        UpdateFormTool::class,
+        PublishFormTool::class,
+        TrashFormTool::class,
     ];
 
     protected array $resources = [

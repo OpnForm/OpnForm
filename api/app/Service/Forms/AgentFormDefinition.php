@@ -257,6 +257,26 @@ class AgentFormDefinition
         ];
     }
 
+    /**
+     * Return the canonical agent-editable portion of an existing form.
+     */
+    public function fromForm(Form $form): array
+    {
+        $definition = ['schema_version' => self::SCHEMA_VERSION];
+
+        foreach (self::ALLOWED_TOP_LEVEL_KEYS as $key) {
+            if ($key === 'schema_version') {
+                continue;
+            }
+
+            if (array_key_exists($key, $form->getAttributes())) {
+                $definition[$key] = $form->getAttribute($key);
+            }
+        }
+
+        return $definition;
+    }
+
     public function jsonSchema(): array
     {
         return [
