@@ -177,6 +177,14 @@ it('dynamically registers public PKCE clients only for allowed redirects', funct
         ->assertJsonPath('error', 'invalid_redirect_uri');
 
     $this->assertDatabaseCount('oauth_clients', 1);
+
+    $this->postJson('/oauth/register', [
+        'client_name' => 'Loopback userinfo injection',
+        'redirect_uris' => ['http://localhost:123@attacker.example/callback'],
+    ])->assertBadRequest()
+        ->assertJsonPath('error', 'invalid_redirect_uri');
+
+    $this->assertDatabaseCount('oauth_clients', 1);
 });
 
 it('rejects PKCE methods other than S256', function () {

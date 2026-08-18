@@ -15,4 +15,23 @@ class McpOAuthRegisterController extends OAuthRegisterController
             && ! str_contains($value, ',')
             && parent::isValidRedirectUri($value);
     }
+
+    protected function isLocalhostUrl(string $url): bool
+    {
+        if (strtolower((string) parse_url($url, PHP_URL_SCHEME)) !== 'http') {
+            return false;
+        }
+
+        if (parse_url($url, PHP_URL_USER) !== null || parse_url($url, PHP_URL_PASS) !== null) {
+            return false;
+        }
+
+        $host = parse_url($url, PHP_URL_HOST);
+
+        return is_string($host) && in_array(
+            strtolower(trim($host, '[]')),
+            ['localhost', '127.0.0.1', '::1'],
+            true,
+        );
+    }
 }
