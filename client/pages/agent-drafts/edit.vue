@@ -64,6 +64,7 @@
 import FormEditor from '~/components/open/forms/components/FormEditor.vue'
 import { workspaceApi } from '~/api'
 import { WindowMessageTypes } from '~/composables/useWindowMessage'
+import { createAgentDraftAutosave } from '~/lib/forms/agent-draft-autosave'
 import { getAgentDraftSessionRequest } from '~/lib/forms/agent-draft-session'
 
 definePageMeta({ layout: 'empty' })
@@ -86,7 +87,6 @@ const selectedWorkspaceId = ref(null)
 const workspaceModalOpen = ref(false)
 const claimAfterLogin = ref(false)
 const hydratingEditor = ref(true)
-let syncTimer = null
 let syncPromise = null
 
 const syncLabel = computed(() => ({
@@ -125,14 +125,14 @@ const refreshDraft = () => $fetch('/api/agent-drafts/current').then((response) =
   return response.draft
 })
 
-const performSync = (rawData) => {
+const performSync = (rawData, keepalive = false) => {
   const definition = cleanDefinition(rawData || workingFormStore.content?.data())
   const fingerprint = JSON.stringify(definition)
   if (!definition || fingerprint === lastSavedFingerprint.value) {
     return Promise.resolve()
   }
   if (syncPromise) {
-    return syncPromise.then(() => performSync(definition))
+    return syncPromise.then(() => performSync(definition, keepalive))
   }
 
   saving.value = true
@@ -140,6 +140,7 @@ const performSync = (rawData) => {
   syncPromise = $fetch('/api/agent-drafts/current', {
     method: 'PUT',
     body: { expected_version: version.value, definition },
+    keepalive,
   }).then((response) => {
     version.value = response.draft.version
     lastSavedFingerprint.value = JSON.stringify(cleanDefinition(response.draft.definition))
@@ -165,11 +166,14 @@ const syncDraft = (data) => performSync(data).then(() => {
   useAlert().success('Draft saved.')
 })
 
+const draftAutosave = createAgentDraftAutosave(({ keepalive }) => performSync(undefined, keepalive))
+
 const scheduleSync = () => {
   if (loading.value || claiming.value || hydratingEditor.value) return
-  clearTimeout(syncTimer)
-  syncTimer = setTimeout(() => performSync().catch(() => {}), 900)
+  draftAutosave.schedule()
 }
+
+const flushPendingSync = () => draftAutosave.flush().catch(() => {})
 
 watch(() => workingFormStore.content?.data?.(), scheduleSync, { deep: true })
 
@@ -229,6 +233,8 @@ const claimDraft = () => {
 }
 
 onMounted(() => {
+  window.addEventListener('pagehide', flushPendingSync)
+
   const sessionRequest = getAgentDraftSessionRequest(window.location.hash)
   if (sessionRequest.consumesHandoff) {
     window.history.replaceState({}, '', '/agent-drafts/edit')
@@ -255,5 +261,8 @@ onMounted(() => {
   }, { useMessageChannel: false })
 })
 
-onBeforeUnmount(() => clearTimeout(syncTimer))
+onBeforeUnmount(() => {
+  window.removeEventListener('pagehide', flushPendingSync)
+  flushPendingSync()
+})
 </script>
