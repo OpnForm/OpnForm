@@ -320,6 +320,7 @@ const linkGroups = computed(() => [
   {
     title: "Developers",
     links: [
+      { label: "MCP for AI agents", to: { name: "mcp" } },
       { label: "Open-source", href: opnformConfig.links.github_url },
       { label: "Self-hosting", href: opnformConfig.links.self_hosting },
       { label: "Documentation", href: opnformConfig.links.tech_docs },
