@@ -15,6 +15,7 @@ use App\Models\Workspace;
 use App\Notifications\Forms\MobileEditorEmail;
 use App\Service\Billing\Feature;
 use App\Service\Forms\FormCleaner;
+use App\Service\Forms\FormCreationService;
 use App\Service\Storage\FileUploadPathService;
 use App\Service\Storage\StorageFileNameParser;
 use App\Service\Storage\UploadSecurityService;
@@ -30,7 +31,7 @@ class FormController extends Controller
 
     private FormCleaner $formCleaner;
 
-    public function __construct()
+    public function __construct(private readonly FormCreationService $formCreation)
     {
         $this->middleware('auth', ['except' => ['uploadAsset']]);
         $this->formCleaner = new FormCleaner();
@@ -133,21 +134,10 @@ class FormController extends Controller
         $this->authorize('ownsWorkspace', $workspace);
         $this->authorize('create', [Form::class, $workspace]);
 
-        $formData = $this->formCleaner
-            ->processRequest($request)
-            ->simulateCleaning($workspace)
-            ->getData();
+        $created = $this->formCreation->create($request->validated(), $request->user(), $workspace);
+        $form = $created['form'];
 
-        $form = Form::create(array_merge($formData, [
-            'creator_id' => $request->user()->id,
-        ]));
-
-        if (config('app.self_hosted') && !empty($formData['slug'])) {
-            $form->slug = $formData['slug'];
-            $form->save();
-        }
-
-        if ($this->formCleaner->hasCleaned()) {
+        if ($created['has_cleaned']) {
             $formStatus = $form->workspace->is_trialing ? 'Non-trial' : 'Pro';
             $message =  'Form successfully created, but the ' . $formStatus . ' features you used will be disabled when sharing your form:';
         } else {
@@ -156,7 +146,7 @@ class FormController extends Controller
 
         return $this->success([
             'message' => $message . ($form->visibility == 'draft' ? ' But other people won\'t be able to see the form since it\'s currently in draft mode' : ''),
-            'form' => (new FormResource($form))->setCleanings($this->formCleaner->getPerformedCleanings()),
+            'form' => (new FormResource($form))->setCleanings($created['cleanings']),
             'users_first_form' => $request->user()->forms()->count() == 1,
         ]);
     }
