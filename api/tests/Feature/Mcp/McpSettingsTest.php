@@ -1,0 +1,131 @@
+<?php
+
+use App\Enums\SettingsKey;
+use App\Models\Setting;
+
+function mcpSettingsPassportKeyPair(): array
+{
+    $key = openssl_pkey_new([
+        'private_key_bits' => 2048,
+        'private_key_type' => OPENSSL_KEYTYPE_RSA,
+    ]);
+    openssl_pkey_export($key, $privateKey);
+    $details = openssl_pkey_get_details($key);
+
+    return [$privateKey, $details['key']];
+}
+
+beforeEach(function () {
+    config()->set('app.self_hosted', true);
+    config()->set('app.url', 'https://forms.example.com');
+    config()->set('app.front_url', 'https://forms.example.com');
+    config()->set('opnform.mcp.enabled', false);
+    config()->set('oauth.enabled', true);
+
+    [$privateKey, $publicKey] = mcpSettingsPassportKeyPair();
+    config()->set('passport.private_key', $privateKey);
+    config()->set('passport.public_key', $publicKey);
+
+    $this->user = $this->actingAsUser();
+    $this->workspace = $this->createUserWorkspace($this->user);
+});
+
+it('returns connection details generated for the self-hosted instance', function () {
+    $response = $this->getJson('/settings/mcp');
+
+    $response->assertSuccessful()
+        ->assertJson([
+            'enabled' => false,
+            'configured_value' => null,
+            'source' => 'environment',
+            'ready' => true,
+            'server_url' => 'https://forms.example.com/mcp',
+            'settings_url' => 'https://forms.example.com/?user-settings=mcp',
+        ]);
+
+    expect($response->json('snippets.native'))
+        ->toContain('https://forms.example.com/mcp')
+        ->not->toContain('api.opnform.com');
+    expect($response->json('snippets.portable'))->toContain('streamable-http');
+    expect($response->json('snippets.codex_cli'))->toBe("codex mcp add opnform --url 'https://forms.example.com/mcp'");
+});
+
+it('stores an enabled override that wins over the environment default', function () {
+    $this->putJson('/settings/mcp', ['enabled' => true])
+        ->assertSuccessful()
+        ->assertJson([
+            'enabled' => true,
+            'configured_value' => true,
+            'source' => 'settings',
+        ]);
+
+    expect(Setting::get(SettingsKey::MCP_ENABLED))->toBeTrue();
+});
+
+it('stores a disabled override without revoking existing OAuth state', function () {
+    Setting::set(SettingsKey::MCP_ENABLED, true);
+
+    $this->putJson('/settings/mcp', ['enabled' => false])
+        ->assertSuccessful()
+        ->assertJson([
+            'enabled' => false,
+            'configured_value' => false,
+        ]);
+
+    expect(Setting::get(SettingsKey::MCP_ENABLED))->toBeFalse();
+});
+
+it('refuses activation until Passport and public URLs are ready', function () {
+    config()->set('passport.private_key');
+    config()->set('passport.public_key');
+    config()->set('app.front_url', 'http://forms.example.com');
+
+    $response = $this->putJson('/settings/mcp', ['enabled' => true]);
+
+    $response->assertUnprocessable()
+        ->assertJsonPath('message', 'Complete the MCP OAuth prerequisites before enabling MCP.');
+
+    expect(collect($response->json('blockers'))->pluck('code')->all())
+        ->toContain('passport_keys_missing', 'front_url_invalid');
+    expect(Setting::get(SettingsKey::MCP_ENABLED))->toBeNull();
+});
+
+it('still exposes readiness guidance when the API URL is invalid', function () {
+    config()->set('app.url', 'forms.example.com');
+
+    $this->getJson('/settings/mcp')
+        ->assertSuccessful()
+        ->assertJsonPath('ready', false)
+        ->assertJsonPath('blockers.0.code', 'app_url_invalid');
+});
+
+it('allows disabling even when OAuth readiness is broken', function () {
+    Setting::set(SettingsKey::MCP_ENABLED, true);
+    config()->set('passport.private_key');
+    config()->set('passport.public_key');
+
+    $this->putJson('/settings/mcp', ['enabled' => false])
+        ->assertSuccessful()
+        ->assertJson([
+            'enabled' => false,
+            'ready' => false,
+        ]);
+});
+
+it('requires a workspace admin to read or update instance MCP settings', function (string $method) {
+    $member = $this->createUser();
+    $this->workspace->users()->attach($member, ['role' => 'user']);
+    $this->actingAs($member, 'api');
+
+    $this->json($method, '/settings/mcp', ['enabled' => true])->assertForbidden();
+})->with(['GET', 'PUT']);
+
+it('hides MCP settings from cloud instances', function (string $method) {
+    config()->set('app.self_hosted', false);
+
+    $this->json($method, '/settings/mcp', ['enabled' => true])
+        ->assertNotFound()
+        ->assertJson([
+            'error' => 'Only available on self-hosted instances.',
+        ]);
+})->with(['GET', 'PUT']);

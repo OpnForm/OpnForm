@@ -38,6 +38,6 @@ final class OAuthServiceProvider extends ServiceProvider
         Passport::tokensExpireIn(now()->addMinutes(max(1, (int) config('oauth.access_token_ttl', 10080))));
         Passport::refreshTokensExpireIn(now()->addDays(max(1, (int) config('oauth.refresh_token_ttl_days', 30))));
 
-        Route::group([], base_path('routes/oauth.php'));
+        Route::middleware('mcp.enabled')->group(base_path('routes/oauth.php'));
     }
 }

@@ -45,6 +45,15 @@ it('fails when Passport keys are missing', function () {
         ->assertFailed();
 });
 
+it('fails when only one Passport environment key is configured', function () {
+    [$privateKey] = temporaryPassportKeyPair();
+    config()->set('passport.private_key', $privateKey);
+
+    $this->artisan('mcp:check-oauth-keys --environment-only')
+        ->expectsOutputToContain('requires both')
+        ->assertFailed();
+});
+
 it('fails when Passport keys do not belong to the same pair', function () {
     [$privateKey] = temporaryPassportKeyPair();
     [, $publicKey] = temporaryPassportKeyPair();

@@ -68,7 +68,7 @@ There are dedicated configuration pages available for more detailed setup instru
 | `JWT_TTL`                        | Time to live for JSON Web Tokens (JWT).                                                                                                                                                   |
 | `JWT_SECRET`                     | Secret key used to sign JWTs.                                                                                                                                                             |
 | `JWT_SKIP_IP_UA_VALIDATION`      | Set to `true` to disable JWT User Agent validation (defaults to `false`). Keep this disabled in production and Docker deployments. For local Docker development, `docker-compose.dev.yml` sets this to `true` automatically. |
-| `OAUTH_ENABLED`                  | Overrides delegated OAuth 2.1 availability. By default, OAuth is enabled on OpnForm Cloud and when MCP is enabled on a self-hosted instance. |
+| `OAUTH_ENABLED`                  | Enables the delegated OAuth 2.1 infrastructure. Defaults to `true`; set it to `false` only when you need to disable OAuth routes independently of the MCP setting. |
 | `OAUTH_ACCESS_TOKEN_TTL`         | Passport access token lifetime in minutes. Defaults to `10080` (7 days) and does not change the first-party JWT lifetime. |
 | `OAUTH_REFRESH_TOKEN_TTL_DAYS`   | Passport refresh token lifetime in days. Defaults to `30`. |
 | `PUBLIC_UPLOADS_RATE_LIMIT_PER_MINUTE` | Maximum public upload requests allowed per client IP or authenticated user per route each minute. Defaults to `30`.                                                                 |
@@ -180,7 +180,7 @@ Cloud instances expose the OpnForm MCP endpoint automatically. Self-hosted insta
 
 | Variable Name | Default | Description |
 | --- | --- | --- |
-| `MCP_ENABLED` | `false` | Enables `/mcp` and MCP OAuth routes on self-hosted instances. |
+| `MCP_ENABLED` | `false` | Default MCP state for self-hosted instances. Set it in `api/.env`, the API service `environment` block in Docker Compose, or the API container environment. A value saved in **Settings → MCP & AI agents** overrides it. |
 | `MCP_OBSERVABILITY_ENABLED` | `true` | Records metadata-only MCP usage events and structured logs. No arguments, tokens, form content, or submission values are recorded. |
 | `MCP_RATE_LIMIT_PER_MINUTE` | `120` | MCP requests allowed per minute per authenticated user or guest IP. |
 | `MCP_RATE_LIMIT_PER_HOUR` | `3000` | MCP requests allowed per hour per authenticated user or guest IP. |

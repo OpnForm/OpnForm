@@ -2,12 +2,11 @@
 
 use App\Mcp\Servers\OpnFormServer;
 use App\Http\Controllers\McpOAuthRegisterController;
-use App\Support\Mcp\McpAvailability;
 use Illuminate\Support\Facades\Route;
 use Laravel\Mcp\Facades\Mcp;
 
-if (app(McpAvailability::class)->enabled()) {
-    if (config('oauth.enabled', false)) {
+if (config('oauth.enabled', false)) {
+    Route::middleware('mcp.enabled')->group(function () {
         Route::get('/.well-known/oauth-authorization-server', static fn () => response()->json([
             'issuer' => config('mcp.authorization_server') ?? url('/'),
             'authorization_endpoint' => route('passport.authorizations.authorize'),
@@ -23,8 +22,11 @@ if (app(McpAvailability::class)->enabled()) {
         Mcp::oauthRoutes();
         Route::post('/oauth/register', McpOAuthRegisterController::class)
             ->middleware('throttle:mcp-oauth-registration');
-    }
-
-    Mcp::web('/mcp', OpnFormServer::class)->middleware(['auth.mcp.optional', 'throttle:mcp', 'observe.mcp']);
-    Mcp::local('opnform', OpnFormServer::class);
+    });
 }
+
+Route::middleware('mcp.enabled')->group(function () {
+    Mcp::web('/mcp', OpnFormServer::class)
+        ->middleware(['auth.mcp.optional', 'throttle:mcp', 'observe.mcp']);
+});
+Mcp::local('opnform', OpnFormServer::class);

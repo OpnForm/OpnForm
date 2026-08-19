@@ -23,6 +23,7 @@ use App\Http\Middleware\ConsumeMcpOAuthLoginTicket;
 use App\Http\Middleware\AuthenticateOptionalMcpOAuth;
 use App\Http\Middleware\RecordMcpUsage;
 use App\Http\Middleware\ThrottleFormSummary;
+use App\Http\Middleware\EnsureMcpEnabled;
 
 class Kernel extends HttpKernel
 {
@@ -61,6 +62,7 @@ class Kernel extends HttpKernel
         \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
         \Illuminate\Session\Middleware\StartSession::class,
         \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+        EnsureMcpEnabled::class,
         AuthenticateJWT::class,
         AuthenticateWithJwtOrSanctum::class,
         \Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests::class,
@@ -139,6 +141,7 @@ class Kernel extends HttpKernel
         'auth.multi' => \App\Http\Middleware\AuthenticateWithJwtOrSanctum::class,
         'auth.mcp.optional' => AuthenticateOptionalMcpOAuth::class,
         'observe.mcp' => RecordMcpUsage::class,
+        'mcp.enabled' => EnsureMcpEnabled::class,
         'throttle.form-summary' => ThrottleFormSummary::class,
 
         'cloud' => EnsureCloudInstance::class,  // Allow cloud instances only
