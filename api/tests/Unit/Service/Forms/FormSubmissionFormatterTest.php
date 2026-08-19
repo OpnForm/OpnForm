@@ -93,6 +93,16 @@ it('renders unsafe or invalid links as escaped text', function (string $type, mi
         'https://example.com/" onclick="alert(1)',
         'https://example.com/&quot; onclick=&quot;alert(1)',
     ],
+    'url with explicit user info' => [
+        'url',
+        'https://trusted.example@evil.example/path',
+        'https://trusted.example@evil.example/path',
+    ],
+    'url without scheme containing user info' => [
+        'url',
+        'trusted.example@evil.example/path',
+        'trusted.example@evil.example/path',
+    ],
     'invalid email' => [
         'email',
         'person@example.com" onclick="alert(1)',

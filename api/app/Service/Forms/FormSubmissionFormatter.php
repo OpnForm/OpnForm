@@ -327,8 +327,15 @@ class FormSubmissionFormatter
         }
 
         $url = $scheme === null ? 'https://' . $label : $label;
+        $urlParts = parse_url($url);
 
-        if (!filter_var($url, FILTER_VALIDATE_URL) || !parse_url($url, PHP_URL_HOST)) {
+        if (
+            !filter_var($url, FILTER_VALIDATE_URL)
+            || !is_array($urlParts)
+            || empty($urlParts['host'])
+            || isset($urlParts['user'])
+            || isset($urlParts['pass'])
+        ) {
             return $this->escapeHtmlValue($label);
         }
 
