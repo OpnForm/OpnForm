@@ -82,10 +82,10 @@ const props = defineProps({
   }
 })
 
-const { current: workspace } = useCurrentWorkspace()
+const { current: workspace, workspaces } = useCurrentWorkspace()
 const { data: user } = useAuth().user()
 const isSelfHosted = computed(() => useFeatureFlag('self_hosted'))
-const canManageInstanceSettings = computed(() => isSelfHosted.value && !!workspace.value?.is_admin)
+const canManageInstanceSettings = computed(() => isSelfHosted.value && !!workspaces.value?.some(candidate => candidate.is_admin))
 const canManageLicense = canManageInstanceSettings
 
 // Modal state is now derived from the presence of an active tab
