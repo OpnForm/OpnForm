@@ -153,9 +153,9 @@ class FormSubmissionFormatter
             }
 
             if ($this->createLinks && $field['type'] == 'url') {
-                $returnArray[$field['name']] = '<a href="' . $data[$field['id']] . '">' . $data[$field['id']] . '</a>';
+                $returnArray[$field['name']] = $this->formatUrlLink($data[$field['id']]);
             } elseif ($this->createLinks && $field['type'] == 'email') {
-                $returnArray[$field['name']] = '<a href="mailto:' . $data[$field['id']] . '">' . $data[$field['id']] . '</a>';
+                $returnArray[$field['name']] = $this->formatEmailLink($data[$field['id']]);
             } elseif ($field['type'] == 'multi_select') {
                 $val = $data[$field['id']];
                 if ($this->outputStringsOnly && is_array($val)) {
