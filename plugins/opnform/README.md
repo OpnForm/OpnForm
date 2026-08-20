@@ -15,19 +15,6 @@ The production MCP connection is registered in ChatGPT Developer Mode as `OpnFor
 
 Public directory submission still uses the production MCP URL directly. The registered app mapping is the compatibility wrapper used by the installable ChatGPT/Codex package.
 
-## OpenAI domain verification
-
-OpenAI accepts the parent `opnform.com` hostname when it verifies the
-`api.opnform.com` MCP origin. Store the public verification challenge in
-`client/public/.well-known/openai-apps-challenge` so Nuxt serves it at:
-
-```text
-https://opnform.com/.well-known/openai-apps-challenge
-```
-
-The file must contain only the current value shown in the OpenAI submission
-portal. Replace it when OpenAI rotates the challenge.
-
 ## Local installation
 
 Use a personal or temporary marketplace outside this repository. A local marketplace entry should point to a copy of this directory, then install `opnform` from that marketplace and test it in a new conversation. Do not commit a repository marketplace file.
