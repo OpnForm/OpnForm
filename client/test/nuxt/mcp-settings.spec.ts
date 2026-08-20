@@ -25,6 +25,7 @@ vi.mock('~/composables/useAlert.js', () => ({
 }))
 
 const readySettings = {
+  self_hosted: true,
   enabled: false,
   available: false,
   configured_value: null,
@@ -184,5 +185,26 @@ describe('MCP self-hosted settings', () => {
 
     expect(mocks.status).toHaveBeenCalledTimes(2)
     expect(wrapper.text()).toContain('Ready to connect')
+  })
+
+  it('shows cloud connection instructions without an availability switch', async () => {
+    mocks.status.mockResolvedValue({
+      ...readySettings,
+      self_hosted: false,
+      enabled: true,
+      available: true,
+      server_url: 'https://api.opnform.com/mcp',
+      settings_url: 'https://opnform.com/?user-settings=mcp',
+    })
+
+    const wrapper = mountSettings()
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('OpnForm MCP is ready')
+    expect(wrapper.text()).toContain('Create private drafts without signing in')
+    expect(wrapper.text()).toContain('Cloud')
+    expect(wrapper.find('[data-testid="mcp-enabled-switch"]').exists()).toBe(false)
+    expect(wrapper.get('[data-testid="server-url"]').text()).toBe('https://api.opnform.com/mcp')
+    expect(wrapper.find('[data-testid="mcp-snippet-settings"]').exists()).toBe(true)
   })
 })
