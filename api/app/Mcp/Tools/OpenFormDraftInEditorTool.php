@@ -14,7 +14,7 @@ use Laravel\Mcp\Server\Tools\Annotations\IsOpenWorld;
 #[Name('open_form_draft_in_editor')]
 #[Description('Create a reusable OpnForm editor link that remains valid until the guest draft expires.')]
 #[IsOpenWorld]
-class OpenFormDraftInEditorTool extends GuestMcpTool
+class OpenFormDraftInEditorTool extends GuestDraftMcpTool
 {
     public function handle(Request $request, AgentFormDraftService $drafts): ResponseFactory
     {

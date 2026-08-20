@@ -23,6 +23,7 @@ use App\Http\Controllers\Settings\OAuthProviderController;
 use App\Http\Controllers\Settings\PasswordController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\TokenController;
+use App\Http\Controllers\Settings\McpSettingsController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\Forms\TemplateController;
 use App\Http\Controllers\Auth\UserInviteController;
@@ -31,7 +32,6 @@ use App\Http\Controllers\WorkspaceController;
 use App\Http\Controllers\WorkspaceUserController;
 use App\Http\Controllers\VersionController;
 use App\Service\Storage\SafeFileResponseService;
-use App\Support\Mcp\McpAvailability;
 use Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -55,8 +55,8 @@ if (config('app.self_hosted')) {
     Route::get('/healthcheck', [HealthCheckController::class, 'apiCheck']);
 }
 
-if (app(McpAvailability::class)->enabled()) {
-    Route::prefix('agent-drafts')->name('agent-drafts.')->group(function () {
+Route::middleware('mcp.enabled')->group(function () {
+    Route::prefix('agent-drafts')->name('agent-drafts.')->middleware('mcp.guest-drafts')->group(function () {
         Route::get('/preview/{draft}', [AgentFormDraftController::class, 'preview'])
             ->middleware(['signed', 'throttle:60,1'])
             ->name('preview');
@@ -73,16 +73,16 @@ if (app(McpAvailability::class)->enabled()) {
             ->middleware(['auth.multi', 'throttle:30,1'])
             ->name('editor.claim');
     });
-}
 
-if (app(McpAvailability::class)->enabled() && config('oauth.enabled', false)) {
-    Route::post('/mcp-oauth/session', McpOAuthSessionController::class)
-        ->middleware(['auth.multi', 'throttle:30,1'])
-        ->name('mcp-oauth.session');
-    Route::delete('/mcp-oauth/session', RevokeMcpOAuthSessionController::class)
-        ->middleware(['auth.mcp.optional', 'throttle:30,1'])
-        ->name('mcp-oauth.session.revoke');
-}
+    if (config('oauth.enabled', false)) {
+        Route::post('/mcp-oauth/session', McpOAuthSessionController::class)
+            ->middleware(['auth.multi', 'throttle:30,1'])
+            ->name('mcp-oauth.session');
+        Route::delete('/mcp-oauth/session', RevokeMcpOAuthSessionController::class)
+            ->middleware(['auth.mcp.optional', 'throttle:30,1'])
+            ->name('mcp-oauth.session.revoke');
+    }
+});
 
 Route::prefix('open')->name('open.')->group(function () {
     Route::prefix('forms')->name('forms.')->group(function () {
@@ -128,6 +128,11 @@ Route::group(['middleware' => 'auth.multi'], function () {
             Route::post('/activate', [\App\Http\Controllers\Settings\LicenseController::class, 'activate'])->name('activate');
             Route::post('/deactivate', [\App\Http\Controllers\Settings\LicenseController::class, 'deactivate'])->name('deactivate');
             Route::post('/portal', [\App\Http\Controllers\Settings\LicenseController::class, 'portal'])->name('portal');
+        });
+
+        Route::prefix('/mcp')->name('mcp.')->middleware(['self-hosted'])->group(function () {
+            Route::get('/', [McpSettingsController::class, 'show'])->name('show');
+            Route::put('/', [McpSettingsController::class, 'update'])->name('update');
         });
 
         Route::prefix('/two-factor')->name('two-factor.')->group(function () {

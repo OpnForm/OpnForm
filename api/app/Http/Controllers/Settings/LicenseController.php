@@ -3,10 +3,10 @@
 namespace App\Http\Controllers\Settings;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
 use App\Service\License\LicenseService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 
 class LicenseController extends Controller
 {
@@ -91,10 +91,7 @@ class LicenseController extends Controller
 
     private function authorizeLicenseManagement(Request $request): void
     {
-        $user = $request->user();
-        if (!$user || !$user->workspaces()->wherePivot('role', User::ROLE_ADMIN)->exists()) {
-            abort(403, 'You need to be a workspace admin to manage the instance license.');
-        }
+        Gate::authorize('manage-instance-settings');
     }
 
     private function activationFailureMessage(string $status): string

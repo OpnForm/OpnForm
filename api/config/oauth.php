@@ -11,10 +11,10 @@ return [
     | from Sanctum personal access tokens.
     |
     */
-    'enabled' => env(
-        'OAUTH_ENABLED',
-        ! env('SELF_HOSTED', true) || env('MCP_ENABLED', false)
-    ),
+    // This controls whether the OAuth infrastructure is available. Runtime
+    // MCP access is gated separately by McpAvailability so self-hosted admins
+    // can toggle it without rebuilding Laravel's route cache.
+    'enabled' => env('OAUTH_ENABLED', true),
 
     'access_token_ttl' => (int) env('OAUTH_ACCESS_TOKEN_TTL', 60 * 24 * 7),
     'refresh_token_ttl_days' => (int) env('OAUTH_REFRESH_TOKEN_TTL_DAYS', 30),

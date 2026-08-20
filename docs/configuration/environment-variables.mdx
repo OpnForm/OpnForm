@@ -68,7 +68,7 @@ There are dedicated configuration pages available for more detailed setup instru
 | `JWT_TTL`                        | Time to live for JSON Web Tokens (JWT).                                                                                                                                                   |
 | `JWT_SECRET`                     | Secret key used to sign JWTs.                                                                                                                                                             |
 | `JWT_SKIP_IP_UA_VALIDATION`      | Set to `true` to disable JWT User Agent validation (defaults to `false`). Keep this disabled in production and Docker deployments. For local Docker development, `docker-compose.dev.yml` sets this to `true` automatically. |
-| `OAUTH_ENABLED`                  | Overrides delegated OAuth 2.1 availability. By default, OAuth is enabled on OpnForm Cloud and when MCP is enabled on a self-hosted instance. |
+| `OAUTH_ENABLED`                  | Enables the delegated OAuth 2.1 infrastructure. Defaults to `true`; set it to `false` only when you need to disable OAuth routes independently of the MCP setting. |
 | `OAUTH_ACCESS_TOKEN_TTL`         | Passport access token lifetime in minutes. Defaults to `10080` (7 days) and does not change the first-party JWT lifetime. |
 | `OAUTH_REFRESH_TOKEN_TTL_DAYS`   | Passport refresh token lifetime in days. Defaults to `30`. |
 | `PUBLIC_UPLOADS_RATE_LIMIT_PER_MINUTE` | Maximum public upload requests allowed per client IP or authenticated user per route each minute. Defaults to `30`.                                                                 |
@@ -176,16 +176,14 @@ Set `OPNFORM_ANONYMOUS_TELEMETRY_DISABLED=true` in your environment variables to
 
 ### MCP and AI agents
 
-Cloud instances expose the OpnForm MCP endpoint automatically. Self-hosted instances must opt in. See the [MCP integration guide](../integrations/mcp) for the guest and OAuth workflows.
+MCP is disabled by default on self-hosted instances. Enable it from **Settings → MCP & AI agents** after configuring public HTTPS origins and Laravel Passport. Form and submission tools require OAuth. See the [MCP integration guide](../integrations/mcp) for the complete setup.
 
 | Variable Name | Default | Description |
 | --- | --- | --- |
-| `MCP_ENABLED` | `false` | Enables `/mcp` and MCP OAuth routes on self-hosted instances. |
+| `MCP_ENABLED` | `false` | Default MCP state for self-hosted instances. Set it in `api/.env`, the API service `environment` block in Docker Compose, or the API container environment. A value saved in **Settings → MCP & AI agents** overrides it. |
 | `MCP_OBSERVABILITY_ENABLED` | `true` | Records metadata-only MCP usage events and structured logs. No arguments, tokens, form content, or submission values are recorded. |
-| `MCP_RATE_LIMIT_PER_MINUTE` | `120` | MCP requests allowed per minute per authenticated user or guest IP. |
-| `MCP_RATE_LIMIT_PER_HOUR` | `3000` | MCP requests allowed per hour per authenticated user or guest IP. |
-| `MCP_DRAFT_CREATES_PER_MINUTE` | `20` | Guest drafts allowed per minute per IP. |
-| `MCP_DRAFT_CREATES_PER_HOUR` | `200` | Guest drafts allowed per hour per IP. |
+| `MCP_RATE_LIMIT_PER_MINUTE` | `120` | MCP requests allowed per minute per OAuth user or unauthenticated client IP. |
+| `MCP_RATE_LIMIT_PER_HOUR` | `3000` | MCP requests allowed per hour per OAuth user or unauthenticated client IP. |
 | `MCP_SUBMISSION_EXPORTS_PER_MINUTE` | `5` | Submission exports allowed per minute per user and form. |
 | `MCP_SUBMISSION_EXPORTS_PER_HOUR` | `30` | Submission exports allowed per hour per user and form. |
 | `FORM_SUMMARY_RATE_LIMIT_PER_MINUTE` | `30` | REST and MCP submission summary requests allowed per minute in one shared per-user bucket. |

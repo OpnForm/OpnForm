@@ -132,16 +132,14 @@ initialize_instance() {
 }
 
 initialize_mcp_oauth_keys() {
-    local self_hosted="${SELF_HOSTED:-false}"
-    local mcp_enabled="${MCP_ENABLED:-false}"
-
-    if [ "$self_hosted" = "true" ] && [ "$mcp_enabled" != "true" ]; then
-        return 0
-    fi
-
     if [ -n "${PASSPORT_PRIVATE_KEY:-}" ] && [ -n "${PASSPORT_PUBLIC_KEY:-}" ]; then
         echo "Using Passport keys from the environment"
         return 0
+    fi
+
+    if [ -n "${PASSPORT_PRIVATE_KEY:-}" ] || [ -n "${PASSPORT_PUBLIC_KEY:-}" ]; then
+        echo "PASSPORT_PRIVATE_KEY and PASSPORT_PUBLIC_KEY must be configured together" >&2
+        exit 1
     fi
 
     if [ -f ./storage/oauth-private.key ] && [ -f ./storage/oauth-public.key ]; then

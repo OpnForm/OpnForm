@@ -15,7 +15,7 @@ use Laravel\Mcp\Server\Tools\Annotations\IsOpenWorld;
 #[Name('create_form_draft')]
 #[Description('Create a private server-side OpnForm draft that expires after seven days. Works without login. Returns a capability token once; keep it private and use it with get_form_draft and patch_form_draft. The form remains an unpublished draft.')]
 #[IsOpenWorld(false)]
-class CreateFormDraftTool extends GuestMcpTool
+class CreateFormDraftTool extends GuestDraftMcpTool
 {
     public function handle(
         Request $request,

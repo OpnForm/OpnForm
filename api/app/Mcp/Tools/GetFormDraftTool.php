@@ -16,7 +16,7 @@ use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 #[Description('Fetch the current canonical definition and version of a private guest draft. Use this after a version conflict or whenever the current state is uncertain.')]
 #[IsReadOnly]
 #[IsOpenWorld(false)]
-class GetFormDraftTool extends GuestMcpTool
+class GetFormDraftTool extends GuestDraftMcpTool
 {
     public function handle(Request $request, AgentFormDraftService $drafts): ResponseFactory
     {
