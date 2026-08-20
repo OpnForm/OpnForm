@@ -16,12 +16,11 @@ final class McpSettingsController extends Controller
 {
     public function show(
         McpAvailability $availability,
-        McpOAuthReadiness $readiness,
         McpConnectionConfiguration $connection,
     ): JsonResponse {
         Gate::authorize('manage-instance-settings');
 
-        return response()->json($this->payload($availability, $readiness, $connection));
+        return response()->json($this->payload($availability, $connection));
     }
 
     public function update(
@@ -42,21 +41,21 @@ final class McpSettingsController extends Controller
 
         Setting::set(SettingsKey::MCP_ENABLED, $enabled);
 
-        return response()->json($this->payload($availability, $readiness, $connection));
+        return response()->json($this->payload($availability, $connection, $readinessResult));
     }
 
+    /**
+     * @param  array{ready: bool, blockers: array<int, array{code: string, message: string}>}|null  $readiness
+     */
     private function payload(
         McpAvailability $availability,
-        McpOAuthReadiness $readiness,
         McpConnectionConfiguration $connection,
+        ?array $readiness = null,
     ): array {
-        $configuredValue = $availability->configuredValue();
+        $status = $availability->status($readiness);
 
-        return array_merge([
-            'enabled' => $availability->enabled(),
-            'available' => $availability->available(),
-            'configured_value' => $configuredValue,
-            'source' => $configuredValue === null ? 'environment' : 'settings',
-        ], $readiness->inspect(), $connection->forSelfHostedInstance());
+        return array_merge($status, [
+            'source' => $status['configured_value'] === null ? 'environment' : 'settings',
+        ], $connection->forSelfHostedInstance());
     }
 }

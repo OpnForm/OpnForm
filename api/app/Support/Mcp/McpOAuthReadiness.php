@@ -29,7 +29,7 @@ final class McpOAuthReadiness
             if (! $this->isSupportedPublicUrl($url)) {
                 $blockers[] = [
                     'code' => strtolower($name).'_invalid',
-                    'message' => "{$name} must be a valid HTTPS URL, or an HTTP loopback URL for local development.",
+                    'message' => "{$name} must be an HTTPS base URL without credentials, query parameters, or fragments, or an HTTP loopback URL for local development.",
                 ];
             }
         }
@@ -48,12 +48,22 @@ final class McpOAuthReadiness
             return false;
         }
 
-        $scheme = strtolower((string) parse_url($value, PHP_URL_SCHEME));
+        $parts = parse_url($value);
+        if (! is_array($parts)
+            || isset($parts['user'])
+            || isset($parts['pass'])
+            || isset($parts['query'])
+            || isset($parts['fragment'])
+        ) {
+            return false;
+        }
+
+        $scheme = strtolower((string) ($parts['scheme'] ?? ''));
         if ($scheme === 'https') {
             return true;
         }
 
-        $host = strtolower(trim((string) parse_url($value, PHP_URL_HOST), '[]'));
+        $host = strtolower(trim((string) ($parts['host'] ?? ''), '[]'));
 
         return $scheme === 'http' && in_array($host, ['localhost', '127.0.0.1', '::1'], true);
     }

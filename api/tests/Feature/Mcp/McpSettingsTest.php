@@ -113,6 +113,34 @@ it('still exposes readiness guidance when the API URL is invalid', function () {
         ->assertJsonPath('blockers.0.code', 'app_url_invalid');
 });
 
+it('rejects base URLs that would produce ambiguous MCP endpoints', function (string $url) {
+    config()->set('app.url', $url);
+
+    $response = $this->getJson('/settings/mcp')
+        ->assertSuccessful()
+        ->assertJsonPath('ready', false);
+
+    expect(collect($response->json('blockers'))->pluck('code')->all())
+        ->toContain('app_url_invalid');
+})->with([
+    'credentials' => 'https://user:password@forms.example.com',
+    'query parameters' => 'https://forms.example.com?tenant=one',
+    'fragment' => 'https://forms.example.com#settings',
+]);
+
+it('supports self-hosted instances installed below a URL path', function () {
+    config()->set('app.url', 'https://forms.example.com/opnform/');
+    config()->set('app.front_url', 'https://forms.example.com/opnform/');
+
+    $this->getJson('/settings/mcp')
+        ->assertSuccessful()
+        ->assertJson([
+            'ready' => true,
+            'server_url' => 'https://forms.example.com/opnform/mcp',
+            'settings_url' => 'https://forms.example.com/opnform/?user-settings=mcp',
+        ]);
+});
+
 it('allows disabling even when OAuth readiness is broken', function () {
     Setting::set(SettingsKey::MCP_ENABLED, true);
     config()->set('passport.private_key', null);
