@@ -11,12 +11,14 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 use Laravel\Mcp\Server\Tools\Annotations\IsOpenWorld;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Name('list_forms')]
 #[Description('List forms accessible to the connected account. Filter by workspace, title, or visibility; results are paginated and exclude trashed forms.')]
 #[IsReadOnly]
+#[IsDestructive(false)]
 #[IsOpenWorld(false)]
 class ListFormsTool extends AuthenticatedMcpTool
 {

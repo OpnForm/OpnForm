@@ -40,6 +40,77 @@ it('exposes the OpnForm MCP endpoint and initializes the protocol', function () 
         });
 });
 
+it('advertises explicit safety annotations for every MCP tool', function () {
+    $response = $this->postJson('/mcp', [
+        'jsonrpc' => '2.0',
+        'id' => 1,
+        'method' => 'tools/list',
+        'params' => [],
+    ], [
+        'Accept' => 'application/json, text/event-stream',
+    ])->assertOk();
+
+    $actual = collect($response->json('result.tools'))
+        ->mapWithKeys(fn (array $tool): array => [
+            $tool['name'] => collect($tool['annotations'])->only([
+                'readOnlyHint',
+                'destructiveHint',
+                'openWorldHint',
+            ])->all(),
+        ])
+        ->sortKeys()
+        ->all();
+
+    $readOnly = [
+        'get_account_context',
+        'get_form',
+        'get_form_draft',
+        'get_submission',
+        'get_submission_export',
+        'get_submission_stats',
+        'get_workspace',
+        'list_forms',
+        'list_submissions',
+        'list_workspaces',
+        'validate_form_definition',
+    ];
+    $writes = [
+        'create_form',
+        'create_form_draft',
+        'export_submissions',
+        'open_form_draft_in_editor',
+        'patch_form_draft',
+        'preview_form_draft',
+        'update_form',
+    ];
+
+    $expected = collect($readOnly)
+        ->mapWithKeys(fn (string $name): array => [$name => [
+            'readOnlyHint' => true,
+            'destructiveHint' => false,
+            'openWorldHint' => false,
+        ]])
+        ->merge(collect($writes)->mapWithKeys(fn (string $name): array => [$name => [
+            'readOnlyHint' => false,
+            'destructiveHint' => false,
+            'openWorldHint' => false,
+        ]]))
+        ->put('publish_form', [
+            'readOnlyHint' => false,
+            'destructiveHint' => false,
+            'openWorldHint' => true,
+        ])
+        ->put('trash_form', [
+            'readOnlyHint' => false,
+            'destructiveHint' => true,
+            'openWorldHint' => false,
+        ])
+        ->sortKeys()
+        ->all();
+
+    expect($actual)->toBe($expected);
+});
+
 it('registers a permissive dedicated rate limiter for MCP traffic', function () {
     $limits = RateLimiter::limiter('mcp')(request());
 

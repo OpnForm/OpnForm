@@ -9,12 +9,14 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 use Laravel\Mcp\Server\Tools\Annotations\IsOpenWorld;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Name('get_submission')]
 #[Description('Read one submission from an accessible form, with response values labeled by form field. This tool never changes the submission.')]
 #[IsReadOnly]
+#[IsDestructive(false)]
 #[IsOpenWorld(false)]
 class GetSubmissionTool extends AuthenticatedMcpTool
 {

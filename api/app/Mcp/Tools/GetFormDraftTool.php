@@ -9,12 +9,14 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 use Laravel\Mcp\Server\Tools\Annotations\IsOpenWorld;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Name('get_form_draft')]
 #[Description('Fetch the current canonical definition and version of a private guest draft. Use this after a version conflict or whenever the current state is uncertain.')]
 #[IsReadOnly]
+#[IsDestructive(false)]
 #[IsOpenWorld(false)]
 class GetFormDraftTool extends GuestDraftMcpTool
 {

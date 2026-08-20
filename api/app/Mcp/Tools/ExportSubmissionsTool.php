@@ -9,10 +9,14 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 use Laravel\Mcp\Server\Tools\Annotations\IsOpenWorld;
+use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Name('export_submissions')]
 #[Description('Queue a private CSV export for all submissions in an accessible form, or up to 1,000 selected submission IDs. Poll get_submission_export for its temporary download URL.')]
+#[IsReadOnly(false)]
+#[IsDestructive(false)]
 #[IsOpenWorld(false)]
 class ExportSubmissionsTool extends AuthenticatedMcpTool
 {

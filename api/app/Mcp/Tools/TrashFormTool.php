@@ -11,9 +11,11 @@ use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
 use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 use Laravel\Mcp\Server\Tools\Annotations\IsOpenWorld;
+use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Name('trash_form')]
 #[Description('Move an accessible writable form at its current revision to soft-delete trash. Call only after explicit user confirmation. Restore and permanent deletion are intentionally not exposed.')]
+#[IsReadOnly(false)]
 #[IsDestructive]
 #[IsOpenWorld(false)]
 class TrashFormTool extends AuthenticatedMcpTool

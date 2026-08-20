@@ -10,12 +10,14 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 use Laravel\Mcp\Server\Tools\Annotations\IsOpenWorld;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Name('get_submission_stats')]
 #[Description('Analyze submissions for an accessible form using the same bounded field summaries available in OpnForm. Returns all-time views/completion overview plus a status/date-filtered summary.')]
 #[IsReadOnly]
+#[IsDestructive(false)]
 #[IsOpenWorld(false)]
 class GetSubmissionStatsTool extends AuthenticatedMcpTool
 {

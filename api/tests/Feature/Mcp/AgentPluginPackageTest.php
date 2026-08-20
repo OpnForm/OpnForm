@@ -44,6 +44,7 @@ it('ships a valid native OpenAI plugin wrapper for the hosted MCP server', funct
     $portable = readOpnformPluginJson('plugin.json');
     $portableMcp = readOpnformPluginJson('mcp.json');
     $native = readOpnformPluginJson('.codex-plugin/plugin.json');
+    $nativeApps = readOpnformPluginJson('.app.json');
     $nativeMcp = readOpnformPluginJson('.mcp.json');
     $nativePluginFields = [
         'id', 'name', 'version', 'description', 'skills', 'apps', 'mcpServers',
@@ -58,7 +59,7 @@ it('ships a valid native OpenAI plugin wrapper for the hosted MCP server', funct
 
     expect($native)
         ->toHaveKeys([
-            'name', 'version', 'description', 'author', 'skills', 'mcpServers', 'interface',
+            'name', 'version', 'description', 'author', 'skills', 'apps', 'mcpServers', 'interface',
         ])
         ->and($native['name'])->toBe($portable['name'])
         ->and($native['version'])->toBe($portable['version'])
@@ -68,8 +69,8 @@ it('ships a valid native OpenAI plugin wrapper for the hosted MCP server', funct
         ->and($native['repository'])->toBe($portable['repository'])
         ->and(array_diff(array_keys($native), $nativePluginFields))->toBe([])
         ->and($native['skills'])->toBe('./skills/')
+        ->and($native['apps'])->toBe('./.app.json')
         ->and($native['mcpServers'])->toBe('./.mcp.json')
-        ->and($native)->not->toHaveKey('apps')
         ->and($native['interface'])->toHaveKeys([
             'displayName', 'shortDescription', 'longDescription', 'developerName',
             'category', 'capabilities', 'websiteURL', 'privacyPolicyURL',
@@ -84,7 +85,13 @@ it('ships a valid native OpenAI plugin wrapper for the hosted MCP server', funct
             'auth' => 'oauth',
         ])
         ->and(array_diff(array_keys($nativeMcp), ['mcpServers']))->toBe([])
-        ->and(opnformPluginPath('.app.json'))->not->toBeFile();
+        ->and($nativeApps)->toBe([
+            'apps' => [
+                'opnform' => [
+                    'id' => 'plugin_asdk_app_6a86dddc8f6c8191b0cc91f3a2a76d19',
+                ],
+            ],
+        ]);
 
     foreach ($native['interface']['defaultPrompt'] as $prompt) {
         expect($prompt)->toBeString()
@@ -96,6 +103,7 @@ it('keeps every native manifest path relative to and inside the plugin package',
     $native = readOpnformPluginJson('.codex-plugin/plugin.json');
     $paths = [
         $native['skills'],
+        $native['apps'],
         $native['mcpServers'],
         $native['interface']['composerIcon'],
         $native['interface']['logo'],
@@ -170,7 +178,7 @@ it('declares the hosted OpnForm MCP dependency in native skill metadata', functi
         );
 });
 
-it('contains valid JSON and no local endpoints or fabricated ChatGPT app IDs', function () {
+it('contains valid JSON, no local endpoints, and only the registered ChatGPT app ID', function () {
     $iterator = new RecursiveIteratorIterator(
         new RecursiveDirectoryIterator(opnformPluginPath(), FilesystemIterator::SKIP_DOTS),
     );
@@ -179,8 +187,11 @@ it('contains valid JSON and no local endpoints or fabricated ChatGPT app IDs', f
         $contents = file_get_contents($file->getPathname());
 
         expect($contents)
-            ->not->toMatch('~https?://(?:localhost|127(?:\.\d+){3}|\[?::1\]?)(?::\d+)?~i')
-            ->not->toContain('plugin_asdk_app');
+            ->not->toMatch('~https?://(?:localhost|127(?:\.\d+){3}|\[?::1\]?)(?::\d+)?~i');
+
+        if ($file->getFilename() !== '.app.json') {
+            expect($contents)->not->toContain('plugin_asdk_app');
+        }
 
         if ($file->getExtension() === 'json') {
             expect(fn () => json_decode($contents, true, flags: JSON_THROW_ON_ERROR))->not->toThrow(JsonException::class);

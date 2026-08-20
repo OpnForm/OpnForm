@@ -9,12 +9,14 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 use Laravel\Mcp\Server\Tools\Annotations\IsOpenWorld;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Name('get_submission_export')]
 #[Description('Check a queued submission export. When completed, returns a temporary private CSV download URL and its expiration time.')]
 #[IsReadOnly]
+#[IsDestructive(false)]
 #[IsOpenWorld(false)]
 class GetSubmissionExportTool extends AuthenticatedMcpTool
 {

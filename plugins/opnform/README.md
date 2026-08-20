@@ -5,22 +5,15 @@ This directory is the installable OpnForm plugin package. It contains both the p
 ## Package formats
 
 - `plugin.json`, `mcp.json`, and `skills/opnform/SKILL.md` are the portable [agent-plugins.org](https://agent-plugins.org) package.
-- `.codex-plugin/plugin.json` and `.mcp.json` let Codex load the hosted OpnForm MCP server directly.
+- `.codex-plugin/plugin.json`, `.app.json`, and `.mcp.json` connect the native OpenAI plugin to the registered ChatGPT app and let Codex load the hosted MCP server directly.
 
 Both integrations use `https://api.opnform.com/mcp`. They contain no credentials or environment-specific endpoint.
 
-## Remaining ChatGPT publication step
+## Registered ChatGPT app
 
-ChatGPT public distribution uses a registered MCP connection rather than the direct Codex MCP declaration. Before submitting the plugin to the public directory:
+The production MCP connection is registered in ChatGPT Developer Mode as `OpnForm MCP`. The real app ID is stored in `.app.json`; do not replace it with a placeholder or an ID from a local development connection.
 
-1. Enable Developer mode in ChatGPT.
-2. Register `https://api.opnform.com/mcp` from the ChatGPT Plugins page.
-3. Copy the technical app ID that ChatGPT creates.
-4. Add `.app.json` with that real registered app mapping.
-5. Add `"apps": "./.app.json"` to `.codex-plugin/plugin.json`.
-6. Re-run the package validators and test the installed plugin in a new conversation.
-
-Do not add `.app.json` before the real registered app ID is available. A fabricated identifier makes the package look publishable while leaving the ChatGPT integration unusable.
+Public directory submission still uses the production MCP URL directly. The registered app mapping is the compatibility wrapper used by the installable ChatGPT/Codex package.
 
 ## Local installation
 

@@ -10,10 +10,14 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 use Laravel\Mcp\Server\Tools\Annotations\IsOpenWorld;
+use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Name('create_form_draft')]
 #[Description('Create a private server-side OpnForm draft that expires after seven days. Works without login. Returns a capability token once; keep it private and use it with get_form_draft and patch_form_draft. The form remains an unpublished draft.')]
+#[IsReadOnly(false)]
+#[IsDestructive(false)]
 #[IsOpenWorld(false)]
 class CreateFormDraftTool extends GuestDraftMcpTool
 {

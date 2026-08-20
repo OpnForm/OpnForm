@@ -17,6 +17,7 @@
     "no-code"
   ],
   "skills": "./skills/",
+  "apps": "./.app.json",
   "mcpServers": "./.mcp.json",
   "interface": {
     "displayName": "OpnForm",
@@ -38,7 +39,7 @@
       "Update my form, then ask me before publishing it."
     ],
     "brandColor": "#2563EB",
-    "composerIcon": "./assets/logo.svg",
-    "logo": "./assets/logo.svg"
+    "composerIcon": "./assets/logo.png",
+    "logo": "./assets/logo.png"
   }
 }
