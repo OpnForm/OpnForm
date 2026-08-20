@@ -24,7 +24,10 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule)
     {
         $schedule->command('forms:database-cleanup')->hourly();
+        $schedule->command('forms:purge-expired-submissions')->hourly()->withoutOverlapping();
+        $schedule->command('forms:retry-pending-submission-file-deletions')->everyFifteenMinutes()->withoutOverlapping();
         $schedule->command('forms:integration-events-cleanup')->daily();
+        $schedule->command('agent-drafts:purge-expired')->hourly()->withoutOverlapping();
         if (config('app.self_hosted')) {
             $schedule->command('app:scheduler-status --mode=record')->everyMinute();
             $schedule->command('telemetry:ping')->hourly();

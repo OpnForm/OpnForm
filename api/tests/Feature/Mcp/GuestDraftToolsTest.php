@@ -1,0 +1,234 @@
+<?php
+
+use App\Mcp\Servers\OpnFormServer;
+use App\Mcp\Tools\CreateFormDraftTool;
+use App\Mcp\Tools\GetFormDraftTool;
+use App\Mcp\Tools\PatchFormDraftTool;
+use App\Models\Forms\AgentFormDraft;
+use App\Service\Forms\AgentFormDraftRateLimiter;
+use App\Service\Forms\AgentFormDraftService;
+use Illuminate\Validation\ValidationException;
+
+function guestDraftDefinition(array $overrides = []): array
+{
+    return array_replace([
+        'title' => 'Customer intake',
+        'properties' => [
+            ['id' => 'name-field', 'name' => 'Name', 'type' => 'text'],
+            ['id' => 'email-field', 'name' => 'Email', 'type' => 'email'],
+        ],
+    ], $overrides);
+}
+
+beforeEach(function () {
+    config()->set('app.self_hosted', false);
+});
+
+it('creates a seven-day server-side guest draft and only stores a token hash', function () {
+    $before = now();
+
+    OpnFormServer::tool(CreateFormDraftTool::class, [
+        'definition' => guestDraftDefinition(['visibility' => 'public']),
+    ])->assertOk()
+        ->assertSee('draft_token')
+        ->assertSee('Customer intake')
+        ->assertSee('expected_version');
+
+    $draft = AgentFormDraft::query()->sole();
+
+    expect($draft->token_hash)->toMatch('/^[a-f0-9]{64}$/')
+        ->and($draft->definition['visibility'])->toBe('draft')
+        ->and($draft->version)->toBe(1)
+        ->and($draft->schema_version)->toBe(1)
+        ->and($draft->status)->toBe(AgentFormDraft::STATUS_ACTIVE)
+        ->and($draft->expires_at->betweenIncluded($before->copy()->addDays(7)->subSecond(), now()->addDays(7)->addSecond()))->toBeTrue();
+
+    $this->assertDatabaseCount('forms', 0);
+});
+
+it('fetches a draft with its capability token without exposing stored secrets', function () {
+    $created = app(AgentFormDraftService::class)->create(guestDraftDefinition());
+
+    OpnFormServer::tool(GetFormDraftTool::class, [
+        'draft_token' => $created['token'],
+    ])->assertOk()
+        ->assertSee('Customer intake')
+        ->assertDontSee($created['draft']->token_hash)
+        ->assertDontSee('token_hash');
+});
+
+it('patches form values and blocks with optimistic versioning', function () {
+    $drafts = app(AgentFormDraftService::class);
+    $created = $drafts->create(guestDraftDefinition());
+
+    $response = OpnFormServer::tool(PatchFormDraftTool::class, [
+        'draft_token' => $created['token'],
+        'expected_version' => 1,
+        'operations' => [
+            [
+                'op' => 'set_form_values',
+                'values' => ['title' => 'Qualified lead', 'visibility' => 'public'],
+            ],
+            [
+                'op' => 'update_block',
+                'block_id' => 'name-field',
+                'patch' => ['name' => 'Full legal name', 'required' => true],
+            ],
+            [
+                'op' => 'add_block',
+                'index' => 1,
+                'block' => ['name' => 'Company', 'type' => 'text'],
+            ],
+            [
+                'op' => 'move_block',
+                'block_id' => 'email-field',
+                'to_index' => 0,
+            ],
+        ],
+    ]);
+
+    $response->assertOk()
+        ->assertSee('Qualified lead')
+        ->assertSee('Full legal name')
+        ->assertSee('version');
+
+    $updated = $created['draft']->refresh();
+
+    expect($updated->version)->toBe(2)
+        ->and($updated->definition['visibility'])->toBe('draft')
+        ->and($updated->definition['properties'][0]['id'])->toBe('email-field')
+        ->and($updated->definition['properties'][1]['name'])->toBe('Full legal name')
+        ->and($updated->definition['properties'][1]['required'])->toBeTrue()
+        ->and($updated->definition['properties'][2]['name'])->toBe('Company')
+        ->and($updated->definition['properties'][2]['id'])->toBeString()->not->toBeEmpty();
+});
+
+it('rejects stale patches without changing the draft', function () {
+    $drafts = app(AgentFormDraftService::class);
+    $created = $drafts->create(guestDraftDefinition());
+
+    $drafts->patch($created['token'], 1, [[
+        'op' => 'set_form_values',
+        'values' => ['title' => 'First update'],
+    ]]);
+
+    OpnFormServer::tool(PatchFormDraftTool::class, [
+        'draft_token' => $created['token'],
+        'expected_version' => 1,
+        'operations' => [[
+            'op' => 'set_form_values',
+            'values' => ['title' => 'Stale overwrite'],
+        ]],
+    ])->assertHasErrors(['Current version is 2']);
+
+    expect($created['draft']->refresh()->definition['title'])->toBe('First update')
+        ->and($created['draft']->version)->toBe(2);
+});
+
+it('rolls back invalid patch operations and preserves the previous version', function () {
+    $drafts = app(AgentFormDraftService::class);
+    $created = $drafts->create(guestDraftDefinition([
+        'properties' => [
+            ['id' => 'only-field', 'name' => 'Name', 'type' => 'text'],
+        ],
+    ]));
+
+    OpnFormServer::tool(PatchFormDraftTool::class, [
+        'draft_token' => $created['token'],
+        'expected_version' => 1,
+        'operations' => [[
+            'op' => 'remove_block',
+            'block_id' => 'only-field',
+        ]],
+    ])->assertHasErrors();
+
+    expect($created['draft']->refresh()->version)->toBe(1)
+        ->and($created['draft']->definition['properties'])->toHaveCount(1);
+});
+
+it('rejects malformed, expired, and claimed draft capabilities with one generic error', function () {
+    $drafts = app(AgentFormDraftService::class);
+    $created = $drafts->create(guestDraftDefinition());
+
+    OpnFormServer::tool(GetFormDraftTool::class, [
+        'draft_token' => str_repeat('x', 43),
+    ])->assertHasErrors(['Draft not found, expired, or already claimed']);
+
+    $created['draft']->forceFill(['expires_at' => now()->subSecond()])->save();
+
+    OpnFormServer::tool(GetFormDraftTool::class, [
+        'draft_token' => $created['token'],
+    ])->assertHasErrors(['Draft not found, expired, or already claimed']);
+
+    $claimed = $drafts->create(guestDraftDefinition());
+    $claimed['draft']->forceFill(['status' => AgentFormDraft::STATUS_CLAIMED])->save();
+
+    OpnFormServer::tool(GetFormDraftTool::class, [
+        'draft_token' => $claimed['token'],
+    ])->assertHasErrors(['Draft not found, expired, or already claimed']);
+});
+
+it('rejects duplicate block ids', function () {
+    OpnFormServer::tool(CreateFormDraftTool::class, [
+        'definition' => guestDraftDefinition([
+            'properties' => [
+                ['id' => 'duplicate', 'name' => 'One', 'type' => 'text'],
+                ['id' => 'duplicate', 'name' => 'Two', 'type' => 'email'],
+            ],
+        ]),
+    ])->assertHasErrors(['unique id']);
+});
+
+it('rejects oversized draft definitions before persistence', function () {
+    OpnFormServer::tool(CreateFormDraftTool::class, [
+        'definition' => guestDraftDefinition([
+            'custom_code' => str_repeat('x', 1_000_001),
+        ]),
+    ])->assertHasErrors(['must not exceed 1 MB']);
+
+    $this->assertDatabaseCount('agent_form_drafts', 0);
+});
+
+it('sanitizes rich text html before an agent draft can be rendered', function () {
+    $created = app(AgentFormDraftService::class)->create(guestDraftDefinition([
+        'properties' => [[
+            'id' => 'rich-text',
+            'name' => 'Introduction',
+            'type' => 'nf-text',
+            'content' => '<p>Hello</p><img src=x onerror="alert(1)"><script>alert(2)</script>',
+        ]],
+    ]));
+
+    $content = $created['draft']->definition['properties'][0]['content'];
+    expect($content)->toContain('<p>Hello</p>')
+        ->not->toContain('onerror')
+        ->not->toContain('<script');
+});
+
+it('rate limits only excessive draft creation bursts', function () {
+    config()->set('opnform.mcp.rate_limit.draft_creates_per_minute', 2);
+    config()->set('opnform.mcp.rate_limit.draft_creates_per_hour', 10);
+    $limiter = app(AgentFormDraftRateLimiter::class);
+
+    $limiter->hit('ip:192.0.2.1');
+    $limiter->hit('ip:192.0.2.1');
+
+    expect(fn () => $limiter->hit('ip:192.0.2.1'))
+        ->toThrow(ValidationException::class, 'Too many drafts');
+
+    expect(fn () => $limiter->hit('ip:192.0.2.2'))->not->toThrow(ValidationException::class);
+});
+
+it('purges only expired agent drafts with the scheduled command', function () {
+    $drafts = app(AgentFormDraftService::class);
+    $active = $drafts->create(guestDraftDefinition())['draft'];
+    $expired = $drafts->create(guestDraftDefinition())['draft'];
+    $expired->forceFill(['expires_at' => now()->subMinute()])->save();
+
+    $this->artisan('agent-drafts:purge-expired')
+        ->expectsOutput('Purged 1 expired agent form draft(s).')
+        ->assertSuccessful();
+
+    $this->assertDatabaseHas('agent_form_drafts', ['id' => $active->id]);
+    $this->assertDatabaseMissing('agent_form_drafts', ['id' => $expired->id]);
+});

@@ -27,6 +27,9 @@ const actionRegistry = new Map([
   ['EmailIntegrationActions', () => import('~/components/open/integrations/components/EmailIntegrationActions.vue')],
   ['N8nIntegrationActions', () => import('~/components/open/integrations/components/N8nIntegrationActions.vue')],
   ['ActivepiecesIntegrationActions', () => import('~/components/open/integrations/components/ActivepiecesIntegrationActions.vue')],
+  ['MakeIntegrationActions', () => import('~/components/open/integrations/components/MakeIntegrationActions.vue')],
+  ['PabblyIntegrationActions', () => import('~/components/open/integrations/components/PabblyIntegrationActions.vue')],
+  ['AlbatoIntegrationActions', () => import('~/components/open/integrations/components/AlbatoIntegrationActions.vue')],
 ])
 
 const providerRegistry = new Map([
@@ -39,6 +42,7 @@ const heavyFormComponentsRegistry = new Map([
   ['SignatureInput', () => import('~/components/forms/heavy/SignatureInput.vue')],
   ['FileInput', () => import('~/components/forms/heavy/FileInput.vue')],
   ['ImageInput', () => import('~/components/forms/heavy/ImageInput.vue')],
+  ['AudioInput', () => import('~/components/forms/heavy/AudioInput.vue')],
   ['LogicConfirmationModal', () => import('~/components/forms/heavy/LogicConfirmationModal.vue')],
   ['MatrixInput', () => import('~/components/forms/heavy/MatrixInput.vue')],
   ['PhoneInput', () => import('~/components/forms/heavy/PhoneInput.vue')],

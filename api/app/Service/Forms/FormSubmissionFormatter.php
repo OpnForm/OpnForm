@@ -4,6 +4,7 @@ namespace App\Service\Forms;
 
 use App\Models\Forms\Form;
 use App\Service\Storage\FilenameUrlEncoder;
+use App\Service\Storage\StorageFileNameParser;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
@@ -152,9 +153,9 @@ class FormSubmissionFormatter
             }
 
             if ($this->createLinks && $field['type'] == 'url') {
-                $returnArray[$field['name']] = '<a href="' . $data[$field['id']] . '">' . $data[$field['id']] . '</a>';
+                $returnArray[$field['name']] = $this->formatUrlLink($data[$field['id']]);
             } elseif ($this->createLinks && $field['type'] == 'email') {
-                $returnArray[$field['name']] = '<a href="mailto:' . $data[$field['id']] . '">' . $data[$field['id']] . '</a>';
+                $returnArray[$field['name']] = $this->formatEmailLink($data[$field['id']]);
             } elseif ($field['type'] == 'multi_select') {
                 $val = $data[$field['id']];
                 if ($this->outputStringsOnly && is_array($val)) {
@@ -255,27 +256,35 @@ class FormSubmissionFormatter
             } elseif (in_array($field['type'], ['files', 'signature'])) {
                 if ($this->outputStringsOnly) {
                     $formId = $this->form->id;
-                    $files = collect($data[$field['id']])->map(function ($file) use ($formId) {
-                        return $this->getFileUrl($formId, $file);
+                    $emailData = collect($data[$field['id']])->map(function ($file) use ($formId) {
+                        $displayName = $this->getFileDisplayName($file);
+
+                        return [
+                            'file_name' => $file,
+                            'unsigned_url' => route(
+                                'open.forms.submissions.file',
+                                [$formId, FilenameUrlEncoder::encode($file)]
+                            ),
+                            'signed_url' => $this->getFileUrl($formId, $file),
+                            'label' => $displayName,
+                            'is_image' => $this->isImageFile($displayName),
+                        ];
                     })->toArray();
+
                     if ($this->createLinks) {
-                        $field['value'] = implode(', ', collect($files)->map(function ($file) {
-                            return $this->buildSafeHtmlLink($file, $file);
+                        $field['value'] = implode('<br>', collect($emailData)->map(function ($file) {
+                            $icon = $file['is_image'] ? '🖼️' : '📎';
+
+                            return $this->buildSafeHtmlLink(
+                                $file['signed_url'],
+                                $icon . ' ' . $file['label']
+                            );
                         })->toArray());
                         $field['value_is_html'] = true;
                     } else {
-                        $field['value'] = implode(', ', $files);
+                        $field['value'] = implode(', ', collect($emailData)->pluck('signed_url')->toArray());
                     }
-                    $field['email_data'] = collect($data[$field['id']])->map(function ($file) use ($formId) {
-                        $splitText = explode('.', $file);
-                        $encodedFilename = FilenameUrlEncoder::encode($file);
-
-                        return [
-                            'unsigned_url' => route('open.forms.submissions.file', [$formId, $encodedFilename]),
-                            'signed_url' => $this->getFileUrl($formId, $file),
-                            'label' => Str::limit($file, 20, '[...].' . end($splitText)),
-                        ];
-                    })->toArray();
+                    $field['email_data'] = $emailData;
                 } else {
                     $formId = $this->form->id;
                     $field['value'] = collect($data[$field['id']])->map(function ($file) use ($formId) {
@@ -295,6 +304,7 @@ class FormSubmissionFormatter
 
             if ($this->createLinks && empty($field['value_is_html'])) {
                 $field['value'] = $this->escapeHtmlValue($field['value']);
+                $field['value_is_html'] = true;
             }
 
             $transformedFields[] = $field;
@@ -305,13 +315,31 @@ class FormSubmissionFormatter
 
     private function formatUrlLink(mixed $value): string
     {
-        $url = is_scalar($value) ? (string) $value : '';
-
-        if (!filter_var($url, FILTER_VALIDATE_URL)) {
+        if (!is_scalar($value)) {
             return $this->escapeHtmlValue($value);
         }
 
-        return $this->buildSafeHtmlLink($url, $url);
+        $label = trim((string) $value);
+        $scheme = parse_url($label, PHP_URL_SCHEME);
+
+        if ($scheme !== null && (!is_string($scheme) || !in_array(strtolower($scheme), ['http', 'https'], true))) {
+            return $this->escapeHtmlValue($label);
+        }
+
+        $url = $scheme === null ? 'https://' . $label : $label;
+        $urlParts = parse_url($url);
+
+        if (
+            !filter_var($url, FILTER_VALIDATE_URL)
+            || !is_array($urlParts)
+            || empty($urlParts['host'])
+            || isset($urlParts['user'])
+            || isset($urlParts['pass'])
+        ) {
+            return $this->escapeHtmlValue($label);
+        }
+
+        return $this->buildSafeHtmlLink($url, $label);
     }
 
     private function formatEmailLink(mixed $value): string
@@ -328,6 +356,32 @@ class FormSubmissionFormatter
     private function buildSafeHtmlLink(string $href, string $label): string
     {
         return '<a href="' . e($href) . '">' . e($label) . '</a>';
+    }
+
+    private function getFileDisplayName(string $fileName): string
+    {
+        $parser = StorageFileNameParser::parse($fileName);
+
+        if ($parser->fileName && $parser->extension) {
+            return $parser->fileName . '.' . $parser->extension;
+        }
+
+        return $fileName;
+    }
+
+    private function isImageFile(string $fileName): bool
+    {
+        return in_array(strtolower(pathinfo($fileName, PATHINFO_EXTENSION)), [
+            'bmp',
+            'gif',
+            'jpeg',
+            'jpg',
+            'png',
+            'svg',
+            'tif',
+            'tiff',
+            'webp',
+        ], true);
     }
 
     private function escapeHtmlValue(mixed $value): string

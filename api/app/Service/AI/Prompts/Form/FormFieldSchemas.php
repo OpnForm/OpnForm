@@ -371,6 +371,15 @@ class FormFieldSchemas
                 'core' => ['$ref' => '#/definitions/baseProperty'],
             ]
         ],
+        'nfAudioProperty' => [
+            'type' => 'object',
+            'required' => ['core', 'type'],
+            'additionalProperties' => false,
+            'properties' => [
+                'type' => ['type' => 'string', 'enum' => ['nf-audio']],
+                'core' => ['$ref' => '#/definitions/baseProperty'],
+            ]
+        ],
         'nfCodeProperty' => [
             'type' => 'object',
             'required' => ['core', 'type'],

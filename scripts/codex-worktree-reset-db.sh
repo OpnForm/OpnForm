@@ -13,8 +13,8 @@ rm -rf "$ROOT_DIR/api/storage/framework/cache/data"/* "$ROOT_DIR/api/storage/fra
 
 (
   cd "$ROOT_DIR/api"
-  APP_ENV=codex php artisan optimize:clear --env=codex
-  APP_ENV=codex php artisan migrate:fresh --seed --seeder=Database\\Seeders\\E2ETestSeeder --force --env=codex
+  APP_ENV=codex "$CODEX_PHP_BIN" artisan optimize:clear --env=codex
+  APP_ENV=codex "$CODEX_PHP_BIN" artisan migrate:fresh --seed --seeder=Database\\Seeders\\E2ETestSeeder --force --env=codex
 )
 
 echo "Codex worktree PostgreSQL database reset:"

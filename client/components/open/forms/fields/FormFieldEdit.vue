@@ -1,5 +1,9 @@
 <template>
   <div 
+    id="form-field-settings"
+    data-testid="form-field-settings"
+    tabindex="-1"
+    aria-label="Field settings"
     :class="{ 'sidebar-bounce': sidebarBounce }"
     class="sidebar-container"
   >
@@ -252,7 +256,10 @@ const dropdownItems = computed(() => {
 })
 defineShortcuts(extractShortcuts(dropdownItems.value))
 
-const activeTab = ref('options')
+const activeTab = computed({
+  get: () => workingFormStore.selectedFieldTab,
+  set: value => workingFormStore.selectedFieldTab = value,
+})
 
 const tabItems = computed(() => {
   const commonTabs = [

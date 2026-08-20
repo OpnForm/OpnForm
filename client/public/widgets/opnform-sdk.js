@@ -21,6 +21,24 @@
   // Message protocol prefix
   const MSG_PREFIX = 'opnform:'
 
+  const ATTRIBUTION_PARAMETERS = [
+    'utm_source', 'utm_medium', 'utm_campaign', 'utm_id', 'utm_term', 'utm_content',
+    'utm_source_platform', 'utm_creative_format', 'utm_marketing_tactic',
+    'gclid', 'gbraid', 'wbraid', 'dclid', 'fbclid', 'ttclid', 'msclkid'
+  ]
+  const ATTRIBUTION_MAX_VALUE_LENGTH = 2048
+
+  function getPageAttribution() {
+    const params = new URLSearchParams(window.location.search)
+    return ATTRIBUTION_PARAMETERS.reduce((attribution, parameter) => {
+      const value = params.getAll(parameter).find(candidate => (
+        candidate.trim() !== '' && candidate.length <= ATTRIBUTION_MAX_VALUE_LENGTH
+      ))
+      if (value !== undefined) attribution[parameter] = value
+      return attribution
+    }, {})
+  }
+
   // Event types
   const EVENTS = {
     READY: 'ready',
@@ -161,6 +179,7 @@
         formSlug: this.slug,
         _sdkToken: this._sdkToken,
         parentOrigin: window.location.origin,
+        trackingParameters: getPageAttribution(),
       }, this._targetOrigin)
     }
 

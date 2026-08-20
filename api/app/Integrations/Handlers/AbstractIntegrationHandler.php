@@ -19,6 +19,7 @@ abstract class AbstractIntegrationHandler
 {
     protected $form = null;
     protected $submissionData = null;
+    protected array $submissionMeta = [];
     protected $integrationData = null;
     protected $provider = null;
     protected ?array $computedValues = null;
@@ -30,6 +31,7 @@ abstract class AbstractIntegrationHandler
     ) {
         $this->form = $event->form;
         $this->submissionData = $event->data;
+        $this->submissionMeta = $event->meta;
         $this->integrationData = $formIntegration->data;
         $this->provider = $formIntegration->provider;
     }
@@ -80,7 +82,7 @@ abstract class AbstractIntegrationHandler
      */
     protected function getWebhookData(): array
     {
-        return self::formatWebhookData($this->form, $this->submissionData);
+        return self::formatWebhookData($this->form, $this->submissionData, $this->submissionMeta);
     }
 
     final public function run(): void
@@ -135,7 +137,7 @@ abstract class AbstractIntegrationHandler
         return [];
     }
 
-    public static function formatWebhookData(Form $form, array $submissionData): array
+    public static function formatWebhookData(Form $form, array $submissionData, array $submissionMeta = []): array
     {
         $formatter = (new FormSubmissionFormatter($form, $submissionData))
             ->useSignedUrlForFiles()
@@ -169,6 +171,11 @@ abstract class AbstractIntegrationHandler
         }
         if ($form->workspace?->hasFeature('editable_submissions') && $form->editable_submissions && isset($submissionData['submission_id'])) {
             $data['edit_link'] = SubmissionUrlService::buildEditUrl($form, $submissionData['submission_id']);
+        }
+
+        $attribution = $submissionMeta['attribution'] ?? null;
+        if (is_array($attribution) && !empty($attribution)) {
+            $data['meta'] = ['attribution' => $attribution];
         }
 
         return $data;

@@ -36,8 +36,15 @@
       :id="block.id"
       :key="'code-' + block.id"
       class="nf-code w-full px-2 my-1.5"
-      v-html="block.content"
-    />
+    >
+      <div
+        v-if="disableCustomCodeExecution"
+        class="rounded-lg border border-dashed bg-neutral-50 p-4 text-sm text-neutral-500"
+      >
+        Custom code is preserved but does not execute in an agent draft preview.
+      </div>
+      <div v-else v-html="block.content" />
+    </div>
     <div
       v-else-if="block.type === 'nf-divider'"
       :id="block.id"
@@ -94,6 +101,31 @@
         :is-dark="darkMode"
       />
     </div>
+    <div
+      v-else-if="block.type === 'nf-audio' && (isAdminPreview || (!isAdminPreview && block.audio_block))"
+      :id="block.id"
+      :key="'audio-' + block.id"
+      class="my-4 w-full"
+      :class="[getFieldAlignClasses(block)]"
+      @dblclick="editFieldOptions"
+    >
+      <div
+        v-if="!block.audio_block"
+        class="p-4 border border-dashed text-center"
+      >
+        <a
+          href="#"
+          class="text-blue-800 dark:text-blue-200"
+          @click.prevent="editFieldOptions"
+        >Open block settings to add audio.</a>
+      </div>
+      <EmbedMedia
+        v-else
+        :src="block.audio_block"
+        :force-audio="true"
+        :is-dark="darkMode"
+      />
+    </div>
   </div>
 </template>
 
@@ -118,6 +150,7 @@ const dataForm = computed(() => props.formManager?.form || {})
 const darkMode = computed(() => props.formManager?.darkMode?.value || false)
 const strategy = computed(() => props.formManager?.strategy?.value || {})
 const isAdminPreview = computed(() => strategy.value?.admin?.showAdminControls || false)
+const disableCustomCodeExecution = inject('disableCustomCodeExecution', false)
 
 // Debounce form data changes to avoid excessive re-renders when user types
 const formDataForMentions = computed(() => dataForm.value?.data?.() || {})

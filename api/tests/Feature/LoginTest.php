@@ -1,6 +1,8 @@
 <?php
 
 use App\Models\User;
+use App\Enterprise\Oidc\Models\IdentityConnection;
+use App\Enterprise\Oidc\OidcLinkService;
 
 it('can login to Forms', function () {
     $user = User::factory()->create();
@@ -53,9 +55,9 @@ it('cannot login if user is blocked', function () {
 
 it('blocks password login when OIDC force_login is enabled', function () {
     // Create an OIDC connection
-    \App\Enterprise\Oidc\Models\IdentityConnection::factory()->create([
+    IdentityConnection::factory()->create([
         'enabled' => true,
-        'type' => \App\Enterprise\Oidc\Models\IdentityConnection::TYPE_OIDC,
+        'type' => IdentityConnection::TYPE_OIDC,
     ]);
 
     // Enable force_login
@@ -73,6 +75,56 @@ it('blocks password login when OIDC force_login is enabled', function () {
     $this->assertGuest();
 
     // Restore config
+    config(['oidc.force_login' => false]);
+});
+
+it('allows an existing account to sign in with a valid OIDC link token when force login is enabled', function () {
+    $connection = IdentityConnection::factory()->create([
+        'enabled' => true,
+        'type' => IdentityConnection::TYPE_OIDC,
+    ]);
+    config(['oidc.force_login' => true]);
+
+    $user = User::factory()->create();
+    $linkToken = app(OidcLinkService::class)->createLinkToken(
+        connectionId: $connection->id,
+        subject: 'existing-account-subject',
+        email: $user->email,
+        claims: ['email' => $user->email],
+    );
+
+    $this->postJson('/login', [
+        'email' => $user->email,
+        'password' => 'Abcd@1234',
+        'oidc_link_token' => $linkToken,
+    ])->assertSuccessful();
+
+    config(['oidc.force_login' => false]);
+});
+
+it('does not allow a link token for a different account to bypass forced OIDC login', function () {
+    $connection = IdentityConnection::factory()->create([
+        'enabled' => true,
+        'type' => IdentityConnection::TYPE_OIDC,
+    ]);
+    config(['oidc.force_login' => true]);
+
+    $user = User::factory()->create();
+    $linkToken = app(OidcLinkService::class)->createLinkToken(
+        connectionId: $connection->id,
+        subject: 'different-account-subject',
+        email: 'other@example.com',
+        claims: ['email' => 'other@example.com'],
+    );
+
+    $this->postJson('/login', [
+        'email' => $user->email,
+        'password' => 'Abcd@1234',
+        'oidc_link_token' => $linkToken,
+    ])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors(['email' => 'Password-based login is disabled. Please use OIDC authentication.']);
+
     config(['oidc.force_login' => false]);
 });
 

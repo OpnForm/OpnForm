@@ -30,14 +30,21 @@ class FormSubmissionResource extends JsonResource
             $this->addExtraData();
         }
 
-        return array_merge([
-            'data' => $this->data,
-            'completion_time' => $this->completion_time,
-        ], ($this->publiclyAccessed) ? [] : [
+        $privateData = [
             'form_id' => $this->form_id,
             'id' => $this->id,
             'submission_id' => SubmissionUrlService::getSubmissionIdentifier($this->resource),
-        ]);
+        ];
+
+        $attribution = ($this->meta ?? [])['attribution'] ?? null;
+        if (is_array($attribution) && !empty($attribution)) {
+            $privateData['meta'] = ['attribution' => $attribution];
+        }
+
+        return array_merge([
+            'data' => $this->data,
+            'completion_time' => $this->completion_time,
+        ], ($this->publiclyAccessed) ? [] : $privateData);
     }
 
     public function publiclyAccessed($publiclyAccessed = true)
@@ -84,6 +91,11 @@ class FormSubmissionResource extends JsonResource
                 $mapped = collect($fileItems)
                     ->filter(fn ($file) => !is_null($file) && $file !== '')
                     ->map(function ($file) {
+                        $file = (string) $file;
+                        if (FilenameUrlEncoder::isEncoded($file)) {
+                            $file = FilenameUrlEncoder::decode($file);
+                        }
+
                         // Use base64url encoding to avoid URL encoding issues with special characters
                         // See: https://github.com/OpnForm/OpnForm/issues/1024
                         $encodedFilename = FilenameUrlEncoder::encode($file);

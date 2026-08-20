@@ -57,7 +57,7 @@
       label="Variables"
       icon="i-heroicons-variable"
     >
-      <ComputedVariablesTab />
+      <ComputedVariablesTab :edit-request="computedVariableEditRequest" />
     </SettingsModalPage>
 
   </SettingsModal>
@@ -84,6 +84,10 @@ const props = defineProps({
   activeTab: {
     type: String,
     default: 'general'
+  },
+  computedVariableEditRequest: {
+    type: Object,
+    default: null
   }
 })
 
@@ -112,4 +116,4 @@ defineShortcuts({
     }
   }
 })
-</script> 
+</script>

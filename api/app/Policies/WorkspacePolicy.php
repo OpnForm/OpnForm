@@ -77,11 +77,15 @@ class WorkspacePolicy
      */
     public function update(User $user, Workspace $workspace)
     {
-        if ($token = $user->currentAccessToken()) {
-            return $token->can('workspaces-write') && $user->ownsWorkspace($workspace);
+        if (!$user->ownsWorkspace($workspace) || $workspace->isReadonlyUser($user)) {
+            return Response::deny('You cannot update this workspace.');
         }
 
-        return $user->ownsWorkspace($workspace);
+        if ($token = $user->currentAccessToken()) {
+            return $token->can('workspaces-write');
+        }
+
+        return true;
     }
 
     /**
@@ -91,16 +95,12 @@ class WorkspacePolicy
      */
     public function delete(User $user, Workspace $workspace)
     {
-        if (!$user->ownsWorkspace($workspace)) {
-            return Response::deny('You cannot delete this workspace.');
+        if (!$this->adminAction($user, $workspace)) {
+            return Response::deny('You need to be an admin of this workspace to do this.');
         }
 
         if ($user->workspaces()->count() <= 1) {
             return Response::deny('You cannot delete your last workspace. Delete your account instead.');
-        }
-
-        if ($token = $user->currentAccessToken()) {
-            return $token->can('workspaces-write');
         }
 
         return true;

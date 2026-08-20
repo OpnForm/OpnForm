@@ -49,6 +49,15 @@
     </SettingsModalPage>
 
     <SettingsModalPage
+      v-if="canManageInstanceSettings"
+      id="mcp"
+      label="MCP & AI agents"
+      icon="i-heroicons-cpu-chip"
+    >
+      <LazyUsersSettingsMcp />
+    </SettingsModalPage>
+
+    <SettingsModalPage
       v-if="!isSelfHosted && user && (user.has_customer_id || user.active_license)"
       id="billing"
       label="Billing"
@@ -73,10 +82,11 @@ const props = defineProps({
   }
 })
 
-const { current: workspace } = useCurrentWorkspace()
+const { current: workspace, workspaces } = useCurrentWorkspace()
 const { data: user } = useAuth().user()
 const isSelfHosted = computed(() => useFeatureFlag('self_hosted'))
-const canManageLicense = computed(() => isSelfHosted.value && !!workspace.value?.is_admin)
+const canManageInstanceSettings = computed(() => isSelfHosted.value && !!workspaces.value?.some(candidate => candidate.is_admin))
+const canManageLicense = canManageInstanceSettings
 
 // Modal state is now derived from the presence of an active tab
 const isOpen = computed({

@@ -356,6 +356,18 @@ async function apiCreateForm(request: APIRequestContext, options: {
   throw new Error(`Failed to create form via API (${lastFailure?.status}): ${lastFailure?.body}`)
 }
 
+async function apiListSubmissions(request: APIRequestContext, token: string, slug: string) {
+  const response = await request.get(`${API_BASE_URL}/open/forms/${slug}/submissions`, {
+    headers: {
+      Accept: "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  })
+
+  expect(response.ok()).toBeTruthy()
+  return response.json()
+}
+
 async function submitPublicForm(page: Page, slug: string, visitorName = "Playwright Visitor") {
   const visitorEmail = uniqueEmail("visitor")
 
@@ -540,6 +552,111 @@ test("editing an existing form title persists after save", async ({ page, reques
   await expect(page.getByRole("heading", { name: updatedTitle, exact: true })).toBeVisible()
 })
 
+test("form save errors open the invalid field section and computed variable", async ({ page, request }) => {
+  const form = await apiCreateForm(request, {
+    title: uniqueTitle("Save Error Form"),
+    payloadOverrides: {
+      properties: [
+        {
+          type: "nf-text",
+          content: "<h1>Save error form</h1>",
+          name: "Title",
+          id: "save_error_title",
+        },
+        buildTextField("contact_name", "Contact name"),
+        buildSelectField("problematic-dropdown", "Problematic dropdown", ["Temporary option"]),
+      ],
+      computed_variables: [{
+        id: "cv_order_total",
+        name: "Order total",
+        formula: "1 + 1",
+        result_type: "number",
+      }],
+    },
+  })
+
+  await loginUi(page)
+  let saveAttempt = 0
+  await page.route("**/open/forms/*", async (route) => {
+    if (route.request().method() !== "PUT") {
+      await route.continue()
+      return
+    }
+
+    saveAttempt += 1
+
+    const responseBody = saveAttempt === 1
+      ? {
+          message: "At least one option is required. (and 1 more error)",
+          errors: {
+            "properties.2.select.options": ["At least one option is required."],
+            properties: ["One or more properties have validation errors."],
+          },
+        }
+      : saveAttempt === 2
+        ? {
+            message: "The logic actions for Problematic dropdown are not valid. (and 1 more error)",
+            errors: {
+              "properties.2.logic": ["The logic actions for Problematic dropdown are not valid."],
+              properties: ["One or more properties have validation errors."],
+            },
+          }
+        : {
+            message: "The formula is required. (and 1 more error)",
+            errors: {
+              "computed_variables.0.formula": ["The formula is required."],
+              computed_variables: ["One or more computed variables have validation errors."],
+            },
+          }
+
+    await route.fulfill({
+      status: 422,
+      contentType: "application/json",
+      body: JSON.stringify(responseBody),
+    })
+  })
+
+  await page.goto(`/forms/${form.slug}/edit`)
+  await expect(page.locator("#form-editor")).toBeVisible()
+  await page.getByTestId("save-form-button").click()
+
+  const errorModal = page.getByTestId("form-save-error-modal")
+  await expect(errorModal).toBeVisible()
+  await expect(page.getByText("Fix 1 field before saving", { exact: true })).toBeVisible()
+  await expect(errorModal).toContainText("Problematic dropdown")
+  await expect(errorModal).toContainText("At least one option is required.")
+  await expect(errorModal).not.toContainText("One or more properties have validation errors.")
+  await expect(errorModal).not.toContainText("and 1 more error")
+
+  await page.getByTestId("edit-form-field-problematic-dropdown").click()
+
+  await expect(errorModal).toBeHidden()
+  const fieldSettings = page.getByTestId("form-field-settings")
+  await expect(fieldSettings).toBeVisible()
+  await expect(fieldSettings).toBeFocused()
+  await expect(fieldSettings).toContainText("Select Options")
+
+  await page.getByTestId("save-form-button").click()
+  await expect(errorModal).toBeVisible()
+  await expect(errorModal).toContainText("The logic actions for Problematic dropdown are not valid.")
+  await page.getByTestId("edit-form-field-problematic-dropdown").click()
+
+  await expect(errorModal).toBeHidden()
+  await expect(fieldSettings).toContainText("When following condition(s) are true")
+
+  await page.getByTestId("save-form-button").click()
+  await expect(errorModal).toBeVisible()
+  await expect(page.getByText("Fix 1 variable before saving", { exact: true })).toBeVisible()
+  await expect(errorModal).toContainText("Order total")
+  await expect(errorModal).toContainText("The formula is required.")
+  await page.getByTestId("edit-computed-variable-cv_order_total").click()
+
+  const variableModal = page.getByTestId("computed-variable-modal")
+  await expect(variableModal).toBeVisible()
+  await expect(variableModal.getByText("Edit Variable", { exact: true })).toBeVisible()
+  await expect(variableModal.getByPlaceholder("e.g., Total Price, Dog Age")).toHaveValue("Order total")
+})
+
 test("public submissions are accepted and visible in the submissions dashboard", async ({ page, request }) => {
   const form = await apiCreateForm(request, { title: uniqueTitle("Submission Form") })
   const { visitorName, visitorEmail } = await submitPublicForm(page, form.slug)
@@ -550,6 +667,145 @@ test("public submissions are accepted and visible in the submissions dashboard",
   await expect(page.getByTestId("form-submissions-page")).toBeVisible()
   await expect(page.getByText(visitorName)).toBeVisible()
   await expect(page.getByText(visitorEmail)).toBeVisible()
+})
+
+test("public form URL attribution is stored separately from submitted answers", async ({ page, request }) => {
+  const form = await apiCreateForm(request, { title: uniqueTitle("Attributed Submission") })
+  const visitorName = `Attributed Visitor ${Date.now()}`
+  const visitorEmail = uniqueEmail("attributed")
+
+  await gotoPageWithRetry(
+    page,
+    `/forms/${form.slug}?utm_source=playwright&utm_campaign=e2e&gclid=browser-click&email=must-not-track`,
+    async () => {
+      await expect(page.getByTestId("public-form-page")).toBeVisible()
+    },
+  )
+  await fillFieldInput(page, "default_name", visitorName)
+  await fillFieldInput(page, "default_email", visitorEmail)
+  await fillFieldInput(page, "default_message", "Attribution browser test")
+  await page.getByRole("button", { name: /submit/i }).click()
+  await expectSubmissionSuccess(page)
+
+  const token = await apiLogin(request)
+  const submissionsResponse = await request.get(
+    `${API_BASE_URL}/open/forms/${form.slug}/submissions`,
+    {
+      headers: {
+        Accept: "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  )
+
+  expect(submissionsResponse.ok()).toBeTruthy()
+  const submissions = await submissionsResponse.json()
+  const submission = submissions.data.find((record: {
+    data: Record<string, unknown>,
+  }) => record.data.default_name === visitorName)
+
+  expect(submission).toBeTruthy()
+  expect(submission.data).not.toHaveProperty("tracking_parameters")
+  expect(submission.meta).toEqual({
+    attribution: {
+      utm_source: "playwright",
+      utm_campaign: "e2e",
+      gclid: "browser-click",
+    },
+  })
+
+  await loginUi(page)
+  await page.goto(`/forms/${form.slug}/show/submissions`)
+  await expect(page.getByTestId("form-submissions-page")).toBeVisible()
+  await page.getByRole("button", { name: "Columns", exact: true }).click()
+
+  const columnsDialog = page.getByRole("dialog", { name: "Columns" })
+  await expect(columnsDialog.getByText("utm_source", { exact: true })).toHaveCount(0)
+  await columnsDialog.getByRole("button", { name: /Attribution & tracking/ }).click()
+  await expect(columnsDialog.getByText("utm_source", { exact: true })).toBeVisible()
+  await columnsDialog.getByRole("button", { name: "Show detected", exact: true }).click()
+
+  const attributedRow = page.getByRole("row").filter({ hasText: visitorName })
+  await expect(attributedRow).toContainText("playwright")
+  await expect(attributedRow).toContainText("e2e")
+  await expect(attributedRow).toContainText("browser-click")
+
+  await columnsDialog.getByRole("button", { name: "Hide URL parameters", exact: true }).click()
+  await expect(page.getByRole("columnheader", { name: "utm_source", exact: true })).toHaveCount(0)
+  await expect(page.getByRole("columnheader", { name: "utm_campaign", exact: true })).toHaveCount(0)
+  await expect(page.getByRole("columnheader", { name: "gclid", exact: true })).toHaveCount(0)
+})
+
+test("SDK parent attribution is captured before an embedded auto-submit", async ({ page, request }) => {
+  const form = await apiCreateForm(request, {
+    title: uniqueTitle("SDK Auto Submit Attribution"),
+    payloadOverrides: {
+      properties: [
+        {
+          type: "nf-text",
+          content: "<h1>SDK auto-submit attribution</h1>",
+          name: "Title",
+          id: "default_title",
+        },
+        buildTextField("sdk_auto_name", "Name"),
+      ],
+    },
+  })
+  const token = await apiLogin(request)
+  const iframeUrl = `/forms/${form.slug}?auto_submit=true&sdk_auto_name=Auto%20SDK`
+
+  await page.goto("/?utm_source=sdk-parent&utm_campaign=auto-submit")
+  await page.setContent(`
+    <!doctype html>
+    <html>
+      <body>
+        <iframe id="${form.slug}" src="${iframeUrl}"></iframe>
+        <script>
+          setTimeout(() => {
+            const sdk = document.createElement('script')
+            sdk.src = '/widgets/opnform-sdk.js'
+            sdk.onload = () => window.opnform.init({ autoResize: false, preventRedirect: true })
+            document.body.appendChild(sdk)
+          }, 750)
+        </script>
+      </body>
+    </html>
+  `)
+
+  let submission: { meta?: { attribution?: Record<string, string> } } | undefined
+  await expect.poll(async () => {
+    const submissions = await apiListSubmissions(request, token, form.slug)
+    submission = submissions.data.find((record: { data: Record<string, unknown> }) => (
+      record.data.sdk_auto_name === "Auto SDK"
+    ))
+    return submission
+  }, { timeout: 20_000 }).toBeTruthy()
+
+  expect(submission?.meta?.attribution).toEqual({
+    utm_source: "sdk-parent",
+    utm_campaign: "auto-submit",
+  })
+})
+
+test("popup embed falls back to valid parent attribution when its form URL value is empty", async ({ page, request }) => {
+  const form = await apiCreateForm(request, { title: uniqueTitle("Popup Attribution") })
+  const formUrl = `/forms/${form.slug}?utm_source=`
+  const widgetData = JSON.stringify({ formurl: formUrl }).replaceAll('"', '&quot;')
+
+  await page.goto("/?utm_source=popup-parent&utm_campaign=popup-test")
+  await page.setContent(`
+    <!doctype html>
+    <html>
+      <body>
+        <script data-nf="${widgetData}" src="/widgets/embed.js"></script>
+      </body>
+    </html>
+  `)
+  await page.locator(".nf-emoji").click()
+
+  const popupUrl = new URL(await page.locator(".nf-popup iframe").getAttribute("src") || "", page.url())
+  expect(popupUrl.searchParams.get("utm_source")).toBe("popup-parent")
+  expect(popupUrl.searchParams.get("utm_campaign")).toBe("popup-test")
 })
 
 test("classic public form submits successfully with mixed field components", async ({ page, request }) => {

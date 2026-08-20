@@ -56,6 +56,11 @@ class FormExportService
 
         foreach ($displayColumns as $column => $value) {
             if ($value === true) {
+                if ($parameter = SubmissionAttribution::parameterFromColumnId($column)) {
+                    $filteredData[$parameter] = $submission->meta['attribution'][$parameter] ?? '';
+                    continue;
+                }
+
                 $key = collect($formattedData)->keys()->first(fn ($key) => str_contains($key, $column));
                 if ($key) {
                     $filteredData[$key] = $formattedData[$key];
@@ -111,6 +116,9 @@ class FormExportService
         }
 
         $output = fopen('php://temp', 'r+');
+
+        // Help spreadsheet applications such as Excel detect UTF-8 correctly.
+        fwrite($output, "\xEF\xBB\xBF");
 
         // Write header row (clean column names)
         $headers = $this->cleanColumnNames(array_keys($rows[0]));

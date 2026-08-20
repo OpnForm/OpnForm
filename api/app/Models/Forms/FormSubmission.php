@@ -3,6 +3,8 @@
 namespace App\Models\Forms;
 
 use App\Events\Models\FormSubmissionDeleting;
+use App\Events\Models\FormSubmissionSaved;
+use App\Events\Models\FormSubmissionUpdating;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Version;
@@ -50,6 +52,8 @@ class FormSubmission extends Model implements VersionableNestedDiff
      */
     protected $dispatchesEvents = [
         'deleting' => FormSubmissionDeleting::class,
+        'saved' => FormSubmissionSaved::class,
+        'updating' => FormSubmissionUpdating::class,
     ];
 
     /**
@@ -58,6 +62,11 @@ class FormSubmission extends Model implements VersionableNestedDiff
     public function form()
     {
         return $this->belongsTo(Form::class);
+    }
+
+    public function storedFiles()
+    {
+        return $this->hasMany(FormSubmissionFile::class);
     }
 
     public function getVersionNestedDiffFields(): array
