@@ -10,6 +10,8 @@ use App\Mcp\Tools\PublishFormTool;
 use App\Mcp\Tools\TrashFormTool;
 use App\Mcp\Tools\UpdateFormTool;
 use App\Models\Forms\Form;
+use App\Enums\SettingsKey;
+use App\Models\Setting;
 use App\Models\OAuthProvider;
 use App\Models\User;
 use App\Models\Workspace;
@@ -59,6 +61,22 @@ function managedFormRevision(User $user, Form $form): string
     return $management->serializeForm($management->form($user, $form->id))['revision'];
 }
 
+function configureManagedSelfHostedMcp(): void
+{
+    $key = openssl_pkey_new([
+        'private_key_bits' => 2048,
+        'private_key_type' => OPENSSL_KEYTYPE_RSA,
+    ]);
+    openssl_pkey_export($key, $privateKey);
+    $details = openssl_pkey_get_details($key);
+
+    config()->set('oauth.enabled', true);
+    config()->set('app.url', 'https://forms.example.com');
+    config()->set('app.front_url', 'https://forms.example.com');
+    config()->set('passport.private_key', $privateKey);
+    config()->set('passport.public_key', $details['key']);
+}
+
 it('always advertises account tools as OAuth protected', function () {
     $tool = app(ListFormsTool::class);
 
@@ -103,6 +121,55 @@ it('advertises guest and account tools with explicit per-tool auth policies', fu
         ->assertSee(['create_form_draft', 'list_forms', 'trash_form']);
 });
 
+it('hides guest draft capabilities but keeps validation and OAuth tools on self-hosted instances', function () {
+    config()->set('app.self_hosted', true);
+    configureManagedSelfHostedMcp();
+    Setting::set(SettingsKey::MCP_ENABLED, true);
+    $headers = ['Accept' => 'application/json, text/event-stream'];
+
+    $toolsResponse = $this->postJson('/mcp', [
+        'jsonrpc' => '2.0',
+        'id' => 1,
+        'method' => 'tools/list',
+        'params' => [],
+    ], $headers)->assertOk();
+    $toolNames = collect($toolsResponse->json('result.tools'))->pluck('name');
+
+    expect($toolNames)
+        ->toContain('validate_form_definition', 'create_form', 'list_forms', 'list_submissions')
+        ->not->toContain(
+            'create_form_draft',
+            'get_form_draft',
+            'patch_form_draft',
+            'preview_form_draft',
+            'open_form_draft_in_editor',
+        );
+
+    $resourcesResponse = $this->postJson('/mcp', [
+        'jsonrpc' => '2.0',
+        'id' => 2,
+        'method' => 'resources/list',
+        'params' => [],
+    ], $headers)->assertOk();
+    $resourceUris = collect($resourcesResponse->json('result.resources'))->pluck('uri');
+
+    expect($resourceUris)
+        ->toContain('opnform://schemas/agent-form-definition/v1', 'opnform://reference/form-fields/v1')
+        ->not->toContain('ui://opnform/form-draft-preview-v3');
+
+    $this->postJson('/mcp', [
+        'jsonrpc' => '2.0',
+        'id' => 3,
+        'method' => 'tools/call',
+        'params' => [
+            'name' => 'create_form_draft',
+            'arguments' => ['definition' => managedFormDefinition()],
+        ],
+    ], $headers)->assertOk()
+        ->assertJsonPath('error.code', -32602)
+        ->assertJsonPath('error.message', 'Tool [create_form_draft] not found.');
+});
+
 it('lists only the connected account workspaces with form write capability', function () {
     $user = User::factory()->create();
     $writable = managedWorkspace($user);
@@ -133,7 +200,8 @@ it('creates an unpublished form automatically when the account has one workspace
     $form = Form::query()->sole();
     expect($form->workspace_id)->toBe($workspace->id)
         ->and($form->creator_id)->toBe($user->id)
-        ->and($form->visibility)->toBe('draft');
+        ->and($form->visibility)->toBe('draft')
+        ->and($form->edit_url)->toBeString()->not->toBeEmpty();
 });
 
 it('requires workspace selection only when multiple workspaces are available', function () {

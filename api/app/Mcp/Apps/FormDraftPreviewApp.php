@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Apps;
 
+use App\Support\Mcp\McpAvailability;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\AppResource;
@@ -16,6 +17,11 @@ use Laravel\Mcp\Server\Ui\Csp;
 #[Uri('ui://opnform/form-draft-preview-v3')]
 class FormDraftPreviewApp extends AppResource
 {
+    public function shouldRegister(McpAvailability $availability): bool
+    {
+        return $availability->guestDraftsEnabled();
+    }
+
     public function handle(Request $request): Response
     {
         $response = Response::view('mcp.form-draft-preview-app');
@@ -58,5 +64,4 @@ class FormDraftPreviewApp extends AppResource
 
         return isset($frontUrl['port']) ? $origin.':'.$frontUrl['port'] : $origin;
     }
-
 }

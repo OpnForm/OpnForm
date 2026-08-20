@@ -5,7 +5,12 @@ namespace App\Support\Mcp;
 final class McpConnectionConfiguration
 {
     /**
-     * @return array{server_url: string, settings_url: string, snippets: array{native: string, portable: string, codex_cli: string}}
+     * @return array{
+     *     server_url: string,
+     *     settings_url: string,
+     *     snippets: array{cursor: string, claude_code: string, chatgpt: string, codex: string, other: string, portable: string},
+     *     install_urls: array{cursor: string}
+     * }
      */
     public function forSelfHostedInstance(): array
     {
@@ -16,12 +21,21 @@ final class McpConnectionConfiguration
             'server_url' => $serverUrl,
             'settings_url' => front_url('/?user-settings=mcp'),
             'snippets' => [
-                'native' => $this->json([
+                'cursor' => $this->json([
+                    'mcpServers' => [
+                        'opnform' => [
+                            'url' => $serverUrl,
+                        ],
+                    ],
+                ]),
+                'claude_code' => 'claude mcp add --transport http opnform '.escapeshellarg($serverUrl),
+                'chatgpt' => "Server URL: {$serverUrl}\nAuthentication: OAuth",
+                'codex' => 'codex mcp add opnform --url '.escapeshellarg($serverUrl),
+                'other' => $this->json([
                     'mcpServers' => [
                         'opnform' => [
                             'type' => 'http',
                             'url' => $serverUrl,
-                            'auth' => 'oauth',
                         ],
                     ],
                 ]),
@@ -34,7 +48,10 @@ final class McpConnectionConfiguration
                         ],
                     ],
                 ]),
-                'codex_cli' => 'codex mcp add opnform --url '.escapeshellarg($serverUrl),
+            ],
+            'install_urls' => [
+                'cursor' => 'cursor://anysphere.cursor-deeplink/mcp/install?name=opnform&config='.
+                    rawurlencode(base64_encode($this->json(['url' => $serverUrl]))),
             ],
         ];
     }

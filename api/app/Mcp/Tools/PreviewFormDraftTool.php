@@ -17,7 +17,7 @@ use Laravel\Mcp\Server\Tools\Annotations\IsOpenWorld;
 #[Description('Render the current guest draft, return a browser preview valid for one hour, and create a reusable editor link that remains valid for the seven-day guest draft lifetime. Call this tool again whenever a fresh preview link is needed.')]
 #[RendersApp(resource: FormDraftPreviewApp::class)]
 #[IsOpenWorld]
-class PreviewFormDraftTool extends GuestMcpTool
+class PreviewFormDraftTool extends GuestDraftMcpTool
 {
     public function handle(Request $request, AgentFormDraftService $drafts): ResponseFactory
     {

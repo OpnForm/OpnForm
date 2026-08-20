@@ -7,7 +7,7 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-final class EnsureMcpEnabled
+final class EnsureMcpGuestDraftsEnabled
 {
     public function __construct(private readonly McpAvailability $availability)
     {
@@ -15,7 +15,7 @@ final class EnsureMcpEnabled
 
     public function handle(Request $request, Closure $next): Response
     {
-        abort_unless($this->availability->available(), Response::HTTP_NOT_FOUND);
+        abort_unless($this->availability->guestDraftsEnabled(), Response::HTTP_NOT_FOUND);
 
         return $next($request);
     }

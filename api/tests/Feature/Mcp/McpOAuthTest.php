@@ -10,6 +10,8 @@ use Laravel\Passport\Passport;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 beforeEach(function () {
+    config()->set('app.front_url', 'https://opnform.test');
+
     $key = openssl_pkey_new([
         'digest_alg' => 'sha256',
         'private_key_bits' => 2048,

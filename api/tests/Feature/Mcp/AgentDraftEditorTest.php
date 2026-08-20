@@ -21,6 +21,7 @@ function editorDraftDefinition(array $overrides = []): array
 }
 
 beforeEach(function () {
+    config()->set('app.self_hosted', false);
     config()->set('app.front_api_secret', 'test-front-secret');
     config()->set('app.front_url', 'https://opnform.test');
 });

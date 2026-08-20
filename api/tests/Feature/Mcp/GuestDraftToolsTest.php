@@ -20,6 +20,10 @@ function guestDraftDefinition(array $overrides = []): array
     ], $overrides);
 }
 
+beforeEach(function () {
+    config()->set('app.self_hosted', false);
+});
+
 it('creates a seven-day server-side guest draft and only stores a token hash', function () {
     $before = now();
 

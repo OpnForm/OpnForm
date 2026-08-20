@@ -63,14 +63,11 @@
                   {{ statusTitle }}
                 </p>
                 <UBadge :color="statusBadgeColor" variant="subtle">
-                  {{ settings.enabled ? 'Enabled' : 'Disabled' }}
+                  {{ statusBadgeLabel }}
                 </UBadge>
               </div>
               <p class="mt-1 max-w-xl text-sm leading-6 text-neutral-600">
                 {{ statusDescription }}
-              </p>
-              <p class="mt-2 text-xs text-neutral-400">
-                {{ sourceDescription }}
               </p>
             </div>
           </div>
@@ -87,12 +84,6 @@
           </div>
         </div>
 
-        <div
-          v-if="settings.enabled"
-          class="border-t border-amber-200 bg-amber-50 px-5 py-3 text-sm leading-6 text-amber-900"
-        >
-          Guest draft creation is publicly reachable and protected by your configured MCP rate limits. Account, form, and submission tools still require OAuth and normal workspace permissions.
-        </div>
       </section>
 
       <section
@@ -119,7 +110,11 @@
         </div>
       </section>
 
-      <section class="space-y-4 rounded-xl border border-neutral-200 bg-white p-5">
+      <section
+        v-if="isMcpAvailable"
+        class="space-y-4 rounded-xl border border-neutral-200 bg-white p-5"
+        data-testid="mcp-connection-settings"
+      >
         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <p class="text-xs font-semibold uppercase tracking-wider text-blue-600">
@@ -137,7 +132,7 @@
             icon="i-heroicons-link"
             variant="soft"
             color="neutral"
-            @click="copyValue(settings.settings_url, 'Settings link copied')"
+            @click="copyValue(sharedSettingsUrl, 'Settings link copied')"
           />
         </div>
 
@@ -146,47 +141,69 @@
           <CopyContent :content="settings.server_url" label="Copy URL" />
         </div>
 
-        <div class="grid gap-3 sm:grid-cols-2">
-          <div class="rounded-lg border border-neutral-200 bg-neutral-50 p-4">
-            <div class="flex items-center gap-2 font-medium text-neutral-900">
-              <Icon name="i-heroicons-sparkles" class="h-4 w-4" />
-              ChatGPT
-            </div>
-            <p class="mt-2 text-sm leading-6 text-neutral-600">
-              In ChatGPT developer mode, create an MCP app and paste the server URL above. OAuth discovery is automatic.
-            </p>
-          </div>
-          <div class="rounded-lg border border-neutral-200 bg-neutral-50 p-4">
-            <div class="flex items-center gap-2 font-medium text-neutral-900">
-              <Icon name="i-heroicons-command-line" class="h-4 w-4" />
-              Codex CLI
-            </div>
-            <p class="mt-2 text-sm leading-6 text-neutral-600">
-              Add the server, then authenticate when you need account-scoped tools.
-            </p>
-          </div>
-        </div>
       </section>
 
-      <section class="space-y-4">
+      <section v-if="isMcpAvailable" data-testid="mcp-snippet-settings">
         <McpCodeSnippet
-          title="Codex command"
-          description="Add this instance as a streamable HTTP MCP server."
-          :content="settings.snippets.codex_cli"
-          @copy="copyValue(settings.snippets.codex_cli, 'Codex command copied')"
-        />
-        <McpCodeSnippet
-          title="Native Codex / OpenAI configuration"
-          description="Use this in a native MCP configuration file."
-          :content="settings.snippets.native"
-          @copy="copyValue(settings.snippets.native, 'Native configuration copied')"
-        />
-        <McpCodeSnippet
-          title="Portable Agent Plugins configuration"
-          description="Use this inside an agent-plugins.org compatible package."
-          :content="settings.snippets.portable"
-          @copy="copyValue(settings.snippets.portable, 'Portable configuration copied')"
-        />
+          :content="activeSnippet.content"
+          :label="activeSnippet.label"
+          @copy="copyValue(activeSnippet.content, `${activeSnippet.label} configuration copied`)"
+        >
+          <template #selector>
+            <div class="flex min-w-0 items-center gap-1 overflow-x-auto" role="group" aria-label="MCP client configuration">
+              <button
+                v-for="snippet in snippetOptions"
+                :key="snippet.key"
+                type="button"
+                :aria-pressed="activeSnippetKey === snippet.key"
+                :data-testid="`mcp-snippet-${snippet.key}`"
+                class="inline-flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors"
+                :class="activeSnippetKey === snippet.key
+                  ? 'bg-white text-neutral-950 shadow-sm'
+                  : 'text-neutral-400 hover:bg-white/10 hover:text-white'"
+                @click="selectSnippet(snippet.key)"
+              >
+                <Icon :name="snippet.icon" class="h-3.5 w-3.5" />
+                {{ snippet.label }}
+              </button>
+            </div>
+          </template>
+          <template #instructions>
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <p class="text-sm leading-6 text-neutral-300">
+                {{ activeSnippet.description }}
+              </p>
+              <UButton
+                v-if="activeSnippet.installUrl"
+                :label="activeSnippet.installLabel"
+                :to="activeSnippet.installUrl"
+                icon="i-heroicons-arrow-top-right-on-square"
+                color="neutral"
+                variant="solid"
+                class="shrink-0"
+              />
+            </div>
+          </template>
+        </McpCodeSnippet>
+
+        <details class="mt-3 overflow-hidden rounded-xl border border-neutral-200 bg-white" data-testid="mcp-portable-config">
+          <summary class="cursor-pointer px-4 py-3 text-sm font-medium text-neutral-700">
+            Portable Agent Plugin configuration
+          </summary>
+          <div class="border-t border-neutral-200 bg-neutral-950">
+            <div class="flex justify-end border-b border-white/10 p-2">
+              <UButton
+                label="Copy"
+                icon="i-heroicons-clipboard-document"
+                color="neutral"
+                variant="solid"
+                size="xs"
+                @click.prevent="copyValue(settings.snippets.portable, 'Agent Plugin configuration copied')"
+              />
+            </div>
+            <pre class="max-h-72 overflow-auto p-4 text-xs leading-6 text-blue-100"><code>{{ settings.snippets.portable }}</code></pre>
+          </div>
+        </details>
       </section>
     </template>
   </div>
@@ -199,19 +216,78 @@ import McpCodeSnippet from '~/components/users/settings/mcp/McpCodeSnippet.vue'
 
 const alert = useAlert()
 const { copy } = useClipboard()
+const route = useRoute()
+const router = useRouter()
 const settings = ref(null)
 const isLoading = ref(true)
 const isSaving = ref(false)
 const loadError = ref(false)
 
+const snippetOptions = [
+  {
+    key: 'cursor',
+    label: 'Cursor',
+    icon: 'i-heroicons-cursor-arrow-rays',
+    description: 'Install OpnForm directly in Cursor, or copy the JSON configuration below.',
+    installLabel: 'Install in Cursor',
+  },
+  {
+    key: 'claude_code',
+    label: 'Claude Code',
+    icon: 'i-heroicons-chat-bubble-left-right',
+    description: 'Run this command, then use /mcp in Claude Code to authenticate with OpnForm.',
+  },
+  {
+    key: 'chatgpt',
+    label: 'ChatGPT',
+    icon: 'i-heroicons-sparkles',
+    description: 'On a plan that supports custom MCP apps, create an app in ChatGPT developer mode with this server URL and OAuth.',
+  },
+  {
+    key: 'codex',
+    label: 'Codex',
+    icon: 'i-heroicons-command-line',
+    description: 'Add this MCP server to Codex. OAuth starts when you use an account-scoped tool.',
+  },
+  {
+    key: 'other',
+    label: 'Other',
+    icon: 'i-heroicons-ellipsis-horizontal',
+    description: 'Use this streamable HTTP configuration in another OAuth-capable MCP client.',
+  },
+]
+
+const activeSnippetKey = ref(resolveSnippetKey(route.query.agent))
+
+const activeSnippet = computed(() => {
+  const option = snippetOptions.find(snippet => snippet.key === activeSnippetKey.value) || snippetOptions[0]
+
+  return {
+    ...option,
+    content: settings.value?.snippets?.[option.key] || '',
+    installUrl: settings.value?.install_urls?.[option.key] || null,
+  }
+})
+
+const sharedSettingsUrl = computed(() => {
+  if (!settings.value?.settings_url) return ''
+
+  const url = new URL(settings.value.settings_url)
+  url.searchParams.set('agent', activeSnippetKey.value)
+
+  return url.toString()
+})
+
+const isMcpAvailable = computed(() => settings.value?.available === true)
+
 const statusTitle = computed(() => {
   if (!settings.value?.ready) return 'Server setup required'
-  return settings.value?.enabled ? 'MCP is available' : 'Ready to connect'
+  return isMcpAvailable.value ? 'MCP is available' : 'Ready to connect'
 })
 
 const statusDescription = computed(() => {
   if (!settings.value?.ready) return 'Resolve the prerequisites below before exposing the MCP endpoint.'
-  if (settings.value?.enabled) return 'AI assistants can create guest drafts and connected users can manage forms and read submissions.'
+  if (isMcpAvailable.value) return 'Connected AI assistants can create and manage forms and read submissions using your OpnForm account.'
   return 'OAuth is ready. Enable MCP when you want this instance to accept agent connections.'
 })
 
@@ -225,13 +301,29 @@ const statusIconClasses = computed(() => {
   return settings.value?.enabled ? 'bg-emerald-100 text-emerald-600' : 'bg-neutral-100 text-neutral-500'
 })
 
-const statusBadgeColor = computed(() => settings.value?.enabled ? 'success' : 'neutral')
-
-const sourceDescription = computed(() => {
-  return settings.value?.source === 'settings'
-    ? 'Controlled from this instance settings.'
-    : 'Using MCP_ENABLED from the API container environment until you change this switch.'
+const statusBadgeLabel = computed(() => {
+  if (!settings.value?.ready && settings.value?.enabled) return 'Unavailable'
+  return settings.value?.enabled ? 'Enabled' : 'Disabled'
 })
+
+const statusBadgeColor = computed(() => {
+  if (!settings.value?.ready && settings.value?.enabled) return 'error'
+  return settings.value?.enabled ? 'success' : 'neutral'
+})
+
+function resolveSnippetKey(value) {
+  return snippetOptions.some(snippet => snippet.key === value) ? value : 'codex'
+}
+
+function selectSnippet(key) {
+  activeSnippetKey.value = resolveSnippetKey(key)
+  router.replace({
+    query: {
+      ...route.query,
+      agent: activeSnippetKey.value,
+    },
+  }).catch(() => {})
+}
 
 function loadSettings() {
   isLoading.value = true
@@ -261,6 +353,7 @@ function updateEnabled(enabled) {
         settings.value = {
           ...settings.value,
           ready: false,
+          available: false,
           blockers: error.data.blockers,
         }
       }
@@ -277,4 +370,8 @@ function copyValue(value, message) {
 }
 
 onMounted(loadSettings)
+
+watch(() => route.query.agent, (agent) => {
+  activeSnippetKey.value = resolveSnippetKey(agent)
+})
 </script>

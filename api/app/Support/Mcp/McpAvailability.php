@@ -7,6 +7,10 @@ use App\Models\Setting;
 
 final class McpAvailability
 {
+    public function __construct(private readonly McpOAuthReadiness $readiness)
+    {
+    }
+
     public function enabled(): bool
     {
         if (! config('app.self_hosted')) {
@@ -23,5 +27,19 @@ final class McpAvailability
         $stored = Setting::get(SettingsKey::MCP_ENABLED);
 
         return is_bool($stored) ? $stored : null;
+    }
+
+    public function available(): bool
+    {
+        if (! config('app.self_hosted')) {
+            return true;
+        }
+
+        return $this->enabled() && $this->readiness->inspect()['ready'];
+    }
+
+    public function guestDraftsEnabled(): bool
+    {
+        return ! config('app.self_hosted') && $this->enabled();
     }
 }

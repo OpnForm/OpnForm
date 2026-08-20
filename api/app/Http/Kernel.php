@@ -24,6 +24,7 @@ use App\Http\Middleware\AuthenticateOptionalMcpOAuth;
 use App\Http\Middleware\RecordMcpUsage;
 use App\Http\Middleware\ThrottleFormSummary;
 use App\Http\Middleware\EnsureMcpEnabled;
+use App\Http\Middleware\EnsureMcpGuestDraftsEnabled;
 
 class Kernel extends HttpKernel
 {
@@ -63,6 +64,7 @@ class Kernel extends HttpKernel
         \Illuminate\Session\Middleware\StartSession::class,
         \Illuminate\View\Middleware\ShareErrorsFromSession::class,
         EnsureMcpEnabled::class,
+        EnsureMcpGuestDraftsEnabled::class,
         AuthenticateJWT::class,
         AuthenticateWithJwtOrSanctum::class,
         \Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests::class,
@@ -142,6 +144,7 @@ class Kernel extends HttpKernel
         'auth.mcp.optional' => AuthenticateOptionalMcpOAuth::class,
         'observe.mcp' => RecordMcpUsage::class,
         'mcp.enabled' => EnsureMcpEnabled::class,
+        'mcp.guest-drafts' => EnsureMcpGuestDraftsEnabled::class,
         'throttle.form-summary' => ThrottleFormSummary::class,
 
         'cloud' => EnsureCloudInstance::class,  // Allow cloud instances only

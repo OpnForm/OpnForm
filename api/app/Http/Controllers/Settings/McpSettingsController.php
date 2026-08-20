@@ -54,6 +54,7 @@ final class McpSettingsController extends Controller
 
         return array_merge([
             'enabled' => $availability->enabled(),
+            'available' => $availability->available(),
             'configured_value' => $configuredValue,
             'source' => $configuredValue === null ? 'environment' : 'settings',
         ], $readiness->inspect(), $connection->forSelfHostedInstance());
