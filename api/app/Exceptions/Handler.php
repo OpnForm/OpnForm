@@ -42,6 +42,10 @@ class Handler extends ExceptionHandler
      */
     protected function unauthenticated($request, AuthenticationException $exception)
     {
+        if ($request->routeIs('passport.authorizations.authorize')) {
+            return redirect(app(\App\Service\OAuth\McpOAuthSessionService::class)->beginAuthorization($request));
+        }
+
         return response()->json(['message' => $exception->getMessage()], 401);
     }
 

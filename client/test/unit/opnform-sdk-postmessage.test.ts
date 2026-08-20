@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { JSDOM } from 'jsdom'
 
 const sdkSource = readFileSync(resolve(__dirname, '../../public/widgets/opnform-sdk.js'), 'utf8')
+const sdkMinSource = readFileSync(resolve(__dirname, '../../public/widgets/opnform-sdk.min.js'), 'utf8')
 
 function getIframeOrigin(window: Window, iframe: HTMLIFrameElement) {
   return new URL(iframe.src, window.location.href).origin
@@ -147,6 +148,36 @@ describe('OpnForm public SDK postMessage security', () => {
         formSlug: 'demo',
         _sdkToken: expect.any(String),
         parentOrigin: 'https://embedder.example.test',
+      }),
+      'https://forms.example.test',
+    )
+  })
+
+  it.each([
+    ['source', sdkSource],
+    ['minified', sdkMinSource],
+  ])('sends allowlisted parent attribution without leaking arbitrary query parameters (%s)', (_variant, source) => {
+    const dom = new JSDOM(
+      '<!doctype html><html><body><iframe id="demo" src="https://forms.example.test/forms/demo"></iframe></body></html>',
+      {
+        url: 'https://embedder.example.test/?utm_source=facebook&gclid=click-id&email=secret@example.test',
+        runScripts: 'outside-only',
+      },
+    )
+
+    dom.window.eval(source)
+    const iframe = dom.window.document.getElementById('demo') as HTMLIFrameElement
+    vi.spyOn(iframe.contentWindow!, 'postMessage').mockImplementation(() => {})
+    dom.window.opnform._forms = {}
+    dom.window.opnform.init({ autoResize: false })
+
+    expect(iframe.contentWindow!.postMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'opnform:handshake',
+        trackingParameters: {
+          utm_source: 'facebook',
+          gclid: 'click-id',
+        },
       }),
       'https://forms.example.test',
     )

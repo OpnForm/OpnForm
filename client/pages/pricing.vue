@@ -602,15 +602,26 @@
                 </div>
 
                 <div class="mt-6">
-                  <UButton
-                    size="lg"
-                    variant="outline"
-                    color="neutral"
-                    label="View self-hosting docs"
-                    href="https://docs.opnform.com/deployment/docker"
-                    target="_blank"
-                    class="px-4 py-2.5 rounded-[12px] text-base leading-7 tracking-[-1.1%] font-medium"
-                  />
+                  <div class="flex flex-col gap-3 sm:flex-row">
+                    <UButton
+                      size="lg"
+                      variant="outline"
+                      color="neutral"
+                      label="Compare self-hosting"
+                      :to="{ name: 'self-hosted-form-builder' }"
+                      class="w-fit px-4 py-2.5 rounded-[12px] text-base leading-7 tracking-[-1.1%] font-medium"
+                    />
+                    <UButton
+                      size="lg"
+                      variant="outline"
+                      color="neutral"
+                      label="View docs"
+                      href="https://docs.opnform.com/deployment/docker"
+                      target="_blank"
+                      trailing-icon="i-heroicons-arrow-up-right-20-solid"
+                      class="w-fit px-4 py-2.5 rounded-[12px] text-base leading-7 tracking-[-1.1%] font-medium"
+                    />
+                  </div>
                 </div>
               </div>
 

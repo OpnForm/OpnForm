@@ -23,6 +23,7 @@ use App\Http\Controllers\Settings\OAuthProviderController;
 use App\Http\Controllers\Settings\PasswordController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\TokenController;
+use App\Http\Controllers\Settings\McpSettingsController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\Forms\TemplateController;
 use App\Http\Controllers\Auth\UserInviteController;
@@ -35,6 +36,9 @@ use Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\HealthCheckController;
+use App\Http\Controllers\AgentFormDraftController;
+use App\Http\Controllers\McpOAuthSessionController;
+use App\Http\Controllers\RevokeMcpOAuthSessionController;
 
 /*
 |--------------------------------------------------------------------------
@@ -50,6 +54,35 @@ use App\Http\Controllers\HealthCheckController;
 if (config('app.self_hosted')) {
     Route::get('/healthcheck', [HealthCheckController::class, 'apiCheck']);
 }
+
+Route::middleware('mcp.enabled')->group(function () {
+    Route::prefix('agent-drafts')->name('agent-drafts.')->middleware('mcp.guest-drafts')->group(function () {
+        Route::get('/preview/{draft}', [AgentFormDraftController::class, 'preview'])
+            ->middleware(['signed', 'throttle:60,1'])
+            ->name('preview');
+        Route::post('/handoff/consume', [AgentFormDraftController::class, 'consume'])
+            ->middleware('throttle:30,1')
+            ->name('handoff.consume');
+        Route::get('/editor/current', [AgentFormDraftController::class, 'current'])
+            ->middleware('throttle:120,1')
+            ->name('editor.current');
+        Route::put('/editor/current', [AgentFormDraftController::class, 'replace'])
+            ->middleware('throttle:120,1')
+            ->name('editor.replace');
+        Route::post('/editor/claim', [AgentFormDraftController::class, 'claim'])
+            ->middleware(['auth.multi', 'throttle:30,1'])
+            ->name('editor.claim');
+    });
+
+    if (config('oauth.enabled', false)) {
+        Route::post('/mcp-oauth/session', McpOAuthSessionController::class)
+            ->middleware(['auth.multi', 'throttle:30,1'])
+            ->name('mcp-oauth.session');
+        Route::delete('/mcp-oauth/session', RevokeMcpOAuthSessionController::class)
+            ->middleware(['auth.mcp.optional', 'throttle:30,1'])
+            ->name('mcp-oauth.session.revoke');
+    }
+});
 
 Route::prefix('open')->name('open.')->group(function () {
     Route::prefix('forms')->name('forms.')->group(function () {
@@ -95,6 +128,11 @@ Route::group(['middleware' => 'auth.multi'], function () {
             Route::post('/activate', [\App\Http\Controllers\Settings\LicenseController::class, 'activate'])->name('activate');
             Route::post('/deactivate', [\App\Http\Controllers\Settings\LicenseController::class, 'deactivate'])->name('deactivate');
             Route::post('/portal', [\App\Http\Controllers\Settings\LicenseController::class, 'portal'])->name('portal');
+        });
+
+        Route::prefix('/mcp')->name('mcp.')->middleware(['self-hosted'])->group(function () {
+            Route::get('/', [McpSettingsController::class, 'show'])->name('show');
+            Route::put('/', [McpSettingsController::class, 'update'])->name('update');
         });
 
         Route::prefix('/two-factor')->name('two-factor.')->group(function () {
@@ -194,7 +232,7 @@ Route::group(['middleware' => 'auth.multi'], function () {
                 });
 
                 // Summary endpoints - Pro plan required, with rate limiting
-                Route::middleware(['feature:form_summary', 'throttle:summary'])->group(function () {
+                Route::middleware(['feature:form_summary', 'throttle.form-summary'])->group(function () {
                     Route::get('form-summary/{form}', [FormSummaryController::class, 'getSummary'])->name('form.summary');
                     Route::get('form-summary/{form}/field/{fieldId}/values', [FormSummaryController::class, 'getFieldValues'])->name('form.summary.field-values');
                 });

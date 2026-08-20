@@ -23,6 +23,22 @@ Include the SDK script after your form iframe:
     them. No additional setup required.
 </Note>
 
+## Automatic campaign attribution
+
+The SDK automatically captures supported campaign parameters from the parent
+page and stores them with the submission under `meta.attribution`. Parameters
+already present in the iframe `src` take precedence over values from the parent
+page.
+
+Supported campaign parameters are `utm_source`, `utm_medium`, `utm_campaign`,
+`utm_id`, `utm_term`, `utm_content`, `utm_source_platform`,
+`utm_creative_format`, `utm_marketing_tactic`, `gclid`, `gbraid`, `wbraid`,
+`dclid`, `fbclid`, `ttclid`, and `msclkid`.
+
+Only these parameters are transmitted to the form. Other URL parameters and the
+complete parent URL are not captured. A raw cross-origin iframe without the SDK
+can only capture parameters included directly in its own `src`.
+
 ## Quick Start
 
 ```javascript
@@ -50,7 +66,7 @@ Listen to form events to trigger custom actions, send data to analytics, or inte
 | Event          | Description                        | Payload                                                 |
 | -------------- | ---------------------------------- | ------------------------------------------------------- |
 | `ready`        | Form iframe loaded and ready       | `{ form, slug, id }`                                    |
-| `submit`       | Form submitted successfully        | `{ form, data, submissionId, completionTime }`          |
+| `submit`       | Form submitted successfully        | `{ form, data, submissionId, completionTime, meta? }`   |
 | `submitStart`  | Submission started                 | `{ form }`                                              |
 | `submitError`  | Submission failed                  | `{ form, errors }`                                      |
 | `dataChange`   | Form data changed                  | `{ form, data, changedField, previousValue, newValue }` |

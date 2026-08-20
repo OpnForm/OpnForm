@@ -320,8 +320,10 @@ const linkGroups = computed(() => [
   {
     title: "Developers",
     links: [
-      { label: "Open-source", href: opnformConfig.links.github_url },
-      { label: "Self-hosting", href: opnformConfig.links.self_hosting },
+      { label: "MCP for AI agents", to: { name: "mcp" } },
+      { label: "Open-source", to: { name: "open-source-form-builder" } },
+      { label: "Self-hosted", to: { name: "self-hosted-form-builder" } },
+      { label: "Self-hosting docs", href: opnformConfig.links.self_hosting },
       { label: "Documentation", href: opnformConfig.links.tech_docs },
       { label: "GitHub", href: opnformConfig.links.github_url },
     ],
@@ -331,8 +333,8 @@ const linkGroups = computed(() => [
     links: [
       { label: "Feedback", href: "https://feedback.opnform.com/" },
       { label: "Changelog", href: "https://feedback.opnform.com/changelog" },
-      // { label: "Privacy Policy", to: { name: "privacy-policy" } },
-      // { label: "Terms & Conditions", to: { name: "terms-conditions" } },
+      { label: "Privacy Policy", to: { name: "privacy-policy" } },
+      { label: "Terms & Conditions", to: { name: "terms-conditions" } },
     ],
   },
 ])

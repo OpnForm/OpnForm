@@ -1,0 +1,202 @@
+---
+title: "Connect AI assistants with MCP"
+description: "Enable the OpnForm MCP server on a self-hosted instance and connect Cursor, Claude Code, ChatGPT, Codex, or another MCP client."
+---
+
+OpnForm includes a remote [Model Context Protocol](https://modelcontextprotocol.io) server. It lets AI assistants create and manage forms, then search, analyze, and export submissions using the permissions of the connected OpnForm account.
+
+Your MCP endpoint uses your API origin:
+
+```text
+https://forms.example.com/mcp
+```
+
+MCP is disabled by default. A workspace administrator must verify the instance configuration and enable it from OpnForm settings.
+
+## Prerequisites
+
+Before you enable MCP, verify that your instance has:
+
+- public HTTPS values for `APP_URL` and `FRONT_URL`;
+- a valid Laravel Passport key pair;
+- persistent storage for the Passport keys so existing OAuth connections survive container replacement;
+- a trusted MCP client that supports remote streamable HTTP servers and OAuth.
+
+<Warning>
+Do not expose a production MCP endpoint over plain HTTP. Localhost URLs are suitable only for local client testing.
+</Warning>
+
+## Enable MCP
+
+<Steps>
+<Step title="Open the MCP settings">
+Sign in as a workspace administrator, then open **Settings → MCP & AI agents**.
+</Step>
+
+<Step title="Resolve the setup checks">
+OpnForm verifies the public URLs and Passport keys. If a requirement is missing, the page identifies what you need to configure before activation.
+</Step>
+
+<Step title="Enable the server">
+Turn on **Enable MCP**. The connection URL and client-specific setup instructions appear immediately.
+
+<Check>
+The status changes to **MCP is available** and the page displays your `/mcp` endpoint.
+</Check>
+</Step>
+</Steps>
+
+The switch is stored in the OpnForm database and applies without restarting the application. Until an administrator changes it, OpnForm uses `MCP_ENABLED` from the API environment as the default:
+
+```dotenv
+MCP_ENABLED=false
+MCP_OBSERVABILITY_ENABLED=true
+```
+
+## Connect an AI assistant
+
+The settings page generates the correct command or configuration for your instance. Select a client, then copy the displayed value.
+
+<Tabs>
+<Tab title="Cursor">
+Use **Install in Cursor** for one-click setup, or copy the generated `mcpServers` JSON configuration.
+</Tab>
+
+<Tab title="Claude Code">
+Run the generated command:
+
+```bash
+claude mcp add --transport http opnform https://forms.example.com/mcp
+```
+</Tab>
+
+<Tab title="ChatGPT">
+On a plan that supports custom MCP apps, enable [ChatGPT developer mode](https://help.openai.com/en/articles/12584461-developer-mode-and-full-mcp-connectors-in-chatgpt), create an app, and paste your server URL. Select OAuth when prompted. ChatGPT discovers the authorization metadata from the endpoint.
+
+<Note>
+ChatGPT plan and workspace controls determine whether custom apps and write actions are available. An administrator may need to enable developer mode before you can add the server.
+</Note>
+</Tab>
+
+<Tab title="Codex">
+Run the generated command:
+
+```bash
+codex mcp add opnform --url https://forms.example.com/mcp
+```
+</Tab>
+
+<Tab title="Other clients">
+Use the generated streamable HTTP configuration in any OAuth-capable MCP client:
+
+```json
+{
+  "mcpServers": {
+    "opnform": {
+      "type": "http",
+      "url": "https://forms.example.com/mcp"
+    }
+  }
+}
+```
+</Tab>
+</Tabs>
+
+Open the advanced section on the settings page if you need the portable [Agent Plugins](https://agent-plugins.org) configuration.
+
+To share instructions for a particular client, include the selected client in the settings URL:
+
+```text
+https://forms.example.com/?user-settings=mcp&agent=cursor
+```
+
+Supported values are `cursor`, `claude_code`, `chatgpt`, `codex`, and `other`.
+
+## Authenticate the connection
+
+Form, workspace, and submission tools always require OAuth. The MCP client discovers OpnForm's authorization metadata, opens the OpnForm consent screen, and uses authorization code flow with PKCE `S256`. You never paste an OpnForm password or access token into a conversation.
+
+The schema resources, field catalog, and `validate_form_definition` tool remain available before authentication because they do not read or store instance data.
+
+<Note>
+After authenticating a local Codex connection, start a new conversation with OpnForm selected so the MCP client loads the stored credential.
+</Note>
+
+A connected user can revoke the current access and refresh tokens by sending an authenticated `DELETE` request to `/mcp-oauth/session`.
+
+## Available capabilities
+
+After OAuth, an assistant can:
+
+- list accessible workspaces;
+- list and inspect forms;
+- create a form as an unpublished draft in a writable workspace;
+- return an `edit_url` so you can review the draft in the OpnForm editor;
+- update, publish, and move forms to the trash;
+- list, search, filter, inspect, summarize, and export submissions.
+
+Workspace administration and submission mutations are unavailable. Publishing and moving a form to the trash require explicit confirmation. MCP does not expose permanent form deletion, form restoration, submission deletion, or submission restoration.
+
+Normal workspace permissions and plan limits continue to apply. If saving a form disables unavailable premium features, the tool response lists those changes.
+
+## OAuth and callback configuration
+
+Configure the callback destinations accepted by your instance:
+
+| Variable | Purpose |
+| --- | --- |
+| `MCP_OAUTH_REDIRECT_DOMAINS` | Comma-separated HTTPS or loopback callback origins accepted during dynamic client registration. |
+| `MCP_OAUTH_CUSTOM_SCHEMES` | Comma-separated callback URI schemes accepted for trusted native clients. |
+| `MCP_AUTHORIZATION_SERVER` | Optional external authorization-server URL advertised by MCP discovery. |
+
+The consent screen displays the callback destination before approval.
+
+OAuth authorization requests and login tickets use atomic cache locks. If you run multiple application instances, configure Laravel's default cache as a shared, lock-capable store such as Redis or DynamoDB. File and array cache drivers are suitable only for single-instance development.
+
+## Rate limits
+
+The default limits are permissive for normal agent use:
+
+| Variable | Default | Scope |
+| --- | ---: | --- |
+| `MCP_RATE_LIMIT_PER_MINUTE` | `120` | All MCP requests, per OAuth user or unauthenticated client IP |
+| `MCP_RATE_LIMIT_PER_HOUR` | `3000` | All MCP requests, per OAuth user or unauthenticated client IP |
+| `MCP_SUBMISSION_EXPORTS_PER_MINUTE` | `5` | Exports, per user and form |
+| `MCP_SUBMISSION_EXPORTS_PER_HOUR` | `30` | Exports, per user and form |
+| `FORM_SUMMARY_RATE_LIMIT_PER_MINUTE` | `30` | REST and MCP submission summaries, shared per user |
+
+## Privacy and observability
+
+When `MCP_OBSERVABILITY_ENABLED=true`, OpnForm records only the MCP method, tool name, authentication mode, outcome, HTTP status, and duration.
+
+OpnForm does not include request arguments, OAuth tokens, form definitions, submission values, export URLs, user identifiers, or IP addresses in MCP telemetry or structured MCP request logs.
+
+Set `MCP_OBSERVABILITY_ENABLED=false` to disable MCP usage events and their structured logs. General anonymous instance telemetry remains controlled by `OPNFORM_ANONYMOUS_TELEMETRY_DISABLED`.
+
+## Troubleshooting
+
+<AccordionGroup>
+<Accordion title="The Enable MCP switch is unavailable">
+Verify that `APP_URL` and `FRONT_URL` use public HTTPS origins and that the API container can read a persistent Passport key pair. Reload the settings page after correcting the configuration.
+</Accordion>
+
+<Accordion title="The client connects but account tools require authentication">
+Enabling MCP only exposes the server. Complete the OAuth flow from the MCP client. For local Codex testing, start a new conversation after authentication.
+</Accordion>
+
+<Accordion title="OAuth returns to the wrong host">
+Check the client callback against `MCP_OAUTH_REDIRECT_DOMAINS` and `MCP_OAUTH_CUSTOM_SCHEMES`. Also verify that `APP_URL`, `FRONT_URL`, and reverse-proxy forwarding headers reflect the public origins.
+</Accordion>
+
+<Accordion title="The client cannot reach the MCP server">
+Confirm that `https://forms.example.com/mcp` is reachable from outside your private network, that your reverse proxy allows streamable HTTP responses, and that no firewall or authentication proxy blocks MCP discovery requests.
+</Accordion>
+</AccordionGroup>
+
+## Agent safety behavior
+
+- Fetch the current form revision before updating, publishing, or trashing it.
+- Re-fetch and reconcile the form after a revision conflict.
+- Ask before publishing or moving a form to the trash.
+- Use submission data only when it is necessary for the user's request.
+- Respect validation, workspace permissions, plan cleaning, and rate limits.

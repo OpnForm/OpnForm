@@ -1,5 +1,6 @@
 import { apiService } from './base'
 import { getOpnRequestsOptions } from '~/composables/useOpnApi'
+import { resolvePdfDownloadUrl } from '~/lib/pdf-editor'
 
 export const formsApi = {
   // Form views
@@ -93,8 +94,9 @@ export const formsApi = {
     getDownloadRequest: (formId, templateId) => {
       const endpoint = `/open/forms/${formId}/pdf-templates/${templateId}/download`
       const requestOptions = getOpnRequestsOptions(endpoint, {})
+      const origin = import.meta.client ? window.location.origin : undefined
       return {
-        url: new URL(endpoint, requestOptions.baseURL).toString(),
+        url: resolvePdfDownloadUrl(endpoint, requestOptions.baseURL, origin),
         httpHeaders: requestOptions.headers,
       }
     },

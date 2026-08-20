@@ -31,6 +31,7 @@
       <TableColumnManager 
         class="ml-auto"
         :table-state="tableState"
+        :data="filteredTableData"
       />
 
       <UButton
@@ -528,4 +529,4 @@ watch(
 )
 
 useEventListener(window, 'resize', computeMaxHeight)
-</script> 
+</script>

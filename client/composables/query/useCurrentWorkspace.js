@@ -108,6 +108,7 @@ export function useCurrentWorkspace() {
     // Primary state
     current,
     currentId,
+    workspaces: workspacesQuery.data,
     
     // Status indicators  
     isLoading,
@@ -118,4 +119,4 @@ export function useCurrentWorkspace() {
     // Actions
     switchTo,
   }
-} 
+}

@@ -30,14 +30,21 @@ class FormSubmissionResource extends JsonResource
             $this->addExtraData();
         }
 
-        return array_merge([
-            'data' => $this->data,
-            'completion_time' => $this->completion_time,
-        ], ($this->publiclyAccessed) ? [] : [
+        $privateData = [
             'form_id' => $this->form_id,
             'id' => $this->id,
             'submission_id' => SubmissionUrlService::getSubmissionIdentifier($this->resource),
-        ]);
+        ];
+
+        $attribution = ($this->meta ?? [])['attribution'] ?? null;
+        if (is_array($attribution) && !empty($attribution)) {
+            $privateData['meta'] = ['attribution' => $attribution];
+        }
+
+        return array_merge([
+            'data' => $this->data,
+            'completion_time' => $this->completion_time,
+        ], ($this->publiclyAccessed) ? [] : $privateData);
     }
 
     public function publiclyAccessed($publiclyAccessed = true)

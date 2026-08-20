@@ -34,6 +34,10 @@ Content-Type: application/json
 
 {
 "completion_time": 10,
+"tracking_parameters": {
+    "utm_source": "newsletter",
+    "utm_campaign": "summer-launch"
+},
 "3700d380-197b-47b9-a008-3acc31bbd506": "Alice",
 "12461db5-0c19-429e-840b-8de1e359c42f": "alice@example.com"
 }
@@ -48,6 +52,16 @@ Content-Type: application/json
     The form identifier - either a human-readable slug (e.g.,
     `customer-feedback`) or UUID. You can find this in your OpnForm dashboard
     under form settings.
+</ParamField>
+
+<ParamField body="tracking_parameters" type="object">
+    Optional campaign attribution. Supported keys are `utm_source`,
+    `utm_medium`, `utm_campaign`, `utm_id`, `utm_term`, `utm_content`,
+    `utm_source_platform`, `utm_creative_format`, `utm_marketing_tactic`,
+    `gclid`, `gbraid`, `wbraid`, `dclid`, `fbclid`, `ttclid`, and `msclkid`.
+    Values must be non-empty strings of at most 2,048 characters. Unsupported
+    keys are rejected. Attribution is stored separately from form answers and
+    cannot be changed after the submission is created.
 </ParamField>
 
 ### Request Body

@@ -1,0 +1,44 @@
+{
+  "name": "opnform",
+  "version": "1.0.0",
+  "description": "Build private form drafts without signing in, then connect OpnForm to manage forms and read submissions.",
+  "author": {
+    "name": "OpnForm",
+    "url": "https://opnform.com"
+  },
+  "homepage": "https://docs.opnform.com/integrations/mcp",
+  "repository": "https://github.com/OpnForm/OpnForm",
+  "license": "AGPL-3.0-or-later",
+  "keywords": [
+    "forms",
+    "mcp",
+    "agent",
+    "submissions",
+    "no-code"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "OpnForm",
+    "shortDescription": "Build and manage forms with your AI assistant",
+    "longDescription": "Create and preview private form drafts without an account. Connect OpnForm only when you need to save, publish, manage existing forms, or search and export submissions.",
+    "developerName": "OpnForm",
+    "category": "Productivity",
+    "capabilities": [
+      "Interactive previews",
+      "Form creation and management",
+      "Read-only submission access"
+    ],
+    "websiteURL": "https://opnform.com",
+    "privacyPolicyURL": "https://opnform.com/privacy-policy",
+    "termsOfServiceURL": "https://opnform.com/terms-conditions",
+    "defaultPrompt": [
+      "Create a contact form for my business and show me a preview.",
+      "Find recent submissions containing a specific email address.",
+      "Update my form, then ask me before publishing it."
+    ],
+    "brandColor": "#2563EB",
+    "composerIcon": "./assets/logo.svg",
+    "logo": "./assets/logo.svg"
+  }
+}

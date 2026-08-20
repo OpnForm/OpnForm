@@ -1,8 +1,14 @@
 <?php
 
 use App\Notifications\Forms\FormEmailNotification;
+use App\Models\PdfTemplate;
+use App\Service\Pdf\PdfCacheService;
+use App\Service\Storage\FileUploadPathService;
 use Illuminate\Notifications\AnonymousNotifiable;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Symfony\Component\Mime\Email;
 
 it('send email with the submitted data', function () {
     $user = $this->actingAsUser();
@@ -80,6 +86,229 @@ it('uses the workspace policy for file links in email notifications', function (
 
     expect((int) ($queryParameters['expires'] ?? 0))->toBe($now->copy()->addHours(168)->timestamp);
     expect($queryParameters['signature'] ?? null)->not->toBeEmpty();
+});
+
+it('shows readable file labels instead of raw api urls', function () {
+    $user = $this->actingAsUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace, [
+        'properties' => [
+            [
+                'id' => 'attachment',
+                'name' => 'Attachment',
+                'type' => 'files',
+                'required' => false,
+            ],
+        ],
+    ]);
+    $integrationData = $this->createFormIntegration('email', $form->id, [
+        'send_to' => $user->email,
+        'sender_name' => 'OpnForm',
+        'subject' => 'New form submission',
+        'email_content' => 'New submission',
+        'include_submission_data' => true,
+    ]);
+    $storedFileName = 'company-logo_' . Str::uuid() . '.png';
+    $documentFileName = 'brief_' . Str::uuid() . '.pdf';
+
+    $notification = new FormEmailNotification(
+        new \App\Events\Forms\FormSubmitted($form, [
+            'attachment' => [$storedFileName, $documentFileName],
+        ]),
+        $integrationData
+    );
+
+    $html = html_entity_decode($notification->toMail(new AnonymousNotifiable())->render());
+
+    expect($html)
+        ->toContain('🖼️ company-logo.png')
+        ->toContain('📎 brief.pdf');
+    expect($html)
+        ->not->toMatch('/<a href="([^"]*submissions\/file[^"]*)">\1<\/a>/')
+        ->not->toMatch('/>https?:\/\/[^<]*api[^<]*<\/a>/');
+});
+
+it('embeds multiple uploaded images and signatures vertically', function () {
+    Storage::fake('local');
+
+    $user = $this->actingAsUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace, [
+        'properties' => [
+            [
+                'id' => 'images',
+                'name' => 'Images',
+                'type' => 'files',
+                'required' => false,
+            ],
+            [
+                'id' => 'signature',
+                'name' => 'Signature',
+                'type' => 'signature',
+                'required' => false,
+            ],
+        ],
+    ]);
+    $imageFileName = 'company-logo_' . Str::uuid() . '.png';
+    $signatureFileName = 'sign_' . Str::uuid() . '.png';
+    Storage::put(FileUploadPathService::getFileUploadPath($form->id, $imageFileName), emailTinyPngBytes());
+    $sixMegabyteImage = emailTinyPngBytes();
+    $sixMegabyteImage .= str_repeat("\0", (6 * 1024 * 1024) - strlen($sixMegabyteImage));
+    Storage::put(FileUploadPathService::getFileUploadPath($form->id, $signatureFileName), $sixMegabyteImage);
+
+    $integrationData = $this->createFormIntegration('email', $form->id, [
+        'send_to' => $user->email,
+        'sender_name' => 'OpnForm',
+        'subject' => 'New form submission',
+        'email_content' => 'New submission',
+        'include_submission_data' => true,
+        'embed_uploaded_images' => true,
+    ]);
+    $notification = new FormEmailNotification(
+        new \App\Events\Forms\FormSubmitted($form, [
+            'images' => [$imageFileName],
+            'signature' => $signatureFileName,
+        ]),
+        $integrationData
+    );
+
+    $mailMessage = $notification->toMail(new AnonymousNotifiable());
+    $html = html_entity_decode($mailMessage->render());
+    $symfonyMessage = (new Email())->from('sender@example.com')->to('recipient@example.com')->html($html);
+    foreach ($mailMessage->callbacks as $callback) {
+        $callback($symfonyMessage);
+    }
+
+    expect(substr_count($html, 'src="cid:'))->toBe(2)
+        ->and($html)->toContain('company-logo.png')
+        ->and($html)->toContain('sign.png')
+        ->and(strpos($html, 'company-logo.png'))->toBeLessThan(strpos($html, 'sign.png'))
+        ->and($symfonyMessage->getAttachments())->toHaveCount(2);
+
+    foreach ($symfonyMessage->getAttachments() as $attachment) {
+        expect($attachment->getDisposition())->toBe('inline')
+            ->and($attachment->getContentType())->toBe('image/png')
+            ->and($attachment->getContentId())->toEndWith('@opnform')
+            ->and($html)->toContain('cid:' . $attachment->getContentId());
+    }
+});
+
+it('falls back to a readable link for each image that is too large', function () {
+    Storage::fake('local');
+
+    $user = $this->actingAsUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace, [
+        'properties' => [
+            [
+                'id' => 'images',
+                'name' => 'Images',
+                'type' => 'files',
+                'required' => false,
+            ],
+        ],
+    ]);
+    $inlineFileName = 'small-image_' . Str::uuid() . '.png';
+    $largeFileName = 'large-image_' . Str::uuid() . '.png';
+    Storage::put(FileUploadPathService::getFileUploadPath($form->id, $inlineFileName), emailTinyPngBytes());
+    $largeImageContents = emailTinyPngBytes();
+    $largeImageContents .= str_repeat("\0", ((6 * 1024 * 1024) + 1) - strlen($largeImageContents));
+    Storage::put(
+        FileUploadPathService::getFileUploadPath($form->id, $largeFileName),
+        $largeImageContents
+    );
+
+    $integrationData = $this->createFormIntegration('email', $form->id, [
+        'send_to' => $user->email,
+        'sender_name' => 'OpnForm',
+        'subject' => 'New form submission',
+        'email_content' => 'New submission',
+        'include_submission_data' => true,
+        'embed_uploaded_images' => true,
+    ]);
+    $notification = new FormEmailNotification(
+        new \App\Events\Forms\FormSubmitted($form, ['images' => [$inlineFileName, $largeFileName]]),
+        $integrationData
+    );
+
+    $mailMessage = $notification->toMail(new AnonymousNotifiable());
+    $html = html_entity_decode($mailMessage->render());
+    $symfonyMessage = (new Email())->from('sender@example.com')->to('recipient@example.com')->html($html);
+    foreach ($mailMessage->callbacks as $callback) {
+        $callback($symfonyMessage);
+    }
+
+    expect(substr_count($html, 'src="cid:'))->toBe(1)
+        ->and($html)->toContain('🖼️ small-image.png')
+        ->and($html)->toContain('🖼️ large-image.png')
+        ->and($symfonyMessage->getAttachments())->toHaveCount(1);
+});
+
+it('keeps selected pdf attachments ahead of optional inline images in the email size budget', function () {
+    Storage::fake('local');
+
+    $user = $this->actingAsUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace, [
+        'properties' => [
+            [
+                'id' => 'image',
+                'name' => 'Image',
+                'type' => 'files',
+                'required' => false,
+            ],
+        ],
+    ]);
+    $submission = $form->submissions()->create(['data' => []]);
+    $template = PdfTemplate::create([
+        'form_id' => $form->id,
+        'name' => 'Selected PDF',
+        'filename' => 'selected.pdf',
+        'original_filename' => 'Selected.pdf',
+        'file_path' => "pdf-templates/{$form->id}/selected.pdf",
+        'file_size' => 11 * 1024 * 1024,
+        'page_count' => 1,
+    ]);
+    $pdfPath = 'tmp/pdf-output/selected.pdf';
+    Storage::put($pdfPath, str_repeat('p', 11 * 1024 * 1024));
+    $cacheService = Mockery::mock(PdfCacheService::class);
+    $cacheService->shouldReceive('getOrGenerateFromTemplate')->once()->andReturn($pdfPath);
+    app()->instance(PdfCacheService::class, $cacheService);
+
+    $imageFileName = 'budget-image_' . Str::uuid() . '.png';
+    $imageContents = emailTinyPngBytes();
+    $imageContents .= str_repeat("\0", (5 * 1024 * 1024) - strlen($imageContents));
+    Storage::put(FileUploadPathService::getFileUploadPath($form->id, $imageFileName), $imageContents);
+
+    $integrationData = $this->createFormIntegration('email', $form->id, [
+        'send_to' => $user->email,
+        'sender_name' => 'OpnForm',
+        'subject' => 'New form submission',
+        'email_content' => 'New submission',
+        'include_submission_data' => true,
+        'embed_uploaded_images' => true,
+        'pdf_template_ids' => [$template->id],
+    ]);
+    $notification = new FormEmailNotification(
+        new \App\Events\Forms\FormSubmitted($form, [
+            'submission_id' => $submission->id,
+            'image' => [$imageFileName],
+        ]),
+        $integrationData
+    );
+
+    $mailMessage = $notification->toMail(new AnonymousNotifiable());
+    $html = html_entity_decode($mailMessage->render());
+    $symfonyMessage = (new Email())->from('sender@example.com')->to('recipient@example.com')->html($html);
+    foreach ($mailMessage->callbacks as $callback) {
+        $callback($symfonyMessage);
+    }
+
+    expect($mailMessage->rawAttachments)->toHaveCount(1)
+        ->and($mailMessage->rawAttachments[0]['name'])->toEndWith('.pdf')
+        ->and($html)->not->toContain('src="cid:')
+        ->and($html)->toContain('🖼️ budget-image.png')
+        ->and($symfonyMessage->getAttachments())->toHaveCount(0);
 });
 
 it('sends a email if needed', function () {
@@ -518,3 +747,11 @@ it('renders rich text field values as html in submission data', function () {
     expect($html)->toContain('Sample </em>');
     expect($html)->not->toContain('&lt;p&gt;Test &lt;em&gt;Sample');
 });
+
+function emailTinyPngBytes(): string
+{
+    return base64_decode(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/w8AAgMBAQEAAP8AAAAASUVORK5CYII=',
+        true
+    ) ?: '';
+}

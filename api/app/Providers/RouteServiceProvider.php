@@ -69,11 +69,6 @@ class RouteServiceProvider extends ServiceProvider
                 });
         });
 
-        // Rate limit for summary endpoints: 30 requests per minute per user
-        RateLimiter::for('summary', function (Request $request) {
-            return Limit::perMinute(30)->by($request->user()?->id ?: $request->ip());
-        });
-
         // Export endpoints use dedicated buckets so long-running CSV exports
         // are not blocked by the general API rate limit.
         RateLimiter::for('export', function (Request $request) {
@@ -108,6 +103,23 @@ class RouteServiceProvider extends ServiceProvider
                 Limit::perHour(max(1, config('opnform.public_uploads.rate_limit.per_hour', 300)))
                     ->by('public-uploads:hour:' . $key),
             ];
+        });
+
+        RateLimiter::for('mcp', function (Request $request) {
+            $identifier = $request->user()
+                ? 'user:'.$request->user()->getAuthIdentifier()
+                : 'ip:'.$request->ip();
+
+            return [
+                Limit::perMinute(max(1, config('opnform.mcp.rate_limit.per_minute', 120)))
+                    ->by('mcp:minute:'.$identifier),
+                Limit::perHour(max(1, config('opnform.mcp.rate_limit.per_hour', 3000)))
+                    ->by('mcp:hour:'.$identifier),
+            ];
+        });
+
+        RateLimiter::for('mcp-oauth-registration', function (Request $request) {
+            return Limit::perHour(20)->by('mcp-oauth-registration:'.$request->ip());
         });
     }
 
