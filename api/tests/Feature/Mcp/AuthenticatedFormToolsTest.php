@@ -101,9 +101,22 @@ it('advertises guest and account tools with explicit per-tool auth policies', fu
     $response = $this->postJson('/mcp', $payload, $headers)->assertOk();
     $tools = collect($response->json('result.tools'))->keyBy('name');
 
-    expect($tools)->toHaveKeys(['create_form_draft', 'list_forms', 'trash_form'])
+    expect($tools)->toHaveKeys(['create_form_draft', 'create_form_in_account', 'list_forms', 'trash_form'])
+        ->not->toHaveKey('create_form')
+        ->and($tools['create_form_draft']['title'])->toBe('Create a Guest Form Draft')
+        ->and($tools['create_form_draft']['description'])
+        ->toContain('default creation tool', 'works immediately without login', 'never request authentication')
         ->and($tools['create_form_draft']['securitySchemes'])->toBe([
             ['type' => 'noauth'],
+        ])
+        ->and($tools['create_form_in_account']['title'])->toBe('Save a Form to an OpnForm Account')
+        ->and($tools['create_form_in_account']['description'])
+        ->toContain('only when the user explicitly asks', 'use create_form_draft without login instead')
+        ->and($tools['create_form_in_account']['securitySchemes'])->toBe([
+            [
+                'type' => 'oauth2',
+                'scopes' => ['mcp:use'],
+            ],
         ])
         ->and($tools['list_forms']['securitySchemes'])->toBe([
             [
@@ -136,7 +149,7 @@ it('hides guest draft capabilities but keeps validation and OAuth tools on self-
     $toolNames = collect($toolsResponse->json('result.tools'))->pluck('name');
 
     expect($toolNames)
-        ->toContain('validate_form_definition', 'create_form', 'list_forms', 'list_submissions')
+        ->toContain('validate_form_definition', 'create_form_in_account', 'list_forms', 'list_submissions')
         ->not->toContain(
             'create_form_draft',
             'get_form_draft',

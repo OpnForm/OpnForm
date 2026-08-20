@@ -14,9 +14,9 @@ use Laravel\Mcp\Server\Tools\Annotations\IsOpenWorld;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Name('patch_form_draft')]
-#[Description('Apply validated semantic operations to a private draft. Requires expected_version, so concurrent agent or editor changes cannot be silently overwritten. Supported ops: set_form_values, add_block, update_block, remove_block, move_block. Before changing presentation_style, fields, layout, or media, read opnform://reference/form-fields/v1; focused mode derives one step per block and media belongs in the block image property.')]
+#[Description('Apply validated semantic operations to a private draft. Operations can replace or remove draft content. Requires expected_version, so concurrent agent or editor changes cannot be silently overwritten. Supported ops: set_form_values, add_block, update_block, remove_block, move_block. Before changing presentation_style, fields, layout, or media, read opnform://reference/form-fields/v1; focused mode derives one step per block and media belongs in the block image property.')]
 #[IsReadOnly(false)]
-#[IsDestructive(false)]
+#[IsDestructive]
 #[IsOpenWorld(false)]
 class PatchFormDraftTool extends GuestDraftMcpTool
 {

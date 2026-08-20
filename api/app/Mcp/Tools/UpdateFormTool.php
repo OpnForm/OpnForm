@@ -14,10 +14,10 @@ use Laravel\Mcp\Server\Tools\Annotations\IsOpenWorld;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Name('update_form')]
-#[Description('Replace the editable definition of an accessible form. Requires the revision value returned by get_form to prevent silent concurrent overwrites. This tool cannot publish or trash a form.')]
+#[Description('Replace the editable definition of an accessible form. This can remove existing fields, and changes to an already-public form are immediately public. Requires the revision value returned by get_form to prevent silent concurrent overwrites. This tool cannot change visibility or trash a form.')]
 #[IsReadOnly(false)]
-#[IsDestructive(false)]
-#[IsOpenWorld(false)]
+#[IsDestructive]
+#[IsOpenWorld]
 class UpdateFormTool extends AuthenticatedMcpTool
 {
     public function handle(Request $request, McpFormManagementService $forms): ResponseFactory

@@ -30,13 +30,13 @@ it('exposes the OpnForm MCP endpoint and initializes the protocol', function () 
         ->assertJsonPath('result.serverInfo.version', '1.0.0')
         ->assertJsonPath('result.protocolVersion', '2025-06-18')
         ->assertJsonPath('result.instructions', function (string $instructions): bool {
-            $discoveryInstructions = substr($instructions, 0, 512);
+            $discoveryInstructions = substr($instructions, 0, 1024);
 
-            return str_contains($discoveryInstructions, 'Never invoke Codex or ChatGPT recursively')
-                && str_contains($discoveryInstructions, 'OpnForm selected before the first message')
-                && str_contains($discoveryInstructions, 'account, form, and submission tools require OAuth')
-                && str_contains($discoveryInstructions, 'Enabling the plugin is not OAuth authentication')
-                && str_contains($discoveryInstructions, 'start a new conversation after OAuth');
+            return str_contains($discoveryInstructions, 'Default every request to create a new form to the guest draft workflow')
+                && str_contains($discoveryInstructions, 'A natural request such as "create a contact form" needs no login')
+                && str_contains($discoveryInstructions, 'Never ask the user to connect')
+                && str_contains($discoveryInstructions, 'OAuth is required only for connected-account operations')
+                && str_contains($discoveryInstructions, 'Enabling or selecting the plugin is not OAuth authentication');
         });
 });
 
@@ -75,12 +75,17 @@ it('advertises explicit safety annotations for every MCP tool', function () {
         'validate_form_definition',
     ];
     $writes = [
-        'create_form',
         'create_form_draft',
+        'create_form_in_account',
         'export_submissions',
         'open_form_draft_in_editor',
-        'patch_form_draft',
         'preview_form_draft',
+    ];
+    $destructivePrivateWrites = [
+        'patch_form_draft',
+    ];
+    $destructiveOpenWorldWrites = [
+        'trash_form',
         'update_form',
     ];
 
@@ -95,15 +100,20 @@ it('advertises explicit safety annotations for every MCP tool', function () {
             'destructiveHint' => false,
             'openWorldHint' => false,
         ]]))
+        ->merge(collect($destructivePrivateWrites)->mapWithKeys(fn (string $name): array => [$name => [
+            'readOnlyHint' => false,
+            'destructiveHint' => true,
+            'openWorldHint' => false,
+        ]]))
+        ->merge(collect($destructiveOpenWorldWrites)->mapWithKeys(fn (string $name): array => [$name => [
+            'readOnlyHint' => false,
+            'destructiveHint' => true,
+            'openWorldHint' => true,
+        ]]))
         ->put('publish_form', [
             'readOnlyHint' => false,
             'destructiveHint' => false,
             'openWorldHint' => true,
-        ])
-        ->put('trash_form', [
-            'readOnlyHint' => false,
-            'destructiveHint' => true,
-            'openWorldHint' => false,
         ])
         ->sortKeys()
         ->all();
