@@ -153,9 +153,9 @@ class FormSubmissionFormatter
             }
 
             if ($this->createLinks && $field['type'] == 'url') {
-                $returnArray[$field['name']] = '<a href="' . $data[$field['id']] . '">' . $data[$field['id']] . '</a>';
+                $returnArray[$field['name']] = $this->formatUrlLink($data[$field['id']]);
             } elseif ($this->createLinks && $field['type'] == 'email') {
-                $returnArray[$field['name']] = '<a href="mailto:' . $data[$field['id']] . '">' . $data[$field['id']] . '</a>';
+                $returnArray[$field['name']] = $this->formatEmailLink($data[$field['id']]);
             } elseif ($field['type'] == 'multi_select') {
                 $val = $data[$field['id']];
                 if ($this->outputStringsOnly && is_array($val)) {
@@ -315,13 +315,31 @@ class FormSubmissionFormatter
 
     private function formatUrlLink(mixed $value): string
     {
-        $url = is_scalar($value) ? (string) $value : '';
-
-        if (!filter_var($url, FILTER_VALIDATE_URL)) {
+        if (!is_scalar($value)) {
             return $this->escapeHtmlValue($value);
         }
 
-        return $this->buildSafeHtmlLink($url, $url);
+        $label = trim((string) $value);
+        $scheme = parse_url($label, PHP_URL_SCHEME);
+
+        if ($scheme !== null && (!is_string($scheme) || !in_array(strtolower($scheme), ['http', 'https'], true))) {
+            return $this->escapeHtmlValue($label);
+        }
+
+        $url = $scheme === null ? 'https://' . $label : $label;
+        $urlParts = parse_url($url);
+
+        if (
+            !filter_var($url, FILTER_VALIDATE_URL)
+            || !is_array($urlParts)
+            || empty($urlParts['host'])
+            || isset($urlParts['user'])
+            || isset($urlParts['pass'])
+        ) {
+            return $this->escapeHtmlValue($label);
+        }
+
+        return $this->buildSafeHtmlLink($url, $label);
     }
 
     private function formatEmailLink(mixed $value): string
