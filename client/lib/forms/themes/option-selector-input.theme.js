@@ -1,14 +1,19 @@
+import { formControlFocusWithin, formControlTransition } from './focus-ring.theme.js'
+
 /**
  * OptionSelectorInput tailwind-variants configuration
  */
 export const optionSelectorInputTheme = {
   slots: {
     option: [
-      'w-full border transition-colors shadow-xs',
-      'relative'
+      'w-full border shadow-xs',
+      'relative',
+      formControlTransition,
+      formControlFocusWithin
     ],
     button: [
-      'flex flex-col items-center justify-center transition-colors',
+      'flex flex-col items-center justify-center',
+      formControlTransition,
       'text-neutral-500 focus:outline-hidden w-full h-full'
     ],
     label: ''
@@ -53,4 +58,3 @@ export const optionSelectorInputTheme = {
     disabled: false
   }
 }
-
