@@ -33,6 +33,8 @@ it('exposes the OpnForm MCP endpoint and initializes the protocol', function () 
             $discoveryInstructions = substr($instructions, 0, 1024);
 
             return str_contains($discoveryInstructions, 'Default every request to create a new form to the guest draft workflow')
+                && str_contains($discoveryInstructions, 'textarea is not a valid field type')
+                && str_contains($discoveryInstructions, 'correct and revalidate the definition before creating a draft')
                 && str_contains($discoveryInstructions, 'A natural request such as "create a contact form" needs no login')
                 && str_contains($discoveryInstructions, 'Never ask the user to connect')
                 && str_contains($discoveryInstructions, 'OAuth is required only for connected-account operations')
@@ -119,6 +121,22 @@ it('advertises explicit safety annotations for every MCP tool', function () {
         ->all();
 
     expect($actual)->toBe($expected);
+});
+
+it('mirrors every tool auth policy in metadata for ChatGPT compatibility', function () {
+    $response = $this->postJson('/mcp', [
+        'jsonrpc' => '2.0',
+        'id' => 1,
+        'method' => 'tools/list',
+        'params' => [],
+    ], [
+        'Accept' => 'application/json, text/event-stream',
+    ])->assertOk();
+
+    foreach ($response->json('result.tools') as $tool) {
+        expect($tool['_meta']['securitySchemes'] ?? null)
+            ->toBe($tool['securitySchemes'] ?? null, "Tool [{$tool['name']}] must mirror securitySchemes in _meta.");
+    }
 });
 
 it('registers a permissive dedicated rate limiter for MCP traffic', function () {

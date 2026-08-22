@@ -33,6 +33,13 @@ This is the default workflow for new-form requests, including when the user does
 
 The browser editor keeps the guest draft available through an HttpOnly session. The user can preview and edit before signing in. Authentication and workspace selection happen only when the user chooses to save the draft into an OpnForm account.
 
+### Common field mappings
+
+- Use `type: text` for both short text and long-answer fields. Set `multi_lines: true` for a message, comment, description, or other textarea-style answer; `textarea` is not a valid OpnForm field type.
+- Use `type: phone_number` for phone inputs, `type: email` for email inputs, and `type: url` for website inputs.
+- Use `type: select` for one choice and `type: multi_select` for multiple choices. Build their option objects exactly as documented by `opnform://reference/form-fields/v1`.
+- If a requested field does not map cleanly, re-read the field reference and validate the whole definition. Never guess a field type and never continue to draft creation after validation fails.
+
 ## Presentation and media
 
 - `classic` is a continuous form. Use widths for columns and `nf-page-break` only when the user wants explicit pagination.

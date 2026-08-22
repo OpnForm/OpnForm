@@ -156,6 +156,8 @@ it('ships a discoverable OpnForm skill with the complete safety workflow', funct
             'start a new conversation with OpnForm selected before the first message',
             'may not hot-reload OAuth credentials',
             'do not loop or claim the connection succeeded',
+            '`textarea` is not a valid OpnForm field type',
+            'never continue to draft creation after validation fails',
         )
         ->and($skill)->toContain('confirm_publish: true', 'confirm_trash: true')
         ->and($skill)->not->toContain('`confirm: true`')
