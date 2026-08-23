@@ -12,7 +12,7 @@ final class McpConnectionConfiguration
      *     install_urls: array{cursor: string}
      * }
      */
-    public function forSelfHostedInstance(): array
+    public function forInstance(): array
     {
         $appUrl = rtrim((string) config('app.url'), '/');
         $serverUrl = $appUrl.'/mcp';

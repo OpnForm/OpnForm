@@ -18,7 +18,9 @@ final class McpSettingsController extends Controller
         McpAvailability $availability,
         McpConnectionConfiguration $connection,
     ): JsonResponse {
-        Gate::authorize('manage-instance-settings');
+        if (config('app.self_hosted')) {
+            Gate::authorize('manage-instance-settings');
+        }
 
         return response()->json($this->payload($availability, $connection));
     }
@@ -55,7 +57,8 @@ final class McpSettingsController extends Controller
         $status = $availability->status($readiness);
 
         return array_merge($status, [
+            'self_hosted' => (bool) config('app.self_hosted'),
             'source' => $status['configured_value'] === null ? 'environment' : 'settings',
-        ], $connection->forSelfHostedInstance());
+        ], $connection->forInstance());
     }
 }

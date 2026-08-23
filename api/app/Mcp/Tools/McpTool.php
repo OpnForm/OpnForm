@@ -16,9 +16,16 @@ abstract class McpTool extends Tool
      */
     public function toArray(): array
     {
+        $tool = parent::toArray();
+        $securitySchemes = $this->securitySchemes();
+
         return [
-            ...parent::toArray(),
-            'securitySchemes' => $this->securitySchemes(),
+            ...$tool,
+            'securitySchemes' => $securitySchemes,
+            '_meta' => [
+                ...($tool['_meta'] ?? []),
+                'securitySchemes' => $securitySchemes,
+            ],
         ];
     }
 }

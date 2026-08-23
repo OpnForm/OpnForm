@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Tools;
 
+use App\Mcp\Support\McpOutputSchema;
 use App\Service\Forms\McpFormManagementService;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
@@ -11,11 +12,13 @@ use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
 use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 use Laravel\Mcp\Server\Tools\Annotations\IsOpenWorld;
+use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Name('trash_form')]
-#[Description('Move an accessible writable form at its current revision to soft-delete trash. Call only after explicit user confirmation. Restore and permanent deletion are intentionally not exposed.')]
+#[Description('Move an accessible writable form at its current revision to soft-delete trash. A public form becomes unavailable. Call only after explicit user confirmation. Restore and permanent deletion are intentionally not exposed.')]
+#[IsReadOnly(false)]
 #[IsDestructive]
-#[IsOpenWorld(false)]
+#[IsOpenWorld]
 class TrashFormTool extends AuthenticatedMcpTool
 {
     public function handle(Request $request, McpFormManagementService $forms): ResponseFactory
@@ -40,6 +43,14 @@ class TrashFormTool extends AuthenticatedMcpTool
             'form_id' => $schema->integer()->min(1)->required(),
             'expected_revision' => $schema->string()->description('Exact 64-character revision returned by get_form.')->min(64)->max(64)->required(),
             'confirm_trash' => $schema->boolean()->description('True only after the user explicitly confirms moving the form to trash.')->required(),
+        ];
+    }
+
+    public function outputSchema(JsonSchema $schema): array
+    {
+        return [
+            'message' => $schema->string()->required(),
+            'form' => McpOutputSchema::formSummary($schema)->required(),
         ];
     }
 }

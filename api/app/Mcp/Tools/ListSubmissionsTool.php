@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Tools;
 
+use App\Mcp\Support\McpOutputSchema;
 use App\Service\Forms\McpSubmissionService;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\Validation\Rule;
@@ -10,12 +11,14 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 use Laravel\Mcp\Server\Tools\Annotations\IsOpenWorld;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Name('list_submissions')]
 #[Description('List and search submissions for an accessible form. Search matches response values, not field names. Filter by completed/partial status and date; results are paginated.')]
 #[IsReadOnly]
+#[IsDestructive(false)]
 #[IsOpenWorld(false)]
 class ListSubmissionsTool extends AuthenticatedMcpTool
 {
@@ -53,6 +56,14 @@ class ListSubmissionsTool extends AuthenticatedMcpTool
             'date_to' => $schema->string()->description('Inclusive ISO 8601 date.'),
             'page' => $schema->integer()->min(1)->default(1),
             'per_page' => $schema->integer()->min(1)->max(100)->default(50),
+        ];
+    }
+
+    public function outputSchema(JsonSchema $schema): array
+    {
+        return [
+            'submissions' => $schema->array()->items(McpOutputSchema::submission($schema))->required(),
+            'pagination' => McpOutputSchema::pagination($schema)->required(),
         ];
     }
 }

@@ -1,19 +1,69 @@
 ---
-title: "Connect AI assistants with MCP"
-description: "Enable the OpnForm MCP server on a self-hosted instance and connect Cursor, Claude Code, ChatGPT, Codex, or another MCP client."
+title: "Use OpnForm with AI assistants through MCP"
+description: "Connect ChatGPT, Cursor, Claude Code, Codex, or another MCP client to OpnForm Cloud or a self-hosted OpnForm instance."
 ---
 
-OpnForm includes a remote [Model Context Protocol](https://modelcontextprotocol.io) server. It lets AI assistants create and manage forms, then search, analyze, and export submissions using the permissions of the connected OpnForm account.
+OpnForm includes a remote [Model Context Protocol](https://modelcontextprotocol.io) server. It lets AI assistants build forms from a conversation, show you a private preview, manage forms, and help you work with submissions.
 
-Your MCP endpoint uses your API origin:
+The setup depends on whether you use **OpnForm Cloud** or a **self-hosted OpnForm instance**.
+
+## Choose your OpnForm setup
+
+<Tabs>
+<Tab title="OpnForm Cloud">
+The hosted MCP server is already enabled at:
+
+```text
+https://api.opnform.com/mcp
+```
+
+You can start a private form draft without an OpnForm account. Connect your account with OAuth only when you want the assistant to save forms, manage existing forms, or read submissions.
+
+If you are signed in to OpnForm, open **Settings → MCP & AI agents** to find the server URL and ready-to-copy instructions for your AI client. There is no activation switch for OpnForm Cloud.
+</Tab>
+
+<Tab title="Self-hosted OpnForm">
+Your MCP endpoint uses the API origin of your instance:
 
 ```text
 https://forms.example.com/mcp
 ```
 
-MCP is disabled by default. A workspace administrator must verify the instance configuration and enable it from OpnForm settings.
+MCP is disabled by default. An administrator must configure OAuth and enable MCP from **Settings → MCP & AI agents**. Self-hosted MCP connections always require an OpnForm account; guest draft creation is not exposed.
+</Tab>
+</Tabs>
 
-## Prerequisites
+## Create a form with OpnForm Cloud
+
+You can ask a compatible AI assistant to create a form before connecting your OpnForm account.
+
+<Steps>
+<Step title="Describe the form you need">
+Explain the form's goal, audience, questions, and any requirements you already know. The assistant validates the definition before creating a private draft.
+</Step>
+
+<Step title="Review the interactive preview">
+Open the preview returned by the assistant. Test the questions and flow, then ask the assistant to add, remove, or revise fields.
+
+The preview is private and does not publish the form.
+</Step>
+
+<Step title="Open the draft in OpnForm">
+Select **Open in OpnForm** when you want to continue in the visual editor. You can customize the design before creating an account or signing in to save the form.
+</Step>
+
+<Step title="Connect your account when needed">
+Complete OAuth when you ask the assistant to save the draft, manage your existing forms, or access submissions. OpnForm displays the requested connection before you approve it.
+</Step>
+</Steps>
+
+<Note>
+Guest draft links are private bearer links. Do not share them publicly. If a preview expires, ask the assistant to generate a fresh preview.
+</Note>
+
+## Enable MCP on a self-hosted instance
+
+### Prerequisites
 
 Before you enable MCP, verify that your instance has:
 
@@ -26,11 +76,9 @@ Before you enable MCP, verify that your instance has:
 Do not expose a production MCP endpoint over plain HTTP. Localhost URLs are suitable only for local client testing.
 </Warning>
 
-## Enable MCP
-
 <Steps>
 <Step title="Open the MCP settings">
-Sign in as a workspace administrator, then open **Settings → MCP & AI agents**.
+Sign in as an administrator, then open **Settings → MCP & AI agents**.
 </Step>
 
 <Step title="Resolve the setup checks">
@@ -38,7 +86,11 @@ OpnForm verifies the public URLs and Passport keys. If a requirement is missing,
 </Step>
 
 <Step title="Enable the server">
-Turn on **Enable MCP**. The connection URL and client-specific setup instructions appear immediately.
+Turn on **Enable MCP**.
+
+<Frame>
+  <img src="/images/mcp/enable-mcp.png" alt="Enable MCP in the settings of a self-hosted OpnForm instance" />
+</Frame>
 
 <Check>
 The status changes to **MCP is available** and the page displays your `/mcp` endpoint.
@@ -53,9 +105,21 @@ MCP_ENABLED=false
 MCP_OBSERVABILITY_ENABLED=true
 ```
 
+Self-hosted instances use a strict authenticated flow. They expose validation and account-scoped MCP tools, but not the cloud guest draft endpoints.
+
 ## Connect an AI assistant
 
-The settings page generates the correct command or configuration for your instance. Select a client, then copy the displayed value.
+For OpnForm Cloud, use `https://api.opnform.com/mcp`. For a self-hosted instance, copy the endpoint displayed in **Settings → MCP & AI agents**.
+
+<Frame>
+  <img src="/images/mcp/connection-endpoint.png" alt="Copy the MCP server URL from OpnForm settings" />
+</Frame>
+
+The settings page generates the correct command or configuration for your client. Select your client, then copy the displayed value.
+
+<Frame>
+  <img src="/images/mcp/client-configuration.png" alt="Select an AI client and copy its generated MCP configuration" />
+</Frame>
 
 <Tabs>
 <Tab title="Cursor">
@@ -63,15 +127,17 @@ Use **Install in Cursor** for one-click setup, or copy the generated `mcpServers
 </Tab>
 
 <Tab title="Claude Code">
-Run the generated command:
+For OpnForm Cloud, run:
 
 ```bash
-claude mcp add --transport http opnform https://forms.example.com/mcp
+claude mcp add --transport http opnform https://api.opnform.com/mcp
 ```
+
+Replace the URL with your own `/mcp` endpoint when you use a self-hosted instance.
 </Tab>
 
 <Tab title="ChatGPT">
-On a plan that supports custom MCP apps, enable [ChatGPT developer mode](https://help.openai.com/en/articles/12584461-developer-mode-and-full-mcp-connectors-in-chatgpt), create an app, and paste your server URL. Select OAuth when prompted. ChatGPT discovers the authorization metadata from the endpoint.
+On a plan that supports custom MCP apps, enable [ChatGPT developer mode](https://help.openai.com/en/articles/12584461-developer-mode-and-full-mcp-connectors-in-chatgpt), create an app, and paste the server URL. Select OAuth when prompted. ChatGPT discovers the authorization metadata from the endpoint.
 
 <Note>
 ChatGPT plan and workspace controls determine whether custom apps and write actions are available. An administrator may need to enable developer mode before you can add the server.
@@ -79,22 +145,24 @@ ChatGPT plan and workspace controls determine whether custom apps and write acti
 </Tab>
 
 <Tab title="Codex">
-Run the generated command:
+For OpnForm Cloud, run:
 
 ```bash
-codex mcp add opnform --url https://forms.example.com/mcp
+codex mcp add opnform --url https://api.opnform.com/mcp
 ```
+
+Replace the URL with your own `/mcp` endpoint when you use a self-hosted instance.
 </Tab>
 
 <Tab title="Other clients">
-Use the generated streamable HTTP configuration in any OAuth-capable MCP client:
+Use a streamable HTTP configuration in any OAuth-capable MCP client:
 
 ```json
 {
   "mcpServers": {
     "opnform": {
       "type": "http",
-      "url": "https://forms.example.com/mcp"
+      "url": "https://api.opnform.com/mcp"
     }
   }
 }
@@ -102,44 +170,47 @@ Use the generated streamable HTTP configuration in any OAuth-capable MCP client:
 </Tab>
 </Tabs>
 
-Open the advanced section on the settings page if you need the portable [Agent Plugins](https://agent-plugins.org) configuration.
+Open **Portable Agent Plugin configuration** in OpnForm settings if your client supports [Agent Plugins](https://agent-plugins.org).
 
 To share instructions for a particular client, include the selected client in the settings URL:
 
 ```text
-https://forms.example.com/?user-settings=mcp&agent=cursor
+https://opnform.com/?user-settings=mcp&agent=cursor
 ```
 
-Supported values are `cursor`, `claude_code`, `chatgpt`, `codex`, and `other`.
+On self-hosted instances, replace `https://opnform.com` with your frontend URL. Supported `agent` values are `cursor`, `claude_code`, `chatgpt`, `codex`, and `other`.
 
-## Authenticate the connection
+## Authenticate your OpnForm account
 
-Form, workspace, and submission tools always require OAuth. The MCP client discovers OpnForm's authorization metadata, opens the OpnForm consent screen, and uses authorization code flow with PKCE `S256`. You never paste an OpnForm password or access token into a conversation.
+Form, workspace, and submission tools use OAuth. The MCP client discovers OpnForm's authorization metadata, opens the OpnForm consent screen, and uses authorization code flow with PKCE `S256`. You never paste an OpnForm password or access token into a conversation.
 
-The schema resources, field catalog, and `validate_form_definition` tool remain available before authentication because they do not read or store instance data.
+On OpnForm Cloud, guest form creation and preview remain available before authentication. On self-hosted instances, guest draft creation is unavailable. Schema resources, the field catalog, and `validate_form_definition` remain available before authentication because they do not read or store account data.
 
 <Note>
-After authenticating a local Codex connection, start a new conversation with OpnForm selected so the MCP client loads the stored credential.
+After authenticating a Codex connection, start a new conversation with OpnForm selected so the MCP client loads the stored credential.
 </Note>
 
 A connected user can revoke the current access and refresh tokens by sending an authenticated `DELETE` request to `/mcp-oauth/session`.
 
 ## Available capabilities
 
-After OAuth, an assistant can:
+| Capability | OpnForm Cloud | Self-hosted |
+| --- | --- | --- |
+| Create and preview a guest draft | Available without an account | Not available |
+| Validate a form definition | Available before authentication | Available before authentication |
+| List accessible workspaces | OAuth required | OAuth required |
+| List, inspect, create, and update forms | OAuth required | OAuth required |
+| Publish or move a form to trash | OAuth and explicit confirmation | OAuth and explicit confirmation |
+| Search, analyze, and export submissions | OAuth required, read-only | OAuth required, read-only |
+| Enable or disable the MCP server | Managed by OpnForm | Self-hosted administrator |
 
-- list accessible workspaces;
-- list and inspect forms;
-- create a form as an unpublished draft in a writable workspace;
-- return an `edit_url` so you can review the draft in the OpnForm editor;
-- update, publish, and move forms to the trash;
-- list, search, filter, inspect, summarize, and export submissions.
-
-Workspace administration and submission mutations are unavailable. Publishing and moving a form to the trash require explicit confirmation. MCP does not expose permanent form deletion, form restoration, submission deletion, or submission restoration.
+Workspace administration and submission mutations are unavailable. MCP does not expose permanent form deletion, form restoration, submission deletion, or submission restoration.
 
 Normal workspace permissions and plan limits continue to apply. If saving a form disables unavailable premium features, the tool response lists those changes.
 
-## OAuth and callback configuration
+## Self-hosted OAuth configuration
+
+The following settings apply only to self-hosted instances.
 
 Configure the callback destinations accepted by your instance:
 
@@ -153,7 +224,7 @@ The consent screen displays the callback destination before approval.
 
 OAuth authorization requests and login tickets use atomic cache locks. If you run multiple application instances, configure Laravel's default cache as a shared, lock-capable store such as Redis or DynamoDB. File and array cache drivers are suitable only for single-instance development.
 
-## Rate limits
+## Self-hosted rate limits
 
 The default limits are permissive for normal agent use:
 
@@ -167,7 +238,7 @@ The default limits are permissive for normal agent use:
 
 ## Privacy and observability
 
-When `MCP_OBSERVABILITY_ENABLED=true`, OpnForm records only the MCP method, tool name, authentication mode, outcome, HTTP status, and duration.
+When `MCP_OBSERVABILITY_ENABLED=true`, a self-hosted instance records only the MCP method, tool name, authentication mode, outcome, HTTP status, and duration.
 
 OpnForm does not include request arguments, OAuth tokens, form definitions, submission values, export URLs, user identifiers, or IP addresses in MCP telemetry or structured MCP request logs.
 
@@ -177,19 +248,27 @@ Set `MCP_OBSERVABILITY_ENABLED=false` to disable MCP usage events and their stru
 
 <AccordionGroup>
 <Accordion title="The Enable MCP switch is unavailable">
-Verify that `APP_URL` and `FRONT_URL` use public HTTPS origins and that the API container can read a persistent Passport key pair. Reload the settings page after correcting the configuration.
+This switch appears only on self-hosted instances. Verify that `APP_URL` and `FRONT_URL` use public HTTPS origins and that the API container can read a persistent Passport key pair. Reload the settings page after correcting the configuration.
 </Accordion>
 
 <Accordion title="The client connects but account tools require authentication">
-Enabling MCP only exposes the server. Complete the OAuth flow from the MCP client. For local Codex testing, start a new conversation after authentication.
+Complete the OAuth flow from the MCP client. Guest drafts on OpnForm Cloud do not authenticate your account automatically.
 </Accordion>
 
-<Accordion title="OAuth returns to the wrong host">
+<Accordion title="OAuth succeeds but the conversation still appears unauthenticated">
+Start a new conversation after authentication. Some clients retain the tool and authentication state that existed when the conversation started.
+</Accordion>
+
+<Accordion title="A guest preview is unavailable">
+Ask the assistant to create a fresh preview. Preview links are private and expire automatically.
+</Accordion>
+
+<Accordion title="OAuth returns to the wrong host on a self-hosted instance">
 Check the client callback against `MCP_OAUTH_REDIRECT_DOMAINS` and `MCP_OAUTH_CUSTOM_SCHEMES`. Also verify that `APP_URL`, `FRONT_URL`, and reverse-proxy forwarding headers reflect the public origins.
 </Accordion>
 
-<Accordion title="The client cannot reach the MCP server">
-Confirm that `https://forms.example.com/mcp` is reachable from outside your private network, that your reverse proxy allows streamable HTTP responses, and that no firewall or authentication proxy blocks MCP discovery requests.
+<Accordion title="The client cannot reach a self-hosted MCP server">
+Confirm that your `/mcp` endpoint is reachable from outside your private network, that your reverse proxy allows streamable HTTP responses, and that no firewall or authentication proxy blocks MCP discovery requests.
 </Accordion>
 </AccordionGroup>
 

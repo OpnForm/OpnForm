@@ -9,6 +9,7 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 use Laravel\Mcp\Server\Tools\Annotations\IsIdempotent;
 use Laravel\Mcp\Server\Tools\Annotations\IsOpenWorld;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
@@ -16,6 +17,7 @@ use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 #[Name('validate_form_definition')]
 #[Description('Normalize and validate an OpnForm agent form definition without storing it. Returns the canonical definition with defaults, stable block IDs, sanitized content, and normalized aliases.')]
 #[IsReadOnly]
+#[IsDestructive(false)]
 #[IsIdempotent]
 #[IsOpenWorld(false)]
 class ValidateFormDefinitionTool extends GuestMcpTool

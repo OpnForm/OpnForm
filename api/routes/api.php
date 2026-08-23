@@ -130,9 +130,9 @@ Route::group(['middleware' => 'auth.multi'], function () {
             Route::post('/portal', [\App\Http\Controllers\Settings\LicenseController::class, 'portal'])->name('portal');
         });
 
-        Route::prefix('/mcp')->name('mcp.')->middleware(['self-hosted'])->group(function () {
+        Route::prefix('/mcp')->name('mcp.')->group(function () {
             Route::get('/', [McpSettingsController::class, 'show'])->name('show');
-            Route::put('/', [McpSettingsController::class, 'update'])->name('update');
+            Route::put('/', [McpSettingsController::class, 'update'])->middleware(['self-hosted'])->name('update');
         });
 
         Route::prefix('/two-factor')->name('two-factor.')->group(function () {

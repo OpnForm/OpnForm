@@ -30,14 +30,132 @@ it('exposes the OpnForm MCP endpoint and initializes the protocol', function () 
         ->assertJsonPath('result.serverInfo.version', '1.0.0')
         ->assertJsonPath('result.protocolVersion', '2025-06-18')
         ->assertJsonPath('result.instructions', function (string $instructions): bool {
-            $discoveryInstructions = substr($instructions, 0, 512);
+            $discoveryInstructions = substr($instructions, 0, 1024);
 
-            return str_contains($discoveryInstructions, 'Never invoke Codex or ChatGPT recursively')
-                && str_contains($discoveryInstructions, 'OpnForm selected before the first message')
-                && str_contains($discoveryInstructions, 'account, form, and submission tools require OAuth')
-                && str_contains($discoveryInstructions, 'Enabling the plugin is not OAuth authentication')
-                && str_contains($discoveryInstructions, 'start a new conversation after OAuth');
+            return str_contains($discoveryInstructions, 'Default every request to create a new form to the guest draft workflow')
+                && str_contains($discoveryInstructions, 'textarea is not a valid field type')
+                && str_contains($discoveryInstructions, 'correct and revalidate the definition before creating a draft')
+                && str_contains($discoveryInstructions, 'A natural request such as "create a contact form" needs no login')
+                && str_contains($discoveryInstructions, 'Never ask the user to connect')
+                && str_contains($discoveryInstructions, 'OAuth is required only for connected-account operations')
+                && str_contains($discoveryInstructions, 'Enabling or selecting the plugin is not OAuth authentication');
         });
+});
+
+it('advertises explicit safety annotations for every MCP tool', function () {
+    $response = $this->postJson('/mcp', [
+        'jsonrpc' => '2.0',
+        'id' => 1,
+        'method' => 'tools/list',
+        'params' => [],
+    ], [
+        'Accept' => 'application/json, text/event-stream',
+    ])->assertOk();
+
+    $actual = collect($response->json('result.tools'))
+        ->mapWithKeys(fn (array $tool): array => [
+            $tool['name'] => collect($tool['annotations'])->only([
+                'readOnlyHint',
+                'destructiveHint',
+                'openWorldHint',
+            ])->all(),
+        ])
+        ->sortKeys()
+        ->all();
+
+    $readOnly = [
+        'get_account_context',
+        'get_form',
+        'get_form_draft',
+        'get_submission',
+        'get_submission_export',
+        'get_submission_stats',
+        'get_workspace',
+        'list_forms',
+        'list_submissions',
+        'list_workspaces',
+        'validate_form_definition',
+    ];
+    $writes = [
+        'create_form_draft',
+        'create_form_in_account',
+        'export_submissions',
+        'open_form_draft_in_editor',
+        'preview_form_draft',
+    ];
+    $destructivePrivateWrites = [
+        'patch_form_draft',
+    ];
+    $destructiveOpenWorldWrites = [
+        'trash_form',
+        'update_form',
+    ];
+
+    $expected = collect($readOnly)
+        ->mapWithKeys(fn (string $name): array => [$name => [
+            'readOnlyHint' => true,
+            'destructiveHint' => false,
+            'openWorldHint' => false,
+        ]])
+        ->merge(collect($writes)->mapWithKeys(fn (string $name): array => [$name => [
+            'readOnlyHint' => false,
+            'destructiveHint' => false,
+            'openWorldHint' => false,
+        ]]))
+        ->merge(collect($destructivePrivateWrites)->mapWithKeys(fn (string $name): array => [$name => [
+            'readOnlyHint' => false,
+            'destructiveHint' => true,
+            'openWorldHint' => false,
+        ]]))
+        ->merge(collect($destructiveOpenWorldWrites)->mapWithKeys(fn (string $name): array => [$name => [
+            'readOnlyHint' => false,
+            'destructiveHint' => true,
+            'openWorldHint' => true,
+        ]]))
+        ->put('publish_form', [
+            'readOnlyHint' => false,
+            'destructiveHint' => false,
+            'openWorldHint' => true,
+        ])
+        ->sortKeys()
+        ->all();
+
+    expect($actual)->toBe($expected);
+});
+
+it('publishes an output schema for every MCP tool', function () {
+    $response = $this->postJson('/mcp', [
+        'jsonrpc' => '2.0',
+        'id' => 1,
+        'method' => 'tools/list',
+        'params' => [],
+    ], [
+        'Accept' => 'application/json, text/event-stream',
+    ])->assertOk();
+
+    foreach ($response->json('result.tools') as $tool) {
+        expect($tool['outputSchema'] ?? null)
+            ->toBeArray("Tool [{$tool['name']}] must declare an output schema.")
+            ->and($tool['outputSchema']['type'] ?? null)->toBe('object')
+            ->and($tool['outputSchema']['properties'] ?? null)->toBeArray()
+            ->not->toBeEmpty();
+    }
+});
+
+it('mirrors every tool auth policy in metadata for ChatGPT compatibility', function () {
+    $response = $this->postJson('/mcp', [
+        'jsonrpc' => '2.0',
+        'id' => 1,
+        'method' => 'tools/list',
+        'params' => [],
+    ], [
+        'Accept' => 'application/json, text/event-stream',
+    ])->assertOk();
+
+    foreach ($response->json('result.tools') as $tool) {
+        expect($tool['_meta']['securitySchemes'] ?? null)
+            ->toBe($tool['securitySchemes'] ?? null, "Tool [{$tool['name']}] must mirror securitySchemes in _meta.");
+    }
 });
 
 it('registers a permissive dedicated rate limiter for MCP traffic', function () {

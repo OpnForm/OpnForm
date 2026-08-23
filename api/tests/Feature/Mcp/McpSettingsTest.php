@@ -37,6 +37,7 @@ it('returns connection details generated for the self-hosted instance', function
 
     $response->assertSuccessful()
         ->assertJson([
+            'self_hosted' => true,
             'enabled' => false,
             'available' => false,
             'configured_value' => null,
@@ -164,12 +165,32 @@ it('requires a workspace admin to read or update instance MCP settings', functio
     $this->json($method, '/settings/mcp', ['enabled' => true])->assertForbidden();
 })->with(['GET', 'PUT']);
 
-it('hides MCP settings from cloud instances', function (string $method) {
+it('returns the hosted MCP connection guide to cloud users', function () {
+    config()->set('app.self_hosted', false);
+    config()->set('app.url', 'https://api.opnform.com');
+    config()->set('app.front_url', 'https://opnform.com');
+    $member = $this->createUser();
+    $this->workspace->users()->attach($member, ['role' => 'user']);
+    $this->actingAs($member, 'api');
+
+    $this->getJson('/settings/mcp')
+        ->assertSuccessful()
+        ->assertJson([
+            'self_hosted' => false,
+            'enabled' => true,
+            'available' => true,
+            'ready' => true,
+            'server_url' => 'https://api.opnform.com/mcp',
+            'settings_url' => 'https://opnform.com/?user-settings=mcp',
+        ]);
+});
+
+it('does not allow cloud users to update the hosted MCP availability', function () {
     config()->set('app.self_hosted', false);
 
-    $this->json($method, '/settings/mcp', ['enabled' => true])
+    $this->putJson('/settings/mcp', ['enabled' => false])
         ->assertNotFound()
         ->assertJson([
             'error' => 'Only available on self-hosted instances.',
         ]);
-})->with(['GET', 'PUT']);
+});

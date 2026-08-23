@@ -7,6 +7,8 @@ description: Use this when a user asks to create, preview, revise, claim, or man
 
 Use the OpnForm MCP server for OpnForm operations. Start as a guest when the user only needs a new form and an interactive preview. Connect an account only when account or workspace data is required.
 
+Treat an unqualified request such as “create a contact form”, “build a survey”, or “make me a registration form” as a guest draft request. Do not infer that the user wants account persistence merely because the plugin offers OAuth or the host displays a Connect button. Do not ask the user to sign in, call `get_account_context`, or call `create_form_in_account` unless the user explicitly asks to save the new form in their OpnForm account or a workspace.
+
 ## Require native MCP access
 
 - Use only the OpnForm MCP tools and resources exposed by the current host session.
@@ -18,6 +20,8 @@ Use the OpnForm MCP server for OpnForm operations. Start as a guest when the use
 
 ## Build and revise a guest draft
 
+This is the default workflow for new-form requests, including when the user does not mention “guest”, “draft”, “preview”, or “without login”. The presence of OAuth-protected account tools does not make authentication a prerequisite for these steps.
+
 1. Read `opnform://schemas/agent-form-definition/v1` and `opnform://reference/form-fields/v1` before generating a definition. Re-read the field reference before changing presentation style, fields, layout, or media later in the conversation. Do not inspect the OpnForm source tree or guess product behavior when the MCP resources describe it.
 2. Call `validate_form_definition`. Resolve every validation error before creating or saving a draft.
 3. Call `create_form_draft` with the validated definition.
@@ -28,6 +32,13 @@ Use the OpnForm MCP server for OpnForm operations. Start as a guest when the use
 8. Offer to open the draft in OpnForm. Use the `editor_url` returned by the preview or call `open_form_draft_in_editor`. The handoff URL is reusable until the seven-day guest draft expires; generating another URL does not revoke earlier ones.
 
 The browser editor keeps the guest draft available through an HttpOnly session. The user can preview and edit before signing in. Authentication and workspace selection happen only when the user chooses to save the draft into an OpnForm account.
+
+### Common field mappings
+
+- Use `type: text` for both short text and long-answer fields. Set `multi_lines: true` for a message, comment, description, or other textarea-style answer; `textarea` is not a valid OpnForm field type.
+- Use `type: phone_number` for phone inputs, `type: email` for email inputs, and `type: url` for website inputs.
+- Use `type: select` for one choice and `type: multi_select` for multiple choices. Build their option objects exactly as documented by `opnform://reference/form-fields/v1`.
+- If a requested field does not map cleanly, re-read the field reference and validate the whole definition. Never guess a field type and never continue to draft creation after validation fails.
 
 ## Presentation and media
 
@@ -41,10 +52,12 @@ The browser editor keeps the guest draft available through an HttpOnly session. 
 
 Authenticated tools remain discoverable before the account is connected. When the user asks for account, form, or submission data, call `get_account_context`; if the host returns an OAuth challenge, ask the user to complete the connection. In local Codex, continue from a new conversation after OAuth instead of repeatedly retrying from the guest conversation. Do not report that account tools are unavailable merely because the current session started as a guest.
 
+For new forms, enter this authenticated workflow only when the user explicitly asks to save directly to their account or names an account/workspace destination. A request to create, build, or preview a form by itself remains in the guest workflow even when an account connection is available.
+
 After authentication, use the account context to choose a workspace. If exactly one writable workspace is available, select it without asking. If several are available, call `list_workspaces` and ask the user which one to use. Workspace access is read-only through MCP; do not attempt workspace administration.
 
 - Use form listing and lookup tools to identify the target before changing it.
-- `create_form` creates a draft. After creation, ask whether the user wants it published.
+- `create_form_in_account` creates an account-owned draft. After creation, ask whether the user wants it published.
 - Before `update_form`, `publish_form`, or `trash_form`, fetch the form and pass its current `revision` as `expected_revision`. On conflict, fetch, reconcile, and retry instead of overwriting newer changes.
 - Call `publish_form` only after the user explicitly confirms publication, then pass the confirmed form's `expected_revision` and `confirm_publish: true`.
 - Call `trash_form` only after the user explicitly confirms moving the form to trash, then pass the confirmed form's `expected_revision` and `confirm_trash: true`. MCP does not expose form restoration or permanent deletion.

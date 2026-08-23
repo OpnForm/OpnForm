@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Tools;
 
+use App\Mcp\Support\McpOutputSchema;
 use App\Service\Forms\AgentFormDraftService;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
@@ -9,10 +10,14 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 use Laravel\Mcp\Server\Tools\Annotations\IsOpenWorld;
+use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Name('patch_form_draft')]
-#[Description('Apply validated semantic operations to a private draft. Requires expected_version, so concurrent agent or editor changes cannot be silently overwritten. Supported ops: set_form_values, add_block, update_block, remove_block, move_block. Before changing presentation_style, fields, layout, or media, read opnform://reference/form-fields/v1; focused mode derives one step per block and media belongs in the block image property.')]
+#[Description('Apply validated semantic operations to a private draft. Operations can replace or remove draft content. Requires expected_version, so concurrent agent or editor changes cannot be silently overwritten. Supported ops: set_form_values, add_block, update_block, remove_block, move_block. Before changing presentation_style, fields, layout, or media, read opnform://reference/form-fields/v1; focused mode derives one step per block and media belongs in the block image property.')]
+#[IsReadOnly(false)]
+#[IsDestructive]
 #[IsOpenWorld(false)]
 class PatchFormDraftTool extends GuestDraftMcpTool
 {
@@ -66,6 +71,14 @@ class PatchFormDraftTool extends GuestDraftMcpTool
                 ->min(1)
                 ->max(100)
                 ->required(),
+        ];
+    }
+
+    public function outputSchema(JsonSchema $schema): array
+    {
+        return [
+            'draft' => McpOutputSchema::draft($schema)->required(),
+            'next_step' => $schema->string()->required(),
         ];
     }
 }

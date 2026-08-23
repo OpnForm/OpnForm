@@ -11,7 +11,7 @@
               MCP & AI agents
             </h3>
             <p class="text-sm text-neutral-500">
-              Connect AI assistants directly to this OpnForm instance.
+              {{ pageDescription }}
             </p>
           </div>
         </div>
@@ -72,7 +72,10 @@
             </div>
           </div>
 
-          <div class="flex shrink-0 items-center gap-3 rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2">
+          <div
+            v-if="isSelfHosted"
+            class="flex shrink-0 items-center gap-3 rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2"
+          >
             <span class="text-sm font-medium text-neutral-700">Enable MCP</span>
             <USwitch
               :model-value="settings.enabled"
@@ -279,34 +282,47 @@ const sharedSettingsUrl = computed(() => {
 })
 
 const isMcpAvailable = computed(() => settings.value?.available === true)
+const isSelfHosted = computed(() => settings.value?.self_hosted !== false)
+
+const pageDescription = computed(() => {
+  return isSelfHosted.value
+    ? 'Connect AI assistants directly to this OpnForm instance.'
+    : 'Connect AI assistants to OpnForm Cloud.'
+})
 
 const statusTitle = computed(() => {
+  if (!isSelfHosted.value) return 'OpnForm MCP is ready'
   if (!settings.value?.ready) return 'Server setup required'
   return isMcpAvailable.value ? 'MCP is available' : 'Ready to connect'
 })
 
 const statusDescription = computed(() => {
+  if (!isSelfHosted.value) return 'Create private drafts without signing in, or connect your account to manage forms and read submissions.'
   if (!settings.value?.ready) return 'Resolve the prerequisites below before exposing the MCP endpoint.'
   if (isMcpAvailable.value) return 'Connected AI assistants can create and manage forms and read submissions using your OpnForm account.'
   return 'OAuth is ready. Enable MCP when you want this instance to accept agent connections.'
 })
 
 const statusIcon = computed(() => {
+  if (!isSelfHosted.value) return 'i-heroicons-check'
   if (!settings.value?.ready) return 'i-heroicons-exclamation-triangle'
   return settings.value?.enabled ? 'i-heroicons-check' : 'i-heroicons-pause'
 })
 
 const statusIconClasses = computed(() => {
+  if (!isSelfHosted.value) return 'bg-emerald-100 text-emerald-600'
   if (!settings.value?.ready) return 'bg-red-100 text-red-600'
   return settings.value?.enabled ? 'bg-emerald-100 text-emerald-600' : 'bg-neutral-100 text-neutral-500'
 })
 
 const statusBadgeLabel = computed(() => {
+  if (!isSelfHosted.value) return 'Cloud'
   if (!settings.value?.ready && settings.value?.enabled) return 'Unavailable'
   return settings.value?.enabled ? 'Enabled' : 'Disabled'
 })
 
 const statusBadgeColor = computed(() => {
+  if (!isSelfHosted.value) return 'success'
   if (!settings.value?.ready && settings.value?.enabled) return 'error'
   return settings.value?.enabled ? 'success' : 'neutral'
 })

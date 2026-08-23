@@ -104,4 +104,14 @@ describe('User settings instance administration', () => {
     expect(wrapper.find('[data-page-id="license"]').exists()).toBe(false)
     expect(wrapper.find('[data-page-id="mcp"]').exists()).toBe(false)
   })
+
+  it('shows the MCP guide to every cloud user', () => {
+    mocks.isSelfHosted = false
+    mocks.workspaces = [mocks.currentWorkspace]
+
+    const wrapper = mountModal()
+
+    expect(wrapper.find('[data-page-id="license"]').exists()).toBe(false)
+    expect(wrapper.find('[data-page-id="mcp"]').exists()).toBe(true)
+  })
 })
