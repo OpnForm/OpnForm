@@ -27,3 +27,17 @@ it('uses one normalization path for form titles, properties, and select options'
         ->and($normalized['properties'][0]['select']['options'][0]['id'])->toBe('First')
         ->and($normalized['properties'][0]['id'])->toBeString()->not->toBeEmpty();
 });
+
+it('preserves strikethrough help text while removing unsafe markup', function () {
+    $normalized = app(FormDataNormalizer::class)->normalizeProperties([
+        [
+            'type' => 'select',
+            'help' => '<p><s onclick="alert(1)">Unavailable option</s></p><script>alert(1)</script>',
+        ],
+    ]);
+
+    expect($normalized[0]['help'])
+        ->toContain('<s>Unavailable option</s>')
+        ->not->toContain('onclick')
+        ->not->toContain('<script>');
+});
