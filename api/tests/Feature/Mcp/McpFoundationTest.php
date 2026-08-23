@@ -38,7 +38,9 @@ it('exposes the OpnForm MCP endpoint and initializes the protocol', function () 
                 && str_contains($discoveryInstructions, 'A natural request such as "create a contact form" needs no login')
                 && str_contains($discoveryInstructions, 'Never ask the user to connect')
                 && str_contains($discoveryInstructions, 'OAuth is required only for connected-account operations')
-                && str_contains($discoveryInstructions, 'Enabling or selecting the plugin is not OAuth authentication');
+                && str_contains($discoveryInstructions, 'Enabling or selecting the plugin is not OAuth authentication')
+                && str_contains($discoveryInstructions, 'Follow the catalog authoring guidelines')
+                && str_contains($discoveryInstructions, 'quality_warnings');
         });
 });
 
@@ -194,9 +196,39 @@ it('publishes the canonical form field catalog', function () {
         ->assertSee('payment')
         ->assertSee('presentation_modes')
         ->assertSee('focused')
+        ->assertSee('authoring_guidelines')
+        ->assertSee('polished respondent-facing form')
         ->assertSee('block_media')
         ->assertSee('trycloudflare.com')
         ->assertSee('save');
+});
+
+it('returns non-blocking authoring quality warnings with a valid definition', function () {
+    OpnFormServer::tool(ValidateFormDefinitionTool::class, [
+        'definition' => [
+            'title' => 'Contact form',
+            'properties' => [
+                ['name' => 'name', 'type' => 'text'],
+                ['name' => 'email', 'type' => 'email'],
+                ['name' => 'message', 'type' => 'text'],
+            ],
+        ],
+    ])
+        ->assertOk()
+        ->assertStructuredContent(
+            fn (AssertableJson $json) => $json
+            ->where('valid', true)
+            ->where('schema_version', 1)
+            ->has('definition')
+            ->has(
+                'quality_warnings',
+                fn (AssertableJson $warnings) => $warnings
+                ->each(
+                    fn (AssertableJson $warning) => $warning
+                    ->hasAll(['code', 'message', 'path'])
+                )
+            )
+        );
 });
 
 it('requires public durable HTTPS URLs for agent-provided media', function () {

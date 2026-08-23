@@ -12,7 +12,7 @@ use Laravel\Mcp\Server\Attributes\Uri;
 use Laravel\Mcp\Server\Resource;
 
 #[Name('form_field_catalog')]
-#[Description('Canonical OpnForm field, presentation, media, and layout reference, including focused-mode guidance, aliases, and plan behavior.')]
+#[Description('Canonical OpnForm field, presentation, media, layout, and authoring-quality reference, including focused-mode guidance, aliases, and plan behavior.')]
 #[Uri('opnform://reference/form-fields/v1')]
 #[MimeType('application/json')]
 class FormFieldCatalogResource extends Resource

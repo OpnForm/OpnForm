@@ -79,6 +79,7 @@ it('ships a valid native OpenAI plugin wrapper for the hosted MCP server', funct
         ->and(array_diff(array_keys($native['interface']), $nativeInterfaceFields))->toBe([])
         ->and($native['interface']['websiteURL'])->toBe($portable['author']['url'])
         ->and($native['interface']['defaultPrompt'])->toHaveCount(3)
+        ->and($native['interface']['defaultPrompt'][0])->toContain('polished contact form')
         ->and($nativeMcp['mcpServers']['opnform'])->toBe([
             'type' => 'http',
             'url' => $portableMcp['mcpServers']['opnform']['url'],
@@ -158,6 +159,12 @@ it('ships a discoverable OpnForm skill with the complete safety workflow', funct
             'do not loop or claim the connection succeeded',
             '`textarea` is not a valid OpnForm field type',
             'never continue to draft creation after validation fails',
+            "field reference's `authoring_guidelines`",
+            '`quality_warnings` as non-blocking editorial guidance',
+            'Use human-facing labels in sentence case',
+            'Add placeholders only when they provide a useful example or expected format',
+            'pair at most two related short fields on a row',
+            'not a generic “Submit”',
         )
         ->and($skill)->toContain('confirm_publish: true', 'confirm_trash: true')
         ->and($skill)->not->toContain('`confirm: true`')

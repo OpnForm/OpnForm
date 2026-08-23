@@ -1,8 +1,8 @@
 interface:
   display_name: "OpnForm"
-  short_description: "Create and manage OpnForm forms through MCP"
+  short_description: "Create polished OpnForm forms through MCP"
   brand_color: "#2563EB"
-  default_prompt: "Use $opnform to create, preview, or manage an OpnForm form directly through MCP."
+  default_prompt: "Use $opnform to create a polished, respondent-friendly form and show me an interactive preview."
 dependencies:
   tools:
     - type: "mcp"

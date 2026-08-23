@@ -21,8 +21,8 @@
   "mcpServers": "./.mcp.json",
   "interface": {
     "displayName": "OpnForm",
-    "shortDescription": "Build and manage forms with your AI assistant",
-    "longDescription": "Create and preview private form drafts without an account. Connect OpnForm only when you need to save, publish, manage existing forms, or search and export submissions.",
+    "shortDescription": "Build polished forms with your AI assistant",
+    "longDescription": "Create polished, respondent-friendly form drafts and preview them without an account. Connect OpnForm only when you need to save, publish, manage existing forms, or search and export submissions.",
     "developerName": "OpnForm",
     "category": "Productivity",
     "capabilities": [
@@ -34,7 +34,7 @@
     "privacyPolicyURL": "https://opnform.com/privacy-policy",
     "termsOfServiceURL": "https://opnform.com/terms-conditions",
     "defaultPrompt": [
-      "Create a contact form for my business and show me a preview.",
+      "Create a polished contact form for my business and show me a preview.",
       "Find recent submissions containing a specific email address.",
       "Update my form, then ask me before publishing it."
     ],

@@ -103,6 +103,7 @@ class AgentFormFieldCatalog
                     ],
                 ],
             ],
+            'authoring_guidelines' => AgentFormAuthoringGuide::reference(),
             'block_media' => [
                 'property' => 'image',
                 'attach_to' => 'Any input block or nf-text block, especially for focused steps. This differs from the classic-only nf-image standalone block and its image_block property.',
