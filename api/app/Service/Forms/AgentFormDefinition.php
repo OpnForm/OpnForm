@@ -204,6 +204,13 @@ class AgentFormDefinition
                 'regex:/^[A-Za-z0-9\-_\.]+$/',
                 'required_if:analytics.provider,meta_pixel,google_analytics,gtm',
             ],
+        ], [
+            'theme.in' => 'theme must be one of: default, simple, notion, minimal, transparent.',
+            'presentation_style.in' => 'presentation_style must be one of: classic, focused.',
+            'width.in' => 'width must be one of: centered, full.',
+            'size.in' => 'size must be one of: sm, md, lg.',
+            'border_radius.in' => 'border_radius must be one of: none, small, full.',
+            'dark_mode.in' => 'dark_mode must be one of: auto, light, dark.',
         ])->validate();
     }
 

@@ -103,6 +103,16 @@ class AgentFormFieldCatalog
                     ],
                 ],
             ],
+            'form_style' => [
+                'theme' => ['default', 'simple', 'notion', 'minimal', 'transparent'],
+                'width' => ['centered', 'full'],
+                'size' => ['sm', 'md', 'lg'],
+                'border_radius' => ['none', 'small', 'full'],
+                'dark_mode' => ['auto', 'light', 'dark'],
+                'color' => 'Accent color string, preferably a hex color such as #2563EB.',
+                'uppercase_labels' => 'Boolean.',
+                'show_progress_bar' => 'Boolean.',
+            ],
             'authoring_guidelines' => AgentFormAuthoringGuide::reference(),
             'block_media' => [
                 'property' => 'image',

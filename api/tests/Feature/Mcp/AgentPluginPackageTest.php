@@ -131,7 +131,7 @@ it('ships a discoverable OpnForm skill with the complete safety workflow', funct
         ->and($skill)->toContain(
             'opnform://schemas/agent-form-definition/v1',
             'validate_form_definition',
-            'draft_token',
+            'draft_handle',
             'preview_form_draft',
             'get_form_draft',
             'open_form_draft_in_editor',
@@ -168,7 +168,13 @@ it('ships a discoverable OpnForm skill with the complete safety workflow', funct
         )
         ->and($skill)->toContain('confirm_publish: true', 'confirm_trash: true')
         ->and($skill)->not->toContain('`confirm: true`')
+        ->and($skill)->not->toContain('draft_token', 'capability secret')
         ->and($skill)->toContain('Submission access is read-only')
+        ->and($skill)->toContain(
+            'do not turn a recoverable enum or field error into a generic “server error”',
+            '`border_radius` is `none`, `small`, or `full`',
+            'Never invent aliases such as `medium` or `large`',
+        )
         ->and(substr_count($skill, "\n"))->toBeLessThan(500);
 });
 
@@ -235,12 +241,16 @@ it('renders a flattened and hardened form preview frame', function () {
         ->toContain('/widgets/iframeResize.min.js')
         ->toContain('checkOrigin: [previewUrl.origin]')
         ->toContain('scrolling: false')
-        ->toContain('const canvasWidth = 1280')
         ->toContain('const focusedHeight = 720')
-        ->toContain('const defaultZoom = 0.8')
-        ->toContain('availableWidth / canvasWidth')
+        ->toContain('const zoomLevels = [0.75, 0.85, 1]')
+        ->toContain('const defaultZoomIndex = 1')
+        ->toContain('availableWidth / zoom')
         ->toContain('new ResizeObserver(applyPreviewLayout).observe(previewViewport)')
         ->toContain("sizeHeight: presentationStyle !== 'focused'")
+        ->toContain("app.callServerTool('open_form_draft_in_editor'")
+        ->toContain('window.openai?.toolOutput')
+        ->toContain("openai:set_globals")
+        ->toContain('Ask ChatGPT to refresh this preview.')
         ->toContain('aria-label="Preview zoom"')
         ->toContain('sandbox="allow-forms allow-modals allow-popups allow-scripts allow-same-origin"')
         ->toContain('referrerpolicy="no-referrer"')

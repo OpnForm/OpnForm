@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AgentFormDraftController;
 use App\Mcp\Servers\OpnFormServer;
+use App\Mcp\Tools\OpenFormDraftInEditorTool;
 use App\Mcp\Tools\PreviewFormDraftTool;
 use App\Models\Forms\AgentFormDraft;
 use App\Models\OAuthProvider;
@@ -26,21 +27,32 @@ beforeEach(function () {
     config()->set('app.front_url', 'https://opnform.test');
 });
 
-it('renders an MCP App preview with short-lived preview and reusable editor links', function () {
+it('renders a read-only MCP App preview and creates an editor link only on demand', function () {
     $created = app(AgentFormDraftService::class)->create(editorDraftDefinition());
 
     OpnFormServer::tool(PreviewFormDraftTool::class, [
-        'draft_token' => $created['token'],
+        'draft_handle' => $created['token'],
     ])->assertOk()
         ->assertSee('preview_url')
-        ->assertSee('editor_url')
+        ->assertSee('draft_handle')
+        ->assertDontSee('editor_url')
         ->assertSee('Agent customer intake');
+
+    $this->assertDatabaseCount('agent_form_draft_handoffs', 0);
 
     OpnFormServer::resource(\App\Mcp\Apps\FormDraftPreviewApp::class)
         ->assertOk()
         ->assertSee('Open in OpnForm')
-        ->assertSee('window.openai?.openExternal')
+        ->assertSee("app.callServerTool('open_form_draft_in_editor'")
+        ->assertSee('window.openai?.toolOutput')
+        ->assertSee("openai:set_globals")
         ->assertSee('<iframe');
+
+    OpnFormServer::tool(OpenFormDraftInEditorTool::class, [
+        'draft_handle' => $created['token'],
+    ])->assertOk()
+        ->assertSee('editor_url')
+        ->assertDontSee('handoff_token');
 
     $draft = $created['draft']->refresh();
     $handoff = $draft->editorHandoffs()->sole();
@@ -59,7 +71,7 @@ it('publishes standard and ChatGPT-compatible CSP metadata with the full fronten
         ->content()
         ->toResource($previewApp);
 
-    expect($previewApp->uri())->toBe('ui://opnform/form-draft-preview-v3')
+    expect($previewApp->uri())->toBe('ui://opnform/form-draft-preview-v4')
         ->and($previewApp->resolvedAppMeta()['csp']['resourceDomains'])
         ->toBe(['http://127.0.0.1:33676'])
         ->and($previewApp->resolvedAppMeta()['csp']['frameDomains'])

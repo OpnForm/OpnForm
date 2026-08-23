@@ -227,7 +227,7 @@ class AgentFormDraftService
 
     private function resolveActive(string $token, bool $lock = false): AgentFormDraft
     {
-        $this->assertTokenShape($token, 'draft_token');
+        $this->assertTokenShape($token, 'draft_handle');
 
         $query = AgentFormDraft::query()
             ->where('token_hash', $this->hashToken($token))
@@ -287,7 +287,7 @@ class AgentFormDraftService
     {
         if (! preg_match('/^[A-Za-z0-9_-]{43}$/', $token)) {
             throw ValidationException::withMessages([
-                $field => ['Invalid or unavailable capability token.'],
+                $field => ['Invalid or unavailable draft handle.'],
             ]);
         }
     }
@@ -317,7 +317,7 @@ class AgentFormDraftService
     private function unavailable(): ValidationException
     {
         return ValidationException::withMessages([
-            'draft_token' => ['Draft not found, expired, or already claimed.'],
+            'draft_handle' => ['Draft not found, expired, or already claimed.'],
         ]);
     }
 }

@@ -13,8 +13,8 @@ use Laravel\Mcp\Server\Ui\AppMeta;
 use Laravel\Mcp\Server\Ui\Csp;
 
 #[Name('form_draft_preview')]
-#[Description('Interactive preview of a guest OpnForm draft with a secure editor handoff.')]
-#[Uri('ui://opnform/form-draft-preview-v3')]
+#[Description('Interactive preview of a temporary guest OpnForm draft with an optional editor handoff.')]
+#[Uri('ui://opnform/form-draft-preview-v4')]
 class FormDraftPreviewApp extends AppResource
 {
     public function shouldRegister(McpAvailability $availability): bool

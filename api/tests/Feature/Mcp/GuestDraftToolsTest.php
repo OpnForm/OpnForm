@@ -3,7 +3,9 @@
 use App\Mcp\Servers\OpnFormServer;
 use App\Mcp\Tools\CreateFormDraftTool;
 use App\Mcp\Tools\GetFormDraftTool;
+use App\Mcp\Tools\OpenFormDraftInEditorTool;
 use App\Mcp\Tools\PatchFormDraftTool;
+use App\Mcp\Tools\PreviewFormDraftTool;
 use App\Models\Forms\AgentFormDraft;
 use App\Service\Forms\AgentFormDraftRateLimiter;
 use App\Service\Forms\AgentFormDraftService;
@@ -24,13 +26,31 @@ beforeEach(function () {
     config()->set('app.self_hosted', false);
 });
 
-it('creates a seven-day server-side guest draft and only stores a token hash', function () {
+it('publishes a neutral draft handle contract and accurate preview annotations', function () {
+    $create = app(CreateFormDraftTool::class)->toArray();
+    $preview = app(PreviewFormDraftTool::class)->toArray();
+    $open = app(OpenFormDraftInEditorTool::class)->toArray();
+
+    expect($create['outputSchema']['properties'])->toHaveKey('draft_handle')
+        ->and($create['outputSchema']['properties'])->not->toHaveKey('draft_token')
+        ->and($preview['inputSchema']['properties'])->toHaveKey('draft_handle')
+        ->and($preview['outputSchema']['properties'])->not->toHaveKeys([
+            'editor_url',
+            'editor_link_expires_at',
+        ])
+        ->and($preview['annotations']['readOnlyHint'])->toBeTrue()
+        ->and($open['_meta']['ui']['visibility'])->toBe(['model', 'app'])
+        ->and($open['outputSchema']['properties'])->not->toHaveKey('handoff_token');
+});
+
+it('creates a seven-day server-side guest draft and returns an opaque handle', function () {
     $before = now();
 
     OpnFormServer::tool(CreateFormDraftTool::class, [
         'definition' => guestDraftDefinition(['visibility' => 'public']),
     ])->assertOk()
-        ->assertSee('draft_token')
+        ->assertSee('draft_handle')
+        ->assertDontSee('capability secret')
         ->assertSee('Customer intake')
         ->assertSee('expected_version');
 
@@ -46,11 +66,11 @@ it('creates a seven-day server-side guest draft and only stores a token hash', f
     $this->assertDatabaseCount('forms', 0);
 });
 
-it('fetches a draft with its capability token without exposing stored secrets', function () {
+it('fetches a draft with its opaque handle without exposing stored hashes', function () {
     $created = app(AgentFormDraftService::class)->create(guestDraftDefinition());
 
     OpnFormServer::tool(GetFormDraftTool::class, [
-        'draft_token' => $created['token'],
+        'draft_handle' => $created['token'],
     ])->assertOk()
         ->assertSee('Customer intake')
         ->assertDontSee($created['draft']->token_hash)
@@ -62,7 +82,7 @@ it('patches form values and blocks with optimistic versioning', function () {
     $created = $drafts->create(guestDraftDefinition());
 
     $response = OpnFormServer::tool(PatchFormDraftTool::class, [
-        'draft_token' => $created['token'],
+        'draft_handle' => $created['token'],
         'expected_version' => 1,
         'operations' => [
             [
@@ -103,6 +123,45 @@ it('patches form values and blocks with optimistic versioning', function () {
         ->and($updated->definition['properties'][2]['id'])->toBeString()->not->toBeEmpty();
 });
 
+it('describes strict style values in the patch schema and field catalog', function () {
+    $tool = OpnFormServer::tool(PatchFormDraftTool::class, [
+        'draft_handle' => str_repeat('x', 43),
+        'expected_version' => 1,
+        'operations' => [[
+            'op' => 'set_form_values',
+            'values' => ['border_radius' => 'large'],
+        ]],
+    ]);
+
+    $tool->assertHasErrors(['Draft not found, expired, or already claimed']);
+
+    $schema = app(PatchFormDraftTool::class)->schema(new \Illuminate\JsonSchema\JsonSchemaTypeFactory());
+
+    $styleProperties = $schema['operations']->toArray()['items']['properties']['values']['properties'];
+
+    expect($styleProperties['presentation_style']['enum'])->toBe(['classic', 'focused'])
+        ->and($styleProperties['width']['enum'])->toBe(['centered', 'full'])
+        ->and($styleProperties['size']['enum'])->toBe(['sm', 'md', 'lg'])
+        ->and($styleProperties['theme']['enum'])->toBe(['default', 'simple', 'notion', 'minimal', 'transparent'])
+        ->and($styleProperties['border_radius']['enum'])->toBe(['none', 'small', 'full'])
+        ->and(\App\Service\Forms\AgentFormFieldCatalog::reference()['form_style']['border_radius'])
+        ->toBe(['none', 'small', 'full']);
+});
+
+it('returns actionable validation errors for invalid style values', function () {
+    $drafts = app(AgentFormDraftService::class);
+    $created = $drafts->create(guestDraftDefinition());
+
+    OpnFormServer::tool(PatchFormDraftTool::class, [
+        'draft_handle' => $created['token'],
+        'expected_version' => 1,
+        'operations' => [[
+            'op' => 'set_form_values',
+            'values' => ['border_radius' => 'large'],
+        ]],
+    ])->assertHasErrors(['border_radius must be one of: none, small, full.']);
+});
+
 it('rejects stale patches without changing the draft', function () {
     $drafts = app(AgentFormDraftService::class);
     $created = $drafts->create(guestDraftDefinition());
@@ -113,7 +172,7 @@ it('rejects stale patches without changing the draft', function () {
     ]]);
 
     OpnFormServer::tool(PatchFormDraftTool::class, [
-        'draft_token' => $created['token'],
+        'draft_handle' => $created['token'],
         'expected_version' => 1,
         'operations' => [[
             'op' => 'set_form_values',
@@ -134,7 +193,7 @@ it('rolls back invalid patch operations and preserves the previous version', fun
     ]));
 
     OpnFormServer::tool(PatchFormDraftTool::class, [
-        'draft_token' => $created['token'],
+        'draft_handle' => $created['token'],
         'expected_version' => 1,
         'operations' => [[
             'op' => 'remove_block',
@@ -151,20 +210,20 @@ it('rejects malformed, expired, and claimed draft capabilities with one generic 
     $created = $drafts->create(guestDraftDefinition());
 
     OpnFormServer::tool(GetFormDraftTool::class, [
-        'draft_token' => str_repeat('x', 43),
+        'draft_handle' => str_repeat('x', 43),
     ])->assertHasErrors(['Draft not found, expired, or already claimed']);
 
     $created['draft']->forceFill(['expires_at' => now()->subSecond()])->save();
 
     OpnFormServer::tool(GetFormDraftTool::class, [
-        'draft_token' => $created['token'],
+        'draft_handle' => $created['token'],
     ])->assertHasErrors(['Draft not found, expired, or already claimed']);
 
     $claimed = $drafts->create(guestDraftDefinition());
     $claimed['draft']->forceFill(['status' => AgentFormDraft::STATUS_CLAIMED])->save();
 
     OpnFormServer::tool(GetFormDraftTool::class, [
-        'draft_token' => $claimed['token'],
+        'draft_handle' => $claimed['token'],
     ])->assertHasErrors(['Draft not found, expired, or already claimed']);
 });
 

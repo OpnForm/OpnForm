@@ -76,6 +76,7 @@ it('advertises explicit safety annotations for every MCP tool', function () {
         'list_forms',
         'list_submissions',
         'list_workspaces',
+        'preview_form_draft',
         'validate_form_definition',
     ];
     $writes = [
@@ -83,7 +84,6 @@ it('advertises explicit safety annotations for every MCP tool', function () {
         'create_form_in_account',
         'export_submissions',
         'open_form_draft_in_editor',
-        'preview_form_draft',
     ];
     $destructivePrivateWrites = [
         'patch_form_draft',

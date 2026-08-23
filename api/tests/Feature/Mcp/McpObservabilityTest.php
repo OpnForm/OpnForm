@@ -16,7 +16,7 @@ it('records metadata-only MCP usage without request arguments', function () {
         'method' => 'tools/call',
         'params' => [
             'name' => 'missing_tool',
-            'arguments' => ['draft_token' => $secret],
+            'arguments' => ['draft_handle' => $secret],
         ],
     ], [
         'Accept' => 'application/json, text/event-stream',

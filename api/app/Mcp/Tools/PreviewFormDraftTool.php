@@ -17,9 +17,9 @@ use Laravel\Mcp\Server\Tools\Annotations\IsOpenWorld;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Name('preview_form_draft')]
-#[Description('Render the current guest draft, return a browser preview valid for one hour, and create a reusable editor link that remains valid for the seven-day guest draft lifetime. Call this tool again whenever a fresh preview link is needed.')]
+#[Description('Render the current guest draft and return a browser preview valid for one hour. This read-only tool does not create an editor link. Call open_form_draft_in_editor only when the user chooses to continue editing in OpnForm.')]
 #[RendersApp(resource: FormDraftPreviewApp::class)]
-#[IsReadOnly(false)]
+#[IsReadOnly]
 #[IsDestructive(false)]
 #[IsOpenWorld(false)]
 class PreviewFormDraftTool extends GuestDraftMcpTool
@@ -27,24 +27,22 @@ class PreviewFormDraftTool extends GuestDraftMcpTool
     public function handle(Request $request, AgentFormDraftService $drafts): ResponseFactory
     {
         $validated = $request->validate([
-            'draft_token' => ['required', 'string', 'size:43'],
+            'draft_handle' => ['required', 'string', 'size:43'],
         ]);
-        $draft = $drafts->get($validated['draft_token']);
-        $handoff = $drafts->issueEditorHandoff($validated['draft_token']);
+        $draft = $drafts->get($validated['draft_handle']);
 
         return Response::structured([
+            'draft_handle' => $validated['draft_handle'],
             'draft' => $drafts->serialize($draft),
             'preview_url' => $drafts->previewUrl($draft),
-            'editor_url' => $handoff['editor_url'],
-            'editor_link_expires_at' => $handoff['expires_at'],
         ]);
     }
 
     public function schema(JsonSchema $schema): array
     {
         return [
-            'draft_token' => $schema->string()
-                ->description('Private capability token returned by create_form_draft.')
+            'draft_handle' => $schema->string()
+                ->description('Opaque reference returned by create_form_draft. Pass it unchanged.')
                 ->min(43)
                 ->max(43)
                 ->required(),
@@ -54,10 +52,9 @@ class PreviewFormDraftTool extends GuestDraftMcpTool
     public function outputSchema(JsonSchema $schema): array
     {
         return [
+            'draft_handle' => $schema->string()->min(43)->max(43)->required(),
             'draft' => McpOutputSchema::draft($schema)->required(),
             'preview_url' => $schema->string()->format('uri')->required(),
-            'editor_url' => $schema->string()->format('uri')->required(),
-            'editor_link_expires_at' => $schema->string()->format('date-time')->required(),
         ];
     }
 }

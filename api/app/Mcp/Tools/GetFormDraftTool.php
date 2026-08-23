@@ -24,19 +24,19 @@ class GetFormDraftTool extends GuestDraftMcpTool
     public function handle(Request $request, AgentFormDraftService $drafts): ResponseFactory
     {
         $validated = $request->validate([
-            'draft_token' => ['required', 'string', 'size:43'],
+            'draft_handle' => ['required', 'string', 'size:43'],
         ]);
 
         return Response::structured([
-            'draft' => $drafts->serialize($drafts->get($validated['draft_token'])),
+            'draft' => $drafts->serialize($drafts->get($validated['draft_handle'])),
         ]);
     }
 
     public function schema(JsonSchema $schema): array
     {
         return [
-            'draft_token' => $schema->string()
-                ->description('Private capability token returned by create_form_draft.')
+            'draft_handle' => $schema->string()
+                ->description('Opaque reference returned by create_form_draft. Pass it unchanged.')
                 ->min(43)
                 ->max(43)
                 ->required(),
