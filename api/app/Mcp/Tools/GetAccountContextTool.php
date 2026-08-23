@@ -2,7 +2,9 @@
 
 namespace App\Mcp\Tools;
 
+use App\Mcp\Support\McpOutputSchema;
 use App\Service\Forms\McpFormManagementService;
+use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
@@ -33,5 +35,18 @@ class GetAccountContextTool extends AuthenticatedMcpTool
             'workspaces' => $workspaces,
             'workspace_selection_required' => count($workspaces) > 1,
         ]);
+    }
+
+    public function outputSchema(JsonSchema $schema): array
+    {
+        return [
+            'account' => $schema->object([
+                'id' => $schema->integer()->min(1)->required(),
+                'name' => $schema->string()->required(),
+                'email' => $schema->string()->format('email')->required(),
+            ])->withoutAdditionalProperties()->required(),
+            'workspaces' => $schema->array()->items(McpOutputSchema::workspace($schema))->required(),
+            'workspace_selection_required' => $schema->boolean()->required(),
+        ];
     }
 }

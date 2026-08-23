@@ -45,4 +45,13 @@ class ExportSubmissionsTool extends AuthenticatedMcpTool
                 ->max(1000),
         ];
     }
+
+    public function outputSchema(JsonSchema $schema): array
+    {
+        return [
+            'job_id' => $schema->string()->format('uuid')->required(),
+            'status' => $schema->string()->required(),
+            'message' => $schema->string()->required(),
+        ];
+    }
 }

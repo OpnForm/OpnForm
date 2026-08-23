@@ -35,4 +35,13 @@ class OpenFormDraftInEditorTool extends GuestDraftMcpTool
             'draft_token' => $schema->string()->min(43)->max(43)->required(),
         ];
     }
+
+    public function outputSchema(JsonSchema $schema): array
+    {
+        return [
+            'handoff_token' => $schema->string()->min(43)->max(43)->required(),
+            'editor_url' => $schema->string()->format('uri')->required(),
+            'expires_at' => $schema->string()->format('date-time')->required(),
+        ];
+    }
 }

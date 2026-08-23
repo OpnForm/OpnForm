@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Tools;
 
+use App\Mcp\Support\McpOutputSchema;
 use App\Service\Forms\AgentFormDraftRateLimiter;
 use App\Service\Forms\AgentFormDraftService;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
@@ -56,6 +57,15 @@ class CreateFormDraftTool extends GuestDraftMcpTool
             'definition' => $schema->object()
                 ->description('Form definition following opnform://schemas/agent-form-definition/v1. The server normalizes defaults, aliases, IDs, and visibility.')
                 ->required(),
+        ];
+    }
+
+    public function outputSchema(JsonSchema $schema): array
+    {
+        return [
+            'draft_token' => $schema->string()->min(43)->max(43)->required(),
+            'draft' => McpOutputSchema::draft($schema)->required(),
+            'next_steps' => $schema->array()->items($schema->string())->required(),
         ];
     }
 }

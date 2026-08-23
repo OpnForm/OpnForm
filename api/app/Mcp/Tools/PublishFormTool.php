@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Tools;
 
+use App\Mcp\Support\McpOutputSchema;
 use App\Service\Forms\McpFormManagementService;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
@@ -42,6 +43,14 @@ class PublishFormTool extends AuthenticatedMcpTool
             'form_id' => $schema->integer()->min(1)->required(),
             'expected_revision' => $schema->string()->description('Exact 64-character revision returned by get_form.')->min(64)->max(64)->required(),
             'confirm_publish' => $schema->boolean()->description('True only after the user explicitly confirms publication.')->required(),
+        ];
+    }
+
+    public function outputSchema(JsonSchema $schema): array
+    {
+        return [
+            'message' => $schema->string()->required(),
+            'form' => McpOutputSchema::form($schema)->required(),
         ];
     }
 }

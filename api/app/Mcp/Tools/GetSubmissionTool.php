@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Tools;
 
+use App\Mcp\Support\McpOutputSchema;
 use App\Service\Forms\McpSubmissionService;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
@@ -42,5 +43,10 @@ class GetSubmissionTool extends AuthenticatedMcpTool
             'form_id' => $schema->integer()->min(1)->required(),
             'submission_id' => $schema->integer()->min(1)->required(),
         ];
+    }
+
+    public function outputSchema(JsonSchema $schema): array
+    {
+        return ['submission' => McpOutputSchema::submission($schema)->required()];
     }
 }

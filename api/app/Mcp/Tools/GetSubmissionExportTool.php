@@ -41,4 +41,18 @@ class GetSubmissionExportTool extends AuthenticatedMcpTool
             'job_id' => $schema->string()->description('Export job UUID returned by export_submissions.')->required(),
         ];
     }
+
+    public function outputSchema(JsonSchema $schema): array
+    {
+        return [
+            'job_id' => $schema->string()->format('uuid')->required(),
+            'status' => $schema->string()->required(),
+            'progress' => $schema->integer()->min(0)->max(100)->required(),
+            'processed_submissions' => $schema->integer()->min(0)->nullable()->required(),
+            'total_submissions' => $schema->integer()->min(0)->nullable()->required(),
+            'file_url' => $schema->string()->format('uri')->nullable()->required(),
+            'expires_at' => $schema->string()->format('date-time')->nullable()->required(),
+            'error_message' => $schema->string()->nullable()->required(),
+        ];
+    }
 }

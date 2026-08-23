@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Tools;
 
+use App\Mcp\Support\McpOutputSchema;
 use App\Service\Forms\McpSubmissionService;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\Validation\Rule;
@@ -55,6 +56,14 @@ class ListSubmissionsTool extends AuthenticatedMcpTool
             'date_to' => $schema->string()->description('Inclusive ISO 8601 date.'),
             'page' => $schema->integer()->min(1)->default(1),
             'per_page' => $schema->integer()->min(1)->max(100)->default(50),
+        ];
+    }
+
+    public function outputSchema(JsonSchema $schema): array
+    {
+        return [
+            'submissions' => $schema->array()->items(McpOutputSchema::submission($schema))->required(),
+            'pagination' => McpOutputSchema::pagination($schema)->required(),
         ];
     }
 }

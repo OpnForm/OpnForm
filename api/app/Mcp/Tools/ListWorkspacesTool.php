@@ -2,7 +2,9 @@
 
 namespace App\Mcp\Tools;
 
+use App\Mcp\Support\McpOutputSchema;
 use App\Service\Forms\McpFormManagementService;
+use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
@@ -24,5 +26,12 @@ class ListWorkspacesTool extends AuthenticatedMcpTool
         return Response::structured([
             'workspaces' => $forms->listWorkspaces($this->user($request)),
         ]);
+    }
+
+    public function outputSchema(JsonSchema $schema): array
+    {
+        return [
+            'workspaces' => $schema->array()->items(McpOutputSchema::workspace($schema))->required(),
+        ];
     }
 }

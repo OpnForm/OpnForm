@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Tools;
 
+use App\Mcp\Support\McpOutputSchema;
 use App\Service\Forms\McpFormManagementService;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
@@ -32,5 +33,10 @@ class GetWorkspaceTool extends AuthenticatedMcpTool
     public function schema(JsonSchema $schema): array
     {
         return ['workspace_id' => $schema->integer()->min(1)->required()];
+    }
+
+    public function outputSchema(JsonSchema $schema): array
+    {
+        return ['workspace' => McpOutputSchema::workspace($schema)->required()];
     }
 }

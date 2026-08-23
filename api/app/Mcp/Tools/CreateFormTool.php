@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Tools;
 
+use App\Mcp\Support\McpOutputSchema;
 use App\Service\Forms\McpFormManagementService;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
@@ -41,6 +42,16 @@ class CreateFormTool extends AuthenticatedMcpTool
         return [
             'workspace_id' => $schema->integer()->description('Required only when the account has multiple workspaces.')->min(1),
             'definition' => $schema->object()->description('Canonical OpnForm agent form definition v1.')->required(),
+        ];
+    }
+
+    public function outputSchema(JsonSchema $schema): array
+    {
+        return [
+            'message' => $schema->string()->required(),
+            'form' => McpOutputSchema::form($schema)->required(),
+            'disabled_features' => $schema->union(['object', 'array'])->required(),
+            'next_step' => $schema->string()->required(),
         ];
     }
 }

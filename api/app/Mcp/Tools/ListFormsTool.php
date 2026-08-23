@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Tools;
 
+use App\Mcp\Support\McpOutputSchema;
 use App\Models\Forms\Form;
 use App\Service\Forms\McpFormManagementService;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
@@ -50,6 +51,14 @@ class ListFormsTool extends AuthenticatedMcpTool
             'visibility' => $schema->string()->enum(Form::VISIBILITY),
             'page' => $schema->integer()->min(1)->default(1),
             'per_page' => $schema->integer()->min(1)->max(100)->default(20),
+        ];
+    }
+
+    public function outputSchema(JsonSchema $schema): array
+    {
+        return [
+            'forms' => $schema->array()->items(McpOutputSchema::formSummary($schema))->required(),
+            'pagination' => McpOutputSchema::pagination($schema)->required(),
         ];
     }
 }

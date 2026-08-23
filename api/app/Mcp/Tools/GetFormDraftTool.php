@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Tools;
 
+use App\Mcp\Support\McpOutputSchema;
 use App\Service\Forms\AgentFormDraftService;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
@@ -40,5 +41,10 @@ class GetFormDraftTool extends GuestDraftMcpTool
                 ->max(43)
                 ->required(),
         ];
+    }
+
+    public function outputSchema(JsonSchema $schema): array
+    {
+        return ['draft' => McpOutputSchema::draft($schema)->required()];
     }
 }

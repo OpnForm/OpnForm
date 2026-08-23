@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Tools;
 
+use App\Mcp\Support\McpOutputSchema;
 use App\Service\Forms\McpFormManagementService;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
@@ -42,6 +43,15 @@ class UpdateFormTool extends AuthenticatedMcpTool
             'form_id' => $schema->integer()->min(1)->required(),
             'expected_revision' => $schema->string()->description('Exact 64-character revision returned by get_form.')->min(64)->max(64)->required(),
             'definition' => $schema->object()->description('Complete canonical OpnForm agent form definition v1.')->required(),
+        ];
+    }
+
+    public function outputSchema(JsonSchema $schema): array
+    {
+        return [
+            'message' => $schema->string()->required(),
+            'form' => McpOutputSchema::form($schema)->required(),
+            'disabled_features' => $schema->union(['object', 'array'])->required(),
         ];
     }
 }

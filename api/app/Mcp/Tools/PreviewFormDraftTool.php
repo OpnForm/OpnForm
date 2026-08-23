@@ -3,6 +3,7 @@
 namespace App\Mcp\Tools;
 
 use App\Mcp\Apps\FormDraftPreviewApp;
+use App\Mcp\Support\McpOutputSchema;
 use App\Service\Forms\AgentFormDraftService;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
@@ -47,6 +48,16 @@ class PreviewFormDraftTool extends GuestDraftMcpTool
                 ->min(43)
                 ->max(43)
                 ->required(),
+        ];
+    }
+
+    public function outputSchema(JsonSchema $schema): array
+    {
+        return [
+            'draft' => McpOutputSchema::draft($schema)->required(),
+            'preview_url' => $schema->string()->format('uri')->required(),
+            'editor_url' => $schema->string()->format('uri')->required(),
+            'editor_link_expires_at' => $schema->string()->format('date-time')->required(),
         ];
     }
 }

@@ -123,6 +123,25 @@ it('advertises explicit safety annotations for every MCP tool', function () {
     expect($actual)->toBe($expected);
 });
 
+it('publishes an output schema for every MCP tool', function () {
+    $response = $this->postJson('/mcp', [
+        'jsonrpc' => '2.0',
+        'id' => 1,
+        'method' => 'tools/list',
+        'params' => [],
+    ], [
+        'Accept' => 'application/json, text/event-stream',
+    ])->assertOk();
+
+    foreach ($response->json('result.tools') as $tool) {
+        expect($tool['outputSchema'] ?? null)
+            ->toBeArray("Tool [{$tool['name']}] must declare an output schema.")
+            ->and($tool['outputSchema']['type'] ?? null)->toBe('object')
+            ->and($tool['outputSchema']['properties'] ?? null)->toBeArray()
+            ->not->toBeEmpty();
+    }
+});
+
 it('mirrors every tool auth policy in metadata for ChatGPT compatibility', function () {
     $response = $this->postJson('/mcp', [
         'jsonrpc' => '2.0',
