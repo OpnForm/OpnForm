@@ -182,6 +182,22 @@ it('can update a form', function () {
     ]);
 });
 
+it('preserves strikethrough formatting when updating field help text', function () {
+    $user = $this->actingAsUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace);
+
+    $formData = (new \App\Http\Resources\FormResource($form))->toArray(request());
+    $formData['properties'][0]['help'] = '<p><s onclick="alert(1)">Unavailable option</s></p>';
+
+    $this->putJson(route('open.forms.update', $form->id), $formData)
+        ->assertSuccessful()
+        ->assertJsonPath('form.properties.0.help', '<p><s>Unavailable option</s></p>');
+
+    expect($form->fresh()->properties[0]['help'])
+        ->toBe('<p><s>Unavailable option</s></p>');
+});
+
 it('truncates form titles longer than the database limit when updating a form', function () {
     $user = $this->actingAsUser();
     $workspace = $this->createUserWorkspace($user);
