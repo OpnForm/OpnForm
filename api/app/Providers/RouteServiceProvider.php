@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Models\Forms\AgentFormDraft;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Foundation\Support\Providers\RouteServiceProvider as ServiceProvider;
 use Illuminate\Http\Request;
@@ -120,6 +121,21 @@ class RouteServiceProvider extends ServiceProvider
 
         RateLimiter::for('mcp-oauth-registration', function (Request $request) {
             return Limit::perHour(20)->by('mcp-oauth-registration:'.$request->ip());
+        });
+
+        RateLimiter::for('agent-draft-preview', function (Request $request) {
+            $routeDraft = $request->route('draft');
+            $draftId = (string) ($routeDraft instanceof AgentFormDraft ? $routeDraft->getKey() : $routeDraft);
+            $identifier = ctype_digit($draftId)
+                ? 'draft:'.$draftId
+                : 'invalid:'.$request->ip();
+
+            return [
+                Limit::perMinute(max(1, config('opnform.mcp.rate_limit.draft_preview_requests_per_minute', 240)))
+                    ->by('agent-draft-preview:'.$identifier),
+                Limit::perMinute(max(1, config('opnform.mcp.rate_limit.draft_proxy_pool_per_minute', 6000)))
+                    ->by('agent-draft-preview:proxy:'.$request->ip()),
+            ];
         });
 
         RateLimiter::for('agent-draft-handoff', function (Request $request) {

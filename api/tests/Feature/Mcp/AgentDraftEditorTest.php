@@ -43,7 +43,7 @@ it('renders a read-only MCP App preview and creates an editor link only on deman
 
     OpnFormServer::resource(\App\Mcp\Apps\FormDraftPreviewApp::class)
         ->assertOk()
-        ->assertSee('Open in OpnForm')
+        ->assertSee('Edit in OpnForm')
         ->assertSee("app.callServerTool('open_form_draft_in_editor'")
         ->assertSee('currentPreviewUrl !== nextPreviewUrl')
         ->assertDontSee('window.openai')
@@ -73,7 +73,7 @@ it('publishes standard and ChatGPT-compatible CSP metadata with the full fronten
         ->content()
         ->toResource($previewApp);
 
-    expect($previewApp->uri())->toBe('ui://opnform/form-draft-preview-v5')
+    expect($previewApp->uri())->toBe('ui://opnform/form-draft-preview-v6')
         ->and($previewApp->resolvedAppMeta()['csp']['resourceDomains'])
         ->toBe(['http://127.0.0.1:33676'])
         ->and($previewApp->resolvedAppMeta()['csp']['frameDomains'])
@@ -112,6 +112,22 @@ it('serves preview data only through a valid signed URL without exposing capabil
         ->assertJsonMissing(['token_hash' => $draft->token_hash]);
 
     $this->getJson(route('agent-drafts.preview', $draft))->assertForbidden();
+});
+
+it('rate limits preview requests per draft instead of the shared frontend proxy', function () {
+    $this->withMiddleware(ThrottleRequests::class);
+    config()->set('opnform.mcp.rate_limit.draft_preview_requests_per_minute', 2);
+    config()->set('opnform.mcp.rate_limit.draft_proxy_pool_per_minute', 1000);
+
+    $firstDraft = app(AgentFormDraftService::class)->create(editorDraftDefinition())['draft'];
+    $secondDraft = app(AgentFormDraftService::class)->create(editorDraftDefinition())['draft'];
+    $firstUrl = URL::temporarySignedRoute('agent-drafts.preview', now()->addMinute(), ['draft' => $firstDraft->id]);
+    $secondUrl = URL::temporarySignedRoute('agent-drafts.preview', now()->addMinute(), ['draft' => $secondDraft->id]);
+
+    $this->getJson($firstUrl)->assertOk();
+    $this->getJson($firstUrl)->assertOk();
+    $this->getJson($firstUrl)->assertTooManyRequests();
+    $this->getJson($secondUrl)->assertOk();
 });
 
 it('keeps each generated browser preview link valid until the draft expires', function () {

@@ -15,6 +15,7 @@ class McpFormManagementService
 {
     public function __construct(
         private readonly AgentFormDefinition $definitions,
+        private readonly AgentFormQualityAnalyzer $qualityAnalyzer,
         private readonly FormCreationService $formCreation,
         private readonly FormUpdateService $formUpdate,
     ) {
@@ -125,6 +126,7 @@ class McpFormManagementService
         $this->assertWritable($workspace, $user);
 
         $definition = $this->definitions->normalizeAndValidate($definition, $workspace);
+        $this->qualityAnalyzer->assertReadyForAgentPersistence($definition);
         $definition['visibility'] = 'draft';
         $created = $this->formCreation->create($definition, $user, $workspace);
 

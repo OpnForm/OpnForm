@@ -213,7 +213,7 @@
 
                         await app.openLink({ url: payload.editor_url });
                     } catch (error) {
-                        actionStatus.textContent = 'Could not open OpnForm. Please try again.';
+                        actionStatus.textContent = 'Could not open the OpnForm editor. Please try again.';
                         actionStatus.hidden = false;
                     } finally {
                         openButton.textContent = initialOpenButtonText;
@@ -242,7 +242,7 @@
                         <button id="zoom-reset" class="zoom-value" type="button" title="Reset zoom">85%</button>
                         <button id="zoom-in" class="zoom-button" type="button" title="Zoom in" aria-label="Zoom in">+</button>
                     </div>
-                    <button id="open-editor" class="open-button" type="button" disabled>Open in OpnForm</button>
+                    <button id="open-editor" class="open-button" type="button" aria-label="Continue editing this draft in OpnForm" disabled>Edit in OpnForm</button>
                 </div>
             </header>
             <p id="action-status" class="action-status" role="status" aria-live="polite" hidden></p>

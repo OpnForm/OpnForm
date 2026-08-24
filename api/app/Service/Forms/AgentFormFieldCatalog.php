@@ -54,8 +54,8 @@ class AgentFormFieldCatalog
             'layout_types' => self::LAYOUT_TYPES,
             'aliases' => self::ALIASES,
             'common_properties' => [
-                'id' => 'Stable UUID. It is generated when omitted.',
-                'name' => 'Required user-facing block label.',
+                'id' => 'Stable technical identifier. Omit it when creating a block so the server generates one. Never place this value in the visible label.',
+                'name' => 'Required respondent-facing label in sentence case, using natural words and spaces, for example Full name or Email address. Never use snake_case, kebab-case, database keys, or variable names.',
                 'type' => 'One canonical type or alias from this catalog.',
                 'help' => 'Optional sanitized HTML help text.',
                 'hidden' => 'Boolean, defaults to false.',
@@ -76,7 +76,9 @@ class AgentFormFieldCatalog
                 'barcode' => ['decoders'],
                 'matrix' => ['rows', 'columns'],
                 'payment' => ['amount', 'currency', 'stripe_account_id'],
-                'nf-text' => ['content'],
+                'nf-text' => [
+                    'content' => 'Sanitized HTML fragment, never Markdown. Use elements such as <h1>, <h2>, <p>, <strong>, <em>, <a>, <ul>, <ol>, and <li>. Example: <h1>Contact us</h1><p>Send us a message and we will get back to you.</p>.',
+                ],
                 'nf-page-break' => ['next_btn_text', 'previous_btn_text'],
                 'nf-image' => ['image_block'],
                 'nf-video' => ['video_block'],

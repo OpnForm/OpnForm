@@ -14,6 +14,16 @@ function readOpnformPluginJson(string $path): array
     );
 }
 
+function readOpnformSkillBundle(): string
+{
+    $skillRoot = opnformPluginPath('skills/opnform');
+    $references = collect(glob($skillRoot.'/references/*.md'))
+        ->map(fn (string $path): string => file_get_contents($path))
+        ->implode("\n");
+
+    return file_get_contents($skillRoot.'/SKILL.md')."\n".$references;
+}
+
 it('ships portable manifests that conform to the Agent Plugins 1.0 schemas', function () {
     $plugin = readOpnformPluginJson('plugin.json');
     $mcp = readOpnformPluginJson('mcp.json');
@@ -124,11 +134,12 @@ it('keeps every native manifest path relative to and inside the plugin package',
 it('ships a discoverable OpnForm skill with the complete safety workflow', function () {
     $skillPath = opnformPluginPath('skills/opnform/SKILL.md');
     $skill = file_get_contents($skillPath);
+    $bundle = readOpnformSkillBundle();
 
     expect($skillPath)->toBeFile()
         ->and($skill)->toStartWith("---\n")
         ->and($skill)->toMatch('/\A---\nname: opnform\ndescription: .+\n---\n/s')
-        ->and($skill)->toContain(
+        ->and($bundle)->toContain(
             'opnform://schemas/agent-form-definition/v1',
             'validate_form_definition',
             'draft_handle',
@@ -145,37 +156,31 @@ it('ships a discoverable OpnForm skill with the complete safety workflow', funct
             'expected_version',
             'revision',
         )
-        ->and($skill)->toContain(
-            'Authenticated tools remain discoverable before the account is connected',
-            'Do not report that account tools are unavailable',
-            'Never launch another Codex or ChatGPT agent',
-            'run `codex exec`',
-            'OpnForm is not attached to the current conversation',
+        ->and($bundle)->toContain(
+            'Do not use shell, raw HTTP, another connector, or a recursive agent as a fallback',
             'Distinguish missing tools from missing authentication',
             'Enabling or selecting the plugin is not OAuth authentication',
-            'Settings → MCP servers → OpnForm → Authenticate',
-            'start a new conversation with OpnForm selected before the first message',
-            'may not hot-reload OAuth credentials',
-            'do not loop or claim the connection succeeded',
-            '`textarea` is not a valid OpnForm field type',
-            'never continue to draft creation after validation fails',
-            "field reference's `authoring_guidelines`",
-            '`quality_warnings` as non-blocking editorial guidance',
-            'Use human-facing labels in sentence case',
-            'Add placeholders only when they provide a useful example or expected format',
-            'pair at most two related short fields on a row',
-            'not a generic “Submit”',
+            'start a new conversation with OpnForm selected',
+            'Do not loop on an OAuth challenge or claim that connection succeeded without a successful account-scoped result',
+            '`textarea` is not a valid type',
+            'do not create or patch after a validation failure',
+            '`quality_warnings`',
+            '`name` is always visible respondent-facing copy',
+            'Add placeholders only for useful examples or expected formats',
+            'Use a contextual action',
         )
         ->and($skill)->toContain('confirm_publish: true', 'confirm_trash: true')
         ->and($skill)->not->toContain('`confirm: true`')
         ->and($skill)->not->toContain('draft_token', 'capability secret')
         ->and($skill)->toContain('Submission access is read-only')
-        ->and($skill)->toContain(
-            'do not turn a recoverable enum or field error into a generic “server error”',
+        ->and($bundle)->toContain(
+            'describe a recoverable field error as a generic server error',
             '`border_radius` is `none`, `small`, or `full`',
-            'Never invent aliases such as `medium` or `large`',
         )
-        ->and(substr_count($skill, "\n"))->toBeLessThan(500);
+        ->and(str_word_count($skill))->toBeLessThan(900)
+        ->and(opnformPluginPath('skills/opnform/references/form-authoring.md'))->toBeFile()
+        ->and(opnformPluginPath('skills/opnform/references/account-and-submissions.md'))->toBeFile()
+        ->and(opnformPluginPath('skills/opnform/references/connection-and-recovery.md'))->toBeFile();
 });
 
 it('declares the hosted OpnForm MCP dependency in native skill metadata', function () {
@@ -222,13 +227,15 @@ it('does not expose plugin package files from the monorepo root', function () {
 });
 
 it('teaches agents how to change presentation and media without repository inspection', function () {
-    $skill = file_get_contents(opnformPluginPath('skills/opnform/SKILL.md'));
+    $bundle = readOpnformSkillBundle();
 
-    expect($skill)
-        ->toContain('Re-read the field reference before changing presentation style, fields, layout, or media')
-        ->toContain('every visible block becomes one step automatically')
-        ->toContain('add an `image` object to that input or `nf-text` block')
-        ->toContain('Never persist localhost, private addresses, temporary tunnel domains');
+    expect($bundle)
+        ->toContain('opnform://schemas/agent-form-definition/v1')
+        ->toContain('opnform://reference/form-fields/v1')
+        ->toContain('before generating or materially changing fields, layout, presentation, or media')
+        ->toContain('In focused mode, every visible block is already one step')
+        ->toContain('attach an `image` object directly to that input or `nf-text` block')
+        ->toContain('Never persist localhost, private addresses, temporary tunnels');
 });
 
 it('renders a guest preview automatically after creation and every draft change', function () {
@@ -236,16 +243,19 @@ it('renders a guest preview automatically after creation and every draft change'
     $server = file_get_contents(app_path('Mcp/Servers/OpnFormServer.php'));
     $createTool = file_get_contents(app_path('Mcp/Tools/CreateFormDraftTool.php'));
     $patchTool = file_get_contents(app_path('Mcp/Tools/PatchFormDraftTool.php'));
+    $previewTool = file_get_contents(app_path('Mcp/Tools/PreviewFormDraftTool.php'));
 
     expect($skill)
-        ->toContain('renders the interactive MCP preview automatically')
-        ->toContain('renders the refreshed interactive preview automatically')
+        ->toContain('Call `preview_form_draft` exactly once with that handle')
+        ->toContain('then call `preview_form_draft` exactly once')
         ->and($server)
-        ->toContain('needs no login or preview wording')
-        ->toContain('Every patch_form_draft renders the updated preview too')
+        ->toContain('Create and patch are data-only')
+        ->toContain('call preview_form_draft exactly once')
         ->and($createTool)
-        ->toContain('RendersApp(resource: FormDraftPreviewApp::class)')
+        ->not->toContain('RendersApp')
         ->and($patchTool)
+        ->not->toContain('RendersApp')
+        ->and($previewTool)
         ->toContain('RendersApp(resource: FormDraftPreviewApp::class)');
 });
 
@@ -257,15 +267,15 @@ it('guides the agent from guest preview to account save and explicit publication
 
     expect($skill)
         ->toContain('whether the user wants another change or wants to save the form')
-        ->toContain('saved as a draft and ask whether the user wants to publish it')
+        ->toContain('saved as an unpublished draft')
         ->toContain('Asking is not confirmation')
         ->and($server)
-        ->toContain('Never call a temporary guest draft saved')
-        ->toContain('publish only after an explicit affirmative response')
+        ->toContain('ask whether to modify or save')
+        ->toContain('require explicit confirmation')
         ->and($createTool)
-        ->toContain('wants another change or wants to save the form')
+        ->toContain('data-only')
         ->and($patchTool)
-        ->toContain('wants another change or wants to save the form');
+        ->toContain('data-only');
 });
 
 it('renders a flattened and hardened form preview frame', function () {

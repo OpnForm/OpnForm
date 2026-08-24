@@ -58,7 +58,8 @@ if (config('app.self_hosted')) {
 Route::middleware('mcp.enabled')->group(function () {
     Route::prefix('agent-drafts')->name('agent-drafts.')->middleware('mcp.guest-drafts')->group(function () {
         Route::get('/preview/{draft}', [AgentFormDraftController::class, 'preview'])
-            ->middleware(['signed', 'throttle:60,1'])
+            ->withoutMiddleware('throttle:100,1')
+            ->middleware(['signed', 'throttle:agent-draft-preview'])
             ->name('preview');
         Route::post('/handoff/consume', [AgentFormDraftController::class, 'consume'])
             ->withoutMiddleware('throttle:100,1')

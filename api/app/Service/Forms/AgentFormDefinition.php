@@ -352,9 +352,20 @@ class AgentFormDefinition
                     'required' => ['name', 'type'],
                     'additionalProperties' => true,
                     'properties' => [
-                        'id' => ['type' => 'string'],
-                        'name' => ['type' => 'string', 'minLength' => 1],
+                        'id' => [
+                            'type' => 'string',
+                            'description' => 'Stable technical block identifier. Omit it for new blocks so the server generates one. Never reuse it as visible label copy.',
+                        ],
+                        'name' => [
+                            'type' => 'string',
+                            'minLength' => 1,
+                            'description' => 'Respondent-facing label in sentence case with natural spaces, such as Full name or Email address. Never use snake_case, kebab-case, database keys, or variable names.',
+                        ],
                         'type' => ['type' => 'string', 'enum' => FieldCatalog::types()],
+                        'content' => [
+                            'type' => 'string',
+                            'description' => 'For nf-text blocks only: sanitized HTML fragment, never Markdown. Example: <h1>Contact us</h1><p>How can we help?</p>.',
+                        ],
                         'help' => ['type' => ['string', 'null']],
                         'hidden' => ['type' => 'boolean', 'default' => false],
                         'required' => ['type' => 'boolean', 'default' => false],

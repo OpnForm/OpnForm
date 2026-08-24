@@ -105,7 +105,7 @@ it('advertises guest and account tools with explicit per-tool auth policies', fu
         ->not->toHaveKey('create_form')
         ->and($tools['create_form_draft']['title'])->toBe('Create a Guest Form Draft')
         ->and($tools['create_form_draft']['description'])
-        ->toContain('default creation tool', 'works immediately without login', 'never request authentication')
+        ->toContain('Default tool', 'without login', 'call preview_form_draft exactly once')
         ->and($tools['create_form_draft']['securitySchemes'])->toBe([
             ['type' => 'noauth'],
         ])
@@ -168,7 +168,7 @@ it('hides guest draft capabilities but keeps validation and OAuth tools on self-
 
     expect($resourceUris)
         ->toContain('opnform://schemas/agent-form-definition/v1', 'opnform://reference/form-fields/v1')
-        ->not->toContain('ui://opnform/form-draft-preview-v5');
+        ->not->toContain('ui://opnform/form-draft-preview-v6');
 
     $this->postJson('/mcp', [
         'jsonrpc' => '2.0',
@@ -215,6 +215,25 @@ it('creates an unpublished form automatically when the account has one workspace
         ->and($form->creator_id)->toBe($user->id)
         ->and($form->visibility)->toBe('draft')
         ->and($form->edit_url)->toBeString()->not->toBeEmpty();
+});
+
+it('rejects machine-like labels before saving an account form', function () {
+    $user = User::factory()->create();
+    managedWorkspace($user);
+
+    OpnFormServer::actingAs($user, 'oauth')->tool(CreateFormTool::class, [
+        'definition' => managedFormDefinition([
+            'properties' => [
+                ['name' => 'full_name', 'type' => 'text'],
+                ['name' => 'contact_email', 'type' => 'email'],
+            ],
+        ]),
+    ])->assertHasErrors([
+        'properties.0.name: Replace the raw label [full_name] with clear respondent-facing copy in sentence case.',
+        'properties.1.name: Replace the raw label [contact_email] with clear respondent-facing copy in sentence case.',
+    ]);
+
+    $this->assertDatabaseCount('forms', 0);
 });
 
 it('requires workspace selection only when multiple workspaces are available', function () {

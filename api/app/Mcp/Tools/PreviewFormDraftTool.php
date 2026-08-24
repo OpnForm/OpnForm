@@ -17,7 +17,7 @@ use Laravel\Mcp\Server\Tools\Annotations\IsOpenWorld;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Name('preview_form_draft')]
-#[Description('Use this when an existing guest draft preview needs to be shown or re-rendered without changing the draft. Create_form_draft and patch_form_draft already render their previews automatically. The returned browser preview is valid for one hour. This read-only tool does not create an editor link. Call open_form_draft_in_editor only when the user chooses to continue editing in OpnForm.')]
+#[Description('Render the final interactive preview for an existing guest draft without changing it. Call exactly once after a successful create_form_draft or patch_form_draft, and use it again only when the user explicitly asks to refresh an existing preview. The signed preview remains valid until the seven-day draft expires. This tool is read-only, safe to retry after an error, and does not create an editor link.')]
 #[RendersApp(resource: FormDraftPreviewApp::class)]
 #[IsReadOnly]
 #[IsDestructive(false)]

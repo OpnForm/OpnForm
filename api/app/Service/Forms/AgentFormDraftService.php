@@ -18,6 +18,7 @@ class AgentFormDraftService
 
     public function __construct(
         private readonly AgentFormDefinition $formDefinition,
+        private readonly AgentFormQualityAnalyzer $qualityAnalyzer,
         private readonly AgentFormDraftPatcher $patcher,
         private readonly FormCreationService $formCreation,
     ) {
@@ -30,6 +31,7 @@ class AgentFormDraftService
     {
         $definition['visibility'] = 'draft';
         $definition = $this->formDefinition->normalizeAndValidate($definition);
+        $this->qualityAnalyzer->assertReadyForAgentPersistence($definition);
         $token = $this->generateToken();
 
         $draft = AgentFormDraft::query()->create([
@@ -63,6 +65,7 @@ class AgentFormDraftService
             $definition = $this->patcher->apply($draft->definition, $operations);
             $definition['visibility'] = 'draft';
             $definition = $this->formDefinition->normalizeAndValidate($definition);
+            $this->qualityAnalyzer->assertReadyForAgentPersistence($definition);
 
             $draft->forceFill([
                 'definition' => $definition,

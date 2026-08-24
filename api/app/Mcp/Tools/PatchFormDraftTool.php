@@ -2,7 +2,6 @@
 
 namespace App\Mcp\Tools;
 
-use App\Mcp\Apps\FormDraftPreviewApp;
 use App\Mcp\Support\McpOutputSchema;
 use App\Models\Forms\Form;
 use App\Service\Forms\AgentFormFieldCatalog;
@@ -13,14 +12,12 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
-use Laravel\Mcp\Server\Attributes\RendersApp;
 use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 use Laravel\Mcp\Server\Tools\Annotations\IsOpenWorld;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Name('patch_form_draft')]
-#[Description('Use this when the user asks to change the current guest form draft. Apply validated semantic operations and return the updated interactive preview automatically. Requires expected_version, so concurrent agent or editor changes cannot be silently overwritten. Supported ops: set_form_values, add_block, update_block, remove_block, move_block. Before changing presentation_style, fields, layout, or media, read opnform://reference/form-fields/v1. Style values are strict: border_radius is none, small, or full; width is centered or full; size is sm, md, or lg; theme is default, simple, notion, minimal, or transparent. Classic mode uses nf-page-break for explicit pagination; focused mode derives one step per block and must not use page breaks.')]
-#[RendersApp(resource: FormDraftPreviewApp::class)]
+#[Description('Apply semantic operations to the current guest draft. This tool is data-only and never renders a widget. Requires the latest expected_version and rejects conflicts without overwriting newer work. On success, call preview_form_draft exactly once with the returned draft_handle so the user sees one updated preview. Do not retry after success. Correct validation errors and retry with the same current version; after a version conflict, fetch the draft before retrying. Supported ops: set_form_values, add_block, update_block, remove_block, move_block.')]
 #[IsReadOnly(false)]
 #[IsDestructive]
 #[IsOpenWorld(false)]
@@ -45,8 +42,6 @@ class PatchFormDraftTool extends GuestDraftMcpTool
         return Response::structured([
             'draft_handle' => $validated['draft_handle'],
             'draft' => $drafts->serialize($draft),
-            'preview_url' => $drafts->previewUrl($draft),
-            'next_step' => 'Present the refreshed interactive preview, briefly summarize the change, then ask whether the user wants another change or wants to save the form to their OpnForm account.',
         ]);
     }
 
@@ -84,6 +79,7 @@ class PatchFormDraftTool extends GuestDraftMcpTool
                     'block' => $schema->object([
                         'name' => $schema->string()->required(),
                         'type' => $schema->string()->enum(AgentFormFieldCatalog::types())->required(),
+                        'content' => $schema->string()->description('For nf-text blocks: sanitized HTML, never Markdown.'),
                         'placeholder' => $schema->string()->nullable(),
                         'help' => $schema->string()->nullable(),
                         'required' => $schema->boolean(),
@@ -92,6 +88,7 @@ class PatchFormDraftTool extends GuestDraftMcpTool
                     'patch' => $schema->object([
                         'name' => $schema->string(),
                         'type' => $schema->string()->enum(AgentFormFieldCatalog::types()),
+                        'content' => $schema->string()->description('For nf-text blocks: sanitized HTML, never Markdown.'),
                         'placeholder' => $schema->string()->nullable(),
                         'help' => $schema->string()->nullable(),
                         'required' => $schema->boolean(),
@@ -112,8 +109,6 @@ class PatchFormDraftTool extends GuestDraftMcpTool
         return [
             'draft_handle' => $schema->string()->min(43)->max(43)->required(),
             'draft' => McpOutputSchema::draft($schema)->required(),
-            'preview_url' => $schema->string()->format('uri')->required(),
-            'next_step' => $schema->string()->required(),
         ];
     }
 }

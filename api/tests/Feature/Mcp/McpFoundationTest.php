@@ -32,15 +32,13 @@ it('exposes the OpnForm MCP endpoint and initializes the protocol', function () 
         ->assertJsonPath('result.instructions', function (string $instructions): bool {
             $discoveryInstructions = substr($instructions, 0, 1024);
 
-            return str_contains($discoveryInstructions, 'Default every request to create a new form to the guest draft workflow')
-                && str_contains($discoveryInstructions, 'textarea is not a valid field type')
-                && str_contains($discoveryInstructions, 'correct and revalidate the definition before creating a draft')
-                && str_contains($discoveryInstructions, 'A natural request such as "create a contact form" needs no login')
-                && str_contains($discoveryInstructions, 'Never ask the user to connect')
-                && str_contains($discoveryInstructions, 'OAuth is required only for connected-account operations')
-                && str_contains($discoveryInstructions, 'Enabling or selecting the plugin is not OAuth authentication')
-                && str_contains($discoveryInstructions, 'Follow the catalog authoring guidelines')
-                && str_contains($discoveryInstructions, 'quality_warnings');
+            return str_contains($discoveryInstructions, 'natural request to create a form as a guest workflow')
+                && str_contains($discoveryInstructions, 'Create and patch are data-only')
+                && str_contains($discoveryInstructions, 'preview_form_draft exactly once')
+                && str_contains($discoveryInstructions, 'Use sanitized HTML, never Markdown')
+                && str_contains($discoveryInstructions, 'respondent-facing label in sentence case')
+                && str_contains($discoveryInstructions, 'Correct relevant quality_warnings before persistence')
+                && str_contains($discoveryInstructions, 'OAuth is only for saving or managing account forms');
         });
 });
 
@@ -173,7 +171,10 @@ it('publishes the versioned form definition schema', function () {
         ->assertOk()
         ->assertSee('agent-form-definition/v1.json')
         ->assertSee('schema_version')
-        ->assertSee('properties');
+        ->assertSee('properties')
+        ->assertSee('Respondent-facing label')
+        ->assertSee('sanitized HTML fragment')
+        ->assertSee('never Markdown');
 });
 
 it('keeps every normalized top-level key represented in the published schema', function () {
@@ -198,12 +199,16 @@ it('publishes the canonical form field catalog', function () {
         ->assertSee('focused')
         ->assertSee('authoring_guidelines')
         ->assertSee('polished respondent-facing form')
+        ->assertSee('sentence case')
+        ->assertSee('natural words and spaces')
+        ->assertSee('sanitized HTML')
+        ->assertSee('never Markdown')
         ->assertSee('block_media')
         ->assertSee('trycloudflare.com')
         ->assertSee('save');
 });
 
-it('returns non-blocking authoring quality warnings with a valid definition', function () {
+it('returns authoring quality warnings with their persistence severity', function () {
     OpnFormServer::tool(ValidateFormDefinitionTool::class, [
         'definition' => [
             'title' => 'Contact form',
@@ -225,7 +230,7 @@ it('returns non-blocking authoring quality warnings with a valid definition', fu
                 fn (AssertableJson $warnings) => $warnings
                 ->each(
                     fn (AssertableJson $warning) => $warning
-                    ->hasAll(['code', 'message', 'path'])
+                    ->hasAll(['code', 'message', 'path', 'blocking'])
                 )
             )
         );

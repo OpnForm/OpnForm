@@ -32,11 +32,11 @@ it('publishes a neutral draft handle contract and accurate preview annotations',
     $open = app(OpenFormDraftInEditorTool::class)->toArray();
 
     expect($create['outputSchema']['properties'])->toHaveKey('draft_handle')
-        ->and($create['outputSchema']['properties'])->toHaveKey('preview_url')
+        ->and($create['outputSchema']['properties'])->not->toHaveKey('preview_url')
         ->and($create['outputSchema']['properties'])->not->toHaveKey('draft_token')
-        ->and($create['_meta']['ui']['resourceUri'])->toBe('ui://opnform/form-draft-preview-v5')
-        ->and(app(PatchFormDraftTool::class)->toArray()['_meta']['ui']['resourceUri'])
-        ->toBe('ui://opnform/form-draft-preview-v5')
+        ->and($create['_meta'])->not->toHaveKey('ui')
+        ->and(app(PatchFormDraftTool::class)->toArray()['_meta'])->not->toHaveKey('ui')
+        ->and($preview['_meta']['ui']['resourceUri'])->toBe('ui://opnform/form-draft-preview-v6')
         ->and($preview['inputSchema']['properties'])->toHaveKey('draft_handle')
         ->and($preview['outputSchema']['properties'])->not->toHaveKeys([
             'editor_url',
@@ -54,10 +54,9 @@ it('creates a seven-day server-side guest draft and returns an opaque handle', f
         'definition' => guestDraftDefinition(['visibility' => 'public']),
     ])->assertOk()
         ->assertSee('draft_handle')
-        ->assertSee('preview_url')
+        ->assertDontSee('preview_url')
         ->assertDontSee('capability secret')
-        ->assertSee('Customer intake')
-        ->assertSee('expected_version');
+        ->assertSee('Customer intake');
 
     $draft = AgentFormDraft::query()->sole();
 
@@ -115,7 +114,7 @@ it('patches form values and blocks with optimistic versioning', function () {
     $response->assertOk()
         ->assertSee('Qualified lead')
         ->assertSee('Full legal name')
-        ->assertSee('preview_url')
+        ->assertDontSee('preview_url')
         ->assertSee('version');
 
     $updated = $created['draft']->refresh();
@@ -242,6 +241,39 @@ it('rejects duplicate block ids', function () {
             ],
         ]),
     ])->assertHasErrors(['unique id']);
+});
+
+it('rejects machine-like labels before persisting a guest draft', function () {
+    OpnFormServer::tool(CreateFormDraftTool::class, [
+        'definition' => guestDraftDefinition([
+            'properties' => [
+                ['id' => 'full-name', 'name' => 'full_name', 'type' => 'text'],
+                ['id' => 'contact-email', 'name' => 'contact_email', 'type' => 'email'],
+            ],
+        ]),
+    ])->assertHasErrors([
+        'properties.0.name: Replace the raw label [full_name] with clear respondent-facing copy in sentence case.',
+        'properties.1.name: Replace the raw label [contact_email] with clear respondent-facing copy in sentence case.',
+    ]);
+
+    $this->assertDatabaseCount('agent_form_drafts', 0);
+});
+
+it('rejects markdown text blocks before persisting a guest draft', function () {
+    OpnFormServer::tool(CreateFormDraftTool::class, [
+        'definition' => guestDraftDefinition([
+            'properties' => [[
+                'id' => 'introduction',
+                'name' => 'Introduction',
+                'type' => 'nf-text',
+                'content' => '# Contact us\n\n**Tell us how we can help.**',
+            ]],
+        ]),
+    ])->assertHasErrors([
+        'properties.0.content: Replace Markdown with sanitized HTML',
+    ]);
+
+    $this->assertDatabaseCount('agent_form_drafts', 0);
 });
 
 it('rejects oversized draft definitions before persistence', function () {
