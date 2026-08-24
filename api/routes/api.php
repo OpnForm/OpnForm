@@ -61,15 +61,19 @@ Route::middleware('mcp.enabled')->group(function () {
             ->middleware(['signed', 'throttle:60,1'])
             ->name('preview');
         Route::post('/handoff/consume', [AgentFormDraftController::class, 'consume'])
-            ->middleware('throttle:30,1')
+            ->withoutMiddleware('throttle:100,1')
+            ->middleware('throttle:agent-draft-handoff')
             ->name('handoff.consume');
         Route::get('/editor/current', [AgentFormDraftController::class, 'current'])
-            ->middleware('throttle:120,1')
+            ->withoutMiddleware('throttle:100,1')
+            ->middleware('throttle:agent-draft-editor')
             ->name('editor.current');
         Route::put('/editor/current', [AgentFormDraftController::class, 'replace'])
-            ->middleware('throttle:120,1')
+            ->withoutMiddleware('throttle:100,1')
+            ->middleware('throttle:agent-draft-editor')
             ->name('editor.replace');
         Route::post('/editor/claim', [AgentFormDraftController::class, 'claim'])
+            ->withoutMiddleware('throttle:100,1')
             ->middleware(['auth.multi', 'throttle:30,1'])
             ->name('editor.claim');
     });

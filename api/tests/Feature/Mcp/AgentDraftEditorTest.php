@@ -8,6 +8,7 @@ use App\Models\Forms\AgentFormDraft;
 use App\Models\OAuthProvider;
 use App\Models\User;
 use App\Service\Forms\AgentFormDraftService;
+use Illuminate\Routing\Middleware\ThrottleRequests;
 use Illuminate\Support\Facades\URL;
 
 function editorDraftDefinition(array $overrides = []): array
@@ -179,6 +180,73 @@ it('keeps every guest editor link reusable until the draft expires', function ()
         ])
         ->assertUnprocessable()
         ->assertJsonValidationErrors('handoff_token');
+});
+
+it('rate limits editor handoffs by capability instead of the shared frontend proxy', function () {
+    $this->withMiddleware(ThrottleRequests::class);
+    config()->set('opnform.mcp.rate_limit.draft_handoffs_per_minute', 2);
+    config()->set('opnform.mcp.rate_limit.draft_proxy_pool_per_minute', 1000);
+    $drafts = app(AgentFormDraftService::class);
+    $created = $drafts->create(editorDraftDefinition());
+
+    // Exceed the API group's generic 100/minute budget to prove that unrelated
+    // visitors sharing the trusted frontend proxy no longer consume one pool.
+    foreach (range(1, 101) as $_) {
+        $handoff = $drafts->issueEditorHandoff($created['token']);
+
+        $this->withHeader('x-api-secret', 'test-front-secret')
+            ->postJson(route('agent-drafts.handoff.consume'), [
+                'handoff_token' => $handoff['handoff_token'],
+            ])
+            ->assertOk();
+    }
+
+    $reused = $drafts->issueEditorHandoff($created['token']);
+    foreach (range(1, 2) as $_) {
+        $this->withHeader('x-api-secret', 'test-front-secret')
+            ->postJson(route('agent-drafts.handoff.consume'), [
+                'handoff_token' => $reused['handoff_token'],
+            ])
+            ->assertOk();
+    }
+
+    $this->withHeader('x-api-secret', 'test-front-secret')
+        ->postJson(route('agent-drafts.handoff.consume'), [
+            'handoff_token' => $reused['handoff_token'],
+        ])
+        ->assertTooManyRequests();
+});
+
+it('rate limits editor requests by session instead of the shared frontend proxy', function () {
+    $this->withMiddleware(ThrottleRequests::class);
+    config()->set('opnform.mcp.rate_limit.draft_editor_requests_per_minute', 2);
+    config()->set('opnform.mcp.rate_limit.draft_proxy_pool_per_minute', 100);
+    $drafts = app(AgentFormDraftService::class);
+
+    $sessions = collect(range(1, 2))->map(function () use ($drafts): string {
+        $created = $drafts->create(editorDraftDefinition());
+
+        return $drafts->consumeEditorHandoff(
+            $drafts->issueEditorHandoff($created['token'])['handoff_token'],
+        )['editor_session'];
+    });
+
+    foreach (range(1, 2) as $_) {
+        $this->withHeaders([
+            'x-api-secret' => 'test-front-secret',
+            AgentFormDraftController::SESSION_HEADER => $sessions[0],
+        ])->getJson(route('agent-drafts.editor.current'))->assertOk();
+    }
+
+    $this->withHeaders([
+        'x-api-secret' => 'test-front-secret',
+        AgentFormDraftController::SESSION_HEADER => $sessions[0],
+    ])->getJson(route('agent-drafts.editor.current'))->assertTooManyRequests();
+
+    $this->withHeaders([
+        'x-api-secret' => 'test-front-secret',
+        AgentFormDraftController::SESSION_HEADER => $sessions[1],
+    ])->getJson(route('agent-drafts.editor.current'))->assertOk();
 });
 
 it('requires the trusted frontend secret for editor endpoints', function () {

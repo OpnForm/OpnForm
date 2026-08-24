@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Tools;
 
+use App\Mcp\Apps\FormDraftPreviewApp;
 use App\Mcp\Support\McpOutputSchema;
 use App\Models\Forms\Form;
 use App\Service\Forms\AgentFormFieldCatalog;
@@ -12,12 +13,14 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
+use Laravel\Mcp\Server\Attributes\RendersApp;
 use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 use Laravel\Mcp\Server\Tools\Annotations\IsOpenWorld;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Name('patch_form_draft')]
-#[Description('Apply validated semantic operations to a private draft. Operations can replace or remove draft content. Requires expected_version, so concurrent agent or editor changes cannot be silently overwritten. Supported ops: set_form_values, add_block, update_block, remove_block, move_block. Before changing presentation_style, fields, layout, or media, read opnform://reference/form-fields/v1. Style values are strict: border_radius is none, small, or full; width is centered or full; size is sm, md, or lg; theme is default, simple, notion, minimal, or transparent. Classic mode uses nf-page-break for explicit pagination; focused mode derives one step per block and must not use page breaks.')]
+#[Description('Use this when the user asks to change the current guest form draft. Apply validated semantic operations and return the updated interactive preview automatically. Requires expected_version, so concurrent agent or editor changes cannot be silently overwritten. Supported ops: set_form_values, add_block, update_block, remove_block, move_block. Before changing presentation_style, fields, layout, or media, read opnform://reference/form-fields/v1. Style values are strict: border_radius is none, small, or full; width is centered or full; size is sm, md, or lg; theme is default, simple, notion, minimal, or transparent. Classic mode uses nf-page-break for explicit pagination; focused mode derives one step per block and must not use page breaks.')]
+#[RendersApp(resource: FormDraftPreviewApp::class)]
 #[IsReadOnly(false)]
 #[IsDestructive]
 #[IsOpenWorld(false)]
@@ -40,8 +43,10 @@ class PatchFormDraftTool extends GuestDraftMcpTool
         );
 
         return Response::structured([
+            'draft_handle' => $validated['draft_handle'],
             'draft' => $drafts->serialize($draft),
-            'next_step' => 'Render or refresh the preview before presenting the result to the user.',
+            'preview_url' => $drafts->previewUrl($draft),
+            'next_step' => 'The refreshed interactive preview is included in this result; present it before any text summary.',
         ]);
     }
 
@@ -105,7 +110,9 @@ class PatchFormDraftTool extends GuestDraftMcpTool
     public function outputSchema(JsonSchema $schema): array
     {
         return [
+            'draft_handle' => $schema->string()->min(43)->max(43)->required(),
             'draft' => McpOutputSchema::draft($schema)->required(),
+            'preview_url' => $schema->string()->format('uri')->required(),
             'next_step' => $schema->string()->required(),
         ];
     }

@@ -32,7 +32,11 @@ it('publishes a neutral draft handle contract and accurate preview annotations',
     $open = app(OpenFormDraftInEditorTool::class)->toArray();
 
     expect($create['outputSchema']['properties'])->toHaveKey('draft_handle')
+        ->and($create['outputSchema']['properties'])->toHaveKey('preview_url')
         ->and($create['outputSchema']['properties'])->not->toHaveKey('draft_token')
+        ->and($create['_meta']['ui']['resourceUri'])->toBe('ui://opnform/form-draft-preview-v4')
+        ->and(app(PatchFormDraftTool::class)->toArray()['_meta']['ui']['resourceUri'])
+        ->toBe('ui://opnform/form-draft-preview-v4')
         ->and($preview['inputSchema']['properties'])->toHaveKey('draft_handle')
         ->and($preview['outputSchema']['properties'])->not->toHaveKeys([
             'editor_url',
@@ -50,6 +54,7 @@ it('creates a seven-day server-side guest draft and returns an opaque handle', f
         'definition' => guestDraftDefinition(['visibility' => 'public']),
     ])->assertOk()
         ->assertSee('draft_handle')
+        ->assertSee('preview_url')
         ->assertDontSee('capability secret')
         ->assertSee('Customer intake')
         ->assertSee('expected_version');
@@ -110,6 +115,7 @@ it('patches form values and blocks with optimistic versioning', function () {
     $response->assertOk()
         ->assertSee('Qualified lead')
         ->assertSee('Full legal name')
+        ->assertSee('preview_url')
         ->assertSee('version');
 
     $updated = $created['draft']->refresh();

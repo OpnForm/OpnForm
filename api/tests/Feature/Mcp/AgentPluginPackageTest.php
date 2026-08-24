@@ -231,6 +231,24 @@ it('teaches agents how to change presentation and media without repository inspe
         ->toContain('Never persist localhost, private addresses, temporary tunnel domains');
 });
 
+it('renders a guest preview automatically after creation and every draft change', function () {
+    $skill = file_get_contents(opnformPluginPath('skills/opnform/SKILL.md'));
+    $server = file_get_contents(app_path('Mcp/Servers/OpnFormServer.php'));
+    $createTool = file_get_contents(app_path('Mcp/Tools/CreateFormDraftTool.php'));
+    $patchTool = file_get_contents(app_path('Mcp/Tools/PatchFormDraftTool.php'));
+
+    expect($skill)
+        ->toContain('renders the interactive MCP preview automatically')
+        ->toContain('renders the refreshed interactive preview automatically')
+        ->and($server)
+        ->toContain('needs no login or preview wording')
+        ->toContain('Every patch_form_draft renders the updated preview too')
+        ->and($createTool)
+        ->toContain('RendersApp(resource: FormDraftPreviewApp::class)')
+        ->and($patchTool)
+        ->toContain('RendersApp(resource: FormDraftPreviewApp::class)');
+});
+
 it('renders a flattened and hardened form preview frame', function () {
     $view = file_get_contents(resource_path('views/mcp/form-draft-preview-app.blade.php'));
 
