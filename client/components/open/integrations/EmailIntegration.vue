@@ -204,6 +204,14 @@
       help="If enabled the email will contain hidden fields"
     />
     <toggle-switch-input
+      v-if="integrationData.data.include_submission_data"
+      :form="integrationData"
+      name="data.embed_uploaded_images"
+      class="mt-4"
+      label="Display uploaded images inline"
+      help="Show GIF, JPEG, and PNG uploads up to 6 MB directly in the email. Other images remain secure links. Embedded images remain available in the recipient's email."
+    />
+    <toggle-switch-input
       v-if="form.editable_submissions"
       :form="integrationData"
       name="data.link_edit_submission"
@@ -303,6 +311,7 @@ onBeforeMount(() => {
     email_content: "Hello there 👋 <br>This is a confirmation that your submission was successfully saved.",
     include_submission_data: true,
     include_hidden_fields_submission_data: false,
+    embed_uploaded_images: false,
     logo_url: null,
     font_family: null,
     font_color: null,

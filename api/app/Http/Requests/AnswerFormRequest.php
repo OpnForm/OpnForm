@@ -12,6 +12,7 @@ use App\Rules\ValidPhoneInputRule;
 use App\Rules\ValidReCaptcha;
 use App\Rules\ValidUrl;
 use App\Service\Forms\FormLogicPropertyResolver;
+use App\Service\Forms\SubmissionAttribution;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -144,6 +145,8 @@ class AnswerFormRequest extends FormRequest
         // Add rules for metadata fields
         $this->requestRules['completion_time'] = 'nullable|integer';
         $this->requestRules['submission_id'] = 'nullable|string';
+        $this->requestRules['tracking_parameters'] = 'nullable|array:' . implode(',', SubmissionAttribution::PARAMETERS);
+        $this->requestRules['tracking_parameters.*'] = 'nullable|string|max:' . SubmissionAttribution::MAX_VALUE_LENGTH;
 
         return $this->requestRules;
     }

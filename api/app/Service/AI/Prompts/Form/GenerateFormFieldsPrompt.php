@@ -3,6 +3,7 @@
 namespace App\Service\AI\Prompts\Form;
 
 use App\Service\AI\Prompts\Prompt;
+use App\Service\Forms\AgentFormAuthoringGuide;
 
 class GenerateFormFieldsPrompt extends Prompt
 {
@@ -46,16 +47,8 @@ class GenerateFormFieldsPrompt extends Prompt
         
         {widthGuidance}
         
-        Field generation guidelines:
-        - Choose the most appropriate field type based on the data being collected
-        - Consider the existing form context and avoid duplicating fields
-        - Use logical field names that clearly describe the data being collected
-        - Add helpful placeholder text and help text for complex fields
-        - Set appropriate validation (required fields where necessary - do not add * to the field name if required - it's done automatically)
-        - Use appropriate width settings for better layout
-        - For select/multi-select fields, provide relevant options based on the context
-        - For number fields, consider if rating, scale, or slider would be more appropriate
-        - For rich text fields, consider if multi-line, matrix, or barcode input would be useful
+        Follow this shared quality baseline:
+        {authoringGuidelines}
         
         Return an array of field objects that:
         - Match the field description requirements
@@ -147,6 +140,7 @@ class GenerateFormFieldsPrompt extends Prompt
             ? 'In focused mode, do not use width options. Each step contains a single full-width question.'
             : 'Field width options:\n- width: "full" (default)\n- width: "1/2"\n- width: "1/3"\n- width: "2/3"\n- width: "1/4"\n- width: "3/4"\nFields can share rows when room allows.';
         $variables['{allowedFieldTypesList}'] = $this->formatAllowedTypes($rules['allowedFieldTypes']);
+        $variables['{authoringGuidelines}'] = AgentFormAuthoringGuide::fieldsPrompt();
 
         return $variables;
     }

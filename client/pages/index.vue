@@ -128,6 +128,29 @@
                 </div>
               </NuxtLink>
             </div>
+
+            <div class="mt-5 flex flex-wrap items-center justify-center gap-2">
+              <NuxtLink
+                :to="{ name: 'open-source-form-builder' }"
+                class="inline-flex min-h-8 items-center gap-2 rounded-full border border-gray-200 bg-white px-3 text-sm font-medium leading-5 tracking-[-0.6%] text-gray-600 shadow-sm transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 hover:no-underline"
+              >
+                <UIcon
+                  name="i-simple-icons-github"
+                  class="h-4 w-4 text-gray-900"
+                />
+                Open-source form builder
+              </NuxtLink>
+              <NuxtLink
+                :to="{ name: 'self-hosted-form-builder' }"
+                class="inline-flex min-h-8 items-center gap-2 rounded-full border border-gray-200 bg-white px-3 text-sm font-medium leading-5 tracking-[-0.6%] text-gray-600 shadow-sm transition-colors hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 hover:no-underline"
+              >
+                <UIcon
+                  name="i-heroicons-server-stack"
+                  class="h-4 w-4 text-emerald-600"
+                />
+                Self-hosted form builder
+              </NuxtLink>
+            </div>
           </div>
         </div>
       </div>

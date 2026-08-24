@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\User;
+
 it('can not create more than 1 workspace for free user', function () {
     $user = $this->actingAsUser();
 
@@ -460,5 +462,139 @@ describe('SMTP settings redaction', function () {
         $ws = collect($response->json())->firstWhere('id', $workspace->id);
         expect($ws['settings']['custom_code'])->toBe('<script>tracking</script>');
         expect($ws['settings']['email_settings'] ?? null)->toBeNull();
+    });
+});
+
+
+describe('Workspace member authorization', function () {
+    it('prevents a readonly member from deleting a workspace they were invited to', function () {
+        $admin = $this->createProUser();
+        $workspace = $this->createUserWorkspace($admin);
+        $form = $this->createForm($admin, $workspace);
+
+        $readonly = $this->createUser();
+        $this->createUserWorkspace($readonly);
+        $workspace->users()->attach($readonly, ['role' => User::ROLE_READONLY]);
+
+        expect($readonly->workspaces()->count())->toBeGreaterThan(1);
+
+        $this->actingAsUser($readonly);
+
+        $this->deleteJson(route('open.workspaces.delete', $workspace))
+            ->assertForbidden()
+            ->assertJson([
+                'message' => 'You need to be an admin of this workspace to do this.',
+            ]);
+
+        expect($workspace->fresh())->not->toBeNull();
+        expect($form->fresh())->not->toBeNull();
+        expect($form->fresh()->workspace_id)->toBe($workspace->id);
+    });
+
+    it('prevents a regular member from deleting a workspace they were invited to', function () {
+        $admin = $this->createProUser();
+        $workspace = $this->createUserWorkspace($admin);
+
+        $member = $this->createUser();
+        $this->createUserWorkspace($member);
+        $workspace->users()->attach($member, ['role' => User::ROLE_USER]);
+
+        expect($member->workspaces()->count())->toBeGreaterThan(1);
+
+        $this->actingAsUser($member);
+
+        $this->deleteJson(route('open.workspaces.delete', $workspace))
+            ->assertForbidden()
+            ->assertJson([
+                'message' => 'You need to be an admin of this workspace to do this.',
+            ]);
+
+        expect($workspace->fresh())->not->toBeNull();
+    });
+
+    it('prevents a non-member from deleting a workspace', function () {
+        $admin = $this->createProUser();
+        $workspace = $this->createUserWorkspace($admin);
+
+        $outsider = $this->createProUser();
+        $this->createUserWorkspace($outsider);
+        $this->actingAsUser($outsider);
+
+        $this->deleteJson(route('open.workspaces.delete', $workspace))
+            ->assertForbidden();
+
+        expect($workspace->fresh())->not->toBeNull();
+    });
+
+    it('allows an admin to delete a workspace they own when they have another workspace', function () {
+        $admin = $this->actingAsProUser();
+        $workspace = $this->createUserWorkspace($admin);
+        $this->createUserWorkspace($admin);
+
+        $this->deleteJson(route('open.workspaces.delete', $workspace))
+            ->assertSuccessful()
+            ->assertJson([
+                'message' => 'Workspace successfully deleted.',
+                'workspace_id' => $workspace->id,
+            ]);
+
+        expect($workspace->fresh())->toBeNull();
+    });
+
+    it('still prevents an admin from deleting their last workspace', function () {
+        $admin = $this->actingAsUser();
+        $workspace = $this->createUserWorkspace($admin);
+
+        expect($admin->workspaces()->count())->toBe(1);
+
+        $this->deleteJson(route('open.workspaces.delete', $workspace))
+            ->assertForbidden()
+            ->assertJson([
+                'message' => 'You cannot delete your last workspace. Delete your account instead.',
+            ]);
+
+        expect($workspace->fresh())->not->toBeNull();
+    });
+
+    it('prevents a readonly member from renaming a workspace', function () {
+        $admin = $this->createProUser();
+        $workspace = $this->createUserWorkspace($admin);
+        $originalName = $workspace->name;
+
+        $readonly = $this->createUser();
+        $workspace->users()->attach($readonly, ['role' => User::ROLE_READONLY]);
+        $this->actingAsUser($readonly);
+
+        $this->putJson(route('open.workspaces.update', $workspace), [
+            'name' => 'Hijacked Workspace',
+            'icon' => '💀',
+        ])
+            ->assertForbidden()
+            ->assertJson([
+                'message' => 'You cannot update this workspace.',
+            ]);
+
+        expect($workspace->fresh()->name)->toBe($originalName);
+    });
+
+    it('allows a regular member to update workspace information', function () {
+        $admin = $this->createProUser();
+        $workspace = $this->createUserWorkspace($admin);
+
+        $member = $this->createUser();
+        $workspace->users()->attach($member, ['role' => User::ROLE_USER]);
+        $this->actingAsUser($member);
+
+        $this->putJson(route('open.workspaces.update', $workspace), [
+            'name' => 'Shared Workspace',
+            'emoji' => '✏️',
+        ])
+            ->assertSuccessful()
+            ->assertJson([
+                'message' => 'Workspace updated.',
+            ]);
+
+        expect($workspace->fresh()->name)->toBe('Shared Workspace');
+        expect($workspace->fresh()->icon)->toBe('✏️');
     });
 });

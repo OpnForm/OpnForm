@@ -3,6 +3,7 @@
 namespace App\Service\AI\Prompts\Form;
 
 use App\Service\AI\Prompts\Prompt;
+use App\Service\Forms\AgentFormAuthoringGuide;
 
 class GenerateFormPrompt extends Prompt
 {
@@ -45,14 +46,8 @@ class GenerateFormPrompt extends Prompt
         
         If the form is too long, you can paginate it by adding one or multiple page breaks (nf-page-break).
         
-        Create a complete form with appropriate fields based on the description. Include:
-        - A clear `title` (internal for form admin)
-        - `nf-text` blocks to add a title or text to the form using some basic html (h1, p, b, i, u etc)
-        - Logical field grouping
-        - Required fields where necessary (do not add * to the field name if required - it's done automatically)
-        - Help text for complex fields
-        - Appropriate validation
-        - Customized submission text
+        Create a complete form with a clear internal title and follow this shared quality baseline:
+        {authoringGuidelines}
     EOD;
 
     /**
@@ -81,7 +76,7 @@ class GenerateFormPrompt extends Prompt
             ],
             'submitted_text' => [
                 'type' => 'string',
-                'description' => 'Text to display after form submission (default: "<p>Thank you for your submission!</p>")'
+                'description' => 'Specific text that confirms what happened after submission and, when known, what comes next.'
             ],
             'uppercase_labels' => [
                 'type' => 'boolean',
@@ -89,7 +84,7 @@ class GenerateFormPrompt extends Prompt
             ],
             'submit_button_text' => [
                 'type' => 'string',
-                'description' => 'Text for the submit button (default: "Submit")'
+                'description' => 'Contextual action label such as "Send message", "Request a quote", or "Join the waitlist".'
             ],
             're_fill_button_text' => [
                 'type' => 'string',
@@ -197,6 +192,7 @@ class GenerateFormPrompt extends Prompt
         $vars['{modeConstraints}'] = $modeConstraints;
         $vars['{widthGuidance}'] = $widthGuidance;
         $vars['{allowedFieldTypesList}'] = $this->formatAllowedTypes($rules['allowedFieldTypes']);
+        $vars['{authoringGuidelines}'] = AgentFormAuthoringGuide::completeFormPrompt();
         return $vars;
     }
 

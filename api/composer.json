@@ -26,6 +26,8 @@
         "laravel/cashier": "*",
         "laravel/framework": "^11.9",
         "laravel/horizon": "*",
+        "laravel/mcp": "^0.8.2",
+        "laravel/passport": "^12.4",
         "laravel/sanctum": "^4.0",
         "laravel/socialite": "*",
         "laravel/tinker": "^2.9",

@@ -213,7 +213,8 @@ if (props.form) {
     formData: formDataRef,
     formErrors: formErrorsRef,
     formManager: formManager,
-    darkMode: darkModeRef
+    darkMode: darkModeRef,
+    attribution: formManager.attribution,
   })
 }
 
@@ -250,7 +251,8 @@ watch(darkModeRef, (newDarkMode) => {
 onMounted(() => {
   if (isAutoSubmit.value && formManager) {
     // Using nextTick to ensure form is fully rendered and initialized
-    nextTick(() => {
+    nextTick(async () => {
+      await sdkBridge?.waitForHandshake?.()
       triggerSubmit()
     })
   }

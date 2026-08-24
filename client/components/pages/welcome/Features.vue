@@ -1,5 +1,5 @@
 <template>
-  <section id="features" class="px-8 lg:px-12">
+  <section :id="props.sectionId" class="scroll-mt-20 px-8 lg:px-12">
     <div class="space-y-8 sm:space-y-12 mx-auto w-full max-w-266 lg:hidden">
       <div
         v-for="panel in panels"
@@ -173,7 +173,7 @@
       </div>
     </div>
 
-    <div class="py-14 md:py-28">
+    <div v-if="props.showExplorer" class="py-14 md:py-28">
       <div class="max-w-3xl mx-auto text-center">
         <h2
           class="text-3xl sm:text-5xl sm:leading-14 font-semibold text-gray-950 tracking-[-1%]"
@@ -329,7 +329,7 @@ const desktopPanelRefs = ref([])
 const activeDesktopPanel = ref(0)
 let desktopPanelObserver = null
 
-const panels = [
+const defaultPanels = [
   {
     eyebrow: "Modern Form Builder",
     eyebrowClass: "text-blue-600",
@@ -453,6 +453,23 @@ const panels = [
   },
 ]
 
+const props = defineProps({
+  panels: {
+    type: Array,
+    default: null,
+  },
+  sectionId: {
+    type: String,
+    default: "features",
+  },
+  showExplorer: {
+    type: Boolean,
+    default: true,
+  },
+})
+
+const panels = computed(() => props.panels || defaultPanels)
+
 const tabs = [
   { key: "smart", label: "Smart Forms", icon: "i-heroicons-sparkles" },
   { key: "inputs", label: "Rich Inputs", icon: "i-heroicons-bars-3-20-solid" },
@@ -565,7 +582,7 @@ const activeTabTheme = computed(
 )
 
 const activeDesktopImage = computed(
-  () => panels[activeDesktopPanel.value] || panels[0],
+  () => panels.value[activeDesktopPanel.value] || panels.value[0],
 )
 
 function setDesktopPanelRef(element, index) {
