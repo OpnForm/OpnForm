@@ -1,370 +1,321 @@
 <template>
-  <div>
-    <section class="relative overflow-hidden bg-white">
-      <div
-        class="pointer-events-none absolute inset-0"
-        aria-hidden="true"
-      >
+  <main class="flex-1 overflow-hidden bg-white">
+    <MarketingHero
+      eyebrow="Open-source form builder"
+      description="Create forms, surveys, registrations, payments, and workflows with a polished no-code builder. Start free on OpnForm Cloud, or self-host the AGPLv3 core when you want to own the stack."
+      :proofs="heroProofs"
+    >
+      <template #eyebrow>
+        <NuxtLink
+          :to="opnformConfig.links.github_url"
+          target="_blank"
+          class="group inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white/85 px-3.5 py-1.5 text-sm font-medium text-neutral-700 shadow-xs backdrop-blur transition-colors hover:border-blue-300 hover:bg-white hover:text-neutral-950 hover:no-underline"
+          :aria-label="githubStarsLabel"
+        >
+          <UIcon name="i-simple-icons-github" class="h-4 w-4 shrink-0 text-neutral-950" />
+          <template v-if="formattedGithubStars">
+            <span class="font-semibold tabular-nums text-neutral-950">
+              {{ formattedGithubStars }}
+            </span>
+            <UIcon name="i-heroicons-star-solid" class="h-3.5 w-3.5 shrink-0 text-amber-400" />
+            <span class="text-neutral-600">on GitHub</span>
+          </template>
+          <span v-else>Open source on GitHub</span>
+          <UIcon
+            name="i-heroicons-arrow-up-right-20-solid"
+            class="h-3.5 w-3.5 shrink-0 text-neutral-400 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
+          />
+        </NuxtLink>
+      </template>
+
+      <template #title>
+        The open-source form builder
+        <span class="text-blue-600">your whole team can use</span>
+      </template>
+
+      <template #actions>
+        <UButton
+          :to="{ name: authenticated ? 'forms-create' : 'forms-create-guest' }"
+          size="lg"
+          label="Create a free form"
+          trailing-icon="i-heroicons-arrow-up-right-20-solid"
+          class="justify-center rounded-xl px-5"
+        />
+        <UButton
+          :to="opnformConfig.links.github_url"
+          target="_blank"
+          size="lg"
+          variant="outline"
+          color="neutral"
+          label="Explore the source"
+          trailing-icon="i-simple-icons-github"
+          class="justify-center rounded-xl px-5"
+        />
+      </template>
+
+      <template #visual>
         <img
-          class="h-full w-full object-cover object-top opacity-[0.16]"
-          src="/img/pages/ai_form_builder/background-pattern.svg"
-          alt=""
+          src="/img/pages/open-source-form-builder/hero-open-source-builder-code-github-768.webp"
+          srcset="/img/pages/open-source-form-builder/hero-open-source-builder-code-github-512.webp 512w, /img/pages/open-source-form-builder/hero-open-source-builder-code-github-768.webp 768w, /img/pages/open-source-form-builder/hero-open-source-builder-code-github-1024.webp 1024w"
+          sizes="(min-width: 1280px) 620px, (min-width: 1024px) 50vw, 92vw"
+          alt="OpnForm visual form builder connected to its source code and public GitHub repository"
+          width="1024"
+          height="1024"
+          fetchpriority="high"
+          decoding="async"
+          class="mx-auto w-full max-w-[620px]"
         />
-        <div
-          class="absolute inset-0 bg-linear-to-b from-white from-30% via-blue-50 via-65% to-white to-90%"
-        />
-      </div>
+      </template>
+    </MarketingHero>
 
-      <div class="relative z-2 px-8 py-14 sm:px-12 sm:py-24">
-        <div class="mx-auto grid max-w-266 gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
-          <div>
-            <NuxtLink
-              :to="{ name: 'self-hosted-form-builder' }"
-              class="inline-flex items-center gap-2 rounded-[10px] border border-gray-200 bg-white px-2.5 py-1 text-sm font-medium text-gray-600 shadow-sm transition-colors hover:border-gray-300 hover:no-underline"
-            >
-              <UIcon
-                name="i-heroicons-server-stack"
-                class="h-4 w-4 text-emerald-600"
-              />
-              <span>Self-hosted deployment</span>
-            </NuxtLink>
-
-            <h1
-              class="mt-6 text-4xl font-semibold tracking-[-1%] text-gray-950 sm:text-[56px] sm:leading-16"
-            >
-              Open source form builder with unlimited submissions
-            </h1>
-
-            <p
-              class="mt-5 text-lg font-normal leading-7 tracking-[-1.5%] text-gray-600 sm:text-xl sm:leading-8"
-            >
-              Build forms, surveys, and workflows on an AGPLv3 form builder you
-              can inspect, extend, and self-host. Use OpnForm as a free online
-              form builder in the cloud, or run it on your own infrastructure
-              when you need full ownership.
-            </p>
-
-            <div class="mt-8 flex flex-col gap-3 sm:flex-row">
-              <UButton
-                :to="{ name: authenticated ? 'forms-create' : 'forms-create-guest' }"
-                size="lg"
-                label="Create a free form"
-                trailing-icon="i-heroicons-arrow-up-right-20-solid"
-                class="w-fit rounded-[12px] py-2.5 pl-4 pr-3.5 text-base font-medium leading-7 tracking-[-1.1%]"
-              />
-              <UButton
-                :to="opnformConfig.links.github_url"
-                target="_blank"
-                size="lg"
-                variant="outline"
-                color="neutral"
-                label="View GitHub"
-                trailing-icon="i-simple-icons-github"
-                class="w-fit rounded-[12px] px-4 py-2.5 text-base font-medium leading-7 tracking-[-1.1%]"
-              />
-            </div>
-
-            <div
-              class="mt-8 flex flex-wrap gap-x-6 gap-y-3 text-sm font-medium leading-5 tracking-[-0.6%] text-gray-600"
-            >
-              <span
-                v-for="proof in heroProofs"
-                :key="proof"
-                class="inline-flex items-center gap-2"
-              >
-                <UIcon
-                  name="i-heroicons-check-20-solid"
-                  class="h-5 w-5 text-emerald-600"
-                />
-                {{ proof }}
-              </span>
-            </div>
-          </div>
-
-          <div class="mx-auto w-full max-w-md lg:max-w-none lg:mx-0">
-            <div
-              class="rounded-4xl border border-gray-200 bg-white p-3 shadow-2xl shadow-blue-900/10 sm:p-4"
-            >
-              <div class="rounded-3xl border border-gray-200 bg-gray-950 p-4 text-white sm:p-5">
-                <div class="flex items-center justify-between gap-3">
-                  <div class="flex items-center gap-2">
-                    <span class="h-2.5 w-2.5 rounded-full bg-red-400" />
-                    <span class="h-2.5 w-2.5 rounded-full bg-amber-300" />
-                    <span class="h-2.5 w-2.5 rounded-full bg-emerald-400" />
-                  </div>
-                  <div class="flex items-center gap-2">
-                    <span class="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] font-medium leading-4 text-gray-300">
-                      AGPLv3
-                    </span>
-                    <span class="text-xs font-medium text-gray-400">opnform/core</span>
-                  </div>
-                </div>
-
-                <div class="mt-5 grid gap-3 sm:grid-cols-2">
-                  <div
-                    v-for="item in sourceSignals"
-                    :key="item.label"
-                    class="rounded-2xl border border-white/10 bg-white/5 p-3.5"
-                  >
-                    <div class="flex items-center gap-3">
-                      <span
-                        class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
-                        :class="item.iconWrapClass"
-                      >
-                        <UIcon
-                          :name="item.icon"
-                          class="h-4.5 w-4.5"
-                          :class="item.iconClass"
-                        />
-                      </span>
-                      <div class="min-w-0">
-                        <div class="truncate text-sm font-semibold leading-5 text-white">
-                          {{ item.label }}
-                        </div>
-                        <div class="text-xs font-medium leading-4 text-gray-400">
-                          {{ item.description }}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="mt-4 overflow-hidden rounded-2xl border border-white/10 bg-[#0d1117]">
-                  <div class="flex items-center gap-2 border-b border-white/10 px-3 py-2">
-                    <UIcon name="i-simple-icons-github" class="h-3.5 w-3.5 text-gray-400" />
-                    <span class="text-[11px] font-medium text-gray-400">README.md</span>
-                  </div>
-                  <div class="space-y-1.5 px-3 py-3 font-mono text-[11px] leading-4 text-gray-400">
-                    <p><span class="text-emerald-400">#</span> OpnForm</p>
-                    <p class="text-gray-500">Open-source form builder · unlimited submissions</p>
-                    <p><span class="text-blue-300">git clone</span> github.com/OpnForm/OpnForm</p>
-                  </div>
-                </div>
-              </div>
-
-              <div class="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-                <div
-                  v-for="metric in heroMetrics"
-                  :key="metric.label"
-                  class="rounded-2xl border border-gray-200 bg-gray-50 px-3 py-3 text-center"
-                >
-                  <div class="text-lg font-semibold leading-7 tracking-[-0.6%] text-gray-950 sm:text-xl">
-                    {{ metric.value }}
-                  </div>
-                  <div class="text-xs font-medium leading-4 text-gray-500">
-                    {{ metric.label }}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="px-8 sm:px-12 bg-white">
-      <div class="mx-auto max-w-266">
-        <div class="mx-auto max-w-2xl text-center">
-          <p class="text-base font-medium leading-7 tracking-[-1.1%] text-blue-600">
-            Why open source
-          </p>
-          <h2
-            class="my-4 text-4xl font-semibold tracking-[-1%] text-gray-950 sm:text-5xl sm:leading-14"
-          >
-            Forms should not become a black box
-          </h2>
-          <p class="text-base font-normal leading-7 tracking-[-1.1%] text-gray-600">
-            Forms collect customer data, applications, payments, support
-            requests, and internal workflows. Open-source software gives teams
-            a way to inspect how that layer works before they depend on it.
-          </p>
-        </div>
-
-        <div class="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          <div
-            v-for="item in openSourceBenefits"
-            :key="item.title"
-            class="rounded-3xl border border-gray-200 bg-gray-50 p-6"
-          >
-            <div
-              class="flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-sm"
-            >
-              <UIcon :name="item.icon" class="h-6 w-6" :class="item.iconClass" />
-            </div>
-            <h3 class="mt-6 text-xl font-semibold leading-7 tracking-[-0.6%] text-gray-950">
-              {{ item.title }}
-            </h3>
-            <p class="mt-3 text-sm font-medium leading-6 tracking-[-0.6%] text-gray-600">
-              {{ item.description }}
-            </p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <PillarComparisonTable
-      eyebrow="Benchmark"
-      title="Open source where closed form builders stop"
-      description="Typeform, Jotform, Tally, Fillout, and Formstack are strong products, but they keep the infrastructure closed. OpnForm is built for teams that want modern form building with inspectable code and deployment choice."
-      :columns="competitorColumns"
-      :rows="competitorRows"
-      note="Competitor positioning is based on public product pages and existing OpnForm comparison research. Pricing and plan limits can change."
+    <MarketingProductShowcase
+      id="product-showcase"
+      eyebrow="A complete form product"
+      title="Open source should not feel like a side project"
+      description="OpnForm gives non-technical teams the builder they expect, while developers keep the APIs, source access, and deployment choices they need."
+      :features="productFeatures"
+      :proofs="productProofs"
+      :cta="{ label: 'Explore every feature', to: { name: 'features' } }"
     />
 
-    <section class="px-8 sm:px-12 bg-white">
-      <div class="mx-auto max-w-266">
-        <div class="mx-auto max-w-2xl text-center">
-          <p class="text-base font-medium leading-7 tracking-[-1.1%] text-blue-600">
-            Deployment choice
-          </p>
-          <h2
-            class="my-4 text-4xl font-semibold tracking-[-1%] text-gray-950 sm:text-5xl sm:leading-14"
-          >
-            Start managed, keep the option to own the stack
-          </h2>
-          <p class="text-base font-normal leading-7 tracking-[-1.1%] text-gray-600">
-            Open source is most useful when it comes with practical paths for
-            real teams: hosted cloud for speed, or self-hosting when ownership
-            matters.
-          </p>
-        </div>
+    <MarketingSplitSection
+      eyebrow="Freedom without friction"
+      title="Own the option to self-host, without starting with the operational burden"
+    >
+      <p>
+        Launch on OpnForm Cloud today and let us handle updates, backups, and uptime.
+        The AGPLv3 core remains public, auditable, and available when your organization
+        needs direct infrastructure control.
+      </p>
+      <p>
+        When self-hosting becomes a real requirement, use the documented Docker path
+        instead of rebuilding your forms in another product. Your team keeps the same
+        builder, workflows, API, and submission model.
+      </p>
+      <p class="text-base text-neutral-500">
+        Honest licensing: the core product is AGPLv3. Advanced team and governance
+        features are available under a separate Enterprise license.
+      </p>
+      <div class="flex flex-col gap-3 pt-2 sm:flex-row">
+        <UButton
+          to="https://docs.opnform.com/deployment/docker"
+          target="_blank"
+          label="Read the Docker guide"
+          trailing-icon="i-heroicons-arrow-up-right-20-solid"
+          class="justify-center rounded-xl"
+        />
+        <UButton
+          :to="opnformConfig.links.github_url"
+          target="_blank"
+          color="neutral"
+          variant="outline"
+          label="Inspect the source"
+          trailing-icon="i-simple-icons-github"
+          class="justify-center rounded-xl"
+        />
+      </div>
+    </MarketingSplitSection>
 
-        <div class="mt-12 grid gap-6 lg:grid-cols-2">
-          <div
-            v-for="option in deploymentOptions"
-            :key="option.title"
-            class="rounded-3xl border border-gray-200 bg-white p-8 shadow-sm"
-            :class="option.highlight ? 'ring-2 ring-blue-500' : ''"
-          >
-            <div class="flex items-start justify-between gap-4">
-              <div
-                class="flex h-14 w-14 items-center justify-center rounded-2xl"
-                :class="option.iconWrapClass"
-              >
-                <UIcon :name="option.icon" class="h-7 w-7" :class="option.iconClass" />
-              </div>
-              <span
-                v-if="option.badge"
-                class="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold leading-4 text-blue-700"
-              >
-                {{ option.badge }}
-              </span>
-            </div>
-            <h3 class="mt-7 text-xl font-semibold leading-7 tracking-[-0.6%] text-gray-950">
-              {{ option.title }}
-            </h3>
-            <p class="mt-4 text-base font-normal leading-7 tracking-[-1.1%] text-gray-600">
-              {{ option.description }}
+    <MarketingNumberedSteps
+      eyebrow="Why teams choose OpnForm"
+      title="Open-source freedom without assembling your own form stack"
+      description="Use one product from the first form to production workflows, self-hosting, and enterprise governance."
+      :steps="opnformAdvantages"
+    />
+
+    <PillarComparisonTable
+      eyebrow="Open-source benchmark"
+      title="See why OpnForm is the stronger all-round choice"
+      description="All five products publish meaningful source code. OpnForm stands out when you need a polished general-purpose builder for the whole team, not a survey specialist or a developer framework."
+      caption="Comparison of OpnForm, Formbricks, HeyForm, LimeSurvey, and Form.io"
+      :columns="openSourceCompetitorColumns"
+      :rows="openSourceCompetitorRows"
+      :sources="openSourceCompetitorSources"
+      reviewed-at="August 23, 2026"
+      note="Methodology: products are compared on license, product focus, builder experience, managed availability, integrations, and buyer fit using official documentation and repositories. Packaging changes over time, so verify critical requirements during your evaluation."
+    >
+      <template #before-table>
+        <div class="mt-10 grid gap-4 text-left lg:grid-cols-[1.15fr_0.85fr]">
+          <article class="rounded-3xl bg-blue-600 p-7 text-white shadow-[0_18px_45px_rgba(37,99,235,0.22)] sm:p-8">
+            <p class="text-sm font-semibold uppercase tracking-[0.13em] text-blue-100">
+              Best all-round choice
             </p>
-            <ul class="mt-6 space-y-3 text-sm font-medium leading-5 tracking-[-0.6%] text-gray-700">
-              <li
-                v-for="feature in option.features"
-                :key="feature"
-                class="flex items-center gap-2.5"
-              >
-                <UIcon
-                  name="i-heroicons-check-20-solid"
-                  class="h-5 w-5 shrink-0 text-emerald-600"
-                />
-                <span>{{ feature }}</span>
-              </li>
-            </ul>
+            <h3 class="mt-3 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+              Choose OpnForm for forms your team runs every day
+            </h3>
+            <p class="mt-3 max-w-2xl leading-7 text-blue-50">
+              OpnForm is built for registrations, applications, lead capture, payments,
+              internal workflows, and embedded forms. You get a modern no-code product,
+              unlimited submissions, and a credible Cloud-to-self-hosted path.
+            </p>
+            <UButton
+              :to="{ name: authenticated ? 'forms-create' : 'forms-create-guest' }"
+              color="neutral"
+              label="Create a free form"
+              trailing-icon="i-heroicons-arrow-right-20-solid"
+              class="mt-6 justify-center rounded-xl bg-white text-blue-700 hover:bg-blue-50"
+            />
+          </article>
+
+          <article class="rounded-3xl border border-neutral-200 bg-neutral-50 p-7 sm:p-8">
+            <p class="text-sm font-semibold uppercase tracking-[0.13em] text-neutral-500">
+              When a specialist fits better
+            </p>
+            <h3 class="mt-3 text-xl font-semibold text-neutral-950">
+              Pick for the primary job, not the longest feature list
+            </h3>
+            <p class="mt-3 leading-7 text-neutral-600">
+              Formbricks is more focused on product and experience surveys. LimeSurvey
+              suits research-heavy survey programs. Form.io gives developers a deeper
+              form-and-data framework. If those are your main use cases, compare them closely.
+            </p>
+          </article>
+        </div>
+      </template>
+    </PillarComparisonTable>
+
+    <section id="enterprise-governance" class="relative scroll-mt-20 overflow-hidden bg-neutral-950 py-16 text-white sm:py-20 lg:py-24">
+      <div aria-hidden="true" class="absolute inset-0 bg-[linear-gradient(rgba(96,165,250,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(96,165,250,0.08)_1px,transparent_1px)] bg-[size:42px_42px]" />
+      <div aria-hidden="true" class="absolute -right-32 top-8 h-96 w-96 rounded-full bg-blue-600/20 blur-3xl" />
+      <div class="relative mx-auto grid max-w-7xl gap-12 px-5 sm:px-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-center lg:px-12">
+        <div>
+          <p class="text-sm font-semibold uppercase tracking-[0.14em] text-blue-300">
+            Open core, enterprise ready
+          </p>
+          <h2 class="mt-4 text-3xl font-semibold tracking-tight text-white sm:text-4xl lg:text-5xl">
+            Keep the product your team likes when governance gets serious
+          </h2>
+          <p class="mt-5 max-w-2xl text-lg leading-8 text-neutral-300">
+            Do not replace a good form builder just because your organization grows.
+            OpnForm Enterprise adds identity, access, audit, and rollout support on top
+            of the same product and self-hosting path.
+          </p>
+
+          <ul class="mt-8 grid gap-3 sm:grid-cols-2">
+            <li v-for="feature in enterpriseFeatures" :key="feature.title" class="flex gap-3 rounded-2xl border border-white/10 bg-white/5 p-4">
+              <UIcon :name="feature.icon" class="mt-0.5 h-5 w-5 shrink-0 text-blue-300" />
+              <div>
+                <p class="font-semibold text-white">{{ feature.title }}</p>
+                <p class="mt-1 text-sm leading-6 text-neutral-400">{{ feature.description }}</p>
+              </div>
+            </li>
+          </ul>
+
+          <div class="mt-8 flex flex-col gap-3 sm:flex-row">
+            <UButton
+              :to="{ name: 'enterprise' }"
+              size="lg"
+              label="Explore OpnForm Enterprise"
+              trailing-icon="i-heroicons-arrow-right-20-solid"
+              class="justify-center rounded-xl"
+            />
+            <UButton
+              :to="{ name: 'self-hosted-form-builder-license' }"
+              size="lg"
+              color="neutral"
+              variant="ghost"
+              label="See self-hosted licensing"
+              class="justify-center rounded-xl !border !border-white/15 !bg-white/10 !text-white hover:!bg-white/15"
+            />
           </div>
         </div>
+
+        <figure class="relative mx-auto w-full max-w-2xl">
+          <img
+            src="/img/pages/open-source-form-builder/enterprise-governance-960.webp"
+            srcset="/img/pages/open-source-form-builder/enterprise-governance-640.webp 640w, /img/pages/open-source-form-builder/enterprise-governance-960.webp 960w, /img/pages/open-source-form-builder/enterprise-governance-1254.webp 1254w"
+            sizes="(min-width: 1280px) 620px, (min-width: 1024px) 48vw, 92vw"
+            alt="OpnForm connected to enterprise identity, role permissions, and audit controls"
+            width="1254"
+            height="1254"
+            loading="lazy"
+            decoding="async"
+            class="w-full drop-shadow-[0_30px_60px_rgba(37,99,235,0.24)]"
+          />
+        </figure>
       </div>
     </section>
 
-    <section class="px-8 py-14 sm:px-12 sm:py-28 bg-white">
-      <div class="mx-auto max-w-266">
-        <div class="grid gap-10 lg:grid-cols-12 lg:items-start">
-          <div class="lg:col-span-5">
-            <p class="text-base font-medium leading-7 tracking-[-1.1%] text-blue-600">
-              Content paths
+    <section class="border-y border-neutral-200 bg-[#f7f9fc] py-16 sm:py-20 lg:py-24">
+      <div class="mx-auto max-w-7xl px-5 sm:px-8 lg:px-12">
+        <div class="grid gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:items-start">
+          <div>
+            <p class="text-sm font-semibold uppercase tracking-[0.14em] text-blue-600">
+              Detailed comparisons
             </p>
-            <h2
-              class="mt-4 text-4xl font-semibold tracking-[-1%] text-gray-950 sm:text-5xl sm:leading-14"
-            >
-              Looking for an open-source alternative?
+            <h2 class="mt-4 text-3xl font-semibold tracking-tight text-neutral-950 sm:text-4xl">
+              See where OpnForm differs product by product
             </h2>
-            <p class="mt-4 text-base font-normal leading-7 tracking-[-1.1%] text-gray-600">
-              Use this page when you are evaluating the category. Use the
-              comparison pages when you need direct switching guidance for a
-              specific tool.
+            <p class="mt-5 text-lg leading-8 text-neutral-600">
+              Compare the workflows, hosting model, builder experience, and trade-offs
+              that matter when your shortlist comes down to two products.
             </p>
-            <div class="mt-8 flex flex-col gap-3 sm:flex-row lg:flex-col xl:flex-row">
-              <UButton
-                :to="opnformConfig.links.github_url"
-                target="_blank"
-                size="lg"
-                label="View on GitHub"
-                trailing-icon="i-simple-icons-github"
-                class="w-fit rounded-[12px] py-2.5 pl-4 pr-3.5 text-base font-medium leading-7 tracking-[-1.1%]"
-              />
-              <UButton
-                :to="{ name: 'pricing' }"
-                size="lg"
-                variant="outline"
-                color="neutral"
-                label="Compare plans"
-                class="w-fit rounded-[12px] px-4 py-2.5 text-base font-medium leading-7 tracking-[-1.1%]"
-              />
-            </div>
           </div>
 
-          <div class="grid gap-4 sm:grid-cols-2 lg:col-span-7">
+          <div class="grid gap-4 sm:grid-cols-3">
             <NuxtLink
-              v-for="link in comparisonLinks"
-              :key="link.label"
-              :to="link.to"
-              class="group rounded-3xl border border-gray-200 bg-gray-50 p-6 transition-colors hover:border-blue-200 hover:bg-blue-50 hover:no-underline"
+              v-for="comparison in openSourceDetailedComparisons"
+              :key="comparison.label"
+              :to="comparison.to"
+              class="group rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md hover:no-underline"
             >
-              <div class="flex items-start justify-between gap-4">
-                <div>
-                  <h3 class="text-lg font-semibold leading-7 tracking-[-0.6%] text-gray-950">
-                    {{ link.label }}
-                  </h3>
-                  <p class="mt-2 text-sm font-medium leading-6 tracking-[-0.6%] text-gray-600">
-                    {{ link.description }}
-                  </p>
-                </div>
-                <UIcon
-                  name="i-heroicons-arrow-up-right-20-solid"
-                  class="h-5 w-5 shrink-0 text-gray-400 transition-colors group-hover:text-blue-600"
-                />
-              </div>
+              <UIcon name="i-heroicons-arrows-right-left-20-solid" class="h-6 w-6 text-blue-600" />
+              <h3 class="mt-5 font-semibold text-neutral-950">{{ comparison.label }}</h3>
+              <p class="mt-2 text-sm leading-6 text-neutral-600">{{ comparison.description }}</p>
+              <span class="mt-5 inline-flex items-center gap-1 text-sm font-semibold text-blue-600">
+                Read comparison
+                <UIcon name="i-heroicons-arrow-right-20-solid" class="h-4 w-4 transition group-hover:translate-x-0.5" />
+              </span>
             </NuxtLink>
           </div>
         </div>
       </div>
     </section>
 
-    <section class="px-8 sm:px-12 bg-white">
-      <div class="mx-auto max-w-266">
-        <div
-          class="grid gap-10 rounded-4xl bg-gray-950 px-8 py-10 shadow-2xl lg:grid-cols-12 lg:items-center lg:px-14 lg:py-14"
-        >
-          <div class="lg:col-span-7">
-            <p class="text-base font-medium leading-7 tracking-[-1.1%] text-blue-400">
-              Self-hosted deployment
-            </p>
-            <h2
-              class="mt-4 text-3xl font-semibold tracking-[-1%] text-white sm:text-5xl sm:leading-14"
-            >
-              Need full data control on your own infrastructure?
-            </h2>
-            <p class="mt-4 max-w-2xl text-base font-normal leading-7 tracking-[-1.1%] text-gray-400">
-              The self-hosted form builder page covers Docker deployment,
-              Enterprise licensing, SSO, audit logs, and the operational
-              checklist for running OpnForm yourself.
-            </p>
+    <section class="bg-white py-16 sm:py-20 lg:py-24">
+      <div class="mx-auto max-w-7xl px-5 sm:px-8 lg:px-12">
+        <div class="mx-auto max-w-3xl text-center">
+          <p class="text-sm font-semibold uppercase tracking-[0.14em] text-blue-600">One product, two paths</p>
+          <h2 class="mt-4 text-3xl font-semibold tracking-tight text-neutral-950 sm:text-4xl lg:text-5xl">
+            Start managed. Keep the option to own the stack.
+          </h2>
+          <p class="mt-5 text-lg leading-8 text-neutral-600">
+            Most teams should start on Cloud. Self-host when policy, procurement, or
+            architecture gives you a concrete reason to operate the application.
+          </p>
+        </div>
+
+        <div class="mx-auto mt-12 grid max-w-5xl gap-6 lg:grid-cols-2">
+          <article v-for="option in deploymentOptions" :key="option.title" class="rounded-3xl border border-neutral-200 bg-white p-7 shadow-sm sm:p-9">
+            <div class="flex h-12 w-12 items-center justify-center rounded-2xl" :class="option.iconClass">
+              <UIcon :name="option.icon" class="h-6 w-6" />
+            </div>
+            <p class="mt-6 text-sm font-semibold uppercase tracking-[0.12em] text-neutral-500">{{ option.eyebrow }}</p>
+            <h3 class="mt-2 text-2xl font-semibold text-neutral-950">{{ option.title }}</h3>
+            <p class="mt-3 leading-7 text-neutral-600">{{ option.description }}</p>
+            <UButton v-bind="option.cta" size="lg" class="mt-7 justify-center rounded-xl px-5" />
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="border-y border-neutral-200 bg-white py-14 sm:py-16">
+      <div class="mx-auto max-w-6xl px-5 sm:px-8 lg:px-12">
+        <div class="grid gap-6 lg:grid-cols-[0.75fr_1.25fr] lg:items-center">
+          <div>
+            <p class="text-sm font-semibold uppercase tracking-[0.14em] text-neutral-500">Switching from closed SaaS?</p>
+            <h2 class="mt-3 text-2xl font-semibold text-neutral-950">Use a direct migration comparison</h2>
           </div>
-          <div class="lg:col-span-5 lg:text-right">
+          <div class="flex flex-wrap gap-2">
             <UButton
-              :to="{ name: 'self-hosted-form-builder' }"
-              size="lg"
-              label="Explore self-hosting"
-              trailing-icon="i-heroicons-arrow-up-right-20-solid"
-              class="w-fit rounded-[12px] py-2.5 pl-4 pr-3.5 text-base font-medium leading-7 tracking-[-1.1%]"
+              v-for="comparison in closedSaasComparisons"
+              :key="comparison.label"
+              :to="comparison.to"
+              color="neutral"
+              variant="outline"
+              :label="`${comparison.label} alternative`"
+              trailing-icon="i-heroicons-arrow-right-20-solid"
+              class="rounded-xl"
             />
           </div>
         </div>
@@ -372,61 +323,58 @@
     </section>
 
     <FaqSection
+      variant="split"
+      eyebrow="FAQ"
+      title="Open-source form builder questions"
+      description="Clear answers about licenses, Cloud, self-hosting, and where OpnForm fits."
       :faqs="openSourceFaqs"
-      :title-lines="['Open source form builder', 'questions']"
-      description="Clear answers for teams comparing OpnForm with closed form builders and deciding between cloud or self-hosting."
-      id-prefix="open-source-form-builder-faq-answer"
+      id-prefix="open-source-form-builder-faq"
       @contact="contactUs"
     />
 
-    <section class="bg-white px-8 pb-14 sm:px-12 sm:pb-28">
-      <div
-        class="mx-auto max-w-336 overflow-hidden rounded-4xl bg-gray-950 px-8 py-10 shadow-2xl sm:px-10 lg:px-14 lg:py-14"
-      >
-        <div class="grid gap-8 xl:grid-cols-12 xl:items-center">
-          <div class="xl:col-span-8">
-            <p class="text-base font-medium leading-7 tracking-[-1.1%] text-blue-400">
-              Open source forms
-            </p>
-            <h2
-              class="mt-4 text-3xl font-semibold tracking-[-1%] text-white sm:text-5xl sm:leading-14"
-            >
-              Build unlimited forms without locking your data into a black box.
-            </h2>
-            <p class="mt-4 max-w-2xl text-base font-normal leading-7 tracking-[-1.1%] text-gray-400 sm:text-lg">
-              Start on OpnForm Cloud, inspect the code on GitHub, and move to
-              self-hosting when your policies or customers require it.
-            </p>
-          </div>
-
-          <div class="flex flex-col gap-3 sm:flex-row xl:col-span-4 xl:justify-end">
-            <UButton
-              :to="{ name: authenticated ? 'forms-create' : 'forms-create-guest' }"
-              size="lg"
-              label="Create a free form"
-              trailing-icon="i-heroicons-arrow-up-right-20-solid"
-              class="w-fit rounded-[12px] py-2.5 pl-4 pr-3.5 text-base font-medium leading-7 tracking-[-1.1%]"
-            />
-            <UButton
-              :to="{ name: 'self-hosted-form-builder' }"
-              size="lg"
-              variant="outline"
-              color="neutral"
-              label="Explore self-hosting"
-              class="w-fit rounded-[12px] bg-white px-4 py-2.5 text-base font-medium leading-7 tracking-[-1.1%] text-gray-950 hover:bg-white/95"
-            />
-          </div>
-        </div>
-      </div>
-    </section>
+    <MarketingCtaPanel
+      eyebrow="No credit card, no submission cap"
+      title="Build your first form with OpnForm"
+      description="See how the builder feels before you compare deployment details. Start free on Cloud, then inspect or self-host the source when you need more control."
+    >
+      <UButton
+        :to="{ name: authenticated ? 'forms-create' : 'forms-create-guest' }"
+        size="lg"
+        color="neutral"
+        label="Create a free form"
+        trailing-icon="i-heroicons-arrow-right-20-solid"
+        class="justify-center rounded-xl bg-white px-5 text-blue-700 hover:bg-blue-50"
+      />
+      <UButton
+        :to="opnformConfig.links.github_url"
+        target="_blank"
+        size="lg"
+        color="neutral"
+        label="View GitHub"
+        trailing-icon="i-simple-icons-github"
+        class="justify-center rounded-xl px-5 !bg-blue-950 !text-white hover:!bg-blue-900"
+      />
+    </MarketingCtaPanel>
 
     <OpenFormFooter :show-cta="false" />
-  </div>
+  </main>
 </template>
 
 <script setup>
 import FaqSection from "~/components/pages/FaqSection.vue"
+import MarketingCtaPanel from "~/components/pages/marketing/MarketingCtaPanel.vue"
+import MarketingHero from "~/components/pages/marketing/MarketingHero.vue"
+import MarketingNumberedSteps from "~/components/pages/marketing/MarketingNumberedSteps.vue"
+import MarketingProductShowcase from "~/components/pages/marketing/MarketingProductShowcase.vue"
+import MarketingSplitSection from "~/components/pages/marketing/MarketingSplitSection.vue"
 import PillarComparisonTable from "~/components/pages/pillars/PillarComparisonTable.vue"
+import {
+  closedSaasComparisons,
+  openSourceCompetitorColumns,
+  openSourceCompetitorRows,
+  openSourceCompetitorSources,
+  openSourceDetailedComparisons,
+} from "~/data/marketing/open-source-competitors.js"
 import { useIsAuthenticated } from "~/composables/useAuthFlow"
 import opnformConfig from "~/opnform.config.js"
 
@@ -434,248 +382,214 @@ definePageMeta({
   layout: "default",
 })
 
+defineRouteRules({
+  swr: 3600,
+})
+
 useOpnSeoMeta({
-  title: "Open Source Form Builder",
+  title: "Open Source Form Builder for Teams",
   description:
-    "Build forms with an open-source online form builder. OpnForm gives unlimited submissions, cloud or self-hosted deployment, API, webhooks, and GDPR-friendly hosting.",
+    "Build unlimited forms and workflows with OpnForm, the open-source no-code form builder. Start free on Cloud or self-host the AGPLv3 core.",
 })
 
 const { isAuthenticated: authenticated } = useIsAuthenticated()
 
-const heroProofs = [
-  "AGPLv3 core",
-  "Unlimited submissions",
-  "Cloud or self-hosted",
-  "API and webhooks",
+const { data: githubRepository } = await useFetch("/api/github-stars", {
+  key: "opnform-github-stars",
+})
+
+const githubStars = computed(() => {
+  const stars = githubRepository.value?.stars
+  return Number.isInteger(stars) && stars > 0 ? stars : null
+})
+const getGithubStarsAnimationStart = (target) => {
+  if (!target) return null
+  return Math.max(0, target - Math.min(600, Math.round(target * 0.2)))
+}
+const displayedGithubStars = ref(getGithubStarsAnimationStart(githubStars.value))
+const githubStarsFormatter = new Intl.NumberFormat("en-US")
+let githubStarsAnimationFrame = null
+
+const formattedGithubStars = computed(() => {
+  if (!Number.isInteger(displayedGithubStars.value)) return null
+  return githubStarsFormatter.format(displayedGithubStars.value)
+})
+
+const githubStarsLabel = computed(() => {
+  if (!githubStars.value) return "View the OpnForm repository on GitHub"
+
+  return `${githubStarsFormatter.format(githubStars.value)} GitHub stars. View the OpnForm repository.`
+})
+
+const animateGithubStars = () => {
+  const target = githubStars.value
+  if (!target || !import.meta.client) return
+
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    displayedGithubStars.value = target
+    return
+  }
+
+  if (githubStarsAnimationFrame) cancelAnimationFrame(githubStarsAnimationFrame)
+
+  const start = getGithubStarsAnimationStart(target)
+  const duration = 1800
+  const startTime = performance.now()
+
+  displayedGithubStars.value = start
+
+  const tick = (currentTime) => {
+    const progress = Math.min((currentTime - startTime) / duration, 1)
+    const easedProgress = 1 - (1 - progress) ** 5
+
+    displayedGithubStars.value = Math.round(start + (target - start) * easedProgress)
+
+    if (progress < 1) {
+      githubStarsAnimationFrame = requestAnimationFrame(tick)
+      return
+    }
+
+    displayedGithubStars.value = target
+    githubStarsAnimationFrame = null
+  }
+
+  githubStarsAnimationFrame = requestAnimationFrame(tick)
+}
+
+onMounted(animateGithubStars)
+
+onBeforeUnmount(() => {
+  if (githubStarsAnimationFrame) cancelAnimationFrame(githubStarsAnimationFrame)
+})
+
+const heroProofs = ["No-code builder", "Unlimited submissions", "Cloud or self-hosted", "Logic, API, and webhooks"]
+
+const productFeatures = [
+  {
+    tone: "blue",
+    title: "Build polished forms without code",
+    description: "Give marketing, operations, HR, and product teams a visual builder they can use without waiting for engineering.",
+    highlights: ["Conditional logic", "Multi-page forms", "Themes and embeds"],
+    image: "/img/pages/open-source-form-builder/feature-no-code-builder-960.webp",
+    imageSrcset: "/img/pages/open-source-form-builder/feature-no-code-builder-640.webp 640w, /img/pages/open-source-form-builder/feature-no-code-builder-960.webp 960w, /img/pages/open-source-form-builder/feature-no-code-builder-1280.webp 1280w",
+    imageAlt: "OpnForm visual builder editing and styling a feedback form",
+  },
+  {
+    tone: "mint",
+    reverse: true,
+    title: "Collect without response caps",
+    description: "Create as many forms as you need and collect unlimited submissions on Cloud and self-hosted editions.",
+    highlights: ["Unlimited forms", "Unlimited submissions", "Cloud or self-hosted"],
+    image: "/img/pages/open-source-form-builder/feature-unlimited-submissions-960.webp",
+    imageSrcset: "/img/pages/open-source-form-builder/feature-unlimited-submissions-640.webp 640w, /img/pages/open-source-form-builder/feature-unlimited-submissions-960.webp 960w, /img/pages/open-source-form-builder/feature-unlimited-submissions-1280.webp 1280w",
+    imageAlt: "OpnForm submission inbox collecting responses without a monthly response cap",
+  },
+  {
+    tone: "violet",
+    title: "Automate what happens next",
+    description: "Send submissions to Google Sheets, Zapier, Stripe, webhooks, or your own systems through the REST API.",
+    highlights: ["Native integrations", "Webhooks", "REST API"],
+    image: "/img/pages/open-source-form-builder/feature-automations-960.webp",
+    imageSrcset: "/img/pages/open-source-form-builder/feature-automations-640.webp 640w, /img/pages/open-source-form-builder/feature-automations-960.webp 960w, /img/pages/open-source-form-builder/feature-automations-1280.webp 1280w",
+    imageAlt: "OpnForm automation connecting a form submission to Google Sheets, Zapier, and Stripe",
+  },
 ]
 
-const sourceSignals = [
+const productProofs = ["File uploads", "Payments", "Custom domains", "Exports and analytics"]
+
+const opnformAdvantages = [
   {
-    icon: "i-simple-icons-github",
-    iconWrapClass: "bg-white/10",
-    iconClass: "text-white",
-    label: "Public repository",
-    description: "Inspect the code before you trust it.",
+    icon: "i-heroicons-cursor-arrow-rays-20-solid",
+    title: "Build without code",
+    description: "Let the people who own the workflow create and update forms themselves, with logic, calculations, uploads, payments, and embeds.",
   },
   {
-    icon: "i-heroicons-scale",
-    iconWrapClass: "bg-blue-400/15",
-    iconClass: "text-blue-300",
-    label: "AGPLv3 core",
-    description: "Open-source with Enterprise separated.",
+    icon: "i-heroicons-rocket-launch-20-solid",
+    title: "Launch without infrastructure",
+    description: "Start free on managed Cloud and collect unlimited submissions before deciding whether operating the stack makes sense.",
   },
   {
-    icon: "i-heroicons-server-stack",
-    iconWrapClass: "bg-emerald-400/15",
-    iconClass: "text-emerald-300",
-    label: "Self-host ready",
-    description: "Deploy when ownership matters.",
+    icon: "i-heroicons-arrows-right-left-20-solid",
+    title: "Connect every submission",
+    description: "Use native integrations, webhooks, embeds, and the REST API instead of exporting data by hand or building glue code for every form.",
   },
   {
-    icon: "i-heroicons-code-bracket-square",
-    iconWrapClass: "bg-violet-400/15",
-    iconClass: "text-violet-300",
-    label: "API and webhooks",
-    description: "Connect forms to your stack.",
+    icon: "i-heroicons-building-office-2-20-solid",
+    title: "Add governance when needed",
+    description: "Keep the same product as your team grows, then add SSO, roles, audit visibility, branding controls, and priority support with Enterprise.",
   },
 ]
 
-const heroMetrics = [
-  { value: "3k+", label: "GitHub stars" },
-  { value: "10k+", label: "companies" },
-  { value: "Free", label: "cloud plan" },
-  { value: "No caps", label: "submissions" },
-]
-
-const openSourceBenefits = [
+const enterpriseFeatures = [
   {
-    icon: "i-heroicons-code-bracket-square",
-    iconClass: "text-blue-600",
-    title: "Auditable by default",
-    description:
-      "Review how the product works instead of relying only on vendor promises.",
+    icon: "i-heroicons-finger-print-20-solid",
+    title: "SSO and identity",
+    description: "Use OIDC, SAML, or LDAP depending on your edition and deployment.",
   },
   {
-    icon: "i-heroicons-arrows-pointing-out",
-    iconClass: "text-emerald-600",
-    title: "No response ceiling",
-    description:
-      "Use OpnForm as a free form builder without upgrading every time a form performs well.",
+    icon: "i-heroicons-user-group-20-solid",
+    title: "Roles and permissions",
+    description: "Control who can view, edit, publish, and manage forms across workspaces.",
   },
   {
-    icon: "i-heroicons-lock-closed",
-    iconClass: "text-violet-600",
-    title: "Data ownership paths",
-    description:
-      "Choose managed cloud for speed or self-hosted infrastructure for direct control.",
+    icon: "i-heroicons-clipboard-document-check-20-solid",
+    title: "Audit visibility",
+    description: "Track important form and submission activity as more people collaborate.",
   },
   {
-    icon: "i-heroicons-puzzle-piece",
-    iconClass: "text-orange-600",
-    title: "Extensible workflows",
-    description:
-      "Use API access, webhooks, integrations, and custom deployment patterns.",
-  },
-]
-
-const competitorColumns = [
-  {
-    label: "OpnForm",
-    detail: "Open-source",
-    logo: "/img/logo.svg",
-    highlight: true,
-  },
-  { label: "Typeform", detail: "Closed SaaS" },
-  { label: "Jotform", detail: "Closed SaaS" },
-  { label: "Tally", detail: "Closed SaaS" },
-  { label: "Fillout", detail: "Closed SaaS" },
-  { label: "Formstack", detail: "Closed SaaS" },
-]
-
-const competitorRows = [
-  {
-    label: "Source code",
-    values: ["AGPLv3 core", "Closed", "Closed", "Closed", "Closed", "Closed"],
-  },
-  {
-    label: "Self-hosting",
-    values: ["Community + Enterprise", "No", "No", "No", "No", "No"],
-  },
-  {
-    label: "Free submissions",
-    values: ["Unlimited", "Capped", "Capped", "Unlimited", "Capped", "Limited"],
-  },
-  {
-    label: "Developer workflows",
-    values: [
-      "API + webhooks",
-      "API + integrations",
-      "API + webhooks",
-      "Webhooks",
-      "API + integrations",
-      "Enterprise workflows",
-    ],
-  },
-  {
-    label: "Data location choice",
-    values: [
-      "Cloud or self-hosted",
-      "Vendor cloud",
-      "Vendor cloud",
-      "Vendor cloud",
-      "Vendor cloud",
-      "Vendor cloud",
-    ],
-  },
-  {
-    label: "Best fit",
-    values: [
-      "Teams needing control",
-      "Conversational surveys",
-      "Large template library",
-      "Simple free forms",
-      "Database-connected forms",
-      "Enterprise workflows",
-    ],
+    icon: "i-heroicons-lifebuoy-20-solid",
+    title: "Rollout support",
+    description: "Get priority help with migration, deployment, and self-hosting questions.",
   },
 ]
 
 const deploymentOptions = [
   {
-    icon: "i-heroicons-cloud",
-    iconWrapClass: "bg-blue-50",
-    iconClass: "text-blue-600",
+    eyebrow: "Fastest path",
     title: "OpnForm Cloud",
-    badge: "Fastest start",
-    highlight: true,
-    description:
-      "The fastest way to launch forms with managed hosting, updates, support, and unlimited submissions.",
-    features: ["No infrastructure work", "Free plan available", "Managed updates"],
+    description: "Launch without operating application servers, databases, backups, or updates. The free plan keeps submissions unlimited.",
+    icon: "i-heroicons-cloud-20-solid",
+    iconClass: "bg-blue-100 text-blue-700",
+    cta: { label: "Create a free form", to: { name: "forms-create-guest" } },
   },
   {
-    icon: "i-heroicons-server-stack",
-    iconWrapClass: "bg-violet-50",
-    iconClass: "text-violet-600",
-    title: "Self-hosted",
-    description:
-      "Run OpnForm on your own infrastructure when policy, procurement, or customer requirements demand data control.",
-    features: ["API and webhooks", "SSO and audit logs", "GDPR-friendly ownership"],
-  },
-]
-
-const comparisonLinks = [
-  {
-    label: "Open-source Typeform alternative",
-    description:
-      "Compare OpnForm with Typeform when conversational forms and response caps are the question.",
-    to: { name: "opnform-vs-typeform" },
-  },
-  {
-    label: "Open-source Jotform alternative",
-    description:
-      "See how OpnForm compares with Jotform on limits, control, and developer workflows.",
-    to: { name: "opnform-vs-jotform" },
-  },
-  {
-    label: "Open-source Google Forms alternative",
-    description:
-      "Move beyond basic forms with unlimited submissions, stronger workflows, and optional self-hosting.",
-    to: { name: "opnform-vs-googleforms" },
-  },
-  {
-    label: "Open-source Tally alternative",
-    description:
-      "Evaluate Tally's free form experience against OpnForm's open infrastructure.",
-    to: { name: "opnform-vs-tally" },
-  },
-  {
-    label: "Open-source Fillout alternative",
-    description:
-      "Compare modern form building, database workflows, and self-hosting options.",
-    to: { name: "opnform-vs-fillout" },
+    eyebrow: "Infrastructure ownership",
+    title: "Self-hosted OpnForm",
+    description: "Run the core product in your environment when data location, procurement, or integration requirements justify the operational work.",
+    icon: "i-heroicons-server-stack-20-solid",
+    iconClass: "bg-emerald-100 text-emerald-700",
+    cta: { label: "Explore self-hosting", to: { name: "self-hosted-form-builder" }, color: "neutral", variant: "outline" },
   },
 ]
 
 const openSourceFaqs = [
   {
     question: "Is OpnForm really open source?",
-    answer:
-      "Yes. The core OpnForm project is open source under AGPLv3 and available on GitHub. Enterprise-only features are licensed separately so the open-source project can remain sustainable.",
+    answer: "Yes. The OpnForm core is available under AGPLv3 and can be inspected, modified, and self-hosted under that license. Advanced Enterprise features use a separate commercial license, which makes OpnForm an open-core product.",
+  },
+  {
+    question: "Which open-source form builders are closest to OpnForm?",
+    answer: "Formbricks and HeyForm are the closest modern product comparisons. LimeSurvey is stronger for research-heavy survey programs, while Form.io is aimed at developers building form-based applications and data APIs.",
+  },
+  {
+    question: "Why choose OpnForm over another open-source form builder?",
+    answer: "Choose OpnForm when non-technical teams need a polished general-purpose form builder and developers still need APIs, webhooks, embeds, and a credible path from managed Cloud to self-hosting. It is especially strong for registrations, applications, lead capture, payments, internal workflows, and embedded forms.",
   },
   {
     question: "Can I use OpnForm for free?",
-    answer:
-      "Yes. OpnForm Cloud has a free plan with unlimited submissions, and the self-hosted core product can be run for free. Paid plans add branding, advanced team controls, Enterprise support, and other business features.",
+    answer: "Yes. OpnForm Cloud has a free plan with unlimited submissions, and Community self-hosting lets you run the open-source core for up to two users on the instance.",
+  },
+  {
+    question: "Do I need to self-host to benefit from open source?",
+    answer: "No. You can use the managed Cloud product while retaining the transparency and future deployment choice of an open-source core. Self-host only when you have a concrete infrastructure requirement.",
   },
   {
     question: "Is OpnForm an open-source Typeform alternative?",
-    answer:
-      "Yes. OpnForm can replace Typeform for many form, survey, lead capture, registration, and workflow use cases, especially when unlimited submissions, API access, and deployment control matter.",
+    answer: "Yes for many registration, survey, lead, payment, and workflow use cases. The more useful distinction is that Typeform is closed SaaS, while OpnForm gives you an inspectable core and a self-hosting path.",
   },
   {
-    question: "Is OpnForm a Google Forms alternative?",
-    answer:
-      "Yes. OpnForm can replace Google Forms when you need a more flexible online form builder with unlimited submissions, custom workflows, API access, webhooks, and the option to self-host.",
-  },
-  {
-    question: "What is the difference between open source and self-hosted?",
-    answer:
-      "Open source means the core product code is publicly available to inspect and modify. Self-hosted means you run the application on your own infrastructure. OpnForm supports both, but you can also use the managed cloud product.",
-  },
-  {
-    question: "What features matter in a self-hosted form builder?",
-    answer:
-      "Teams usually look for API access, webhooks, SSO, roles and permissions, audit logs, Docker deployment, backups, data residency control, and a GDPR-friendly operating model. OpnForm supports the core form builder for free and adds Enterprise controls when rollout requirements grow.",
-  },
-  {
-    question: "Do non-technical teams need to self-host OpnForm?",
-    answer:
-      "No. Most teams should start with OpnForm Cloud because it removes infrastructure work. Self-hosting is best for teams with specific compliance, procurement, or infrastructure requirements.",
-  },
-  {
-    question: "Is OpnForm GDPR-friendly?",
-    answer:
-      "OpnForm gives teams GDPR-friendly deployment choices, including managed cloud and self-hosting for direct infrastructure control. Your legal and data processing requirements still depend on your own setup and use case.",
+    question: "What should I verify before choosing an open-source form builder?",
+    answer: "Verify the license, what is included in the community edition, deployment requirements, upgrade process, APIs, integrations, team controls, and the support path you will need in production.",
   },
 ]
 
@@ -684,9 +598,8 @@ useJsonLd("open-source-form-builder-schema", buildSchemaGraph([
   buildWebsiteSchema(),
   buildSoftwareApplicationSchema(),
   buildWebPageSchema({
-    name: "Open Source Form Builder",
-    description:
-      "Build forms with an open-source online form builder. OpnForm gives unlimited submissions, cloud or self-hosted deployment, API, webhooks, and GDPR-friendly hosting.",
+    name: "Open Source Form Builder for Teams",
+    description: "Build unlimited forms and workflows with OpnForm, a polished open-source no-code builder available on Cloud or as an AGPLv3 self-hosted core.",
     path: "/open-source-form-builder",
   }),
   buildBreadcrumbSchema([

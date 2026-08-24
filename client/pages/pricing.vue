@@ -688,7 +688,7 @@
                   <UButton
                     size="lg"
                     label="Buy license"
-                    :to="{ name: 'self-hosted-license' }"
+                    :to="{ name: 'self-hosted-form-builder-license' }"
                     class="px-4 py-2.5 rounded-[12px] text-base leading-7 tracking-[-1.1%] font-medium"
                   />
                   <p class="mt-3 text-sm leading-5 tracking-[-0.6%] font-medium text-gray-600">

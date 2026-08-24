@@ -1,5 +1,5 @@
 <template>
-  <div class="flex-1 overflow-hidden bg-white">
+  <main class="flex-1 overflow-hidden bg-white">
     <section class="relative border-b border-neutral-200 bg-[#f7f9fc]">
       <div
         aria-hidden="true"
@@ -221,60 +221,24 @@
       </div>
     </section>
 
-    <section class="border-b border-neutral-200 bg-white py-16 sm:py-20 lg:py-24">
-      <div class="mx-auto grid max-w-6xl gap-10 px-5 sm:px-8 lg:grid-cols-[0.75fr_1.25fr] lg:px-12">
-        <div>
-          <p class="text-sm font-semibold uppercase tracking-[0.14em] text-blue-600">
-            In plain English
-          </p>
-          <h2 class="mt-4 text-3xl font-semibold tracking-tight text-neutral-950 sm:text-4xl">
-            What is an MCP form builder?
-          </h2>
-        </div>
-        <div class="space-y-5 text-lg leading-8 text-neutral-600">
-          <p>
-            MCP is a shared way for AI assistants to work with products like OpnForm.
-            Instead of copying questions between a chat and a form builder, your
-            assistant can create the draft for you.
-          </p>
-          <p>
-            You stay in control: review the real form, ask for changes in the
-            conversation, then continue in OpnForm to customize, save, and publish it.
-          </p>
-        </div>
-      </div>
-    </section>
+    <MarketingSplitSection eyebrow="In plain English" title="What is an MCP form builder?">
+      <p>
+        MCP is a shared way for AI assistants to work with products like OpnForm.
+        Instead of copying questions between a chat and a form builder, your
+        assistant can create the draft for you.
+      </p>
+      <p>
+        You stay in control: review the real form, ask for changes in the
+        conversation, then continue in OpnForm to customize, save, and publish it.
+      </p>
+    </MarketingSplitSection>
 
-    <section id="how-it-works" class="scroll-mt-20 bg-neutral-950 py-16 text-white sm:py-20 lg:py-24">
-      <div class="mx-auto max-w-7xl px-5 sm:px-8 lg:px-12">
-        <div class="max-w-3xl">
-          <p class="text-sm font-semibold uppercase tracking-[0.14em] text-blue-300">
-            From idea to live form
-          </p>
-          <h2 class="mt-4 text-3xl font-semibold tracking-tight !text-white sm:text-4xl lg:text-5xl">
-            You describe it. Your agent builds it. You make it yours.
-          </h2>
-        </div>
-
-        <ol class="mt-12 grid gap-px overflow-hidden rounded-3xl bg-white/15 lg:grid-cols-3">
-          <li
-            v-for="(step, index) in steps"
-            :key="step.title"
-            class="relative bg-neutral-950 p-7 sm:p-8"
-          >
-            <span
-              class="text-6xl font-semibold tracking-tighter text-white/25"
-              aria-hidden="true"
-            >
-              0{{ index + 1 }}
-            </span>
-            <UIcon :name="step.icon" class="mt-8 h-7 w-7 text-blue-300" />
-            <h3 class="mt-4 text-xl font-semibold text-white">{{ step.title }}</h3>
-            <p class="mt-3 leading-7 text-neutral-300">{{ step.description }}</p>
-          </li>
-        </ol>
-      </div>
-    </section>
+    <MarketingNumberedSteps
+      id="how-it-works"
+      eyebrow="From idea to live form"
+      title="You describe it. Your agent builds it. You make it yours."
+      :steps="steps"
+    />
 
     <section class="bg-[#f7f9fc] py-16 sm:py-20 lg:py-24">
       <div class="mx-auto max-w-7xl px-5 sm:px-8 lg:px-12">
@@ -338,9 +302,9 @@
               Forms are work. Your assistant can take the first pass.
             </h2>
             <p class="mt-5 text-lg leading-8 text-neutral-600">
-              Give it the context you already have — an event, a hiring process, a
-              customer request, or a research goal — and start from a usable form
-              instead of an empty canvas.
+              Give it the context you already have: an event, a hiring process, a
+              customer request, or a research goal. Start from a usable form instead
+              of an empty canvas.
             </p>
             <UButton
               :to="{ name: 'ai-form-builder' }"
@@ -391,81 +355,50 @@
       </div>
     </section>
 
-    <section class="border-y border-neutral-200 bg-neutral-50 py-16 sm:py-20 lg:py-24">
-      <div class="mx-auto max-w-5xl px-5 sm:px-8 lg:px-12">
-        <div class="grid gap-10 lg:grid-cols-[0.8fr_1.2fr]">
-          <div>
-            <p class="text-sm font-semibold uppercase tracking-[0.14em] text-blue-600">FAQ</p>
-            <h2 class="mt-4 text-3xl font-semibold tracking-tight text-neutral-950 sm:text-4xl">
-              Questions about the OpnForm MCP
-            </h2>
-          </div>
-          <div class="divide-y divide-neutral-200 border-y border-neutral-200">
-            <details v-for="faq in faqs" :key="faq.question" class="group py-5">
-              <summary
-                class="flex cursor-pointer list-none items-center justify-between gap-5 font-semibold text-neutral-950"
-              >
-                {{ faq.question }}
-                <UIcon
-                  name="i-heroicons-plus-20-solid"
-                  class="h-5 w-5 shrink-0 text-neutral-500 transition group-open:rotate-45"
-                />
-              </summary>
-              <p class="mt-3 max-w-2xl pr-8 leading-7 text-neutral-600">{{ faq.answer }}</p>
-            </details>
-          </div>
-        </div>
-      </div>
-    </section>
+    <FaqSection
+      variant="split"
+      eyebrow="FAQ"
+      title="Questions about the OpnForm MCP"
+      :faqs="faqs"
+      :show-contact="false"
+      id-prefix="mcp-faq"
+    />
 
-    <section class="bg-white px-5 py-16 sm:px-8 sm:py-20 lg:px-12 lg:py-24">
-      <div
-        class="relative mx-auto max-w-6xl overflow-hidden rounded-[2rem] bg-blue-700 px-6 py-12 text-center text-white shadow-xl shadow-blue-950/15 sm:px-12 sm:py-16"
-      >
-        <div
-          aria-hidden="true"
-          class="absolute inset-0 opacity-20 [background-image:radial-gradient(circle_at_center,white_1px,transparent_1.5px)] [background-size:22px_22px]"
-        />
-        <div class="relative mx-auto max-w-3xl">
-          <p class="text-sm font-semibold uppercase tracking-[0.14em] text-blue-100">
-            Your next form can start as a conversation
-          </p>
-          <h2 class="mt-4 text-3xl font-semibold tracking-tight !text-white sm:text-4xl lg:text-5xl">
-            Connect OpnForm to your AI assistant
-          </h2>
-          <p class="mx-auto mt-5 max-w-2xl text-lg leading-8 text-blue-100">
-            Start with a private draft — no OpnForm account required. Connect your
-            account later when you want to save, publish, or manage existing forms.
-          </p>
-          <div class="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-            <UButton
-              to="https://docs.opnform.com/integrations/mcp"
-              external
-              size="lg"
-              color="neutral"
-              label="Follow the setup guide"
-              trailing-icon="i-heroicons-arrow-up-right-20-solid"
-              class="justify-center rounded-xl bg-white px-5 text-blue-700 hover:bg-blue-50"
-            />
-            <UButton
-              :to="createFormTarget"
-              size="lg"
-              variant="solid"
-              color="neutral"
-              label="Create a form in OpnForm"
-              trailing-icon="i-heroicons-arrow-right-20-solid"
-              class="justify-center rounded-xl px-5 !bg-blue-950 !text-white hover:!bg-blue-900"
-            />
-          </div>
-        </div>
-      </div>
-    </section>
+    <MarketingCtaPanel
+      eyebrow="Your next form can start as a conversation"
+      title="Connect OpnForm to your AI assistant"
+      description="Start with a private draft. No OpnForm account required. Connect your account later when you want to save, publish, or manage existing forms."
+    >
+      <UButton
+        to="https://docs.opnform.com/integrations/mcp"
+        external
+        size="lg"
+        color="neutral"
+        label="Follow the setup guide"
+        trailing-icon="i-heroicons-arrow-up-right-20-solid"
+        class="justify-center rounded-xl bg-white px-5 text-blue-700 hover:bg-blue-50"
+      />
+      <UButton
+        :to="createFormTarget"
+        size="lg"
+        variant="solid"
+        color="neutral"
+        label="Create a form in OpnForm"
+        trailing-icon="i-heroicons-arrow-right-20-solid"
+        class="justify-center rounded-xl px-5 !bg-blue-950 !text-white hover:!bg-blue-900"
+      />
+    </MarketingCtaPanel>
 
     <OpenFormFooter :show-cta="false" />
-  </div>
+  </main>
 </template>
 
 <script setup>
+import FaqSection from "~/components/pages/FaqSection.vue"
+import MarketingCtaPanel from "~/components/pages/marketing/MarketingCtaPanel.vue"
+import MarketingNumberedSteps from "~/components/pages/marketing/MarketingNumberedSteps.vue"
+import MarketingSplitSection from "~/components/pages/marketing/MarketingSplitSection.vue"
+
 definePageMeta({
   layout: "default",
   middleware: ["root-redirect", "self-hosted"],

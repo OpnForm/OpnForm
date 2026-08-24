@@ -202,7 +202,7 @@
           <div
             class="text-sm leading-5 tracking-[0.6%] font-medium text-neutral-600 sm:text-right lg:mt-8 lg:text-left"
           >
-            {{ currYear }} OpnForm — All rights reserved
+            {{ currYear }} OpnForm. All rights reserved.
             <span v-if="version" class="block mt-1">
               Version {{ version }}
             </span>

@@ -14,7 +14,8 @@ export default {
     '/templates/my-templates',
     '/setup',
     '/self-hosted/checkout/**',
-    ...(isSelfHostedBuild ? ['/self-hosted/license'] : []),
+    '/self-hosted/license',
+    '/self-hosted-form-builder/license',
   ],
   sources: [`${process.env.NUXT_PUBLIC_API_BASE}sitemap-urls`],
   cacheMaxAgeSeconds: 60 * 60 * 2, // 2 hours
@@ -54,11 +55,6 @@ function getCloudMarketingUrls () {
       changefreq: 'monthly',
       priority: 0.9
     },
-    {
-      url: '/self-hosted/license',
-      changefreq: 'monthly',
-      priority: 0.7
-    }
   ]
 }
 
