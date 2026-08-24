@@ -16,8 +16,6 @@ class AgentFormDraftService
 {
     public const EXPIRY_DAYS = 7;
 
-    public const PREVIEW_URL_TTL_MINUTES = 60;
-
     public function __construct(
         private readonly AgentFormDefinition $formDefinition,
         private readonly AgentFormDraftPatcher $patcher,
@@ -218,7 +216,7 @@ class AgentFormDraftService
     {
         $sourceUrl = URL::temporarySignedRoute(
             'agent-drafts.preview',
-            now()->addMinutes(self::PREVIEW_URL_TTL_MINUTES),
+            $draft->expires_at,
             ['draft' => $draft->id],
         );
 

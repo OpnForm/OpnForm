@@ -114,7 +114,7 @@ it('serves preview data only through a valid signed URL without exposing capabil
     $this->getJson(route('agent-drafts.preview', $draft))->assertForbidden();
 });
 
-it('keeps each generated browser preview link valid for one hour', function () {
+it('keeps each generated browser preview link valid until the draft expires', function () {
     $this->freezeTime();
     $draft = app(AgentFormDraftService::class)->create(editorDraftDefinition())['draft'];
     $previewUrl = app(AgentFormDraftService::class)->previewUrl($draft);
@@ -122,7 +122,13 @@ it('keeps each generated browser preview link valid for one hour', function () {
     parse_str((string) parse_url($previewQuery['source'], PHP_URL_QUERY), $sourceQuery);
 
     expect((int) $sourceQuery['expires'])
-        ->toBe(now()->addMinutes(AgentFormDraftService::PREVIEW_URL_TTL_MINUTES)->timestamp);
+        ->toBe($draft->expires_at->timestamp);
+
+    $this->travelTo($draft->expires_at->copy()->subSecond());
+    $this->getJson($previewQuery['source'])->assertOk();
+
+    $this->travelTo($draft->expires_at->copy()->addSecond());
+    $this->getJson($previewQuery['source'])->assertForbidden();
 });
 
 it('keeps every guest editor link reusable until the draft expires', function () {

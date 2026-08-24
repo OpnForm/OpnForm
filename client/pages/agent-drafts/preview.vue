@@ -123,8 +123,8 @@ onMounted(() => {
         workspace: { plan_tier: 'pro', features: [], limits: {} },
       }
     }).catch(() => {
-      errorTitle.value = 'This preview link has expired'
-      error.value = 'Your draft is usually still available for seven days. Ask your AI assistant: “Generate a new preview of this form.”'
+      errorTitle.value = 'This draft preview is no longer available'
+      error.value = 'Guest drafts and their previews are available for seven days. Ask your AI assistant to recreate the form if you still need it.'
     }).finally(() => {
       loading.value = false
     })
