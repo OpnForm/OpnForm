@@ -54,6 +54,7 @@
                 let presentationStyle = 'classic';
                 let resizeScriptPromise;
                 let draftHandle = null;
+                let currentPreviewUrl = null;
                 let rendered = false;
                 const initialOpenButtonText = openButton.textContent;
                 const loadingFallback = window.setTimeout(() => {
@@ -143,7 +144,11 @@
                     if (payload.preview_url) {
                         const previewUrl = new URL(payload.preview_url);
                         previewUrl.searchParams.set('embedded', '1');
-                        preview.src = previewUrl.toString();
+                        const nextPreviewUrl = previewUrl.toString();
+                        if (currentPreviewUrl !== nextPreviewUrl) {
+                            currentPreviewUrl = nextPreviewUrl;
+                            preview.src = nextPreviewUrl;
+                        }
                         preview.hidden = false;
                         previewViewport.hidden = false;
                         applyPreviewLayout();
@@ -187,15 +192,6 @@
 
                 app.onToolInput(applyToolInput);
                 app.onToolResult(renderToolResult);
-
-                applyToolInput(window.openai?.toolInput);
-                renderToolResult(window.openai?.toolOutput);
-
-                window.addEventListener('openai:set_globals', (event) => {
-                    const globals = event.detail?.globals ?? {};
-                    applyToolInput(globals.toolInput ?? window.openai?.toolInput);
-                    renderToolResult(globals.toolOutput ?? window.openai?.toolOutput);
-                });
 
                 openButton.onclick = async () => {
                     if (!draftHandle) return;

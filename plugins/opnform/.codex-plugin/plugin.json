@@ -1,6 +1,6 @@
 {
   "name": "opnform",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Build private form drafts without signing in, then connect OpnForm to manage forms and read submissions.",
   "author": {
     "name": "OpnForm",

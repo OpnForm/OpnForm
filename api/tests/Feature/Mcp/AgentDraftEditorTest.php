@@ -45,8 +45,9 @@ it('renders a read-only MCP App preview and creates an editor link only on deman
         ->assertOk()
         ->assertSee('Open in OpnForm')
         ->assertSee("app.callServerTool('open_form_draft_in_editor'")
-        ->assertSee('window.openai?.toolOutput')
-        ->assertSee("openai:set_globals")
+        ->assertSee('currentPreviewUrl !== nextPreviewUrl')
+        ->assertDontSee('window.openai')
+        ->assertDontSee("openai:set_globals")
         ->assertSee('<iframe');
 
     OpnFormServer::tool(OpenFormDraftInEditorTool::class, [
@@ -72,7 +73,7 @@ it('publishes standard and ChatGPT-compatible CSP metadata with the full fronten
         ->content()
         ->toResource($previewApp);
 
-    expect($previewApp->uri())->toBe('ui://opnform/form-draft-preview-v4')
+    expect($previewApp->uri())->toBe('ui://opnform/form-draft-preview-v5')
         ->and($previewApp->resolvedAppMeta()['csp']['resourceDomains'])
         ->toBe(['http://127.0.0.1:33676'])
         ->and($previewApp->resolvedAppMeta()['csp']['frameDomains'])

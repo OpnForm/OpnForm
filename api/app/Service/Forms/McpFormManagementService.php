@@ -132,7 +132,7 @@ class McpFormManagementService
             'message' => 'Form created as an unpublished draft.',
             'form' => $this->serializeForm($created['form']->load('workspace')),
             'disabled_features' => $created['cleanings'],
-            'next_step' => 'Open edit_url to review or refine the unpublished form. Ask the user before calling publish_form.',
+            'next_step' => 'Tell the user the form is saved as an unpublished draft, then ask whether they want to publish it. Call publish_form only after explicit confirmation.',
         ];
     }
 

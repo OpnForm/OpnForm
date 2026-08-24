@@ -249,6 +249,25 @@ it('renders a guest preview automatically after creation and every draft change'
         ->toContain('RendersApp(resource: FormDraftPreviewApp::class)');
 });
 
+it('guides the agent from guest preview to account save and explicit publication', function () {
+    $skill = file_get_contents(opnformPluginPath('skills/opnform/SKILL.md'));
+    $server = file_get_contents(app_path('Mcp/Servers/OpnFormServer.php'));
+    $createTool = file_get_contents(app_path('Mcp/Tools/CreateFormDraftTool.php'));
+    $patchTool = file_get_contents(app_path('Mcp/Tools/PatchFormDraftTool.php'));
+
+    expect($skill)
+        ->toContain('whether the user wants another change or wants to save the form')
+        ->toContain('saved as a draft and ask whether the user wants to publish it')
+        ->toContain('Asking is not confirmation')
+        ->and($server)
+        ->toContain('Never call a temporary guest draft saved')
+        ->toContain('publish only after an explicit affirmative response')
+        ->and($createTool)
+        ->toContain('wants another change or wants to save the form')
+        ->and($patchTool)
+        ->toContain('wants another change or wants to save the form');
+});
+
 it('renders a flattened and hardened form preview frame', function () {
     $view = file_get_contents(resource_path('views/mcp/form-draft-preview-app.blade.php'));
 
@@ -266,13 +285,14 @@ it('renders a flattened and hardened form preview frame', function () {
         ->toContain('new ResizeObserver(applyPreviewLayout).observe(previewViewport)')
         ->toContain("sizeHeight: presentationStyle !== 'focused'")
         ->toContain("app.callServerTool('open_form_draft_in_editor'")
-        ->toContain('window.openai?.toolOutput')
-        ->toContain("openai:set_globals")
+        ->toContain('currentPreviewUrl !== nextPreviewUrl')
         ->toContain('Ask ChatGPT to refresh this preview.')
         ->toContain('aria-label="Preview zoom"')
         ->toContain('sandbox="allow-forms allow-modals allow-popups allow-scripts allow-same-origin"')
         ->toContain('referrerpolicy="no-referrer"')
         ->not->toContain('class="card"')
         ->not->toContain('border-radius: 10px')
+        ->not->toContain('window.openai')
+        ->not->toContain('openai:set_globals')
         ->not->toContain('allow-top-navigation');
 });

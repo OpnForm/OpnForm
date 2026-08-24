@@ -46,7 +46,7 @@ class PatchFormDraftTool extends GuestDraftMcpTool
             'draft_handle' => $validated['draft_handle'],
             'draft' => $drafts->serialize($draft),
             'preview_url' => $drafts->previewUrl($draft),
-            'next_step' => 'The refreshed interactive preview is included in this result; present it before any text summary.',
+            'next_step' => 'Present the refreshed interactive preview, briefly summarize the change, then ask whether the user wants another change or wants to save the form to their OpnForm account.',
         ]);
     }
 

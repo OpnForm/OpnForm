@@ -34,9 +34,9 @@ it('publishes a neutral draft handle contract and accurate preview annotations',
     expect($create['outputSchema']['properties'])->toHaveKey('draft_handle')
         ->and($create['outputSchema']['properties'])->toHaveKey('preview_url')
         ->and($create['outputSchema']['properties'])->not->toHaveKey('draft_token')
-        ->and($create['_meta']['ui']['resourceUri'])->toBe('ui://opnform/form-draft-preview-v4')
+        ->and($create['_meta']['ui']['resourceUri'])->toBe('ui://opnform/form-draft-preview-v5')
         ->and(app(PatchFormDraftTool::class)->toArray()['_meta']['ui']['resourceUri'])
-        ->toBe('ui://opnform/form-draft-preview-v4')
+        ->toBe('ui://opnform/form-draft-preview-v5')
         ->and($preview['inputSchema']['properties'])->toHaveKey('draft_handle')
         ->and($preview['outputSchema']['properties'])->not->toHaveKeys([
             'editor_url',

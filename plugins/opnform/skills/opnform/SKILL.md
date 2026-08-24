@@ -30,9 +30,17 @@ This is the default workflow for new-form requests, including when the user does
 6. Apply requested changes with `patch_form_draft`, passing the latest `expected_version`. Validate the changed definition before persistence when needed. Its result renders the refreshed interactive preview automatically; present it before replying so the user never needs to ask to see an update.
 7. If the version conflicts or the current state is uncertain, call `get_form_draft`, reconcile the user's requested changes, validate again, and retry with the new version. Never overwrite blindly.
 8. If a patch returns a validation error, correct the invalid operation and retry once with the same latest version. Report the returned validation problem accurately; do not turn a recoverable enum or field error into a generic “server error”.
-9. Offer to open the draft in OpnForm. Call `open_form_draft_in_editor` only after the user chooses the preview's **Open in OpnForm** action or explicitly asks to continue in the editor. The returned handoff URL is reusable until the seven-day guest draft expires; generating another URL does not revoke earlier ones.
+9. After the preview, briefly summarize the result and ask one concise next-step question: whether the user wants another change or wants to save the form to their OpnForm account. Use the user's language. Do not end with only “the draft is ready”, and do not claim that a temporary guest draft is saved to an account.
+10. Call `open_form_draft_in_editor` only after the user chooses the preview's **Open in OpnForm** action or explicitly asks to continue in the editor. The returned handoff URL is reusable until the seven-day guest draft expires; generating another URL does not revoke earlier ones.
 
 The browser editor keeps the guest draft available through an HttpOnly session. The user can preview and edit before signing in. Authentication and workspace selection happen only when the user chooses to save the draft into an OpnForm account.
+
+### Guide the next decision
+
+- After every successful guest creation or revision, keep the interactive preview visible, mention the meaningful result or change in one sentence, and offer the two relevant choices: continue modifying the form or save it to the user's OpnForm account.
+- When the user chooses to save, that is an explicit request for account persistence. Enter the authenticated workflow, preserve the latest validated definition, and connect only if needed. If the user prefers the visual editor, use the editor handoff instead.
+- After a form is saved to an account and remains unpublished, clearly say that it is saved as a draft and ask whether the user wants to publish it. Asking is not confirmation: call `publish_form` only after an explicit affirmative response.
+- If the user already gave the next instruction, follow it instead of repeating a menu. Keep suggestions contextual and limited to one immediate decision; do not pile on unrelated account or submission actions.
 
 ### Produce a polished first draft
 
@@ -72,7 +80,7 @@ For new forms, enter this authenticated workflow only when the user explicitly a
 After authentication, use the account context to choose a workspace. If exactly one writable workspace is available, select it without asking. If several are available, call `list_workspaces` and ask the user which one to use. Workspace access is read-only through MCP; do not attempt workspace administration.
 
 - Use form listing and lookup tools to identify the target before changing it.
-- `create_form_in_account` creates an account-owned draft. After creation, ask whether the user wants it published.
+- `create_form_in_account` creates an account-owned draft. State that it is saved but unpublished, then ask whether the user wants it published.
 - Before `update_form`, `publish_form`, or `trash_form`, fetch the form and pass its current `revision` as `expected_revision`. On conflict, fetch, reconcile, and retry instead of overwriting newer changes.
 - Call `publish_form` only after the user explicitly confirms publication, then pass the confirmed form's `expected_revision` and `confirm_publish: true`.
 - Call `trash_form` only after the user explicitly confirms moving the form to trash, then pass the confirmed form's `expected_revision` and `confirm_trash: true`. MCP does not expose form restoration or permanent deletion.

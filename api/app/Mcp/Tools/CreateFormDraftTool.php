@@ -51,6 +51,7 @@ class CreateFormDraftTool extends GuestDraftMcpTool
                 'Pass draft_handle unchanged to guest draft tools. Do not display this internal handle to the user.',
                 'Use patch_form_draft with expected_version for changes.',
                 'The interactive preview is included in this result; present it before any text summary.',
+                'After the preview, ask whether the user wants another change or wants to save the form to their OpnForm account.',
             ],
         ]);
     }
