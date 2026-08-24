@@ -40,8 +40,10 @@
       />
       <div
         v-else
-        class="overflow-hidden border border-neutral-200 bg-white shadow-sm"
-        :class="isEmbedded && isFocused ? 'h-full' : (isEmbedded ? '' : 'min-h-[650px] rounded-xl')"
+        class="overflow-hidden"
+        :class="isEmbedded
+          ? (isFocused ? 'h-full bg-transparent' : 'bg-transparent')
+          : 'min-h-[650px] rounded-xl border border-neutral-200 bg-white shadow-sm'"
       >
         <OpenCompleteForm
           ref="formPreview"
@@ -67,9 +69,6 @@ import { FormMode } from '~/lib/forms/FormModeStrategy.js'
 
 definePageMeta({ layout: 'empty' })
 useOpnSeoMeta({ title: 'Private form draft preview' })
-useHead({
-  script: [{ src: '/widgets/iframeResizer.contentWindow.min.js' }],
-})
 
 const route = useRoute()
 const config = useRuntimeConfig()
@@ -84,6 +83,13 @@ const isResetting = ref(false)
 const isEmbedded = computed(() => route.query.embedded === '1')
 const isFocused = computed(() => form.value?.presentation_style === 'focused')
 provide('disableCustomCodeExecution', true)
+
+useHead(() => ({
+  script: [{ src: '/widgets/iframeResizer.contentWindow.min.js' }],
+  style: isEmbedded.value
+    ? [{ children: 'html, body, #__nuxt { background: transparent !important; }' }]
+    : [],
+}))
 
 const resetForm = () => {
   if (!formPreview.value?.restart || isResetting.value) return

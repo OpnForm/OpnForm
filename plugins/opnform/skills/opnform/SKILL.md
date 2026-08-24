@@ -22,16 +22,30 @@ Treat an unqualified request such as “create a contact form”, “build a sur
 
 This is the default workflow for new-form requests, including when the user does not mention “guest”, “draft”, “preview”, or “without login”. The presence of OAuth-protected account tools does not make authentication a prerequisite for these steps.
 
-1. Read `opnform://schemas/agent-form-definition/v1` and `opnform://reference/form-fields/v1` before generating a definition. Re-read the field reference before changing presentation style, fields, layout, or media later in the conversation. Do not inspect the OpnForm source tree or guess product behavior when the MCP resources describe it.
-2. Call `validate_form_definition`. Resolve every validation error before creating or saving a draft.
-3. Call `create_form_draft` with the validated definition.
-4. Keep the returned `draft_token` private. It is a capability secret: never quote it to the user, write it to a file, log it, or send it to another service.
-5. Call `preview_form_draft` and present its interactive MCP preview when the host supports it.
-6. Apply requested changes with `patch_form_draft`, passing the latest `expected_version`. Validate the changed definition before persistence when needed.
+1. Read `opnform://schemas/agent-form-definition/v1` and `opnform://reference/form-fields/v1` before generating a definition. Follow the field reference's `authoring_guidelines`. Re-read the field reference before changing presentation style, fields, layout, or media later in the conversation. Do not inspect the OpnForm source tree or guess product behavior when the MCP resources describe it.
+2. Perform the respondent-facing quality pass below, then call `validate_form_definition`. Resolve every validation error. Treat `quality_warnings` as non-blocking editorial guidance: correct relevant warnings before creating or saving while preserving intentional user choices.
+3. Call `create_form_draft` with the validated definition. Its result renders the interactive MCP preview automatically; present that preview even when the user did not ask to see one, and do not finish a create turn with text alone.
+4. Keep the returned `draft_handle` in tool context and pass it unchanged to guest draft tools. It is an internal opaque reference, not user-facing form content: do not quote it to the user, write it to a file, log it, or send it to another service.
+5. Use `preview_form_draft` to show or re-render an existing draft when no create or patch is being performed. This is a read-only step and must not create an editor link.
+6. Apply requested changes with `patch_form_draft`, passing the latest `expected_version`. Validate the changed definition before persistence when needed. Its result renders the refreshed interactive preview automatically; present it before replying so the user never needs to ask to see an update.
 7. If the version conflicts or the current state is uncertain, call `get_form_draft`, reconcile the user's requested changes, validate again, and retry with the new version. Never overwrite blindly.
-8. Offer to open the draft in OpnForm. Use the `editor_url` returned by the preview or call `open_form_draft_in_editor`. The handoff URL is reusable until the seven-day guest draft expires; generating another URL does not revoke earlier ones.
+8. If a patch returns a validation error, correct the invalid operation and retry once with the same latest version. Report the returned validation problem accurately; do not turn a recoverable enum or field error into a generic “server error”.
+9. Offer to open the draft in OpnForm. Call `open_form_draft_in_editor` only after the user chooses the preview's **Open in OpnForm** action or explicitly asks to continue in the editor. The returned handoff URL is reusable until the seven-day guest draft expires; generating another URL does not revoke earlier ones.
 
 The browser editor keeps the guest draft available through an HttpOnly session. The user can preview and edit before signing in. Authentication and workspace selection happen only when the user chooses to save the draft into an OpnForm account.
+
+### Produce a polished first draft
+
+- Infer the form's purpose, audience, language, and tone. Make conservative assumptions and show a useful first draft instead of blocking on non-essential questions.
+- Keep short forms short. Unless the form is intentionally trivial, begin with a concise `nf-text` heading and one supporting sentence explaining its purpose.
+- Use human-facing labels in sentence case. Use short noun labels for identity fields and direct, unbiased questions for surveys; never expose raw identifiers or snake_case.
+- Add placeholders only when they provide a useful example or expected format. Never use them instead of visible labels or repeat “Enter your [label]”.
+- Add help text only for constraints, unfamiliar information, formatting, or why information is requested.
+- Use the most specific field type and mark only essential fields as required. Avoid duplicate or unnecessary questions.
+- In classic mode, pair at most two related short fields on a row and keep long answers full width. Split long forms by meaningful sections, not arbitrary field counts.
+- Use clean neutral style defaults unless the user supplies brand direction. Do not invent brand colors, logos, decorative media, legal consent, sensitive questions, response times, or business commitments.
+- Use a contextual action such as “Send message”, “Request a quote”, or “Join the waitlist”, not a generic “Submit”. Add a specific completion message that confirms what happened and, when known, what comes next.
+- Keep language, capitalization, tone, terminology, and option style consistent throughout the form.
 
 ### Common field mappings
 
@@ -44,6 +58,7 @@ The browser editor keeps the guest draft available through an HttpOnly session. 
 
 - `classic` is a continuous form. Use widths for columns and `nf-page-break` only when the user wants explicit pagination.
 - `focused` is a Typeform-like flow: every visible block becomes one step automatically. Use full-width input blocks and concise `nf-text` intro steps. Remove `nf-page-break` and do not add standalone `nf-image`, `nf-divider`, `nf-code`, `nf-video`, or `nf-audio` blocks.
+- Use the exact documented style values. In particular: `border_radius` is `none`, `small`, or `full`; `width` is `centered` or `full`; `size` is `sm`, `md`, or `lg`; and `theme` is `default`, `simple`, `notion`, `minimal`, or `transparent`. Never invent aliases such as `medium` or `large`.
 - To illustrate a focused step, add an `image` object to that input or `nf-text` block. Follow the layouts and media schema in `opnform://reference/form-fields/v1`; do not confuse this with the standalone `nf-image.image_block` shape.
 - Use only user-provided or durable public HTTPS image URLs. Never persist localhost, private addresses, temporary tunnel domains, expiring signed URLs, or asset paths found by reading the OpnForm repository.
 - Preserve the existing language, copy, field IDs, and unrelated settings unless the user asks to change them. For a focused conversion, usually set `settings.auto_next`, `settings.navigation_arrows`, and the localized `translations.focused_next_button_text` deliberately.
@@ -75,7 +90,7 @@ Submission access requires OAuth. Authenticate only when the user's request need
 
 ## Safety and recovery
 
-- Treat draft tokens, editor handoffs, OAuth tokens, and export URLs as secrets.
+- Keep internal draft handles out of user-facing text and logs. Treat editor handoffs, OAuth tokens, and export URLs as sensitive credentials.
 - If a preview or editor URL expires, call the appropriate tool for a fresh URL; never reconstruct one.
 - If authentication is unavailable, continue with guest-safe draft tools when the task permits it.
 - Never bypass confirmation, workspace permission, validation, revision checks, plan enforcement, or rate limits.

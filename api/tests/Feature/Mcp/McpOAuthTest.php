@@ -137,9 +137,9 @@ it('creates and previews a guest form over HTTP without an OAuth challenge', fun
         ->assertJsonPath('result.isError', false)
         ->assertJsonMissingPath('result._meta.mcp/www_authenticate');
 
-    $draftToken = $createResponse->json('result.structuredContent.draft_token');
+    $draftHandle = $createResponse->json('result.structuredContent.draft_handle');
 
-    expect($draftToken)->toBeString()->toHaveLength(43);
+    expect($draftHandle)->toBeString()->toHaveLength(43);
 
     $this->postJson('/mcp', [
         'jsonrpc' => '2.0',
@@ -148,14 +148,15 @@ it('creates and previews a guest form over HTTP without an OAuth challenge', fun
         'params' => [
             'name' => 'preview_form_draft',
             'arguments' => [
-                'draft_token' => $draftToken,
+                'draft_handle' => $draftHandle,
             ],
         ],
     ], mcpHeaders())->assertOk()
         ->assertJsonPath('result.isError', false)
         ->assertJsonPath('result.structuredContent.draft.definition.title', 'Contact form')
         ->assertJsonPath('result.structuredContent.preview_url', fn (string $url): bool => str_starts_with($url, 'https://opnform.test/'))
-        ->assertJsonPath('result.structuredContent.editor_url', fn (string $url): bool => str_starts_with($url, 'https://opnform.test/'))
+        ->assertJsonPath('result.structuredContent.draft_handle', $draftHandle)
+        ->assertJsonMissingPath('result.structuredContent.editor_url')
         ->assertJsonMissingPath('result._meta.mcp/www_authenticate');
 });
 
