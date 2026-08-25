@@ -73,7 +73,7 @@ it('publishes standard and ChatGPT-compatible CSP metadata with the full fronten
         ->content()
         ->toResource($previewApp);
 
-    expect($previewApp->uri())->toBe('ui://opnform/form-draft-preview-v7')
+    expect($previewApp->uri())->toBe('ui://opnform/form-draft-preview-v8.html')
         ->and($previewApp->resolvedAppMeta()['domain'])
         ->toBe('http://127.0.0.1:33676')
         ->and($previewApp->resolvedAppMeta()['csp']['resourceDomains'])

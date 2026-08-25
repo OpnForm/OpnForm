@@ -24,6 +24,16 @@ use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 #[IsOpenWorld(false)]
 class PreviewFormDraftTool extends GuestDraftMcpTool
 {
+    /**
+     * @return array<string, mixed>
+     */
+    public function toArray(): array
+    {
+        $this->setMeta('openai/outputTemplate', FormDraftPreviewApp::URI);
+
+        return parent::toArray();
+    }
+
     public function handle(Request $request, AgentFormDraftService $drafts): ResponseFactory
     {
         $validated = $request->validate([

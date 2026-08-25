@@ -14,9 +14,11 @@ use Laravel\Mcp\Server\Ui\Csp;
 
 #[Name('form_draft_preview')]
 #[Description('Interactive preview of a temporary guest OpnForm draft with an optional editor handoff.')]
-#[Uri('ui://opnform/form-draft-preview-v7')]
+#[Uri(FormDraftPreviewApp::URI)]
 class FormDraftPreviewApp extends AppResource
 {
+    public const URI = 'ui://opnform/form-draft-preview-v8.html';
+
     public function shouldRegister(McpAvailability $availability): bool
     {
         return $availability->guestDraftsEnabled();
