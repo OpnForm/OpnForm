@@ -14,7 +14,7 @@ use Laravel\Mcp\Server\Ui\Csp;
 
 #[Name('form_draft_preview')]
 #[Description('Interactive preview of a temporary guest OpnForm draft with an optional editor handoff.')]
-#[Uri('ui://opnform/form-draft-preview-v6')]
+#[Uri('ui://opnform/form-draft-preview-v7')]
 class FormDraftPreviewApp extends AppResource
 {
     public function shouldRegister(McpAvailability $availability): bool
@@ -50,7 +50,7 @@ class FormDraftPreviewApp extends AppResource
             Csp::make()
                 ->resourceDomains([$origin])
                 ->frameDomains([$origin]),
-        );
+        )->domain($origin);
     }
 
     private function frontOrigin(): ?string
