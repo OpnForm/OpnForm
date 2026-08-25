@@ -39,6 +39,9 @@ it('publishes a neutral draft handle contract and accurate preview annotations',
         ->and($preview['_meta']['ui']['resourceUri'])->toBe('ui://opnform/form-draft-preview.html')
         ->and($preview['_meta']['openai/outputTemplate'])->toBe('ui://opnform/form-draft-preview.html')
         ->and($preview['inputSchema']['properties'])->toHaveKey('draft_handle')
+        ->and($preview['description'])
+        ->toContain('modify the draft again or save it', 'Do not request OAuth unless the user chooses save')
+        ->and($preview['outputSchema']['properties'])->toHaveKey('next_step')
         ->and($preview['outputSchema']['properties'])->not->toHaveKeys([
             'preview_url',
             'editor_url',

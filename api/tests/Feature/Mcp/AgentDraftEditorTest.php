@@ -38,6 +38,7 @@ it('renders a read-only MCP App preview and creates an editor link only on deman
     ])->assertOk()
         ->assertDontSee('preview_url')
         ->assertSee('draft_handle')
+        ->assertSee(['next_step', 'modify the draft again or save it', 'Do not request OAuth unless the user chooses save'])
         ->assertDontSee('editor_url')
         ->assertSee('Agent customer intake');
 

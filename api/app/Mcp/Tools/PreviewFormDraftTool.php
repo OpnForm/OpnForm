@@ -17,7 +17,7 @@ use Laravel\Mcp\Server\Tools\Annotations\IsOpenWorld;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Name('preview_form_draft')]
-#[Description('Render the final interactive preview for an existing guest draft without changing it. Call exactly once after a successful create_form_draft or patch_form_draft, and use it again only when the user explicitly asks to refresh an existing preview. The signed preview remains valid until the seven-day draft expires. This tool is read-only, safe to retry after an error, and does not create an editor link.')]
+#[Description('Render the final interactive preview for an existing guest draft without changing it. Call exactly once after a successful create_form_draft or patch_form_draft, and use it again only when the user explicitly asks to refresh an existing preview. After success, briefly summarize the result and ask one question offering two choices: modify the draft again or save it to the user\'s OpnForm account. Do not request OAuth unless the user chooses save. The signed preview remains valid until the seven-day draft expires. This tool is read-only, safe to retry after an error, and does not create an editor link.')]
 #[RendersApp(resource: FormDraftPreviewApp::class)]
 #[IsReadOnly]
 #[IsDestructive(false)]
@@ -44,6 +44,7 @@ class PreviewFormDraftTool extends GuestDraftMcpTool
         return Response::structured([
             'draft_handle' => $validated['draft_handle'],
             'draft' => $drafts->serialize($draft),
+            'next_step' => 'Briefly summarize the preview, then ask one question offering two choices: modify the draft again or save it to the user\'s OpnForm account. Do not request OAuth unless the user chooses save.',
         ])->withMeta('preview_url', $drafts->previewUrl($draft));
     }
 
@@ -63,6 +64,7 @@ class PreviewFormDraftTool extends GuestDraftMcpTool
         return [
             'draft_handle' => $schema->string()->min(43)->max(43)->required(),
             'draft' => McpOutputSchema::draft($schema)->required(),
+            'next_step' => $schema->string()->required(),
         ];
     }
 }

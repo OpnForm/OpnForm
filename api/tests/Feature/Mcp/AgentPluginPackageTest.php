@@ -264,9 +264,11 @@ it('guides the agent from guest preview to account save and explicit publication
     $server = file_get_contents(app_path('Mcp/Servers/OpnFormServer.php'));
     $createTool = file_get_contents(app_path('Mcp/Tools/CreateFormDraftTool.php'));
     $patchTool = file_get_contents(app_path('Mcp/Tools/PatchFormDraftTool.php'));
+    $previewTool = file_get_contents(app_path('Mcp/Tools/PreviewFormDraftTool.php'));
 
     expect($skill)
-        ->toContain('whether the user wants another change or wants to save the form')
+        ->toContain('ask exactly one question offering two choices')
+        ->toContain('A status-only response is incomplete')
         ->toContain('saved as an unpublished draft')
         ->toContain('Asking is not confirmation')
         ->and($server)
@@ -275,7 +277,11 @@ it('guides the agent from guest preview to account save and explicit publication
         ->and($createTool)
         ->toContain('data-only')
         ->and($patchTool)
-        ->toContain('data-only');
+        ->toContain('data-only')
+        ->and($previewTool)
+        ->toContain("'next_step'")
+        ->toContain('modify the draft again or save it')
+        ->toContain('Do not request OAuth unless the user chooses save');
 });
 
 it('renders a flattened and hardened form preview frame', function () {
