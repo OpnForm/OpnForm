@@ -17,7 +17,11 @@ use Laravel\Mcp\Server\Ui\Csp;
 #[Uri(FormDraftPreviewApp::URI)]
 class FormDraftPreviewApp extends AppResource
 {
-    public const URI = 'ui://opnform/form-draft-preview-v8.html';
+    /**
+     * This URI is persisted by OpenAI plugin versions and existing conversations.
+     * Keep it stable for non-breaking widget changes and continue serving old URIs.
+     */
+    public const URI = 'ui://opnform/form-draft-preview.html';
 
     public function shouldRegister(McpAvailability $availability): bool
     {

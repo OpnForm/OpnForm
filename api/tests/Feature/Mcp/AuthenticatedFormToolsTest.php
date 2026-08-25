@@ -168,11 +168,22 @@ it('hides guest draft capabilities but keeps validation and OAuth tools on self-
 
     expect($resourceUris)
         ->toContain('opnform://schemas/agent-form-definition/v1', 'opnform://reference/form-fields/v1')
-        ->not->toContain('ui://opnform/form-draft-preview-v8.html');
+        ->not->toContain('ui://opnform/form-draft-preview.html');
+
+    $resourceTemplatesResponse = $this->postJson('/mcp', [
+        'jsonrpc' => '2.0',
+        'id' => 3,
+        'method' => 'resources/templates/list',
+        'params' => [],
+    ], $headers)->assertOk();
+    $resourceTemplateUris = collect($resourceTemplatesResponse->json('result.resourceTemplates'))->pluck('uriTemplate');
+
+    expect($resourceTemplateUris)
+        ->not->toContain('ui://opnform/form-draft-preview-{version}');
 
     $this->postJson('/mcp', [
         'jsonrpc' => '2.0',
-        'id' => 3,
+        'id' => 4,
         'method' => 'tools/call',
         'params' => [
             'name' => 'create_form_draft',

@@ -3,6 +3,7 @@
 namespace App\Mcp\Servers;
 
 use App\Mcp\Apps\FormDraftPreviewApp;
+use App\Mcp\Apps\LegacyFormDraftPreviewApp;
 use App\Mcp\Methods\CallTool;
 use App\Mcp\Resources\FormDefinitionSchemaResource;
 use App\Mcp\Resources\FormFieldCatalogResource;
@@ -67,6 +68,7 @@ class OpnFormServer extends Server
         FormDefinitionSchemaResource::class,
         FormFieldCatalogResource::class,
         FormDraftPreviewApp::class,
+        LegacyFormDraftPreviewApp::class,
     ];
 
     protected function boot(): void

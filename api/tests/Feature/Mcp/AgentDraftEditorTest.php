@@ -73,7 +73,7 @@ it('publishes standard and ChatGPT-compatible CSP metadata with the full fronten
         ->content()
         ->toResource($previewApp);
 
-    expect($previewApp->uri())->toBe('ui://opnform/form-draft-preview-v8.html')
+    expect($previewApp->uri())->toBe('ui://opnform/form-draft-preview.html')
         ->and($previewApp->resolvedAppMeta()['domain'])
         ->toBe('http://127.0.0.1:33676')
         ->and($previewApp->resolvedAppMeta()['csp']['resourceDomains'])
@@ -103,6 +103,40 @@ it('publishes standard and ChatGPT-compatible CSP metadata with the full fronten
         ->toBe(['https://opnform.test'])
         ->and($secureResource['_meta']['openai/widgetCSP']['frame_domains'])
         ->toBe(['https://opnform.test']);
+});
+
+it('keeps preview template URIs used by existing plugin versions readable', function () {
+    $headers = ['Accept' => 'application/json, text/event-stream'];
+
+    $historicalUris = array_map(
+        fn (int $version) => "ui://opnform/form-draft-preview-v{$version}",
+        range(3, 7),
+    );
+    $historicalUris[] = 'ui://opnform/form-draft-preview-v8.html';
+
+    foreach ($historicalUris as $index => $uri) {
+
+        $this->postJson('/mcp', [
+            'jsonrpc' => '2.0',
+            'id' => $index + 1,
+            'method' => 'resources/read',
+            'params' => ['uri' => $uri],
+        ], $headers)->assertOk()
+            ->assertJsonPath('result.contents.0.uri', $uri)
+            ->assertJsonPath('result.contents.0.mimeType', 'text/html;profile=mcp-app')
+            ->assertJsonPath('result.contents.0._meta.ui.domain', 'https://opnform.test')
+            ->assertSee('Edit in OpnForm');
+    }
+
+    $resourceTemplatesResponse = $this->postJson('/mcp', [
+        'jsonrpc' => '2.0',
+        'id' => 8,
+        'method' => 'resources/templates/list',
+        'params' => [],
+    ], $headers)->assertOk();
+
+    expect(collect($resourceTemplatesResponse->json('result.resourceTemplates'))->pluck('uriTemplate'))
+        ->toContain('ui://opnform/form-draft-preview-{version}');
 });
 
 it('serves preview data only through a valid signed URL without exposing capabilities', function () {
