@@ -40,11 +40,14 @@ it('publishes a neutral draft handle contract and accurate preview annotations',
         ->and($preview['_meta']['openai/outputTemplate'])->toBe('ui://opnform/form-draft-preview.html')
         ->and($preview['inputSchema']['properties'])->toHaveKey('draft_handle')
         ->and($preview['outputSchema']['properties'])->not->toHaveKeys([
+            'preview_url',
             'editor_url',
             'editor_link_expires_at',
         ])
         ->and($preview['annotations']['readOnlyHint'])->toBeTrue()
         ->and($open['_meta']['ui']['visibility'])->toBe(['model', 'app'])
+        ->and($open['outputSchema']['properties'])->toHaveKey('editor_handoff_ready')
+        ->and($open['outputSchema']['properties'])->not->toHaveKey('editor_url')
         ->and($open['outputSchema']['properties'])->not->toHaveKey('handoff_token');
 });
 

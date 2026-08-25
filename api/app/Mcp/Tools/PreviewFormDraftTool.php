@@ -44,8 +44,7 @@ class PreviewFormDraftTool extends GuestDraftMcpTool
         return Response::structured([
             'draft_handle' => $validated['draft_handle'],
             'draft' => $drafts->serialize($draft),
-            'preview_url' => $drafts->previewUrl($draft),
-        ]);
+        ])->withMeta('preview_url', $drafts->previewUrl($draft));
     }
 
     public function schema(JsonSchema $schema): array
@@ -64,7 +63,6 @@ class PreviewFormDraftTool extends GuestDraftMcpTool
         return [
             'draft_handle' => $schema->string()->min(43)->max(43)->required(),
             'draft' => McpOutputSchema::draft($schema)->required(),
-            'preview_url' => $schema->string()->format('uri')->required(),
         ];
     }
 }

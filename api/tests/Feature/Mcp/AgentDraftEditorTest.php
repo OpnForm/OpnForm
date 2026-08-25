@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\AgentFormDraftController;
+use App\Mcp\Apps\FormDraftPreviewApp;
+use App\Mcp\Apps\LegacyFormDraftPreviewApp;
 use App\Mcp\Servers\OpnFormServer;
 use App\Mcp\Tools\OpenFormDraftInEditorTool;
 use App\Mcp\Tools\PreviewFormDraftTool;
@@ -34,7 +36,7 @@ it('renders a read-only MCP App preview and creates an editor link only on deman
     OpnFormServer::tool(PreviewFormDraftTool::class, [
         'draft_handle' => $created['token'],
     ])->assertOk()
-        ->assertSee('preview_url')
+        ->assertDontSee('preview_url')
         ->assertSee('draft_handle')
         ->assertDontSee('editor_url')
         ->assertSee('Agent customer intake');
@@ -53,7 +55,8 @@ it('renders a read-only MCP App preview and creates an editor link only on deman
     OpnFormServer::tool(OpenFormDraftInEditorTool::class, [
         'draft_handle' => $created['token'],
     ])->assertOk()
-        ->assertSee('editor_url')
+        ->assertSee('editor_handoff_ready')
+        ->assertDontSee('editor_url')
         ->assertDontSee('handoff_token');
 
     $draft = $created['draft']->refresh();
@@ -62,13 +65,13 @@ it('renders a read-only MCP App preview and creates an editor link only on deman
         ->and($handoff->expires_at->isSameSecond($draft->expires_at))->toBeTrue()
         ->and(app(AgentFormDraftService::class)->issueEditorHandoff($created['token'])['editor_url'])
         ->toStartWith('https://opnform.test/agent-drafts/edit#handoff=')
-        ->and(app(\App\Mcp\Apps\FormDraftPreviewApp::class)->resolvedAppMeta()['csp']['frameDomains'])
+        ->and(app(FormDraftPreviewApp::class)->resolvedAppMeta()['csp']['frameDomains'])
         ->toBe(['https://opnform.test']);
 });
 
 it('publishes standard and ChatGPT-compatible CSP metadata with the full frontend origin', function () {
     config()->set('app.front_url', 'http://127.0.0.1:33676');
-    $previewApp = app(\App\Mcp\Apps\FormDraftPreviewApp::class);
+    $previewApp = app(FormDraftPreviewApp::class);
     $resource = $previewApp->handle(new \Laravel\Mcp\Request())
         ->content()
         ->toResource($previewApp);
@@ -80,7 +83,11 @@ it('publishes standard and ChatGPT-compatible CSP metadata with the full fronten
         ->toBe(['http://127.0.0.1:33676'])
         ->and($previewApp->resolvedAppMeta()['csp']['frameDomains'])
         ->toBe(['http://127.0.0.1:33676'])
+        ->and($previewApp->resolvedAppMeta()['prefersBorder'])
+        ->toBeFalse()
         ->and($resource['text'])->not->toContain('native-preview')
+        ->and($resource['_meta']['openai/widgetDescription'])
+        ->toBe('Interactive private preview of the current OpnForm draft, with zoom controls and an Edit in OpnForm action.')
         ->and($resource['_meta']['openai/widgetCSP'])
         ->toBe([
             'connect_domains' => [],
@@ -90,7 +97,7 @@ it('publishes standard and ChatGPT-compatible CSP metadata with the full fronten
         ]);
 
     config()->set('app.front_url', 'https://opnform.test');
-    $secureApp = app(\App\Mcp\Apps\FormDraftPreviewApp::class);
+    $secureApp = app(FormDraftPreviewApp::class);
     $secureResource = $secureApp->handle(new \Laravel\Mcp\Request())
         ->content()
         ->toResource($secureApp);
@@ -105,17 +112,32 @@ it('publishes standard and ChatGPT-compatible CSP metadata with the full fronten
         ->toBe(['https://opnform.test']);
 });
 
-it('keeps preview template URIs used by existing plugin versions readable', function () {
+it('keeps signed editor URLs private to the widget result metadata', function () {
+    $created = app(AgentFormDraftService::class)->create(editorDraftDefinition());
+
+    $this->postJson('/mcp', [
+        'jsonrpc' => '2.0',
+        'id' => 1,
+        'method' => 'tools/call',
+        'params' => [
+            'name' => 'open_form_draft_in_editor',
+            'arguments' => ['draft_handle' => $created['token']],
+        ],
+    ], ['Accept' => 'application/json, text/event-stream'])->assertOk()
+        ->assertJsonPath('result.isError', false)
+        ->assertJsonPath('result.structuredContent.editor_handoff_ready', true)
+        ->assertJsonPath('result.structuredContent.expires_at', fn (string $expiresAt): bool => $expiresAt !== '')
+        ->assertJsonMissingPath('result.structuredContent.editor_url')
+        ->assertJsonPath('result._meta.editor_url', fn (string $url): bool => str_starts_with(
+            $url,
+            'https://opnform.test/agent-drafts/edit#handoff=',
+        ));
+});
+
+it('keeps the current OpenAI snapshot preview URI readable without a catch-all template', function () {
     $headers = ['Accept' => 'application/json, text/event-stream'];
 
-    $historicalUris = array_map(
-        fn (int $version) => "ui://opnform/form-draft-preview-v{$version}",
-        range(3, 7),
-    );
-    $historicalUris[] = 'ui://opnform/form-draft-preview-v8.html';
-
-    foreach ($historicalUris as $index => $uri) {
-
+    foreach ([FormDraftPreviewApp::URI, LegacyFormDraftPreviewApp::URI] as $index => $uri) {
         $this->postJson('/mcp', [
             'jsonrpc' => '2.0',
             'id' => $index + 1,
@@ -128,6 +150,16 @@ it('keeps preview template URIs used by existing plugin versions readable', func
             ->assertSee('Edit in OpnForm');
     }
 
+    $resourcesResponse = $this->postJson('/mcp', [
+        'jsonrpc' => '2.0',
+        'id' => 7,
+        'method' => 'resources/list',
+        'params' => [],
+    ], $headers)->assertOk();
+
+    expect(collect($resourcesResponse->json('result.resources'))->pluck('uri'))
+        ->toContain(FormDraftPreviewApp::URI, LegacyFormDraftPreviewApp::URI);
+
     $resourceTemplatesResponse = $this->postJson('/mcp', [
         'jsonrpc' => '2.0',
         'id' => 8,
@@ -136,7 +168,7 @@ it('keeps preview template URIs used by existing plugin versions readable', func
     ], $headers)->assertOk();
 
     expect(collect($resourceTemplatesResponse->json('result.resourceTemplates'))->pluck('uriTemplate'))
-        ->toContain('ui://opnform/form-draft-preview-{version}');
+        ->not->toContain('ui://opnform/form-draft-preview-{version}');
 });
 
 it('serves preview data only through a valid signed URL without exposing capabilities', function () {

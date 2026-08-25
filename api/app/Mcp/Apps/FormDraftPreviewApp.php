@@ -30,7 +30,11 @@ class FormDraftPreviewApp extends AppResource
 
     public function handle(Request $request): Response
     {
-        $response = Response::view('mcp.form-draft-preview-app');
+        $response = Response::view('mcp.form-draft-preview-app')
+            ->withMeta(
+                'openai/widgetDescription',
+                'Interactive private preview of the current OpnForm draft, with zoom controls and an Edit in OpnForm action.',
+            );
         $origin = $this->frontOrigin();
 
         if ($origin !== null) {
@@ -49,14 +53,14 @@ class FormDraftPreviewApp extends AppResource
     {
         $origin = $this->frontOrigin();
         if ($origin === null) {
-            return AppMeta::make();
+            return AppMeta::make()->prefersBorder(false);
         }
 
         return AppMeta::make()->csp(
             Csp::make()
                 ->resourceDomains([$origin])
                 ->frameDomains([$origin]),
-        )->domain($origin);
+        )->domain($origin)->prefersBorder(false);
     }
 
     private function frontOrigin(): ?string

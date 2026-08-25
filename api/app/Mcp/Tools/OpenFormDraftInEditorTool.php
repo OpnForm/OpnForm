@@ -45,9 +45,9 @@ class OpenFormDraftInEditorTool extends GuestDraftMcpTool
         $handoff = $drafts->issueEditorHandoff($validated['draft_handle']);
 
         return Response::structured([
-            'editor_url' => $handoff['editor_url'],
+            'editor_handoff_ready' => true,
             'expires_at' => $handoff['expires_at'],
-        ]);
+        ])->withMeta('editor_url', $handoff['editor_url']);
     }
 
     public function schema(JsonSchema $schema): array
@@ -64,7 +64,7 @@ class OpenFormDraftInEditorTool extends GuestDraftMcpTool
     public function outputSchema(JsonSchema $schema): array
     {
         return [
-            'editor_url' => $schema->string()->format('uri')->required(),
+            'editor_handoff_ready' => $schema->boolean()->required(),
             'expires_at' => $schema->string()->format('date-time')->required(),
         ];
     }

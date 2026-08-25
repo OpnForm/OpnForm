@@ -119,6 +119,10 @@
                     ?? result
                     ?? {};
 
+                const toolMeta = (result) => result?._meta
+                    ?? result?.meta
+                    ?? {};
+
                 const applyToolInput = (input) => {
                     const args = input?.arguments ?? input ?? {};
                     draftHandle = args.draft_handle ?? draftHandle;
@@ -127,10 +131,12 @@
 
                 const renderToolResult = (result) => {
                     const payload = toolPayload(result);
+                    const resultMeta = toolMeta(result);
                     const draft = payload.draft ?? {};
                     const definition = draft.definition ?? {};
+                    const previewUrlValue = resultMeta.preview_url;
 
-                    if (!payload.preview_url && !draft.version && !definition.title) {
+                    if (!previewUrlValue && !draft.version && !definition.title) {
                         return false;
                     }
 
@@ -141,8 +147,8 @@
                     title.textContent = definition.title ?? 'Untitled form';
                     meta.textContent = `Draft v${draft.version ?? '?'} · ${presentationStyle} layout`;
                     applyPreviewLayout();
-                    if (payload.preview_url) {
-                        const previewUrl = new URL(payload.preview_url);
+                    if (previewUrlValue) {
+                        const previewUrl = new URL(previewUrlValue);
                         previewUrl.searchParams.set('embedded', '1');
                         const nextPreviewUrl = previewUrl.toString();
                         if (currentPreviewUrl !== nextPreviewUrl) {
@@ -205,13 +211,14 @@
                         const result = await app.callServerTool('open_form_draft_in_editor', {
                             draft_handle: draftHandle,
                         });
-                        const payload = toolPayload(result);
+                        const resultMeta = toolMeta(result);
+                        const editorUrl = resultMeta.editor_url;
 
-                        if (result?.isError || !payload.editor_url) {
+                        if (result?.isError || !editorUrl) {
                             throw new Error('Editor link unavailable');
                         }
 
-                        await app.openLink({ url: payload.editor_url });
+                        await app.openLink({ url: editorUrl });
                     } catch (error) {
                         actionStatus.textContent = 'Could not open the OpnForm editor. Please try again.';
                         actionStatus.hidden = false;

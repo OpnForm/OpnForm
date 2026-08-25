@@ -4,15 +4,12 @@ namespace App\Mcp\Apps;
 
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
-use Laravel\Mcp\Server\Contracts\HasUriTemplate;
-use Laravel\Mcp\Support\UriTemplate;
+use Laravel\Mcp\Server\Attributes\Uri;
 
-#[Name('legacy_form_draft_preview')]
-#[Description('Compatibility resource for OpnForm preview templates referenced by existing plugin versions and conversations.')]
-class LegacyFormDraftPreviewApp extends FormDraftPreviewApp implements HasUriTemplate
+#[Name('legacy_form_draft_preview_v8')]
+#[Description('Compatibility resource for the form preview URI published by the current OpenAI plugin snapshot.')]
+#[Uri(LegacyFormDraftPreviewApp::URI)]
+class LegacyFormDraftPreviewApp extends FormDraftPreviewApp
 {
-    public function uriTemplate(): UriTemplate
-    {
-        return new UriTemplate('ui://opnform/form-draft-preview-{version}');
-    }
+    public const URI = 'ui://opnform/form-draft-preview-v8.html';
 }

@@ -168,7 +168,10 @@ it('hides guest draft capabilities but keeps validation and OAuth tools on self-
 
     expect($resourceUris)
         ->toContain('opnform://schemas/agent-form-definition/v1', 'opnform://reference/form-fields/v1')
-        ->not->toContain('ui://opnform/form-draft-preview.html');
+        ->not->toContain(
+            'ui://opnform/form-draft-preview.html',
+            'ui://opnform/form-draft-preview-v8.html',
+        );
 
     $resourceTemplatesResponse = $this->postJson('/mcp', [
         'jsonrpc' => '2.0',
