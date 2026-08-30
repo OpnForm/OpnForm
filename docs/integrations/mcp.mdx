@@ -208,6 +208,54 @@ Workspace administration and submission mutations are unavailable. MCP does not 
 
 Normal workspace permissions and plan limits continue to apply. If saving a form disables unavailable premium features, the tool response lists those changes.
 
+Before validating or saving a definition, OpnForm silently normalizes issues it can repair without guessing intent. For example, it removes empty or invalid display-logic blocks, repairs stale logic reference metadata, discards unusable entries from select options, and removes invalid computed variables together with formulas or logic that become invalid as a result. Ambiguous changes still return a precise error path, such as an empty select field, a duplicate field ID, or a malformed form block.
+
+### Computed variables and display logic
+
+The versioned form-definition schema and field catalog document computed variables, display-logic actions, condition groups, and the operators available for each reference type. Formula references use technical IDs in braces:
+
+```json
+{
+  "computed_variables": [
+    {
+      "id": "cv_priority_score",
+      "name": "Priority score",
+      "formula": "{budget} * 1.2",
+      "result_type": "number"
+    }
+  ]
+}
+```
+
+A logic condition may use that calculated value by setting `property_meta.type` to `computed`:
+
+```json
+{
+  "hidden": true,
+  "logic": {
+    "conditions": {
+      "operatorIdentifier": "and",
+      "children": [
+        {
+          "identifier": "cv_priority_score",
+          "value": {
+            "operator": "greater_than",
+            "property_meta": {
+              "id": "cv_priority_score",
+              "type": "computed"
+            },
+            "value": 10000
+          }
+        }
+      ]
+    },
+    "actions": ["show-block"]
+  }
+}
+```
+
+With `patch_form_draft`, replace the complete `computed_variables` list through `set_form_values`, and add or modify a block's `logic` through `add_block` or `update_block`. The draft is normalized and validated atomically before its version changes.
+
 ## Self-hosted OAuth configuration
 
 The following settings apply only to self-hosted instances.

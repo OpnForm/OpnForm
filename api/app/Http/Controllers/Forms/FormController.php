@@ -16,6 +16,8 @@ use App\Notifications\Forms\MobileEditorEmail;
 use App\Service\Billing\Feature;
 use App\Service\Forms\FormCleaner;
 use App\Service\Forms\FormCreationService;
+use App\Service\Forms\FormDataNormalizer;
+use App\Service\Forms\FormStructureValidator;
 use App\Service\Forms\FormUpdateService;
 use App\Service\Storage\FileUploadPathService;
 use App\Service\Storage\StorageFileNameParser;
@@ -35,6 +37,8 @@ class FormController extends Controller
     public function __construct(
         private readonly FormCreationService $formCreation,
         private readonly FormUpdateService $formUpdate,
+        private readonly FormDataNormalizer $formDataNormalizer,
+        private readonly FormStructureValidator $formStructureValidator,
     ) {
         $this->middleware('auth', ['except' => ['uploadAsset']]);
         $this->formCleaner = new FormCleaner();
@@ -182,6 +186,16 @@ class FormController extends Controller
         ]);
     }
 
+    public function validateDefinition(UpdateFormRequest $request, Form $form)
+    {
+        $this->authorize('update', $form);
+
+        return $this->success([
+            'valid' => true,
+            'message' => 'The form definition is valid.',
+        ]);
+    }
+
     public function destroy(Form $form)
     {
         $this->authorize('delete', $form);
@@ -197,8 +211,16 @@ class FormController extends Controller
     {
         $this->authorize('update', $form);
 
+        $normalizedStructure = $this->formDataNormalizer->normalize([
+            'properties' => $form->properties ?? [],
+            'computed_variables' => $form->computed_variables ?? [],
+        ]);
+        $this->formStructureValidator->validate($normalizedStructure, $form->workspace);
+
         // Create copy
         $formCopy = $form->replicate();
+        $formCopy->properties = $normalizedStructure['properties'];
+        $formCopy->computed_variables = $normalizedStructure['computed_variables'];
         // generate new slug before changing title
         if (Str::isUuid($formCopy->slug)) {
             $formCopy->slug = Str::uuid();

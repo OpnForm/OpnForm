@@ -49,6 +49,30 @@
         </template>
       </FormEditorNavbar>
 
+      <div
+        v-if="backgroundValidationIssueCount > 0"
+        class="flex items-center justify-between gap-4 border-b border-amber-200 bg-amber-50 px-4 py-3 text-amber-900"
+        data-testid="form-background-validation-banner"
+      >
+        <div class="flex min-w-0 items-center gap-2">
+          <Icon
+            name="i-heroicons-exclamation-triangle"
+            class="size-5 shrink-0 text-amber-600"
+          />
+          <p class="text-sm">
+            This form has {{ backgroundValidationIssueCount }} {{ backgroundValidationIssueCount === 1 ? 'issue' : 'issues' }} to fix before it can be saved again.
+          </p>
+        </div>
+        <UButton
+          color="warning"
+          variant="soft"
+          size="sm"
+          @click="showValidationErrors"
+        >
+          Review issues
+        </UButton>
+      </div>
+
       <FormEditorErrorHandler>
         <div class="w-full flex grow min-h-0 overflow-hidden relative bg-white">
           <div 
@@ -98,13 +122,6 @@
         @edit-computed-variable="editInvalidComputedVariable"
       />
 
-      <!-- Logic Confirmation Modal -->
-      <LogicConfirmationModal
-        :is-visible="showLogicConfirmationModal"
-        :errors="logicErrors"
-        @cancel="handleLogicConfirmationCancel"
-        @confirm="handleLogicConfirmationConfirm"
-      />
     </div>
     <FormEditorSkeleton
       v-else
@@ -123,12 +140,10 @@ import FormErrorModal from "./form-components/FormErrorModal.vue"
 import FormFieldsEditor from './FormFieldsEditor.vue'
 import FormCustomization from "./form-components/FormCustomization.vue"
 import FormEditorPreview from "./form-components/FormEditorPreview.vue"
-import { useFormLogic } from "~/composables/forms/useFormLogic.js"
 import { captureException } from "@sentry/core"
 import FormEditorErrorHandler from '~/components/open/forms/components/FormEditorErrorHandler.vue'
 import { setFormDefaults, ensureSettingsObject } from '~/composables/forms/initForm.js'
 import { breakpointsTailwind, useBreakpoints } from '@vueuse/core'
-import LogicConfirmationModal from '~/components/forms/heavy/LogicConfirmationModal.vue'
 import { formsApi } from "~/api"
 import { useResizable } from '~/composables/components/useResizable'
 import ResizeHandle from '~/components/global/ResizeHandle.vue'
@@ -173,10 +188,10 @@ const emit = defineEmits(['mounted', 'on-save', 'openRegister', 'go-back', 'save
 
 // Reactive data
 const showFormErrorModal = ref(false)
-const showLogicConfirmationModal = ref(false)
 const validationErrorResponse = ref(null)
+const hasBackgroundValidationErrors = ref(false)
+const backgroundValidatedFormId = ref(null)
 const createdFormSlug = ref(null)
-const logicErrors = ref([])
 const formEditorNavbar = ref(null)
 const route = useRoute()
 const { emitFormSaved, emitNavigateBack } = useEditorEmbedBridge()
@@ -216,6 +231,9 @@ const saveErrorSummary = computed(() => {
     form.value?.properties || [],
     form.value?.computed_variables || [],
   )
+})
+const backgroundValidationIssueCount = computed(() => {
+  return hasBackgroundValidationErrors.value ? saveErrorSummary.value.issueCount : 0
 })
 
 watch(
@@ -289,6 +307,52 @@ const showValidationErrors = () => {
   showFormErrorModal.value = true
 }
 
+const validateLoadedForm = () => {
+  if (!props.isEdit || !form.value?.id || typeof form.value.data !== 'function') {
+    return
+  }
+
+  const validatedFormId = form.value.id
+  const definition = setFormDefaults(form.value.data())
+  validationErrorResponse.value = null
+  hasBackgroundValidationErrors.value = false
+  backgroundValidatedFormId.value = validatedFormId
+  formsApi.validateDefinition(validatedFormId, definition)
+    .then(() => {
+      if (form.value?.id !== validatedFormId) {
+        return
+      }
+
+      hasBackgroundValidationErrors.value = false
+    })
+    .catch((error) => {
+      if (form.value?.id !== validatedFormId) {
+        return
+      }
+
+      const errorStatus = error?.response?.status || error?.status
+      if (errorStatus === 422) {
+        validationErrorResponse.value = error.data
+        hasBackgroundValidationErrors.value = true
+        return
+      }
+
+      captureException(error)
+    })
+}
+
+watch(
+  () => form.value?.id,
+  (id) => {
+    if (!props.isEdit || !id || backgroundValidatedFormId.value === id) {
+      return
+    }
+
+    nextTick(validateLoadedForm)
+  },
+  { immediate: true },
+)
+
 const handleFormErrorModalClose = () => {
   showFormErrorModal.value = false
 
@@ -348,26 +412,10 @@ const saveForm = () => {
   // Apply defaults to the form
   const defaultedData = setFormDefaults(form.value.data())
   form.value.fill(defaultedData)
-
-  // Check for logic errors
-  const { getLogicErrors } = useFormLogic()
-  logicErrors.value = getLogicErrors(form.value.properties)
-  
-  if (logicErrors.value.length > 0) {
-    showLogicConfirmationModal.value = true
-    return
-  }
-  
   proceedWithSave()
 }
 
 const proceedWithSave = () => {
-  if (logicErrors.value.length > 0) {
-    // Clean invalid logic before saving using the comprehensive validator
-    const { validatePropertiesLogic } = useFormLogic()
-    form.value.properties = validatePropertiesLogic(form.value.properties)
-  }
-
   if (props.saveHandler) {
     props.saveHandler(form.value.data())
     return
@@ -382,19 +430,11 @@ const proceedWithSave = () => {
   }
 }
 
-const handleLogicConfirmationCancel = () => {
-  showLogicConfirmationModal.value = false
-}
-
-const handleLogicConfirmationConfirm = () => {
-  showLogicConfirmationModal.value = false
-  proceedWithSave()
-}
-
 const saveFormEdit = () => {
   if (form.value.busy || !form.value.id) return
 
   validationErrorResponse.value = null
+  hasBackgroundValidationErrors.value = false
 
   form.value.mutate(updateMutation).then((response) => {
     const updatedForm = response.form
@@ -430,6 +470,7 @@ const saveFormEdit = () => {
     
     if (errorStatus === 422) {
       validationErrorResponse.value = error.data
+      hasBackgroundValidationErrors.value = true
       showValidationErrors()
     } else {
       console.error(error)
@@ -452,6 +493,7 @@ const saveFormCreate = () => {
   // Attach workspace ID before sending
   form.value.workspace_id = workspace.value.id
   validationErrorResponse.value = null
+  hasBackgroundValidationErrors.value = false
 
   form.value.mutate(createMutation).then((response) => {
     const newForm = response.form
@@ -494,6 +536,7 @@ const saveFormCreate = () => {
     
     if (errorStatus === 422) {
       validationErrorResponse.value = error.data
+      hasBackgroundValidationErrors.value = true
       showValidationErrors()
     } else {
       useAlert().error(
@@ -518,13 +561,14 @@ onMounted(() => {
   emit("mounted")
   workingFormStore.activeTab = 'build'
   amplitude.logEvent('form_editor_viewed')
-  
+
   if (!props.isEdit) {
     nextTick(() => {
       workingFormStore.openAddFieldSidebar()
     })
   }
 })
+
 </script>
 
 <style lang="scss">

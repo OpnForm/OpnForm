@@ -2,6 +2,8 @@
 
 namespace App\Service\Forms;
 
+use App\Rules\PropertyValidators\LogicPropertyValidator;
+
 class AgentFormFieldCatalog
 {
     public const INPUT_TYPES = [
@@ -42,9 +44,71 @@ class AgentFormFieldCatalog
         'toggle_switch' => ['type' => 'checkbox', 'use_toggle_switch' => true],
     ];
 
+    public const LEGACY_ALIASES = [
+        'textarea' => ['type' => 'text', 'multi_lines' => true],
+        'long_text' => ['type' => 'text', 'multi_lines' => true],
+        'multi_lines' => ['type' => 'text', 'multi_lines' => true],
+        'short_text' => ['type' => 'text', 'multi_lines' => false],
+        'multiselect' => ['type' => 'multi_select'],
+        'phone' => ['type' => 'phone_number'],
+        'file_upload' => ['type' => 'files'],
+        'file' => ['type' => 'files'],
+        'hidden' => ['type' => 'text', 'hidden' => true],
+        'divider' => ['type' => 'nf-divider'],
+        'nf_text' => ['type' => 'nf-text'],
+        'header' => ['type' => 'nf-text'],
+        'info' => ['type' => 'nf-text'],
+        'paragraph' => ['type' => 'nf-text'],
+        'section_break' => ['type' => 'nf-text'],
+        'html' => ['type' => 'nf-text'],
+        'page_break' => ['type' => 'nf-page-break'],
+        'nf-page_break' => ['type' => 'nf-page-break'],
+        'radio_button' => ['type' => 'select', 'without_dropdown' => true],
+        'datetime-local' => ['type' => 'date', 'with_time' => true],
+        'date_range' => ['type' => 'date', 'date_range' => true],
+    ];
+
+    public const OBSOLETE_NON_FIELD_TYPES = [
+        'submit',
+        'submit_button',
+        'nf-submit',
+        'captcha',
+        'use_captcha',
+    ];
+
     public static function types(): array
     {
         return [...self::INPUT_TYPES, ...self::LAYOUT_TYPES];
+    }
+
+    public static function normalizationAliases(): array
+    {
+        return array_merge(self::ALIASES, self::LEGACY_ALIASES);
+    }
+
+    /** @return array<string, array<int, string>> */
+    public static function logicOperatorsByReferenceType(): array
+    {
+        return collect(LogicPropertyValidator::getConditionMapping())
+            ->map(function (array $mapping): array {
+                return collect($mapping['comparators'] ?? [])
+                    ->reject(fn (mixed $config): bool => is_array($config)
+                        && ($config['custom_validation_only'] ?? false) === true)
+                    ->keys()
+                    ->values()
+                    ->all();
+            })
+            ->all();
+    }
+
+    /** @return array<int, string> */
+    public static function logicOperators(): array
+    {
+        return collect(self::logicOperatorsByReferenceType())
+            ->flatten()
+            ->unique()
+            ->values()
+            ->all();
     }
 
     public static function reference(): array
@@ -62,6 +126,7 @@ class AgentFormFieldCatalog
                 'required' => 'Boolean, defaults to false.',
                 'placeholder' => 'Optional placeholder.',
                 'width' => 'One of full, 1/2, 1/3, 2/3, 1/4, 3/4. Defaults to full.',
+                'logic' => 'Optional display logic object described in display_logic. Empty or invalid logic that can be removed safely is discarded during normalization.',
             ],
             'type_properties' => [
                 'text' => ['multi_lines', 'max_char_limit', 'show_char_limit', 'secret_input', 'input_mask'],
@@ -114,6 +179,44 @@ class AgentFormFieldCatalog
                 'color' => 'Accent color string, preferably a hex color such as #2563EB.',
                 'uppercase_labels' => 'Boolean.',
                 'show_progress_bar' => 'Boolean.',
+            ],
+            'computed_variables' => [
+                'description' => 'Optional calculated values that formulas and display logic may reference. Invalid variables and variables depending on them are removed during normalization.',
+                'item' => [
+                    'id' => 'Required unique technical identifier beginning with cv_. It must not duplicate a block ID.',
+                    'name' => 'Required unique human-readable name, at most 100 characters.',
+                    'formula' => 'Required expression, at most 2000 characters. Reference a field or another variable with braces, for example {budget} * 1.2.',
+                    'result_type' => 'Optional hint: number, text, or auto.',
+                ],
+                'example' => [
+                    'id' => 'cv_priority_score',
+                    'name' => 'Priority score',
+                    'formula' => '{budget} * 1.2',
+                    'result_type' => 'number',
+                ],
+            ],
+            'display_logic' => [
+                'description' => 'Attach logic to the target block. Conditions may reference another field or a computed variable, never the target field itself.',
+                'shape' => [
+                    'conditions' => 'A leaf condition or a group with operatorIdentifier and/or plus a non-empty children array. Groups may be nested up to 10 levels and contain at most 100 total nodes.',
+                    'actions' => LogicPropertyValidator::ACTIONS_VALUES,
+                ],
+                'operators_by_reference_type' => self::logicOperatorsByReferenceType(),
+                'computed_variable_reference_type' => 'Use property_meta.type computed for every computed-variable condition.',
+                'example' => [
+                    'conditions' => [
+                        'operatorIdentifier' => 'and',
+                        'children' => [[
+                            'identifier' => 'cv_priority_score',
+                            'value' => [
+                                'operator' => 'greater_than',
+                                'property_meta' => ['id' => 'cv_priority_score', 'type' => 'computed'],
+                                'value' => 10000,
+                            ],
+                        ]],
+                    ],
+                    'actions' => ['show-block'],
+                ],
             ],
             'authoring_guidelines' => AgentFormAuthoringGuide::reference(),
             'block_media' => [

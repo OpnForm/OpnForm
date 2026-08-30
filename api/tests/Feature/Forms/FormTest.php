@@ -182,6 +182,137 @@ it('can update a form', function () {
     ]);
 });
 
+it('prevalidates recoverable logic after normalizing it without saving', function () {
+    $user = $this->actingAsUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace);
+    $formData = (new \App\Http\Resources\FormResource($form))->toArray(request());
+    $formData['properties'][1]['logic'] = [
+        'conditions' => [
+            'operatorIdentifier' => 'and',
+            'children' => [[
+                'identifier' => 'deleted_field',
+                'value' => [
+                    'operator' => 'equals',
+                    'property_meta' => ['id' => 'deleted_field', 'type' => 'text'],
+                    'value' => 'yes',
+                ],
+            ]],
+        ],
+        'actions' => ['hide-block'],
+    ];
+
+    $this->postJson(route('open.forms.validate-definition', $form), $formData)
+        ->assertSuccessful()
+        ->assertJsonPath('valid', true);
+
+    expect($form->fresh()->properties[1]['logic'] ?? null)->toBeNull();
+});
+
+it('authorizes definition prevalidation before running its validation rules', function () {
+    $owner = $this->actingAsUser();
+    $workspace = $this->createUserWorkspace($owner);
+    $form = $this->createForm($owner, $workspace);
+    $otherUser = $this->createUser();
+    $this->actingAs($otherUser);
+
+    $this->postJson(route('open.forms.validate-definition', $form), [
+        'properties' => 'invalid',
+    ])->assertForbidden();
+});
+
+it('removes recoverably invalid logic while saving the rest of the form', function () {
+    $user = $this->actingAsUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace);
+    $formData = (new \App\Http\Resources\FormResource($form))->toArray(request());
+    $formData['title'] = 'Persisted after cleanup';
+    $formData['properties'][1]['logic'] = [
+        'conditions' => [
+            'operatorIdentifier' => 'and',
+            'children' => [[
+                'identifier' => 'missing',
+                'value' => [
+                    'operator' => 'equals',
+                    'property_meta' => ['id' => 'missing', 'type' => 'text'],
+                    'value' => 'yes',
+                ],
+            ]],
+        ],
+        'actions' => ['hide-block'],
+    ];
+
+    $this->putJson(route('open.forms.update', $form), $formData)
+        ->assertSuccessful()
+        ->assertJsonPath('form.title', 'Persisted after cleanup');
+
+    expect($form->fresh()->title)->toBe('Persisted after cleanup')
+        ->and($form->fresh()->properties[1])->not->toHaveKey('logic');
+});
+
+it('saves after discarding malformed legacy property entries', function () {
+    $user = $this->actingAsUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace);
+    $form->forceFill([
+        'properties' => [
+            'malformed',
+            ['id' => 'kept', 'name' => 'Kept', 'type' => 'text'],
+        ],
+    ])->save();
+    $formData = (new \App\Http\Resources\FormResource($form->fresh()))->toArray(request());
+    $formData['title'] = 'Saved after cleanup';
+
+    $this->putJson(route('open.forms.update', $form), $formData)
+        ->assertSuccessful()
+        ->assertJsonPath('form.title', 'Saved after cleanup');
+
+    expect($form->fresh()->properties)->toBe([
+        ['id' => 'kept', 'name' => 'Kept', 'type' => 'text'],
+    ]);
+});
+
+it('still blocks when cleanup would require inventing a select option', function () {
+    $user = $this->actingAsUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace);
+    $formData = (new \App\Http\Resources\FormResource($form))->toArray(request());
+    $formData['properties'][] = [
+        'id' => 'empty-choice',
+        'name' => 'Choose one',
+        'type' => 'select',
+        'select' => [
+            'options' => [
+                ['id' => null, 'name' => null],
+            ],
+        ],
+    ];
+
+    $this->putJson(route('open.forms.update', $form), $formData)
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['properties.14.select.options'])
+        ->assertJsonPath('issues.0.code', 'invalid_definition');
+});
+
+it('applies the shared field count limit to human form saves', function () {
+    $user = $this->actingAsUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace);
+    $formData = (new \App\Http\Resources\FormResource($form))->toArray(request());
+    $formData['properties'] = collect(range(1, \App\Service\Forms\FormStructureValidator::MAX_PROPERTY_COUNT + 1))
+        ->map(fn (int $index) => [
+            'id' => "field-{$index}",
+            'name' => "Field {$index}",
+            'type' => 'text',
+        ])
+        ->all();
+
+    $this->putJson(route('open.forms.update', $form), $formData)
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['properties'])
+        ->assertJsonPath('issues.0.path', 'properties');
+});
+
 it('preserves strikethrough formatting when updating field help text', function () {
     $user = $this->actingAsUser();
     $workspace = $this->createUserWorkspace($user);
@@ -345,6 +476,36 @@ it('can duplicate a form', function () {
         'id' => $response->json('new_form.id'),
         'title' => 'Copy of ' . $form->title
     ]);
+});
+
+it('normalizes recoverable logic while duplicating without changing the source form', function () {
+    $user = $this->actingAsUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace);
+    $properties = $form->properties;
+    $properties[1]['logic'] = [
+        'conditions' => [
+            'operatorIdentifier' => 'and',
+            'children' => [[
+                'identifier' => 'deleted_field',
+                'value' => [
+                    'operator' => 'equals',
+                    'property_meta' => ['id' => 'deleted_field', 'type' => 'text'],
+                    'value' => 'yes',
+                ],
+            ]],
+        ],
+        'actions' => ['hide-block'],
+    ];
+    $form->forceFill(['properties' => $properties])->save();
+
+    $response = $this->postJson(route('open.forms.duplicate', $form))
+        ->assertSuccessful();
+
+    $copy = \App\Models\Forms\Form::query()->findOrFail($response->json('new_form.id'));
+    expect($workspace->forms()->count())->toBe(2)
+        ->and($copy->properties[1])->not->toHaveKey('logic')
+        ->and($form->fresh()->properties[1])->toHaveKey('logic');
 });
 
 it('can delete a form', function () {
@@ -605,7 +766,7 @@ it('can update form with multi select min/max selection constraints', function (
     expect($multiSelectField['max_selection'])->toBe(3);
 });
 
-it('validates min/max selection constraints format in form creation', function () {
+it('clears invalid optional selection constraints during form creation', function () {
     $user = $this->actingAsUser();
     $workspace = $this->createUserWorkspace($user);
     $form = $this->makeForm($user, $workspace);
@@ -628,10 +789,11 @@ it('validates min/max selection constraints format in form creation', function (
 
     $formData = (new \App\Http\Resources\FormResource($form))->toArray(request());
 
-    $this->postJson(route('open.forms.store', $formData))
-        ->assertUnprocessable()
-        ->assertJsonValidationErrors([
-            'properties.14.min_selection',
-            'properties.14.max_selection'
-        ]);
+    $response = $this->postJson(route('open.forms.store', $formData))
+        ->assertSuccessful();
+
+    $savedForm = \App\Models\Forms\Form::query()->findOrFail($response->json('form.id'));
+    $savedField = collect($savedForm->properties)->firstWhere('id', 'invalid_field');
+
+    expect($savedField)->not->toHaveKeys(['min_selection', 'max_selection']);
 });

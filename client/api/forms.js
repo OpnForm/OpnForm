@@ -15,6 +15,7 @@ export const formsApi = {
   
   create: (data) => apiService.post('/open/forms', data),
   update: (id, data) => apiService.put(`/open/forms/${id}`, data),
+  validateDefinition: (id, data) => apiService.post(`/open/forms/${id}/validate-definition`, data),
   delete: (id) => apiService.delete(`/open/forms/${id}`),
   duplicate: (id) => apiService.post(`/open/forms/${id}/duplicate`),
 

@@ -35,6 +35,7 @@
 <script setup>
 
 import FormEditor from "~/components/open/forms/components/FormEditor.vue"
+import { setFormDefaults } from "~/composables/forms/initForm.js"
 import { hash } from "~/lib/utils.js"
 
 // Composables
@@ -83,7 +84,7 @@ function initUpdatedForm() {
     return
   }
 
-  updatedForm.value = useForm(form.value)
+  updatedForm.value = useForm(setFormDefaults(form.value))
   if (!updatedForm.value) {
     return
   }

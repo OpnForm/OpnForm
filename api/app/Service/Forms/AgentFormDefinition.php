@@ -70,15 +70,16 @@ class AgentFormDefinition
         'analytics',
     ];
 
-    public function __construct(private readonly FormDataNormalizer $normalizer)
-    {
+    public function __construct(
+        private readonly FormDataNormalizer $normalizer,
+        private readonly FormValidationIssueMapper $issueMapper,
+    ) {
     }
 
     public function normalizeAndValidate(array $definition, ?Workspace $workspace = null): array
     {
         $definition = $this->migrate($definition);
         $definition = array_replace($this->defaults(), $definition);
-        $definition = $this->normalizeAliases($definition);
         $definition = $this->normalizer->normalize($definition, backfillPropertyIds: true);
         $definition['properties'] = collect($definition['properties'])->map(function ($property) {
             if (! is_array($property)) {
@@ -129,24 +130,11 @@ class AgentFormDefinition
             ]);
         }
 
-        $propertyIds = collect($definition['properties'] ?? [])
-            ->pluck('id')
-            ->filter(fn ($id) => is_string($id) && $id !== '');
-
-        if ($propertyIds->duplicates()->isNotEmpty()) {
-            throw ValidationException::withMessages([
-                'properties' => ['Every form block must have a unique id.'],
-            ]);
-        }
-
-        Validator::make($definition, [
+        $validator = Validator::make($definition, [
             'schema_version' => ['required', 'integer', Rule::in([self::SCHEMA_VERSION])],
             'title' => ['required', 'string', 'max:255'],
             'visibility' => ['required', Rule::in(Form::VISIBILITY)],
-            'properties' => ['required', 'array', 'min:1', 'max:500', new FormPropertiesRule($workspace)],
-            'properties.*.id' => ['required', 'string', 'max:255'],
-            'properties.*.name' => ['required', 'string', 'max:500'],
-            'properties.*.type' => ['required', Rule::in(FieldCatalog::types())],
+            'properties' => ['required', 'array', 'min:1', 'max:'.FormStructureValidator::MAX_PROPERTY_COUNT, new FormPropertiesRule($workspace)],
             'properties.*.help' => ['nullable', 'string'],
             'properties.*.image.url' => ['nullable', new PublicMediaUrlRule()],
             'computed_variables' => ['nullable', 'array', new ComputedVariablesRule()],
@@ -211,7 +199,16 @@ class AgentFormDefinition
             'size.in' => 'size must be one of: sm, md, lg.',
             'border_radius.in' => 'border_radius must be one of: none, small, full.',
             'dark_mode.in' => 'dark_mode must be one of: auto, light, dark.',
-        ])->validate();
+        ]);
+
+        if ($validator->passes()) {
+            return;
+        }
+
+        $errors = $validator->errors()->toArray();
+        $pathErrors = $this->issueMapper->pathErrors($errors);
+
+        throw ValidationException::withMessages($pathErrors !== [] ? $pathErrors : $errors);
     }
 
     public function defaults(): array
@@ -304,7 +301,13 @@ class AgentFormDefinition
                     'maxItems' => 500,
                     'items' => ['$ref' => '#/$defs/block'],
                 ],
-                'computed_variables' => ['type' => 'array', 'default' => []],
+                'computed_variables' => [
+                    'type' => 'array',
+                    'maxItems' => ComputedVariablesRule::MAX_VARIABLE_COUNT,
+                    'items' => ['$ref' => '#/$defs/computedVariable'],
+                    'default' => [],
+                    'description' => 'Calculated values available to other formulas and display logic. Formula references use braces, for example {budget} * 1.2.',
+                ],
                 'language' => ['type' => 'string', 'enum' => Form::LANGUAGES, 'default' => 'en'],
                 'font_family' => ['type' => ['string', 'null']],
                 'theme' => ['type' => 'string', 'enum' => Form::THEMES, 'default' => 'default'],
@@ -372,6 +375,109 @@ class AgentFormDefinition
                         'placeholder' => ['type' => ['string', 'null']],
                         'width' => ['type' => 'string', 'enum' => ['full', '1/2', '1/3', '2/3', '1/4', '3/4'], 'default' => 'full'],
                         'image' => ['$ref' => '#/$defs/blockImage'],
+                        'logic' => [
+                            'anyOf' => [
+                                ['$ref' => '#/$defs/displayLogic'],
+                                ['type' => 'null'],
+                            ],
+                            'description' => 'Optional conditional behavior for this target block. Empty or safely invalid logic is removed during normalization.',
+                        ],
+                    ],
+                ],
+                'computedVariable' => [
+                    'type' => 'object',
+                    'additionalProperties' => true,
+                    'required' => ['id', 'name', 'formula'],
+                    'properties' => [
+                        'id' => [
+                            'type' => 'string',
+                            'pattern' => '^cv_',
+                            'description' => 'Unique technical identifier beginning with cv_. It must not duplicate a block ID.',
+                        ],
+                        'name' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 100],
+                        'formula' => [
+                            'type' => 'string',
+                            'minLength' => 1,
+                            'maxLength' => 2000,
+                            'description' => 'Expression referencing block or computed-variable IDs with braces, for example {budget} * 1.2.',
+                        ],
+                        'result_type' => ['type' => ['string', 'null'], 'enum' => ['number', 'text', 'auto', null]],
+                    ],
+                ],
+                'displayLogic' => [
+                    'type' => 'object',
+                    'additionalProperties' => true,
+                    'required' => ['conditions', 'actions'],
+                    'properties' => [
+                        'conditions' => ['$ref' => '#/$defs/logicCondition'],
+                        'actions' => [
+                            'type' => 'array',
+                            'minItems' => 1,
+                            'uniqueItems' => true,
+                            'items' => ['type' => 'string', 'enum' => \App\Rules\PropertyValidators\LogicPropertyValidator::ACTIONS_VALUES],
+                            'description' => 'Allowed actions depend on the target block state and type; validate_form_definition returns the exact path for an incompatible action.',
+                        ],
+                    ],
+                ],
+                'logicCondition' => [
+                    'oneOf' => [
+                        ['$ref' => '#/$defs/logicConditionGroup'],
+                        ['$ref' => '#/$defs/logicLeafCondition'],
+                    ],
+                ],
+                'logicConditionGroup' => [
+                    'type' => 'object',
+                    'additionalProperties' => true,
+                    'required' => ['operatorIdentifier', 'children'],
+                    'properties' => [
+                        'operatorIdentifier' => ['type' => 'string', 'enum' => ['and', 'or']],
+                        'children' => [
+                            'type' => 'array',
+                            'minItems' => 1,
+                            'maxItems' => \App\Rules\PropertyValidators\LogicPropertyValidator::MAX_CONDITION_COUNT,
+                            'items' => ['$ref' => '#/$defs/logicCondition'],
+                        ],
+                    ],
+                ],
+                'logicLeafCondition' => [
+                    'type' => 'object',
+                    'additionalProperties' => true,
+                    'required' => ['identifier', 'value'],
+                    'properties' => [
+                        'identifier' => [
+                            'type' => 'string',
+                            'minLength' => 1,
+                            'description' => 'ID of the referenced field or computed variable. It must match value.property_meta.id.',
+                        ],
+                        'value' => ['$ref' => '#/$defs/logicConditionValue'],
+                    ],
+                ],
+                'logicConditionValue' => [
+                    'type' => 'object',
+                    'additionalProperties' => true,
+                    'required' => ['operator', 'property_meta'],
+                    'properties' => [
+                        'operator' => [
+                            'type' => 'string',
+                            'enum' => FieldCatalog::logicOperators(),
+                            'description' => 'Comparison operator compatible with property_meta.type. Consult operators_by_reference_type in the field catalog.',
+                        ],
+                        'property_meta' => [
+                            'type' => 'object',
+                            'additionalProperties' => true,
+                            'required' => ['id', 'type'],
+                            'properties' => [
+                                'id' => ['type' => 'string', 'minLength' => 1],
+                                'type' => [
+                                    'type' => 'string',
+                                    'enum' => array_keys(FieldCatalog::logicOperatorsByReferenceType()),
+                                    'description' => 'Use computed when referencing a computed variable; otherwise use the referenced field type.',
+                                ],
+                            ],
+                        ],
+                        'value' => [
+                            'description' => 'Comparison value. Omit only for operators such as is_empty, is_not_empty, is_checked, or is_not_checked.',
+                        ],
                     ],
                 ],
                 'blockImage' => [
@@ -415,16 +521,4 @@ class AgentFormDefinition
         return $definition;
     }
 
-    private function normalizeAliases(array $definition): array
-    {
-        $definition['properties'] = collect($definition['properties'] ?? [])->map(function ($property) {
-            if (! is_array($property) || ! isset(FieldCatalog::ALIASES[$property['type'] ?? ''])) {
-                return $property;
-            }
-
-            return array_replace($property, FieldCatalog::ALIASES[$property['type']]);
-        })->values()->all();
-
-        return $definition;
-    }
 }

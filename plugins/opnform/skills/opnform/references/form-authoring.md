@@ -29,6 +29,48 @@ Incorrect:
 }
 ```
 
+## Computed variables and display logic
+
+- A computed variable needs a unique `id` beginning with `cv_`, a unique human-readable `name`, and a non-empty `formula`. Reference block and variable IDs with braces, for example `{budget} * 1.2`.
+- Attach `logic` to the block whose behavior should change. A condition must reference another block or variable; it cannot reference its own target block.
+- Keep `identifier` equal to `value.property_meta.id`. Use the referenced block type in `property_meta.type`, or `computed` for a computed variable.
+- Read `operators_by_reference_type` from `opnform://reference/form-fields/v1` instead of guessing an operator. Use only actions listed by the schema and let `validate_form_definition` check whether each action is compatible with the target block.
+- To revise a draft, replace the complete `computed_variables` list through `set_form_values`, and add, replace, or clear a block's `logic` through `add_block` or `update_block`.
+
+Example:
+
+```json
+{
+  "computed_variables": [
+    {
+      "id": "cv_priority_score",
+      "name": "Priority score",
+      "formula": "{budget} * 1.2",
+      "result_type": "number"
+    }
+  ],
+  "logic": {
+    "conditions": {
+      "operatorIdentifier": "and",
+      "children": [
+        {
+          "identifier": "cv_priority_score",
+          "value": {
+            "operator": "greater_than",
+            "property_meta": {
+              "id": "cv_priority_score",
+              "type": "computed"
+            },
+            "value": 10000
+          }
+        }
+      ]
+    },
+    "actions": ["show-block"]
+  }
+}
+```
+
 ## `nf-text` uses HTML
 
 The `content` property of an `nf-text` block is a sanitized HTML fragment. Never use Markdown syntax such as `# Heading`, `**bold**`, Markdown links, or fenced code blocks.

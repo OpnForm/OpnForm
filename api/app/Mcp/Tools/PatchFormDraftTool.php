@@ -4,6 +4,7 @@ namespace App\Mcp\Tools;
 
 use App\Mcp\Support\McpOutputSchema;
 use App\Models\Forms\Form;
+use App\Rules\PropertyValidators\LogicPropertyValidator;
 use App\Service\Forms\AgentFormFieldCatalog;
 use App\Service\Forms\AgentFormDraftService;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
@@ -75,15 +76,26 @@ class PatchFormDraftTool extends GuestDraftMcpTool
                         'show_progress_bar' => $schema->boolean(),
                         'submit_button_text' => $schema->string(),
                         'settings' => $schema->object(),
-                    ])->description('Top-level form values for set_form_values. Do not put properties here.'),
+                        'computed_variables' => $schema->array()
+                            ->items($schema->object([
+                                'id' => $schema->string()->description('Unique technical ID beginning with cv_.')->required(),
+                                'name' => $schema->string()->description('Unique human-readable variable name.')->required(),
+                                'formula' => $schema->string()->description('Formula using brace references such as {budget} * 1.2.')->required(),
+                                'result_type' => $schema->string()->enum(['number', 'text', 'auto']),
+                            ]))
+                            ->max(500)
+                            ->description('Complete replacement list of computed variables. Use [] to remove all variables.'),
+                    ])->description('Top-level form values for set_form_values, including computed_variables. Do not put properties here.'),
                     'block' => $schema->object([
                         'name' => $schema->string()->required(),
                         'type' => $schema->string()->enum(AgentFormFieldCatalog::types())->required(),
                         'content' => $schema->string()->description('For nf-text blocks: sanitized HTML, never Markdown.'),
                         'placeholder' => $schema->string()->nullable(),
                         'help' => $schema->string()->nullable(),
+                        'hidden' => $schema->boolean(),
                         'required' => $schema->boolean(),
                         'width' => $schema->string()->enum(['full', '1/2', '1/3', '2/3', '1/4', '3/4']),
+                        'logic' => $this->logicSchema($schema)->nullable(),
                     ])->description('Complete block for add_block. Use type nf-page-break only in classic mode.'),
                     'patch' => $schema->object([
                         'name' => $schema->string(),
@@ -91,8 +103,10 @@ class PatchFormDraftTool extends GuestDraftMcpTool
                         'content' => $schema->string()->description('For nf-text blocks: sanitized HTML, never Markdown.'),
                         'placeholder' => $schema->string()->nullable(),
                         'help' => $schema->string()->nullable(),
+                        'hidden' => $schema->boolean(),
                         'required' => $schema->boolean(),
                         'width' => $schema->string()->enum(['full', '1/2', '1/3', '2/3', '1/4', '3/4']),
+                        'logic' => $this->logicSchema($schema)->nullable(),
                     ])->description('Fields to merge into the selected block for update_block. Block id cannot change.'),
                     'block_id' => $schema->string()->description('Stable block id from the latest draft.'),
                     'index' => $schema->integer()->description('Zero-based block index. For add_block, insertion at the final count is allowed.')->min(0),
@@ -102,6 +116,31 @@ class PatchFormDraftTool extends GuestDraftMcpTool
                 ->max(100)
                 ->required(),
         ];
+    }
+
+    private function logicSchema(JsonSchema $schema): mixed
+    {
+        return $schema->object([
+            'conditions' => $schema->object([
+                'operatorIdentifier' => $schema->string()->enum(['and', 'or']),
+                'children' => $schema->array()->items($schema->object()),
+                'identifier' => $schema->string()->description('Referenced field or computed-variable ID.'),
+                'value' => $schema->object([
+                    'operator' => $schema->string()->enum(AgentFormFieldCatalog::logicOperators()),
+                    'property_meta' => $schema->object([
+                        'id' => $schema->string()->description('Referenced field or computed-variable ID.'),
+                        'type' => $schema->string()
+                            ->enum(array_keys(AgentFormFieldCatalog::logicOperatorsByReferenceType()))
+                            ->description('Use computed for a computed-variable reference.'),
+                    ]),
+                    'value' => $schema->union(['string', 'number', 'boolean', 'object', 'array', 'null'])
+                        ->description('Comparison value. Omit it for operators that do not take a value, such as is_empty or is_checked.'),
+                ]),
+            ])->description('A condition leaf or a nested and/or group. See opnform://schemas/agent-form-definition/v1 for the recursive shape.'),
+            'actions' => $schema->array()
+                ->items($schema->string()->enum(LogicPropertyValidator::ACTIONS_VALUES))
+                ->min(1),
+        ])->description('Conditional behavior for the target block. Empty or safely invalid logic is removed during normalization.');
     }
 
     public function outputSchema(JsonSchema $schema): array

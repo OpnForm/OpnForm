@@ -246,6 +246,7 @@ Route::group(['middleware' => 'auth.multi'], function () {
 
         Route::prefix('forms')->name('forms.')->group(function () {
             Route::post('/', [FormController::class, 'store'])->name('store');
+            Route::post('/{form}/validate-definition', [FormController::class, 'validateDefinition'])->name('validate-definition');
             Route::post('/{form}/workspace/{workspace}', [FormController::class, 'updateWorkspace'])->name('workspace.update');
             Route::put('/{form}', [FormController::class, 'update'])->name('update');
             Route::delete('/{form}', [FormController::class, 'destroy'])->name('destroy');

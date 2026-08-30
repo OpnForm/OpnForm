@@ -172,6 +172,9 @@ it('publishes the versioned form definition schema', function () {
         ->assertSee('agent-form-definition/v1.json')
         ->assertSee('schema_version')
         ->assertSee('properties')
+        ->assertSee('computedVariable')
+        ->assertSee('displayLogic')
+        ->assertSee('property_meta')
         ->assertSee('Respondent-facing label')
         ->assertSee('sanitized HTML fragment')
         ->assertSee('never Markdown');
@@ -269,6 +272,32 @@ it('documents block media in the published form definition schema', function () 
         ->and($schema['$defs']['blockImage']['properties']['url']['type'])->toBe(['string', 'null'])
         ->and($schema['$defs']['blockImage']['properties']['layout']['enum'])
         ->toContain('right-split', 'background');
+});
+
+it('documents computed variables and recursive display logic in the published resources', function () {
+    $schema = app(AgentFormDefinition::class)->jsonSchema();
+    $catalog = \App\Service\Forms\AgentFormFieldCatalog::reference();
+
+    expect($schema['properties']['computed_variables']['items']['$ref'])
+        ->toBe('#/$defs/computedVariable')
+        ->and($schema['$defs']['computedVariable']['required'])
+        ->toBe(['id', 'name', 'formula'])
+        ->and($schema['$defs']['computedVariable']['properties']['id']['pattern'])
+        ->toBe('^cv_')
+        ->and($schema['$defs']['block']['properties']['logic']['anyOf'][0]['$ref'])
+        ->toBe('#/$defs/displayLogic')
+        ->and($schema['$defs']['logicConditionGroup']['properties']['children']['items']['$ref'])
+        ->toBe('#/$defs/logicCondition')
+        ->and($schema['$defs']['logicConditionValue']['properties']['property_meta']['properties']['type']['enum'])
+        ->toContain('number', 'computed')
+        ->and($schema['$defs']['logicConditionValue']['properties']['operator']['enum'])
+        ->toContain('greater_than', 'contains', 'is_empty')
+        ->and($catalog['computed_variables']['example']['formula'])
+        ->toBe('{budget} * 1.2')
+        ->and($catalog['display_logic']['operators_by_reference_type']['computed'])
+        ->toContain('greater_than', 'equals')
+        ->and($catalog['display_logic']['example']['conditions']['children'][0]['value']['property_meta'])
+        ->toBe(['id' => 'cv_priority_score', 'type' => 'computed']);
 });
 
 it('applies the public media URL policy to block images', function () {

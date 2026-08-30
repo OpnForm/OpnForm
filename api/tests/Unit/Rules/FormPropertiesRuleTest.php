@@ -6,6 +6,77 @@ use Tests\TestCase;
 uses(TestCase::class);
 
 describe('FormPropertiesRule', function () {
+    it('returns field-local errors for malformed core values without throwing', function () {
+        $validator = validator([
+            'properties' => [[
+                'id' => 123,
+                'name' => ['Not', 'text'],
+                'type' => ['text'],
+            ]],
+        ], [
+            'properties' => ['array', new FormPropertiesRule()],
+        ]);
+
+        expect($validator->passes())->toBeFalse()
+            ->and($validator->errors()->first('properties.0.id'))->toContain('must be a string')
+            ->and($validator->errors()->first('properties.0.name'))->toContain('must be a string')
+            ->and($validator->errors()->first('properties.0.type'))->toContain('must be a string');
+    });
+
+    it('rejects unsupported field types on the exact field path', function () {
+        $validator = validator([
+            'properties' => [[
+                'id' => 'unknown',
+                'name' => 'Unknown',
+                'type' => 'invented_field_type',
+            ]],
+        ], [
+            'properties' => ['array', new FormPropertiesRule()],
+        ]);
+
+        expect($validator->passes())->toBeFalse()
+            ->and($validator->errors()->first('properties.0.type'))->toContain('not supported');
+    });
+
+    it('returns localized errors instead of throwing for malformed payment neighbours and values', function () {
+        $validator = validator([
+            'properties' => [
+                'not-a-property',
+                [
+                    'id' => 'payment',
+                    'name' => 'Payment',
+                    'type' => 'payment',
+                    'amount' => 10,
+                    'currency' => ['EUR'],
+                    'stripe_account_id' => ['invalid'],
+                ],
+            ],
+        ], [
+            'properties' => ['array', new FormPropertiesRule()],
+        ]);
+
+        expect($validator->passes())->toBeFalse()
+            ->and($validator->errors()->first('properties.0'))->toContain('must be an array')
+            ->and($validator->errors()->first('properties.1.currency'))->toContain('valid currency');
+    });
+
+    it('rejects malformed nested image values without PHP warnings', function () {
+        $validator = validator([
+            'properties' => [[
+                'id' => 'photo',
+                'name' => 'Photo',
+                'type' => 'text',
+                'image' => ['focal_point' => 'center', 'brightness' => ['bright']],
+            ]],
+        ], [
+            'properties' => ['array', new FormPropertiesRule()],
+        ]);
+
+        expect($validator->passes())->toBeFalse()
+            ->and($validator->errors()->first('properties.0.image.focal_point'))->toContain('must be an object')
+            ->and($validator->errors()->first('properties.0.image.brightness'))->toContain('must be an integer');
+    });
+
     describe('basic validation', function () {
         it('passes with valid properties', function () {
             $rules = [
@@ -83,6 +154,19 @@ describe('FormPropertiesRule', function () {
     });
 
     describe('core property validation', function () {
+        it('counts multibyte field names as characters rather than bytes', function () {
+            $validator = $this->app['validator']->make(
+                ['properties' => [[
+                    'id' => 'multibyte-name',
+                    'name' => str_repeat('é', 500),
+                    'type' => 'text',
+                ]]],
+                ['properties' => [new FormPropertiesRule()]],
+            );
+
+            expect($validator->passes())->toBeTrue();
+        });
+
         it('fails when id is missing', function () {
             $rules = [
                 'properties' => ['required', 'array', new FormPropertiesRule()],
@@ -566,6 +650,11 @@ describe('FormPropertiesRule', function () {
                         'name' => 'Priority',
                         'type' => 'select',
                         'allow_creation' => false,
+                        'select' => [
+                            'options' => [
+                                ['name' => 'High'],
+                            ],
+                        ],
                     ],
                     [
                         'id' => 'divider',
@@ -589,6 +678,11 @@ describe('FormPropertiesRule', function () {
             $data = [
                 'properties' => [
                     [
+                        'id' => 'source',
+                        'name' => 'Source',
+                        'type' => 'text',
+                    ],
+                    [
                         'id' => 'title',
                         'name' => 'Title',
                         'type' => 'text',
@@ -599,11 +693,11 @@ describe('FormPropertiesRule', function () {
                                 'operatorIdentifier' => 'and',
                                 'children' => [
                                     [
-                                        'identifier' => 'title',
+                                        'identifier' => 'source',
                                         'value' => [
                                             'operator' => 'equals',
                                             'property_meta' => [
-                                                'id' => 'title',
+                                                'id' => 'source',
                                                 'type' => 'text',
                                             ],
                                             'value' => 'TEST',
@@ -629,6 +723,11 @@ describe('FormPropertiesRule', function () {
             $data = [
                 'properties' => [
                     [
+                        'id' => 'source',
+                        'name' => 'Source',
+                        'type' => 'text',
+                    ],
+                    [
                         'id' => 'text',
                         'name' => 'Custom Text',
                         'type' => 'nf-text',
@@ -641,7 +740,7 @@ describe('FormPropertiesRule', function () {
                                         'value' => [
                                             'operator' => 'equals',
                                             'property_meta' => [
-                                                'id' => 'title',
+                                                'id' => 'source',
                                                 'type' => 'text',
                                             ],
                                             'value' => 'TEST',
@@ -657,7 +756,7 @@ describe('FormPropertiesRule', function () {
 
             $validator = $this->app['validator']->make($data, $rules);
             expect($validator->passes())->toBeFalse();
-            expect($validator->errors()->has('properties.0.logic'))->toBeTrue();
+            expect($validator->errors()->has('properties.1.logic.actions.0'))->toBeTrue();
         });
     });
 });

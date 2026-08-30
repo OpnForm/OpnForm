@@ -169,7 +169,7 @@ class FormResource extends JsonResource
     private function hasPaymentBlock()
     {
         return array_filter($this->properties, function ($property) {
-            return $property['type'] === 'payment';
+            return is_array($property) && ($property['type'] ?? null) === 'payment';
         });
     }
 

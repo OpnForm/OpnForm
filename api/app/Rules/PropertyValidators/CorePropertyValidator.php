@@ -2,6 +2,8 @@
 
 namespace App\Rules\PropertyValidators;
 
+use Illuminate\Support\Str;
+
 /**
  * Validates core property fields that are common to ALL property types.
  */
@@ -21,16 +23,26 @@ class CorePropertyValidator implements PropertyValidatorInterface
         $position = $index + 1; // 1-based for user-friendly messages
 
         // Required fields
-        if (!isset($property['id']) || $property['id'] === '' || $property['id'] === null) {
+        if (! isset($property['id']) || $property['id'] === '') {
             $errors['id'] = "The form block number {$position} is missing an id.";
+        } elseif (! is_string($property['id'])) {
+            $errors['id'] = "The form block number {$position} id must be a string.";
+        } elseif (Str::length($property['id']) > 255) {
+            $errors['id'] = "The form block number {$position} id must not exceed 255 characters.";
         }
 
-        if (!isset($property['name']) || $property['name'] === '' || $property['name'] === null) {
+        if (! isset($property['name']) || $property['name'] === '') {
             $errors['name'] = "The form block number {$position} is missing a name.";
+        } elseif (! is_string($property['name'])) {
+            $errors['name'] = "The form block number {$position} name must be a string.";
+        } elseif (Str::length($property['name']) > 500) {
+            $errors['name'] = "The form block number {$position} name must not exceed 500 characters.";
         }
 
-        if (!isset($property['type']) || $property['type'] === '' || $property['type'] === null) {
+        if (! isset($property['type']) || $property['type'] === '') {
             $errors['type'] = "The form block number {$position} is missing a type.";
+        } elseif (! is_string($property['type'])) {
+            $errors['type'] = "The form block number {$position} type must be a string.";
         }
 
         // Boolean fields (nullable)
@@ -64,7 +76,9 @@ class CorePropertyValidator implements PropertyValidatorInterface
         }
 
         // Image validation (nested object)
-        if (isset($property['image']) && is_array($property['image'])) {
+        if (isset($property['image']) && ! is_array($property['image'])) {
+            $errors['image'] = 'The image configuration must be an object.';
+        } elseif (isset($property['image']) && is_array($property['image'])) {
             $image = $property['image'];
 
             if (isset($image['url']) && $image['url'] !== null && !filter_var($image['url'], FILTER_VALIDATE_URL)) {
@@ -72,7 +86,7 @@ class CorePropertyValidator implements PropertyValidatorInterface
             }
 
             if (isset($image['alt']) && $image['alt'] !== null) {
-                if (!is_string($image['alt']) || strlen($image['alt']) > 125) {
+                if (!is_string($image['alt']) || Str::length($image['alt']) > 125) {
                     $errors['image.alt'] = "The image alt text must be a string with max 125 characters.";
                 }
             }
@@ -84,7 +98,9 @@ class CorePropertyValidator implements PropertyValidatorInterface
             }
 
             // Focal point validation
-            if (isset($image['focal_point']) && is_array($image['focal_point'])) {
+            if (isset($image['focal_point']) && ! is_array($image['focal_point'])) {
+                $errors['image.focal_point'] = 'The image focal point must be an object.';
+            } elseif (isset($image['focal_point']) && is_array($image['focal_point'])) {
                 $focalPoint = $image['focal_point'];
 
                 if (isset($focalPoint['x']) && $focalPoint['x'] !== null) {
@@ -101,9 +117,11 @@ class CorePropertyValidator implements PropertyValidatorInterface
             }
 
             if (isset($image['brightness']) && $image['brightness'] !== null) {
-                if (!is_int($image['brightness']) && !ctype_digit(strval($image['brightness'])) && !preg_match('/^-?\d+$/', strval($image['brightness']))) {
+                $brightness = $image['brightness'];
+                if (! is_int($brightness)
+                    && (! is_string($brightness) || preg_match('/^-?\d+$/', $brightness) !== 1)) {
                     $errors['image.brightness'] = "The image brightness must be an integer.";
-                } elseif ((int)$image['brightness'] < -100 || (int)$image['brightness'] > 100) {
+                } elseif ((int) $brightness < -100 || (int) $brightness > 100) {
                     $errors['image.brightness'] = "The image brightness must be between -100 and 100.";
                 }
             }

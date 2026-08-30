@@ -143,8 +143,22 @@ const performSync = (rawData, keepalive = false) => {
     body: { expected_version: version.value, definition },
     keepalive,
   }).then((response) => {
+    const serverDefinition = cleanDefinition(response.draft.definition)
+    const serverFingerprint = JSON.stringify(serverDefinition)
+    const currentData = workingFormStore.content?.data?.()
+    const currentFingerprint = currentData
+      ? JSON.stringify(cleanDefinition(currentData))
+      : null
+
     version.value = response.draft.version
-    lastSavedFingerprint.value = JSON.stringify(cleanDefinition(response.draft.definition))
+    lastSavedFingerprint.value = serverFingerprint
+
+    // Reflect deterministic server cleanups without overwriting edits made
+    // while this request was in flight.
+    if (currentFingerprint === fingerprint && serverFingerprint !== fingerprint) {
+      workingFormStore.set(useForm(serverDefinition))
+    }
+
     syncState.value = 'saved'
   }).catch((exception) => {
     syncState.value = 'error'

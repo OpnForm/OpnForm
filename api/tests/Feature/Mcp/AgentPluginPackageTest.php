@@ -238,6 +238,18 @@ it('teaches agents how to change presentation and media without repository inspe
         ->toContain('Never persist localhost, private addresses, temporary tunnels');
 });
 
+it('teaches agents how to author and patch computed variables and display logic', function () {
+    $bundle = readOpnformSkillBundle();
+
+    expect($bundle)
+        ->toContain('A computed variable needs a unique `id` beginning with `cv_`')
+        ->toContain('`{budget} * 1.2`')
+        ->toContain('Use the referenced block type in `property_meta.type`, or `computed`')
+        ->toContain('`operators_by_reference_type`')
+        ->toContain('replace the complete `computed_variables` list through `set_form_values`')
+        ->toContain("clear a block's `logic`");
+});
+
 it('renders a guest preview automatically after creation and every draft change', function () {
     $skill = file_get_contents(opnformPluginPath('skills/opnform/SKILL.md'));
     $server = file_get_contents(app_path('Mcp/Servers/OpnFormServer.php'));
