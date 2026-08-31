@@ -110,3 +110,56 @@ describe('working_pdf store - page_manifest model', () => {
     expect(store.getSourcePageNumber(2)).toBeNull()
   })
 })
+
+describe('working_pdf store - computed variables', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('exposes computed variables in field options and zone labels', () => {
+    const store = useWorkingPdfStore()
+    store.set(createTemplateFixture({
+      page_manifest: [{ id: 'p1', type: 'source', source_page: 1 }],
+      page_count: 1,
+    }))
+    store.setForm({
+      properties: [
+        { id: 'agree', name: 'Agree', type: 'checkbox' },
+      ],
+      computed_variables: [
+        { id: 'cv_yes_no', name: 'Yes No', formula: 'IF({agree}, "yes", "no")' },
+      ],
+    })
+
+    expect(store.computedVariables).toEqual([
+      { id: 'cv_yes_no', name: 'Yes No', type: 'computed' },
+    ])
+    expect(store.fieldOptions).toContainEqual({
+      name: 'Yes No (Variable)',
+      value: 'cv_yes_no',
+    })
+
+    store.addZoneWithField({ id: 'cv_yes_no', name: 'Yes No' })
+
+    const zone = store.content.zone_mappings[0]
+    expect(zone.field_id).toBe('cv_yes_no')
+    expect(store.getZoneLabel(zone)).toBe('Yes No')
+
+    const savedTemplate = {
+      ...createTemplateFixture(),
+      ...store.getSaveData(),
+    }
+
+    store.reset()
+    store.set(savedTemplate)
+    store.setForm({
+      properties: [],
+      computed_variables: [
+        { id: 'cv_yes_no', name: 'Yes No', formula: 'IF({agree}, "yes", "no")' },
+      ],
+    })
+
+    expect(store.content.zone_mappings[0].field_id).toBe('cv_yes_no')
+    expect(store.getZoneLabel(store.content.zone_mappings[0])).toBe('Yes No')
+  })
+})

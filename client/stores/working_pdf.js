@@ -87,10 +87,25 @@ export const useWorkingPdfStore = defineStore("working_pdf", {
       ]
     },
 
+    computedVariables() {
+      if (!this.form?.computed_variables?.length) return []
+      return this.form.computed_variables
+        .filter(v => v?.id && v?.name)
+        .map(v => ({
+          id: v.id,
+          name: v.name,
+          type: 'computed',
+        }))
+    },
+
     fieldOptions() {
       const formOptions = this.formFields.map(f => ({ name: f.name, value: f.id }))
+      const computedOptions = this.computedVariables.map(v => ({
+        name: `${v.name} (Variable)`,
+        value: v.id,
+      }))
       const specialOptions = this.specialFields.map(f => ({ name: f.name, value: f.id }))
-      return [...formOptions, ...specialOptions]
+      return [...formOptions, ...computedOptions, ...specialOptions]
     },
 
     defaultFilenamePattern() {
@@ -210,7 +225,7 @@ export const useWorkingPdfStore = defineStore("working_pdf", {
     getZoneLabel(zone) {
       if (zone.static_text !== undefined) return 'Static Text'
       if (zone.static_image !== undefined) return 'Image'
-      const allFields = [...this.formFields, ...this.specialFields]
+      const allFields = [...this.formFields, ...this.computedVariables, ...this.specialFields]
       const field = allFields.find(f => f.id === zone.field_id)
       return field?.name || zone.field_id || 'Unmapped'
     },
