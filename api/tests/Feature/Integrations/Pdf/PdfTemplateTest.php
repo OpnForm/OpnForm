@@ -705,6 +705,60 @@ describe('PDF From-Scratch Default Filename Pattern', function () {
 });
 
 describe('PDF Template Update - source_page renormalization', function () {
+    it('persists and reloads computed variable zone mappings', function () {
+        $user = $this->actingAsProUser();
+        $workspace = $this->createUserWorkspace($user);
+        $form = $this->createForm($user, $workspace, [
+            'properties' => [
+                ['id' => 'amount', 'name' => 'Amount', 'type' => 'number'],
+            ],
+            'computed_variables' => [
+                ['id' => 'cv_total', 'name' => 'Total', 'formula' => '{amount} * 2'],
+            ],
+        ]);
+
+        $pdfContent = createValidPdf();
+        $filePath = "pdf-templates/{$form->id}/template.pdf";
+        Storage::put($filePath, $pdfContent);
+
+        $template = PdfTemplate::create([
+            'form_id' => $form->id,
+            'name' => 'Computed Variable Template',
+            'filename' => 'template.pdf',
+            'original_filename' => 'template.pdf',
+            'file_path' => $filePath,
+            'file_size' => strlen($pdfContent),
+            'page_count' => 1,
+            'page_manifest' => [['id' => 'page-1', 'type' => 'source', 'source_page' => 1]],
+            'zone_mappings' => [],
+        ]);
+
+        $zone = [
+            'id' => 'zone-total',
+            'page_id' => 'page-1',
+            'x' => 10,
+            'y' => 10,
+            'width' => 30,
+            'height' => 5,
+            'field_id' => 'cv_total',
+            'font_size' => 12,
+            'font_color' => '#000000',
+        ];
+
+        $this->putJson(
+            route('open.forms.pdf-templates.update', [$form, $template]),
+            [
+                'page_manifest' => $template->page_manifest,
+                'zone_mappings' => [$zone],
+            ]
+        )->assertSuccessful()
+            ->assertJsonPath('data.zone_mappings.0.field_id', 'cv_total');
+
+        $this->getJson(route('open.forms.pdf-templates.show', [$form, $template]))
+            ->assertSuccessful()
+            ->assertJsonPath('data.zone_mappings.0.field_id', 'cv_total');
+    });
+
     it('renormalizes source_page after removing pages from manifest', function () {
         $user = $this->actingAsProUser();
         $workspace = $this->createUserWorkspace($user);

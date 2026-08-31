@@ -144,5 +144,22 @@ describe('working_pdf store - computed variables', () => {
     const zone = store.content.zone_mappings[0]
     expect(zone.field_id).toBe('cv_yes_no')
     expect(store.getZoneLabel(zone)).toBe('Yes No')
+
+    const savedTemplate = {
+      ...createTemplateFixture(),
+      ...store.getSaveData(),
+    }
+
+    store.reset()
+    store.set(savedTemplate)
+    store.setForm({
+      properties: [],
+      computed_variables: [
+        { id: 'cv_yes_no', name: 'Yes No', formula: 'IF({agree}, "yes", "no")' },
+      ],
+    })
+
+    expect(store.content.zone_mappings[0].field_id).toBe('cv_yes_no')
+    expect(store.getZoneLabel(store.content.zone_mappings[0])).toBe('Yes No')
   })
 })

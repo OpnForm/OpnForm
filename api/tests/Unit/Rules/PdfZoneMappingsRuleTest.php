@@ -102,6 +102,30 @@ describe('PdfZoneMappingsRule', function () {
         expect($validator->errors()->first('zone_mappings'))->toContain("field_id 'missing_field' does not exist in form");
     });
 
+    it('rejects unknown field ids when the form has no standard fields', function () {
+        $form = createPdfZoneForm(['properties' => []]);
+
+        $validator = Validator::make(
+            ['zone_mappings' => [validPdfZone(['field_id' => 'missing_field'])]],
+            ['zone_mappings' => [new PdfZoneMappingsRule($form)]]
+        );
+
+        expect($validator->fails())->toBeTrue();
+        expect($validator->errors()->first('zone_mappings'))->toContain("field_id 'missing_field' does not exist in form");
+    });
+
+    it('rejects non-string field ids', function () {
+        $form = createPdfZoneForm();
+
+        $validator = Validator::make(
+            ['zone_mappings' => [validPdfZone(['field_id' => ['name']])]],
+            ['zone_mappings' => [new PdfZoneMappingsRule($form)]]
+        );
+
+        expect($validator->fails())->toBeTrue();
+        expect($validator->errors()->first('zone_mappings'))->toContain('field_id must be a non-empty string');
+    });
+
     it('still accepts static text and image zones', function () {
         $form = createPdfZoneForm();
 
