@@ -524,12 +524,11 @@ class FormSummaryService
                 return $item;
             }
 
-            $item['value'] = app_url(URL::signedRoute(
+            $item['value'] = URL::publicSignedRoute(
                 'open.forms.submissions.file',
                 [$formId, $item['value']],
-                now()->addMinutes(10),
-                absolute: false
-            ));
+                now()->addMinutes(10)
+            );
 
             return $item;
         }, $values);

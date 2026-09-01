@@ -1,23 +1,5 @@
 <?php
 
-if (!function_exists('app_url')) {
-    function app_url($path = '')
-    {
-        $baseUrl = config('app.url');
-        if (! $baseUrl) {
-            return $path;
-        }
-
-        $cleanBaseUrl = rtrim($baseUrl, '/');
-
-        if (! $path) {
-            return $cleanBaseUrl;
-        }
-
-        return $cleanBaseUrl . '/' . ltrim($path, '/');
-    }
-}
-
 if (!function_exists('front_url')) {
     function front_url($path = '')
     {
