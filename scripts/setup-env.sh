@@ -15,6 +15,7 @@ CLIENT_ENV_EXAMPLE="client/.env.example"
 # Check for Docker-specific environment settings
 USE_DOCKER_ENV=false
 PUBLIC_URL=""
+PUBLIC_URL_PROVIDED=false
 while [[ "$#" -gt 0 ]]; do
   case "$1" in
     --docker)
@@ -23,6 +24,7 @@ while [[ "$#" -gt 0 ]]; do
       CLIENT_ENV_EXAMPLE="client/.env.docker"
       ;;
     --public-url)
+      PUBLIC_URL_PROVIDED=true
       if [[ "$#" -lt 2 ]]; then
         echo "Missing value for --public-url." >&2
         exit 1
@@ -31,6 +33,7 @@ while [[ "$#" -gt 0 ]]; do
       shift
       ;;
     --public-url=*)
+      PUBLIC_URL_PROVIDED=true
       PUBLIC_URL="${1#*=}"
       ;;
     *)
@@ -41,7 +44,12 @@ while [[ "$#" -gt 0 ]]; do
   shift
 done
 
-if [[ -n "$PUBLIC_URL" && "$USE_DOCKER_ENV" != true ]]; then
+if [[ "$PUBLIC_URL_PROVIDED" == true && -z "$PUBLIC_URL" ]]; then
+  echo "--public-url cannot be empty." >&2
+  exit 1
+fi
+
+if [[ "$PUBLIC_URL_PROVIDED" == true && "$USE_DOCKER_ENV" != true ]]; then
   echo "--public-url can only be used with --docker." >&2
   exit 1
 fi

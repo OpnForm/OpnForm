@@ -137,6 +137,16 @@ if (
   exit 1
 fi
 
+empty_url_root="$TEST_ROOT/empty-url"
+prepare_repository "$empty_url_root"
+if (
+  cd "$empty_url_root"
+  bash scripts/setup-env.sh --docker --public-url=
+); then
+  echo "Expected an empty public URL to be rejected." >&2
+  exit 1
+fi
+
 docker_root="$TEST_ROOT/docker-wrapper"
 prepare_repository "$docker_root"
 cp "$REPOSITORY_ROOT/scripts/docker-setup.sh" "$docker_root/scripts/docker-setup.sh"

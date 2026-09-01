@@ -23,6 +23,7 @@ echo -e "${NC}"
 # Default values
 DEV_MODE=false
 PUBLIC_URL=""
+PUBLIC_URL_PROVIDED=false
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 
@@ -31,6 +32,7 @@ while [[ "$#" -gt 0 ]]; do
     case $1 in
         --dev) DEV_MODE=true ;;
         --public-url)
+            PUBLIC_URL_PROVIDED=true
             if [[ "$#" -lt 2 ]]; then
                 echo "Missing value for --public-url."
                 exit 1
@@ -38,13 +40,21 @@ while [[ "$#" -gt 0 ]]; do
             PUBLIC_URL="$2"
             shift
             ;;
-        --public-url=*) PUBLIC_URL="${1#*=}" ;;
+        --public-url=*)
+            PUBLIC_URL_PROVIDED=true
+            PUBLIC_URL="${1#*=}"
+            ;;
         *) echo "Unknown parameter: $1"; exit 1 ;;
     esac
     shift
 done
 
-if [[ "$DEV_MODE" == true && -n "$PUBLIC_URL" ]]; then
+if [[ "$PUBLIC_URL_PROVIDED" == true && -z "$PUBLIC_URL" ]]; then
+    echo "--public-url cannot be empty."
+    exit 1
+fi
+
+if [[ "$DEV_MODE" == true && "$PUBLIC_URL_PROVIDED" == true ]]; then
     echo "--public-url is only available for production Docker setup."
     exit 1
 fi
