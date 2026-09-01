@@ -58,8 +58,7 @@ describe('PDF Template - Signed URL', function () {
 
         $url = $response->json('url');
         expect($url)
-            ->toStartWith('/open/forms/')
-            ->not->toContain('://')
+            ->toStartWith(config('app.url').'/open/forms/')
             ->toContain('signature=');
     });
 
@@ -166,6 +165,8 @@ describe('PDF Template - Signed URL', function () {
 
 describe('PDF Template - Download', function () {
     it('can generate and download pdf with valid signed url', function () {
+        config()->set('app.url', 'https://forms.example.test');
+
         $user = $this->actingAsProUser();
         $workspace = $this->createUserWorkspace($user);
         $form = $this->createForm($user, $workspace);
@@ -191,10 +192,8 @@ describe('PDF Template - Download', function () {
             'data' => ['name' => 'John Doe'],
         ]);
 
-        // Generate signed URL
-        $signedUrl = URL::temporarySignedRoute(
-            'open.forms.pdf-templates.download-submission',
-            now()->addHours(1),
+        $signedUrlEndpoint = route(
+            'open.forms.pdf-templates.submission.signed-url',
             [
                 'form' => $form->id,
                 'pdfTemplate' => $template->id,
@@ -202,11 +201,20 @@ describe('PDF Template - Download', function () {
             ],
             absolute: false
         );
+        $signedUrlResponse = $this
+            ->withServerVariables(['HTTP_HOST' => 'internal-proxy.example.test'])
+            ->getJson($signedUrlEndpoint);
+        $signedUrlResponse->assertSuccessful();
+        $signedUrl = $signedUrlResponse->json('url');
+
+        expect($signedUrl)->toStartWith('https://forms.example.test/open/forms/');
+
+        $relativeSignedUrl = parse_url($signedUrl, PHP_URL_PATH).'?'.parse_url($signedUrl, PHP_URL_QUERY);
 
         // The public hostname may differ from the one used by Laravel behind a reverse proxy.
         $response = $this
             ->withServerVariables(['HTTP_HOST' => 'self-hosted.example.test'])
-            ->get($signedUrl);
+            ->get($relativeSignedUrl);
 
         $response->assertSuccessful()
             ->assertHeader('content-type', 'application/pdf');
@@ -324,10 +332,17 @@ describe('PDF Template - Preview', function () {
 
         $response->assertSuccessful()
             ->assertJsonStructure(['url']);
-        expect($response->json('url'))
-            ->toStartWith('/open/forms/')
-            ->not->toContain('://')
+        $signedUrl = $response->json('url');
+        expect($signedUrl)
+            ->toStartWith(config('app.url').'/open/forms/')
             ->toContain('signature=');
+
+        $relativeSignedUrl = parse_url($signedUrl, PHP_URL_PATH).'?'.parse_url($signedUrl, PHP_URL_QUERY);
+        $this
+            ->withServerVariables(['HTTP_HOST' => 'self-hosted.example.test'])
+            ->get($relativeSignedUrl)
+            ->assertSuccessful()
+            ->assertHeader('content-type', 'application/pdf');
     });
 
     it('can preview pdf with empty data when no submissions exist', function () {
@@ -361,8 +376,7 @@ describe('PDF Template - Preview', function () {
         $response->assertSuccessful()
             ->assertJsonStructure(['url']);
         expect($response->json('url'))
-            ->toStartWith('/open/forms/')
-            ->not->toContain('://')
+            ->toStartWith(config('app.url').'/open/forms/')
             ->toContain('signature=');
     });
 
