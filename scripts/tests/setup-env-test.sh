@@ -147,6 +147,24 @@ if (
   exit 1
 fi
 
+port_root="$TEST_ROOT/port"
+prepare_repository "$port_root"
+(
+  cd "$port_root"
+  bash scripts/setup-env.sh --docker --public-url http://127.0.0.1:8080 >/dev/null
+)
+assert_env_value "$port_root/api/.env" APP_URL http://127.0.0.1:8080
+
+invalid_port_range_root="$TEST_ROOT/invalid-port-range"
+prepare_repository "$invalid_port_range_root"
+if (
+  cd "$invalid_port_range_root"
+  bash scripts/setup-env.sh --docker --public-url https://forms.example.com:65536
+); then
+  echo "Expected an out-of-range public URL port to be rejected." >&2
+  exit 1
+fi
+
 docker_root="$TEST_ROOT/docker-wrapper"
 prepare_repository "$docker_root"
 cp "$REPOSITORY_ROOT/scripts/docker-setup.sh" "$docker_root/scripts/docker-setup.sh"
@@ -163,16 +181,20 @@ printf '%s\n' \
 chmod +x "$docker_root/bin/docker"
 FAKE_DOCKER_ARGS="$docker_root/docker-args"
 export FAKE_DOCKER_ARGS
-(
+wrapper_output="$(
   cd "$docker_root"
-  PATH="$docker_root/bin:$PATH" bash scripts/docker-setup.sh --public-url https://wrapper.example.test >/dev/null
-)
+  PATH="$docker_root/bin:$PATH" bash scripts/docker-setup.sh --public-url https://wrapper.example.test/
+)"
 
 assert_env_value "$docker_root/api/.env" APP_URL https://wrapper.example.test
 assert_env_value "$docker_root/api/.env" FRONT_URL https://wrapper.example.test
 assert_env_value "$docker_root/client/.env" NUXT_PUBLIC_APP_URL https://wrapper.example.test
 assert_env_value "$docker_root/client/.env" NUXT_PUBLIC_API_BASE https://wrapper.example.test/api
 grep -F 'compose -f docker-compose.yml up -d' "$FAKE_DOCKER_ARGS" >/dev/null
+if [[ "$wrapper_output" != *'Then visit: https://wrapper.example.test'* ]]; then
+  echo "Expected Docker setup to display the normalized public URL." >&2
+  exit 1
+fi
 
 if bash "$REPOSITORY_ROOT/scripts/docker-setup.sh" --dev --public-url https://forms.example.com >/dev/null 2>&1; then
   echo "Expected --dev and --public-url to be rejected together." >&2
