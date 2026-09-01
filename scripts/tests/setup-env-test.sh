@@ -196,6 +196,15 @@ if [[ "$wrapper_output" != *'Then visit: https://wrapper.example.test'* ]]; then
   exit 1
 fi
 
+existing_wrapper_output="$(
+  cd "$docker_root"
+  PATH="$docker_root/bin:$PATH" bash scripts/docker-setup.sh
+)"
+if [[ "$existing_wrapper_output" != *'Then visit: https://wrapper.example.test'* ]]; then
+  echo "Expected Docker setup to display the existing public URL when no new value is provided." >&2
+  exit 1
+fi
+
 if bash "$REPOSITORY_ROOT/scripts/docker-setup.sh" --dev --public-url https://forms.example.com >/dev/null 2>&1; then
   echo "Expected --dev and --public-url to be rejected together." >&2
   exit 1
