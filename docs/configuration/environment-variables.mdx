@@ -14,6 +14,13 @@ production.
 
 For a standard Docker deployment available at `https://forms.example.com`:
 
+```bash
+./scripts/docker-setup.sh --public-url https://forms.example.com
+```
+
+The setup command creates or updates the following values while preserving
+existing application keys and secrets:
+
 | File | Variable | Value |
 | --- | --- | --- |
 | `api/.env` | `APP_URL` | `https://forms.example.com` |
@@ -27,11 +34,9 @@ same origin under `/api`, which is why `NUXT_PUBLIC_API_BASE` ends in `/api`.
 If your API is exposed on a separate public origin, use that browser-accessible
 API URL instead.
 
-<Warning>
-    After changing either `.env` file in Docker, recreate the affected
-    containers. `docker compose restart` does not reload environment values.
-    See [Updating Environment Variables](#updating-environment-variables).
-</Warning>
+If you configure these values manually, recreate the affected containers.
+`docker compose restart` does not reload environment values. See
+[Updating Environment Variables](#updating-environment-variables).
 
 For the deployment workflow, see [Docker Deployment](../deployment/docker#configure-your-public-instance-url).
 For the OIDC-specific checklist, see [OIDC SSO Configuration](./oidc-sso#prerequisites).

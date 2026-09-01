@@ -10,6 +10,9 @@ on:
       - "client/**"
       - "docker/**"
       - "docker-compose*.yml"
+      - "scripts/docker-setup.sh"
+      - "scripts/setup-env.sh"
+      - "scripts/tests/setup-env-test.sh"
       - ".github/workflows/**"
   pull_request:
     paths:
@@ -17,6 +20,9 @@ on:
       - "client/**"
       - "docker/**"
       - "docker-compose*.yml"
+      - "scripts/docker-setup.sh"
+      - "scripts/setup-env.sh"
+      - "scripts/tests/setup-env-test.sh"
       - ".github/workflows/**"
   workflow_dispatch:
 
@@ -32,6 +38,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Test Docker environment setup
+        run: bash scripts/tests/setup-env-test.sh
 
       - name: Get Composer cache directory
         id: composer-cache
