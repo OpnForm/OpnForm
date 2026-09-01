@@ -98,8 +98,14 @@ describe('Form Summary', function () {
     });
 
     it('returns correct summary types for different field types', function () {
+        config()->set('app.url', 'https://forms.example.test');
+
+        $submissionData = $this->generateFormSubmissionData($this->form, [], true);
+        $filesProperty = collect($this->form->properties)->firstWhere('type', 'files');
+        $submissionData[$filesProperty['id']] = ['summary-file.png'];
+
         $this->form->submissions()->create([
-            'data' => $this->generateFormSubmissionData($this->form, [], true),
+            'data' => $submissionData,
             'status' => FormSubmission::STATUS_COMPLETED,
         ]);
 
@@ -131,6 +137,11 @@ describe('Form Summary', function () {
         // Check date field has date_summary summary type
         $dateField = $fields->firstWhere('type', 'date');
         expect($dateField['summary_type'])->toBe('date_summary');
+
+        $filesField = $fields->firstWhere('type', 'files');
+        expect($filesField['data']['values'][0]['value'])
+            ->toStartWith('https://forms.example.test/open/forms/')
+            ->toContain('signature=');
     });
 
     it('calculates numeric stats correctly', function () {

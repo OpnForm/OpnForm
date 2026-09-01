@@ -26,11 +26,12 @@ class AppServiceProvider extends ServiceProvider
     {
         if (config('filesystems.default') === 'local') {
             Storage::disk('local')->buildTemporaryUrlsUsing(function ($path, $expiration, $options) {
-                return URL::temporarySignedRoute(
+                return app_url(URL::temporarySignedRoute(
                     'local.temp',
                     $expiration,
-                    array_merge($options, ['path' => $path])
-                );
+                    array_merge($options, ['path' => $path]),
+                    absolute: false
+                ));
             });
         }
 

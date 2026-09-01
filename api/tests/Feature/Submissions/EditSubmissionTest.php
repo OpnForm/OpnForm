@@ -81,10 +81,11 @@ it('keeps an existing upload canonical when an edited submission submits its sig
         'status' => FormSubmission::STATUS_COMPLETED,
     ]);
 
-    $signedUploadUrl = URL::signedRoute(
+    $signedUploadUrl = app_url(URL::signedRoute(
         'open.forms.submissions.file',
-        [$form->id, FilenameUrlEncoder::encode($fileName)]
-    );
+        [$form->id, FilenameUrlEncoder::encode($fileName)],
+        absolute: false
+    ));
 
     $this->putJson(route('open.forms.submissions.update', [
         'form' => $form,

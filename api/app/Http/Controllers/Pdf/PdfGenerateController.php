@@ -65,7 +65,7 @@ class PdfGenerateController extends Controller
             abort(404, 'Template not found.');
         }
 
-        $url = self::absoluteAppUrl(URL::temporarySignedRoute(
+        $url = app_url(URL::temporarySignedRoute(
             'open.forms.pdf-templates.preview-signed',
             now()->addMinutes(15),
             [
@@ -175,7 +175,7 @@ class PdfGenerateController extends Controller
     ): string {
         $submissionId = SubmissionUrlService::getSubmissionIdentifier($submission);
 
-        return self::absoluteAppUrl(URL::temporarySignedRoute(
+        return app_url(URL::temporarySignedRoute(
             'open.forms.pdf-templates.download-submission',
             now()->addHours(24),
             [
@@ -185,11 +185,6 @@ class PdfGenerateController extends Controller
             ],
             absolute: false
         ));
-    }
-
-    private static function absoluteAppUrl(string $relativeUrl): string
-    {
-        return rtrim((string) config('app.url'), '/').'/'.ltrim($relativeUrl, '/');
     }
 
 }
