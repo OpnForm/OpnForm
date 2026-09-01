@@ -127,6 +127,16 @@ if [[ -e "$invalid_root/api/.env" || -e "$invalid_root/client/.env" ]]; then
   exit 1
 fi
 
+invalid_port_root="$TEST_ROOT/invalid-port"
+prepare_repository "$invalid_port_root"
+if (
+  cd "$invalid_port_root"
+  bash scripts/setup-env.sh --docker --public-url https://forms.example.com:not-a-port
+); then
+  echo "Expected a non-numeric public URL port to be rejected." >&2
+  exit 1
+fi
+
 docker_root="$TEST_ROOT/docker-wrapper"
 prepare_repository "$docker_root"
 cp "$REPOSITORY_ROOT/scripts/docker-setup.sh" "$docker_root/scripts/docker-setup.sh"

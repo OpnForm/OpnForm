@@ -97,6 +97,9 @@ if [ "$DEV_MODE" = false ]; then
         SETUP_ARGS+=(--public-url "$PUBLIC_URL")
     fi
     bash "$SCRIPT_DIR/setup-env.sh" "${SETUP_ARGS[@]}"
+    if [[ -n "$PUBLIC_URL" ]]; then
+        PUBLIC_URL="$(grep '^APP_URL=' "$PROJECT_ROOT/api/.env" | tail -n 1 | cut -d= -f2-)"
+    fi
 
     if jwt_skip_validation_disabled_in_env "$PROJECT_ROOT/api/.env"; then
         echo -e "${YELLOW}Warning: JWT User Agent validation is disabled in api/.env.${NC}"

@@ -49,6 +49,7 @@ fi
 normalize_public_url() {
   local url="$1"
   local authority
+  local port=""
 
   while [[ "$url" == */ ]]; do
     url="${url%/}"
@@ -63,8 +64,17 @@ normalize_public_url() {
   esac
 
   authority="${url#*://}"
-  if [[ -z "$authority" || "$authority" == */* || "$authority" == *\?* || "$authority" == *\#* || "$authority" == *\|* || "$authority" == *\\* || "$authority" == *\&* || "$authority" == *@* || "$authority" =~ [[:space:]] ]]; then
-    echo "The public URL must be an origin without a path, query, fragment, or credentials." >&2
+  if [[ "$authority" =~ ^\[[0-9A-Fa-f:.]+\](:([0-9]+))?$ ]]; then
+    port="${BASH_REMATCH[2]}"
+  elif [[ "$authority" =~ ^[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?(:([0-9]+))?$ ]]; then
+    port="${BASH_REMATCH[3]}"
+  else
+    echo "The public URL must contain a valid hostname or IP address and no path, query, fragment, or credentials." >&2
+    return 1
+  fi
+
+  if [[ -n "$port" ]] && (( 10#$port < 1 || 10#$port > 65535 )); then
+    echo "The public URL port must be between 1 and 65535." >&2
     return 1
   fi
 
