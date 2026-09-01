@@ -28,6 +28,23 @@
               type="email"
               placeholder="Enter your email"
               :required="true"
+              :disabled="user?.can_change_email === false"
+            >
+              <template
+                v-if="user?.can_change_email === false"
+                #help
+              >
+                Your email address is managed by your sign-in provider.
+              </template>
+            </text-input>
+            <TextInput
+              v-if="isEmailChanged && user?.can_change_email !== false"
+              :form="profileForm"
+              name="current_password"
+              label="Current Password"
+              native-type="password"
+              placeholder="Enter current password"
+              :required="true"
             />
           </div>
 
@@ -70,15 +87,12 @@
 // Use useAuth composable for all user-related mutations
 const alert = useAlert()
 
-// Auth composable (TanStack Query powered)
 const {
-  updateProfile: updateProfileMutationFactory,
   deleteAccount: deleteAccountFactory,
   invalidateUser
 } = useAuth()
 
 // Query mutations
-const updateMutation = updateProfileMutationFactory()
 const deleteMutation = deleteAccountFactory()
 
 const { data: user } = useAuth().user()
@@ -87,11 +101,16 @@ const { data: user } = useAuth().user()
 const profileForm = useForm({
   name: '',
   email: '',
+  current_password: '',
+})
+
+const isEmailChanged = computed(() => {
+  return Boolean(user.value) && profileForm.email.trim().toLowerCase() !== user.value.email.toLowerCase()
 })
 
 // Update profile
 const updateProfile = () => {
-  profileForm.mutate(updateMutation)
+  profileForm.patch('/settings/profile')
     .then(() => {
       invalidateUser()
       alert.success('Your info has been updated!')
@@ -99,6 +118,9 @@ const updateProfile = () => {
     .catch((error) => {
       console.error(error)
       alert.error(error?.data?.message || 'Error updating profile')
+    })
+    .finally(() => {
+      profileForm.current_password = ''
     })
 }
 
@@ -122,22 +144,30 @@ const deleteAccount = () => {
     })
 }
 
+function syncProfileForm(currentUser) {
+  profileForm.name = currentUser.name
+  profileForm.email = currentUser.email
+  profileForm.current_password = ''
+}
+
 // Initialize form with user data
 onBeforeMount(() => {
   if (user.value) {
-    profileForm.keys().forEach((key) => {
-      profileForm[key] = user.value[key]
-    })
+    syncProfileForm(user.value)
   }
 })
 
 // Watch for user changes
 watch(user, (newUser) => {
   if (newUser) {
-    profileForm.keys().forEach((key) => {
-      profileForm[key] = newUser[key]
-    })
+    syncProfileForm(newUser)
   }
 }, { immediate: true })
 
-</script> 
+watch(isEmailChanged, (emailChanged) => {
+  if (!emailChanged) {
+    profileForm.current_password = ''
+  }
+})
+
+</script>

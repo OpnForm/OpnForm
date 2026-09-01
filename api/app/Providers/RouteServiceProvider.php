@@ -52,6 +52,19 @@ class RouteServiceProvider extends ServiceProvider
             return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
         });
 
+        RateLimiter::for('password-reset', function (Request $request) {
+            $ip = $request->ip();
+            $requestedEmail = $request->input('email');
+            $email = is_string($requestedEmail) ? strtolower(trim($requestedEmail)) : 'invalid';
+            $emailKey = hash('sha256', $email !== '' ? $email : 'unknown');
+
+            return [
+                Limit::perMinute(5)->by('password-reset:minute:ip:' . $ip),
+                Limit::perHour(30)->by('password-reset:hour:ip:' . $ip),
+                Limit::perHour(5)->by('password-reset:hour:email:' . $emailKey),
+            ];
+        });
+
         RateLimiter::for('oidc-init', function (Request $request) {
             $connection = (string) ($request->route('slug') ?? 'unknown');
             $key = hash('sha256', $request->ip() . '|' . $connection);
