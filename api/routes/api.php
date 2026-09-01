@@ -351,7 +351,7 @@ Route::group(['middleware' => 'auth.multi'], function () {
                 '/{form}/pdf-templates/{pdfTemplate}/submissions/{submission_id}/download',
                 [PdfGenerateController::class, 'downloadByTemplate']
             )
-                ->middleware('signed')
+                ->middleware('signed:relative')
                 ->withoutMiddleware(['auth.multi'])
                 ->name('pdf-templates.download-submission');
 
@@ -360,7 +360,7 @@ Route::group(['middleware' => 'auth.multi'], function () {
                 '/{form}/pdf-templates/{pdfTemplate}/preview',
                 [PdfGenerateController::class, 'previewBySignature']
             )
-                ->middleware('signed')
+                ->middleware('signed:relative')
                 ->withoutMiddleware(['auth.multi'])
                 ->name('pdf-templates.preview-signed');
         });

@@ -71,7 +71,8 @@ class PdfGenerateController extends Controller
             [
                 'form' => $form->id,
                 'pdfTemplate' => $pdfTemplate->id,
-            ]
+            ],
+            absolute: false
         );
 
         return response()->json(['url' => $url]);
@@ -181,7 +182,8 @@ class PdfGenerateController extends Controller
                 'form' => $form->id,
                 'pdfTemplate' => $template->id,
                 'submission_id' => $submissionId,
-            ]
+            ],
+            absolute: false
         );
     }
 

@@ -57,7 +57,10 @@ describe('PDF Template - Signed URL', function () {
             ->assertJsonStructure(['url']);
 
         $url = $response->json('url');
-        expect($url)->toContain('signature=');
+        expect($url)
+            ->toStartWith('/open/forms/')
+            ->not->toContain('://')
+            ->toContain('signature=');
     });
 
     it('requires authentication to get signed url', function () {
@@ -196,11 +199,14 @@ describe('PDF Template - Download', function () {
                 'form' => $form->id,
                 'pdfTemplate' => $template->id,
                 'submission_id' => getEncodedSubmissionId($submission),
-            ]
+            ],
+            absolute: false
         );
 
-        // Extract path from URL for testing
-        $response = $this->get($signedUrl);
+        // The public hostname may differ from the one used by Laravel behind a reverse proxy.
+        $response = $this
+            ->withServerVariables(['HTTP_HOST' => 'self-hosted.example.test'])
+            ->get($signedUrl);
 
         $response->assertSuccessful()
             ->assertHeader('content-type', 'application/pdf');
@@ -273,7 +279,8 @@ describe('PDF Template - Download', function () {
                 'form' => $form->id,
                 'pdfTemplate' => $template->id,
                 'submission_id' => getEncodedSubmissionId($submission),
-            ]
+            ],
+            absolute: false
         );
 
         $response = $this->get($signedUrl);
@@ -317,7 +324,10 @@ describe('PDF Template - Preview', function () {
 
         $response->assertSuccessful()
             ->assertJsonStructure(['url']);
-        expect(str_contains($response->json('url'), 'pdf-templates'))->toBeTrue();
+        expect($response->json('url'))
+            ->toStartWith('/open/forms/')
+            ->not->toContain('://')
+            ->toContain('signature=');
     });
 
     it('can preview pdf with empty data when no submissions exist', function () {
@@ -350,7 +360,10 @@ describe('PDF Template - Preview', function () {
 
         $response->assertSuccessful()
             ->assertJsonStructure(['url']);
-        expect(str_contains($response->json('url'), 'pdf-templates'))->toBeTrue();
+        expect($response->json('url'))
+            ->toStartWith('/open/forms/')
+            ->not->toContain('://')
+            ->toContain('signature=');
     });
 
     it('requires authentication for preview', function () {
@@ -432,7 +445,8 @@ describe('PDF with Zone Mappings', function () {
                 'form' => $form->id,
                 'pdfTemplate' => $template->id,
                 'submission_id' => getEncodedSubmissionId($submission),
-            ]
+            ],
+            absolute: false
         );
 
         $response = $this->get($signedUrl);
@@ -489,7 +503,8 @@ describe('PDF with Zone Mappings', function () {
                 'form' => $form->id,
                 'pdfTemplate' => $template->id,
                 'submission_id' => getEncodedSubmissionId($submission),
-            ]
+            ],
+            absolute: false
         );
 
         $response = $this->get($signedUrl);
@@ -531,7 +546,8 @@ describe('PDF Branding', function () {
                 'form' => $form->id,
                 'pdfTemplate' => $template->id,
                 'submission_id' => getEncodedSubmissionId($submission),
-            ]
+            ],
+            absolute: false
         );
 
         $response = $this->get($signedUrl);
@@ -571,7 +587,8 @@ describe('PDF Branding', function () {
                 'form' => $form->id,
                 'pdfTemplate' => $template->id,
                 'submission_id' => getEncodedSubmissionId($submission),
-            ]
+            ],
+            absolute: false
         );
 
         $response = $this->get($signedUrl);
