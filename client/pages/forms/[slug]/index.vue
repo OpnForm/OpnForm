@@ -5,7 +5,27 @@
     class="flex flex-col min-h-screen"
   >
     <div class="w-full mx-auto flex flex-col grow h-full">
-      <div v-if="!formLoading && !form">
+      <div
+        v-if="formUnavailable"
+        class="flex grow items-center justify-center p-6"
+      >
+        <div class="max-w-md text-center">
+          <h1 class="text-2xl font-semibold text-neutral-900">
+            This form is temporarily unavailable
+          </h1>
+          <p class="mt-3 text-neutral-500">
+            We couldn't load the form right now. Please check your connection and try again.
+          </p>
+          <button
+            type="button"
+            class="mt-6 rounded-lg bg-blue-500 px-4 py-2 font-medium text-white hover:bg-blue-600"
+            @click="retryForm"
+          >
+            Try again
+          </button>
+        </div>
+      </div>
+      <div v-else-if="formNotFound || (!formLoading && !form)">
         <NotFoundForm />
       </div>
       <div v-else-if="formLoading">
@@ -48,6 +68,12 @@ import {
 import { FormMode } from "~/lib/forms/FormModeStrategy.js"
 import { formsApi } from '~/api'
 import { customDomainUsed } from '~/lib/utils.js'
+import {
+  getPublicFormResponseStatus,
+  isPublicFormNotFoundError,
+  publicFormRetryDelay,
+  shouldRetryPublicFormRequest,
+} from '~/lib/forms/public-form-loading.js'
 
 const crisp = useCrisp()
 const appStore = useAppStore()
@@ -58,10 +84,39 @@ const { t } = useI18n()
 const { performRedirect } = useSubdomainRedirect()
 
 // Use TanStack Query to load the form
-const { data: form, isLoading: formLoading, error: formError, refetch: refetchForm, suspense } = useForms().detail(slug, {
-  retry: false, // Don't auto-retry for 404s
+const {
+  data: form,
+  isLoading: formLoading,
+  error: formError,
+  refetch: refetchForm,
+  suspense,
+} = useForms().detail(slug, {
+  retry: shouldRetryPublicFormRequest,
+  retryDelay: publicFormRetryDelay,
   refetchOnWindowFocus: false,
+  requestOptions: {
+    retry: false,
+  },
 })
+
+const retainedFormErrorStatus = useState(`public-form-error-status:${slug}`, () => null)
+const formErrorStatus = computed(() => {
+  return formError.value
+    ? getPublicFormResponseStatus(formError.value)
+    : retainedFormErrorStatus.value
+})
+const formNotFound = computed(() => formErrorStatus.value === 404)
+const formUnavailable = computed(() => formErrorStatus.value === 503)
+const retryingForm = ref(false)
+
+const retryForm = () => {
+  if (retryingForm.value) return
+
+  retryingForm.value = true
+  refetchForm().finally(() => {
+    retryingForm.value = false
+  })
+}
 
 if (import.meta.server) {
   await suspense()
@@ -104,19 +159,28 @@ const passwordEntered = function (password) {
   })
 }
 
-// Handle 404 errors during SSR
+// Preserve real 404s while exposing transient upstream failures as retryable 503s.
 if (import.meta.server && formError.value) {
   const event = useRequestEvent()
+  const responseStatus = getPublicFormResponseStatus(formError.value)
+  retainedFormErrorStatus.value = responseStatus
   console.error(`Error loading form [${slug}]:`, formError.value)
-  
-  // Check if we should redirect on 404 (subdomain redirect feature)
-  await performRedirect({ skipIfIframe: true })
-  setResponseStatus(event, 404, 'Page Not Found')
+
+  if (responseStatus === 404) {
+    await performRedirect({ skipIfIframe: true })
+  }
+
+  setResponseStatus(
+    event,
+    responseStatus,
+    responseStatus === 404 ? 'Page Not Found' : 'Service Unavailable',
+  )
 }
 
 // Adapt page to form: colors, custom code etc when form is loaded
 watch(form, (newForm) => {
   if (newForm) {
+    retainedFormErrorStatus.value = null
     handleDarkMode(newForm?.dark_mode)
     handleTransparentMode(newForm?.transparent_background)
 
@@ -129,9 +193,15 @@ watch(form, (newForm) => {
   }
 }, { immediate: true })
 
+watch(formError, (error) => {
+  if (error) {
+    retainedFormErrorStatus.value = getPublicFormResponseStatus(error)
+  }
+})
+
 // Handle client-side 404 redirects for forms (subdomain redirect feature)
 watch([formLoading, formError], async ([loading, error]) => {
-  if (import.meta.client && !loading && (error || !form.value)) {
+  if (import.meta.client && !loading && isPublicFormNotFoundError(error)) {
     await performRedirect({ skipIfIframe: true })
   }
 })
