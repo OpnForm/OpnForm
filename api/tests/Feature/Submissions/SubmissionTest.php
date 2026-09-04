@@ -36,12 +36,14 @@ it('can submit a select whose public options are stored at the field root', func
     $selectIndex = collect($properties)->search(fn ($property) => $property['type'] === 'select');
     $select = $properties[$selectIndex];
     $select['options'] = $select['select']['options'];
+    $select['options'][0]['id'] = 'first-option-id';
+    $select['options'][0]['name'] = 'First option';
     unset($select['select']);
     $properties[$selectIndex] = $select;
     $form->update(['properties' => $properties]);
 
     $formData = $this->generateFormSubmissionData($form, [
-        $select['id'] => $select['options'][0]['id'],
+        $select['id'] => $select['options'][0]['name'],
     ]);
 
     $this->postJson(route('forms.answer', $form->slug), $formData)

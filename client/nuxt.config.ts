@@ -18,9 +18,10 @@ export default defineNuxtConfig({
 
   hooks: {
       'build:manifest': (manifest) => {
-          // Dynamic form fields, editor panels and modals are intentionally lazy.
-          // Nuxt otherwise emits a prefetch hint for every possible dynamic import,
-          // making browsers download the whole registry immediately.
+          // Nuxt follows every dynamicImports edge while generating resource hints,
+          // including all route middleware, locales and optional form/editor code.
+          // Keep those chunks on-demand; modules actually rendered during SSR are
+          // still tracked and emitted through their regular manifest imports.
           Object.values(manifest).forEach((entry) => {
               if (entry.dynamicImports) entry.dynamicImports = []
           })

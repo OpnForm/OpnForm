@@ -21,6 +21,7 @@ import { tv } from 'tailwind-variants'
 import { textBlockTheme } from '~/lib/forms/themes/text-block.theme.js'
 import BlockMediaLayout from '~/components/open/forms/components/BlockMediaLayout.vue'
 import { inputWrapperTheme } from '~/lib/forms/themes/input-wrapper.theme.js'
+import { loadMentionParser } from '~/lib/forms/mention-parser-loader.js'
 
 const props = defineProps({
   content: { type: String, required: true },
@@ -38,9 +39,11 @@ const mentionParser = shallowRef(null)
 
 watch(() => [props.content, props.mentionsAllowed], ([content, mentionsAllowed]) => {
   if (!mentionsAllowed || !content?.includes('mention-field-id') || mentionParser.value) return
-  import('@/composables/components/useParseMention').then(({ useParseMention }) => {
-    mentionParser.value = useParseMention
-  })
+  loadMentionParser()
+    .then((parser) => {
+      mentionParser.value = parser
+    })
+    .catch((error) => console.error('Failed to load the mention parser:', error))
 }, { immediate: true })
 
 const computeProcessedContent = () => {

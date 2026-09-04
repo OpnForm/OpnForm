@@ -21,7 +21,6 @@
 
         <LazyVendorClarity />
         <LazyVendorFeatureBase />
-        <LazySubscriptionModal />
         <LazyQuickRegister />
       </ClientOnly>
     </div>

@@ -150,6 +150,7 @@ import { tailwindcssPaletteGenerator } from '~/lib/colors.js'
 import { useRouter } from 'vue-router'
 import { clearFormatterCache } from '~/components/forms/components/FormSubmissionFormatter.js'
 import { formsApi } from '~/api'
+import { clearLoadedMentionCache } from '~/lib/forms/mention-parser-loader.js'
 
 const OpenForm = defineAsyncComponent(() => import('./OpenForm.vue'))
 const OpenFormFocused = defineAsyncComponent(() => import('./OpenFormFocused.vue'))
@@ -176,8 +177,6 @@ const route = useRoute()
 const router = useRouter()
 const alert = useAlert()
 const workingFormStore = shallowRef(null)
-const authStore = useAuthStore()
-const user = computed(() => authStore.user)
 const passwordForm = useForm({ password: null })
 // Removed unused hidePasswordDisabledMsg (was always false and unused)
 // submission_id is a public UUID identifier
@@ -297,7 +296,7 @@ const getFontUrl = computed(() => {
 })
 
 const isFormOwner = computed(() => {
-  return !!authStore.token && props.form && props.form.creator_id === user.value?.id
+  return props.form?.viewer_is_form_creator === true
 })
 
 const isProcessing = computed(() => formManager?.state.isProcessing ?? false)
@@ -362,7 +361,7 @@ onBeforeUnmount(() => {
   setLocale('en')
   // Clear caches for this form to prevent memory leaks
   clearFormatterCache(props.form?.slug)
-  import('~/composables/components/useParseMention.js').then(({ clearMentionCache }) => clearMentionCache())
+  clearLoadedMentionCache()
 })
 
 const handleScrollToError = () => {

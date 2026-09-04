@@ -136,6 +136,7 @@ import { useComponentRegistry } from '~/composables/components/useComponentRegis
 import TextBlock from '~/components/forms/core/TextBlock.vue'
 import { shuffleArray } from '~/lib/utils.js'
 import { getFieldOptions } from '~/lib/forms/field-options.js'
+import { loadMentionParser } from '~/lib/forms/mention-parser-loader.js'
 
 const props = defineProps({
   block: { type: Object, required: false, default: null },
@@ -169,9 +170,11 @@ const needsMentionParser = computed(() => {
 
 watch(needsMentionParser, (isNeeded) => {
   if (!isNeeded || mentionParser.value) return
-  import('@/composables/components/useParseMention').then(({ useParseMention }) => {
-    mentionParser.value = useParseMention
-  })
+  loadMentionParser()
+    .then((parser) => {
+      mentionParser.value = parser
+    })
+    .catch((error) => console.error('Failed to load the mention parser:', error))
 }, { immediate: true })
 
 // Use centralized fieldState from manager

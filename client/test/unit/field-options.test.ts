@@ -5,7 +5,7 @@ describe('getFieldOptions', () => {
   it('reads public API options from the field root', () => {
     expect(getFieldOptions({
       type: 'select',
-      options: [{ name: '1-10', id: '1-10' }],
+      options: [{ name: '1-10', id: 'team-size-small' }],
     })).toEqual([{ name: '1-10', value: '1-10', image: null }])
   })
 

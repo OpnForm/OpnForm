@@ -333,7 +333,7 @@ export function useFormManager(initialFormConfig, initialMode = FormMode.LIVE, o
       if (import.meta.client) {
         const isIframe = useIsIframe()
         const formConfig = toValue(config)
-        const { default: cloneDeep } = await import('lodash/cloneDeep.js')
+        const { default: cloneDeep } = await import('clone-deep')
         const payload = cloneDeep({
           type: 'form-submitted',
           form: {
