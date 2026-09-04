@@ -17,7 +17,6 @@
 </template>
 
 <script setup>
-import { useParseMention } from '@/composables/components/useParseMention'
 import { tv } from 'tailwind-variants'
 import { textBlockTheme } from '~/lib/forms/themes/text-block.theme.js'
 import BlockMediaLayout from '~/components/open/forms/components/BlockMediaLayout.vue'
@@ -35,17 +34,25 @@ const props = defineProps({
   ui: { type: Object, default: () => ({}) }
 })
 
-// Compute initial value inline to avoid flash of unprocessed content
+const mentionParser = shallowRef(null)
+
+watch(() => [props.content, props.mentionsAllowed], ([content, mentionsAllowed]) => {
+  if (!mentionsAllowed || !content?.includes('mention-field-id') || mentionParser.value) return
+  import('@/composables/components/useParseMention').then(({ useParseMention }) => {
+    mentionParser.value = useParseMention
+  })
+}, { immediate: true })
+
 const computeProcessedContent = () => {
-  if (props.mentionsAllowed && props.form && props.formData) {
-    return useParseMention(props.content, props.mentionsAllowed, props.form, props.formData, props.computedValues)
+  if (mentionParser.value && props.mentionsAllowed && props.form && props.formData) {
+    return mentionParser.value(props.content, props.mentionsAllowed, props.form, props.formData, props.computedValues)
   }
   return props.content
 }
 
 const processedContent = ref(computeProcessedContent())
 
-watch(() => [props.content, props.mentionsAllowed, props.form, props.formData, props.computedValues], () => {
+watch(() => [props.content, props.mentionsAllowed, props.form, props.formData, props.computedValues, mentionParser.value], () => {
   processedContent.value = computeProcessedContent()
 })
 

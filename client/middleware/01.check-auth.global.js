@@ -1,12 +1,11 @@
 import { useQueryClient } from '@tanstack/vue-query'
-import { initServiceClients } from '~/composables/useAuthFlow'
 
 const AUTH_COOKIE_NAME = 'opnform_token'
 const LEGACY_AUTH_COOKIE_NAME = 'token'
 const ADMIN_AUTH_COOKIE_NAME = 'opnform_admin_token'
 const LEGACY_ADMIN_AUTH_COOKIE_NAME = 'admin_token'
 
-export default defineNuxtRouteMiddleware(async (_to, _from) => {
+export default defineNuxtRouteMiddleware(async (to, _from) => {
   const authStore = useAuthStore()
   const queryClient = useQueryClient()
   const tokenCookie = useCookie(AUTH_COOKIE_NAME)
@@ -22,6 +21,13 @@ export default defineNuxtRouteMiddleware(async (_to, _from) => {
     resolvedToken,
     resolvedAdminToken,
   )
+
+  // Public forms do not need the authenticated application bootstrap. Avoid
+  // fetching the user/workspaces and initializing analytics/support vendors on
+  // the respondent's critical path, even when an auth cookie is present.
+  if (to.name === 'forms-slug') {
+    return
+  }
 
   // If no token, nothing to do
   if (!authStore.token) {
@@ -58,6 +64,8 @@ export default defineNuxtRouteMiddleware(async (_to, _from) => {
   // Initialize service clients on client side (no-op on server)
   if (userData) {
     authStore.updateUser(userData)
-    initServiceClients(userData)
+    await import('~/composables/useAuthFlow').then(({ initServiceClients }) => {
+      initServiceClients(userData)
+    })
   }
 })

@@ -8,7 +8,7 @@
     :class="[
       {
         'group/nffield hover:bg-neutral-100/50 relative hover:z-10 transition-colors hover:border-neutral-200 border-dashed border border-transparent box-border dark:hover:border-blue-900 dark:hover:bg-blue-950 rounded-md': isAdminPreview,
-        'cursor-pointer':workingFormStore.showEditFieldSidebar && isAdminPreview,
+        'cursor-pointer':workingFormStore?.showEditFieldSidebar && isAdminPreview,
         'bg-blue-50 hover:!bg-blue-50 dark:bg-neutral-700! dark:hover:bg-neutral-700! rounded-md': beingEdited,
       }]"
     @click="setFieldAsSelected"
@@ -100,7 +100,6 @@
 
 <script setup>
 import { FormMode, createFormModeStrategy } from "~/lib/forms/FormModeStrategy.js"
-import { useWorkingFormStore } from '~/stores/working_form'
 import BlockRenderer from './BlockRenderer.vue'
 
 // Define props
@@ -120,11 +119,18 @@ const form = computed(() => props.formManager?.config?.value || {})
 const showHidden = computed(() => props.formManager?.strategy?.value?.display?.showHiddenFields || false)
 
 // Setup stores and reactive state
-const workingFormStore = useWorkingFormStore()
-const selectedFieldIndex = computed(() => workingFormStore.selectedFieldIndex)
-const showEditFieldSidebar = computed(() => workingFormStore.showEditFieldSidebar)
 const strategy = computed(() => props.formManager?.strategy?.value || createFormModeStrategy(FormMode.LIVE))
 const isAdminPreview = computed(() => strategy.value?.admin?.showAdminControls || false)
+const workingFormStore = shallowRef(null)
+const selectedFieldIndex = computed(() => workingFormStore.value?.selectedFieldIndex ?? -1)
+const showEditFieldSidebar = computed(() => workingFormStore.value?.showEditFieldSidebar ?? false)
+
+watch(isAdminPreview, (isAdmin) => {
+  if (!isAdmin || workingFormStore.value) return
+  import('~/stores/working_form').then(({ useWorkingFormStore }) => {
+    workingFormStore.value = useWorkingFormStore()
+  })
+}, { immediate: true })
 
 // Computed properties
 // Field rendering is delegated to BlockRenderer
@@ -145,27 +151,27 @@ const beingEdited = computed(() =>
 // Methods
 function editFieldOptions() {
   if (!isAdminPreview.value) return
-  workingFormStore.openSettingsForField(props.field, true)
+  workingFormStore.value?.openSettingsForField(props.field, true)
 }
 
 function setFieldAsSelected() {
-  if (!isAdminPreview.value || !workingFormStore.showEditFieldSidebar) return
-  workingFormStore.openSettingsForField(props.field)
+  if (!isAdminPreview.value || !workingFormStore.value?.showEditFieldSidebar) return
+  workingFormStore.value.openSettingsForField(props.field)
 }
 
 function fieldDoubleClick() {
   if (!isAdminPreview.value) return
-  workingFormStore.openSettingsForField(props.field)
+  workingFormStore.value?.openSettingsForField(props.field)
 }
 
 function openAddFieldSidebar() {
   if (!isAdminPreview.value) return
-  workingFormStore.openAddFieldSidebar(props.field)
+  workingFormStore.value?.openAddFieldSidebar(props.field)
 }
 
 function removeField() {
   if (!isAdminPreview.value) return
-  workingFormStore.removeField(props.field)
+  workingFormStore.value?.removeField(props.field)
 }
 
 /**

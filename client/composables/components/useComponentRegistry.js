@@ -1,6 +1,4 @@
 import { defineAsyncComponent } from 'vue'
-import FocusedSelectorInput from '~/components/forms/core/FocusedSelectorInput.vue'
-import FocusedToggleInput from '~/components/forms/core/FocusedToggleInput.vue'
 
 const integrationRegistry = new Map([
   ['webhook', () => import('~/components/open/integrations/WebhookIntegration.vue')],
@@ -51,8 +49,8 @@ const heavyFormComponentsRegistry = new Map([
 ])
 
 const focusedFormComponentsRegistry = new Map([
-  ['FocusedSelectorInput', FocusedSelectorInput],
-  ['FocusedToggleInput', FocusedToggleInput],
+  ['FocusedSelectorInput', () => import('~/components/forms/core/FocusedSelectorInput.vue')],
+  ['FocusedToggleInput', () => import('~/components/forms/core/FocusedToggleInput.vue')],
 ])
 
 // Component loading cache to avoid duplicate imports
@@ -198,9 +196,9 @@ export function useComponentRegistry() {
     }
 
     if (focusedFormComponentsRegistry.has(componentName)) {
-      const component = focusedFormComponentsRegistry.get(componentName)
+      const loader = focusedFormComponentsRegistry.get(componentName)
       return {
-        component,
+        component: createAsyncComponent(loader),
         clientOnly: false
       }
     }

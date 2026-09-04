@@ -16,11 +16,21 @@ export default defineNuxtConfig({
   ...(viteCacheDir ? {vite: {cacheDir: viteCacheDir}} : {}),
   css: ['~/css/app.css'],
 
+  hooks: {
+      'build:manifest': (manifest) => {
+          // Dynamic form fields, editor panels and modals are intentionally lazy.
+          // Nuxt otherwise emits a prefetch hint for every possible dynamic import,
+          // making browsers download the whole registry immediately.
+          Object.values(manifest).forEach((entry) => {
+              if (entry.dynamicImports) entry.dynamicImports = []
+          })
+      },
+  },
+
   // Disable certain plugins during testing
   modules: isUnitTestMode ? [] : [
       '@pinia/nuxt', 
       '@vueuse/nuxt', 
-      '@vueuse/motion/nuxt', 
       '@nuxtjs/sitemap',
       '@nuxt/ui', 
       'nuxt-utm', 
@@ -96,6 +106,15 @@ export default defineNuxtConfig({
           org: "opnform",
           project: "opnform-vue",
       },
+      unstable_sentryBundlerPluginOptions: {
+          bundleSizeOptimizations: {
+              excludeDebugStatements: true,
+              excludeTracing: true,
+              excludeReplayShadowDom: true,
+              excludeReplayIframe: true,
+              excludeReplayWorker: true,
+          },
+      },
   },
 
   sourcemap: { client: 'hidden' },
@@ -148,6 +167,9 @@ export default defineNuxtConfig({
   },
 
   icon: {
+      // Managed E2E worktrees place buildDir outside client/node_modules, so
+      // locally-installed JSON collections cannot be resolved at runtime there.
+      serverBundle: (isE2EMode || buildDir) ? 'remote' : 'auto',
       customCollections: [
           {
               prefix: 'opnform',
@@ -159,9 +181,7 @@ export default defineNuxtConfig({
               'ix:mandatory',
           ],
           includeCustomCollections: true,
-          scan: {
-              globInclude: ['**/*.vue', '**/*.json'],
-          },
+          scan: false,
       },
     },
 
