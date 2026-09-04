@@ -175,6 +175,7 @@ const emit = defineEmits(['submitted', 'password-entered', 'restarted'])
 const { t, setLocale } = useI18n()
 const route = useRoute()
 const router = useRouter()
+const nuxtApp = useNuxtApp()
 const alert = useAlert()
 const workingFormStore = shallowRef(null)
 const passwordForm = useForm({ password: null })
@@ -241,7 +242,7 @@ watch([
   if (!showAdminControls || !struct) return
 
   import('~/stores/working_form').then(({ useWorkingFormStore }) => {
-    workingFormStore.value ||= useWorkingFormStore()
+    workingFormStore.value ||= nuxtApp.runWithContext(() => useWorkingFormStore())
     workingFormStore.value.setStructureService(struct)
   })
 }, { immediate: true })

@@ -143,6 +143,7 @@ const props = defineProps({
   formManager: { type: Object, required: true }
 })
 
+const nuxtApp = useNuxtApp()
 const form = computed(() => props.formManager?.config?.value || {})
 const dataForm = computed(() => props.formManager?.form || {})
 const darkMode = computed(() => props.formManager?.darkMode?.value || false)
@@ -414,7 +415,7 @@ const boundProps = computed(() => {
 const editFieldOptions = () => {
   if (!isAdminPreview.value) return
   import('~/stores/working_form').then(({ useWorkingFormStore }) => {
-    useWorkingFormStore().openSettingsForField(props.block, true)
+    nuxtApp.runWithContext(() => useWorkingFormStore()).openSettingsForField(props.block, true)
   })
 }
 </script>

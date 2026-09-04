@@ -119,6 +119,7 @@ const form = computed(() => props.formManager?.config?.value || {})
 const showHidden = computed(() => props.formManager?.strategy?.value?.display?.showHiddenFields || false)
 
 // Setup stores and reactive state
+const nuxtApp = useNuxtApp()
 const strategy = computed(() => props.formManager?.strategy?.value || createFormModeStrategy(FormMode.LIVE))
 const isAdminPreview = computed(() => strategy.value?.admin?.showAdminControls || false)
 const workingFormStore = shallowRef(null)
@@ -128,7 +129,7 @@ const showEditFieldSidebar = computed(() => workingFormStore.value?.showEditFiel
 watch(isAdminPreview, (isAdmin) => {
   if (!isAdmin || workingFormStore.value) return
   import('~/stores/working_form').then(({ useWorkingFormStore }) => {
-    workingFormStore.value = useWorkingFormStore()
+    workingFormStore.value = nuxtApp.runWithContext(() => useWorkingFormStore())
   })
 }, { immediate: true })
 

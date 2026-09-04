@@ -27,7 +27,7 @@ vi.mock('~/api/forms', () => ({
   },
 }))
 
-vi.mock('~/composables/useAuthFlow', () => ({
+vi.mock('~/composables/useIsAuthenticated.js', () => ({
   useIsAuthenticated: () => ({ isAuthenticated: { value: true } }),
 }))
 

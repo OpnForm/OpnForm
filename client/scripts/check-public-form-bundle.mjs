@@ -18,6 +18,7 @@ const forbiddenSources = [
   '/vue-draggable-plus/',
   '/overlayscrollbars/',
   '/overlayscrollbars-vue/',
+  '/composables/useAuthFlow.js',
   '/components/workspaces/settings/',
   '/components/users/settings/',
 ]

@@ -3,7 +3,7 @@ import clonedeep from "clone-deep"
 import { generateUUID } from "~/lib/utils.js"
 import blocksTypes from "~/data/blocks_types.json"
 import { useAlert } from '~/composables/useAlert'
-import { useIsAuthenticated } from '~/composables/useAuthFlow'
+import { useIsAuthenticated } from '~/composables/useIsAuthenticated.js'
 
 import { useForm } from '~/composables/useForm'
 

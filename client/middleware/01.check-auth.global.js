@@ -6,6 +6,7 @@ const ADMIN_AUTH_COOKIE_NAME = 'opnform_admin_token'
 const LEGACY_ADMIN_AUTH_COOKIE_NAME = 'admin_token'
 
 export default defineNuxtRouteMiddleware(async (to, _from) => {
+  const nuxtApp = useNuxtApp()
   const authStore = useAuthStore()
   const queryClient = useQueryClient()
   const tokenCookie = useCookie(AUTH_COOKIE_NAME)
@@ -64,8 +65,8 @@ export default defineNuxtRouteMiddleware(async (to, _from) => {
   // Initialize service clients on client side (no-op on server)
   if (userData) {
     authStore.updateUser(userData)
-    await import('~/composables/useAuthFlow').then(({ initServiceClients }) => {
-      initServiceClients(userData)
+    await import('~/composables/useServiceClients.js').then((serviceClients) => {
+      nuxtApp.runWithContext(() => serviceClients.initServiceClients(userData))
     })
   }
 })
