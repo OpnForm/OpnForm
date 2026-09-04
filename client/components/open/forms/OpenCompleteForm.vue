@@ -5,6 +5,15 @@
     :dir="form?.layout_rtl ? 'rtl' : 'ltr'"
     :style="formStyle"
   >
+    <ClientOnly>
+      <LazyOpenFormsComponentsSdkBridgeHost
+        v-if="shouldLoadSdkBridge"
+        :form="form"
+        :form-manager="formManager"
+        :dark-mode="darkMode"
+        @ready="handleSdkBridgeReady"
+      />
+    </ClientOnly>
     <v-transition name="fade" mode="out-in">
       <div v-if="isAutoSubmit" key="auto-submit" class="text-center p-6">
         <Loader class="h-6 w-6 text-blue-500 mx-auto" />
@@ -62,8 +71,9 @@
         </template>
 
         <template #cleanings>
-          <form-cleanings
-            v-if="showFormCleanings"
+          <component
+            :is="FormCleanings"
+            v-if="shouldShowFormCleanings"
             :hideable="true"
             class="mb-4 mx-2"
             :form="form"
@@ -115,8 +125,10 @@
     </v-transition>
 
     <template v-if="!isAutoSubmit">
-      <FirstSubmissionModal
-        :show="showFirstSubmissionModal"
+      <component
+        :is="FirstSubmissionModal"
+        v-if="showFirstSubmissionModal"
+        :show="true"
         :form="form"
         @close="showFirstSubmissionModal=false"
       />
@@ -127,12 +139,8 @@
 <script setup>
 import { useFormManager } from '~/lib/forms/composables/useFormManager'
 import { FormMode } from "~/lib/forms/FormModeStrategy.js"
-import OpenForm from './OpenForm.vue'
-import OpenFormFocused from './OpenFormFocused.vue'
 import OpenFormButton from './OpenFormButton.vue'
-import FormCleanings from '../../pages/forms/show/FormCleanings.vue'
 import VTransition from '~/components/global/transitions/VTransition.vue'
-import FirstSubmissionModal from '~/components/open/forms/components/FirstSubmissionModal.vue'
 import { useForm } from '~/composables/useForm'
 import { useAlert } from '~/composables/useAlert'
 import { useI18n } from 'vue-i18n'
@@ -140,10 +148,14 @@ import { useIsIframe } from '~/composables/useIsIframe'
 import Loader from '~/components/global/Loader.vue'
 import { tailwindcssPaletteGenerator } from '~/lib/colors.js'
 import { useRouter } from 'vue-router'
-import { useSdkBridge } from '~/lib/sdk/useSdkBridge'
 import { clearFormatterCache } from '~/components/forms/components/FormSubmissionFormatter.js'
-import { clearMentionCache } from '~/composables/components/useParseMention.js'
 import { formsApi } from '~/api'
+import { clearLoadedMentionCache } from '~/lib/forms/mention-parser-loader.js'
+
+const OpenForm = defineAsyncComponent(() => import('./OpenForm.vue'))
+const OpenFormFocused = defineAsyncComponent(() => import('./OpenFormFocused.vue'))
+const FormCleanings = defineAsyncComponent(() => import('../../pages/forms/show/FormCleanings.vue'))
+const FirstSubmissionModal = defineAsyncComponent(() => import('~/components/open/forms/components/FirstSubmissionModal.vue'))
 
 const props = defineProps({
   form: { type: Object, required: true },
@@ -163,9 +175,9 @@ const emit = defineEmits(['submitted', 'password-entered', 'restarted'])
 const { t, setLocale } = useI18n()
 const route = useRoute()
 const router = useRouter()
+const nuxtApp = useNuxtApp()
 const alert = useAlert()
-const workingFormStore = useWorkingFormStore()
-const { data: user } = useAuth().user()
+const workingFormStore = shallowRef(null)
 const passwordForm = useForm({ password: null })
 // Removed unused hidePasswordDisabledMsg (was always false and unused)
 // submission_id is a public UUID identifier
@@ -191,7 +203,11 @@ provide('formBorderRadius', computed(() => props.form.border_radius || 'small'))
 provide('formPresentationStyle', computed(() => props.form.presentation_style || 'classic'))
 
 let formManager = null
-let sdkBridge = null
+const sdkBridge = shallowRef(null)
+let resolveSdkBridgeReady
+const sdkBridgeReady = new Promise((resolve) => {
+  resolveSdkBridgeReady = resolve
+})
 if (props.form) {
   formManager = useFormManager(props.form, props.mode, {
     darkMode: darkModeRef,
@@ -204,18 +220,6 @@ if (props.form) {
     urlParams: new URLSearchParams(queryString),
   })
 
-  // Initialize SDK bridge for parent window communication
-  const formDataRef = computed(() => formManager.form.data())
-  const formErrorsRef = computed(() => formManager.form.errors?.all?.() || {})
-  
-  sdkBridge = useSdkBridge({
-    formConfig: computed(() => props.form),
-    formData: formDataRef,
-    formErrors: formErrorsRef,
-    formManager: formManager,
-    darkMode: darkModeRef,
-    attribution: formManager.attribution,
-  })
 }
 
 // Watch for changes to the form prop and update formManager
@@ -235,9 +239,12 @@ watch([
   () => formManager?.strategy?.value?.admin?.showAdminControls,
   () => formManager?.structure?.value
 ], ([showAdminControls, struct]) => {
-  if (workingFormStore && showAdminControls && struct) {
-    workingFormStore.setStructureService(struct)
-  }
+  if (!showAdminControls || !struct) return
+
+  import('~/stores/working_form').then(({ useWorkingFormStore }) => {
+    workingFormStore.value ||= nuxtApp.runWithContext(() => useWorkingFormStore())
+    workingFormStore.value.setStructureService(struct)
+  })
 }, { immediate: true })
 
 // Add a watcher to update formManager's darkMode whenever darkModeRef changes
@@ -252,7 +259,8 @@ onMounted(() => {
   if (isAutoSubmit.value && formManager) {
     // Using nextTick to ensure form is fully rendered and initialized
     nextTick(async () => {
-      await sdkBridge?.waitForHandshake?.()
+      const bridge = shouldLoadSdkBridge.value ? await sdkBridgeReady : null
+      await bridge?.waitForHandshake?.()
       triggerSubmit()
     })
   }
@@ -262,6 +270,26 @@ const isPublicFormPage = computed(() => {
   return route.name === 'forms-slug'
 })
 
+const shouldLoadSdkBridge = computed(() => {
+  if (!isPublicFormPage.value) return false
+  const workspaceCustomCode = props.form?.workspace?.settings?.custom_code
+  return useIsIframe() || !!workspaceCustomCode || !!props.form?.custom_code
+})
+
+const handleSdkBridgeReady = (bridge) => {
+  sdkBridge.value = bridge
+  resolveSdkBridgeReady(bridge)
+}
+
+const callSdkBridge = (method, ...args) => {
+  if (!shouldLoadSdkBridge.value) return Promise.resolve()
+  if (sdkBridge.value) {
+    sdkBridge.value[method]?.(...args)
+    return Promise.resolve()
+  }
+  return sdkBridgeReady.then((bridge) => bridge?.[method]?.(...args))
+}
+
 const getFontUrl = computed(() => {
   if(!props.form?.font_family) return null
   const family = props.form.font_family.replace(/ /g, '+')
@@ -269,12 +297,16 @@ const getFontUrl = computed(() => {
 })
 
 const isFormOwner = computed(() => {
-  const { isAuthenticated } = useIsAuthenticated()
-  return isAuthenticated.value && props.form && props.form.creator_id === user.value.id
+  return props.form?.viewer_is_form_creator === true
 })
 
 const isProcessing = computed(() => formManager?.state.isProcessing ?? false)
 const showFormCleanings = computed(() => formManager?.strategy.value.display.showFormCleanings ?? false)
+const shouldShowFormCleanings = computed(() => (
+  showFormCleanings.value &&
+  isFormOwner.value &&
+  Object.keys(props.form?.cleanings || {}).length > 0
+))
 const showFontLink = computed(() => formManager?.strategy.value.display.showFontLink ?? false)
 
 const formStyle = computed(() => {
@@ -330,7 +362,7 @@ onBeforeUnmount(() => {
   setLocale('en')
   // Clear caches for this form to prevent memory leaks
   clearFormatterCache(props.form?.slug)
-  clearMentionCache()
+  clearLoadedMentionCache()
 })
 
 const handleScrollToError = () => {
@@ -355,7 +387,7 @@ const triggerSubmit = () => {
   if (!formManager || isProcessing.value) return
 
   // Emit SDK submitStart event
-  sdkBridge?.onSubmitStart()
+  callSdkBridge('onSubmitStart')
 
   formManager.submit({
     submissionId: submissionId.value
@@ -368,7 +400,7 @@ const triggerSubmit = () => {
         }
 
         // Emit SDK submit success event
-        sdkBridge?.onSubmitSuccess({
+        callSdkBridge('onSubmitSuccess', {
           data: submittedData.value,
           submissionId: result?.submission_id,
           completionTime: result?.completion_time
@@ -394,7 +426,7 @@ const triggerSubmit = () => {
       
       // Emit SDK submit error event
       const errors = error.data?.errors || error.data || { general: error.message }
-      sdkBridge?.onSubmitError(errors)
+      callSdkBridge('onSubmitError', errors)
       
       if (error.response && error.response.status === 422 && error.data) {
         alert.formValidationError(error.data)
@@ -433,7 +465,7 @@ const restart = async () => {
   })
   
   // Emit SDK reset event
-  sdkBridge?.onReset()
+  callSdkBridge('onReset')
   
   emit('restarted', true)
 }

@@ -13,7 +13,6 @@ import { usePartialSubmission } from '~/composables/forms/usePartialSubmission.j
 import { useIsIframe } from '~/composables/useIsIframe'
 import { useAmplitude } from '~/composables/useAmplitude'
 import { useConfetti } from '~/composables/useConfetti'
-import { cloneDeep } from 'lodash'
 import { useFieldState } from './useFieldState'
 import { useComputedVariables } from '~/composables/forms/useComputedVariables'
 import { useSubmissionAttribution } from './useSubmissionAttribution'
@@ -334,6 +333,7 @@ export function useFormManager(initialFormConfig, initialMode = FormMode.LIVE, o
       if (import.meta.client) {
         const isIframe = useIsIframe()
         const formConfig = toValue(config)
+        const { default: cloneDeep } = await import('clone-deep')
         const payload = cloneDeep({
           type: 'form-submitted',
           form: {

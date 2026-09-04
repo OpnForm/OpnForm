@@ -26,7 +26,7 @@
         </div>
       </div>
       <div v-else-if="formNotFound || (!formLoading && !form)">
-        <NotFoundForm />
+        <LazyNotFoundForm />
       </div>
       <div v-else-if="formLoading">
         <p class="text-center mt-6 p-4">
@@ -34,7 +34,7 @@
         </p>
       </div>
       <template v-else>
-        <FormAnalyticsScript
+        <LazyOpenFormsFormAnalyticsScript
           v-if="form.analytics?.provider && form.analytics?.tracking_id"
           ref="analyticsScriptRef"
           :form="form"
@@ -55,8 +55,6 @@
 
 <script setup>
 import OpenCompleteForm from "~/components/open/forms/OpenCompleteForm.vue"
-import FormAnalyticsScript from "~/components/open/forms/FormAnalyticsScript.vue"
-import sha256 from 'js-sha256'
 import { onBeforeRouteLeave } from 'vue-router'
 import {
   disableDarkMode,
@@ -142,19 +140,16 @@ const passwordEntered = function (password) {
     sameSite: usesHttps ? 'none' : 'lax',
     secure: usesHttps
   })
-  cookie.value = sha256(password)
-  
-  // Clear any previous error
-  passwordError.value = null
-  
-  nextTick(() => {
-    refetchForm().then(() => {
+  return import('js-sha256').then(({ default: sha256 }) => {
+    cookie.value = sha256(password)
+    passwordError.value = null
+
+    return nextTick().then(() => refetchForm()).then(() => {
       if (form.value?.is_password_protected) {
-        // Set error message - child component will pick it up
         passwordError.value = t('forms.invalid_password')
-      } else {
-        trackFormView()
+        return
       }
+      trackFormView()
     })
   })
 }
@@ -383,7 +378,10 @@ useHead({
     },
   ] : {},
   script: computed(() => {
-    const scripts = [{ src: '/widgets/iframeResizer.contentWindow.min.js' }]
+    const scripts = []
+    if (isIframe) {
+      scripts.push({ src: '/widgets/iframeResizer.contentWindow.min.js' })
+    }
     // Load local SDK stub before custom code if needed
     if (shouldLoadLocalSdk.value) {
       scripts.unshift({ src: '/widgets/opnform-local.js' })

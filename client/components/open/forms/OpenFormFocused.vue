@@ -51,7 +51,7 @@
         </div>
         <div v-if="!props.formManager?.state.isSubmitted" class="mt-2 flex gap-2" :class="[getFieldAlignClasses(currentBlock), {'flex-col justify-normal! items-center': isLast &&form.use_captcha}]">
           <slot name="submit-btn" v-if="isLast" :loading="isProcessing">
-            <CaptchaWrapper v-if="form.use_captcha" :form-manager="formManager" />
+            <LazyCaptchaWrapper v-if="form.use_captcha" :form-manager="formManager" />
             <open-form-button 
               native-type="button" 
               :form="form" 
@@ -105,7 +105,6 @@ import CenteredStep from './components/layouts/CenteredStep.vue'
 import FormProgressbar from './FormProgressbar.vue'
 import OpenFormButton from './OpenFormButton.vue'
 import SlidingTransition from '../../global/transitions/SlidingTransition.vue'
-import CaptchaWrapper from '~/components/forms/heavy/components/CaptchaWrapper.vue'
 import { FormMode } from '~/lib/forms/FormModeStrategy.js'
 import { useFormImagePreloader } from '~/composables/forms/useFormImagePreloader.js'
 import PoweredBy from '~/components/pages/forms/show/PoweredBy.vue'

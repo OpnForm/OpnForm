@@ -80,7 +80,6 @@
 import { computed, inject, ref } from 'vue'
 import InputLabel from './InputLabel.vue'
 import InputHelp from './InputHelp.vue'
-import {twMerge} from "tailwind-merge"
 import { tv } from "tailwind-variants"
 import { inputWrapperTheme } from "~/lib/forms/themes/input-wrapper.theme.js"
 import BlockMediaLayout from '~/components/open/forms/components/BlockMediaLayout.vue'
@@ -121,7 +120,7 @@ const ui = computed(() => {
 })
 
 // Wrapper classes with twMerge operation - makes sense as computed property
-const wrapperClasses = computed(() => twMerge(ui.value.wrapper(), props.wrapperClass))
+const wrapperClasses = computed(() => ui.value.wrapper({ class: props.wrapperClass }))
 
 const presentationStyle = computed(() => injectedPresentationStyle.value)
 </script>

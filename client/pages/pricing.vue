@@ -733,7 +733,7 @@
 <script setup>
 import FeatureComparison from "~/components/pages/pricing/FeatureComparison.vue"
 import FaqSection from "~/components/pages/FaqSection.vue"
-import { useIsAuthenticated } from "~/composables/useAuthFlow"
+import { useIsAuthenticated } from "~/composables/useIsAuthenticated.js"
 
 definePageMeta({
   layout: "default",

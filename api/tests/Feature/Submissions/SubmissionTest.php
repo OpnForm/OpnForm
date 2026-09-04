@@ -28,6 +28,32 @@ it('can delete form submission', function () {
     expect(Version::query()->whereIn('version_id', $versionIds)->count())->toBe(0);
 });
 
+it('can submit a select whose public options are stored at the field root', function () {
+    $user = $this->actingAsUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace);
+    $properties = $form->properties;
+    $selectIndex = collect($properties)->search(fn ($property) => $property['type'] === 'select');
+    $select = $properties[$selectIndex];
+    $select['options'] = $select['select']['options'];
+    $select['options'][0]['id'] = 'first-option-id';
+    $select['options'][0]['name'] = 'First option';
+    unset($select['select']);
+    $properties[$selectIndex] = $select;
+    $form->update(['properties' => $properties]);
+
+    $formData = $this->generateFormSubmissionData($form, [
+        $select['id'] => $select['options'][0]['name'],
+    ]);
+
+    $this->postJson(route('forms.answer', $form->slug), $formData)
+        ->assertSuccessful()
+        ->assertJson([
+            'type' => 'success',
+            'message' => 'Form submission saved.',
+        ]);
+});
+
 it('can delete multiple form submissions', function () {
     $user = $this->actingAsUser();
     $workspace = $this->createUserWorkspace($user);
