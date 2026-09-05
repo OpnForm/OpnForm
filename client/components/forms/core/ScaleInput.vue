@@ -18,7 +18,6 @@
           compVal !== i ? ui.buttonUnselected({ class: props.ui?.slots?.buttonUnselected }) : '',
           compVal !== i ? ui.buttonHover({ class: props.ui?.slots?.buttonHover }) : ''
         ]"
-        class="focus-visible:ring-2 focus-visible:ring-form/100 focus-visible:outline-none"
         :style="btnStyle(i === compVal)"
         role="radio"
         :tabindex="getScaleTabIndex(i)"
@@ -117,8 +116,14 @@ export default {
       }
     },
     btnStyle(isSelected) {
-      if (!isSelected) return {}
+      const style = {
+        '--bg-form-color': this.color,
+        '--form-color': this.color,
+        '--form-focus-color': this.hasError ? 'var(--color-red-500)' : this.color
+      }
+      if (!isSelected) return style
       return {
+        ...style,
         color: this.textColor,
         backgroundColor: this.color,
       }

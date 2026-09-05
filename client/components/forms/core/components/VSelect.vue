@@ -373,12 +373,17 @@ export default {
 
     optionStyle () {
       return {
-        '--bg-form-color': this.color
+        '--bg-form-color': this.color,
+        '--form-color': this.color,
+        '--form-focus-color': this.hasError ? 'var(--color-red-500)' : this.color
       }
     },
     inputStyle () {
       return {
-        '--tw-ring-color': this.color
+        '--tw-ring-color': this.color,
+        '--form-color': this.color,
+        '--form-focus-color': this.hasError ? 'var(--color-red-500)' : this.color,
+        '--bg-form-color': this.color
       }
     },
     popoverContentStyle () {
