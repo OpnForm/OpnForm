@@ -1,6 +1,7 @@
+import { existsSync, readdirSync, readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import templateIndustries from './data/forms/templates/industries.json'
 import templateTypes from './data/forms/templates/types.json'
-import opnformConfig from './opnform.config.js'
 
 const isSelfHostedBuild = process.env.SELF_HOSTED === 'true'
   || process.env.NUXT_PUBLIC_SELF_HOSTED === 'true'
@@ -26,8 +27,9 @@ export default {
     return [
       ...getTemplateIndustriesUrls(),
       ...getTemplateTypesUrls(),
+      ...getFeaturePagesUrls(),
       ...getCloudMarketingUrls(),
-      ...(await getIntegrationsPages().catch(() => [])),
+      ...getIntegrationsPages(),
     ]
   }
 }
@@ -47,6 +49,55 @@ function getCloudMarketingUrls () {
       priority: 0.7
     }
   ]
+}
+
+function getFeaturePagesUrls () {
+  const featuresDir = join(process.cwd(), 'content/features')
+
+  if (!existsSync(featuresDir)) return []
+
+  return readdirSync(featuresDir)
+    .filter((fileName) => fileName.endsWith('.md'))
+    .map((fileName) => {
+      const frontmatter = getMarkdownFrontmatter(join(featuresDir, fileName))
+      if (frontmatter.published === false) return null
+
+      const fallbackSlug = fileName.replace(/\.md$/, '')
+      const slug = frontmatter.slug || fallbackSlug
+
+      return {
+        url: `/features/${slug}`,
+        changefreq: 'monthly',
+        priority: 0.75
+      }
+    })
+    .filter((page) => page)
+}
+
+function getMarkdownFrontmatter (filePath) {
+  const content = readFileSync(filePath, 'utf8')
+  const match = content.match(/^---\n([\s\S]*?)\n---/)
+  if (!match) return {}
+
+  return match[1].split('\n').reduce((frontmatter, line) => {
+    const separatorIndex = line.indexOf(':')
+    if (separatorIndex === -1) return frontmatter
+
+    const key = line.slice(0, separatorIndex).trim()
+    const rawValue = line.slice(separatorIndex + 1).trim()
+
+    if (!key) return frontmatter
+
+    frontmatter[key] = parseFrontmatterValue(rawValue)
+    return frontmatter
+  }, {})
+}
+
+function parseFrontmatterValue (value) {
+  if (value === 'true') return true
+  if (value === 'false') return false
+
+  return value.replace(/^['"]|['"]$/g, '')
 }
 
 function getTemplateTypesUrls () {
@@ -69,32 +120,25 @@ function getTemplateIndustriesUrls () {
   })
 }
 
-async function getIntegrationsPages () {
-  try {
-    const databaseId = '1eda631bec208005bd8ed9988b380263'
-    const apiUrl = opnformConfig.notion.worker
-    if (!apiUrl) return []
-    
-    const response = await fetch(`${apiUrl}/table/${databaseId}`, {
-      timeout: 5000,
-      headers: { 'Cache-Control': 'no-cache' }
-    })
-    
-    if (!response.ok) return []
-    
-    const pages = await response.json()
-    return pages.map((page) => {
-      const slug = page.Slug ?? page.slug ?? null
-      const published = page.Published ?? page.published ?? false
-      if (!slug || !published) return null
+function getIntegrationsPages () {
+  const integrationsDir = join(process.cwd(), 'content/integrations')
+
+  if (!existsSync(integrationsDir)) return []
+
+  return readdirSync(integrationsDir)
+    .filter((fileName) => fileName.endsWith('.md'))
+    .map((fileName) => {
+      const frontmatter = getMarkdownFrontmatter(join(integrationsDir, fileName))
+      if (frontmatter.published === false) return null
+
+      const fallbackSlug = fileName.replace(/\.md$/, '')
+      const slug = frontmatter.slug || fallbackSlug
+
       return {
         url: `/integrations/${slug}`,
         changefreq: 'monthly',
         priority: 0.9
       }
-    }).filter((page) => page)
-  } catch (error) {
-    console.warn('Error fetching integrations pages for sitemap:', error.message)
-    return []
-  }
+    })
+    .filter((page) => page)
 }
