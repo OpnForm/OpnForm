@@ -87,15 +87,18 @@ abstract class AbstractIntegrationHandler
 
     final public function run(): void
     {
+        $eventMetadata = $this->getEventMetadata();
+
         try {
             $this->handle();
             $this->formIntegration->events()->create([
                 'status' => FormIntegrationsEvent::STATUS_SUCCESS,
+                'data' => $eventMetadata,
             ]);
         } catch (\Exception $e) {
             $this->formIntegration->events()->create([
                 'status' => FormIntegrationsEvent::STATUS_ERROR,
-                'data' => $this->extractEventDataFromException($e),
+                'data' => array_merge($eventMetadata, $this->extractEventDataFromException($e)),
             ]);
             Log::error('Integration failed', array_merge([
                 'form_id' => $this->form->id,
@@ -179,6 +182,17 @@ abstract class AbstractIntegrationHandler
         }
 
         return $data;
+    }
+
+    protected function getEventMetadata(): array
+    {
+        if (!isset($this->submissionData['submission_id'])) {
+            return [];
+        }
+
+        return [
+            'submission_id' => $this->submissionData['submission_id'],
+        ];
     }
 
     public function extractEventDataFromException(\Exception $e): array

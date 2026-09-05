@@ -21,6 +21,7 @@ return [
         'open.forms.integrations.update',
         'open.forms.integrations.destroy',
         'open.forms.integrations.events',
+        'open.forms.integrations.events.retry',
 
         // Workspace CRUD
         'open.workspaces.index',
