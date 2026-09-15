@@ -264,11 +264,21 @@
 </template>
 
 <script>
-import debounce from 'debounce'
-import Fuse from 'fuse.js'
 import { tv } from "tailwind-variants"
 import { vSelectTheme } from "~/lib/forms/themes/v-select.theme.js"
-import { useVirtualizer } from '@tanstack/vue-virtual'
+
+let fuseModulePromise = null
+let virtualizerModulePromise = null
+
+function createDebounced(callback, delay) {
+  let timeoutId = null
+  const debounced = (...args) => {
+    clearTimeout(timeoutId)
+    timeoutId = setTimeout(() => callback(...args), delay)
+  }
+  debounced.clear = () => clearTimeout(timeoutId)
+  return debounced
+}
 
 export default {
   name: 'VSelect',
@@ -310,6 +320,8 @@ export default {
     fuseOptions: { type: Object, default: () => ({}) },
     searchDebounceMs: { type: Number, default: 150 },
     minSearchLength: { type: Number, default: 1 },
+    fuzzySearchThreshold: { type: Number, default: 0 },
+    virtualizationThreshold: { type: Number, default: 100 },
     // Explicit popover width control. Accepts number (px) or CSS length string.
     popoverWidth: { type: [String, Number], default: null }
   },
@@ -389,7 +401,7 @@ export default {
     },
     debouncedRemote () {
       if (this.remote) {
-        return debounce(this.remote, 300)
+        return createDebounced(this.remote, 300)
       }
       return null
     },
@@ -406,11 +418,7 @@ export default {
         return this.data
       }
 
-      // Ensure Fuse is ready
-      if (!this.fuse) {
-        this.buildFuse()
-      }
-      if (!this.fuse) return this.data
+      if (!this.fuse) return this.filterOptionsSimply(term)
 
       return this.fuse.search(term).map((res) => res.item)
     },
@@ -458,12 +466,15 @@ export default {
       } else {
         // Local search path: debounce updates
         if (this.updateDebouncedTerm) this.updateDebouncedTerm(val)
+        if (val?.length >= this.minSearchLength) this.ensureFuse()
       }
     },
     data () {
       // Only (re)build fuse when using local search
       if (this.searchable && !this.remote) {
-        this.buildFuse()
+        this.fuse = null
+        this.fuseIndex = null
+        if (this.debouncedTerm?.length >= this.minSearchLength) this.ensureFuse()
       } else {
         this.fuse = null
         this.fuseIndex = null
@@ -510,9 +521,7 @@ export default {
     }
   },
   mounted () {
-    // Initialize fuse for local search and debounce handler
-    this.buildFuse()
-    this.updateDebouncedTerm = debounce((val) => {
+    this.updateDebouncedTerm = createDebounced((val) => {
       this.debouncedTerm = val
     }, this.searchDebounceMs)
   },
@@ -529,29 +538,45 @@ export default {
     optionId(index) {
       return `${this.controlId}-option-${index}`
     },
-    buildFuse () {
-      if (!this.data || !Array.isArray(this.data) || this.data.length === 0) {
-        this.fuse = null
-        this.fuseIndex = null
-        return
+    filterOptionsSimply (term) {
+      const normalizedTerm = String(term).toLocaleLowerCase()
+      return this.data.filter((item) => this.searchKeys.some((key) => {
+        const value = key.split('.').reduce((current, segment) => current?.[segment], item)
+        return String(value ?? '').toLocaleLowerCase().includes(normalizedTerm)
+      }))
+    },
+    ensureFuse () {
+      if (
+        this.fuse ||
+        this.remote ||
+        !this.searchable ||
+        !Array.isArray(this.data) ||
+        this.data.length < this.fuzzySearchThreshold
+      ) {
+        return Promise.resolve(this.fuse)
       }
 
-      const options = Object.assign({
-        keys: this.searchKeys,
-        threshold: 0.3,
-        ignoreLocation: true,
-        includeScore: false
-      }, this.fuseOptions || {})
+      fuseModulePromise ||= import('fuse.js')
+      return fuseModulePromise.then(({ default: Fuse }) => {
+        if (!this.data?.length) return null
 
-      try {
-        const index = Fuse.createIndex(options.keys, this.data)
-        this.fuseIndex = index
-        this.fuse = new Fuse(this.data, options, index)
-      } catch {
-        // Fallback without precomputed index
-        this.fuse = new Fuse(this.data, options)
-        this.fuseIndex = null
-      }
+        const options = Object.assign({
+          keys: this.searchKeys,
+          threshold: 0.3,
+          ignoreLocation: true,
+          includeScore: false
+        }, this.fuseOptions || {})
+
+        try {
+          const index = Fuse.createIndex(options.keys, this.data)
+          this.fuseIndex = index
+          this.fuse = new Fuse(this.data, options, index)
+        } catch {
+          this.fuse = new Fuse(this.data, options)
+          this.fuseIndex = null
+        }
+        return this.fuse
+      })
     },
     setupVirtualizer () {
       const scrollEl = this.$refs.scrollRef
@@ -583,14 +608,22 @@ export default {
         return
       }
 
-      this.virtualizer = useVirtualizer({
-        count: this.filteredOptions.length,
-        getScrollElement: () => this.$refs.scrollRef,
-        estimateSize: () => this.estimatedItemSizePx,
-        overscan: 5
-      })
+      if (this.filteredOptions.length < this.virtualizationThreshold) {
+        restoreScroll()
+        return
+      }
 
-      restoreScroll()
+      virtualizerModulePromise ||= import('@tanstack/vue-virtual')
+      virtualizerModulePromise.then(({ useVirtualizer }) => {
+        if (!this.isOpen || !this.$refs.scrollRef) return
+        this.virtualizer = useVirtualizer({
+          count: this.filteredOptions.length,
+          getScrollElement: () => this.$refs.scrollRef,
+          estimateSize: () => this.estimatedItemSizePx,
+          overscan: 5
+        })
+        restoreScroll()
+      })
     },
     isSelected (value) {
       if (!this.modelValue) return false

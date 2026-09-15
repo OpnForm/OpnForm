@@ -1,6 +1,4 @@
-import { Crisp } from "crisp-sdk-web"
-
-export default defineNuxtPlugin(() => {
+export default defineNuxtPlugin((nuxtApp) => {
   const isIframe = useIsIframe()
   const router = useRouter()
   const crispWebsiteId = useRuntimeConfig().public.crispWebsiteId
@@ -14,23 +12,31 @@ export default defineNuxtPlugin(() => {
   const isPublicFormPage = () => currentRoute.name === 'forms-slug'
 
   // Initialize Crisp SDK and set up event listeners
+  let crispPromise = null
   const initCrisp = () => {
-    if (window.Crisp) return // Already initialized
+    if (window.Crisp) return Promise.resolve(window.Crisp)
+    if (crispPromise) return crispPromise
 
-    Crisp.configure(crispWebsiteId)
-    window.Crisp = Crisp
+    crispPromise = import('crisp-sdk-web').then(({ Crisp }) => {
+      Crisp.configure(crispWebsiteId)
+      window.Crisp = Crisp
 
-    // Set up Crisp callbacks (same as useCrisp().onCrispInit() + showChat())
-    const appStore = useAppStore()
-    Crisp.chat.onChatOpened(() => {
-      appStore.crisp.chatOpened = true
+      const appStore = useAppStore()
+      Crisp.chat.onChatOpened(() => {
+        appStore.crisp.chatOpened = true
+      })
+      Crisp.chat.onChatClosed(() => {
+        appStore.crisp.chatOpened = false
+      })
+      Crisp.chat.show()
+      appStore.crisp.hidden = false
+      return Crisp
     })
-    Crisp.chat.onChatClosed(() => {
-      appStore.crisp.chatOpened = false
-    })
-    Crisp.chat.show()
-    appStore.crisp.hidden = false
+
+    return crispPromise
   }
+
+  nuxtApp.provide('ensureCrisp', initCrisp)
 
   // If not on public form page, initialize immediately
   if (!isPublicFormPage()) {

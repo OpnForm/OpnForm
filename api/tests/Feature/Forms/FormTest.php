@@ -123,7 +123,8 @@ it('can fetch a form', function () {
         ->assertSuccessful()
         ->assertJson([
             'id' => $form->id,
-            'title' => $form->title
+            'title' => $form->title,
+            'viewer_is_form_creator' => true,
         ]);
 });
 
@@ -150,6 +151,7 @@ it('does not leak workspace details on public form fetch', function () {
     $response = $this->getJson(route('forms.show', $form->slug))
         ->assertSuccessful()
         ->assertJsonPath('id', $form->id)
+        ->assertJsonPath('viewer_is_form_creator', false)
         ->assertJsonPath('workspace_id', $workspace->id)
         ->assertJsonPath('workspace.id', $workspace->id)
         ->assertJsonPath('workspace.max_file_size', $workspace->max_file_size / 1000000);

@@ -24,6 +24,7 @@ describe('SelectInput accessibility', () => {
         options,
       },
       global: {
+        mocks: { $t: key => key },
         stubs: {
           InputWrapper: {
             props: ['id', 'name', 'label'],
@@ -128,5 +129,52 @@ describe('VSelect accessibility', () => {
     })
 
     expect(wrapper.get('button[aria-haspopup="listbox"]').attributes('disabled')).toBeDefined()
+  })
+
+  it('does not load Fuse before the user searches', async () => {
+    const wrapper = mount(VSelect, {
+      props: {
+        data: [
+          { value: 'bug', name: 'Bug report' },
+          { value: 'idea', name: 'Feature idea' },
+        ],
+        searchable: true,
+        searchKeys: ['name'],
+      },
+      global: {
+        mocks: { $t: key => key },
+        stubs: {
+          UPopover: popoverStub,
+          Icon: true,
+          Loader: true,
+        },
+      },
+    })
+
+    expect(wrapper.vm.fuse).toBe(null)
+  })
+
+  it('loads fuzzy search on demand once the user searches', async () => {
+    const data = Array.from({ length: 50 }, (_, index) => ({
+      value: index,
+      name: `Option ${index}`,
+    }))
+    const wrapper = mount(VSelect, {
+      props: { data, searchable: true, searchKeys: ['name'] },
+      global: {
+        mocks: { $t: key => key },
+        stubs: {
+          UPopover: popoverStub,
+          Icon: true,
+          Loader: true,
+        },
+      },
+    })
+
+    wrapper.vm.searchTerm = 'Option 4'
+    await wrapper.vm.$nextTick()
+    await wrapper.vm.ensureFuse()
+
+    expect(wrapper.vm.fuse).not.toBe(null)
   })
 })

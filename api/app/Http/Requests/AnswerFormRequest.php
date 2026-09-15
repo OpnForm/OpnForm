@@ -59,32 +59,35 @@ class AnswerFormRequest extends FormRequest
         $selectionFields = collect($this->form->properties)->filter(function ($pro) {
             return in_array($pro['type'], ['select', 'multi_select']);
         });
+        $data = $this->toArray();
+
+        // Use option names instead of IDs when evaluating conditional logic. Public
+        // forms expose options at the field root while editor data can still use
+        // the legacy type-specific nesting.
+        foreach ($selectionFields as $field) {
+            $options = $field[$field['type']]['options'] ?? $field['options'] ?? [];
+
+            if (isset($data[$field['id']]) && is_array($data[$field['id']])) {
+                $data[$field['id']] = array_map(function ($val) use ($options) {
+                    $tmpop = collect($options)->first(function ($op) use ($val) {
+                        return isset($op['id'], $op['name']) && ($op['id'] === $val || $op['name'] === $val);
+                    });
+                    return isset($tmpop['name']) ? $tmpop['name'] : $val;
+                }, $data[$field['id']]);
+            } elseif (isset($data[$field['id']])) {
+                $tmpop = collect($options)->first(function ($op) use ($field, $data) {
+                    return isset($op['id'], $op['name']) && ($op['id'] === $data[$field['id']] || $op['name'] === $data[$field['id']]);
+                });
+                $data[$field['id']] = isset($tmpop['name']) ? $tmpop['name'] : $data[$field['id']];
+            }
+        }
+
         foreach ($this->form->properties as $property) {
             $rules = [];
-
-            $data = $this->toArray();
 
             // User custom validation
             if (!(Str::of($property['type'])->startsWith('nf-')) && isset($property['validation'])) {
                 $rules[] = (new CustomFieldValidationRule($property['validation'], $data, $this->form));
-            }
-
-            // For get values instead of Id for select/multi select options
-            foreach ($selectionFields as $field) {
-                if (isset($data[$field['id']]) && is_array($data[$field['id']])) {
-                    $data[$field['id']] = array_map(function ($val) use ($field) {
-                        $tmpop = collect($field[$field['type']]['options'])->first(function ($op) use ($val) {
-                            return isset($op['id'], $op['name']) && ($op['id'] === $val || $op['name'] === $val);
-                        });
-                        return isset($tmpop['name']) ? $tmpop['name'] : $val;
-                    }, $data[$field['id']]);
-                } elseif (isset($data[$field['id']])) {
-                    // Handle single select values
-                    $tmpop = collect($field[$field['type']]['options'])->first(function ($op) use ($field, $data) {
-                        return isset($op['id'], $op['name']) && ($op['id'] === $data[$field['id']] || $op['name'] === $data[$field['id']]);
-                    });
-                    $data[$field['id']] = isset($tmpop['name']) ? $tmpop['name'] : $data[$field['id']];
-                }
             }
             if (
                 FormLogicPropertyResolver::isRequired($property, $data, $this->form) &&
@@ -284,11 +287,9 @@ class AnswerFormRequest extends FormRequest
     private function getSelectPropertyOptions($property): array
     {
         $type = $property['type'];
-        if (!isset($property[$type])) {
-            return [];
-        }
+        $options = $property[$type]['options'] ?? $property['options'] ?? [];
 
-        return array_column($property[$type]['options'], 'name');
+        return array_column($options, 'name');
     }
 
     protected function prepareForValidation()

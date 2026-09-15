@@ -31,11 +31,11 @@
       @click="settingsModal = true"
     />
     <FormSettingsModal
+      v-if="settingsModal"
       v-model="settingsModal"
       v-model:active-tab="settingsModalActiveTab"
       :computed-variable-edit-request="computedVariableEditRequest"
       @close="settingsModal = false"
-      hydrate-on-interaction
     />
 
     <GitHubStar
@@ -124,10 +124,11 @@
 import { storeToRefs } from 'pinia'
 import FormHistory from '~/components/open/editors/FormHistory.vue'
 import UndoRedo from '~/components/open/editors/UndoRedo.vue'
-import FormSettingsModal from '~/components/open/forms/components/form-components/FormSettingsModal.vue'
 import EditableTag from '~/components/app/EditableTag.vue'
 import TrackClick from '~/components/global/TrackClick.vue'
 import { useFeatureFlag } from '~/composables/useFeatureFlag'
+
+const FormSettingsModal = defineAsyncComponent(() => import('~/components/open/forms/components/form-components/FormSettingsModal.vue'))
 
 defineProps({
   backButton: {

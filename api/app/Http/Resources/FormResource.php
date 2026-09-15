@@ -20,13 +20,15 @@ class FormResource extends JsonResource
      */
     public function toArray($request)
     {
-        if (!$this->userIsFormOwner() && ProtectedForm::isProtected($request, $this->resource)) {
+        $userIsFormOwner = $this->userIsFormOwner();
+
+        if (!$userIsFormOwner && ProtectedForm::isProtected($request, $this->resource)) {
             return $this->getProtectedForm();
         }
 
         // Owner/Member view: readonly members can see everything except password
         $ownerData = [];
-        if ($this->userIsFormOwner()) {
+        if ($userIsFormOwner) {
             $ownerData = [
                 'views_count' => $this->views_count,
                 'submissions_count' => $this->submissions_count,
@@ -56,7 +58,7 @@ class FormResource extends JsonResource
             'plan_tier' => $this->workspace->plan_tier ?? 'free',
             'is_trialing' => $this->workspaceIsTrialing(),
             'workspace_id' => $this->workspace_id,
-            'workspace' => $this->userIsFormOwner()
+            'workspace' => $userIsFormOwner
                 ? new WorkspaceResource($this->workspace)
                 : (new WorkspaceResource($this->workspace))->restrictForGuest(),
             'is_closed' => $this->is_closed,
@@ -71,6 +73,7 @@ class FormResource extends JsonResource
             'cover_settings' => $this->cover_settings ?? new \stdClass(),
             'translations' => $this->translations ?? new \stdClass(),
             'computed_variables' => $this->computed_variables ?? [],
+            'viewer_is_form_creator' => Auth::id() === $this->creator_id,
         ]);
 
         $data['no_branding'] = app(BrandingPolicy::class)->canRemoveFormBranding($this->resource);
@@ -110,6 +113,7 @@ class FormResource extends JsonResource
             'seo_meta' => $this->seo_meta,
             'cover_picture' => $this->cover_picture,
             'cover_settings' => $this->cover_settings ?? new \stdClass(),
+            'viewer_is_form_creator' => false,
         ];
     }
 

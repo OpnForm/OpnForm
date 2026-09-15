@@ -1,7 +1,7 @@
 import { useQueryClient, useQuery, useMutation } from '@tanstack/vue-query'
 import { computed, toValue } from 'vue'
 import { formsApi } from '~/api/forms'
-import { useIsAuthenticated } from '~/composables/useAuthFlow'
+import { useIsAuthenticated } from '~/composables/useIsAuthenticated.js'
 import { useFormsListCache } from './useFormsList'
 
 export function useForms() {
