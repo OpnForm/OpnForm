@@ -169,6 +169,8 @@ describe('PDF Template Create from Scratch', function () {
             ->toArray();
         foreach ($inputFields as $fieldId) {
             expect($zoneFieldIds)->toContain($fieldId);
+            $zone = collect($template->zone_mappings)->firstWhere('field_id', $fieldId);
+            expect($zone['field_name'])->toBe(collect($form->properties)->firstWhere('id', $fieldId)['name']);
         }
 
         // Every zone must reference a valid page_id from the manifest

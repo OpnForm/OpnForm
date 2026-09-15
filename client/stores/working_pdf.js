@@ -236,7 +236,7 @@ export const useWorkingPdfStore = defineStore("working_pdf", {
         font_size: 12,
         font_color: '#000000',
       }
-      const newZone = field ? { ...baseZone, field_id: field.id } : { ...baseZone, [staticFieldKey]: '' }
+      const newZone = field ? { ...baseZone, field_id: field.id, field_name: field.name } : { ...baseZone, [staticFieldKey]: '' }
       this.addZone(newZone)
       this.selectedZoneId = newZone.id
       this.lastAddedZoneId = newZone.id
@@ -400,7 +400,12 @@ export const useWorkingPdfStore = defineStore("working_pdf", {
       if (!this.content) return null
       return {
         name: this.content.name,
-        zone_mappings: this.content.zone_mappings,
+        zone_mappings: this.content.zone_mappings.map((zone) => {
+          if (zone.static_text !== undefined || zone.static_image !== undefined) return zone
+          const field = [...(this.form?.properties || []), ...this.computedVariables, ...this.specialFields]
+            .find(field => field.id === zone.field_id)
+          return field ? { ...zone, field_name: field.name } : zone
+        }),
         filename_pattern: this.content.filename_pattern,
         remove_branding: this.content.remove_branding,
         page_count: this.pageManifest.length,

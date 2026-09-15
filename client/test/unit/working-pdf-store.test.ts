@@ -216,3 +216,24 @@ describe('working_pdf store - obsolete field mappings', () => {
     expect(store.hasUnsavedChanges).toBe(true)
   })
 })
+
+
+describe('working_pdf store - field names', () => {
+  it('saves the current name after remapping and keeps it when the field is deleted', () => {
+    setActivePinia(createPinia())
+    const store = useWorkingPdfStore()
+    store.set(createTemplateFixture())
+    store.setForm({ properties: [
+      { id: 'name', name: 'Full name', type: 'text' },
+      { id: 'account', name: 'Account number', type: 'text' },
+    ] })
+    store.addZoneWithField({ id: 'name', name: 'Full name' })
+    store.content.zone_mappings[0].field_id = 'account'
+    const saved = store.getSaveData()
+    expect(saved.zone_mappings[0].field_name).toBe('Account number')
+
+    store.set({ ...createTemplateFixture(), ...saved })
+    store.setForm({ properties: [] })
+    expect(store.obsoleteFieldZones[0].field_name).toBe('Account number')
+  })
+})
