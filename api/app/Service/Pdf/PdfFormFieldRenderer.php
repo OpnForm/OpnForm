@@ -96,7 +96,7 @@ class PdfFormFieldRenderer
 
         // Value zone
         $zoneHeight = $this->getFieldZoneHeight($type, $field);
-        $this->addFieldValueZone($fieldId, $zoneHeight);
+        $this->addFieldValueZone($fieldId, $zoneHeight, $name);
 
         // Spacing before next field
         $this->cursorY += self::FIELD_SPACING;
@@ -119,7 +119,7 @@ class PdfFormFieldRenderer
         $this->cursorY += $height;
     }
 
-    private function addFieldValueZone(string $fieldId, float $height): void
+    private function addFieldValueZone(string $fieldId, float $height, string $fieldName): void
     {
         $this->zones[] = [
             'id' => (string) Str::uuid(),
@@ -130,6 +130,7 @@ class PdfFormFieldRenderer
             'width' => 100 - (2 * self::MARGIN_X),
             'height' => $height,
             'field_id' => $fieldId,
+            'field_name' => $fieldName,
             'font_size' => self::DEFAULT_FONT_SIZE,
             'font_color' => '#111827',
         ];
