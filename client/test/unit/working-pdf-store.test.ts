@@ -191,8 +191,6 @@ describe('working_pdf store - obsolete field mappings', () => {
     expect(store.obsoleteFieldZones).toEqual([
       expect.objectContaining({ id: 'obsolete-field', field_id: 'deleted_account_number' }),
     ])
-    expect(store.getObsoleteZoneLabel(store.obsoleteFieldZones[0])).toBe('Account Number')
-    expect(store.getObsoleteZoneLabel({ field_id: 'deleted_email' })).toBe('deleted_email')
   })
 
   it('removes obsolete field zones and clears a removed selection without marking the template saved', () => {

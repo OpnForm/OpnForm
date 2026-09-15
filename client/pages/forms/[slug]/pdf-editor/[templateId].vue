@@ -24,46 +24,11 @@
 
     <!-- Editor Layout (only when loaded) -->
     <template v-else>
-      <UModal v-model:open="isObsoleteZonesModalOpen" :ui="{ content: 'sm:max-w-lg' }">
-        <template #header>
-          <div>
-            <h2 class="text-lg font-semibold text-neutral-900 dark:text-white">
-              Obsolete PDF field mappings
-            </h2>
-            <p class="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-              These mappings point to fields that are no longer present in this form and can leave PDF output blank.
-            </p>
-          </div>
-        </template>
-
-        <template #body>
-          <ul class="space-y-2">
-            <li
-              v-for="zone in obsoleteFieldZones"
-              :key="zone.id"
-              class="rounded-md border border-neutral-200 px-3 py-2 text-sm dark:border-neutral-700"
-            >
-              <p class="font-medium text-neutral-900 dark:text-white">
-                {{ pdfStore.getObsoleteZoneLabel(zone) }}
-              </p>
-              <p class="mt-0.5 text-neutral-500 dark:text-neutral-400">
-                Page {{ zone.page }}
-              </p>
-            </li>
-          </ul>
-        </template>
-
-        <template #footer>
-          <div class="flex w-full flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-            <UButton color="neutral" variant="ghost" @click="keepAndReviewObsoleteZones">
-              Keep and review
-            </UButton>
-            <UButton color="primary" @click="removeObsoleteZones">
-              Remove obsolete zones
-            </UButton>
-          </div>
-        </template>
-      </UModal>
+      <PdfObsoleteFieldZonesModal
+        v-model:open="isObsoleteZonesModalOpen"
+        :zones="obsoleteFieldZones"
+        @remove="removeObsoleteZones"
+      />
 
       <PdfEditorNavbar
         @go-back="goBack"
@@ -94,6 +59,7 @@
 <script setup>
 import { usePdfTemplates } from '~/composables/query/forms/usePdfTemplates'
 import PdfEditorNavbar from '~/components/open/pdf-editor/PdfEditorNavbar.vue'
+import PdfObsoleteFieldZonesModal from '~/components/open/pdf-editor/PdfObsoleteFieldZonesModal.vue'
 import PdfLeftSidebar from '~/components/open/pdf-editor/PdfLeftSidebar.vue'
 import PdfRightSidebar from '~/components/open/pdf-editor/PdfRightSidebar.vue'
 import PdfZoneEditor from '~/components/open/pdf-editor/PdfZoneEditor.vue'
@@ -148,10 +114,6 @@ watch([() => templateData.value?.data, form, isLoading], ([t, f, loading]) => {
 }, { immediate: true })
 
 const { obsoleteFieldZones } = storeToRefs(pdfStore)
-
-const keepAndReviewObsoleteZones = () => {
-  isObsoleteZonesModalOpen.value = false
-}
 
 const removeObsoleteZones = () => {
   pdfStore.removeObsoleteFieldZones()

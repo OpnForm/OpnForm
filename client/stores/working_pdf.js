@@ -256,10 +256,6 @@ export const useWorkingPdfStore = defineStore("working_pdf", {
       return field?.name || zone.field_id || 'Unmapped'
     },
 
-    getObsoleteZoneLabel(zone) {
-      return zone.field_name || zone.field_label || zone.label || zone.field_id
-    },
-
     addPageAfter(afterPageNum) {
       if (!this.content) return
       const after = Number(afterPageNum)
