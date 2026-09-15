@@ -163,3 +163,58 @@ describe('working_pdf store - computed variables', () => {
     expect(store.getZoneLabel(store.content.zone_mappings[0])).toBe('Yes No')
   })
 })
+
+describe('working_pdf store - obsolete field mappings', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('identifies only field zones that no longer map to an active field, variable, or special field', () => {
+    const store = useWorkingPdfStore()
+    store.set(createTemplateFixture({
+      page_count: 2,
+      zone_mappings: [
+        { id: 'active-field', page: 1, field_id: 'email' },
+        { id: 'computed-variable', page: 1, field_id: 'total' },
+        { id: 'special-field', page: 1, field_id: 'submission_id' },
+        { id: 'obsolete-field', page: 2, field_id: 'deleted_account_number', field_name: 'Account Number' },
+        { id: 'blank-field', page: 2, field_id: '  ' },
+        { id: 'static-text', page: 2, field_id: 'deleted_text', static_text: 'Text' },
+        { id: 'static-image', page: 2, field_id: 'deleted_image', static_image: 'image.png' },
+      ],
+    }))
+    store.setForm({
+      properties: [{ id: 'email', name: 'Email', type: 'email' }],
+      computed_variables: [{ id: 'total', name: 'Total', formula: '1 + 1' }],
+    })
+
+    expect(store.obsoleteFieldZones).toEqual([
+      expect.objectContaining({ id: 'obsolete-field', field_id: 'deleted_account_number' }),
+    ])
+    expect(store.getObsoleteZoneLabel(store.obsoleteFieldZones[0])).toBe('Account Number')
+    expect(store.getObsoleteZoneLabel({ field_id: 'deleted_email' })).toBe('deleted_email')
+  })
+
+  it('removes obsolete field zones and clears a removed selection without marking the template saved', () => {
+    const store = useWorkingPdfStore()
+    store.set(createTemplateFixture({
+      page_count: 1,
+      zone_mappings: [
+        { id: 'obsolete', page: 1, field_id: 'deleted_field' },
+        { id: 'active', page: 1, field_id: 'name' },
+      ],
+    }))
+    store.setForm({
+      properties: [{ id: 'name', name: 'Name', type: 'text' }],
+    })
+    store.setSelectedZone('obsolete')
+
+    store.removeObsoleteFieldZones()
+
+    expect(store.content.zone_mappings).toEqual([
+      expect.objectContaining({ id: 'active', field_id: 'name' }),
+    ])
+    expect(store.selectedZoneId).toBeNull()
+    expect(store.hasUnsavedChanges).toBe(true)
+  })
+})

@@ -108,6 +108,20 @@ export const useWorkingPdfStore = defineStore("working_pdf", {
       return [...formOptions, ...computedOptions, ...specialOptions]
     },
 
+    obsoleteFieldZones() {
+      const activeFieldIds = new Set([
+        ...this.formFields,
+        ...this.computedVariables,
+        ...this.specialFields,
+      ].map(field => field.id))
+
+      return (this.content?.zone_mappings || []).filter((zone) => {
+        if (zone.static_text !== undefined || zone.static_image !== undefined) return false
+        if (typeof zone.field_id !== 'string' || !zone.field_id.trim()) return false
+        return !activeFieldIds.has(zone.field_id)
+      })
+    },
+
     defaultFilenamePattern() {
       return DEFAULT_FILENAME_PATTERN
     }
@@ -195,6 +209,18 @@ export const useWorkingPdfStore = defineStore("working_pdf", {
       }
     },
 
+    removeObsoleteFieldZones() {
+      if (!this.content?.zone_mappings) return
+
+      const obsoleteZoneIds = new Set(this.obsoleteFieldZones.map(zone => zone.id))
+      if (!obsoleteZoneIds.size) return
+
+      this.content.zone_mappings = this.content.zone_mappings.filter(zone => !obsoleteZoneIds.has(zone.id))
+      if (obsoleteZoneIds.has(this.selectedZoneId)) {
+        this.selectedZoneId = null
+      }
+    },
+
     addZoneWithField(field = null, staticFieldKey = null) {
       const currentEntry = this.pageManifest[this.currentPage - 1]
       if (!currentEntry) return
@@ -228,6 +254,10 @@ export const useWorkingPdfStore = defineStore("working_pdf", {
       const allFields = [...this.formFields, ...this.computedVariables, ...this.specialFields]
       const field = allFields.find(f => f.id === zone.field_id)
       return field?.name || zone.field_id || 'Unmapped'
+    },
+
+    getObsoleteZoneLabel(zone) {
+      return zone.field_name || zone.field_label || zone.label || zone.field_id
     },
 
     addPageAfter(afterPageNum) {
