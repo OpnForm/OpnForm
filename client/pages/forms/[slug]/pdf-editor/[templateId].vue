@@ -26,8 +26,7 @@
     <template v-else>
       <PdfObsoleteFieldZonesModal
         v-model:open="isObsoleteZonesModalOpen"
-        :zones="obsoleteFieldZones"
-        @remove="removeObsoleteZones"
+        :zones="removedObsoleteFieldZones"
       />
 
       <PdfEditorNavbar
@@ -97,6 +96,7 @@ const updateTemplate = update(
 
 const isLoading = computed(() => formLoading.value || templateLoading.value)
 const isObsoleteZonesModalOpen = ref(false)
+const removedObsoleteFieldZones = ref([])
 const hasCheckedObsoleteZones = ref(false)
 
 // Initialize store from template and form
@@ -109,16 +109,13 @@ watch([() => templateData.value?.data, form, isLoading], ([t, f, loading]) => {
   }
   if (!loading && t && f && !hasCheckedObsoleteZones.value) {
     hasCheckedObsoleteZones.value = true
-    isObsoleteZonesModalOpen.value = pdfStore.obsoleteFieldZones.length > 0
+    removedObsoleteFieldZones.value = pdfStore.obsoleteFieldZones.map(zone => ({ ...zone }))
+    if (removedObsoleteFieldZones.value.length) {
+      pdfStore.removeObsoleteFieldZones()
+      isObsoleteZonesModalOpen.value = true
+    }
   }
 }, { immediate: true })
-
-const { obsoleteFieldZones } = storeToRefs(pdfStore)
-
-const removeObsoleteZones = () => {
-  pdfStore.removeObsoleteFieldZones()
-  isObsoleteZonesModalOpen.value = false
-}
 
 // Cleanup on unmount
 onUnmounted(() => {

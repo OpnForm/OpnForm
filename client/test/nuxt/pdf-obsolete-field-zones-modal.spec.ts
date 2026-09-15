@@ -40,15 +40,16 @@ describe('PdfObsoleteFieldZonesModal', () => {
     expect(wrapper.text()).toContain('Page 2')
   })
 
-  it('keeps zones when dismissed and emits removal only after explicit confirmation', async () => {
+  it('closes when the acknowledgement is clicked without emitting a removal action', async () => {
     const wrapper = createWrapper()
-    const buttons = wrapper.findAll('button')
 
-    await buttons.find(button => button.text().includes('Keep and review')).trigger('click')
+    expect(wrapper.text()).toContain('have been removed')
+    expect(wrapper.findAll('button')).toHaveLength(1)
+    expect(wrapper.get('button').text()).toBe('Got it')
+
+    await wrapper.get('button').trigger('click')
+
     expect(wrapper.emitted('update:open')).toEqual([[false]])
     expect(wrapper.emitted('remove')).toBeUndefined()
-
-    await buttons.find(button => button.text().includes('Remove obsolete zones')).trigger('click')
-    expect(wrapper.emitted('remove')).toEqual([[]])
   })
 })

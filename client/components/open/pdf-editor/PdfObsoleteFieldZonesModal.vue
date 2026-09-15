@@ -6,7 +6,7 @@
           Obsolete PDF field mappings
         </h2>
         <p class="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-          These mappings point to fields that are no longer present in this form and can leave PDF output blank.
+          These zones have been removed because their mapped fields were deleted from this form. Add any needed fields to the PDF template again.
         </p>
       </div>
     </template>
@@ -29,12 +29,9 @@
     </template>
 
     <template #footer>
-      <div class="flex w-full flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-        <UButton color="neutral" variant="ghost" @click="keepAndReview">
-          Keep and review
-        </UButton>
-        <UButton color="primary" @click="removeObsoleteZones">
-          Remove obsolete zones
+      <div class="flex w-full justify-end">
+        <UButton color="primary" @click="close">
+          Got it
         </UButton>
       </div>
     </template>
@@ -53,7 +50,7 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits(['update:open', 'remove'])
+const emit = defineEmits(['update:open'])
 
 const isOpen = computed({
   get: () => props.open,
@@ -62,11 +59,7 @@ const isOpen = computed({
 
 const getZoneLabel = zone => zone.field_name || zone.field_label || zone.label || zone.field_id
 
-const keepAndReview = () => {
+const close = () => {
   isOpen.value = false
-}
-
-const removeObsoleteZones = () => {
-  emit('remove')
 }
 </script>
