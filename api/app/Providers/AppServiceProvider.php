@@ -24,9 +24,27 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot()
     {
+        $toPublicUrl = static function (string $relativeUrl): string {
+            $appUrl = config('app.url');
+
+            if (! is_string($appUrl) || $appUrl === '') {
+                return $relativeUrl;
+            }
+
+            return rtrim($appUrl, '/') . '/' . ltrim($relativeUrl, '/');
+        };
+
+        URL::macro('publicSignedRoute', function ($name, $parameters = [], $expiration = null) use ($toPublicUrl) {
+            return $toPublicUrl(URL::signedRoute($name, $parameters, $expiration, false));
+        });
+
+        URL::macro('temporaryPublicSignedRoute', function ($name, $expiration, $parameters = []) {
+            return URL::publicSignedRoute($name, $parameters, $expiration);
+        });
+
         if (config('filesystems.default') === 'local') {
             Storage::disk('local')->buildTemporaryUrlsUsing(function ($path, $expiration, $options) {
-                return URL::temporarySignedRoute(
+                return URL::temporaryPublicSignedRoute(
                     'local.temp',
                     $expiration,
                     array_merge($options, ['path' => $path])

@@ -28,7 +28,7 @@ class FormSubmissionController extends Controller
     public function __construct()
     {
         $this->middleware('auth', ['except' => ['submissionFile']]);
-        $this->middleware('signed', ['only' => ['submissionFile']]);
+        $this->middleware('signed:relative', ['only' => ['submissionFile']]);
     }
 
     public function submissions(Form $form)

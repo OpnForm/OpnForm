@@ -86,7 +86,8 @@ export default defineNuxtConfig({
   },
 
   experimental: {
-      inlineRouteRules: true
+      inlineRouteRules: true,
+      emitRouteChunkError: 'manual'
   },
 
   sentry: {

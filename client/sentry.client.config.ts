@@ -1,4 +1,5 @@
 import * as Sentry from "@sentry/nuxt";
+import { CHUNK_ERROR_RECOVERY_TAG } from './lib/chunk-error-recovery.js'
 
 Sentry.init({
   // If set up, you can use your runtime config here
@@ -27,12 +28,15 @@ Sentry.init({
         return null
       }
       
-      // Filter out chunk loading errors
-      if (
+      // The recovery plugin reports exact Nuxt chunk errors before reloading.
+      // Keep filtering noisy browser errors that merely resemble chunk failures.
+      const isRecoveredChunkError = event.tags?.handled_by === CHUNK_ERROR_RECOVERY_TAG
+      const resemblesChunkError =
         errorValue.includes('Failed to fetch dynamically imported module') ||
         errorValue.includes('Loading chunk') ||
         errorValue.includes('Failed to load resource')
-      ) {
+
+      if (!isRecoveredChunkError && resemblesChunkError) {
         return null
       }
     }

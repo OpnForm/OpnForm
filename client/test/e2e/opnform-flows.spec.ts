@@ -219,15 +219,21 @@ async function openRegister(page: Page) {
 }
 
 async function selectHearAboutUs(page: Page) {
-  await page.getByRole("button", { name: "Select option", exact: true }).click()
-  await page.getByText("Friend or Colleague", { exact: true }).click()
+  const select = page.getByRole("button", { name: "How did you hear about us?", exact: true })
+
+  await expect(async () => {
+    await select.click()
+    await expect(select).toHaveAttribute("aria-expanded", "true")
+  }).toPass({ timeout: 15_000 })
+
+  await page.getByRole("option", { name: "Friend or Colleague", exact: true }).click()
 }
 
 async function registerUi(page: Page, email: string) {
   await openRegister(page)
+  await selectHearAboutUs(page)
   await page.locator('input[name="name"]').fill("Playwright User")
   await page.locator('input[name="email"]').fill(email)
-  await selectHearAboutUs(page)
   await page.locator('input[name="password"]').fill("Abcd@1234")
   await page.locator('input[name="password_confirmation"]').fill("Abcd@1234")
   await page.locator('input[name="agree_terms"]').check({ force: true })

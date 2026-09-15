@@ -21,10 +21,12 @@
           :class="[variantSlots.anchor({ class: ui?.slots?.anchor }), inputClass]"
         >
         <button
+          :id="controlId"
           type="button"
+          :disabled="disabled"
           aria-haspopup="listbox"
           :aria-expanded="isOpen"
-          aria-labelledby="listbox-label"
+          :aria-controls="listboxId"
           :class="variantSlots.button({ class: ui?.slots?.button })"
           @click.stop="toggleDropdown"
           @focus="onFocus"
@@ -100,13 +102,14 @@
 
       <template #content>
         <div
+          :id="listboxId"
           tabindex="-1"
           role="listbox"
           ref="scrollRef"
           :class="variantSlots.dropdown({ class: ui?.slots?.dropdown })"
           class="w-(--reka-popper-anchor-width)"
           :style="popoverContentStyle"
-          :aria-activedescendant="highlightedIndex >= 0 ? `option-${highlightedIndex}` : undefined"
+          :aria-activedescendant="highlightedIndex >= 0 ? optionId(highlightedIndex) : undefined"
           @keydown="handleDropdownKeydown"
         >
           <div
@@ -160,7 +163,7 @@
               <div
                 v-for="virtualItem in virtualizer.getVirtualItems()"
                 :key="filteredOptions[virtualItem.index] ? filteredOptions[virtualItem.index][optionKey] : virtualItem.index"
-                :id="`option-${virtualItem.index}`"
+                :id="optionId(virtualItem.index)"
                 role="option"
                 :aria-selected="filteredOptions[virtualItem.index] ? isSelected(filteredOptions[virtualItem.index]) : false"
                 :data-index="virtualItem.index"
@@ -199,7 +202,7 @@
               <div
                 v-for="(option, index) in filteredOptions"
                 :key="option[optionKey]"
-                :id="`option-${index}`"
+                :id="optionId(index)"
                 role="option"
                 :aria-selected="isSelected(option)"
                 :style="optionStyle"
@@ -271,7 +274,13 @@ export default {
   name: 'VSelect',
   components: {},
   directives: {},
+  setup() {
+    return {
+      generatedId: useId()
+    }
+  },
   props: {
+    id: { type: String, default: null },
     data: Array,
     modelValue: { default: null, type: [String, Number, Array, Object, Boolean] },
     inputClass: { type: String, default: null },
@@ -320,6 +329,12 @@ export default {
     }
   },
   computed: {
+    controlId() {
+      return this.id || `v-select-${this.generatedId}`
+    },
+    listboxId() {
+      return `${this.controlId}-listbox`
+    },
     // Resolve theme values with proper reactivity
     resolvedTheme() {
       return this.theme || 'default'
@@ -511,6 +526,9 @@ export default {
     }
   },
   methods: {
+    optionId(index) {
+      return `${this.controlId}-option-${index}`
+    },
     buildFuse () {
       if (!this.data || !Array.isArray(this.data) || this.data.length === 0) {
         this.fuse = null

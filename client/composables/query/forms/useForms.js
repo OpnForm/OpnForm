@@ -5,6 +5,7 @@ import { useIsAuthenticated } from '~/composables/useAuthFlow'
 import { useFormsListCache } from './useFormsList'
 
 export function useForms() {
+  const nuxtApp = useNuxtApp()
   const queryClient = useQueryClient()
   const { isAuthenticated } = useIsAuthenticated()
   const formsListCache = useFormsListCache()
@@ -17,17 +18,17 @@ export function useForms() {
   })
 
   const detail = (slug, options = {}) => {
-    const { usePrivate = false, enabled = true, ...queryOptions } = options
+    const { usePrivate = false, enabled = true, requestOptions = {}, ...queryOptions } = options
     const scope = scopeFor(usePrivate)
     
     return useQuery({
       queryKey: detailKey(scope, slug),
-      queryFn: () => {
+      queryFn: () => nuxtApp.runWithContext(() => {
         if (usePrivate) {
-          return formsApi.get(slug, queryOptions)
+          return formsApi.get(slug, requestOptions)
         }
-        return formsApi.publicGet(slug, queryOptions)
-      },
+        return formsApi.publicGet(slug, requestOptions)
+      }),
       enabled: isQueryEnabled(slug, enabled, usePrivate),
       onSuccess: (form) => {
         if (form) {

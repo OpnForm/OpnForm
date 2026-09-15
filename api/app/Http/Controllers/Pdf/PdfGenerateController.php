@@ -65,7 +65,7 @@ class PdfGenerateController extends Controller
             abort(404, 'Template not found.');
         }
 
-        $url = URL::temporarySignedRoute(
+        $url = URL::temporaryPublicSignedRoute(
             'open.forms.pdf-templates.preview-signed',
             now()->addMinutes(15),
             [
@@ -174,7 +174,7 @@ class PdfGenerateController extends Controller
     ): string {
         $submissionId = SubmissionUrlService::getSubmissionIdentifier($submission);
 
-        return URL::temporarySignedRoute(
+        return URL::temporaryPublicSignedRoute(
             'open.forms.pdf-templates.download-submission',
             now()->addHours(24),
             [

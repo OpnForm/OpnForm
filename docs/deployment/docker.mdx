@@ -34,36 +34,52 @@ import CloudVersion from "/snippets/cloud-version.mdx";
 
     ```bash
     chmod +x scripts/docker-setup.sh
-    ./scripts/docker-setup.sh
+    ./scripts/docker-setup.sh --public-url https://forms.example.com
     ```
+
+    Replace `https://forms.example.com` with the origin that users enter in
+    their browser. Do not include a path or trailing slash. Use HTTPS for a
+    production deployment.
 
     The script will:
 
     - Create necessary environment files
+    - Configure the public backend and frontend URLs
     - Pull required Docker images
     - Start all containers in production mode
     - Display access information
 
-3. Access your OpnForm instance at `http://localhost`
+3. Access your OpnForm instance at the public URL you provided.
+
+<Note>
+    To evaluate OpnForm only on the local machine, omit `--public-url` and open
+    `http://localhost`. The script warns when the generated configuration still
+    points to localhost.
+</Note>
 
 ### Configure your public instance URL
 
-The setup script creates the environment files, but it cannot know the public
-domain where your instance will be available. Before configuring OIDC, OAuth,
-or using the instance in production, set the public URL in both files:
+Pass the public origin to the setup script to configure all required values in
+one command. You can run the same command again to update an existing
+installation; existing application keys and secrets are preserved.
+
+```bash
+./scripts/docker-setup.sh --public-url https://forms.example.com
+```
+
+The command sets these values:
 
 | File | Required variables |
 | --- | --- |
 | `api/.env` | `APP_URL` and `FRONT_URL` |
 | `client/.env` | `NUXT_PUBLIC_APP_URL` and `NUXT_PUBLIC_API_BASE` |
 
-For example, an instance available at `https://forms.example.com` uses
-`https://forms.example.com` for `APP_URL`, `FRONT_URL`, and
-`NUXT_PUBLIC_APP_URL`, plus `https://forms.example.com/api` for
-`NUXT_PUBLIC_API_BASE`.
+An instance available at `https://forms.example.com` uses that origin for
+`APP_URL`, `FRONT_URL`, and `NUXT_PUBLIC_APP_URL`, plus
+`https://forms.example.com/api` for `NUXT_PUBLIC_API_BASE`.
 
-After changing these variables, recreate the containers; `docker compose
-restart` does not load new environment values.
+If you edit either `.env` file manually, recreate the containers; `docker
+compose restart` does not load new environment values.
 
 ```bash
 docker compose down

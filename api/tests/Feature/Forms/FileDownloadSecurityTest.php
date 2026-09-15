@@ -31,7 +31,11 @@ it('forces attachment download with safe headers for submission files', function
     // Call signed file route with encoded filename (as the new implementation does)
     // See: https://github.com/OpnForm/OpnForm/issues/1024
     $encodedFilename = FilenameUrlEncoder::encode($fileName);
-    $signedUrl = URL::signedRoute('open.forms.submissions.file', [$form->id, $encodedFilename]);
+    $signedUrl = URL::signedRoute(
+        'open.forms.submissions.file',
+        [$form->id, $encodedFilename],
+        absolute: false
+    );
     $response = $this->get($signedUrl);
 
     $response->assertOk();
@@ -66,7 +70,11 @@ it('does not eager load workspace users for signed submission file downloads', f
     ]);
 
     $encodedFilename = FilenameUrlEncoder::encode($fileName);
-    $signedUrl = URL::signedRoute('open.forms.submissions.file', [$form->id, $encodedFilename]);
+    $signedUrl = URL::signedRoute(
+        'open.forms.submissions.file',
+        [$form->id, $encodedFilename],
+        absolute: false
+    );
 
     DB::flushQueryLog();
     DB::enableQueryLog();

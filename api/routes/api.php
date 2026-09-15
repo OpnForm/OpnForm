@@ -265,7 +265,7 @@ Route::group(['middleware' => 'auth.multi'], function () {
                     ->middleware('throttle:export-status')
                     ->name('export.status');
                 Route::get('/file/{filename}', [FormSubmissionController::class, 'submissionFile'])
-                    ->middleware('signed')
+                    ->middleware('signed:relative')
                     ->withoutMiddleware(['auth.multi'])
                     ->name('file');
                 Route::delete('/{submission_id}', [FormSubmissionController::class, 'destroy'])->name('destroy');
@@ -351,7 +351,7 @@ Route::group(['middleware' => 'auth.multi'], function () {
                 '/{form}/pdf-templates/{pdfTemplate}/submissions/{submission_id}/download',
                 [PdfGenerateController::class, 'downloadByTemplate']
             )
-                ->middleware('signed')
+                ->middleware('signed:relative')
                 ->withoutMiddleware(['auth.multi'])
                 ->name('pdf-templates.download-submission');
 
@@ -360,7 +360,7 @@ Route::group(['middleware' => 'auth.multi'], function () {
                 '/{form}/pdf-templates/{pdfTemplate}/preview',
                 [PdfGenerateController::class, 'previewBySignature']
             )
-                ->middleware('signed')
+                ->middleware('signed:relative')
                 ->withoutMiddleware(['auth.multi'])
                 ->name('pdf-templates.preview-signed');
         });
@@ -566,7 +566,7 @@ Route::post(
 )->middleware('throttle:public-uploads')->name('upload-file');
 
 Route::get('local/temp/{path}', function (Request $request, string $path) {
-    if (!$request->hasValidSignature()) {
+    if (!$request->hasValidRelativeSignature()) {
         abort(401);
     }
 

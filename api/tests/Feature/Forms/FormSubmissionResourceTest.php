@@ -4,6 +4,8 @@ use App\Models\Forms\FormSubmission;
 use Illuminate\Support\Str;
 
 it('sanitizes rich_text and maps files in FormSubmissionResource', function () {
+    config()->set('app.url', 'https://forms.example.test');
+
     $user = $this->actingAsUser();
     $workspace = $this->createUserWorkspace($user);
     $form = $this->createForm($user, $workspace);
@@ -55,7 +57,9 @@ it('sanitizes rich_text and maps files in FormSubmissionResource', function () {
     expect($data[$filesId])->toBeArray();
     expect($data[$filesId])->toHaveCount(2);
     expect($data[$filesId][0]['file_name'])->toBe($files[0]);
-    expect($data[$filesId][0]['file_url'])->toBeString();
+    expect($data[$filesId][0]['file_url'])
+        ->toStartWith('https://forms.example.test/open/forms/')
+        ->toContain('signature=');
 
     // Plain text remains raw (escaping is at render time)
     expect($data[$textId])->toBe($textPayload);

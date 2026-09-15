@@ -22,6 +22,8 @@ echo -e "${NC}"
 
 # Default values
 DEV_MODE=false
+PUBLIC_URL=""
+PUBLIC_URL_PROVIDED=false
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 
@@ -29,10 +31,33 @@ PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 while [[ "$#" -gt 0 ]]; do
     case $1 in
         --dev) DEV_MODE=true ;;
+        --public-url)
+            PUBLIC_URL_PROVIDED=true
+            if [[ "$#" -lt 2 ]]; then
+                echo "Missing value for --public-url."
+                exit 1
+            fi
+            PUBLIC_URL="$2"
+            shift
+            ;;
+        --public-url=*)
+            PUBLIC_URL_PROVIDED=true
+            PUBLIC_URL="${1#*=}"
+            ;;
         *) echo "Unknown parameter: $1"; exit 1 ;;
     esac
     shift
 done
+
+if [[ "$PUBLIC_URL_PROVIDED" == true && -z "$PUBLIC_URL" ]]; then
+    echo "--public-url cannot be empty."
+    exit 1
+fi
+
+if [[ "$DEV_MODE" == true && "$PUBLIC_URL_PROVIDED" == true ]]; then
+    echo "--public-url is only available for production Docker setup."
+    exit 1
+fi
 
 cd "$PROJECT_ROOT"
 
@@ -77,7 +102,12 @@ echo -e "${BLUE}Starting OpnForm Docker setup...${NC}"
 # Run the environment setup script with --docker flag (only for production)
 if [ "$DEV_MODE" = false ]; then
     echo -e "${GREEN}Setting up environment files...${NC}"
-    bash "$SCRIPT_DIR/setup-env.sh" --docker
+    SETUP_ARGS=(--docker)
+    if [[ -n "$PUBLIC_URL" ]]; then
+        SETUP_ARGS+=(--public-url "$PUBLIC_URL")
+    fi
+    bash "$SCRIPT_DIR/setup-env.sh" "${SETUP_ARGS[@]}"
+    PUBLIC_URL="$(grep '^APP_URL=' "$PROJECT_ROOT/api/.env" | tail -n 1 | cut -d= -f2-)"
 
     if jwt_skip_validation_disabled_in_env "$PROJECT_ROOT/api/.env"; then
         echo -e "${YELLOW}Warning: JWT User Agent validation is disabled in api/.env.${NC}"
@@ -130,5 +160,5 @@ if [ "$DEV_MODE" = true ]; then
 else
     echo -e "${BLUE}Production environment setup complete!${NC}"
     echo -e "${YELLOW}Please wait a moment for all services to start${NC}"
-    echo -e "${GREEN}Then visit: http://localhost${NC}"
+    echo -e "${GREEN}Then visit: ${PUBLIC_URL:-http://localhost}${NC}"
 fi

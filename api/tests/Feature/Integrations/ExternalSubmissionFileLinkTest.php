@@ -8,7 +8,9 @@ use App\Integrations\Handlers\TelegramIntegration;
 use App\Integrations\Handlers\ZapierIntegration;
 use App\Models\Integration\FormIntegration;
 use App\Service\Forms\FormSubmissionFormatter;
+use App\Service\Storage\FileUploadPathService;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Storage;
 
 function queryParameterFromFileLink(string $url, string $key): string
 {
@@ -45,7 +47,14 @@ function formWithExternalFileLinkPolicy(object $test, int $expirationHours = 168
 }
 
 test('uses the configured workspace policy for signed submission file links', function () {
+    config()->set('app.url', 'https://forms.example.test');
+    Storage::fake('local');
+
     [$form, $submissionData] = formWithExternalFileLinkPolicy($this, 168);
+    Storage::put(
+        FileUploadPathService::getFileUploadPath($form->id, 'weekend-upload.png'),
+        'test image content'
+    );
     $now = Carbon::parse('2026-07-17 17:00:00');
     Carbon::setTestNow($now);
 
@@ -54,15 +63,22 @@ test('uses the configured workspace policy for signed submission file links', fu
             ->outputStringsOnly()
             ->useSignedUrlForFiles()
             ->getFieldsWithValue();
+
+        $fileUrl = $fields[0]['value'];
+
+        expect($fileUrl)->toStartWith('https://forms.example.test/open/forms/');
+        expect(queryParameterFromFileLink($fileUrl, 'expires'))
+            ->toBe((string) $now->copy()->addHours(168)->timestamp);
+        expect(queryParameterFromFileLink($fileUrl, 'signature'))->not->toBeEmpty();
+
+        $relativeFileUrl = parse_url($fileUrl, PHP_URL_PATH).'?'.parse_url($fileUrl, PHP_URL_QUERY);
+        $this
+            ->withServerVariables(['HTTP_HOST' => 'self-hosted.example.test'])
+            ->get($relativeFileUrl)
+            ->assertOk();
     } finally {
         Carbon::setTestNow();
     }
-
-    $fileUrl = $fields[0]['value'];
-
-    expect(queryParameterFromFileLink($fileUrl, 'expires'))
-        ->toBe((string) $now->copy()->addHours(168)->timestamp);
-    expect(queryParameterFromFileLink($fileUrl, 'signature'))->not->toBeEmpty();
 });
 
 test('uses the workspace policy in generic webhook and Zapier payloads', function (string $integrationClass) {
