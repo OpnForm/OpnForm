@@ -49,6 +49,12 @@ For self-hosted installations, please refer to our [Deployment Guides](https://d
 
 The client `npm run build` also checks the public form bundle size and eager dependencies. This check reads `.nuxt/dist/client/_nuxt`, independently of Nitro's deployment output directory (including AWS Amplify's `.amplify-hosting`). Run its regression tests from `client/` with `node --test scripts/check-public-form-bundle.test.mjs`.
 
+## Form list performance
+
+The dashboard fetches lightweight summaries in batches of 50. The API keeps its default page size of 10 and its maximum of 100 for other callers. It paginates forms before loading view and completed-submission counts for the returned IDs. Historical views use an index on `form_statistics.form_id`, and the aggregate is explicitly aliased as `total_views_count` so the model uses the preloaded value.
+
+The index migration runs outside a transaction and uses `CREATE INDEX CONCURRENTLY` on PostgreSQL to keep writes available. It also recovers an invalid index left by an interrupted build. Run this migration through Laravel normally; do not wrap it in an external transaction. MySQL and SQLite use the standard schema index migration.
+
 ## Codex worktrees
 
 Codex creates an isolated local environment for each worktree. It uses a dedicated PostgreSQL Docker volume and local Laravel/Nuxt processes, so sibling worktrees do not share ports, data, or API configuration.
