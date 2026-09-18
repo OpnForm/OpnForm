@@ -10,10 +10,9 @@ class ActionRequest extends FormRequest
     {
         $rules = [
             'action_id' => 'required|uuid',
-            'expected_state' => 'required|string|size:64|regex:/^[a-f0-9]+$/',
         ];
-        $operation = $this->route('operation');
-        if (!in_array($operation, ['create-template', 'restore-form'], true)) {
+        $operation = $this->route()->defaults['operation'];
+        if (!in_array($operation, ['create-template'], true)) {
             $rules['user_id'] = 'required|integer';
         }
         return $rules + match ($operation) {

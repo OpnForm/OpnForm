@@ -24,7 +24,13 @@ class AdminOperations
             'template_prompt' => 'required|string|max:4000'
         ]);
 
-        $job = new GenerateTemplateJob($request->template_prompt);
+        $receiptId = $request->attributes->get('admin_api_action_id');
+        $job = new GenerateTemplateJob($request->template_prompt, $receiptId);
+        if ($receiptId) {
+            abort_if(in_array(config('queue.connections.'.config('queue.default').'.driver'), ['sync', 'null'], true), 503, 'A background queue is required for templates.');
+            dispatch($job);
+            return response()->json(['accepted' => true], 202);
+        }
         $job->handle();
 
         return $this->success([
@@ -57,8 +63,6 @@ class AdminOperations
             ]);
         }
 
-        $user->makeVisible('meta');
-
         // Get two-factor authentication status
         $user->two_factor_enabled = $user->hasTwoFactorEnabled();
 
@@ -75,7 +79,7 @@ class AdminOperations
                 ];
             });
         return $this->success([
-            'user' => $user,
+            'user' => request()->is('external/admin/*') ? $user->only(['id', 'email', 'name', 'blocked_at', 'two_factor_enabled']) : $user->makeVisible('meta'),
             'workspaces' => $workspaces
         ]);
     }
@@ -144,9 +148,13 @@ class AdminOperations
         }
 
         $subscription = $activeSubscriptions->first();
-        Cashier::stripe()->subscriptions->update($subscription->stripe_id, [
-            'discounts' => [['coupon' => $couponId]]
+        $updated = Cashier::stripe()->subscriptions->update($subscription->stripe_id, [
+            'discounts' => [['coupon' => $couponId]],
+            'expand' => ['discounts'],
         ]);
+        if ($request->attributes->has('admin_api_action_id')) {
+            abort_unless(collect($updated->discounts)->contains(fn ($discount) => ($discount->coupon->id ?? null) === $couponId), 409, 'Discount not confirmed.');
+        }
 
         self::log('Applying NGO/Student discount to sub', [
             'user_id' => $user->id,
@@ -177,6 +185,9 @@ class AdminOperations
             ? \Carbon\Carbon::parse($request->get('trial_ends_at'))
             : now()->addDays($request->get('number_of_day'));
         $subscription->extendTrial($trialEndDate);
+        if ($request->attributes->has('admin_api_action_id')) {
+            abort_unless($subscription->asStripeSubscription()->trial_end === $trialEndDate->timestamp, 409, 'Trial end not confirmed.');
+        }
 
         self::log('Trial extended', [
             'user_id' => $user->id,
@@ -214,6 +225,10 @@ class AdminOperations
 
         // Cancel the subscription
         $subscription->cancel();
+        if ($request->attributes->has('admin_api_action_id')) {
+            $remote = $subscription->asStripeSubscription();
+            abort_unless($remote->cancel_at_period_end || $remote->status === 'canceled', 409, 'Cancellation not confirmed.');
+        }
 
         self::log('Cancel Subscription', [
             'user_id' => $user->id,
@@ -267,15 +282,15 @@ class AdminOperations
             return $this->error(['message' => 'You can only refund the last invoice.'], 422);
         }
 
-        try {
-            // Get the Stripe invoice to find the payment
-            $payment = app(AdminStripeState::class)->refundablePayment($user, $latestInvoice->asStripeInvoice());
+        // Get the Stripe invoice to find the payment
+        $payment = app(AdminStripe::class)->refundablePayment($user, $latestInvoice->asStripeInvoice());
 
-            abort_unless($payment['amount_paid'] > $payment['amount_refunded'], 422, 'The charge has already been refunded.');
-            if ($request->attributes->has('admin_api_action_id')) {
-                abort_unless($request->integer('expected_amount') === $payment['amount_paid'] - $payment['amount_refunded']
-                    && $request->get('expected_currency') === $payment['currency'], 409, 'Approved refund amount or currency changed.');
-            }
+        abort_unless($payment['amount_paid'] > $payment['amount_refunded'], 422, 'The charge has already been refunded.');
+        if ($request->attributes->has('admin_api_action_id')) {
+            abort_unless($request->integer('expected_amount') === $payment['amount_paid'] - $payment['amount_refunded']
+                && $request->get('expected_currency') === $payment['currency'], 409, 'Approved refund amount or currency changed.');
+        }
+        try {
             $refund = Cashier::stripe()->refunds->create([
                 'charge' => $payment['charge_id'],
                 'amount' => $payment['amount_paid'] - $payment['amount_refunded'],
@@ -289,6 +304,10 @@ class AdminOperations
                 ? ['idempotency_key' => 'admin-api:'.$request->attributes->get('admin_api_action_id')]
                 : []);
 
+            if ($request->attributes->has('admin_api_action_id')) {
+                \App\Models\AdminApiAction::whereKey($request->attributes->get('admin_api_action_id'))->update(['result' => ['refund_id' => $refund->id, 'charge_id' => $payment['charge_id']]]);
+                abort_unless($refund->status === 'succeeded' && $refund->amount === $request->integer('expected_amount') && $refund->currency === $request->get('expected_currency'), 409, 'Refund is not confirmed; reconcile before retrying.');
+            }
             self::log('Refund Payment', [
                 'user_id' => $user->id,
                 'invoice_id' => $latestInvoice->id,

@@ -7,19 +7,28 @@ use Laravel\Cashier\Cashier;
 use Stripe\Invoice;
 
 /** Stripe Basil uses invoice payments and plural subscription discounts. */
-class AdminStripeState
+class AdminStripe
 {
-    public function subscriptions(User $user): array
+    public static function withTimeout(callable $callback): mixed
     {
-        $subscriptions = Cashier::stripe()->subscriptions->all([
-            'customer' => $user->stripe_id, 'limit' => 100, 'status' => 'all', 'expand' => ['data.discounts'],
-        ]);
-        abort_if($subscriptions->has_more, 422, 'Too many subscriptions for a safe billing snapshot.');
-        return array_map(fn ($sub) => [
-            'id' => $sub->id, 'status' => $sub->status, 'trial_end' => $sub->trial_end,
-            'cancel_at_period_end' => $sub->cancel_at_period_end,
-            'discounts' => array_values(array_filter(array_map(fn ($discount) => is_object($discount) ? $discount->coupon?->id : null, $sub->discounts ?? []))),
-        ], $subscriptions->data);
+        $client = \Stripe\ApiRequestor::httpClient();
+        $retries = \Stripe\Stripe::getMaxNetworkRetries();
+        $timeout = $client instanceof \Stripe\HttpClient\CurlClient ? $client->getTimeout() : null;
+        $connect = $client instanceof \Stripe\HttpClient\CurlClient ? $client->getConnectTimeout() : null;
+        try {
+            if ($timeout !== null) {
+                $client->setTimeout(4);
+                $client->setConnectTimeout(2);
+            }
+            \Stripe\Stripe::setMaxNetworkRetries(0);
+            return $callback();
+        } finally {
+            if ($timeout !== null) {
+                $client->setTimeout($timeout);
+                $client->setConnectTimeout($connect);
+            }
+            \Stripe\Stripe::setMaxNetworkRetries($retries);
+        }
     }
 
     public function refundablePayment(User $user, Invoice $invoice): array
@@ -59,7 +68,8 @@ class AdminStripeState
             $refunded = count($matched) > 0 && !($payments?->has_more ?? true)
                 && count($matched) === count($payments->data)
                 && collect($matched)->every(fn ($charge) => $charge->refunded);
-            return ['id' => $invoice->id, 'amount_paid' => $invoice->amount_paid,
+            $single = count($matched) === 1 && count($payments->data ?? []) === 1 && !($payments?->has_more ?? true) && $matched[0]->amount === $invoice->amount_paid;
+            return ['currency' => $invoice->currency, 'refundable_amount' => $single ? max(0, $matched[0]->amount - $matched[0]->amount_refunded) : null, 'id' => $invoice->id, 'amount_paid' => $invoice->amount_paid,
                 'name' => ucfirst($invoice->account_name ?? ''),
                 'creation_date' => \Carbon\Carbon::parse($invoice->created)->format('Y-m-d H:i:s'),
                 'status' => $refunded ? 'refunded' : $invoice->status,

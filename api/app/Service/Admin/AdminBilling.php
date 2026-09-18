@@ -46,11 +46,14 @@ class AdminBilling
             'stripe_id' => $user->stripe_id,
         ]);
 
-        $user->updateStripeCustomer([
+        $updated = $user->updateStripeCustomer([
             'email' => $request->billing_email,
             'name' => $request->billing_name,
         ]);
 
+        if ($request->attributes->has('admin_api_action_id')) {
+            abort_unless($updated->email === $request->billing_email && $updated->name === $request->billing_name, 409, 'Customer update not confirmed.');
+        }
         return $this->success(['message' => 'Billing info updated successfully']);
     }
 
@@ -84,7 +87,7 @@ class AdminBilling
                 "message" => "Stripe user not created",
             ]);
         }
-        $payments = app(AdminStripeState::class)->paymentRows($user);
+        $payments = app(AdminStripe::class)->paymentRows($user);
         return $this->success([
             'payments'  =>  $payments,
         ]);

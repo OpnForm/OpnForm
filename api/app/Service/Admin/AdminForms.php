@@ -25,6 +25,9 @@ class AdminForms
     public function restoreDeletedForm(string $slug)
     {
         $form = Form::onlyTrashed()->whereSlug($slug)->firstOrFail();
+        if (request()->attributes->has('admin_api_action_id')) {
+            abort_unless(User::findOrFail(request()->integer('user_id'))->forms()->withTrashed()->where('forms.id', $form->id)->exists(), 404);
+        }
         $form->restore();
 
         AdminOperations::log('Restore deleted form', [

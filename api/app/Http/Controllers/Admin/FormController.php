@@ -13,9 +13,9 @@ class FormController extends Controller
         return app(AdminForms::class)->getDeletedForms($user);
     }
 
-    public function restoreDeletedForm(string $slug)
+    public function restoreDeletedForm(\Illuminate\Http\Request $request)
     {
-        return app(AdminForms::class)->restoreDeletedForm($slug);
+        return app(AdminForms::class)->restoreDeletedForm($request->route('slug') ?? $request->string('slug')->toString());
     }
 
 }

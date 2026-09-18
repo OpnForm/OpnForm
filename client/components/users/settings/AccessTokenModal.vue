@@ -48,6 +48,9 @@
               label="Name"
             />
 
+            <UFormField v-if="hasAdminAbilities" label="Expires in days" :error="tokenForm.errors.get('expires_at')">
+              <UInput v-model="expiryDays" type="number" min="1" max="90" />
+            </UFormField>
             <FlatSelectInput
               :form="tokenForm"
               name="abilities"
@@ -83,6 +86,8 @@
 </template>
 
 <script setup>
+import { useQuery } from '@tanstack/vue-query'
+import { tokensApi } from '~/api/tokens'
 import CopyContent from "~/components/open/forms/components/CopyContent.vue"
 
 const props = defineProps({
@@ -96,17 +101,22 @@ const emit = defineEmits(['close'])
 
 const { abilities, create } = useTokens()
 const alert = useAlert()
+const crisp = useCrisp()
 
-const abilitiesOptions = computed(() => abilities.map(ability => ({
+const { data: adminAbilities } = useQuery({ queryKey: ['tokens', 'abilities'], queryFn: tokensApi.abilities })
+const abilitiesOptions = computed(() => [...abilities, ...(adminAbilities.value ?? []).map(name => ({ name, title: name.replace('admin:', 'Admin – ').replaceAll(':', ' – ').replaceAll('-', ' ') }))].map(ability => ({
   name: ability.title,
   value: ability.name
 })))
 
 const token = ref('')
+const expiryDays = ref(30)
 const tokenForm = useForm({
   name: "",
-  abilities: abilitiesOptions.value.map(ability => ability.value),
+  abilities: abilities.map(ability => ability.name),
+  expires_at: "",
 })
+const hasAdminAbilities = computed(() => tokenForm.abilities.some(ability => ability.startsWith('admin:')))
 
 // Create token mutation
 const createTokenMutation = create()
@@ -120,11 +130,18 @@ const isOpen = computed({
 // Methods
 const closeModal = () => {
   tokenForm.reset()
+  expiryDays.value = 30
   token.value = ''
   isOpen.value = false
 }
 
 function createToken() {
+  const days = Number(expiryDays.value)
+  if (hasAdminAbilities.value && (!Number.isInteger(days) || days < 1 || days > 90)) {
+    tokenForm.errors.set('expires_at', 'Choose an expiration between 1 and 90 days.')
+    return
+  }
+  tokenForm.expires_at = hasAdminAbilities.value ? new Date(Date.now() + days * 86400000).toISOString() : null
   tokenForm.mutate(createTokenMutation).then((response) => {
     // Assuming the response contains the token
     token.value = response.token || response.data?.token || response

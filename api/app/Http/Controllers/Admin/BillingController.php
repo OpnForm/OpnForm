@@ -16,22 +16,22 @@ class BillingController extends Controller
 
     public function getCustomer(User $user)
     {
-        return app(AdminBilling::class)->getCustomer($user);
+        return \App\Service\Admin\AdminStripe::withTimeout(fn () => app(AdminBilling::class)->getCustomer($user));
     }
 
     public function updateCustomer(Request $request)
     {
-        return app(AdminBilling::class)->updateCustomer($request);
+        return \App\Service\Admin\AdminStripe::withTimeout(fn () => app(AdminBilling::class)->updateCustomer($request));
     }
 
     public function getSubscriptions(User $user)
     {
-        return app(AdminBilling::class)->getSubscriptions($user);
+        return \App\Service\Admin\AdminStripe::withTimeout(fn () => app(AdminBilling::class)->getSubscriptions($user));
     }
 
     public function getPayments(User $user)
     {
-        return app(AdminBilling::class)->getPayments($user);
+        return \App\Service\Admin\AdminStripe::withTimeout(fn () => app(AdminBilling::class)->getPayments($user));
     }
 
 }

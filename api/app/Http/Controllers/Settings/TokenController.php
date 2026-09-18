@@ -13,6 +13,11 @@ class TokenController
 {
     use AuthorizesRequests;
 
+    public function abilities()
+    {
+        return response()->json(!config('app.self_hosted') && request()->user()->moderator && !request()->user()->is_blocked ? AccessTokenAbility::adminValues() : []);
+    }
+
     public function index()
     {
         return TokenResource::collection(
@@ -22,9 +27,16 @@ class TokenController
 
     public function store(CreateTokenRequest $request)
     {
+        $abilities = $request->input('abilities') ?? [];
+        $admin = array_intersect($abilities, AccessTokenAbility::adminValues());
+        if ($admin) {
+            abort_unless(!config('app.self_hosted') && $request->user()->moderator && !$request->user()->is_blocked, 403);
+            $request->validate(['expires_at' => 'required|date|after:now|before_or_equal:'.now()->addDays(90)->toIso8601String()]);
+        }
         $token = Auth::user()->createToken(
             $request->input('name'),
-            AccessTokenAbility::allowed($request->input('abilities'))
+            array_values(array_unique([...AccessTokenAbility::allowed($abilities), ...$admin])),
+            $admin ? \Carbon\Carbon::parse($request->input('expires_at')) : null
         );
 
         return response()->json([
