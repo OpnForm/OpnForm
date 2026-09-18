@@ -1,7 +1,6 @@
 <template>
   <UModal
     v-model:open="isOpen"
-    @close="closeModal"
   >
     <template #header>
       <div class="flex items-center w-full gap-4 px-2">
@@ -48,6 +47,9 @@
               label="Name"
             />
 
+            <UFormField v-if="hasAdminAbilities" label="Expires in days" :error="tokenForm.errors.get('expires_at')">
+              <UInput v-model="expiryDays" type="number" min="1" max="90" />
+            </UFormField>
             <FlatSelectInput
               :form="tokenForm"
               name="abilities"
@@ -83,6 +85,8 @@
 </template>
 
 <script setup>
+import { useQuery } from '@tanstack/vue-query'
+import { tokensApi } from '~/api/tokens'
 import CopyContent from "~/components/open/forms/components/CopyContent.vue"
 
 const props = defineProps({
@@ -96,38 +100,63 @@ const emit = defineEmits(['close'])
 
 const { abilities, create } = useTokens()
 const alert = useAlert()
+const crisp = useCrisp()
 
-const abilitiesOptions = computed(() => abilities.map(ability => ({
+const { data: adminAbilities } = useQuery({ queryKey: ['tokens', 'abilities'], queryFn: tokensApi.abilities })
+const abilitiesOptions = computed(() => [...abilities, ...(adminAbilities.value ?? []).map(name => ({ name, title: name.replace('admin:', 'Admin – ').replaceAll(':', ' – ').replaceAll('-', ' ') }))].map(ability => ({
   name: ability.title,
   value: ability.name
 })))
 
 const token = ref('')
+const expiryDays = ref(30)
 const tokenForm = useForm({
   name: "",
-  abilities: abilitiesOptions.value.map(ability => ability.value),
+  abilities: abilities.map(ability => ability.name),
+  expires_at: "",
 })
+const hasAdminAbilities = computed(() => tokenForm.abilities.some(ability => ability.startsWith('admin:')))
 
 // Create token mutation
 const createTokenMutation = create()
+let formGeneration = 0
+
+const resetForm = () => {
+  formGeneration++
+  tokenForm.reset()
+  expiryDays.value = 30
+  token.value = ''
+}
 
 // Modal state
 const isOpen = computed({
   get: () => props.modelValue,
-  set: (value) => emit('close', value)
+  set: (value) => {
+    if (!value) resetForm()
+    emit('close', value)
+  }
+})
+watch(() => props.modelValue, (open) => {
+  if (!open) resetForm()
 })
 
 // Methods
 const closeModal = () => {
-  tokenForm.reset()
-  token.value = ''
   isOpen.value = false
 }
 
 function createToken() {
+  const days = Number(expiryDays.value)
+  if (hasAdminAbilities.value && (!Number.isInteger(days) || days < 1 || days > 90)) {
+    tokenForm.errors.set('expires_at', 'Choose an expiration between 1 and 90 days.')
+    return
+  }
+  tokenForm.expires_at = hasAdminAbilities.value ? new Date(Date.now() + days * 86400000).toISOString() : null
+  const generation = formGeneration
   tokenForm.mutate(createTokenMutation).then((response) => {
-    // Assuming the response contains the token
-    token.value = response.token || response.data?.token || response
+    if (generation === formGeneration && props.modelValue) {
+      token.value = response.token || response.data?.token || response
+    }
   }).catch(() => {
     alert.error("An error occurred while creating the token")
   })
