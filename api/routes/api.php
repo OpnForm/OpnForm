@@ -119,6 +119,7 @@ Route::group(['middleware' => 'auth.multi'], function () {
         Route::patch('/password', [PasswordController::class, 'update']);
 
         Route::prefix('/tokens')->name('tokens.')->group(function () {
+            Route::get('/abilities', [\App\Http\Controllers\Settings\TokenController::class, 'abilities'])->name('abilities');
             Route::get('/', [TokenController::class, 'index'])->name('index');
             Route::post('/', [TokenController::class, 'store'])->name('store');
             Route::delete('{token}', [TokenController::class, 'destroy'])->name('destroy');
