@@ -276,3 +276,29 @@ it('routes explicit reads to existing services with their scope', function ($pat
     ['/billing/payments', 'getPayments', 'admin:billing:read', \App\Service\Admin\AdminBilling::class],
     ['/deleted-forms', 'getDeletedForms', 'admin:forms:read', \App\Service\Admin\AdminForms::class],
 ]);
+
+it('does not downgrade a completed template when dispatch acknowledgement fails', function () {
+    [, $token] = adminApiCredentials(['admin:templates:create']);
+    $id = (string) Str::uuid();
+    $service = Mockery::mock(\App\Service\Admin\AdminOperations::class);
+    $service->shouldReceive('createTemplate')->once()->andReturnUsing(function () use ($id) {
+        AdminApiAction::whereKey($id)->update(['status' => 'completed', 'result' => ['template_slug' => 'generated-template']]);
+        throw new RuntimeException('Queue acknowledgement failed after processing');
+    });
+    app()->instance(\App\Service\Admin\AdminOperations::class, $service);
+    $this->withToken($token->plainTextToken)->withHeader('Idempotency-Key', 'concurrent-template-2')
+        ->postJson('/external/admin/v1/actions/create-template', ['action_id' => $id, 'template_prompt' => 'Contact form'])->assertStatus(500);
+    expect(AdminApiAction::find($id)->status)->toBe('completed');
+    expect(AdminApiAction::find($id)->result)->toBe(['template_slug' => 'generated-template']);
+});
+
+it('rejects query parameters that can shadow the approved JSON target', function () {
+    [, $token] = adminApiCredentials(['admin:users:block']);
+    $approved = User::factory()->create();
+    $other = User::factory()->create();
+    $this->withToken($token->plainTextToken)->withHeader('Idempotency-Key', 'shadow-target-1')
+        ->postJson('/external/admin/v1/actions/block-user?user_id='.$other->id, ['action_id' => (string) Str::uuid(), 'user_id' => $approved->id, 'reason' => 'Approved target only'])
+        ->assertUnprocessable();
+    expect($approved->fresh()->is_blocked)->toBeFalse()->and($other->fresh()->is_blocked)->toBeFalse();
+    expect(AdminApiAction::count())->toBe(0);
+});

@@ -13,6 +13,8 @@ class AdminRequestReceipt
 {
     public function handle(Request $request, Closure $next)
     {
+        // Request::get() in shared UI services prefers query values over JSON input.
+        abort_if($request->query->count() > 0, 422, 'Action parameters must be supplied only in the JSON body.');
         $input = app(ActionRequest::class)->validated();
         $key = $request->header('Idempotency-Key');
         abort_unless(is_string($key) && strlen($key) >= 8 && strlen($key) <= 200, 422, 'Idempotency-Key required.');
