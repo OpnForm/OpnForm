@@ -2,7 +2,8 @@ import { readFileSync, existsSync } from 'node:fs'
 import { gzipSync } from 'node:zlib'
 
 const manifestPath = new URL('../.nuxt/dist/server/client.manifest.json', import.meta.url)
-const publicAssetsUrl = new URL('../.output/public/_nuxt/', import.meta.url)
+// Inspect Vite's client output, shared by all Nitro deployment presets.
+// Amplify publishes to .amplify-hosting instead of .output/public.
 const buildAssetsUrl = new URL('../.nuxt/dist/client/_nuxt/', import.meta.url)
 const maximumGzipBytes = 420 * 1024
 const routeEntry = 'pages/forms/[slug]/index.vue'
@@ -59,7 +60,7 @@ function inspectScenario(scenarioName, componentNames) {
     const entry = manifest[key]
     if (entry.resourceType !== 'script' || !entry.file) continue
 
-    const assetUrl = new URL(entry.file, publicAssetsUrl)
+    const assetUrl = new URL(entry.file, buildAssetsUrl)
     if (!existsSync(assetUrl)) {
       throw new Error(`Missing built asset for ${key}: ${entry.file}`)
     }
