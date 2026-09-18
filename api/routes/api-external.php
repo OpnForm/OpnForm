@@ -37,3 +37,15 @@ Route::prefix('external')
                 ->name('forms');
         });
     });
+
+// This surface deliberately excludes impersonation and customer-token wildcard access.
+Route::prefix('external/admin/v1')->middleware(['auth:sanctum', \App\Http\Middleware\AdminApiRemoteTimeout::class])->name('admin-api.')->group(function () {
+    $auth = \App\Http\Middleware\AuthenticateAdminApi::class;
+    $controller = \App\Http\Controllers\External\AdminApiController::class;
+    Route::get('users/{identifier}', [$controller, 'user'])->middleware($auth.':admin:users:read')->name('users.show');
+    Route::get('workspaces/{id}', [$controller, 'workspace'])->middleware($auth.':admin:workspaces:read')->name('workspaces.show');
+    Route::get('users/{user}/billing/{resource}', [$controller, 'billing'])->middleware($auth.':admin:billing:read')->name('billing.show');
+    Route::get('users/{user}/deleted-forms', [$controller, 'deletedForms'])->middleware($auth.':admin:forms:read')->name('forms.deleted');
+    Route::get('actions/{actionId}', [$controller, 'actionStatus'])->middleware($auth)->name('actions.show');
+    Route::post('actions/{operation}', [$controller, 'execute'])->middleware($auth)->name('actions.execute');
+});

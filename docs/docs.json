@@ -152,6 +152,18 @@
               "api-reference/zapier/unsubscribe-webhook",
               "api-reference/zapier/sample-submission-polling"
             ]
+          },
+          {
+            "group": "Admin API",
+            "pages": [
+              "api-reference/admin/overview",
+              "api-reference/admin/get-user",
+              "api-reference/admin/get-workspace",
+              "api-reference/admin/get-billing",
+              "api-reference/admin/list-deleted-forms",
+              "api-reference/admin/get-action",
+              "api-reference/admin/execute-action"
+            ]
           }
         ]
       },

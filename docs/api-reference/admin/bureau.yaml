@@ -1,0 +1,587 @@
+# Configure a real non-admin test user ID before importing this connection.
+version: 1
+baseUrl: https://api.opnform.com
+auth:
+  type: bearer
+test:
+  operation: user_get
+  input:
+    identifier: "42"
+operations:
+  user_get:
+    kind: read
+    title: User get
+    description: Read current admin data.
+    input:
+      identifier: {type: string}
+    request:
+      method: GET
+      path: /external/admin/v1/users/{{input.identifier}}
+    output:
+      id: id
+      email: email
+      blocked: blocked
+      two_factor_enabled: two_factor_enabled
+      workspaces: workspaces
+  workspace_get:
+    kind: read
+    title: Workspace get
+    description: Read current admin data.
+    input:
+      workspace_id: {type: integer}
+    request:
+      method: GET
+      path: /external/admin/v1/workspaces/{{input.workspace_id}}
+    output:
+      id: id
+      name: name
+      plan: plan
+      forms_count: forms_count
+  deleted_forms:
+    kind: read
+    title: Deleted forms
+    description: Read current admin data.
+    input:
+      user_id: {type: integer}
+    request:
+      method: GET
+      path: /external/admin/v1/users/{{input.user_id}}/deleted-forms
+    output:
+      forms: forms
+  billing_customer:
+    kind: read
+    title: Billing customer
+    description: Read current admin data.
+    input:
+      user_id: {type: integer}
+    request:
+      method: GET
+      path: /external/admin/v1/users/{{input.user_id}}/billing/customer
+    output:
+      billing_email: billing_email
+      billing_name: billing_name
+  billing_subscriptions:
+    kind: read
+    title: Billing subscriptions
+    description: Read current admin data.
+    input:
+      user_id: {type: integer}
+    request:
+      method: GET
+      path: /external/admin/v1/users/{{input.user_id}}/billing/subscriptions
+    output:
+      subscriptions: subscriptions
+  billing_payments:
+    kind: read
+    title: Billing payments
+    description: Read current admin data.
+    input:
+      user_id: {type: integer}
+    request:
+      method: GET
+      path: /external/admin/v1/users/{{input.user_id}}/billing/payments
+    output:
+      payments: payments
+  user_block_status:
+    kind: read
+    title: Check block-user
+    description: Read before proposing; copy snapshot_hash to expected_state and keep the same action_id.
+    input:
+      action_id: {type: string}
+      user_id: {type: integer}
+    request:
+      method: GET
+      path: "/external/admin/v1/actions/{{input.action_id}}?operation=block-user&user_id={{input.user_id}}"
+    output:
+      action_id: action_id
+      operation: operation
+      target: target
+      status: status
+      snapshot_hash: snapshot_hash
+      state: state
+      result: result
+  user_block:
+    kind: action
+    title: Block user
+    description: Requires admin:users:block. Execute only after the user approves the exact parameters.
+    input:
+      action_id: {type: string}
+      expected_state: {type: string}
+      user_id: {type: integer}
+      reason: {type: string}
+    request:
+      method: POST
+      path: /external/admin/v1/actions/block-user
+      body:
+        action_id: '{{input.action_id}}'
+        expected_state: '{{input.expected_state}}'
+        user_id: '{{input.user_id}}'
+        reason: '{{input.reason}}'
+    idempotencyHeader: Idempotency-Key
+    verify:
+      operation: user_block_status
+      expect:
+        action_id: '{{input.action_id}}'
+        operation: block-user
+        status: completed
+  user_unblock_status:
+    kind: read
+    title: Check unblock-user
+    description: Read before proposing; copy snapshot_hash to expected_state and keep the same action_id.
+    input:
+      action_id: {type: string}
+      user_id: {type: integer}
+    request:
+      method: GET
+      path: "/external/admin/v1/actions/{{input.action_id}}?operation=unblock-user&user_id={{input.user_id}}"
+    output:
+      action_id: action_id
+      operation: operation
+      target: target
+      status: status
+      snapshot_hash: snapshot_hash
+      state: state
+      result: result
+  user_unblock:
+    kind: action
+    title: Unblock user
+    description: Requires admin:users:unblock. Execute only after the user approves the exact parameters.
+    input:
+      action_id: {type: string}
+      expected_state: {type: string}
+      user_id: {type: integer}
+      reason: {type: string}
+    request:
+      method: POST
+      path: /external/admin/v1/actions/unblock-user
+      body:
+        action_id: '{{input.action_id}}'
+        expected_state: '{{input.expected_state}}'
+        user_id: '{{input.user_id}}'
+        reason: '{{input.reason}}'
+    idempotencyHeader: Idempotency-Key
+    verify:
+      operation: user_unblock_status
+      expect:
+        action_id: '{{input.action_id}}'
+        operation: unblock-user
+        status: completed
+  user_password_reset_status:
+    kind: read
+    title: Check send-password-reset-email
+    description: Read before proposing; copy snapshot_hash to expected_state and keep the same action_id.
+    input:
+      action_id: {type: string}
+      user_id: {type: integer}
+    request:
+      method: GET
+      path: "/external/admin/v1/actions/{{input.action_id}}?operation=send-password-reset-email&user_id={{input.user_id}}"
+    output:
+      action_id: action_id
+      operation: operation
+      target: target
+      status: status
+      snapshot_hash: snapshot_hash
+      state: state
+      result: result
+  user_password_reset:
+    kind: action
+    title: Send password reset email
+    description: Requires admin:users:password-reset. Execute only after the user approves the exact parameters.
+    input:
+      action_id: {type: string}
+      expected_state: {type: string}
+      user_id: {type: integer}
+    request:
+      method: POST
+      path: /external/admin/v1/actions/send-password-reset-email
+      body:
+        action_id: '{{input.action_id}}'
+        expected_state: '{{input.expected_state}}'
+        user_id: '{{input.user_id}}'
+    idempotencyHeader: Idempotency-Key
+    verify:
+      operation: user_password_reset_status
+      expect:
+        action_id: '{{input.action_id}}'
+        operation: send-password-reset-email
+        status: completed
+  user_disable_2fa_status:
+    kind: read
+    title: Check disable-two-factor-authentication
+    description: Read before proposing; copy snapshot_hash to expected_state and keep the same action_id.
+    input:
+      action_id: {type: string}
+      user_id: {type: integer}
+    request:
+      method: GET
+      path: "/external/admin/v1/actions/{{input.action_id}}?operation=disable-two-factor-authentication&user_id={{input.user_id}}"
+    output:
+      action_id: action_id
+      operation: operation
+      target: target
+      status: status
+      snapshot_hash: snapshot_hash
+      state: state
+      result: result
+  user_disable_2fa:
+    kind: action
+    title: Disable two factor authentication
+    description: Requires admin:users:disable-2fa. Execute only after the user approves the exact parameters.
+    input:
+      action_id: {type: string}
+      expected_state: {type: string}
+      user_id: {type: integer}
+      reason: {type: string}
+    request:
+      method: POST
+      path: /external/admin/v1/actions/disable-two-factor-authentication
+      body:
+        action_id: '{{input.action_id}}'
+        expected_state: '{{input.expected_state}}'
+        user_id: '{{input.user_id}}'
+        reason: '{{input.reason}}'
+    idempotencyHeader: Idempotency-Key
+    verify:
+      operation: user_disable_2fa_status
+      expect:
+        action_id: '{{input.action_id}}'
+        operation: disable-two-factor-authentication
+        status: completed
+  user_clear_cache_status:
+    kind: read
+    title: Check clear-user-cache
+    description: Read before proposing; copy snapshot_hash to expected_state and keep the same action_id.
+    input:
+      action_id: {type: string}
+      user_id: {type: integer}
+    request:
+      method: GET
+      path: "/external/admin/v1/actions/{{input.action_id}}?operation=clear-user-cache&user_id={{input.user_id}}"
+    output:
+      action_id: action_id
+      operation: operation
+      target: target
+      status: status
+      snapshot_hash: snapshot_hash
+      state: state
+      result: result
+  user_clear_cache:
+    kind: action
+    title: Clear user cache
+    description: Requires admin:users:clear-cache. Execute only after the user approves the exact parameters.
+    input:
+      action_id: {type: string}
+      expected_state: {type: string}
+      user_id: {type: integer}
+    request:
+      method: POST
+      path: /external/admin/v1/actions/clear-user-cache
+      body:
+        action_id: '{{input.action_id}}'
+        expected_state: '{{input.expected_state}}'
+        user_id: '{{input.user_id}}'
+    idempotencyHeader: Idempotency-Key
+    verify:
+      operation: user_clear_cache_status
+      expect:
+        action_id: '{{input.action_id}}'
+        operation: clear-user-cache
+        status: completed
+  billing_discount_status:
+    kind: read
+    title: Check apply-discount
+    description: Read before proposing; copy snapshot_hash to expected_state and keep the same action_id.
+    input:
+      action_id: {type: string}
+      user_id: {type: integer}
+    request:
+      method: GET
+      path: "/external/admin/v1/actions/{{input.action_id}}?operation=apply-discount&user_id={{input.user_id}}"
+    output:
+      action_id: action_id
+      operation: operation
+      target: target
+      status: status
+      snapshot_hash: snapshot_hash
+      state: state
+      result: result
+  billing_discount:
+    kind: action
+    title: Apply discount
+    description: Requires admin:billing:discount. Execute only after the user approves the exact parameters.
+    input:
+      action_id: {type: string}
+      expected_state: {type: string}
+      user_id: {type: integer}
+    request:
+      method: POST
+      path: /external/admin/v1/actions/apply-discount
+      body:
+        action_id: '{{input.action_id}}'
+        expected_state: '{{input.expected_state}}'
+        user_id: '{{input.user_id}}'
+    idempotencyHeader: Idempotency-Key
+    verify:
+      operation: billing_discount_status
+      expect:
+        action_id: '{{input.action_id}}'
+        operation: apply-discount
+        status: completed
+  billing_extend_trial_status:
+    kind: read
+    title: Check extend-trial
+    description: Read before proposing; copy snapshot_hash to expected_state and keep the same action_id.
+    input:
+      action_id: {type: string}
+      user_id: {type: integer}
+    request:
+      method: GET
+      path: "/external/admin/v1/actions/{{input.action_id}}?operation=extend-trial&user_id={{input.user_id}}"
+    output:
+      action_id: action_id
+      operation: operation
+      target: target
+      status: status
+      snapshot_hash: snapshot_hash
+      state: state
+      result: result
+  billing_extend_trial:
+    kind: action
+    title: Extend trial
+    description: Requires admin:billing:extend-trial. Execute only after the user approves the exact parameters.
+    input:
+      action_id: {type: string}
+      expected_state: {type: string}
+      user_id: {type: integer}
+      trial_ends_at: {type: string}
+    request:
+      method: POST
+      path: /external/admin/v1/actions/extend-trial
+      body:
+        action_id: '{{input.action_id}}'
+        expected_state: '{{input.expected_state}}'
+        user_id: '{{input.user_id}}'
+        trial_ends_at: '{{input.trial_ends_at}}'
+    idempotencyHeader: Idempotency-Key
+    verify:
+      operation: billing_extend_trial_status
+      expect:
+        action_id: '{{input.action_id}}'
+        operation: extend-trial
+        status: completed
+  billing_cancel_status:
+    kind: read
+    title: Check cancel-subscription
+    description: Read before proposing; copy snapshot_hash to expected_state and keep the same action_id.
+    input:
+      action_id: {type: string}
+      user_id: {type: integer}
+    request:
+      method: GET
+      path: "/external/admin/v1/actions/{{input.action_id}}?operation=cancel-subscription&user_id={{input.user_id}}"
+    output:
+      action_id: action_id
+      operation: operation
+      target: target
+      status: status
+      snapshot_hash: snapshot_hash
+      state: state
+      result: result
+  billing_cancel:
+    kind: action
+    title: Cancel subscription
+    description: Requires admin:billing:cancel. Execute only after the user approves the exact parameters.
+    input:
+      action_id: {type: string}
+      expected_state: {type: string}
+      user_id: {type: integer}
+      subscription_id: {type: integer}
+      cancellation_reason: {type: string}
+    request:
+      method: POST
+      path: /external/admin/v1/actions/cancel-subscription
+      body:
+        action_id: '{{input.action_id}}'
+        expected_state: '{{input.expected_state}}'
+        user_id: '{{input.user_id}}'
+        subscription_id: '{{input.subscription_id}}'
+        cancellation_reason: '{{input.cancellation_reason}}'
+    idempotencyHeader: Idempotency-Key
+    verify:
+      operation: billing_cancel_status
+      expect:
+        action_id: '{{input.action_id}}'
+        operation: cancel-subscription
+        status: completed
+  billing_refund_status:
+    kind: read
+    title: Check refund-payment
+    description: Read before proposing; copy snapshot_hash to expected_state and keep the same action_id.
+    input:
+      action_id: {type: string}
+      user_id: {type: integer}
+    request:
+      method: GET
+      path: "/external/admin/v1/actions/{{input.action_id}}?operation=refund-payment&user_id={{input.user_id}}"
+    output:
+      action_id: action_id
+      operation: operation
+      target: target
+      status: status
+      snapshot_hash: snapshot_hash
+      state: state
+      result: result
+  billing_refund:
+    kind: action
+    title: Refund payment
+    description: Requires admin:billing:refund. Execute only after the user approves the exact parameters.
+    input:
+      action_id: {type: string}
+      expected_state: {type: string}
+      user_id: {type: integer}
+      invoice_id: {type: string}
+      refund_reason: {type: string}
+      expected_amount: {type: integer, description: Exact remaining refund amount in minor currency units.}
+      expected_currency: {type: string, description: Lowercase ISO currency code.}
+    request:
+      method: POST
+      path: /external/admin/v1/actions/refund-payment
+      body:
+        action_id: '{{input.action_id}}'
+        expected_state: '{{input.expected_state}}'
+        user_id: '{{input.user_id}}'
+        invoice_id: '{{input.invoice_id}}'
+        refund_reason: '{{input.refund_reason}}'
+        expected_amount: '{{input.expected_amount}}'
+        expected_currency: '{{input.expected_currency}}'
+    idempotencyHeader: Idempotency-Key
+    verify:
+      operation: billing_refund_status
+      expect:
+        action_id: '{{input.action_id}}'
+        operation: refund-payment
+        status: completed
+  billing_update_status:
+    kind: read
+    title: Check update-customer
+    description: Read before proposing; copy snapshot_hash to expected_state and keep the same action_id.
+    input:
+      action_id: {type: string}
+      user_id: {type: integer}
+    request:
+      method: GET
+      path: "/external/admin/v1/actions/{{input.action_id}}?operation=update-customer&user_id={{input.user_id}}"
+    output:
+      action_id: action_id
+      operation: operation
+      target: target
+      status: status
+      snapshot_hash: snapshot_hash
+      state: state
+      result: result
+  billing_update:
+    kind: action
+    title: Update customer
+    description: Requires admin:billing:update. Execute only after the user approves the exact parameters.
+    input:
+      action_id: {type: string}
+      expected_state: {type: string}
+      user_id: {type: integer}
+      billing_email: {type: string}
+      billing_name: {type: string}
+    request:
+      method: POST
+      path: /external/admin/v1/actions/update-customer
+      body:
+        action_id: '{{input.action_id}}'
+        expected_state: '{{input.expected_state}}'
+        user_id: '{{input.user_id}}'
+        billing_email: '{{input.billing_email}}'
+        billing_name: '{{input.billing_name}}'
+    idempotencyHeader: Idempotency-Key
+    verify:
+      operation: billing_update_status
+      expect:
+        action_id: '{{input.action_id}}'
+        operation: update-customer
+        status: completed
+  form_restore_status:
+    kind: read
+    title: Check restore-form
+    description: Read before proposing; copy snapshot_hash to expected_state and keep the same action_id.
+    input:
+      action_id: {type: string}
+      slug: {type: string}
+    request:
+      method: GET
+      path: "/external/admin/v1/actions/{{input.action_id}}?operation=restore-form&slug={{input.slug}}"
+    output:
+      action_id: action_id
+      operation: operation
+      target: target
+      status: status
+      snapshot_hash: snapshot_hash
+      state: state
+      result: result
+  form_restore:
+    kind: action
+    title: Restore form
+    description: Requires admin:forms:restore. Execute only after the user approves the exact parameters.
+    input:
+      action_id: {type: string}
+      expected_state: {type: string}
+      slug: {type: string}
+    request:
+      method: POST
+      path: /external/admin/v1/actions/restore-form
+      body:
+        action_id: '{{input.action_id}}'
+        expected_state: '{{input.expected_state}}'
+        slug: '{{input.slug}}'
+    idempotencyHeader: Idempotency-Key
+    verify:
+      operation: form_restore_status
+      expect:
+        action_id: '{{input.action_id}}'
+        operation: restore-form
+        status: completed
+  template_create_status:
+    kind: read
+    title: Check create-template
+    description: Read before proposing; copy snapshot_hash to expected_state and keep the same action_id.
+    input:
+      action_id: {type: string}
+    request:
+      method: GET
+      path: "/external/admin/v1/actions/{{input.action_id}}?operation=create-template"
+    output:
+      action_id: action_id
+      operation: operation
+      target: target
+      status: status
+      snapshot_hash: snapshot_hash
+      state: state
+      result: result
+  template_create:
+    kind: action
+    title: Create template
+    description: Requires admin:templates:create. Execute only after the user approves the exact parameters.
+    input:
+      action_id: {type: string}
+      expected_state: {type: string}
+      template_prompt: {type: string}
+    request:
+      method: POST
+      path: /external/admin/v1/actions/create-template
+      body:
+        action_id: '{{input.action_id}}'
+        expected_state: '{{input.expected_state}}'
+        template_prompt: '{{input.template_prompt}}'
+    idempotencyHeader: Idempotency-Key
+    verify:
+      operation: template_create_status
+      expect:
+        action_id: '{{input.action_id}}'
+        operation: create-template
+        status: completed

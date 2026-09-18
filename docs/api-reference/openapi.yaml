@@ -1200,6 +1200,716 @@ paths:
                 "200":
                     description: "Successful"
 
+    /external/admin/v1/users/{identifier}:
+      get:
+        tags:
+          - Admin API
+        summary: Look up a support user
+        description: Requires an operator-issued admin-api:v1 token and explicit
+          admin:users:read scope. See the Admin API guide.
+        parameters:
+          - name: identifier
+            in: path
+            required: true
+            schema:
+              type: string
+        responses:
+          "200":
+            description: Successful
+            content:
+              application/json:
+                schema:
+                  type: object
+                  required:
+                    - id
+                    - email
+                    - name
+                    - blocked
+                    - two_factor_enabled
+                    - workspaces
+                  properties:
+                    id:
+                      type: integer
+                    email:
+                      type: string
+                      format: email
+                    name:
+                      type: string
+                    blocked:
+                      type: boolean
+                    blocked_at:
+                      type: string
+                      nullable: true
+                    two_factor_enabled:
+                      type: boolean
+                    workspaces:
+                      type: array
+                      items:
+                        type: object
+          "401":
+            description: Missing or expired bearer token
+          "403":
+            description: Missing explicit admin scope or moderator role
+          "404":
+            description: Resource or operation not found
+          "409":
+            description: Precondition or idempotency conflict
+          "422":
+            description: Invalid input
+          "429":
+            description: Rate limit exceeded
+          "503":
+            description: Asynchronous queue required
+    /external/admin/v1/workspaces/{id}:
+      get:
+        tags:
+          - Admin API
+        summary: Read a support workspace
+        description: Requires an operator-issued admin-api:v1 token and explicit
+          admin:workspaces:read scope. See the Admin API guide.
+        parameters:
+          - name: id
+            in: path
+            required: true
+            schema:
+              type: integer
+        responses:
+          "200":
+            description: Successful
+            content:
+              application/json:
+                schema:
+                  type: object
+                  required:
+                    - id
+                    - name
+                    - plan
+                    - forms_count
+                  properties:
+                    id:
+                      type: integer
+                    name:
+                      type: string
+                    plan:
+                      type: string
+                    forms_count:
+                      type: integer
+          "401":
+            description: Missing or expired bearer token
+          "403":
+            description: Missing explicit admin scope or moderator role
+          "404":
+            description: Resource or operation not found
+          "409":
+            description: Precondition or idempotency conflict
+          "422":
+            description: Invalid input
+          "429":
+            description: Rate limit exceeded
+          "503":
+            description: Asynchronous queue required
+    /external/admin/v1/users/{user}/billing/{resource}:
+      get:
+        tags:
+          - Admin API
+        summary: Read billing data
+        description: Requires an operator-issued admin-api:v1 token and explicit
+          admin:billing:read scope. See the Admin API guide.
+        parameters:
+          - name: user
+            in: path
+            required: true
+            schema:
+              type: integer
+          - name: resource
+            in: path
+            required: true
+            schema:
+              type: string
+              enum:
+                - customer
+                - subscriptions
+                - payments
+        responses:
+          "200":
+            description: Successful
+            content:
+              application/json:
+                schema:
+                  oneOf:
+                    - type: object
+                      required:
+                        - billing_email
+                        - billing_name
+                      properties:
+                        type:
+                          type: string
+                        billing_email:
+                          type: string
+                          nullable: true
+                        billing_name:
+                          type: string
+                          nullable: true
+                    - type: object
+                      required:
+                        - subscriptions
+                      properties:
+                        subscriptions:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              stripe_id:
+                                type: string
+                              name:
+                                type: string
+                              plan:
+                                type: string
+                              status:
+                                type: string
+                              creation_date:
+                                type: string
+                              canceled_at:
+                                type: string
+                    - type: object
+                      required:
+                        - payments
+                      properties:
+                        payments:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                              amount_paid:
+                                type: integer
+                              name:
+                                type: string
+                              creation_date:
+                                type: string
+                              status:
+                                type: string
+          "401":
+            description: Missing or expired bearer token
+          "403":
+            description: Missing explicit admin scope or moderator role
+          "404":
+            description: Resource or operation not found
+          "409":
+            description: Precondition or idempotency conflict
+          "422":
+            description: Invalid input
+          "429":
+            description: Rate limit exceeded
+          "503":
+            description: Asynchronous queue required
+    /external/admin/v1/users/{user}/deleted-forms:
+      get:
+        tags:
+          - Admin API
+        summary: List deleted forms
+        description: Requires an operator-issued admin-api:v1 token and explicit
+          admin:forms:read scope. See the Admin API guide.
+        parameters:
+          - name: user
+            in: path
+            required: true
+            schema:
+              type: integer
+        responses:
+          "200":
+            description: Successful
+            content:
+              application/json:
+                schema:
+                  type: object
+                  required:
+                    - forms
+                  properties:
+                    forms:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          id:
+                            type: integer
+                          slug:
+                            type: string
+                          title:
+                            type: string
+                          created_by:
+                            type: string
+                          deleted_at:
+                            type: string
+          "401":
+            description: Missing or expired bearer token
+          "403":
+            description: Missing explicit admin scope or moderator role
+          "404":
+            description: Resource or operation not found
+          "409":
+            description: Precondition or idempotency conflict
+          "422":
+            description: Invalid input
+          "429":
+            description: Rate limit exceeded
+          "503":
+            description: Asynchronous queue required
+    /external/admin/v1/actions/{actionId}:
+      get:
+        tags:
+          - Admin API
+        summary: Prepare or verify an admin action
+        description: Requires an operator-issued admin-api:v1 token and explicit the
+          operation's own scope. See the Admin API guide.
+        parameters:
+          - name: actionId
+            in: path
+            required: true
+            schema:
+              type: string
+          - name: operation
+            in: query
+            required: true
+            schema:
+              type: string
+              enum:
+                - block-user
+                - unblock-user
+                - send-password-reset-email
+                - disable-two-factor-authentication
+                - clear-user-cache
+                - apply-discount
+                - extend-trial
+                - cancel-subscription
+                - refund-payment
+                - update-customer
+                - restore-form
+                - create-template
+          - name: user_id
+            in: query
+            required: false
+            schema:
+              type: integer
+          - name: slug
+            in: query
+            required: false
+            schema:
+              type: string
+        responses:
+          "200":
+            description: Successful
+            content:
+              application/json:
+                schema:
+                  type: object
+                  required:
+                    - action_id
+                    - operation
+                    - status
+                    - target
+                    - snapshot_hash
+                    - state
+                    - result
+                  properties:
+                    action_id:
+                      type: string
+                      format: uuid
+                    operation:
+                      type: string
+                      enum:
+                        - block-user
+                        - unblock-user
+                        - send-password-reset-email
+                        - disable-two-factor-authentication
+                        - clear-user-cache
+                        - apply-discount
+                        - extend-trial
+                        - cancel-subscription
+                        - refund-payment
+                        - update-customer
+                        - restore-form
+                        - create-template
+                    status:
+                      type: string
+                      enum:
+                        - not_started
+                        - queued
+                        - running
+                        - verifying
+                        - completed
+                        - rejected
+                        - uncertain
+                        - verification_pending
+                    target:
+                      type: string
+                    snapshot_hash:
+                      type: string
+                      pattern: ^[a-f0-9]{64}$
+                    state:
+                      type: object
+                    result:
+                      type: object
+                      nullable: true
+                      properties:
+                        message:
+                          type: string
+                        template_slug:
+                          type: string
+                        refund_id:
+                          type: string
+                        delivery:
+                          type: string
+                        code:
+                          type: string
+          "401":
+            description: Missing or expired bearer token
+          "403":
+            description: Missing explicit admin scope or moderator role
+          "404":
+            description: Resource or operation not found
+          "409":
+            description: Precondition or idempotency conflict
+          "422":
+            description: Invalid input
+          "429":
+            description: Rate limit exceeded
+          "503":
+            description: Asynchronous queue required
+    /external/admin/v1/actions/{operation}:
+      post:
+        tags:
+          - Admin API
+        summary: Queue an approved admin action
+        description: Requires the explicit per-operation scope; impersonation is
+          unavailable. Supply the exact snapshot hash from GET actions/{actionId},
+          and obtain business approval in the calling integration. Same key/content
+          returns the durable receipt without repeating the write.
+        parameters:
+          - name: operation
+            in: path
+            required: true
+            schema:
+              type: string
+              enum:
+                - block-user
+                - unblock-user
+                - send-password-reset-email
+                - disable-two-factor-authentication
+                - clear-user-cache
+                - apply-discount
+                - extend-trial
+                - cancel-subscription
+                - refund-payment
+                - update-customer
+                - restore-form
+                - create-template
+          - name: Idempotency-Key
+            in: header
+            required: true
+            schema:
+              type: string
+              minLength: 8
+              maxLength: 200
+              pattern: ^[A-Za-z0-9._:-]+$
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - type: object
+                    title: block-user
+                    description: Requires admin:users:block. Use this body with
+                      operation=block-user.
+                    additionalProperties: false
+                    required:
+                      - action_id
+                      - expected_state
+                      - user_id
+                      - reason
+                    properties:
+                      action_id:
+                        type: string
+                        format: uuid
+                      expected_state:
+                        type: string
+                        pattern: ^[a-f0-9]{64}$
+                      user_id:
+                        type: integer
+                      reason:
+                        type: string
+                  - type: object
+                    title: unblock-user
+                    description: Requires admin:users:unblock. Use this body with
+                      operation=unblock-user.
+                    additionalProperties: false
+                    required:
+                      - action_id
+                      - expected_state
+                      - user_id
+                      - reason
+                    properties:
+                      action_id:
+                        type: string
+                        format: uuid
+                      expected_state:
+                        type: string
+                        pattern: ^[a-f0-9]{64}$
+                      user_id:
+                        type: integer
+                      reason:
+                        type: string
+                  - type: object
+                    title: send-password-reset-email
+                    description: Requires admin:users:password-reset. Use this body with
+                      operation=send-password-reset-email.
+                    additionalProperties: false
+                    required:
+                      - action_id
+                      - expected_state
+                      - user_id
+                    properties:
+                      action_id:
+                        type: string
+                        format: uuid
+                      expected_state:
+                        type: string
+                        pattern: ^[a-f0-9]{64}$
+                      user_id:
+                        type: integer
+                  - type: object
+                    title: disable-two-factor-authentication
+                    description: Requires admin:users:disable-2fa. Use this body with
+                      operation=disable-two-factor-authentication.
+                    additionalProperties: false
+                    required:
+                      - action_id
+                      - expected_state
+                      - user_id
+                      - reason
+                    properties:
+                      action_id:
+                        type: string
+                        format: uuid
+                      expected_state:
+                        type: string
+                        pattern: ^[a-f0-9]{64}$
+                      user_id:
+                        type: integer
+                      reason:
+                        type: string
+                  - type: object
+                    title: clear-user-cache
+                    description: Requires admin:users:clear-cache. Use this body with
+                      operation=clear-user-cache.
+                    additionalProperties: false
+                    required:
+                      - action_id
+                      - expected_state
+                      - user_id
+                    properties:
+                      action_id:
+                        type: string
+                        format: uuid
+                      expected_state:
+                        type: string
+                        pattern: ^[a-f0-9]{64}$
+                      user_id:
+                        type: integer
+                  - type: object
+                    title: apply-discount
+                    description: Requires admin:billing:discount. Use this body with
+                      operation=apply-discount.
+                    additionalProperties: false
+                    required:
+                      - action_id
+                      - expected_state
+                      - user_id
+                    properties:
+                      action_id:
+                        type: string
+                        format: uuid
+                      expected_state:
+                        type: string
+                        pattern: ^[a-f0-9]{64}$
+                      user_id:
+                        type: integer
+                  - type: object
+                    title: extend-trial
+                    description: Requires admin:billing:extend-trial. Use this body with
+                      operation=extend-trial.
+                    additionalProperties: false
+                    required:
+                      - action_id
+                      - expected_state
+                      - user_id
+                      - trial_ends_at
+                    properties:
+                      action_id:
+                        type: string
+                        format: uuid
+                      expected_state:
+                        type: string
+                        pattern: ^[a-f0-9]{64}$
+                      user_id:
+                        type: integer
+                      trial_ends_at:
+                        type: string
+                  - type: object
+                    title: cancel-subscription
+                    description: Requires admin:billing:cancel. Use this body with
+                      operation=cancel-subscription.
+                    additionalProperties: false
+                    required:
+                      - action_id
+                      - expected_state
+                      - user_id
+                      - subscription_id
+                      - cancellation_reason
+                    properties:
+                      action_id:
+                        type: string
+                        format: uuid
+                      expected_state:
+                        type: string
+                        pattern: ^[a-f0-9]{64}$
+                      user_id:
+                        type: integer
+                      subscription_id:
+                        type: integer
+                      cancellation_reason:
+                        type: string
+                  - type: object
+                    title: refund-payment
+                    description: Requires admin:billing:refund. Use this body with
+                      operation=refund-payment.
+                    additionalProperties: false
+                    required:
+                      - action_id
+                      - expected_state
+                      - user_id
+                      - invoice_id
+                      - refund_reason
+                      - expected_amount
+                      - expected_currency
+                    properties:
+                      action_id:
+                        type: string
+                        format: uuid
+                      expected_state:
+                        type: string
+                        pattern: ^[a-f0-9]{64}$
+                      user_id:
+                        type: integer
+                      invoice_id:
+                        type: string
+                      refund_reason:
+                        type: string
+                      expected_amount:
+                        type: integer
+                        minimum: 1
+                        description: Exact remaining refund amount in minor currency units.
+                      expected_currency:
+                        type: string
+                        pattern: ^[a-z]{3}$
+                  - type: object
+                    title: update-customer
+                    description: Requires admin:billing:update. Use this body with
+                      operation=update-customer.
+                    additionalProperties: false
+                    required:
+                      - action_id
+                      - expected_state
+                      - user_id
+                      - billing_email
+                      - billing_name
+                    properties:
+                      action_id:
+                        type: string
+                        format: uuid
+                      expected_state:
+                        type: string
+                        pattern: ^[a-f0-9]{64}$
+                      user_id:
+                        type: integer
+                      billing_email:
+                        type: string
+                      billing_name:
+                        type: string
+                  - type: object
+                    title: restore-form
+                    description: Requires admin:forms:restore. Use this body with
+                      operation=restore-form.
+                    additionalProperties: false
+                    required:
+                      - action_id
+                      - expected_state
+                      - slug
+                    properties:
+                      action_id:
+                        type: string
+                        format: uuid
+                      expected_state:
+                        type: string
+                        pattern: ^[a-f0-9]{64}$
+                      slug:
+                        type: string
+                  - type: object
+                    title: create-template
+                    description: Requires admin:templates:create. Use this body with
+                      operation=create-template.
+                    additionalProperties: false
+                    required:
+                      - action_id
+                      - expected_state
+                      - template_prompt
+                    properties:
+                      action_id:
+                        type: string
+                        format: uuid
+                      expected_state:
+                        type: string
+                        pattern: ^[a-f0-9]{64}$
+                      template_prompt:
+                        type: string
+        responses:
+          "200":
+            description: Existing completed receipt
+            content:
+              application/json:
+                schema:
+                  type: object
+          "202":
+            description: Accepted; poll the status endpoint
+            content:
+              application/json:
+                schema:
+                  type: object
+                  required:
+                    - action_id
+                    - status
+                  properties:
+                    action_id:
+                      type: string
+                      format: uuid
+                    status:
+                      type: string
+          "401":
+            description: Missing or expired bearer token
+          "403":
+            description: Missing explicit admin scope or moderator role
+          "404":
+            description: Resource or operation not found
+          "409":
+            description: Precondition or idempotency conflict
+          "422":
+            description: Invalid input
+          "429":
+            description: Rate limit exceeded
+          "503":
+            description: Asynchronous queue required
 components:
     schemas:
         Workspace:
