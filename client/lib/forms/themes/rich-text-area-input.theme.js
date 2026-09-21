@@ -1,10 +1,13 @@
+import { formControlFocusWithin, formControlTransition } from './focus-ring.theme.js'
+
 /**
  * RichTextAreaInput tailwind-variants configuration
  */
 export const richTextAreaInputTheme = {
   slots: {
     container: [
-      'rich-editor resize-y notranslate relative'
+      'rich-editor resize-y notranslate relative',
+      formControlTransition
     ],
     help: 'text-neutral-500'
   },
@@ -44,7 +47,7 @@ export const richTextAreaInputTheme = {
           'shadow-[inset_0_-1px_0_0_rgb(212_212_212)] dark:shadow-[inset_0_-1px_0_0_rgb(82_82_82)]',
           '!rounded-none',
           'transition-shadow duration-200',
-          'focus-within:ring-0 focus-within:shadow-[inset_0_-2px_0_0_var(--color-form)]'
+          'focus-within:ring-0 focus-within:shadow-[inset_0_-2px_0_0_var(--form-focus-color)]'
         ]
       }
     },
@@ -66,14 +69,14 @@ export const richTextAreaInputTheme = {
       true: { container: '!cursor-not-allowed !bg-neutral-200 dark:!bg-neutral-800' }
     },
     focused: {
-      true: { container: 'focus-within:ring-2 focus-within:ring-form/100 focus-within:border-transparent' }
+      true: { container: formControlFocusWithin }
     }
   },
   compoundVariants: [
     {
       theme: 'transparent',
       focused: true,
-      class: { container: 'focus-within:ring-0 focus-within:shadow-[inset_0_-2px_0_0_var(--color-form)] outline-none' }
+      class: { container: 'focus-within:ring-0 focus-within:shadow-[inset_0_-2px_0_0_var(--form-focus-color)] outline-none' }
     }
   ],
   defaultVariants: {
@@ -85,4 +88,3 @@ export const richTextAreaInputTheme = {
     focused: false
   }
 }
-

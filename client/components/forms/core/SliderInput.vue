@@ -18,7 +18,7 @@
           v-model.number="compVal"
           type="range"
           :class="[ui.slider({ class: props.ui?.slots?.slider }), 'slider']"
-          :style="{ '--thumb-color': color }"
+          :style="[inputStyle, { '--thumb-color': color }]"
           :disabled="disabled"
           :min="minSlider"
           :max="maxSlider"

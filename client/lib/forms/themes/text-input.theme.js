@@ -1,3 +1,5 @@
+import { formControlFocus, formControlTransition } from './focus-ring.theme.js'
+
 /**
  * TextInput tailwind-variants configuration
  * Proper TV structure: base classes + variant overrides (following Nuxt UI pattern)
@@ -12,6 +14,7 @@ export const textInputTheme = {
       'text-neutral-700 dark:text-neutral-300',
       'placeholder-neutral-400 dark:placeholder-neutral-500',
       'focus:outline-hidden',
+      formControlTransition,
       'disabled:cursor-not-allowed disabled:opacity-75'
     ],
     help: 'text-neutral-500'
@@ -22,13 +25,13 @@ export const textInputTheme = {
         input: [
           'border-neutral-300 dark:border-neutral-600',
           'shadow-xs',
-          'focus:ring-2 focus:ring-form/100 focus:border-transparent'
+          formControlFocus
         ]
       },
       simple: {
         input: [
           'border-neutral-300 dark:border-neutral-600',
-          'focus:ring-2 focus:ring-form/100 focus:border-transparent'
+          formControlFocus
         ]
       },
       notion: {
@@ -36,7 +39,7 @@ export const textInputTheme = {
           'border-notion-input-border dark:border-notion-input-borderDark',
           'bg-notion-input-background dark:bg-notion-dark-light',
           'text-neutral-900 dark:text-neutral-100',
-          'focus:ring-2 focus:ring-form/40 focus:border-transparent'
+          formControlFocus
         ]
       },
       minimal: {
@@ -44,7 +47,7 @@ export const textInputTheme = {
           'border-2 border-transparent',
           'bg-neutral-100 dark:bg-notion-dark-light',
           'text-neutral-700 dark:text-neutral-300',
-          'focus:ring-0 focus:border-form'
+          formControlFocus
         ]
       },
       transparent: {
@@ -55,7 +58,7 @@ export const textInputTheme = {
           'shadow-[inset_0_-1px_0_0_rgb(212_212_212)] dark:shadow-[inset_0_-1px_0_0_rgb(82_82_82)]',
           '!rounded-none',
           'transition-shadow duration-200',
-          'focus:ring-0 focus:shadow-[inset_0_-2px_0_0_var(--color-form)]',
+          'focus:ring-0 focus:shadow-[inset_0_-2px_0_0_var(--form-focus-color)]',
           '!px-0'
         ]
       }

@@ -1,3 +1,5 @@
+import { formControlFocus, formControlTransition } from './focus-ring.theme.js'
+
 /**
  * MentionInput tailwind-variants configuration
  */
@@ -7,23 +9,25 @@ export const mentionInputTheme = {
       'flex-1 appearance-none w-full',
       'border',
       'focus:outline-hidden',
+      formControlTransition,
       'pr-12'
     ]
   },
   variants: {
     theme: {
       default: {
-        input: 'border-neutral-300 dark:border-neutral-600 bg-white text-neutral-700 dark:bg-notion-dark-light dark:text-neutral-300'
+        input: ['border-neutral-300 dark:border-neutral-600 bg-white text-neutral-700 dark:bg-notion-dark-light dark:text-neutral-300', formControlFocus]
       },
       minimal: {
         input: [
           'border-2 border-transparent',
           'bg-neutral-100 dark:bg-notion-dark-light',
-          'text-neutral-700 dark:text-neutral-300'
+          'text-neutral-700 dark:text-neutral-300',
+          formControlFocus
         ]
       },
       notion: {
-        input: 'border-notion-input-border dark:border-notion-input-borderDark bg-notion-input-background dark:bg-notion-dark-light text-neutral-900 dark:text-neutral-100'
+        input: ['border-notion-input-border dark:border-notion-input-borderDark bg-notion-input-background dark:bg-notion-dark-light text-neutral-900 dark:text-neutral-100', formControlFocus]
       },
       transparent: {
         input: [
@@ -33,7 +37,7 @@ export const mentionInputTheme = {
           'shadow-[inset_0_-1px_0_0_rgb(212_212_212)] dark:shadow-[inset_0_-1px_0_0_rgb(82_82_82)]',
           '!rounded-none',
           'transition-shadow duration-200',
-          'focus:ring-0 focus:shadow-[inset_0_-2px_0_0_var(--color-form)]'
+          'focus:ring-0 focus:shadow-[inset_0_-2px_0_0_var(--form-focus-color)]'
         ]
       }
     },
@@ -63,4 +67,3 @@ export const mentionInputTheme = {
     disabled: false
   }
 }
-

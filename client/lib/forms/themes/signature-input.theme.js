@@ -1,3 +1,5 @@
+import { formControlFocus, formControlTransition } from './focus-ring.theme.js'
+
 /**
  * SignatureInput tailwind-variants configuration
  */
@@ -6,7 +8,9 @@ export const signatureInputTheme = {
     container: [
       'flex flex-wrap items-center justify-center gap-4',
       'border border-dashed',
-      'focus:outline-hidden'
+      'focus:outline-hidden',
+      formControlTransition,
+      formControlFocus
     ],
     help: 'text-neutral-500'
   },
@@ -68,4 +72,3 @@ export const signatureInputTheme = {
     disabled: false
   }
 }
-

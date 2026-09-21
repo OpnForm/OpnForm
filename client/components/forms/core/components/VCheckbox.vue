@@ -55,7 +55,8 @@ const resolvedSize = computed(() => {
 // Color style for CSS custom property
 const colorStyle = computed(() => ({
   '--accent-color': props.color,
-  '--form-color': props.color
+  '--form-color': props.color,
+  '--form-focus-color': props.color
 }))
 
 // OPTIMIZED: Single computed following Nuxt UI pattern

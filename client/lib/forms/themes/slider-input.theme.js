@@ -1,26 +1,14 @@
+import { formControlFocusVisibleHalo, formControlTransition } from './focus-ring.theme.js'
+
 /**
  * SliderInput tailwind-variants configuration
  */
 export const sliderInputTheme = {
   slots: {
     stepLabel: 'text-neutral-700 dark:text-neutral-300 text-center',
-    slider: 'w-full mt-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2'
+    slider: ['w-full mt-3', formControlTransition, formControlFocusVisibleHalo]
   },
   variants: {
-    theme: {
-      default: {
-        slider: 'focus-visible:ring-form/100'
-      },
-      simple: {
-        slider: 'focus-visible:ring-form/100'
-      },
-      notion: {
-        slider: 'focus-visible:ring-form/40'
-      },
-      minimal: {
-        slider: 'focus-visible:ring-2 focus-visible:ring-form/60'
-      }
-    },
     size: {
       xs: { stepLabel: 'text-xs' },
       sm: { stepLabel: 'text-sm' },

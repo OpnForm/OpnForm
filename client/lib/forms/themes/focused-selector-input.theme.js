@@ -1,3 +1,5 @@
+import { formControlFocusWithin } from './focus-ring.theme.js'
+
 /**
  * FocusedSelectorInput tailwind-variants configuration
  * Used for focused mode one-per-line option selection
@@ -8,7 +10,8 @@ export const focusedSelectorInputTheme = {
     option: [
       'w-full border border-transparent transition-all duration-200',
       'overflow-hidden',
-      'group'
+      'group',
+      formControlFocusWithin
     ],
     optionButton: [
       'w-full flex items-center gap-3 transition-all duration-200',
@@ -158,4 +161,3 @@ export const focusedSelectorInputTheme = {
     disabled: false
   }
 }
-

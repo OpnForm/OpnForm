@@ -1,3 +1,5 @@
+import { formControlActive, formControlFocusWithin, formControlTransition } from './focus-ring.theme.js'
+
 /**
  * VSelect tailwind-variants configuration
  * Used for select dropdown components
@@ -5,7 +7,7 @@
 export const vSelectTheme = {
   slots: {
     container: 'v-select relative',
-    anchor: 'w-full flex overflow-hidden',
+    anchor: ['w-full flex overflow-hidden', formControlTransition],
     button: [
       'cursor-pointer w-full grow relative focus:outline-hidden min-w-0 truncate'
     ],
@@ -97,7 +99,7 @@ export const vSelectTheme = {
           'shadow-[inset_0_-1px_0_0_rgb(212_212_212)] dark:shadow-[inset_0_-1px_0_0_rgb(82_82_82)]',
           '!rounded-none',
           'transition-shadow duration-200',
-          'focus-within:ring-0 focus-within:shadow-[inset_0_-2px_0_0_var(--color-form)]'
+          'focus-within:ring-0 focus-within:shadow-[inset_0_-2px_0_0_var(--form-focus-color)]'
         ],
         chevronGradient: 'bg-gradient-to-r from-transparent to-transparent',
         chevronContainer: 'bg-transparent',
@@ -107,7 +109,7 @@ export const vSelectTheme = {
     // Open state styling for when popover is open (even if not focused)
     isOpen: {
       true: {
-        anchor: 'ring-2 ring-form/100 outline-none'
+        anchor: formControlActive
       }
     },
     size: {
@@ -169,7 +171,7 @@ export const vSelectTheme = {
     },
     focused: {
       true: {
-        anchor: 'focus-within:ring-2 focus-within:ring-form/100 focus-within:border-transparent'
+        anchor: formControlFocusWithin
       }
     },
     multiple: {
@@ -191,12 +193,12 @@ export const vSelectTheme = {
     {
       theme: 'transparent',
       isOpen: true,
-      class: { anchor: 'ring-0 shadow-[inset_0_-2px_0_0_var(--color-form)] outline-none' }
+      class: { anchor: 'ring-0 shadow-[inset_0_-2px_0_0_var(--form-focus-color)] outline-none' }
     },
     {
       theme: 'transparent',
       focused: true,
-      class: { anchor: 'focus-within:ring-0 focus-within:shadow-[inset_0_-2px_0_0_var(--color-form)] outline-none' }
+      class: { anchor: 'focus-within:ring-0 focus-within:shadow-[inset_0_-2px_0_0_var(--form-focus-color)] outline-none' }
     }
   ],
   defaultVariants: {

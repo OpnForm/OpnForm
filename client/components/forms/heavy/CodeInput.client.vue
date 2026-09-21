@@ -8,7 +8,10 @@
       <slot name="help" />
     </template>
 
-    <div :class="ui.container({ class: props.ui?.slots?.container })">
+    <div
+      :class="ui.container({ class: props.ui?.slots?.container })"
+      :style="inputStyle"
+    >
       <!-- Fullscreen button -->
       <UTooltip text="Open in fullscreen" :content="{ side: 'left' }" arrow>
         <UButton
