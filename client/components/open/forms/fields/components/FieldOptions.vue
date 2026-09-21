@@ -116,24 +116,7 @@
       />
     </div>
 
-    <div
-      v-if="field.type === 'rating'"
-      class="px-4"
-    >
-      <EditorSectionHeader
-        icon="i-heroicons-star"
-        title="Rating"
-      />
-      <text-input
-        name="rating_max_value"
-        native-type="number"
-        :min="1"
-        class="mt-3"
-        :form="field"
-        required
-        label="Max rating value"
-      />
-    </div>
+    <RatingOptions :field="field" />
 
     <div
       v-if="field.type === 'scale'"
@@ -649,6 +632,7 @@ import PaymentFieldOptions from './PaymentFieldOptions.vue'
 import HiddenRequiredDisabled from './HiddenRequiredDisabled.vue'
 import SelectOptionEditor from './SelectOptionEditor.vue'
 import InputMaskOptions from './InputMaskOptions.vue'
+import RatingOptions from './RatingOptions.vue'
 import EditorSectionHeader from '~/components/open/forms/components/form-components/EditorSectionHeader.vue'
 import PlanTag from '~/components/app/PlanTag.vue'
 import MentionInput from '~/components/forms/heavy/MentionInput.vue'
@@ -659,7 +643,7 @@ import BlockMediaOptions from '~/components/open/forms/components/media/BlockMed
 
 export default {
   name: 'FieldOptions',
-  components: { CountryFlag, MatrixFieldOptions, HiddenRequiredDisabled, EditorSectionHeader, PaymentFieldOptions, PlanTag, BlockMediaOptions, SelectOptionEditor, MentionInput, InputMaskOptions },
+  components: { CountryFlag, MatrixFieldOptions, HiddenRequiredDisabled, EditorSectionHeader, PaymentFieldOptions, PlanTag, BlockMediaOptions, SelectOptionEditor, MentionInput, InputMaskOptions, RatingOptions },
   props: {
     field: {
       type: Object,
