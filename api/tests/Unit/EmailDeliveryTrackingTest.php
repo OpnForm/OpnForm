@@ -88,7 +88,7 @@ it('captures the SES message ID rather than the MIME id and records SMTP accepta
     $this->tracker->handle(new NotificationSent(new stdClass(), $notification, 'mail', $response));
     $recipient = data_get($this->event->fresh()->data, 'email.recipients.'.$this->recipientId);
     expect($recipient->status)->toBe($expectedStatus)->and($recipient->provider_message_id)->toBe($sesId);
-})->with([['ses', 'ses-message-id', 'accepted'], ['smtp', null, 'accepted'], ['log', null, 'not_sent']]);
+})->with([['ses', 'ses-message-id', 'accepted'], ['smtp', null, 'accepted'], ['log', null, 'not_sent'], ['failover', null, 'unknown']]);
 
 it('does not treat a cancelled mail send as success', function () {
     $notification = new class () extends \Illuminate\Notifications\Notification {

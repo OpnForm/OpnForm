@@ -19,7 +19,12 @@ class EmailDeliveryTracker
         $message = $event->response?->getSymfonySentMessage()->getOriginalMessage();
         $sesId = $message?->getHeaders()->get('X-SES-Message-ID')?->getBodyAsString();
         $transport = $event->notification->emailTransport ?? 'unknown';
-        $status = $event->response === null ? 'blocked' : (in_array($transport, ['log', 'array']) ? 'not_sent' : 'accepted');
+        $status = match (true) {
+            $event->response === null => 'blocked',
+            in_array($transport, ['log', 'array']) => 'not_sent',
+            (bool) $sesId || in_array($transport, ['smtp', 'ses', 'ses-v2', 'mailgun', 'postmark', 'sendmail', 'resend']) => 'accepted',
+            default => 'unknown', // A failover/custom driver can return a response after only logging the email.
+        };
         $this->recipient($context['event'], $context['recipient'], [
             'status' => $status,
             'provider' => $sesId ? 'ses' : $transport,
@@ -27,6 +32,7 @@ class EmailDeliveryTracker
             'reason' => match ($status) {
                 'blocked' => 'The application cancelled the email before transport acceptance.',
                 'not_sent' => 'The configured mail transport does not deliver email.',
+                'unknown' => 'The transport completed, but its delivery capability could not be confirmed.',
                 default => 'Accepted by the mail transport; delivery is not yet confirmed.',
             },
         ]);
