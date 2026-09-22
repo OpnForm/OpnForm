@@ -114,7 +114,8 @@ class EmailIntegration extends AbstractIntegrationHandler
 
         if ($this->riskLimitReached()) {
             app(\App\Service\Integrations\EmailDeliveryTracker::class)->outcome(
-                $this->emailTrackingId, 'error',
+                $this->emailTrackingId,
+                'error',
                 'Email sending is blocked by account restrictions. Contact support to review the account.'
             );
             return;

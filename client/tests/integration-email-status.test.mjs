@@ -53,3 +53,10 @@ test('renders recipient evidence and the inbox limitation in the actual Vue comp
     await rm(generatedPath)
   }
 })
+
+
+test('confirmed errors stay prominent when another recipient has an uncertain stale result', () => {
+  const event = { email_tracking: true, status: 'Error', data: { email: { recipients: { a: { status: 'sending', updated_at: '2020-01-01T00:00:00Z' } } } } }
+  assert.equal(eventLabel(event), 'Action needed')
+  assert.equal(eventColor(event), 'error')
+})

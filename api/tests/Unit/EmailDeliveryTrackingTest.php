@@ -3,6 +3,7 @@
 use App\Models\Integration\FormIntegration;
 use App\Models\Integration\FormIntegrationsEvent;
 use App\Service\Integrations\EmailDeliveryTracker;
+use Tests\Fixtures\TrackedEmailHarness;
 use Aws\Sns\MessageValidator;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\TestCase;
@@ -163,26 +164,6 @@ it('confirms only the allowlisted SNS topic without following the supplied URL',
     Http::assertSent(fn ($request) => str_starts_with($request->url(), 'https://sns.eu-west-2.amazonaws.com/'));
 });
 
-class TrackedEmailHarness
-{
-    use \App\Integrations\Handlers\TracksEmailIntegration;
-
-    public array $submissionData = [];
-    public object $integrationData;
-    public \App\Events\Forms\FormSubmitted $event;
-
-    public function __construct(public FormIntegration $formIntegration)
-    {
-        $this->integrationData = (object) [];
-        $this->event = new \App\Events\Forms\FormSubmitted(new \App\Models\Forms\Form(), []);
-    }
-
-    public function handle(): void
-    {
-        $this->sendTrackedEmails(['person@example.com', 'other@example.com']);
-    }
-}
-
 it('keeps a timeout visible and continues other recipients without replaying the accepted one', function () {
     $integration = new FormIntegration();
     $integration->id = 7;
@@ -272,4 +253,69 @@ it('distinguishes an explicit SES rejection from an uncertain transport failure 
     expect($recipient->status)->toBe('rejected')->and($recipient->reason_code)->toBe('MessageRejected');
     expect(json_encode($recipient))->not->toContain('private');
     expect($this->event->fresh()->status)->toBe('error');
+});
+
+it('keeps confirmed acceptance when a later synchronous listener throws', function () {
+    $this->tracker->recipient($this->id, $this->recipientId, ['status' => 'accepted', 'provider_message_id' => 'accepted-id']);
+    $this->tracker->failure($this->id, $this->recipientId, new RuntimeException('Later listener failed'));
+    $recipient = data_get($this->event->fresh()->data, 'email.recipients.'.$this->recipientId);
+    expect($recipient->status)->toBe('accepted')->and($recipient->provider_message_id)->toBe('accepted-id');
+});
+
+it('does not let an unavailable alert queue interrupt other recipients', function () {
+    Event::getFacadeRoot()->except([\App\Events\Models\FormIntegrationsEventCreated::class]);
+    Event::forget(\App\Events\Models\FormIntegrationsEventCreated::class);
+    Event::listen(\App\Events\Models\FormIntegrationsEventCreated::class, function () {
+        throw new RuntimeException('Queue unavailable');
+    });
+    // Pending recipients must still be returned for dispatch despite the invalid-address alert.
+    $recipients = $this->tracker->prepare($this->id, ['invalid', 'person@example.com']);
+    expect($recipients)->toHaveCount(2)->and($this->event->fresh()->status)->toBe('error');
+});
+
+it('does not retry the sending job when tracking persistence fails after a possible send', function () {
+    $integration = new FormIntegration();
+    $integration->id = 7;
+    $this->partialMock(EmailDeliveryTracker::class, function ($mock) {
+        $mock->shouldReceive('failure')->once()->andThrow(new RuntimeException('Database unavailable'));
+        $mock->shouldReceive('outcome')->once()->andThrow(new RuntimeException('Still unavailable'));
+    });
+    \Illuminate\Support\Facades\Notification::shouldReceive('send')->once()->andThrow(new RuntimeException('Transport timeout'));
+    expect(fn () => (new TrackedEmailHarness($integration))->run())->not->toThrow(Throwable::class);
+    expect(FormIntegrationsEvent::where('integration_id', 7)->sole()->status)->toBe('processing');
+});
+
+it('does not refresh event timestamps for unmatched or duplicate feedback', function () {
+    $this->tracker->feedback(emailFeedback($this));
+    $before = $this->event->fresh()->getAttributes();
+    $this->travel(20)->minutes();
+    $this->tracker->feedback(emailFeedback($this));
+    $payload = emailFeedback($this);
+    $payload['delivery']['recipients'] = ['wrong@example.com'];
+    $this->tracker->feedback($payload);
+    expect($this->event->fresh()->getAttributes())->toBe($before);
+});
+
+it('preserves feedback identifiers and records acceptance when feedback wins the race', function () {
+    $this->tracker->feedback(emailFeedback($this));
+    $this->tracker->recipient($this->id, $this->recipientId, ['status' => 'accepted', 'provider_message_id' => null, 'provider' => 'unknown']);
+    $recipient = data_get($this->event->fresh()->data, 'email.recipients.'.$this->recipientId);
+    expect($recipient->status)->toBe('delivered')->and($recipient->provider_message_id)->toBe('ses-message-id')
+        ->and($recipient->timeline->accepted)->not->toBeNull();
+});
+
+it('safely ignores malformed structured feedback', function ($bad) {
+    $before = $this->event->fresh()->getAttributes();
+    expect($this->tracker->feedback(array_replace_recursive(emailFeedback($this), $bad)))->toBeFalse();
+    expect($this->event->fresh()->getAttributes())->toBe($before);
+})->with([
+    [['notificationType' => []]],
+    [['mail' => ['headers' => 'not-an-array']]],
+    [['delivery' => ['recipients' => 'not-an-array']]],
+    [['mail' => ['messageId' => ['bad']]]],
+]);
+
+it('asks SNS to retry a temporary signing certificate download failure', function () {
+    Http::fake(['https://sns.eu-west-2.amazonaws.com/*' => Http::response('', 503)]);
+    $this->postJson('/aws/sns/ses/integration-events', snsEmailEnvelope(emailFeedback($this)))->assertStatus(503);
 });

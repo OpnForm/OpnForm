@@ -90,20 +90,28 @@ class EmailDeliveryTracker
                 return;
             }
             $current = &$data['email']['recipients'][$recipient];
-            // A synchronous result must not overwrite feedback that won the race.
-            if (isset($current['feedback'])) {
-                unset($changes['status'], $changes['reason']);
+            // Acceptance is positive evidence even if a later listener or persistence step fails.
+            if (($current['status'] ?? null) === 'accepted' && in_array($changes['status'] ?? null, ['unknown', 'blocked', 'rejected'])) {
+                return;
             }
             if (isset($changes['status'])) {
                 $current['timeline'][$changes['status']] ??= now()->toIso8601String();
+            }
+            // Feedback can arrive before NotificationSent. Preserve its outcome and correlation.
+            if (isset($current['feedback'])) {
+                unset($changes['status'], $changes['reason'], $changes['reason_code']);
+                if (!empty($current['provider_message_id'])) {
+                    unset($changes['provider_message_id'], $changes['provider']);
+                }
             }
             $current = array_merge($current, $changes, ['updated_at' => now()->toIso8601String()]);
         });
     }
 
-    public function outcome(string $id, string $status, string $reason): void
+    public function outcome(string $id, string $status, string $reason, array $metadata = []): void
     {
-        $this->update($id, function (&$data) use ($status, $reason) {
+        $this->update($id, function (&$data) use ($status, $reason, $metadata) {
+            $data = array_merge($data, $metadata);
             $data['email']['outcome'] = $status;
             $data['email']['reason'] = $reason;
         });
@@ -111,6 +119,35 @@ class EmailDeliveryTracker
 
     public function feedback(array $payload): bool
     {
+        $type = strtolower(is_string($payload['notificationType'] ?? $payload['eventType'] ?? null)
+            ? ($payload['notificationType'] ?? $payload['eventType']) : '');
+        if (!in_array($type, ['delivery', 'bounce', 'complaint'])) {
+            return false;
+        }
+        $rules = [
+            'mail' => 'required|array',
+            'mail.messageId' => 'required|string|max:1024',
+            'mail.headers' => 'required|array|max:200',
+            'mail.headers.*' => 'required|array',
+            'mail.headers.*.name' => 'required|string|max:256',
+            'mail.headers.*.value' => 'present|string|max:10000',
+            $type => 'required|array',
+            "$type.timestamp" => 'sometimes|string|max:128',
+        ];
+        $list = match ($type) {
+            'delivery' => 'recipients', 'bounce' => 'bouncedRecipients', 'complaint' => 'complainedRecipients',
+        };
+        $rules["$type.$list"] = 'required|array|max:1000';
+        $rules["$type.$list.*"] = $type === 'delivery' ? 'required|string|max:320' : 'required|array';
+        if ($type !== 'delivery') {
+            $rules["$type.$list.*.emailAddress"] = 'required|string|max:320';
+        }
+        foreach (['bounceType', 'bounceSubType', 'complaintFeedbackType'] as $field) {
+            $rules["$type.$field"] = 'sometimes|string|max:128';
+        }
+        if (\Illuminate\Support\Facades\Validator::make($payload, $rules)->fails()) {
+            return false;
+        }
         $headers = [];
         foreach ($payload['mail']['headers'] ?? [] as $header) {
             $headers[strtolower($header['name'] ?? '')] = $header['value'] ?? '';
@@ -120,7 +157,6 @@ class EmailDeliveryTracker
         if (!Str::isUuid($id) || !Str::isUuid($recipientId)) {
             return false;
         }
-        $type = strtolower($payload['notificationType'] ?? $payload['eventType'] ?? '');
         $section = $payload[$type] ?? [];
         $addresses = match ($type) {
             'delivery' => $section['recipients'] ?? [],
@@ -142,6 +178,9 @@ class EmailDeliveryTracker
                 return;
             }
             $matched = true;
+            if (isset($recipient['feedback'][$type])) {
+                return;
+            }
             // One immutable fact per feedback type. Duplicates and out-of-order delivery are harmless.
             $recipient['feedback'][$type] ??= [
                 'at' => $section['timestamp'] ?? null,
@@ -170,7 +209,11 @@ class EmailDeliveryTracker
                 return; // The integration or its retained history may have been deleted.
             }
             $data = json_decode(json_encode($event->data), true);
+            $before = $data;
             $change($data);
+            if ($data === $before) {
+                return;
+            }
             $statuses = array_column($data['email']['recipients'] ?? [], 'status');
             $status = $data['email']['outcome'] ?? 'processing';
             if ($statuses) {
@@ -182,13 +225,23 @@ class EmailDeliveryTracker
                     default => 'accepted',
                 };
             }
-            $notifyFailure = $status === 'error' && empty($data['email']['failure_notified']);
+            $notifyFailure = $status === 'error' && empty($data['email']['failure_notification_attempted']);
             if ($notifyFailure) {
-                $data['email']['failure_notified'] = true;
+                $data['email']['failure_notification_attempted'] = true;
             }
             $event->update(['data' => $data, 'status' => $status]);
             if ($notifyFailure) {
-                DB::afterCommit(fn () => \App\Events\Models\FormIntegrationsEventCreated::dispatch($event));
+                DB::afterCommit(function () use ($event) {
+                    try {
+                        \App\Events\Models\FormIntegrationsEventCreated::dispatch($event);
+                    } catch (\Throwable $exception) {
+                        // Alert delivery must never interrupt the actual recipient sends or SNS acknowledgement.
+                        \Illuminate\Support\Facades\Log::error('Integration failure alert could not be queued', [
+                            'tracking_id' => $event->tracking_id,
+                            'exception_type' => get_class($exception),
+                        ]);
+                    }
+                });
             }
         });
     }

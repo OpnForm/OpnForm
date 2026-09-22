@@ -10,6 +10,7 @@ use App\Notifications\Forms\FormEmailNotification;
 trait TracksEmailIntegration
 {
     private ?string $emailTrackingId = null;
+    private bool $emailSendAttempted = false;
 
     public function run(): void
     {
@@ -26,9 +27,21 @@ trait TracksEmailIntegration
         try {
             $this->handle();
         } catch (\Throwable $e) {
-            // Before recipient dispatch: do not expose SMTP credentials or arbitrary provider payloads.
-            app(EmailDeliveryTracker::class)->outcome($this->emailTrackingId, 'error', 'The application could not prepare the email. Contact support with this event date.');
-            \Illuminate\Support\Facades\Log::error('Email integration preparation failed', [
+            try {
+                app(EmailDeliveryTracker::class)->outcome(
+                    $this->emailTrackingId,
+                    $this->emailSendAttempted ? 'unknown' : 'error',
+                    $this->emailSendAttempted
+                        ? 'Email processing was interrupted. Review recipient outcomes; do not retry blindly.'
+                        : 'The application could not prepare the email. Contact support with this event ID.'
+                );
+            } catch (\Throwable $trackingException) {
+                // A database outage after a possible send must not replay the notification job.
+                \Illuminate\Support\Facades\Log::error('Could not persist interrupted email outcome', [
+                    'tracking_id' => $this->emailTrackingId, 'exception_type' => get_class($trackingException),
+                ]);
+            }
+            \Illuminate\Support\Facades\Log::error('Email integration processing failed', [
                 'tracking_id' => $this->emailTrackingId, 'exception_type' => get_class($e),
             ]);
         }
@@ -52,6 +65,7 @@ trait TracksEmailIntegration
             try {
                 $notification = new FormEmailNotification($this->event, $this->integrationData);
                 $notification->emailTracking = ['event' => $this->emailTrackingId, 'recipient' => $recipientId];
+                $this->emailSendAttempted = true;
                 Notification::route('mail', $recipient['address'])->notify($notification);
                 // If NotificationSending vetoed the send there is no NotificationSent event.
                 $record = \App\Models\Integration\FormIntegrationsEvent::where('tracking_id', $this->emailTrackingId)->first();

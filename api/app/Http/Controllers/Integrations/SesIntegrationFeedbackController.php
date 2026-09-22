@@ -18,9 +18,14 @@ class SesIntegrationFeedbackController extends Controller
         $body = json_decode($request->getContent(), true);
         abort_unless(is_array($body), 422);
         abort_unless(in_array($body['TopicArn'] ?? '', config('email-tracking.sns_topics', []), true), 403);
+        foreach (['Type', 'Message', 'MessageId', 'Timestamp', 'Signature', 'SignatureVersion', 'TopicArn', 'SigningCertURL'] as $field) {
+            abort_unless(is_string($body[$field] ?? null), 403);
+        }
         try {
             $validator->validate(new Message($body));
-        } catch (\Throwable $e) {
+        } catch (\Illuminate\Http\Client\ConnectionException|\Illuminate\Http\Client\RequestException $e) {
+            abort(503, 'SNS certificate temporarily unavailable.');
+        } catch (\Aws\Sns\Exception\InvalidSnsMessageException|\InvalidArgumentException $e) {
             abort(403, 'Invalid SNS signature.');
         }
         if (($body['Type'] ?? '') === 'SubscriptionConfirmation') {
@@ -35,7 +40,8 @@ class SesIntegrationFeedbackController extends Controller
             return response()->json(['ok' => true]);
         }
         abort_unless(($body['Type'] ?? '') === 'Notification', 422);
-        $payload = json_decode($body['Message'] ?? '', true);
+        abort_unless(is_string($body['Message'] ?? null), 422);
+        $payload = json_decode($body['Message'], true);
         abort_unless(is_array($payload), 422);
         if (!$tracker->feedback($payload)) {
             Log::info('SES feedback did not match a retained integration email', ['sns_message_id' => $body['MessageId'] ?? null]);

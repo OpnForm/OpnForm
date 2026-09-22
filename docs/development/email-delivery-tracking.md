@@ -27,3 +27,11 @@ The webhook stores only normalized feedback type/subtype, identifiers and timest
 ## Rollback
 
 Roll back code/workers first and leave the nullable column in place until no new workers use it. Disable the new subscriptions independently; preserve legacy bounce/complaint subscriptions. Removing the column later drops correlation only, not the event JSON. Do not replay uncertain events while rolling back.
+
+## Failure isolation and callback retries
+
+A later listener failure cannot erase already-persisted transport acceptance. Failure alerts are best-effort: queue failures are logged but cannot interrupt recipient sends or SNS acknowledgement. If tracking storage fails after a possible send, the handler stops and logs the tracking ID instead of automatically replaying the sending job; the retained incomplete event becomes uncertain in the UI. This does not provide exactly-once sending after worker termination.
+
+SNS certificate downloads have a five-second timeout, redirects disabled and a one-hour cache. Temporary HTTP failures return 503 so SNS can retry, while invalid signatures return 403. Malformed or unmatched SES feedback is acknowledged without changing the event; duplicate feedback does not refresh timestamps. Known errors remain highlighted even if another recipient has an uncertain result.
+
+Run `npm run test:email-events` from client/ for the event status and Vue rendering regressions; CI also runs this command.

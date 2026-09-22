@@ -7,12 +7,14 @@ export function isStale(event, now = Date.now()) {
 }
 
 export function eventLabel(event) {
+  if (event.status === "Error") return "Action needed"
   if (event.legacy_email && event.status === "Success") return "Completed · delivery untracked"
   if (isStale(event)) return "Outcome unknown"
   return ({ Accepted: "Accepted · delivery unconfirmed", Delivered: "Delivered to mail server", Unknown: "Outcome unknown", Error: "Action needed" })[event.status] || event.status
 }
 
 export function eventColor(event) {
+  if (event.status === "Error") return "error"
   if (isStale(event) || ["Unknown", "Accepted", "Processing"].includes(event.status)) return "warning"
   if (["Success", "Delivered"].includes(event.status)) return event.legacy_email ? "neutral" : "success"
   return event.status === "Error" ? "error" : "neutral"
