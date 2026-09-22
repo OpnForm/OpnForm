@@ -3,7 +3,7 @@
 use App\Models\Integration\FormIntegration;
 use App\Models\Integration\FormIntegrationsEvent;
 use App\Service\Integrations\EmailDeliveryTracker;
-use Tests\Fixtures\TrackedEmailHarness;
+use Tests\TrackedEmailHarness;
 use Aws\Sns\MessageValidator;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\TestCase;
@@ -318,4 +318,12 @@ it('safely ignores malformed structured feedback', function ($bad) {
 it('asks SNS to retry a temporary signing certificate download failure', function () {
     Http::fake(['https://sns.eu-west-2.amazonaws.com/*' => Http::response('', 503)]);
     $this->postJson('/aws/sns/ses/integration-events', snsEmailEnvelope(emailFeedback($this)))->assertStatus(503);
+});
+
+
+it('shows a known interruption immediately without erasing completed recipient evidence', function () {
+    $this->tracker->recipient($this->id, $this->recipientId, ['status' => 'accepted']);
+    $this->tracker->outcome($this->id, 'unknown', 'Processing interrupted.');
+    expect($this->event->fresh()->status)->toBe('unknown');
+    expect(data_get($this->event->fresh()->data, 'email.recipients.'.$this->recipientId.'.status'))->toBe('accepted');
 });

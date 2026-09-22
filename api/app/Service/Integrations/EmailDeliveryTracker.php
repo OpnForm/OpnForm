@@ -219,7 +219,10 @@ class EmailDeliveryTracker
             if ($statuses) {
                 $status = match (true) {
                     (bool) array_intersect($statuses, ['invalid', 'blocked', 'not_sent', 'rejected', 'bounced', 'complained']) => 'error',
-                    in_array('unknown', $statuses) => 'unknown',
+                    in_array('unknown', $statuses) || (
+                        ($data['email']['outcome'] ?? null) === 'unknown'
+                        && array_intersect($statuses, ['pending', 'sending'])
+                    ) => 'unknown',
                     (bool) array_intersect($statuses, ['pending', 'sending']) => 'processing',
                     count(array_unique($statuses)) === 1 && $statuses[0] === 'delivered' => 'delivered',
                     default => 'accepted',
