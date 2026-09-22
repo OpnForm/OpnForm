@@ -21,6 +21,9 @@ class SesIntegrationFeedbackController extends Controller
         foreach (['Type', 'Message', 'MessageId', 'Timestamp', 'Signature', 'SignatureVersion', 'TopicArn', 'SigningCertURL'] as $field) {
             abort_unless(is_string($body[$field] ?? null), 403);
         }
+        foreach (['Subject', 'SubscribeURL', 'Token', 'UnsubscribeURL'] as $field) {
+            abort_if(isset($body[$field]) && !is_string($body[$field]), 403);
+        }
         try {
             $validator->validate(new Message($body));
         } catch (\Illuminate\Http\Client\ConnectionException|\Illuminate\Http\Client\RequestException $e) {

@@ -327,3 +327,11 @@ it('shows a known interruption immediately without erasing completed recipient e
     expect($this->event->fresh()->status)->toBe('unknown');
     expect(data_get($this->event->fresh()->data, 'email.recipients.'.$this->recipientId.'.status'))->toBe('accepted');
 });
+
+
+it('rejects malformed optional SNS envelope fields before any certificate request', function () {
+    $payload = snsEmailEnvelope(emailFeedback($this));
+    $payload['Subject'] = ['not-a-string'];
+    $this->postJson('/aws/sns/ses/integration-events', $payload)->assertForbidden();
+    Http::assertNothingSent();
+});
