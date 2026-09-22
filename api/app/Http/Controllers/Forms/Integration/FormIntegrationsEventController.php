@@ -19,7 +19,7 @@ class FormIntegrationsEventController extends Controller
         $formIntegration = $form->integrations()->findOrFail((int) $integrationid);
 
         return FormIntegrationsEventResource::collection(
-            $formIntegration->events()->orderByDesc('created_at')->get()
+            $formIntegration->events()->with('integration')->orderByDesc('created_at')->get()
         );
     }
 }

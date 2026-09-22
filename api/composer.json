@@ -14,6 +14,7 @@
     "require": {
         "php": "^8.3",
         "ext-json": "*",
+        "aws/aws-php-sns-message-validator": "^1.10",
         "aws/aws-sdk-php": "*",
         "doctrine/dbal": "*",
         "enshrined/svg-sanitize": "^0.22",

@@ -4,9 +4,7 @@ namespace App\Integrations\Handlers;
 
 use App\Models\Forms\Form;
 use App\Models\Integration\FormIntegration;
-use App\Notifications\Forms\FormEmailNotification;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Notification;
 use App\Open\MentionParser;
 use App\Service\Billing\Feature;
 use App\Service\Forms\FormSubmissionFormatter;
@@ -16,6 +14,8 @@ use Illuminate\Support\Facades\Auth;
 
 class EmailIntegration extends AbstractIntegrationHandler
 {
+    use TracksEmailIntegration;
+
     public const RISKY_USERS_LIMIT = 120;
     public const MAX_PDF_ATTACHMENTS = 3;
 
@@ -80,17 +80,7 @@ class EmailIntegration extends AbstractIntegrationHandler
 
     protected function shouldRun(): bool
     {
-        // Check basic conditions first
-        if (!$this->integrationData?->send_to || !parent::shouldRun()) {
-            return false;
-        }
-
-        // Only check risk limit if integration would otherwise run
-        if ($this->riskLimitReached()) {
-            throw new \Exception('Email integration temporarily blocked due to account restrictions. Please contact support to unblock your account or upgrade to a Pro plan to continue sending emails.');
-        }
-
-        return true;
+        return $this->integrationData?->send_to && parent::shouldRun();
     }
 
     // To avoid phishing abuse we limit this feature for risky users
@@ -113,7 +103,20 @@ class EmailIntegration extends AbstractIntegrationHandler
 
     public function handle(): void
     {
+        if (!$this->emailTrackingId) {
+            $this->run();
+            return;
+        }
         if (!$this->shouldRun()) {
+            $this->emailSkipped('No email sent: integration conditions were not met or recipients were not configured.');
+            return;
+        }
+
+        if ($this->riskLimitReached()) {
+            app(\App\Service\Integrations\EmailDeliveryTracker::class)->outcome(
+                $this->emailTrackingId, 'error',
+                'Email sending is blocked by account restrictions. Contact support to review the account.'
+            );
             return;
         }
 
@@ -129,20 +132,6 @@ class EmailIntegration extends AbstractIntegrationHandler
             $sendTo = $this->integrationData?->send_to;
         }
 
-        $recipients = collect(preg_split("/\r\n|\n|\r/", $sendTo))
-            ->filter(function ($email) {
-                return filter_var($email, FILTER_VALIDATE_EMAIL);
-            });
-        Log::info('Sending email notification', [
-            'recipients' => $recipients->toArray(),
-            'form_id' => $this->form->id,
-            'form_slug' => $this->form->slug,
-        ]);
-
-        $recipients->each(function ($subscriber) {
-            Notification::route('mail', $subscriber)->notify(
-                new FormEmailNotification($this->event, $this->integrationData)
-            );
-        });
+        $this->sendTrackedEmails(preg_split("/\r\n|\n|\r/", $sendTo));
     }
 }

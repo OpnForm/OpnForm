@@ -11,15 +11,12 @@
         :data="integrationEvents"
       >
         <template #status-cell="{ row }">
-          <UBadge
-            variant="subtle"
-            :color="row.original.status === 'Success' ? 'success' : 'error'"
-            :label="row.original.status"
-          />
+          <UBadge variant="subtle" :color="eventColor(row.original)" :label="eventLabel(row.original)" />
         </template>
         <template #data-cell="{ row }">
+          <IntegrationEmailEvent v-if="row.original.email_tracking" :event="row.original" />
           <vue-json-pretty
-            v-if="row.original.data && Object.keys(row.original.data).length > 0"
+            v-else-if="row.original.data && Object.keys(row.original.data).length > 0"
             :data="row.original.data"
             :collapsed-node-length="0"
             :show-length="true"
@@ -31,6 +28,7 @@
     </template>
 
     <template #footer>
+      <UButton color="neutral" variant="outline" label="Refresh" :loading="integrationEventsLoading" @click="fetchEvents" />
       <UButton
         color="neutral"
         variant="outline"
@@ -42,6 +40,8 @@
 </template>
 
 <script setup>
+import IntegrationEmailEvent from "./IntegrationEmailEvent.vue"
+import { eventColor, eventLabel } from "~/lib/integration-email-status"
 import VueJsonPretty from "vue-json-pretty"
 import "vue-json-pretty/lib/styles.css"
 import { formsApi } from "~/api/forms"
@@ -53,6 +53,7 @@ const props = defineProps({
 })
 
 const emit = defineEmits(["close"])
+const alert = useAlert()
 
 // Modal state
 const isOpen = computed({
@@ -87,6 +88,9 @@ const fetchEvents = () => {
       integrationEvents.value = []
       formsApi.integrations.events(props.form.id, props.formIntegrationId).then((data) => {
         integrationEvents.value = data
+      }).catch(() => {
+        alert.error("Could not load integration events. Please refresh.")
+      }).finally(() => {
         integrationEventsLoading.value = false
       })
     })
