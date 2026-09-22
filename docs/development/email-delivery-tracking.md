@@ -35,3 +35,5 @@ A later listener failure cannot erase already-persisted transport acceptance. Fa
 SNS certificate downloads have a five-second timeout, redirects disabled and a one-hour cache. Temporary HTTP failures return 503 so SNS can retry, while invalid signatures return 403. Malformed or unmatched SES feedback is acknowledged without changing the event; duplicate feedback does not refresh timestamps. Known errors remain highlighted even if another recipient has an uncertain result.
 
 Run `npm run test:email-events` from client/ for the event status and Vue rendering regressions; CI also runs this command.
+
+Past Events keeps each recipient and current outcome visible. Delivery details (timeline, provider IDs and delivery limitations) are collapsed by default and can be expanded. Failure explanations remain visible without expanding. Use Refresh to load new SES feedback.
