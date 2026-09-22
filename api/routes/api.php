@@ -576,3 +576,6 @@ Route::get('local/temp/{path}', function (Request $request, string $path) {
 
 Route::get('caddy/ask-certificate/{secret?}', [\App\Http\Controllers\CaddyController::class, 'ask'])
     ->name('caddy.ask')->middleware(\App\Http\Middleware\CaddyRequestMiddleware::class);
+
+Route::post('/aws/sns/ses/integration-events', \App\Http\Controllers\Integrations\SesIntegrationFeedbackController::class)
+    ->withoutMiddleware(['throttle:100,1', 'throttle:150,1', 'throttle:api']);

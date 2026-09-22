@@ -38,6 +38,7 @@ class EventServiceProvider extends ServiceProvider
      * @var array
      */
     protected $listen = [
+        \Illuminate\Notifications\Events\NotificationSent::class => [\App\Service\Integrations\EmailDeliveryTracker::class],
         Registered::class => [
             SendEmailVerificationNotification::class,
         ],

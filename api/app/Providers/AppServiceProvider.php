@@ -105,6 +105,15 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register()
     {
+        $this->app->bind(\Aws\Sns\MessageValidator::class, fn () => new \Aws\Sns\MessageValidator(
+            fn ($url) => \Illuminate\Support\Facades\Cache::remember(
+                'sns-signing-cert:'.hash('sha256', $url),
+                3600,
+                fn () => \Illuminate\Support\Facades\Http::timeout(5)->withOptions(['allow_redirects' => false])
+                    ->get($url)->throw()->body()
+            )
+        ));
+
         $this->app->singleton(StripeClient::class, function () {
             return new StripeClient(config('cashier.secret'));
         });

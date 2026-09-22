@@ -85,7 +85,7 @@ abstract class AbstractIntegrationHandler
         return self::formatWebhookData($this->form, $this->submissionData, $this->submissionMeta);
     }
 
-    final public function run(): void
+    public function run(): void
     {
         try {
             $this->handle();

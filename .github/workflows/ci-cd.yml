@@ -98,6 +98,9 @@ jobs:
       - name: Run ESLint
         run: npm run lint
 
+      - name: Test integration email event rendering
+        run: npm run test:email-events
+
       - name: Run front-end tests
         run: npm run test -- --run
 
