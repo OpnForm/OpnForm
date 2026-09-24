@@ -3,7 +3,7 @@ import { apiService } from './base'
 export const contentApi = {
   // Fonts
   fonts: {
-    list: (options) => apiService.get('/content/fonts', options)
+    list: (options) => apiService.get('/fonts', options)
   },
 
   // Feature flags

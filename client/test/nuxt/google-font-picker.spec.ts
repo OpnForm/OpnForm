@@ -29,9 +29,18 @@ vi.mock('@vueuse/core', async (importOriginal) => {
   }
 })
 
-vi.mock('~/components/global/OverlayScrollbarsComponent.client.vue', () => ({
-  default: { template: '<div class="font-scroll-container"><slot /></div>' },
-}))
+vi.mock('~/components/global/OverlayScrollbarsComponent.client.vue', async () => {
+  const { h, ref } = await import('vue')
+  return {
+    default: {
+      setup(_: unknown, { expose, slots }: { expose: (value: object) => void; slots: { default?: () => unknown } }) {
+        const root = ref<HTMLElement | null>(null)
+        expose({ getElement: () => root.value })
+        return () => h('div', { ref: root, class: 'font-scroll-container' }, slots.default?.())
+      },
+    },
+  }
+})
 
 function mountPicker(show = true) {
   return mount(GoogleFontPicker, {
@@ -52,7 +61,7 @@ function mountPicker(show = true) {
 }
 
 describe('GoogleFontPicker', () => {
-  it('shows fonts when their response arrives without requiring a scrollbar ref method', async () => {
+  it('shows fonts when their response arrives', async () => {
     const wrapper = mountPicker()
     expect(wrapper.find('.font-scroll-container').exists()).toBe(true)
     mockQuery.data!.value = ['Roboto']

@@ -560,7 +560,7 @@ test("editing an existing form title persists after save", async ({ page, reques
 
 test("font picker opens from Design and applies a font", async ({ page, request }) => {
   const form = await apiCreateForm(request, { title: uniqueTitle("Font Picker") })
-  await page.route("**/content/fonts", route => route.fulfill({ json: ["Roboto", "Open Sans"] }))
+  await page.route("**/fonts", route => route.fulfill({ json: ["Roboto", "Open Sans"] }))
 
   const token = await apiLogin(request)
   const baseURL = test.info().project.use.baseURL
@@ -588,6 +588,8 @@ test("font picker opens from Design and applies a font", async ({ page, request 
   await page.getByRole("button", { name: "Apply", exact: true }).click()
 
   await expect(fontFamily.getByRole("button")).toContainText("Roboto")
+  await fontFamily.getByRole("button").click()
+  await expect(page.getByText("The quick brown fox jumped over the lazy dog").first()).toBeVisible()
   expect(pageErrors).toEqual([])
 })
 

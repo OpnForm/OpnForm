@@ -65,7 +65,7 @@
 
 <script setup>
 import { defineEmits } from "vue"
-import { refDebounced, unrefElement, useElementVisibility } from "@vueuse/core"
+import { refDebounced, useElementVisibility } from "@vueuse/core"
 import { useFuse } from '@vueuse/integrations/useFuse'
 import FontCard from './FontCard.vue'
 import { useContent } from '~/composables/query/useContent'
@@ -126,28 +126,17 @@ const { results: fuseResults } = useFuse(
 )
 const scrollContainer = ref(null)
 const fontRefs = new Map()
-const trackedFontRefs = new WeakSet()
 const visible = ref([])
 
 const setFontRef = (el, index) => {
-  if (el) {
-    fontRefs.set(index, el)
-  } else {
-    fontRefs.delete(index)
-  }
+  if (el) fontRefs.set(index, el)
 }
 
 const initializeVisibilityTracking = async () => {
-  await nextTick()
-  const root = unrefElement(scrollContainer)
-  if (!root) return
-
+  await nextTick() // Ensure DOM has been fully updated
   fontRefs.forEach((el, index) => {
-    if (trackedFontRefs.has(el)) return
-    trackedFontRefs.add(el)
-
     const visibility = useElementVisibility(el, {
-      root,
+      root: scrollContainer.value?.getElement(),
       threshold: 0.1
     })
     watch(
