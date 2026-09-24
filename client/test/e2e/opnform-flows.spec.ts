@@ -558,6 +558,39 @@ test("editing an existing form title persists after save", async ({ page, reques
   await expect(page.getByRole("heading", { name: updatedTitle, exact: true })).toBeVisible()
 })
 
+test("font picker opens from Design and applies a font", async ({ page, request }) => {
+  const form = await apiCreateForm(request, { title: uniqueTitle("Font Picker") })
+  await page.route("**/content/fonts", route => route.fulfill({ json: ["Roboto", "Open Sans"] }))
+
+  const token = await apiLogin(request)
+  const baseURL = test.info().project.use.baseURL
+  if (!baseURL) throw new Error("Playwright baseURL is required")
+  await page.context().addCookies([{ name: "opnform_token", value: token, url: baseURL }])
+  await page.goto(`/forms/${form.slug}/edit`)
+  await expect(page.locator("#form-editor")).toBeVisible()
+
+  // Exercise the enabled UI without requiring a Google Fonts API key in CI.
+  await page.evaluate(() => {
+    const payload = (window as typeof window & {
+      __NUXT__: { state: Record<string, { services: { google: { fonts: boolean } } }> }
+    }).__NUXT__
+    payload.state["$sfeatureFlags"].services.google.fonts = true
+  })
+
+  const pageErrors: string[] = []
+  page.on("pageerror", error => pageErrors.push(error.message))
+
+  await page.getByText("Design", { exact: true }).click()
+  const fontFamily = page.getByText("Font Family", { exact: true }).locator("..")
+  await fontFamily.getByRole("button").click()
+  await expect(page.getByText("The quick brown fox jumped over the lazy dog").first()).toBeVisible()
+  await page.getByText("Roboto", { exact: true }).last().click()
+  await page.getByRole("button", { name: "Apply", exact: true }).click()
+
+  await expect(fontFamily.getByRole("button")).toContainText("Roboto")
+  expect(pageErrors).toEqual([])
+})
+
 test("form save errors open the invalid field section and computed variable", async ({ page, request }) => {
   const form = await apiCreateForm(request, {
     title: uniqueTitle("Save Error Form"),
