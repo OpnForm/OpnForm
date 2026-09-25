@@ -157,11 +157,11 @@ watch(() => props.show, (show) => {
   }
 })
 
-watch(fonts, (newFonts) => {
-  if (newFonts && newFonts.length > 0) {
+watch([fonts, () => props.show], ([newFonts, show]) => {
+  if (show && newFonts.length > 0) {
     initializeVisibilityTracking()
   }
-})
+}, { immediate: true })
 
 const enrichedFonts = computed(() => {
   return fuseResults.value && fuseResults.value.length > 0
