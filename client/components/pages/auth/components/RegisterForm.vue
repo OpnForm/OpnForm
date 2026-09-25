@@ -212,6 +212,7 @@ const hearAboutUsOptions = computed(() => {
       name: "Search Engine (Google, DuckDuckGo...)",
       value: "search_engine",
     },
+    {name: "AI assistant (ChatGPT, Claude, Gemini...)", value: "ai_assistant"},
     {name: "Friend or Colleague", value: "friend_colleague"},
     {name: "Blog/Article", value: "blog_article"},
   ]
