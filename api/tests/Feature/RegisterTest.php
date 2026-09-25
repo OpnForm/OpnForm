@@ -6,7 +6,7 @@ use App\Rules\ValidReCaptcha;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Support\Facades\Http;
 
-it('can register', function () {
+it('can register', function (string $source) {
 
     Http::fake([
         ValidReCaptcha::RECAPTCHA_VERIFY_URL => Http::response(['success' => true])
@@ -15,7 +15,7 @@ it('can register', function () {
     $this->postJson('/register', [
         'name' => 'Test User',
         'email' => 'test@test.app',
-        'hear_about_us' => 'google',
+        'hear_about_us' => $source,
         'password' => 'Abcd@1234',
         'password_confirmation' => 'Abcd@1234',
         'agree_terms' => true,
@@ -36,9 +36,10 @@ it('can register', function () {
 
     $user = User::where('email', 'test@test.app')->first();
     expect($user)->not->toBeNull();
+    expect($user->hear_about_us)->toBe($source);
     expect($user->meta)->toHaveKey('registration_ip');
     expect($user->meta['registration_ip'])->toBe(request()->ip());
-});
+})->with(['google', 'ai_assistant']);
 
 it('cannot register with existing email', function () {
     User::factory()->create(['email' => 'test@test.app']);
