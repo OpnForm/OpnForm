@@ -13,7 +13,7 @@
         <thead>
           <tr>
             <th class="sticky left-0 bg-white z-10 p-3 border-b border-r border-neutral-100 w-1/4 min-w-[150px]">
-              <span class="text-xs font-medium text-neutral-400 uppercase tracking-wider">Rows / Columns</span>
+              <span class="text-xs font-medium text-neutral-600 uppercase tracking-wider">Rows / Columns</span>
             </th>
             <th
               v-for="col in columns"
@@ -42,7 +42,7 @@
               >
                 <span class="font-bold">{{ formatPercentage(getPercentage(rowName, col)) }}%</span>
                 <span 
-                  class="text-[10px] opacity-75 mt-0.5"
+                  class="text-xs mt-0.5"
                   v-if="getPercentage(rowName, col) > 0"
                 >
                   {{ getCount(rowName, col) }}
@@ -105,11 +105,11 @@ const getCellClass = (percentage) => {
   } else if (percentage >= 40) {
     return 'bg-neutral-700 text-white shadow-sm'
   } else if (percentage >= 20) {
-    return 'bg-neutral-400 text-white'
+    return 'bg-neutral-300 text-neutral-900'
   } else if (percentage > 0) {
     return 'bg-neutral-100 text-neutral-700'
   }
-  return 'bg-transparent text-neutral-300'
+  return 'bg-transparent text-neutral-600'
 }
 </script>
 
