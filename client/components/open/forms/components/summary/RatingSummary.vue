@@ -19,7 +19,7 @@
               v-for="i in maxRating"
               :key="i"
               :name="i <= Math.round(data.average || 0) ? 'i-heroicons-star-solid' : 'i-heroicons-star'"
-              class="w-5 h-5 text-amber-400"
+              class="w-5 h-5 text-amber-700"
             />
           </div>
           <span class="text-xs text-neutral-500 uppercase tracking-wider font-medium">Average Rating</span>
@@ -39,7 +39,7 @@
             
             <div class="flex-1 bg-neutral-100 rounded-full h-2.5 overflow-hidden">
               <div
-                class="bg-amber-400 h-full rounded-full transition-all duration-500 ease-out"
+                class="bg-amber-700 h-full rounded-full transition-all duration-500 ease-out"
                 :style="{ width: getPercentage(rating) + '%' }"
               />
             </div>
