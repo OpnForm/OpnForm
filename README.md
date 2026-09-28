@@ -35,8 +35,6 @@ The easiest way to get started with OpnForm is to sign up for our [managed servi
 -   🛡️ Captcha protection
 -   📊 Form analytics
 
-The form **Summary** tab offers bar and pie charts with ten contrasting category colors, white pie-slice separators, and visible response counts and percentages. Colors repeat for larger distributions; the labeled values remain available without hovering or relying on color. Use the chart buttons on each card to switch views.
-
 For a complete list of features and detailed documentation, visit our [Technical Documentation](https://docs.opnform.com).
 
 ## AI agents and MCP
