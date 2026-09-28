@@ -212,19 +212,6 @@ import CloudVersion from "/snippets/cloud-version.mdx";
 
 <CloudVersion />
 
-### Server-rendered configuration cache
-
-The Nuxt server caches the public feature flags and plan catalog for ten minutes
-per server instance. Server-rendered pages reuse these values instead of calling
-the Laravel API on every render. This cache is separate from Laravel's cache;
-clearing Laravel's cache alone does not invalidate the Nuxt copy. With the default
-in-memory storage, restarting the Nuxt process clears its copy.
-
-After expiry, the last successful value is served while it refreshes in the
-background. A failed refresh does not replace valid configuration with an empty
-response. Explicit in-app refreshes still fetch directly from the API. Multiple
-server instances each warm their own cache unless shared Nitro storage is configured.
-
 ## Docker Environment Variables
 
 When running OpnForm with Docker, there are some important considerations for handling environment variables:
