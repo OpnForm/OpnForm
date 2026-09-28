@@ -285,7 +285,7 @@ const processMention = (content, { asText = false } = {}) => {
   if (!processed) return content
   if (!asText) return processed
   // Strip HTML tags to get plain text
-  return processed.replace(/<[^>]*>/g, '')
+  return String(processed).replace(/<[^>]*>/g, '')
 }
 
 // Process mentions in placeholder and help text
