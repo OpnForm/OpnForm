@@ -14,7 +14,7 @@ export default {
     '/self-hosted/checkout/**',
     ...(isSelfHostedBuild ? ['/self-hosted/license'] : []),
   ],
-  sources: [`${process.env.NUXT_PUBLIC_API_BASE}sitemap-urls`],
+  sources: [`${(process.env.NUXT_PUBLIC_API_BASE || '').replace(/\/+$/, '')}/sitemap-urls`],
   cacheMaxAgeSeconds: 60 * 60 * 2, // 2 hours
   xslColumns: [
     { label: 'URL', width: '50%' },
