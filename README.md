@@ -82,10 +82,6 @@ Run the browser suite against the running worktree with:
 
 The PDF editor removes zones linked to deleted fields and lists them before you continue. Save the template to keep the cleanup. Mappings retain field names when created or saved, so deleted fields can still be identified. Older mappings without a saved name appear as “Deleted field” with their page number.
 
-## Payment amounts
-
-Payment fields accept fixed numeric amounts or amounts containing field mentions. Fixed amounts render in the editor preview and public form without loading the mention parser; mention-based amounts are resolved when the parser is ready.
-
 ## Support & Community
 
 If you need help or have questions, please join our [Discord community](https://discord.gg/YTSjU2a9TS). For more information and assistance, check out the following resources:
