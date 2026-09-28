@@ -20,7 +20,7 @@
           <span v-if="yesPercentage >= 10">{{ yesPercentage }}%</span>
         </div>
         <div
-          class="flex items-center justify-center text-sm font-semibold text-white transition-all duration-500 relative group overflow-hidden"
+          class="flex items-center justify-center text-sm font-semibold text-neutral-900 transition-all duration-500 relative group overflow-hidden"
           :style="{ width: noPercentage + '%', backgroundColor: chartColors[1] }"
         >
           <span v-if="noPercentage >= 10">{{ noPercentage }}%</span>
@@ -129,4 +129,3 @@ const chartOptions = {
   }
 }
 </script>
-
