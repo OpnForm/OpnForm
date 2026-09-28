@@ -10,6 +10,8 @@
     "generate": "export NODE_TLS_REJECT_UNAUTHORIZED=0; nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
+    "test:ssr-cache:built": "node --test tests/ssr-config-cache-built.test.mjs",
+    "test:ssr-cache": "node --test tests/ssr-config-cache.test.mjs",
     "test:email-events": "node --test tests/integration-email-status.test.mjs",
     "lint": "eslint --ext .js,.vue .",
     "lint:fix": "eslint . --fix --ext .js,.vue",

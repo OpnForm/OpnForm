@@ -1,11 +1,11 @@
 import { contentApi } from '~/api/content'
 
 export default defineNuxtPlugin(async (nuxtApp) => {
-  // Load feature flags during SSR using cached server route
+  // Reuse the Nitro cache across SSR requests, without forwarding user headers.
   const featureFlagsState = useState('featureFlags', () => ({}))
   
   try {
-    const flags = await contentApi.featureFlags.list({ server: true })
+    const flags = await $fetch('/api/feature-flags', { retry: 0 })
     featureFlagsState.value = flags
   } catch (error) {
     console.error('Failed to load feature flags on server:', error)

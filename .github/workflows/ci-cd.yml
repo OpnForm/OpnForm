@@ -11,6 +11,7 @@ on:
       - "docker/**"
       - "docker-compose*.yml"
       - "scripts/docker-setup.sh"
+      - "scripts/e2e-*.sh"
       - "scripts/setup-env.sh"
       - "scripts/tests/setup-env-test.sh"
       - ".github/workflows/**"
@@ -21,6 +22,7 @@ on:
       - "docker/**"
       - "docker-compose*.yml"
       - "scripts/docker-setup.sh"
+      - "scripts/e2e-*.sh"
       - "scripts/setup-env.sh"
       - "scripts/tests/setup-env-test.sh"
       - ".github/workflows/**"
@@ -101,6 +103,9 @@ jobs:
       - name: Test integration email event rendering
         run: npm run test:email-events
 
+      - name: Test SSR configuration cache
+        run: npm run test:ssr-cache
+
       - name: Run front-end tests
         run: npm run test -- --run
 
@@ -111,6 +116,9 @@ jobs:
         run: npm run build:e2e
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+
+      - name: Test built SSR configuration cache
+        run: npm run test:ssr-cache:built
 
       - name: Upload Nuxt Output Artifact
         if: ${{ !cancelled() }}
