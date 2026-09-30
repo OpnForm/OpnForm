@@ -591,8 +591,8 @@
       return form ? form.isReady() : false
     }
 
-    create(slug, options = {}) {
-      const { container, width = '100%', height = 'auto', darkMode, onSubmit } = options
+    create(slugOrUrl, options = {}) {
+      const { container, baseUrl = 'https://opnform.com', width = '100%', height = 'auto', darkMode, onSubmit } = options
 
       let containerEl = container
       if (typeof container === 'string') {
@@ -604,23 +604,34 @@
         return null
       }
 
+      let url
+      let slug
+      try {
+        if (typeof slugOrUrl !== 'string' || !slugOrUrl.trim()) throw new Error('Missing form slug or URL')
+        const isUrl = /^[a-z][a-z\d+.-]*:/i.test(slugOrUrl)
+        if (!isUrl && /[/?#\s]/.test(slugOrUrl)) throw new Error('Invalid form slug')
+        url = new URL(isUrl ? slugOrUrl : `${baseUrl.replace(/\/+$/, '')}/forms/${encodeURIComponent(slugOrUrl)}`)
+        const slugMatch = url.pathname.match(/\/forms\/([^/]+)\/?$/)
+        if (!['http:', 'https:'].includes(url.protocol) || !slugMatch) throw new Error('Invalid form URL')
+        slug = decodeURIComponent(slugMatch[1])
+      } catch (e) {
+        console.error('[OpnForm SDK] Invalid form slug, URL or baseUrl:', e.message)
+        return null
+      }
+
       const iframe = document.createElement('iframe')
       iframe.id = slug
       iframe.style.border = 'none'
       iframe.style.width = width
       iframe.style.height = height === 'auto' ? '600px' : height
 
-      let url = `/forms/${slug}`
       const sdkToken = generateSdkToken()
-      const query = new URLSearchParams({
-        _sdkToken: sdkToken,
-        _sdkParentOrigin: window.location.origin,
-      })
+      url.searchParams.set('_sdkToken', sdkToken)
+      url.searchParams.set('_sdkParentOrigin', window.location.origin)
       if (darkMode !== undefined) {
-        query.set('darkMode', String(darkMode))
+        url.searchParams.set('darkMode', String(darkMode))
       }
-      url += `?${query.toString()}`
-      iframe.src = url
+      iframe.src = url.toString()
 
       containerEl.appendChild(iframe)
 
