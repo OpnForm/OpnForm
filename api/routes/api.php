@@ -492,12 +492,6 @@ Route::prefix('forms')->name('forms.')->group(function () {
         Route::post('{form}/answer', [PublicFormController::class, 'answer'])->name('answer')->middleware(HandlePrecognitiveRequests::class);
         Route::get('{form}/stripe-connect/get-account', [FormPaymentController::class, 'getAccount'])->name('stripe-connect.get-account')->middleware(HandlePrecognitiveRequests::class);
         Route::post('{form}/stripe-connect/payment-intent', [FormPaymentController::class, 'createIntent'])->name('stripe-connect.create-intent')->middleware(HandlePrecognitiveRequests::class);
-
-        // Form content endpoints (user lists, relation lists etc.)
-        Route::get(
-            '{form}/users',
-            [PublicFormController::class, 'listUsers']
-        )->name('users.index');
     });
 
     // File uploads
