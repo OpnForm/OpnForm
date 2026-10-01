@@ -29,7 +29,6 @@ class ImpersonationMiddleware
         'forms.show',
         'forms.answer',
         'forms.fetchSubmission',
-        'forms.users.index',
         'open.forms.index-all',
         'open.forms.show',
         'open.forms.import',

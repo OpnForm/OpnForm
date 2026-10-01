@@ -14,7 +14,6 @@ use App\Service\Forms\FormSubmissionProcessor;
 use App\Service\Forms\FormCleaner;
 use App\Service\Forms\SubmissionUrlService;
 use App\Service\Storage\SafeFileResponseService;
-use App\Service\WorkspaceHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -75,19 +74,6 @@ class PublicFormController extends Controller
         return $this->success([
             'message' => 'Form viewed.',
         ]);
-    }
-
-    public function listUsers(Request $request, Form $form)
-    {
-        // Check that form has user field
-        if (!$form->has_user_field) {
-            return [];
-        }
-
-        // Use serializer
-        $workspace = $form->workspace;
-
-        return (new WorkspaceHelper($workspace))->getAllUsers();
     }
 
     public function showAsset(string $assetFileName, SafeFileResponseService $safeFileResponseService)
