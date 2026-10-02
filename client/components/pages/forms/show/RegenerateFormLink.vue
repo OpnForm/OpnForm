@@ -37,10 +37,54 @@
 
       <template #body>
         <p>
-          You can choose between two different URL formats for your form.
+          You can choose between different URL formats for your form.
           <span class="font-semibold">Be careful, changing your form URL is not a reversible
             operation</span>. Make sure to update your form URL everywhere where it's used.
         </p>
+        <div
+          v-if="isSelfHosted"
+          class="border-t py-4 mt-4"
+        >
+          <h3 class="text-xl text-neutral-700 font-semibold">
+            Custom URL
+          </h3>
+          <p>
+            Choose your own URL. Use lowercase letters, numbers and hyphens (up to 100 characters).
+          </p>
+          <form
+            class="flex items-start gap-2 mt-4"
+            @submit.prevent="setCustomSlug"
+          >
+            <div class="flex-1">
+              <UInput
+                v-model="customSlug"
+                class="w-full"
+                placeholder="my-form-url"
+                :color="customSlugError ? 'error' : undefined"
+              />
+              <p
+                v-if="customSlugError"
+                class="text-sm text-red-600 mt-1"
+              >
+                {{ customSlugError }}
+              </p>
+            </div>
+            <TrackClick
+              name="regenerate_form_link_custom_click"
+              :properties="{form_id: form.id, form_slug: form.slug, type: 'custom'}"
+            >
+              <UButton
+                type="submit"
+                :loading="regenerateLinkMutationInstance.isPending.value"
+                :disabled="!customSlug"
+                variant="outline"
+                color="primary"
+              >
+                Set custom URL
+              </UButton>
+            </TrackClick>
+          </form>
+        </div>
         <div class="border-t py-4 mt-4">
           <h3 class="text-xl text-neutral-700 font-semibold">
             Human Readable URL
@@ -124,10 +168,20 @@ const isModalOpen = computed({
 const { regenerateLink: regenerateLinkMutation } = useForms()
 const regenerateLinkMutationInstance = regenerateLinkMutation()
 
-const regenerateLink = (option) => {
+const isSelfHosted = computed(() => useFeatureFlag('self_hosted'))
+const customSlug = ref("")
+const customSlugError = ref("")
+
+const setCustomSlug = () => {
+  regenerateLink("custom", { slug: customSlug.value.trim() })
+}
+
+const regenerateLink = (option, data = null) => {
+  customSlugError.value = ""
   regenerateLinkMutationInstance.mutateAsync({
     id: props.form.id,
-    option
+    option,
+    data
   }).then((data) => {
     router.push({
       name: "forms-slug-show-share",
@@ -136,6 +190,11 @@ const regenerateLink = (option) => {
     useAlert().success(data.message)
     showGenerateFormLinkModal.value = false
   }).catch((error) => {
+    const slugError = error?.data?.errors?.slug?.[0]
+    if (option === "custom" && slugError) {
+      customSlugError.value = slugError
+      return
+    }
     useAlert().error(error?.data?.message || "Something went wrong")
   })
 }
