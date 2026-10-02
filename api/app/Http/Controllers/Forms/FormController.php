@@ -12,6 +12,7 @@ use App\Models\Forms\Form;
 use App\Models\Version;
 use App\Models\Workspace;
 use App\Notifications\Forms\MobileEditorEmail;
+use App\Rules\CustomSlugRule;
 use App\Service\Billing\Feature;
 use App\Service\Forms\FormCleaner;
 use App\Service\Forms\FormCreationService;
@@ -239,11 +240,18 @@ class FormController extends Controller
         ]);
     }
 
-    public function regenerateLink(Form $form, $option)
+    public function regenerateLink(Request $request, Form $form, $option)
     {
         $this->authorize('update', $form);
 
-        if ($option == 'slug') {
+        if ($option == 'custom') {
+            abort_unless(config('app.self_hosted'), 403, 'Custom form URLs are only available on self-hosted instances.');
+
+            $validated = $request->validate([
+                'slug' => ['required', 'string', 'max:100', new CustomSlugRule($form)],
+            ]);
+            $form->slug = $validated['slug'];
+        } elseif ($option == 'slug') {
             $form->generateSlug();
         } elseif ($option == 'uuid') {
             $form->slug = Str::uuid();

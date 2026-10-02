@@ -278,7 +278,7 @@ Route::group(['middleware' => 'auth.multi'], function () {
                 '/{form}/regenerate-link/{option}',
                 [FormController::class, 'regenerateLink']
             )
-                ->where('option', '(uuid|slug)')
+                ->where('option', '(uuid|slug|custom)')
                 ->name('regenerate-link');
             Route::post(
                 '/{form}/duplicate',

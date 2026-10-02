@@ -93,3 +93,57 @@ it('can update form with existing record but generates_uuid field is not update'
         expect($uuid2)->toBe($uuid);
     }
 });
+
+it('can set a custom form slug when self hosted', function () {
+    config(['app.self_hosted' => true]);
+    $user = $this->actingAsUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace);
+
+    $this->putJson(route('open.forms.regenerate-link', [$form->id, 'custom']), ['slug' => 'my-custom-form'])
+        ->assertSuccessful()
+        ->assertJsonPath('form.slug', 'my-custom-form');
+
+    expect($form->fresh()->slug)->toBe('my-custom-form');
+});
+
+it('rejects invalid or duplicate custom form slugs', function () {
+    config(['app.self_hosted' => true]);
+    $user = $this->actingAsUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace);
+    $otherForm = $this->createForm($user, $workspace);
+
+    foreach ([$otherForm->slug, '', 'Has Spaces', 'UPPER', '-leading', 'double--hyphen', str_repeat('a', 101)] as $invalid) {
+        $this->putJson(route('open.forms.regenerate-link', [$form->id, 'custom']), ['slug' => $invalid])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['slug']);
+    }
+
+    $this->putJson(route('open.forms.regenerate-link', [$form->id, 'custom']), ['slug' => $form->slug])
+        ->assertSuccessful();
+});
+
+it('cannot set a custom form slug when not self hosted', function () {
+    config(['app.self_hosted' => false]);
+    $user = $this->actingAsUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace);
+    $originalSlug = $form->slug;
+
+    $this->putJson(route('open.forms.regenerate-link', [$form->id, 'custom']), ['slug' => 'my-custom-form'])
+        ->assertForbidden();
+
+    expect($form->fresh()->slug)->toBe($originalSlug);
+});
+
+it('cannot set a custom form slug on a form the user cannot update', function () {
+    config(['app.self_hosted' => true]);
+    $owner = $this->createUser();
+    $workspace = $this->createUserWorkspace($owner);
+    $form = $this->createForm($owner, $workspace);
+
+    $this->actingAsUser();
+    $this->putJson(route('open.forms.regenerate-link', [$form->id, 'custom']), ['slug' => 'stolen-form'])
+        ->assertForbidden();
+});
