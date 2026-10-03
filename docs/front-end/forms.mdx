@@ -15,6 +15,8 @@ Our form system consists of three main parts:
 2. **useFormInput Composable** (`client/components/forms/useFormInput.js`) - Input component logic
 3. **Form Components** (`client/components/forms/`) - Reusable input components
 
+Public form initialization resolves field values before evaluating conditional visibility and rendering server HTML. Empty checkboxes and switches start at `false`, including hidden controls, so rules such as **is not checked** apply on the first render. URL prefill, configured defaults, and restored answers retain their values. Focused Yes/No questions remain unanswered until the respondent selects an option.
+
 ## Creating a Basic Form
 
 ### 1. Initialize the Form
@@ -382,4 +384,4 @@ const handleLogin = () => {
 
 <Check>
 **Validation**: Combine client-side validation (required, email, etc.) with server-side validation for the best user experience.
-</Check> 
+</Check>

@@ -936,6 +936,70 @@ test("public form surfaces required and invalid email validation errors", async 
   await expectFieldError(page, "required_email", /valid email address/i)
 })
 
+for (const toggle of [false, true]) {
+  for (const prefill of ["", "true", "false"]) {
+    const checked = prefill === "true"
+    test(`public form initial visibility with ${toggle ? "toggle" : "checkbox"} and ${prefill || "empty"} prefill`, async ({ page, request, browser }) => {
+      const form = await apiCreateForm(request, {
+        title: uniqueTitle("Initial Visibility"),
+        payloadOverrides: {
+          auto_save: false,
+          properties: [
+            buildCheckboxField("include_files", "Include files", { use_toggle_switch: toggle }),
+            {
+              id: "attachments",
+              name: "Attach files (optional)",
+              type: "files",
+              hidden: false,
+              required: false,
+              logic: {
+                conditions: {
+                  identifier: "include_files",
+                  value: {
+                    operator: "is_not_checked",
+                    property_meta: { id: "include_files", type: "checkbox" },
+                  },
+                },
+                actions: ["hide-block"],
+              },
+            },
+            buildTextField("internal", "Internal field", { hidden: true }),
+          ],
+        },
+      })
+      const path = `/forms/${form.slug}${prefill ? `?include_files=${prefill}` : ""}`
+      const response = await request.get(path)
+      expect(response.ok()).toBeTruthy()
+      const html = await response.text()
+      expect(html.includes('data-testid="open-form-field-attachments"')).toBe(checked)
+      expect(html).not.toContain('data-testid="open-form-field-internal"')
+
+      // Inspect the actual first paint without allowing hydration to hide a wrong SSR field.
+      const context = await browser.newContext({ javaScriptEnabled: false })
+      try {
+        const firstRender = await context.newPage()
+        await firstRender.goto(new URL(path, response.url()).href)
+        await expect(firstRender.getByLabel("Include files", { exact: true })).toBeVisible()
+        await expect(getOpenFormField(firstRender, "attachments")).toHaveCount(checked ? 1 : 0)
+        await expect(getOpenFormField(firstRender, "internal")).toHaveCount(0)
+      } finally {
+        await context.close()
+      }
+
+      await openPublicForm(page, `${form.slug}${prefill ? `?include_files=${prefill}` : ""}`)
+      await page.waitForLoadState("networkidle")
+      const control = page.getByRole(toggle ? "switch" : "checkbox", { name: "Include files", exact: true })
+      await expect(control).toBeChecked({ checked })
+      await expect(getOpenFormField(page, "attachments")).toHaveCount(checked ? 1 : 0)
+      await control.click()
+      await expect(getOpenFormField(page, "attachments")).toHaveCount(checked ? 0 : 1)
+      await control.click()
+      await expect(getOpenFormField(page, "attachments")).toHaveCount(checked ? 1 : 0)
+      await expect(getOpenFormField(page, "internal")).toHaveCount(0)
+    })
+  }
+}
+
 test("public form logic reveals and requires follow-up details conditionally", async ({ page, request }) => {
   const form = await apiCreateForm(request, {
     title: uniqueTitle("Conditional Logic"),
