@@ -112,7 +112,8 @@ async function createFocusForm(request: APIRequestContext, settings: Record<stri
     data: { email: 'e2e@example.test', password: 'Abcd@1234', remember: false },
   })
   expect(login.ok()).toBeTruthy()
-  const headers = { Authorization: `Bearer ${(await login.json()).token}`, Accept: 'application/json' }
+  const token = (await login.json()).token
+  const headers = { Authorization: `Bearer ${token}`, Accept: 'application/json' }
   const workspaces = await request.get(`${API_BASE_URL}/open/workspaces`, { headers })
   const workspaceId = (await workspaces.json())[0].id
   const response = await request.post(`${API_BASE_URL}/open/forms`, {
@@ -129,7 +130,7 @@ async function createFocusForm(request: APIRequestContext, settings: Record<stri
     },
   })
   expect(response.ok(), await response.text()).toBeTruthy()
-  return (await response.json()).form
+  return { form: (await response.json()).form, token }
 }
 
 for (const presentation of ['classic', 'focused']) {
@@ -139,7 +140,7 @@ for (const presentation of ['classic', 'focused']) {
         test.setTimeout(120_000)
         const errors: string[] = []
         page.on('pageerror', error => errors.push(error.message))
-        const form = await createFocusForm(request, {
+        const { form } = await createFocusForm(request, {
           title: `Focus ${presentation} ${theme} ${mode} ${Date.now()}`,
           theme, presentation_style: presentation, dark_mode: mode,
           size: presentation === 'focused' ? 'lg' : (testInfo.project.name === 'mobile-chromium' ? 'sm' : 'md'),
@@ -229,14 +230,12 @@ for (const presentation of ['classic', 'focused']) {
 
 test('editor compound controls retain animated keyboard focus', async ({ page, request }, testInfo) => {
   test.skip(testInfo.project.name === 'mobile-chromium', 'The form editor requires a desktop viewport')
-  const form = await createFocusForm(request, { title: `Focus editor ${Date.now()}` })
-  await page.goto('/login')
-  await page.waitForLoadState('networkidle')
-  await page.locator('input[name="email"]').fill('e2e@example.test')
-  await page.locator('input[name="password"]').fill('Abcd@1234')
-  await page.getByRole('button', { name: /log in to continue/i }).click()
-  await expect(page).toHaveURL(/\/home$/, { timeout: 20_000 })
+  const { form, token } = await createFocusForm(request, { title: `Focus editor ${Date.now()}` })
+  const baseURL = testInfo.project.use.baseURL
+  if (!baseURL) throw new Error('Playwright baseURL is required')
+  await page.context().addCookies([{ name: 'opnform_token', value: token, url: baseURL }])
   await page.goto(`/forms/${form.slug}/edit`)
+  await page.waitForLoadState('networkidle')
   await page.getByRole('tab', { name: 'Design', exact: true }).click()
   await page.waitForLoadState('networkidle')
 
