@@ -11,6 +11,8 @@
         :disabled="disabled ? true : null"
         type="color"
         class="mr-2"
+        :class="ui.input({ class: props.ui?.slots?.input })"
+        :style="inputStyle"
         :name="name"
         @keydown.enter="onEnterPress"
       >
@@ -44,7 +46,7 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue', 'focus', 'blur'])
 
-const { compVal, inputWrapperProps } = useFormInput(props, { emit }, {
+const { compVal, inputWrapperProps, inputStyle, ui } = useFormInput(props, { emit }, {
   variants: colorInputTheme
 })
 

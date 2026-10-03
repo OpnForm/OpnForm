@@ -32,9 +32,12 @@
       ref="signaturePad"
       class="not-draggable"
       :class="ui.container({ class: props.ui?.slots?.container })"
+      :style="inputStyle"
       height="150px"
       :name="name"
       :options="{ onEnd, penColor }"
+      :tabindex="disabled ? -1 : 0"
+      @pointerdown="!disabled && $event.currentTarget.focus()"
     />
 
     <template #bottom_after_help>

@@ -1,15 +1,22 @@
+import { formControlFocusVisibleInset, formControlTransition } from './focus-ring.theme.js'
+
 /**
  * RatingInput tailwind-variants configuration
  */
 export const ratingInputTheme = {
   slots: {
     icon: '',
-    star: 'cursor-pointer inline-block text-neutral-200 dark:text-neutral-700 focus-visible:ring-2 focus-visible:ring-form/100 focus-visible:rounded-full focus-visible:outline-none'
+    star: [
+      'cursor-pointer inline-block text-neutral-200 dark:text-neutral-700',
+      'border-2 border-transparent rounded-full focus-visible:outline-none',
+      formControlTransition,
+      formControlFocusVisibleInset
+    ]
   },
   variants: {
     theme: {
       minimal: {
-        star: 'border-2 border-transparent focus-visible:ring-0 focus-visible:border-form rounded-full'
+        star: 'border-2 border-transparent rounded-full'
       }
     },
     size: {

@@ -133,7 +133,8 @@ const props = defineProps({
 const {
   ui,
   compVal,
-  inputWrapperProps
+  inputWrapperProps,
+  hasError
 } = useFormInput(props, getCurrentInstance(), {
   variants: dateInputTheme
 })
@@ -207,6 +208,9 @@ const handleCompValChange = () => {
 const setInputColor = () => {
   if (triggerButton.value) {
     triggerButton.value.style.setProperty('--tw-ring-color', props.color)
+    triggerButton.value.style.setProperty('--form-color', props.color)
+    triggerButton.value.style.setProperty('--form-focus-color', hasError.value ? 'var(--color-red-500)' : props.color)
+    triggerButton.value.style.setProperty('--bg-form-color', props.color)
   }
 }
 
@@ -316,7 +320,7 @@ const formattedDatePreview = computed(() => {
   return formattedDate(fromDate.value)
 })
 
-watch(() => props.color, () => {
+watch([() => props.color, hasError], () => {
   setInputColor()
 }, { immediate: true })
 

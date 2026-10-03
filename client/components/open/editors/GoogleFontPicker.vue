@@ -14,32 +14,35 @@
       <OverlayScrollbarsComponent
         ref="scrollContainer"
         defer
-        class="grid grid-cols-3 gap-2 p-5 mb-5 max-h-[24rem] border rounded-md bg-neutral-50 mt-3"
+        class="p-5 mb-5 max-h-[24rem] border rounded-md bg-neutral-50 mt-3"
       >
-        <template v-if="loading">
-          <div
-            v-for="i in 9"
-            :key="`skeleton-${i}`"
-            class="flex flex-col p-3 rounded-md shadow border-neutral-200 border-[0.5px] bg-white"
-          >
-            <div class="flex flex-wrap gap-2 mb-3">
-              <USkeleton class="h-5 w-full" />
-              <USkeleton class="h-5 w-3/4" />
+        <!-- Keep Vue's list anchors inside one child when the scrollbar moves its content. -->
+        <div class="grid grid-cols-3 gap-2">
+          <template v-if="loading">
+            <div
+              v-for="i in 9"
+              :key="`skeleton-${i}`"
+              class="flex flex-col p-3 rounded-md shadow border-neutral-200 border-[0.5px] bg-white"
+            >
+              <div class="flex flex-wrap gap-2 mb-3">
+                <USkeleton class="h-5 w-full" />
+                <USkeleton class="h-5 w-3/4" />
+              </div>
+              <USkeleton class="h-3 w-1/2" />
             </div>
-            <USkeleton class="h-3 w-1/2" />
-          </div>
-        </template>
-        <template v-else>
-          <FontCard
-            v-for="(fontName, index) in enrichedFonts"
-            :key="fontName"
-            :ref="el => setFontRef(el, index)"
-            :font-name="fontName"
-            :is-visible="visible[index]"
-            :is-selected="selectedFont === fontName"
-            @select-font="selectedFont = fontName"
-          />
-        </template>
+          </template>
+          <template v-else>
+            <FontCard
+              v-for="(fontName, index) in enrichedFonts"
+              :key="fontName"
+              :ref="el => setFontRef(el, index)"
+              :font-name="fontName"
+              :is-visible="visible[index]"
+              :is-selected="selectedFont === fontName"
+              @select-font="selectedFont = fontName"
+            />
+          </template>
+        </div>
       </OverlayScrollbarsComponent>
     </template>
 
