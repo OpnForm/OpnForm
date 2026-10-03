@@ -89,7 +89,7 @@ const router = useRouter()
 
 const { current: workspace } = useCurrentWorkspace()
 
-const updateMutation = update(workspace.value.id)
+const updateMutation = update(computed(() => workspace.value?.id))
 const removeMutation = remove()
 const leaveMutation = leave()
 

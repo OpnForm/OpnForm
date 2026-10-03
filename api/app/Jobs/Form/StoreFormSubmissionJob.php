@@ -160,20 +160,31 @@ class StoreFormSubmissionJob implements ShouldQueue
             return in_array($property['id'], $propertyIds);
         });
 
-        // Build query to find record based on database_fields_update fields
+        // Every configured match must have a value before running a lookup.
+        // An empty or partial predicate could overwrite an unrelated submission.
+        if ($properties->isEmpty() || $properties->count() !== count($propertyIds)) {
+            return null;
+        }
+
         $query = $this->form->submissions();
         foreach ($properties as $property) {
             $fieldId = $property['id'];
-            if (isset($submissionData[$fieldId]) && $submissionData[$fieldId]) {
-                $newValue = $submissionData[$fieldId];
-
-                // Remove country code from phone number
-                if ($property['type'] == 'phone_number' && (!$property['use_simple_text_input'] ?? false)) {
-                    $newValue = substr($newValue, 2);
-                }
-
-                $query->where("data->$fieldId", $newValue);
+            if (!array_key_exists($fieldId, $submissionData)
+                || $submissionData[$fieldId] === null
+                || $submissionData[$fieldId] === ''
+                || $submissionData[$fieldId] === []) {
+                return null;
             }
+
+            $newValue = $submissionData[$fieldId];
+            if ($property['type'] === 'phone_number' && !($property['use_simple_text_input'] ?? false)) {
+                $newValue = substr($newValue, 2);
+                if ($newValue === '') {
+                    return null;
+                }
+            }
+
+            $query->where("data->$fieldId", $newValue);
         }
         $record = $query->first();
 
@@ -410,7 +421,9 @@ class StoreFormSubmissionJob implements ShouldQueue
 
             $path = FormController::ASSETS_UPLOAD_PATH . '/' . $fileName; // Assuming assets are in a defined path
             $newPath = FileUploadPathService::getFileUploadPath($this->form->id, $fileName);
-            Storage::move($path, $newPath);
+            if (!Storage::move($path, $newPath)) {
+                throw new \RuntimeException('File storage failed.');
+            }
             return $fileName;
         }
 
@@ -438,7 +451,9 @@ class StoreFormSubmissionJob implements ShouldQueue
             return null; // Canonical name generation failed
         }
         $completeNewFilename = FileUploadPathService::getFileUploadPath($this->form->id, $movedFileName);
-        Storage::move($fileNameInTmp, $completeNewFilename);
+        if (!Storage::move($fileNameInTmp, $completeNewFilename)) {
+            throw new \RuntimeException('File storage failed.');
+        }
         return $movedFileName;
     }
 
@@ -454,7 +469,9 @@ class StoreFormSubmissionJob implements ShouldQueue
         }
         $fileName = 'sign_' . (string) Str::uuid() . '.png';
         $completeNewFilename = FileUploadPathService::getFileUploadPath($this->form->id, $fileName);
-        Storage::put($completeNewFilename, base64_decode(explode(',', $value)[1]));
+        if (!Storage::put($completeNewFilename, base64_decode(explode(',', $value)[1]))) {
+            throw new \RuntimeException('File storage failed.');
+        }
         return $fileName;
     }
 

@@ -18,7 +18,7 @@ class SubmissionRetentionService
         $value = $form->submission_retention_value;
         $unit = $form->submission_retention_unit;
 
-        if (!$value || !in_array($unit, Form::SUBMISSION_RETENTION_UNITS, true)) {
+        if (!$value || $value < 1 || !in_array($unit, Form::SUBMISSION_RETENTION_UNITS, true)) {
             return null;
         }
 

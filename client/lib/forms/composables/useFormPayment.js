@@ -26,7 +26,7 @@ export function useFormPayment(formConfig, form) {
       if (!stripeElements.value) {
         // Create the Stripe elements with the account ID
         stripeElements.value = createStripeElements(accountId)
-      } else if (stripeElements.value && accountId) {
+      } else if (stripeElements.value) {
         // Update the account ID if the instance already exists
         // Use the proper setter method to avoid readonly errors
         if (typeof stripeElements.value.setAccountId === 'function') {

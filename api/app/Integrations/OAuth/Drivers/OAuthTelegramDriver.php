@@ -63,6 +63,11 @@ class OAuthTelegramDriver implements WidgetOAuthDriver
             throw new InvalidWidgetDataException('Missing Telegram hash');
         }
 
+        if (!isset($data['auth_date']) || !is_numeric($data['auth_date'])
+            || $data['auth_date'] < time() - 300 || $data['auth_date'] > time() + 30) {
+            throw new InvalidWidgetDataException('Telegram authentication has expired');
+        }
+
         // Whitelist allowed keys from Telegram Login Widget
         $allowedKeys = [
             'id',

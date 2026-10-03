@@ -3,6 +3,7 @@
 namespace App\Service\FormImport\Importers;
 
 use App\Service\FormImport\FormImportException;
+use App\Service\Security\PublicWebhookUrl;
 use App\Service\FormImport\FormImporterInterface;
 use Illuminate\Support\Facades\Http;
 
@@ -43,9 +44,11 @@ abstract class AbstractImporter implements FormImporterInterface
 
     protected function fetchHtml(string $url): string
     {
+        if (!$this->isDomainAllowed($url)) {
+            throw new FormImportException('Form import host is not allowed.');
+        }
         $response = Http::timeout(15)
-            ->maxRedirects(3)
-            ->withOptions(['verify' => true])
+            ->withOptions(PublicWebhookUrl::requestOptionsPublicOnly($url))
             ->withHeaders([
                 'User-Agent' => 'Mozilla/5.0 (compatible; OpnFormImporter/1.0)',
                 'Accept' => 'text/html,application/xhtml+xml',

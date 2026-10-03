@@ -340,16 +340,10 @@ export const createStripeElements = (initialAccountId = null) => {
    * @param {String|Number} accountId - The Stripe account ID
    */
   const setAccountId = (accountId) => {
-    if (accountId) {
-      // Always convert to string - Stripe.js requires a string account ID
-      const accountIdStr = String(accountId)
-      console.debug('[useStripeElements] Setting Stripe account ID:', accountIdStr)
+    const accountIdStr = accountId ? String(accountId) : null
+    if (state.stripeAccountId !== accountIdStr) {
+      resetStripeState()
       state.stripeAccountId = accountIdStr
-      
-      // If we have all required components, ensure card element is ready
-      if (state.card && state.stripe) {
-        state.isCardElementReady = true
-      }
     }
   }
 

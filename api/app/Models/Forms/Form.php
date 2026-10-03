@@ -170,6 +170,7 @@ class Form extends Model implements CachableAttributes, VersionableNestedDiff
         // Security & Privacy
         'can_be_indexed',
         'password',
+        'share_submission_data_with_parent',
 
         // Custom SEO
         'seo_meta',
@@ -194,6 +195,7 @@ class Form extends Model implements CachableAttributes, VersionableNestedDiff
             'enable_ip_tracking' => 'boolean',
             'submission_retention_value' => 'integer',
             'auto_save' => 'boolean',
+            'share_submission_data_with_parent' => 'boolean',
             'pdf_download_enabled' => 'boolean',
             'clear_empty_fields_on_update' => 'boolean',
             'presentation_style' => 'string',

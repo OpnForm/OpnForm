@@ -88,7 +88,8 @@ abstract class Prompt
         } catch (\Exception $e) {
             Log::error('Error while executing prompt', [
                 'exception' => $e,
-                'prompt' => $prompt,
+                'prompt_class' => static::class,
+                'prompt_length' => strlen($prompt),
                 'json_schema' => $this->jsonSchema ?? null
             ]);
             throw $e;

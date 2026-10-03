@@ -27,7 +27,7 @@ class LogicFunctions
 
     private static function isBlankValue(mixed $value): bool
     {
-        return $value === null || $value === '';
+        return $value === null || $value === '' || $value === [];
     }
 
     public static function IF(mixed $condition, mixed $valueIfTrue, mixed $valueIfFalse = '')

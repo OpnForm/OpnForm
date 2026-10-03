@@ -71,7 +71,7 @@ class PublicWebhookUrl
 
     private static function allowPrivateUrlsFromConfig(): bool
     {
-        return (bool) config('opnform.webhooks.allow_private_urls', false);
+        return filter_var(config('opnform.webhooks.allow_private_urls', false), FILTER_VALIDATE_BOOLEAN);
     }
 
     private static function validatedIp(string $url, bool $allowPrivateUrls): ?string

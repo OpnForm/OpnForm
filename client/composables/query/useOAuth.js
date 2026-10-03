@@ -1,5 +1,6 @@
 import { useQueryClient, useQuery, useMutation } from '@tanstack/vue-query'
 import { oauthApi } from '~/api/oauth'
+import { rememberOAuthState } from '~/lib/oauthState'
 import { WindowMessageTypes, useWindowMessage } from '~/composables/useWindowMessage'
 
 export function useOAuth() {
@@ -129,6 +130,7 @@ export function useOAuth() {
       intent: additionalData.intent ?? 'integration'
     })
       .then((data) => {
+        rememberOAuthState(service, data.state)
         if (newtab) {
           navigatePopupOrFallback(popupWindow, data.url, service)
         } else {
@@ -156,10 +158,7 @@ export function useOAuth() {
       utm_data: $utm.value
     })
       .then((data) => {
-        // If we have invite_token in additionalData store it in localStorage
-        if (additionalData.invite_token) {
-          localStorage.setItem('oauth_invite_token', additionalData.invite_token)
-        }
+        rememberOAuthState(service, data.state)
         navigatePopupOrFallback(popupWindow, data.url, service)
       })
       .catch((error) => {

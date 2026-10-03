@@ -191,6 +191,7 @@ abstract class UserFormRequest extends \Illuminate\Foundation\Http\FormRequest
 
             // Security & Privacy
             'can_be_indexed' => 'boolean',
+            'share_submission_data_with_parent' => 'sometimes|boolean',
             'password' => 'sometimes|nullable',
             'use_captcha' => 'boolean',
             'captcha_provider' => ['sometimes', Rule::in(['recaptcha', 'hcaptcha'])],

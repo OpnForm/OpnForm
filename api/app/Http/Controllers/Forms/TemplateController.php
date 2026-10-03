@@ -113,6 +113,7 @@ class TemplateController extends Controller
     {
         $template = Template::whereSlug($slug)->first();
         if ($template) {
+            abort_unless($template->publicly_listed || (Auth::check() && $template->creator_id === Auth::id()), 404);
             return new FormTemplateResource($template);
         }
 

@@ -126,7 +126,7 @@ class FormSubmissionController extends Controller
         $cacheKey = $exportService->getCacheKey($jobId);
         $jobData = Cache::get($cacheKey);
 
-        if (!$jobData) {
+        if (!$jobData || (int) ($jobData['form_id'] ?? 0) !== (int) $form->id) {
             return $this->error([
                 'message' => 'Export job not found or has expired.'
             ], 404);

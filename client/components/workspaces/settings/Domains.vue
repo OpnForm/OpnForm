@@ -150,7 +150,7 @@ const removeDomain = (index) => {
   isChanged.value = true
 }
 
-const updateMutation = updateCustomDomains(workspace.value?.id)
+const updateMutation = updateCustomDomains(computed(() => workspace.value?.id))
 
 const saveChanges = () => {
   if (!workspace.value?.id) return

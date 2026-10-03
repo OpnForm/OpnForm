@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Forms;
 use App\Http\Controllers\Controller;
 use App\Models\Forms\Form;
 use App\Models\OAuthProvider;
+use App\Integrations\OAuth\OAuthProviderService;
 use App\Http\Requests\Forms\CreatePaymentIntentRequest;
 use App\Http\Requests\Forms\GetStripeAccountRequest;
 use Illuminate\Support\Facades\Auth;
@@ -60,7 +61,7 @@ class FormPaymentController extends Controller
             }
 
             // Use the new workspace method to check if the provider belongs to *any* workspace user
-            if (!$form->workspace->hasProvider($provider->id)) {
+            if ($provider->provider !== OAuthProviderService::Stripe || !$form->workspace->hasProvider($provider->id)) {
                 Log::error('User attempted to use Stripe account not associated with the workspace', [
                     'form_id' => $form->id,
                     'stripe_account_id' => $paymentBlock['stripe_account_id'],
@@ -109,6 +110,10 @@ class FormPaymentController extends Controller
             return $this->error(['message' => 'Failed to find Stripe account']);
         }
 
+        if ($provider->provider !== OAuthProviderService::Stripe || !$form->workspace->hasProvider($provider->id)) {
+            return $this->error(['message' => 'The configured Stripe account is not associated with this workspace.'], 403);
+        }
+
         // Resolve amount from submission data
         $amount = $request->resolveAmount($paymentBlock['amount']);
 
@@ -148,7 +153,7 @@ class FormPaymentController extends Controller
 
             Log::info('Payment intent created', [
                 'form_id' => $form->id,
-                'intent' => $intent
+                'intent_id' => $intent->id
             ]);
 
             if ($intent->id) {

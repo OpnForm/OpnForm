@@ -150,7 +150,7 @@ class RegisterController extends Controller
 
     private function checkRegistrationAllowed(array $data)
     {
-        if (config('app.self_hosted') && !array_key_exists('invite_token', $data) && (app()->environment() !== 'testing')) {
+        if (config('app.self_hosted') && empty($data['invite_token']) && (app()->environment() !== 'testing')) {
             // Allow registration during setup (when no users exist)
             if (!\App\Models\User::max('id')) {
                 return; // Setup mode - allow registration

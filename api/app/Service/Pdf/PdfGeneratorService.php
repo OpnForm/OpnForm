@@ -45,7 +45,9 @@ class PdfGeneratorService
 
         // Store in consistent temp folder for lifecycle cleanup
         $tempPath = self::TEMP_FOLDER . '/' . Str::uuid() . '.pdf';
-        Storage::put($tempPath, $pdfContent);
+        if (!Storage::put($tempPath, $pdfContent)) {
+            throw new \RuntimeException('File storage failed.');
+        }
 
         return $tempPath;
     }

@@ -153,6 +153,15 @@ class Evaluator
                 throw new FormulaException("Unknown function: {$funcName}");
             }
 
+            if ($funcName === 'IF') {
+                if (count($node['args']) < 2 || count($node['args']) > 3) {
+                    return null;
+                }
+                $branch = $this->toBoolean($this->evaluateNode($node['args'][0]))
+                    ? $node['args'][1] : ($node['args'][2] ?? null);
+                return $branch ? $this->evaluateNode($branch) : '';
+            }
+
             // Evaluate all arguments
             $args = array_map(fn ($arg) => $this->evaluateNode($arg), $node['args']);
 

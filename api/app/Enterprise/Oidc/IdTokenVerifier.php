@@ -4,6 +4,7 @@ namespace App\Enterprise\Oidc;
 
 use App\Enterprise\Oidc\Models\IdentityConnection;
 use Firebase\JWT\JWK;
+use App\Service\Security\PublicWebhookUrl;
 use Firebase\JWT\JWT;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -70,6 +71,14 @@ class IdTokenVerifier
             // Verify signature using firebase/php-jwt
             // This will throw an exception if signature is invalid
             $decoded = JWT::decode($idToken, $key);
+            $claims = (array) $decoded;
+            $audiences = (array) ($claims['aud'] ?? []);
+            if (($claims['iss'] ?? null) !== $connection->issuer
+                || !in_array($connection->client_id, $audiences, true)
+                || !isset($claims['exp']) || !is_numeric($claims['exp']) || $claims['exp'] <= time()
+                || ((count($audiences) > 1 || isset($claims['azp'])) && ($claims['azp'] ?? null) !== $connection->client_id)) {
+                throw new \Exception('Invalid ID token issuer, audience, expiration or authorized party');
+            }
 
             Log::debug('OIDC ID token signature verified', [
                 'connection_id' => $connection->id,
@@ -105,7 +114,7 @@ class IdTokenVerifier
             // Try multiple methods to find JWKS URI
             $jwksUri = $this->resolveJwksUri($connection);
 
-            $response = Http::timeout(10)->get($jwksUri);
+            $response = Http::timeout(10)->withOptions(PublicWebhookUrl::requestOptionsPublicOnly($jwksUri))->get($jwksUri);
 
             if (!$response->successful()) {
                 throw new \Exception("Failed to fetch JWKS from provider: {$jwksUri} (HTTP {$response->status()})");
@@ -203,7 +212,7 @@ class IdTokenVerifier
         return Cache::remember($cacheKey, 3600, function () use ($connection) {
             $wellKnownUrl = rtrim($connection->issuer, '/') . '/.well-known/openid-configuration';
 
-            $response = Http::timeout(10)->get($wellKnownUrl);
+            $response = Http::timeout(10)->withOptions(PublicWebhookUrl::requestOptionsPublicOnly($wellKnownUrl))->get($wellKnownUrl);
 
             if (!$response->successful()) {
                 throw new \Exception("Failed to fetch OpenID configuration from: {$wellKnownUrl}");

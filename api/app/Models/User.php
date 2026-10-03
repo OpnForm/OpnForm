@@ -65,6 +65,7 @@ class User extends Authenticatable implements JWTSubject, CachableAttributes, Tw
      */
     protected $hidden = [
         'password',
+        'auth_version',
         'remember_token',
         'hear_about_us',
         'meta'
@@ -371,6 +372,7 @@ class User extends Authenticatable implements JWTSubject, CachableAttributes, Tw
     {
         return [
             'ua' => Hash::make(request()->userAgent()),
+            'auth_version' => $this->auth_version,
         ];
     }
 
@@ -396,6 +398,17 @@ class User extends Authenticatable implements JWTSubject, CachableAttributes, Tw
     public static function boot()
     {
         parent::boot();
+        static::updating(function (User $user) {
+            if ($user->isDirty('password')) $user->auth_version = \Illuminate\Support\Str::random(64);
+        });
+        static::updated(function (User $user) {
+            if (!$user->wasChanged('password')) return;
+            $user->tokens()->delete();
+            $accessTokens = \Illuminate\Support\Facades\DB::table('oauth_access_tokens')->where('user_id', $user->id);
+            \Illuminate\Support\Facades\DB::table('oauth_refresh_tokens')
+                ->whereIn('access_token_id', $accessTokens->select('id'))->update(['revoked' => true]);
+            \Illuminate\Support\Facades\DB::table('oauth_access_tokens')->where('user_id', $user->id)->update(['revoked' => true]);
+        });
         static::deleting(function (User $user) {
             // Delete all OAuth providers for this user
             $user->oauthProviders()->delete();

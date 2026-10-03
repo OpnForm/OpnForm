@@ -291,10 +291,14 @@ class FormController extends Controller
 
         $newPath = self::ASSETS_UPLOAD_PATH . '/' . $fileNameParser->getMovedFileName();
         if ($inspection->isSvg) {
-            Storage::put($newPath, $inspection->sanitizedContents);
+            if (!Storage::put($newPath, $inspection->sanitizedContents)) {
+                throw new \RuntimeException('File storage failed.');
+            }
             Storage::delete($fileName);
         } else {
-            Storage::move($fileName, $newPath);
+            if (!Storage::move($fileName, $newPath)) {
+                throw new \RuntimeException('File storage failed.');
+            }
         }
 
         return $this->success([

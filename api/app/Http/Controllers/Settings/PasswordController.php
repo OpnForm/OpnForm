@@ -17,7 +17,7 @@ class PasswordController extends Controller
     public function update(Request $request)
     {
         $this->validate($request, [
-            'current_password' => 'required',
+            'current_password' => 'required|string',
             'password' => [
                 'required',
                 'string',
@@ -36,9 +36,9 @@ class PasswordController extends Controller
             ]);
         }
 
-        $request->user()->update([
+        \Illuminate\Support\Facades\DB::transaction(fn () => $request->user()->update([
             'password' => bcrypt($request->password),
-        ]);
+        ]));
 
         return response()->json(null, 204);
     }

@@ -145,10 +145,12 @@ export function useFormInitialization(formConfig, form, pendingSubmission) {
   const applyUrlParameters = (params) => {
     if (!params) return
     
+    const fieldKeys = new Set((toValue(formConfig)?.properties ?? []).map(field => field.nf_id ?? field.id))
+
     // First, handle regular parameters
     params.forEach((value, key) => {
       // Skip array parameters for now
-      if (key.endsWith('[]')) return
+      if (key.endsWith('[]') || !fieldKeys.has(key)) return
       
       try {
         // Try to parse JSON if the value starts with '{'
@@ -170,6 +172,7 @@ export function useFormInitialization(formConfig, form, pendingSubmission) {
         const arrayValues = params.getAll(key)
         if (arrayValues.length > 0) {
           const baseKey = key.slice(0, -2)
+          if (!fieldKeys.has(baseKey)) return
           form[baseKey] = arrayValues
         }
       }
@@ -183,7 +186,8 @@ export function useFormInitialization(formConfig, form, pendingSubmission) {
   const applyDefaultValues = (defaultData) => {
     if (!defaultData || Object.keys(defaultData).length === 0) return
 
-    form.resetAndFill(defaultData)
+    const existing = Object.fromEntries(Object.entries(form.data()).filter(([, value]) => value !== null && value !== undefined))
+    form.resetAndFill({ ...defaultData, ...existing })
   }
 
   /**

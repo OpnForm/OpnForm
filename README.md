@@ -101,3 +101,7 @@ OpnForm uses a dual-license model to make the project sustainable:
 -   **Enterprise Edition** (Proprietary): Advanced features under `api/app/Enterprise/` are available under our [Enterprise License](https://github.com/OpnForm/OpnForm/blob/main/api/app/Enterprise/LICENSE) and [Enterprise Terms](https://opnform.com/terms-conditions). These features help fund ongoing development and keep OpnForm sustainable.
 
 By offering Enterprise features alongside our open-source core, we can continue to invest in making OpnForm better for everyone while keeping the project financially sustainable.
+
+## Security remediation rollout
+
+See [October 2026 deployment and compatibility notes](docs/security-remediation-2026-10.md) before deploying the API/client changes.

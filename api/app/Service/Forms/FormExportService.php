@@ -96,11 +96,15 @@ class FormExportService
         $filePath = self::EXPORT_FILE_PATH . $fileName;
         $disk = Storage::disk(config('filesystems.default'));
 
-        $disk->put($filePath, $csvContent, [
+        $stored = $disk->put($filePath, $csvContent, [
             'visibility' => 'private',
             'Content-Type' => 'text/csv',
             'Content-Disposition' => 'attachment; filename="' . $fileName . '"'
         ]);
+
+        if (!$stored) {
+            throw new \RuntimeException('Unable to store CSV export');
+        }
 
         // Generate temporary URL for download (works for all storage types)
         return $disk->temporaryUrl($filePath, $expiresAt);
@@ -122,11 +126,11 @@ class FormExportService
 
         // Write header row (clean column names)
         $headers = $this->cleanColumnNames(array_keys($rows[0]));
-        fputcsv($output, $headers);
+        fputcsv($output, array_map([$this, 'safeSpreadsheetCell'], $headers));
 
         // Write data rows
         foreach ($rows as $row) {
-            fputcsv($output, array_values($row));
+            fputcsv($output, array_map([$this, 'safeSpreadsheetCell'], array_values($row)));
         }
 
         rewind($output);
@@ -134,6 +138,15 @@ class FormExportService
         fclose($output);
 
         return $csvContent;
+    }
+
+    private function safeSpreadsheetCell(mixed $value): mixed
+    {
+        // Preserve real numbers (including negatives); neutralize only text formulas.
+        if (is_string($value) && preg_match('/^[\s\x00-\x1f]*[=+\-@]/u', $value)) {
+            return "'" . $value;
+        }
+        return $value;
     }
 
     /**

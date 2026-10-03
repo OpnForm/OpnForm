@@ -330,8 +330,10 @@ describe('hasPaidLicense', function () {
         $this->storeSelfHostedLicense([
             'license_key' => 'lic_paidtelemetry12345',
             'status' => 'active',
+            'last_checked_at' => now()->toIso8601String(),
         ]);
 
+        Http::fake(['*' => Http::response([], 500)]);
         $service = app(LicenseService::class);
 
         expect($service->hasPaidLicense())->toBeTrue();

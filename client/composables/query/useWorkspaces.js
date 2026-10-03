@@ -112,10 +112,10 @@ export function useWorkspaces() {
   // Custom domains mutation
   const updateCustomDomains = (workspaceId, options = {}) => {
     return useMutation({
-      mutationFn: (data) => workspaceApi.customDomains.update(workspaceId, data),
+      mutationFn: (data) => workspaceApi.customDomains.update(toValue(workspaceId), data),
       onSuccess: (updatedWorkspace) => {
         // Update individual workspace cache with custom domain info
-        queryClient.setQueryData(['workspaces', workspaceId], (old) => {
+        queryClient.setQueryData(['workspaces', updatedWorkspace.id ?? toValue(workspaceId)], (old) => {
           if (!old) return updatedWorkspace
           return { ...old, ...updatedWorkspace }
         })

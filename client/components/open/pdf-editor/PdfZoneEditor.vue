@@ -65,7 +65,7 @@
               v-if="zone.static_text !== undefined && zone.static_text"
               class="pdf-zone-text-preview w-full h-full overflow-hidden leading-tight pointer-events-none select-none"
               :style="getZoneTextPreviewStyle(zone)"
-              v-html="zone.static_text"
+              v-html="sanitizeStaticText(zone.static_text)"
             />
             <!-- In-canvas image preview (static image zones only) -->
             <div
@@ -112,6 +112,9 @@
 </template>
 
 <script setup>
+import DOMPurify from 'dompurify'
+
+const sanitizeStaticText = (value) => import.meta.client ? DOMPurify.sanitize(value || '') : ''
 import { formsApi } from '~/api/forms'
 import { getPdfRenderPages } from '~/lib/pdf-editor'
 

@@ -9,6 +9,11 @@ use Tests\TestHelpers;
 uses(TestHelpers::class);
 uses()->group('oidc', 'feature');
 
+beforeEach(function () {
+    // Public IP fixtures avoid real DNS; all HTTP stays intercepted by the fake.
+    Http::preventStrayRequests();
+});
+
 afterEach(function () {
     Cache::flush();
     Http::fake();
@@ -17,7 +22,7 @@ afterEach(function () {
 describe('IdTokenVerifier', function () {
     it('verifies valid ID token signature', function () {
         $connection = IdentityConnection::factory()->create([
-            'issuer' => 'https://idp.example.com',
+            'issuer' => 'https://1.1.1.1',
         ]);
 
         // Create a valid JWT token with proper structure
@@ -104,9 +109,9 @@ describe('IdTokenVerifier', function () {
 
     it('uses custom jwks_uri from connection options', function () {
         $connection = IdentityConnection::factory()->create([
-            'issuer' => 'https://idp.example.com',
+            'issuer' => 'https://1.1.1.1',
             'options' => [
-                'jwks_uri' => 'https://custom-jwks.example.com/keys',
+                'jwks_uri' => 'https://8.8.8.8/keys',
             ],
         ]);
 
@@ -121,7 +126,7 @@ describe('IdTokenVerifier', function () {
 
         // Mock custom JWKS endpoint
         Http::fake([
-            'https://custom-jwks.example.com/keys' => Http::response([
+            'https://8.8.8.8/keys' => Http::response([
                 'keys' => [
                     [
                         'kty' => 'RSA',
@@ -143,13 +148,13 @@ describe('IdTokenVerifier', function () {
         // Verify custom URI was called
         Http::assertSent(
             fn ($request) =>
-            $request->url() === 'https://custom-jwks.example.com/keys'
+            $request->url() === 'https://8.8.8.8/keys'
         );
     });
 
     it('falls back to standard jwks.json when OpenID config fails', function () {
         $connection = IdentityConnection::factory()->create([
-            'issuer' => 'https://idp.example.com',
+            'issuer' => 'https://1.1.1.1',
         ]);
 
         $header = base64_encode(json_encode([
@@ -192,7 +197,7 @@ describe('IdTokenVerifier', function () {
 
     it('throws exception when JWKS fetch fails', function () {
         $connection = IdentityConnection::factory()->create([
-            'issuer' => 'https://idp.example.com',
+            'issuer' => 'https://1.1.1.1',
         ]);
 
         $header = base64_encode(json_encode([
@@ -218,7 +223,7 @@ describe('IdTokenVerifier', function () {
 
     it('throws exception when JWKS has no keys', function () {
         $connection = IdentityConnection::factory()->create([
-            'issuer' => 'https://idp.example.com',
+            'issuer' => 'https://1.1.1.1',
         ]);
 
         $header = base64_encode(json_encode([
@@ -245,7 +250,7 @@ describe('IdTokenVerifier', function () {
 
     it('throws exception when kid not found in JWKS', function () {
         $connection = IdentityConnection::factory()->create([
-            'issuer' => 'https://idp.example.com',
+            'issuer' => 'https://1.1.1.1',
         ]);
 
         $header = base64_encode(json_encode([

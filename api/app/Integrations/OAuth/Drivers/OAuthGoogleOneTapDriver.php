@@ -150,6 +150,10 @@ class OAuthGoogleOneTapDriver implements WidgetOAuthDriver
             throw new InvalidWidgetDataException('Invalid issuer');
         }
 
+        if (($payload['email_verified'] ?? false) !== true) {
+            throw new InvalidWidgetDataException('Google email is not verified');
+        }
+
         // Check required fields
         if (!isset($payload['sub']) || !isset($payload['email'])) {
             throw new InvalidWidgetDataException('Missing required fields');

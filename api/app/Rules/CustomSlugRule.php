@@ -20,6 +20,10 @@ class CustomSlugRule implements ValidationRule
 
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
+        if ($value !== null && !is_string($value)) {
+            $fail('The custom slug must be a string.');
+            return;
+        }
         if ($value === null || empty(trim($value)) || !config('app.self_hosted')) {
             return;
         }

@@ -11,13 +11,19 @@ use Illuminate\Http\Request;
 
 class AiFormController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('throttle:4,1')->only(['generateForm', 'generateFields']);
+    }
+
     public function generateForm(AiGenerateFormRequest $request)
     {
-        $this->middleware('throttle:4,1');
-
+        $accessToken = \Illuminate\Support\Str::random(64);
         return $this->success([
+            'ai_form_completion_token' => $accessToken,
             'message' => 'We\'re working on your form, please wait ~1 min.',
             'ai_form_completion_id' => AiFormCompletion::create([
+                'access_token_hash' => hash('sha256', $accessToken),
                 'form_prompt' => $request->input('form_prompt'),
                 'generation_params' => $request->input('generation_params', []),
                 'ip' => $request->ip(),
@@ -31,8 +37,9 @@ class AiFormController extends Controller
             abort(404);
         }
 
-        if ($aiFormCompletion->ip != request()->ip()) {
-            return $this->error('You are not authorized to view this AI completion.', 403);
+        if (!$aiFormCompletion->access_token_hash
+            || !hash_equals($aiFormCompletion->access_token_hash, hash('sha256', (string) request()->header('X-AI-Completion-Token')))) {
+            return $this->error(['message' => 'You are not authorized to view this AI completion.'], 403);
         }
 
         return $this->showCompletion($aiFormCompletion);
@@ -53,12 +60,13 @@ class AiFormController extends Controller
 
     public function generateFields(AiGenerateFieldsRequest $request)
     {
-        $this->middleware('throttle:4,1');
-
+        $accessToken = \Illuminate\Support\Str::random(64);
         return $this->success([
+            'ai_form_completion_token' => $accessToken,
             'message' => 'Generating your fields, please wait...',
             'ai_form_completion_id' => AiFormCompletion::create([
                 'type' => AiFormCompletion::TYPE_FIELDS,
+                'access_token_hash' => hash('sha256', $accessToken),
                 'form_prompt' => $request->input('fields_prompt'),
                 'context' => $request->input('current_form_structure'),
                 'generation_params' => $request->input('generation_params', []),

@@ -29,19 +29,23 @@ class OAuthProviderService
             );
         }
 
+        $attributes = [
+            'access_token' => $userData['access_token'],
+            'name' => $userData['name'],
+            'email' => $userData['email'] ?? null,
+            'scopes' => $userData['scopes'] ?? [],
+        ];
+        if (!empty($userData['refresh_token'])) {
+            $attributes['refresh_token'] = $userData['refresh_token'];
+        }
+
         return OAuthProvider::updateOrCreate(
             [
                 'user_id' => $user->id,
                 'provider' => $provider,
                 'provider_user_id' => $providerUserId,
             ],
-            [
-                'access_token' => $userData['access_token'],
-                'refresh_token' => $userData['refresh_token'] ?? '',
-                'name' => $userData['name'],
-                'email' => $userData['email'],
-                'scopes' => $userData['scopes'] ?? [],
-            ]
+            $attributes
         );
     }
 }

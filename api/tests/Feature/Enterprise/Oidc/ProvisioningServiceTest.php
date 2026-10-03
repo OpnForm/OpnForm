@@ -436,6 +436,7 @@ describe('ProvisioningService - ID Token Validation', function () {
         $socialiteUser = createMockSocialiteUser();
         $idTokenClaims = createValidIdTokenClaims($connection, 'sub-array');
         $idTokenClaims['aud'] = ['other-client', 'correct-client-id'];
+        $idTokenClaims['azp'] = 'correct-client-id';
 
         $service = app(ProvisioningService::class);
         $user = $service->provisionUser($connection, $socialiteUser, $idTokenClaims);

@@ -6,7 +6,7 @@
  * Check if value is "truthy" for formula purposes
  */
 function isTruthy(value) {
-  if (value === null || value === undefined || value === '') {
+  if (value === null || value === undefined || value === '' || (Array.isArray(value) && value.length === 0)) {
     return false
   }
   if (typeof value === 'boolean') {
@@ -29,7 +29,7 @@ function isTruthy(value) {
  * Check if value is blank/empty
  */
 function isBlankValue(value) {
-  return value === null || value === undefined || value === ''
+  return value === null || value === undefined || value === '' || (Array.isArray(value) && value.length === 0)
 }
 
 /**
@@ -81,7 +81,7 @@ export function ISBLANK(value) {
  * ISNUMBER - Check if value is a number
  */
 export function ISNUMBER(value) {
-  if (value === null || value === undefined || value === '') {
+  if (value === null || value === undefined || value === '' || (Array.isArray(value) && value.length === 0)) {
     return false
   }
   return typeof value === 'number' || !isNaN(Number(value))

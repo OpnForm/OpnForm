@@ -70,9 +70,7 @@ class FormLogicPropertyResolver
 
     public function shouldBeHidden(): bool
     {
-        if (! isset($this->property['hidden'])) {
-            return false;
-        }
+        $this->property['hidden'] = $this->property['hidden'] ?? false;
 
         if (! $this->logic) {
             return $this->property['hidden'];

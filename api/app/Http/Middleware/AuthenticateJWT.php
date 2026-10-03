@@ -18,15 +18,21 @@ class AuthenticateJWT
      */
     public function handle(Request $request, Closure $next)
     {
-        // If skipping JWT client fingerprint validation is enabled in config, skip the rest
-        if (config('app.jwt_skip_ip_ua_validation')) {
-            return $next($request);
-        }
-
         // Parse JWT Payload
         try {
             $payload = JWTAuth::parseToken()->getPayload();
         } catch (JWTException $e) {
+            return $next($request);
+        }
+
+        // Credential revocation also applies to trusted SSR and impersonation tokens.
+        $user = \App\Models\User::find($payload->get('sub'));
+        if (!$user || $payload->get('auth_version') !== $user->auth_version) {
+            return response()->json(['message' => 'Authentication expired. Please sign in again.'], 401);
+        }
+
+        // If skipping JWT client fingerprint validation is enabled in config, skip the rest
+        if (config('app.jwt_skip_ip_ua_validation')) {
             return $next($request);
         }
 

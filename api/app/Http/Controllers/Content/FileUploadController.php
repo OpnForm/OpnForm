@@ -36,9 +36,13 @@ class FileUploadController extends Controller
         $path = FileUploadPathService::getTmpFileUploadPath($uuid);
 
         if ($inspection->isSvg) {
-            Storage::put($path, $inspection->sanitizedContents);
+            if (!Storage::put($path, $inspection->sanitizedContents)) {
+                throw new \RuntimeException('File storage failed.');
+            }
         } else {
-            Storage::putFileAs(FileUploadPathService::getTmpFileUploadPath(), $request->file('file'), $uuid);
+            if (!Storage::putFileAs(FileUploadPathService::getTmpFileUploadPath(), $request->file('file'), $uuid)) {
+                throw new \RuntimeException('File storage failed.');
+            }
         }
 
         return response()->json([

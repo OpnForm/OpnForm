@@ -10,6 +10,13 @@
         </div>
       </div>
 
+      <ToggleSwitchInput
+        name="share_submission_data_with_parent"
+        :form="form"
+        label="Share answers with the embedding page"
+        help="Allow the website embedding this form to receive submitted answers. Leave off to send only a submission notification."
+      />
+
       <TextInput
         name="password"
         :form="form"

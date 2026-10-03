@@ -205,8 +205,10 @@ class FormLogicConditionChecker
         // Check if value is boolean
         if (is_bool($value)) {
             return match ($operator) {
-                'equals', 'is_checked' => $value === true,
-                'does_not_equal', 'is_not_checked' => $value === false,
+                'equals' => $value === ($propertyCondition['value'] ?? null),
+                'does_not_equal' => $value !== ($propertyCondition['value'] ?? null),
+                'is_checked' => $value === true,
+                'is_not_checked' => $value === false,
                 default => false
             };
         }

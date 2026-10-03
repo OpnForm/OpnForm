@@ -1,3 +1,4 @@
+import { rememberAiCompletion, aiCompletionOptions } from '~/lib/aiCompletionToken'
 import { apiService } from './base'
 import { getOpnRequestsOptions } from '~/composables/useOpnApi'
 import { resolvePdfDownloadUrl } from '~/lib/pdf-editor'
@@ -56,11 +57,11 @@ export const formsApi = {
 
   // AI form generation
   ai: {
-    generate: (data) => apiService.post('/forms/ai/generate', data),
-    generateFields: (data) => apiService.post('/forms/ai/generate-fields', data),
+    generate: (data) => apiService.post('/forms/ai/generate', data).then(rememberAiCompletion),
+    generateFields: (data) => apiService.post('/forms/ai/generate-fields', data).then(rememberAiCompletion),
     generateFormula: (data) => apiService.post('/forms/ai/generate-formula', data),
     getFormula: (generationId, options) => apiService.get(`/forms/ai/formula/${generationId}`, options),
-    get: (generationId, options) => apiService.get(`/forms/ai/${generationId}`, options)
+    get: (generationId, options) => apiService.get(`/forms/ai/${generationId}`, aiCompletionOptions(generationId, options))
   },
 
   // Stripe/Payment

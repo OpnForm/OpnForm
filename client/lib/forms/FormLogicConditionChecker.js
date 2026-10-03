@@ -75,6 +75,7 @@ export function conditionsMet(conditions, formData) {
 
   if (conditions.operatorIdentifier === "and") {
     let isvalid = true
+    if (!Array.isArray(conditions.children) || conditions.children.length === 0) return false
     conditions.children.forEach((childrenCondition) => {
       if (!conditionsMet(childrenCondition, formData)) {
         isvalid = false
@@ -83,6 +84,7 @@ export function conditionsMet(conditions, formData) {
     return isvalid
   } else if (conditions.operatorIdentifier === "or") {
     let isvalid = false
+    if (!Array.isArray(conditions.children) || conditions.children.length === 0) return false
     conditions.children.forEach((childrenCondition) => {
       if (conditionsMet(childrenCondition, formData)) {
         isvalid = true
@@ -175,7 +177,9 @@ function areValidNumbers(condition, fieldValue) {
 function checkEquals(condition, fieldValue) {
   const conditionValue = condition.value
   // For numeric values, convert to numbers before comparison
-  if (areValidNumbers(condition, fieldValue) && typeof conditionValue === 'number' && typeof fieldValue === 'number') {
+  if (areValidNumbers(condition, fieldValue) && (typeof conditionValue === 'number' || typeof fieldValue === 'number')
+      && String(conditionValue).trim() !== '' && String(fieldValue).trim() !== ''
+      && Number.isFinite(Number(conditionValue)) && Number.isFinite(Number(fieldValue))) {
     return parseFloat(conditionValue) === parseFloat(fieldValue)
   }
   return conditionValue === fieldValue
@@ -187,16 +191,11 @@ function checkObjectEquals(condition, fieldValue) {
 
 function checkMatrixContains(condition, fieldValue)
 {
-  if (typeof fieldValue === "undefined" || typeof fieldValue !== "object") {
+  if (!fieldValue || typeof fieldValue !== "object" || !condition.value || typeof condition.value !== "object") {
     return false
   }
-  const conditionValue = condition.value
-  for (const key in conditionValue) {
-    if(conditionValue[key] == fieldValue[key]){
-      return true
-    }
-  }
-  return false
+  const entries = Object.entries(condition.value)
+  return entries.length > 0 && entries.every(([key, value]) => _isEqual(value, fieldValue[key]))
 }
 
 function checkContains(condition, fieldValue) {
@@ -226,7 +225,8 @@ function checkendsWith(condition, fieldValue) {
 }
 
 function checkIsEmpty(condition, fieldValue) {
-  return !fieldValue || fieldValue.length === 0
+  return fieldValue === null || fieldValue === undefined || fieldValue === ''
+    || (Array.isArray(fieldValue) && fieldValue.length === 0)
 }
 
 function checkGreaterThan(condition, fieldValue) {
@@ -332,7 +332,7 @@ function checkNextYear(condition, fieldValue) {
 }
 
 function checkAtLeastXDaysAgo(condition, fieldValue) {
-  if (!fieldValue || !condition.value) return false
+  if (!fieldValue || condition.value === null || condition.value === undefined || condition.value === '') return false
   const fieldDate = new Date(fieldValue)
   if (Number.isNaN(fieldDate.getTime())) return false
   const today = new Date()
@@ -345,7 +345,7 @@ function checkAtLeastXDaysAgo(condition, fieldValue) {
 }
 
 function checkAtLeastXDaysFromNow(condition, fieldValue) {
-  if (!fieldValue || !condition.value) return false
+  if (!fieldValue || condition.value === null || condition.value === undefined || condition.value === '') return false
   const fieldDate = new Date(fieldValue)
   if (Number.isNaN(fieldDate.getTime())) return false
   const today = new Date()
@@ -358,7 +358,7 @@ function checkAtLeastXDaysFromNow(condition, fieldValue) {
 }
 
 function checkWithinPastXDays(condition, fieldValue) {
-  if (!fieldValue || !condition.value) return false
+  if (!fieldValue || condition.value === null || condition.value === undefined || condition.value === '') return false
   const fieldDate = new Date(fieldValue)
   if (Number.isNaN(fieldDate.getTime())) return false
   const today = new Date()
@@ -372,7 +372,7 @@ function checkWithinPastXDays(condition, fieldValue) {
 }
 
 function checkWithinNextXDays(condition, fieldValue) {
-  if (!fieldValue || !condition.value) return false
+  if (!fieldValue || condition.value === null || condition.value === undefined || condition.value === '') return false
   const fieldDate = new Date(fieldValue)
   if (Number.isNaN(fieldDate.getTime())) return false
   const today = new Date()

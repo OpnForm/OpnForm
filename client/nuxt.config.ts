@@ -103,6 +103,8 @@ export default defineNuxtConfig({
 
   sentry: {
       sourceMapsUploadOptions: {
+        enabled: Boolean(process.env.SENTRY_AUTH_TOKEN),
+        sourcemaps: { filesToDeleteAfterUpload: ['./.output/public/**/*.map', './.nuxt/dist/client/**/*.map'] },
           authToken: process.env.SENTRY_AUTH_TOKEN,
           org: "opnform",
           project: "opnform-vue",
@@ -118,7 +120,7 @@ export default defineNuxtConfig({
       },
   },
 
-  sourcemap: { client: 'hidden' },
+  sourcemap: { client: process.env.SENTRY_AUTH_TOKEN ? 'hidden' : false },
 
   gtag: {
       id: process.env.NUXT_PUBLIC_GOOGLE_ANALYTICS_CODE,
