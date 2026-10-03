@@ -1,6 +1,6 @@
 # OpnForm — évaluation des rapports de sécurité
 
-La branche **`codex/report-triage-fixes`** traite quatre familles de corrections partagées avec NoteForms et améliore l'accès au signalement d'abus. Les failles historiques réellement dangereuses sur les réponses prévisibles et les fichiers actifs sont déjà corrigées dans la base actuelle ; elles ont été vérifiées par leurs tests, sans réimplémentation.
+La branche **`codex/report-triage-verified`** reprend le commit local `34683ad1` de `codex/report-triage-fixes`, traite quatre familles de corrections partagées avec NoteForms et améliore l'accès au signalement d'abus. Les failles historiques réellement dangereuses sur les réponses prévisibles et les fichiers actifs sont déjà corrigées dans la base actuelle ; elles ont été vérifiées par leurs tests, sans réimplémentation.
 
 ## Périmètre et méthode
 
@@ -52,6 +52,8 @@ Les domaines déjà enregistrés restent actifs sans vérification rétroactive.
 - App gérée du checkout : **http://127.0.0.1:34399**, API **http://127.0.0.1:28399**, PostgreSQL isolé **22399**. Le navigateur a montré le TXT et le refus explicite d'enregistrer un domaine sans preuve ; aucun TXT de production n'a été publié.
 
 ## Limites et mise en service
+
+La reprise de ce travail dans le checkout `ab6c/OpnForm` a confirmé la présence des 216 historiques OpnForm et des 237 historiques NoteForms récupérés dans le passage précédent. Le code applicatif est identique au commit initial de triage. Les 107 tests API OpnForm, les 44 tests API NoteForms, les 14 tests frontend NoteForms et le lint des deux produits ont été relancés avec succès dans les worktrees `2dea`, qui disposent déjà des dépendances. Les 873 tests frontend OpnForm et les vérifications visuelles ci-dessus proviennent du passage précédent du même jour ; ils n'ont pas été relancés lors de cette reprise. Dans NoteForms, `php artisan test` n'est pas disponible dans cet environnement : les tests ont été exécutés directement avec `vendor/bin/pest`.
 
 Les modifications restent sur une branche locale : aucun push, déploiement, changement DNS, réponse aux chercheurs ou traitement d'un compte client. Aucune migration de données n'est nécessaire. La clé d'application existante doit rester configurée et stable ; sa rotation change les preuves TXT en attente. Les anciennes soumissions ou fichiers déjà en stockage externe ne sont pas audités par cette branche.
 
