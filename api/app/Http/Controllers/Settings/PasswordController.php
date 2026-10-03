@@ -3,8 +3,11 @@
 namespace App\Http\Controllers\Settings;
 
 use App\Http\Controllers\Controller;
+use App\Rules\MaxPasswordLength;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Password;
 use Illuminate\Validation\ValidationException;
 
 class PasswordController extends Controller
@@ -17,10 +20,12 @@ class PasswordController extends Controller
     public function update(Request $request)
     {
         $this->validate($request, [
-            'current_password' => 'required',
+            'current_password' => 'required|string|max:1024',
             'password' => [
+                'bail',
                 'required',
                 'string',
+                new MaxPasswordLength(),
                 'min:8', // Minimum password length
                 'regex:/[A-Za-z]/', // Include letters
                 'regex:/[0-9]/', // Include numbers
@@ -36,9 +41,11 @@ class PasswordController extends Controller
             ]);
         }
 
-        $request->user()->update([
-            'password' => bcrypt($request->password),
-        ]);
+        DB::transaction(function () use ($request) {
+            $user = $request->user();
+            $user->update(['password' => bcrypt($request->password)]);
+            Password::broker()->deleteToken($user);
+        });
 
         return response()->json(null, 204);
     }

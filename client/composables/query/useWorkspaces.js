@@ -112,17 +112,25 @@ export function useWorkspaces() {
   // Custom domains mutation
   const updateCustomDomains = (workspaceId, options = {}) => {
     return useMutation({
-      mutationFn: (data) => workspaceApi.customDomains.update(workspaceId, data),
+      mutationFn: ({ workspaceId: requestedId, ...data }) => workspaceApi.customDomains.update(requestedId ?? toValue(workspaceId), data),
       onSuccess: (updatedWorkspace) => {
         // Update individual workspace cache with custom domain info
-        queryClient.setQueryData(['workspaces', workspaceId], (old) => {
+        queryClient.setQueryData(['workspaces', updatedWorkspace.id], (old) => {
           if (!old) return updatedWorkspace
           return { ...old, ...updatedWorkspace }
+        })
+        queryClient.setQueryData(['workspaces', 'list'], (old) => {
+          if (!Array.isArray(old)) return old
+          return old.map(workspace => workspace.id === updatedWorkspace.id ? { ...workspace, ...updatedWorkspace } : workspace)
         })
       },
       ...options
     })
   }
+
+  const customDomainVerification = () => useMutation({
+    mutationFn: ({ workspaceId, domain }) => workspaceApi.customDomains.verification(workspaceId, domain),
+  })
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ['workspaces'] })
@@ -150,6 +158,7 @@ export function useWorkspaces() {
     remove,
     leave,
     updateCustomDomains,
+    customDomainVerification,
     
     // Utilities
     invalidate,

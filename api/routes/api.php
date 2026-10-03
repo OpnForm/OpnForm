@@ -216,6 +216,7 @@ Route::group(['middleware' => 'auth.multi'], function () {
                     '/forms',
                     [FormController::class, 'index']
                 )->name('forms.index');
+                Route::get('/custom-domains/verification', [WorkspaceController::class, 'customDomainVerification'])->name('custom-domain-verification');
                 Route::put('/custom-domains', [WorkspaceController::class, 'saveCustomDomain'])->name('save-custom-domains');
                 Route::put('/email-settings', [WorkspaceController::class, 'saveEmailSettings'])->name('save-email-settings');
                 Route::put('/custom-code-settings', [WorkspaceController::class, 'saveCustomCodeSettings'])->name('save-custom-code-settings');

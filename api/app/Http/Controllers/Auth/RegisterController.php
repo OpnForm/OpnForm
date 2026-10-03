@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Rules\MaxPasswordLength;
+use App\Rules\SafeAccountName;
 use App\Http\Resources\UserResource;
 use App\Models\User;
 use App\Models\UserWorkspace;
@@ -75,11 +77,13 @@ class RegisterController extends Controller
     protected function validator(array $data)
     {
         $rules = [
-            'name' => 'required|max:255',
+            'name' => ['bail', 'required', 'string', 'max:255', new SafeAccountName()],
             'email' => 'required|email:filter|max:255|unique:users|indisposable',
             'password' => [
+                'bail',
                 'required',
                 'string',
+                new MaxPasswordLength(),
                 'min:8', // Minimum password length
                 'regex:/[A-Za-z]/', // Include letters
                 'regex:/[0-9]/', // Include numbers

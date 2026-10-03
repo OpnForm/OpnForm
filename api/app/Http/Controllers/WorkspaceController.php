@@ -11,6 +11,8 @@ use App\Models\User;
 use App\Models\UserWorkspace;
 use App\Models\Workspace;
 use App\Service\Billing\Feature;
+use App\Service\CustomDomainOwnershipService;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -45,15 +47,38 @@ class WorkspaceController extends Controller
         return WorkspaceResource::collection($workspaces);
     }
 
-    public function saveCustomDomain(CustomDomainRequest $request)
+    public function saveCustomDomain(CustomDomainRequest $request, CustomDomainOwnershipService $ownership)
     {
         $this->authorize('adminAction', $request->workspace);
         $request->workspace->requireFeature('custom_domain');
+
+        $existing = array_map(fn ($domain) => strtolower(trim($domain)), $request->workspace->custom_domains ?? []);
+        foreach (array_diff($request->customDomains, $existing) as $domain) {
+            if (! $ownership->verify($request->workspace->id, $domain)) {
+                throw ValidationException::withMessages([
+                    'custom_domains' => "Add the TXT verification record for {$domain} to your DNS, wait for propagation, then save again.",
+                ]);
+            }
+        }
 
         $request->workspace->custom_domains = $request->customDomains;
         $request->workspace->save();
 
         return new WorkspaceResource($request->workspace);
+    }
+
+    public function customDomainVerification(Request $request, Workspace $workspace, CustomDomainOwnershipService $ownership)
+    {
+        $this->authorize('adminAction', $workspace);
+        $workspace->requireFeature('custom_domain');
+        if (is_string($request->query('domain'))) {
+            $request->merge(['domain' => strtolower(trim($request->query('domain')))]);
+        }
+        $validated = $request->validate([
+            'domain' => ['required', 'string', 'max:'.CustomDomainOwnershipService::MAX_DOMAIN_LENGTH, 'regex:'.CustomDomainOwnershipService::DOMAIN_REGEX],
+        ]);
+
+        return response()->json($ownership->challenge($workspace->id, $validated['domain']));
     }
 
     public function saveEmailSettings(EmailSettingsRequest $request)
