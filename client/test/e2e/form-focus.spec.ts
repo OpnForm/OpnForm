@@ -231,6 +231,7 @@ test('editor compound controls retain animated keyboard focus', async ({ page, r
   test.skip(testInfo.project.name === 'mobile-chromium', 'The form editor requires a desktop viewport')
   const form = await createFocusForm(request, { title: `Focus editor ${Date.now()}` })
   await page.goto('/login')
+  await page.waitForLoadState('networkidle')
   await page.locator('input[name="email"]').fill('e2e@example.test')
   await page.locator('input[name="password"]').fill('Abcd@1234')
   await page.getByRole('button', { name: /log in to continue/i }).click()
