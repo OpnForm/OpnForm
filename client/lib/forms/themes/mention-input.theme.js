@@ -18,6 +18,9 @@ export const mentionInputTheme = {
       default: {
         input: ['border-neutral-300 dark:border-neutral-600 bg-white text-neutral-700 dark:bg-notion-dark-light dark:text-neutral-300', formControlFocus]
       },
+      simple: {
+        input: ['border-neutral-300 dark:border-neutral-600 bg-white text-neutral-700 dark:bg-notion-dark-light dark:text-neutral-300', formControlFocus]
+      },
       minimal: {
         input: [
           'border-2 border-transparent',

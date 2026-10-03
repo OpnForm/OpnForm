@@ -1,10 +1,11 @@
-import { formControlFocusWithin, formControlTransition } from './focus-ring.theme.js'
+import { formControlFocusVisibleHalo, formControlFocusWithin, formControlTransition } from './focus-ring.theme.js'
 
 /**
  * OptionSelectorInput tailwind-variants configuration
  */
 export const optionSelectorInputTheme = {
   slots: {
+    container: [formControlTransition, formControlFocusVisibleHalo],
     option: [
       'w-full border shadow-xs',
       'relative',

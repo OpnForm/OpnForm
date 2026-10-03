@@ -1,4 +1,4 @@
-import { formControlFocusWithin } from './focus-ring.theme.js'
+import { formControlFocusVisibleHalo, formControlFocusWithin, formControlTransition } from './focus-ring.theme.js'
 
 /**
  * FocusedSelectorInput tailwind-variants configuration
@@ -6,9 +6,10 @@ import { formControlFocusWithin } from './focus-ring.theme.js'
  */
 export const focusedSelectorInputTheme = {
   slots: {
-    container: 'space-y-2 focus:outline-hidden',
+    container: ['space-y-2 focus:outline-hidden', formControlTransition, formControlFocusVisibleHalo],
     option: [
-      'w-full border border-transparent transition-all duration-200',
+      'w-full border border-transparent',
+      formControlTransition,
       'overflow-hidden',
       'group',
       formControlFocusWithin

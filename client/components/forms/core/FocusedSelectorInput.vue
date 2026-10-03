@@ -13,7 +13,7 @@
       ]"
       role="listbox"
       :aria-multiselectable="multiple ? 'true' : 'false'"
-      :tabindex="0"
+      :tabindex="disabled ? -1 : 0"
       @keydown.capture="onKeydown"
     >
       <div

@@ -36,8 +36,8 @@
       height="150px"
       :name="name"
       :options="{ onEnd, penColor }"
-      tabindex="0"
-      @pointerdown="$event.currentTarget.focus()"
+      :tabindex="disabled ? -1 : 0"
+      @pointerdown="!disabled && $event.currentTarget.focus()"
     />
 
     <template #bottom_after_help>

@@ -1,16 +1,21 @@
 <template>
   <div :class="ui.container({ class: props.ui?.slots?.container })">
-    <input
-      :id="id || name"
-      v-model="internalValue"
-      :value="value"
-      :name="name"
-      type="checkbox"
-      :class="ui.input({ class: props.ui?.slots?.input })"
+    <span
+      :class="ui.control({ class: props.ui?.slots?.control })"
       :style="colorStyle"
-      :disabled="disabled ? true : null"
-      @keydown="handleKeydown"
     >
+      <input
+        :id="id || name"
+        v-model="internalValue"
+        :value="value"
+        :name="name"
+        type="checkbox"
+        :class="ui.input({ class: props.ui?.slots?.input })"
+        :style="colorStyle"
+        :disabled="disabled ? true : null"
+        @keydown="handleKeydown"
+      >
+    </span>
     <label
       :for="id || name"
       :class="ui.label({ class: props.ui?.slots?.label })"
@@ -34,6 +39,7 @@ const props = defineProps({
   modelValue: { type: [Boolean, String], default: false },
   value: { type: [Boolean, String, Number, Object], required: false },
   disabled: { type: Boolean, default: false },
+  hasError: { type: Boolean, default: false },
   color: { type: String, default: null },
   // Theme configuration as strings for tailwind-variants
   size: {type: String, default: null}, 
@@ -56,7 +62,7 @@ const resolvedSize = computed(() => {
 const colorStyle = computed(() => ({
   '--accent-color': props.color,
   '--form-color': props.color,
-  '--form-focus-color': props.color
+  '--form-focus-color': props.hasError ? 'var(--color-red-500)' : (props.color || '#3B82F6')
 }))
 
 // OPTIMIZED: Single computed following Nuxt UI pattern

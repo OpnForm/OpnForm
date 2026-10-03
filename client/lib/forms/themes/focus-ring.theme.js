@@ -1,7 +1,8 @@
 export const formControlTransition = [
   'transition-[color,background-color,border-color,box-shadow]',
   'duration-200',
-  'ease-out'
+  'ease-out',
+  'motion-reduce:transition-none'
 ]
 
 export const formControlFocus = [
@@ -20,6 +21,11 @@ export const formControlFocusVisibleHalo = [
   'focus-visible:ring-0',
   'focus-visible:outline-none',
   'focus-visible:shadow-[0_0_0_3px_color-mix(in_srgb,var(--form-focus-color)_24%,transparent)]'
+]
+
+// Some native controls do not draw box-shadow in WebKit; draw it on their wrapper.
+export const formControlFocusVisibleWithin = [
+  'has-[:focus-visible]:shadow-[0_0_0_3px_color-mix(in_srgb,var(--form-focus-color)_24%,transparent)]'
 ]
 
 export const formControlFocusWithin = [

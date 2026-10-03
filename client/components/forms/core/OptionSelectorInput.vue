@@ -6,6 +6,7 @@
 
     <div
       :class="[
+        variants().container({ class: props.ui?.slots?.container }),
         seamless ? 'flex -space-x-px' : `grid ${gridClass} gap-2`
       ]"
       :style="optionStyle"
