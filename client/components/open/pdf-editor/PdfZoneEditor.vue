@@ -113,6 +113,7 @@
 
 <script setup>
 import { formsApi } from '~/api/forms'
+import { getPdfRenderPages } from '~/lib/pdf-editor'
 
 const pdfStore = useWorkingPdfStore()
 const {
@@ -398,12 +399,6 @@ const cancelAllRenderTasks = () => {
   activeRenderTasks.clear()
 }
 
-const getPriorityZoomPages = () => {
-  const current = Number(currentPage.value)
-  const candidatePages = [current - 1, current, current + 1]
-  return candidatePages.filter((pageNum) => pageList.value.includes(pageNum) && !isNewPage(pageNum))
-}
-
 const getEditorScrollRoot = () => {
   return pagesContainer.value?.closest?.('.pdf-editor-scroll-container')
 }
@@ -418,9 +413,9 @@ const fitZoomToPageWidth = async () => {
   if (!pdfDoc.value) return
 
   const firstPhysicalPage = pageList.value.find((pageNum) => !isNewPage(pageNum))
-  if (!firstPhysicalPage) return
-
-  const sourcePageNumber = pdfStore.getSourcePageNumber(firstPhysicalPage)
+  const sourcePageNumber = firstPhysicalPage
+    ? pdfStore.getSourcePageNumber(firstPhysicalPage)
+    : 1
   if (sourcePageNumber == null) return
 
   const availablePageWidth = getAvailablePageWidth()
@@ -488,7 +483,24 @@ const renderAllPages = async (options = {}) => {
   if (!pdfDoc.value) return
   const { zoomOnlyVisible = false } = options
   const thisPassId = ++renderPassId.value
-  const targetPages = zoomOnlyVisible ? getPriorityZoomPages() : pageList.value.filter((p) => !isNewPage(p))
+  const { physicalPages, targetPages } = getPdfRenderPages(
+    pageList.value,
+    currentPage.value,
+    isNewPage,
+    zoomOnlyVisible
+  )
+
+  if (!physicalPages.length) {
+    const page = await pdfDoc.value.getPage(1)
+    if (thisPassId !== renderPassId.value) return
+    const viewport = page.getViewport({ scale: zoomScale.value })
+    canvasWidth.value = viewport.width
+    canvasHeight.value = viewport.height
+    return
+  }
+
+  // A visible-only zoom pass can contain only blank pages. Preserve the
+  // dimensions established by the last physical-page render in that case.
   if (!targetPages.length) return
 
   // Get dimensions from first physical page (for new pages and initial layout)

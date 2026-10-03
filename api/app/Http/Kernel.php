@@ -19,6 +19,12 @@ use Illuminate\Routing\Router;
 use App\Http\Middleware\CheckUserIsBlocked;
 use App\Http\Middleware\EnsureCloudInstance;
 use App\Http\Middleware\EnsureSelfHostedInstance;
+use App\Http\Middleware\ConsumeMcpOAuthLoginTicket;
+use App\Http\Middleware\AuthenticateOptionalMcpOAuth;
+use App\Http\Middleware\RecordMcpUsage;
+use App\Http\Middleware\ThrottleFormSummary;
+use App\Http\Middleware\EnsureMcpEnabled;
+use App\Http\Middleware\EnsureMcpGuestDraftsEnabled;
 
 class Kernel extends HttpKernel
 {
@@ -57,6 +63,8 @@ class Kernel extends HttpKernel
         \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
         \Illuminate\Session\Middleware\StartSession::class,
         \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+        EnsureMcpEnabled::class,
+        EnsureMcpGuestDraftsEnabled::class,
         AuthenticateJWT::class,
         AuthenticateWithJwtOrSanctum::class,
         \Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests::class,
@@ -78,6 +86,7 @@ class Kernel extends HttpKernel
             \App\Http\Middleware\EncryptCookies::class,
             \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
             \Illuminate\Session\Middleware\StartSession::class,
+            ConsumeMcpOAuthLoginTicket::class,
             // \Illuminate\Session\Middleware\AuthenticateSession::class,
             \Illuminate\View\Middleware\ShareErrorsFromSession::class,
             \App\Http\Middleware\VerifyCsrfToken::class,
@@ -132,6 +141,11 @@ class Kernel extends HttpKernel
         'abilities' => \Laravel\Sanctum\Http\Middleware\CheckAbilities::class,
         'ability' => \Laravel\Sanctum\Http\Middleware\CheckForAnyAbility::class,
         'auth.multi' => \App\Http\Middleware\AuthenticateWithJwtOrSanctum::class,
+        'auth.mcp.optional' => AuthenticateOptionalMcpOAuth::class,
+        'observe.mcp' => RecordMcpUsage::class,
+        'mcp.enabled' => EnsureMcpEnabled::class,
+        'mcp.guest-drafts' => EnsureMcpGuestDraftsEnabled::class,
+        'throttle.form-summary' => ThrottleFormSummary::class,
 
         'cloud' => EnsureCloudInstance::class,  // Allow cloud instances only
         'self-hosted' => EnsureSelfHostedInstance::class, // Allow self-hosted instances only

@@ -13,6 +13,7 @@ class CreateTokenRequest extends FormRequest
                 'required',
                 'string',
             ],
+            'abilities.*' => ['string', \Illuminate\Validation\Rule::in(array_merge(\App\Enums\AccessTokenAbility::values(), \App\Enums\AccessTokenAbility::adminValues()))],
             'abilities' => [
                 'nullable',
                 'array'

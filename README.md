@@ -37,11 +37,23 @@ The easiest way to get started with OpnForm is to sign up for our [managed servi
 
 For a complete list of features and detailed documentation, visit our [Technical Documentation](https://docs.opnform.com).
 
+## AI agents and MCP
+
+OpnForm's remote MCP server lets AI agents create and preview a private form draft without requiring a login. OAuth adds workspace-aware form management and read-only submission search, statistics, and exports. The installable portable and native plugin package lives in [`plugins/opnform/`](./plugins/opnform). See the [MCP integration guide](https://docs.opnform.com/integrations/mcp).
+
 ## Quick Start
 
 The easiest way to get started with OpnForm is through our [official managed service in the Cloud](https://opnform.com/).
 
 For self-hosted installations, please refer to our [Deployment Guides](https://docs.opnform.com/deployment). For local development, we provide a minimal Docker-based setup - check out our [Docker Development Guide](https://docs.opnform.com/deployment/docker-development).
+
+The client `npm run build` also checks the public form bundle size and eager dependencies. This check reads `.nuxt/dist/client/_nuxt`, independently of Nitro's deployment output directory (including AWS Amplify's `.amplify-hosting`). Run its regression tests from `client/` with `node --test scripts/check-public-form-bundle.test.mjs`.
+
+## Form list performance
+
+The dashboard fetches lightweight summaries in batches of 50. The API keeps its default page size of 10 and its maximum of 100 for other callers. It paginates forms before loading view and completed-submission counts for the returned IDs. Historical views use an index on `form_statistics.form_id`, and the aggregate is explicitly aliased as `total_views_count` so the model uses the preloaded value.
+
+The index migration runs outside a transaction and uses `CREATE INDEX CONCURRENTLY` on PostgreSQL to keep writes available. It also recovers an invalid index left by an interrupted build. Run this migration through Laravel normally; do not wrap it in an external transaction. MySQL and SQLite use the standard schema index migration.
 
 ## Codex worktrees
 
@@ -65,6 +77,10 @@ Run the browser suite against the running worktree with:
 ```bash
 ./scripts/codex-worktree-test-e2e.sh
 ```
+
+## PDF template fields
+
+The PDF editor removes zones linked to deleted fields and lists them before you continue. Save the template to keep the cleanup. Mappings retain field names when created or saved, so deleted fields can still be identified. Older mappings without a saved name appear as “Deleted field” with their page number.
 
 ## Support & Community
 

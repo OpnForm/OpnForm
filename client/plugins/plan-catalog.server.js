@@ -4,7 +4,7 @@ export default defineNuxtPlugin(async (nuxtApp) => {
   const planCatalogState = useState('planCatalog', () => ({ tiers: {} }))
 
   try {
-    const plans = await contentApi.plans.list({ server: true })
+    const plans = await $fetch('/api/plan-catalog', { retry: 0 })
     if (plans?.tiers) {
       planCatalogState.value = plans
     }

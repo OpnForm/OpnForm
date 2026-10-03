@@ -1,0 +1,56 @@
+---
+title: Authentication architecture
+description: Understand when OpnForm uses JWT, Sanctum personal access tokens, and Passport OAuth 2.1.
+---
+
+OpnForm intentionally uses three authentication mechanisms. They serve different clients and should not be substituted for one another without a dedicated migration.
+
+| Mechanism | Client | Purpose |
+| --- | --- | --- |
+| JWT | First-party Nuxt application | Existing browser login and authenticated application requests |
+| Sanctum personal access tokens | API users and integrations | Long-lived tokens created by a user, constrained by token abilities and the `auth.multi` route policy |
+| Passport OAuth 2.1 | Third-party delegated clients | Authorization Code with PKCE, consent, scoped access, and refresh tokens |
+
+<Warning>
+Do not migrate first-party login to Passport. Passport is for delegated access by external clients. A future first-party authentication migration should evaluate Sanctum's stateful cookie authentication as a separate project.
+</Warning>
+
+## Delegated OAuth flow
+
+The `OAuthServiceProvider` owns Passport configuration, routes, token lifetimes, consent rendering, and scope descriptions. MCP adds its own dynamic client registration policy, login bridge, metadata, and `mcp:use` scope requirement on top of that generic layer.
+
+1. The client dynamically registers an allowed redirect URI for the MCP integration.
+2. The authorization request must use Authorization Code with PKCE and the `S256` challenge method.
+3. OpnForm authenticates the account through the existing first-party login flow.
+4. The generic consent screen displays the callback destination and every requested scope description.
+5. Passport issues a scoped access token and refresh token.
+6. The MCP endpoint accepts the token only when it includes `mcp:use` and the account is not blocked.
+
+Guest MCP requests remain available without a bearer token. A bearer token that is invalid or missing the required scope is rejected rather than treated as a guest request.
+
+## Configuration
+
+```dotenv
+# Optional override. The default follows Cloud or self-hosted MCP availability.
+OAUTH_ENABLED=true
+
+# Seven days, in minutes.
+OAUTH_ACCESS_TOKEN_TTL=10080
+
+# Refresh tokens remain valid for 30 days.
+OAUTH_REFRESH_TOKEN_TTL_DAYS=30
+```
+
+These values are independent of `JWT_TTL`. Changing a delegated OAuth token lifetime must not change first-party sessions.
+
+## Adding another delegated client
+
+When you add another OAuth consumer:
+
+1. Add a narrowly defined scope and a user-readable description to `config/oauth.php`.
+2. Keep redirect URI validation specific to the client registration endpoint.
+3. Require PKCE `S256` for public clients.
+4. Enforce the scope at the protected resource boundary.
+5. Add consent, token, insufficient-scope, account-blocking, and revocation tests.
+
+Do not add product-specific permissions directly to the generic OAuth consent template. The template renders the scopes requested and validated by Passport.

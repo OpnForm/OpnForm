@@ -1,6 +1,11 @@
 import { computed } from 'vue'
 import { useTableColumnPreferences } from './useTableColumnPreferences'
 import debounce from 'debounce'
+import {
+  ATTRIBUTION_PARAMETERS,
+  attributionColumnAccessor,
+  attributionColumnId,
+} from '~/lib/forms/submissionAttribution'
 
 const normalizeColumnList = (columns) => {
   if (Array.isArray(columns)) {
@@ -86,6 +91,20 @@ export function useTableState(form, withActions = false) {
          })
        }
 
+       ATTRIBUTION_PARAMETERS.forEach((parameter) => {
+         const columnId = attributionColumnId(parameter)
+         baseColumns.push({
+           id: columnId,
+           accessorFn: attributionColumnAccessor(parameter),
+           header: parameter,
+           type: 'text',
+           hiddenByDefault: true,
+           enableResizing: true,
+           minSize: 100,
+           maxSize: 500,
+         })
+       })
+
        if (hasFeature('enable_partial_submissions') && (form.value?.enable_partial_submissions ?? false)) {
          if (!baseColumns.find(property => property.id === 'status')) {
            baseColumns.push({
@@ -136,8 +155,10 @@ export function useTableState(form, withActions = false) {
       const configCols = columnConfigurations.value || []
       configCols.forEach(col => {
         const pref = prefs.columns[col.id] || {}
-        // Use preference if set, otherwise default: visible for regular columns, hidden for removed columns
-        const visible = pref.visible !== null && pref.visible !== undefined ? pref.visible : !col.isRemoved
+        // Use preference if set, otherwise hide removed and system-hidden columns.
+        const visible = pref.visible !== null && pref.visible !== undefined
+          ? pref.visible
+          : !col.isRemoved && !col.hiddenByDefault
         visibility[col.id] = visible
       })
       return visibility
@@ -145,9 +166,10 @@ export function useTableState(form, withActions = false) {
     set(newVisibility) {
       Object.entries(newVisibility).forEach(([columnId, visible]) => {
         const pref = getColumnPreference(columnId)
+        const column = columnConfigurations.value.find(candidate => candidate.id === columnId)
         const currentVisible = pref.visible !== null && pref.visible !== undefined 
           ? pref.visible 
-          : !columnConfigurations.value.find(c => c.id === columnId)?.isRemoved
+          : !column?.isRemoved && !column?.hiddenByDefault
         if (currentVisible !== visible) {
           setColumnPreference(columnId, { visible })
         }

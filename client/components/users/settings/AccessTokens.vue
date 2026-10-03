@@ -58,6 +58,7 @@
       >
         <template #name-cell="{ row: { original: item } }">
           <span class="font-semibold">{{ item.name }}</span>
+          <p v-if="item.expires_at" class="text-xs text-neutral-500">Expires {{ new Date(item.expires_at).toLocaleString() }}</p>
         </template>
 
         <template #abilities-cell="{ row: { original: item } }">

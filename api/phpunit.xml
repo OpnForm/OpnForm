@@ -12,6 +12,7 @@
     <server name="APP_DEBUG" value="true"/>
     <server name="APP_KEY" value="AckfSECXIvnK5r28GVIWUAxmbBSjTsmF"/>
     <server name="APP_NAME" value="NotionForms TESTING"/>
+    <server name="APP_URL" value="http://localhost"/>
     <server name="APP_ENV" value="testing"/>
     <server name="BCRYPT_ROUNDS" value="4"/>
     <server name="CACHE_DRIVER" value="array"/>

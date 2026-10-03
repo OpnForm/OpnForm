@@ -30,14 +30,21 @@ class FormSubmissionResource extends JsonResource
             $this->addExtraData();
         }
 
-        return array_merge([
-            'data' => $this->data,
-            'completion_time' => $this->completion_time,
-        ], ($this->publiclyAccessed) ? [] : [
+        $privateData = [
             'form_id' => $this->form_id,
             'id' => $this->id,
             'submission_id' => SubmissionUrlService::getSubmissionIdentifier($this->resource),
-        ]);
+        ];
+
+        $attribution = ($this->meta ?? [])['attribution'] ?? null;
+        if (is_array($attribution) && !empty($attribution)) {
+            $privateData['meta'] = ['attribution' => $attribution];
+        }
+
+        return array_merge([
+            'data' => $this->data,
+            'completion_time' => $this->completion_time,
+        ], ($this->publiclyAccessed) ? [] : $privateData);
     }
 
     public function publiclyAccessed($publiclyAccessed = true)
@@ -94,7 +101,7 @@ class FormSubmissionResource extends JsonResource
                         $encodedFilename = FilenameUrlEncoder::encode($file);
 
                         return [
-                            'file_url' => URL::signedRoute(
+                            'file_url' => URL::publicSignedRoute(
                                 'open.forms.submissions.file',
                                 [$this->form_id, $encodedFilename],
                                 now()->addMinutes(10)

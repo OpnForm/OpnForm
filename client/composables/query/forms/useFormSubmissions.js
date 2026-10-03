@@ -1,5 +1,19 @@
 import { useQueryClient, useQuery, useMutation, keepPreviousData } from '@tanstack/vue-query'
 import { formsApi } from '~/api/forms'
+import { attributionColumnId } from '~/lib/forms/submissionAttribution'
+
+const tableSubmission = (record) => {
+  const attribution = record?.meta?.attribution || {}
+  const attributionColumns = Object.entries(attribution).reduce((columns, [parameter, value]) => {
+    columns[attributionColumnId(parameter)] = value
+    return columns
+  }, {})
+
+  return {
+    ...record.data,
+    ...attributionColumns,
+  }
+}
 
 export function useFormSubmissions() {
   const queryClient = useQueryClient()
@@ -80,7 +94,7 @@ export function useFormSubmissions() {
 
     // Computed properties
     const submissions = computed(() =>
-      query.data.value?.data?.map(record => record.data) || []
+      query.data.value?.data?.map(tableSubmission) || []
     )
 
     const pagination = computed(() => query.data.value?.meta || null)
@@ -253,4 +267,4 @@ export function useFormSubmissions() {
     invalidateSubmissions,
     invalidateSubmission,
   }
-} 
+}

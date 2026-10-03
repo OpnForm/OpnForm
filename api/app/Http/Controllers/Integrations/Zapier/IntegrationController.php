@@ -60,7 +60,11 @@ class IntegrationController
         }
         $cacheKey = "zapier-poll-submissions-{$form->id}";
         return (array) Cache::remember($cacheKey, 60 * 5, function () use ($form, $submissionData, $lastSubmission) {
-            return [ZapierIntegration::formatWebhookData($form, $submissionData ?? $lastSubmission->data)];
+            return [ZapierIntegration::formatWebhookData(
+                $form,
+                $submissionData ?? $lastSubmission->data,
+                $lastSubmission?->meta ?? []
+            )];
         });
     }
 }

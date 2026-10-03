@@ -25,6 +25,7 @@ class UserResource extends JsonResource
             'has_forms' => $this->has_forms,
             'active_license' => $this->licenses()->active()->first(),
             'two_factor_enabled' => $this->hasTwoFactorEnabled(),
+            'can_change_email' => $this->canChangeEmail(),
         ] : [];
 
         return array_merge(parent::toArray($request), $personalData);

@@ -36,8 +36,15 @@
       :id="block.id"
       :key="'code-' + block.id"
       class="nf-code w-full px-2 my-1.5"
-      v-html="block.content"
-    />
+    >
+      <div
+        v-if="disableCustomCodeExecution"
+        class="rounded-lg border border-dashed bg-neutral-50 p-4 text-sm text-neutral-500"
+      >
+        Custom code is preserved but does not execute in an agent draft preview.
+      </div>
+      <div v-else v-html="block.content" />
+    </div>
     <div
       v-else-if="block.type === 'nf-divider'"
       :id="block.id"
@@ -88,7 +95,7 @@
           @click.prevent="editFieldOptions"
         >Open block settings to add video URL.</a>
       </div>
-      <EmbedMedia
+      <LazyEmbedMedia
         v-else
         :src="block.video_block"
         :is-dark="darkMode"
@@ -112,7 +119,7 @@
           @click.prevent="editFieldOptions"
         >Open block settings to add audio.</a>
       </div>
-      <EmbedMedia
+      <LazyEmbedMedia
         v-else
         :src="block.audio_block"
         :force-audio="true"
@@ -128,26 +135,48 @@ import ClientOnlyWrapper from '~/components/global/ClientOnlyWrapper.vue'
 import { useComponentRegistry } from '~/composables/components/useComponentRegistry'
 import TextBlock from '~/components/forms/core/TextBlock.vue'
 import { shuffleArray } from '~/lib/utils.js'
-import { useWorkingFormStore } from '~/stores/working_form'
-import { useParseMention } from '@/composables/components/useParseMention'
+import { getFieldOptions } from '~/lib/forms/field-options.js'
+import { loadMentionParser } from '~/lib/forms/mention-parser-loader.js'
 
 const props = defineProps({
   block: { type: Object, required: false, default: null },
   formManager: { type: Object, required: true }
 })
 
-const workingFormStore = useWorkingFormStore()
-
+const nuxtApp = useNuxtApp()
 const form = computed(() => props.formManager?.config?.value || {})
 const dataForm = computed(() => props.formManager?.form || {})
 const darkMode = computed(() => props.formManager?.darkMode?.value || false)
 const strategy = computed(() => props.formManager?.strategy?.value || {})
 const isAdminPreview = computed(() => strategy.value?.admin?.showAdminControls || false)
+const disableCustomCodeExecution = inject('disableCustomCodeExecution', false)
 
 // Debounce form data changes to avoid excessive re-renders when user types
 const formDataForMentions = computed(() => dataForm.value?.data?.() || {})
 const debouncedFormData = refDebounced(formDataForMentions, 300)
 const computedValues = computed(() => props.formManager?.computedValues?.value || {})
+const mentionParser = shallowRef(null)
+
+const needsMentionParser = computed(() => {
+  const field = props.block || {}
+  return [
+    field.content,
+    field.placeholder,
+    field.help,
+    field.amount,
+    field.prefill_name,
+    field.prefill_email,
+  ].some(value => typeof value === 'string' && value.includes('mention-field-id'))
+})
+
+watch(needsMentionParser, (isNeeded) => {
+  if (!isNeeded || mentionParser.value) return
+  loadMentionParser()
+    .then((parser) => {
+      mentionParser.value = parser
+    })
+    .catch((error) => console.error('Failed to load the mention parser:', error))
+}, { immediate: true })
 
 // Use centralized fieldState from manager
 const fieldState = computed(() => props.formManager?.fieldState)
@@ -242,11 +271,7 @@ const roundedClass = computed(() => {
 const selectOptions = computed(() => {
   const field = props.block
   if (!field || !['select', 'multi_select'].includes(field.type)) return null
-  const options = field[field.type]?.options?.map(option => ({ 
-    name: option.name, 
-    value: option.name,
-    image: option.image || null  // Include image if present
-  })) ?? []
+  const options = getFieldOptions(field)
   return field.shuffle_options && options.length > 1 ? shuffleArray(options) : options
 })
 
@@ -254,18 +279,20 @@ const selectOptions = computed(() => {
 // Set asText=true to strip HTML (for plain text attributes like placeholder)
 const processMention = (content, { asText = false } = {}) => {
   if (!content) return content
-  const processed = useParseMention(content, true, form.value, debouncedFormData.value, computedValues.value)
+  const processed = mentionParser.value
+    ? mentionParser.value(content, true, form.value, debouncedFormData.value, computedValues.value)
+    : content
   if (!processed) return content
   if (!asText) return processed
   // Strip HTML tags to get plain text
-  return processed.replace(/<[^>]*>/g, '')
+  return String(processed).replace(/<[^>]*>/g, '')
 }
 
 // Process mentions in placeholder and help text
 const processedPlaceholder = ref('')
 const processedHelp = ref('')
 
-watch(() => [props.block?.placeholder, props.block?.help, debouncedFormData.value, computedValues.value], () => {
+watch(() => [props.block?.placeholder, props.block?.help, debouncedFormData.value, computedValues.value, mentionParser.value], () => {
   const field = props.block
   if (!field) {
     processedPlaceholder.value = ''
@@ -358,7 +385,7 @@ const boundProps = computed(() => {
     inputProperties.direction = form.value.layout_rtl ? 'rtl' : 'ltr'
     inputProperties.currency = field.currency
     // Parse amount with mentions - field.amount may contain mention HTML
-    const parsedAmount = useParseMention(field.amount, true, form.value, dataForm.value)
+    const parsedAmount = processMention(field.amount, { asText: true })
     const sanitizedAmount = String(parsedAmount ?? '')
       .replace(/<[^>]*>/g, '')
       .replace(/,/g, '')
@@ -370,11 +397,11 @@ const boundProps = computed(() => {
 
     // Parse prefill fields with mentions
     if (field.prefill_name) {
-      const parsed = useParseMention(field.prefill_name, true, form.value, dataForm.value)
+      const parsed = processMention(field.prefill_name, { asText: true })
       inputProperties.prefillName = String(parsed ?? '').replace(/<[^>]*>/g, '').trim()
     }
     if (field.prefill_email) {
-      const parsed = useParseMention(field.prefill_email, true, form.value, dataForm.value)
+      const parsed = processMention(field.prefill_email, { asText: true })
       inputProperties.prefillEmail = String(parsed ?? '').replace(/<[^>]*>/g, '').trim()
     }
     if (props.formManager?.payment) {
@@ -386,6 +413,9 @@ const boundProps = computed(() => {
 })
 
 const editFieldOptions = () => {
-  workingFormStore.openSettingsForField(props.block, true)
+  if (!isAdminPreview.value) return
+  import('~/stores/working_form').then(({ useWorkingFormStore }) => {
+    nuxtApp.runWithContext(() => useWorkingFormStore()).openSettingsForField(props.block, true)
+  })
 }
 </script>

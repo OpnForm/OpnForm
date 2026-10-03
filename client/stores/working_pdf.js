@@ -87,10 +87,39 @@ export const useWorkingPdfStore = defineStore("working_pdf", {
       ]
     },
 
+    computedVariables() {
+      if (!this.form?.computed_variables?.length) return []
+      return this.form.computed_variables
+        .filter(v => v?.id && v?.name)
+        .map(v => ({
+          id: v.id,
+          name: v.name,
+          type: 'computed',
+        }))
+    },
+
     fieldOptions() {
       const formOptions = this.formFields.map(f => ({ name: f.name, value: f.id }))
+      const computedOptions = this.computedVariables.map(v => ({
+        name: `${v.name} (Variable)`,
+        value: v.id,
+      }))
       const specialOptions = this.specialFields.map(f => ({ name: f.name, value: f.id }))
-      return [...formOptions, ...specialOptions]
+      return [...formOptions, ...computedOptions, ...specialOptions]
+    },
+
+    obsoleteFieldZones() {
+      const activeFieldIds = new Set([
+        ...this.formFields,
+        ...this.computedVariables,
+        ...this.specialFields,
+      ].map(field => field.id))
+
+      return (this.content?.zone_mappings || []).filter((zone) => {
+        if (zone.static_text !== undefined || zone.static_image !== undefined) return false
+        if (typeof zone.field_id !== 'string' || !zone.field_id.trim()) return false
+        return !activeFieldIds.has(zone.field_id)
+      })
     },
 
     defaultFilenamePattern() {
@@ -180,6 +209,18 @@ export const useWorkingPdfStore = defineStore("working_pdf", {
       }
     },
 
+    removeObsoleteFieldZones() {
+      if (!this.content?.zone_mappings) return
+
+      const obsoleteZoneIds = new Set(this.obsoleteFieldZones.map(zone => zone.id))
+      if (!obsoleteZoneIds.size) return
+
+      this.content.zone_mappings = this.content.zone_mappings.filter(zone => !obsoleteZoneIds.has(zone.id))
+      if (obsoleteZoneIds.has(this.selectedZoneId)) {
+        this.selectedZoneId = null
+      }
+    },
+
     addZoneWithField(field = null, staticFieldKey = null) {
       const currentEntry = this.pageManifest[this.currentPage - 1]
       if (!currentEntry) return
@@ -195,7 +236,7 @@ export const useWorkingPdfStore = defineStore("working_pdf", {
         font_size: 12,
         font_color: '#000000',
       }
-      const newZone = field ? { ...baseZone, field_id: field.id } : { ...baseZone, [staticFieldKey]: '' }
+      const newZone = field ? { ...baseZone, field_id: field.id, field_name: field.name } : { ...baseZone, [staticFieldKey]: '' }
       this.addZone(newZone)
       this.selectedZoneId = newZone.id
       this.lastAddedZoneId = newZone.id
@@ -210,7 +251,7 @@ export const useWorkingPdfStore = defineStore("working_pdf", {
     getZoneLabel(zone) {
       if (zone.static_text !== undefined) return 'Static Text'
       if (zone.static_image !== undefined) return 'Image'
-      const allFields = [...this.formFields, ...this.specialFields]
+      const allFields = [...this.formFields, ...this.computedVariables, ...this.specialFields]
       const field = allFields.find(f => f.id === zone.field_id)
       return field?.name || zone.field_id || 'Unmapped'
     },
@@ -359,7 +400,12 @@ export const useWorkingPdfStore = defineStore("working_pdf", {
       if (!this.content) return null
       return {
         name: this.content.name,
-        zone_mappings: this.content.zone_mappings,
+        zone_mappings: this.content.zone_mappings.map((zone) => {
+          if (zone.static_text !== undefined || zone.static_image !== undefined) return zone
+          const field = [...(this.form?.properties || []), ...this.computedVariables, ...this.specialFields]
+            .find(field => field.id === zone.field_id)
+          return field ? { ...zone, field_name: field.name } : zone
+        }),
         filename_pattern: this.content.filename_pattern,
         remove_branding: this.content.remove_branding,
         page_count: this.pageManifest.length,

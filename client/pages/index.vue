@@ -171,7 +171,7 @@
 import LiveDemo from "~/components/pages/welcome/LiveDemo.vue"
 import Features from "~/components/pages/welcome/Features.vue"
 import MoreFeatures from "../components/pages/welcome/MoreFeatures.vue"
-import { useIsAuthenticated } from "~/composables/useAuthFlow"
+import { useIsAuthenticated } from "~/composables/useIsAuthenticated.js"
 
 definePageMeta({
   layout: "default",

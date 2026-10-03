@@ -17,7 +17,9 @@ export default defineNitroPlugin((nitroApp) => {
     delete response.headers["X-Frame-Options"]
     delete response.headers["x-frame-options"]
 
-    if (routePath && !routePath.startsWith("/forms/")) {
+    const isEmbeddableRoute = routePath?.startsWith('/forms/') || routePath?.startsWith('/agent-drafts/preview')
+
+    if (routePath && !isEmbeddableRoute) {
       // Build frame-ancestors for non-form routes: localhost variants + matching allowlisted domain (if Referer present)
       // Note: CSP frame-ancestors doesn't support port wildcards, so we list common dev ports
       const commonPorts = ['', ':3000', ':3001', ':4200', ':5000', ':5173', ':8000', ':8080', ':8081', ':9000']
@@ -46,7 +48,7 @@ export default defineNitroPlugin((nitroApp) => {
       // Restrict embedding to localhost + (optionally) matched allowlisted domain
       response.headers["Content-Security-Policy"] = `frame-ancestors ${ancestors.join(' ')};`
     } else {
-      // Forms: embeddable anywhere, omit CSP directive
+      // Public forms and short-lived signed agent previews are embeddable anywhere.
       delete response.headers["Content-Security-Policy"]
     }
 

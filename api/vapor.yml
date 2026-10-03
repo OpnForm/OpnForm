@@ -24,6 +24,7 @@ environments:
       - "php artisan optimize"
       - "php artisan disposable:update"
     deploy:
+      - "php artisan mcp:check-oauth-keys --environment-only"
       - "php artisan migrate --force"
     firewall:
       rate-limit: 1000
@@ -41,6 +42,7 @@ environments:
       - "php artisan optimize"
       - "php artisan disposable:update"
     deploy:
+      - "php artisan mcp:check-oauth-keys --environment-only"
       - "php artisan migrate --force"
     firewall:
       rate-limit: 1000

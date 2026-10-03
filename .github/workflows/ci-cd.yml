@@ -10,6 +10,10 @@ on:
       - "client/**"
       - "docker/**"
       - "docker-compose*.yml"
+      - "scripts/docker-setup.sh"
+      - "scripts/e2e-*.sh"
+      - "scripts/setup-env.sh"
+      - "scripts/tests/setup-env-test.sh"
       - ".github/workflows/**"
   pull_request:
     paths:
@@ -17,6 +21,10 @@ on:
       - "client/**"
       - "docker/**"
       - "docker-compose*.yml"
+      - "scripts/docker-setup.sh"
+      - "scripts/e2e-*.sh"
+      - "scripts/setup-env.sh"
+      - "scripts/tests/setup-env-test.sh"
       - ".github/workflows/**"
   workflow_dispatch:
 
@@ -32,6 +40,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Test Docker environment setup
+        run: bash scripts/tests/setup-env-test.sh
 
       - name: Get Composer cache directory
         id: composer-cache
@@ -89,6 +100,12 @@ jobs:
       - name: Run ESLint
         run: npm run lint
 
+      - name: Test integration email event rendering
+        run: npm run test:email-events
+
+      - name: Test SSR configuration cache
+        run: npm run test:ssr-cache
+
       - name: Run front-end tests
         run: npm run test -- --run
 
@@ -99,6 +116,9 @@ jobs:
         run: npm run build:e2e
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+
+      - name: Test built SSR configuration cache
+        run: npm run test:ssr-cache:built
 
       - name: Upload Nuxt Output Artifact
         if: ${{ !cancelled() }}
@@ -315,14 +335,6 @@ jobs:
           cache: npm
           cache-dependency-path: client/package-lock.json
 
-      - name: Cache Playwright Browsers
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-${{ hashFiles('client/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-playwright-
-
       - name: Install composer dependencies
         working-directory: ./api
         run: composer install --prefer-dist --no-interaction --no-progress --ignore-platform-reqs --optimize-autoloader
@@ -337,9 +349,21 @@ jobs:
           name: nuxt-output
           path: client/.output
 
-      - name: Install Playwright Browsers
+      - name: Configure stable Ubuntu package mirror
+        run: |
+          if [ -f /etc/apt/apt-mirrors.txt ]; then
+            sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' /etc/apt/apt-mirrors.txt
+          fi
+
+      - name: Install Playwright system dependencies
+        timeout-minutes: 5
         working-directory: ./client
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install-deps chromium
+
+      - name: Install Playwright Chromium
+        timeout-minutes: 5
+        working-directory: ./client
+        run: npx playwright install chromium
 
       - name: Start E2E Stack
         run: ./scripts/e2e-up.sh

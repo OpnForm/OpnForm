@@ -17,14 +17,17 @@ class FormSubmitted
 
     public $data;
 
+    public array $meta;
+
     /**
      * Create a new event instance.
      *
      * @return void
      */
-    public function __construct(Form $form, array $data)
+    public function __construct(Form $form, array $data, array $meta = [])
     {
         $this->form = $form;
         $this->data = $data;
+        $this->meta = $meta;
     }
 }

@@ -66,13 +66,14 @@
 <script setup>
 import SettingsModal from '~/components/pages/settings/SettingsModal.vue'
 import SettingsModalPage from '~/components/pages/settings/SettingsModalPage.vue'
-import FormInformation from '~/components/open/forms/components/form-components/FormInformation.vue'
-import FormSubmissionSettings from '~/components/open/forms/components/form-components/FormSubmissionSettings.vue'
-import FormSecurityAccess from '~/components/open/forms/components/form-components/FormSecurityAccess.vue'
-import FormCustomSeo from '~/components/open/forms/components/form-components/FormCustomSeo.vue'
-import FormCustomCode from '~/components/open/forms/components/form-components/FormCustomCode.vue'
-import ComputedVariablesTab from '~/components/open/forms/components/computed-variables/ComputedVariablesTab.vue'
-import FormAnalyticsSettings from '~/components/open/forms/components/form-components/FormAnalyticsSettings.vue'
+
+const FormInformation = defineAsyncComponent(() => import('~/components/open/forms/components/form-components/FormInformation.vue'))
+const FormSubmissionSettings = defineAsyncComponent(() => import('~/components/open/forms/components/form-components/FormSubmissionSettings.vue'))
+const FormSecurityAccess = defineAsyncComponent(() => import('~/components/open/forms/components/form-components/FormSecurityAccess.vue'))
+const FormCustomSeo = defineAsyncComponent(() => import('~/components/open/forms/components/form-components/FormCustomSeo.vue'))
+const FormCustomCode = defineAsyncComponent(() => import('~/components/open/forms/components/form-components/FormCustomCode.vue'))
+const ComputedVariablesTab = defineAsyncComponent(() => import('~/components/open/forms/components/computed-variables/ComputedVariablesTab.vue'))
+const FormAnalyticsSettings = defineAsyncComponent(() => import('~/components/open/forms/components/form-components/FormAnalyticsSettings.vue'))
 
 const emit = defineEmits(['close', 'update:activeTab'])
 

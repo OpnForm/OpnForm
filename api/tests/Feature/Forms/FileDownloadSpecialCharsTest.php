@@ -31,7 +31,7 @@ describe('File download with special characters in filename', function () {
 
         // Use base64url encoded filename (as the new implementation does)
         $encodedFilename = FilenameUrlEncoder::encode($fileName);
-        $signedUrl = URL::signedRoute('open.forms.submissions.file', [$form->id, $encodedFilename]);
+        $signedUrl = URL::signedRoute('open.forms.submissions.file', [$form->id, $encodedFilename], absolute: false);
         $response = $this->get($signedUrl);
 
         $response->assertOk();
@@ -59,7 +59,7 @@ describe('File download with special characters in filename', function () {
         ]);
 
         $encodedFilename = FilenameUrlEncoder::encode($fileName);
-        $signedUrl = URL::signedRoute('open.forms.submissions.file', [$form->id, $encodedFilename]);
+        $signedUrl = URL::signedRoute('open.forms.submissions.file', [$form->id, $encodedFilename], absolute: false);
         $response = $this->get($signedUrl);
 
         $response->assertOk();
@@ -87,7 +87,7 @@ describe('File download with special characters in filename', function () {
         ]);
 
         $encodedFilename = FilenameUrlEncoder::encode($fileName);
-        $signedUrl = URL::signedRoute('open.forms.submissions.file', [$form->id, $encodedFilename]);
+        $signedUrl = URL::signedRoute('open.forms.submissions.file', [$form->id, $encodedFilename], absolute: false);
         $response = $this->get($signedUrl);
 
         $response->assertOk();
@@ -116,7 +116,7 @@ describe('File download with special characters in filename', function () {
         ]);
 
         $encodedFilename = FilenameUrlEncoder::encode($fileName);
-        $signedUrl = URL::signedRoute('open.forms.submissions.file', [$form->id, $encodedFilename]);
+        $signedUrl = URL::signedRoute('open.forms.submissions.file', [$form->id, $encodedFilename], absolute: false);
         $response = $this->get($signedUrl);
 
         $response->assertOk();
@@ -143,7 +143,7 @@ describe('File download with special characters in filename', function () {
         ]);
 
         $encodedFilename = FilenameUrlEncoder::encode($fileName);
-        $signedUrl = URL::signedRoute('open.forms.submissions.file', [$form->id, $encodedFilename]);
+        $signedUrl = URL::signedRoute('open.forms.submissions.file', [$form->id, $encodedFilename], absolute: false);
         $response = $this->get($signedUrl);
 
         $response->assertOk();
@@ -170,7 +170,7 @@ describe('File download with special characters in filename', function () {
         ]);
 
         $encodedFilename = FilenameUrlEncoder::encode($fileName);
-        $signedUrl = URL::signedRoute('open.forms.submissions.file', [$form->id, $encodedFilename]);
+        $signedUrl = URL::signedRoute('open.forms.submissions.file', [$form->id, $encodedFilename], absolute: false);
         $response = $this->get($signedUrl);
 
         $response->assertOk();

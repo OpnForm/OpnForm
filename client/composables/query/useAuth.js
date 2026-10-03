@@ -1,11 +1,13 @@
 import { useQueryClient, useQuery, useMutation } from '@tanstack/vue-query'
 import { authApi } from '~/api/auth'
-import { initServiceClients } from '~/composables/useAuthFlow'
+import { initServiceClients } from '~/composables/useServiceClients.js'
 
 export function useAuth() {
+  const nuxtApp = useNuxtApp()
   const queryClient = useQueryClient()
-  const { handleAuthSuccess, handleManualLogout, handleTwoFactorError } = useAuthFlow()
   const { isAuthenticated } = useIsAuthenticated()
+  const getAuthFlow = () => import('~/composables/useAuthFlow')
+    .then((authFlow) => nuxtApp.runWithContext(() => authFlow.useAuthFlow()))
 
   // Queries
   const user = (options = {}) => {
@@ -42,12 +44,13 @@ export function useAuth() {
   const deleteAccount = (options = {}) => {
     return useMutation({
       mutationFn: () => authApi.user.delete(),
-      onSuccess: () => {
+      onSuccess: async () => {
         // Clear cached data
         queryClient.clear()
         
         // Handle logout coordination (token clearing + navigation)
-        handleManualLogout()
+        const { handleManualLogout } = await getAuthFlow()
+        return handleManualLogout()
       },
       ...options
     })
@@ -56,7 +59,7 @@ export function useAuth() {
   const login = (options = {}) => {
     return useMutation({
       mutationFn: (data) => authApi.login(data),
-      onSuccess: (tokenData, variables) => {
+      onSuccess: async (tokenData, variables) => {
         // Cache user data if provided
         if (tokenData.user) {
           queryClient.setQueryData(['user'], tokenData.user)
@@ -68,15 +71,16 @@ export function useAuth() {
         queryClient.invalidateQueries({ queryKey: ['workspaces'] })
         
         // Handle auth flow coordination
-        handleAuthSuccess(tokenData, variables?.source || 'credentials')
+        const { handleAuthSuccess } = await getAuthFlow()
+        return handleAuthSuccess(tokenData, variables?.source || 'credentials')
       },
-      onError: (error, variables) => {
+      onError: async (error, variables) => {
+        const { handleAuthSuccess, handleTwoFactorError } = await getAuthFlow()
         // Check if this is a 2FA requirement (422 with requires_2fa flag)
         const twoFactorData = handleTwoFactorError(error)
         if (twoFactorData) {
           // Handle auth flow coordination (will show 2FA modal)
-          handleAuthSuccess(twoFactorData, variables?.source || 'credentials')
-          return
+          return handleAuthSuccess(twoFactorData, variables?.source || 'credentials')
         }
         
         // This is a real error, let it propagate
@@ -89,7 +93,7 @@ export function useAuth() {
   const register = (options = {}) => {
     return useMutation({
       mutationFn: (data) => authApi.register(data),
-      onSuccess: (tokenData, variables) => {
+      onSuccess: async (tokenData, variables) => {
         // Cache user data if provided
         if (tokenData.user) {
           queryClient.setQueryData(['user'], tokenData.user)
@@ -101,7 +105,8 @@ export function useAuth() {
         queryClient.invalidateQueries({ queryKey: ['workspaces'] })
         
         // Handle auth flow coordination (includes AppSumo license handling)
-        handleAuthSuccess(tokenData, variables?.source, true)
+        const { handleAuthSuccess } = await getAuthFlow()
+        return handleAuthSuccess(tokenData, variables?.source, true)
       },
       ...options
     })
@@ -110,20 +115,22 @@ export function useAuth() {
   const logout = (options = {}) => {
     return useMutation({
       mutationFn: () => authApi.logout(),
-      onSuccess: () => {
+      onSuccess: async () => {
         // Clear cached data
         queryClient.clear()
         
         // Handle manual logout coordination (token clearing + navigation)
-        handleManualLogout()
+        const { handleManualLogout } = await getAuthFlow()
+        return handleManualLogout()
       },
-      onError: (error) => {
+      onError: async (error) => {
         console.error(error)
         // Even if logout API fails, clear local state
         queryClient.clear()
         
         // Handle manual logout coordination (token clearing + navigation)
-        handleManualLogout()
+        const { handleManualLogout } = await getAuthFlow()
+        return handleManualLogout()
       },
       ...options
     })
@@ -132,7 +139,7 @@ export function useAuth() {
   const oauthCallback = (options = {}) => {
     return useMutation({
       mutationFn: ({ provider, data }) => authApi.oauth.callback(provider, data),
-      onSuccess: (response) => {
+      onSuccess: async (response) => {
         // Cache user data if provided
         if (response.user) {
           queryClient.setQueryData(['user'], response.user)
@@ -144,7 +151,8 @@ export function useAuth() {
         queryClient.invalidateQueries({ queryKey: ['workspaces'] })
         
         // Handle auth flow coordination (token handling done there)
-        handleAuthSuccess(response, 'oauth', response.new_user)
+        const { handleAuthSuccess } = await getAuthFlow()
+        return handleAuthSuccess(response, 'oauth', response.new_user)
       },
       ...options
     })
@@ -169,4 +177,4 @@ export function useAuth() {
     // Utilities
     invalidateUser
   }
-} 
+}

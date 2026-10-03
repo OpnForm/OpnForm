@@ -3,7 +3,7 @@ import { toValue } from 'vue'
 /**
  * @fileoverview Composable for handling the final form submission process.
  */
-export function useFormSubmission(formConfig, form) {
+export function useFormSubmission(formConfig, form, attribution = null) {
 
   /**
    * Prepares additional metadata for the submission payload.
@@ -32,6 +32,11 @@ export function useFormSubmission(formConfig, form) {
     // Add submission ID if provided (for editable submissions)
     if (options.submissionId) {
       metadata.submission_id = options.submissionId
+    }
+
+    const trackingParameters = toValue(attribution)
+    if (trackingParameters && Object.keys(trackingParameters).length > 0) {
+      metadata.tracking_parameters = trackingParameters
     }
 
     return metadata

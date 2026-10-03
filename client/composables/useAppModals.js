@@ -1,12 +1,11 @@
-import { ref, watch, computed, readonly } from 'vue'
+import { ref, watch, computed, readonly, defineAsyncComponent } from 'vue'
 import { useRouteQuery } from '@vueuse/router'
 import { createSharedComposable } from '@vueuse/core'
 // (No need for explicit imports of auto-imported composables)
 
-// Pre-import modal components so overlay receives component definitions, not promises
-import UsersSettingsModal from '~/components/users/settings/Modal.vue'
-import WorkspacesSettingsModal from '~/components/workspaces/settings/Modal.vue'
-import SubscriptionModal from '~/components/pages/pricing/SubscriptionModal.vue'
+const UsersSettingsModal = defineAsyncComponent(() => import('~/components/users/settings/Modal.vue'))
+const WorkspacesSettingsModal = defineAsyncComponent(() => import('~/components/workspaces/settings/Modal.vue'))
+const SubscriptionModal = defineAsyncComponent(() => import('~/components/pages/pricing/SubscriptionModal.vue'))
 
 /**
  * Factory for creating URL-synced modals.

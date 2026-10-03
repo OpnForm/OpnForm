@@ -1,21 +1,12 @@
+import * as Sentry from '@sentry/nuxt'
+import { createChunkErrorRecovery } from '~/lib/chunk-error-recovery.js'
+
 export default defineNuxtPlugin((nuxtApp) => {
-const router = useRouter()
+  const recover = createChunkErrorRecovery({
+    captureException: Sentry.captureException,
+    flush: Sentry.flush,
+    reload: reloadNuxtApp,
+  })
 
-    router.onError((error) => {
-        if (
-        error.message.includes('Failed to fetch dynamically imported module') ||
-        error.message.includes('Failed to load resource')
-        ) {
-        window.location.reload()
-        }
-    })
-
-    nuxtApp.hook('app:error', (error) => {
-        if (
-        error.message.includes('Loading chunk') ||
-        error.message.includes('Failed to load resource')
-        ) {
-        window.location.reload()
-        }
-    })
+  nuxtApp.hook('app:chunkError', recover)
 })

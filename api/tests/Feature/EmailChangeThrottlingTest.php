@@ -13,6 +13,7 @@ it('allows first two email changes within an hour', function () {
     $response = $this->patchJson('/settings/profile', [
         'name' => 'Test User',
         'email' => 'first@example.com',
+        'current_password' => 'Abcd@1234',
     ]);
     $response->assertSuccessful();
 
@@ -20,6 +21,7 @@ it('allows first two email changes within an hour', function () {
     $response = $this->patchJson('/settings/profile', [
         'name' => 'Test User',
         'email' => 'second@example.com',
+        'current_password' => 'Abcd@1234',
     ]);
     $response->assertSuccessful();
 });
@@ -35,6 +37,7 @@ it('blocks third email change within an hour', function () {
     $response = $this->patchJson('/settings/profile', [
         'name' => 'Test User',
         'email' => 'first@example.com',
+        'current_password' => 'Abcd@1234',
     ]);
     $response->assertSuccessful();
 
@@ -42,6 +45,7 @@ it('blocks third email change within an hour', function () {
     $response = $this->patchJson('/settings/profile', [
         'name' => 'Test User',
         'email' => 'second@example.com',
+        'current_password' => 'Abcd@1234',
     ]);
     $response->assertSuccessful();
 
@@ -49,6 +53,7 @@ it('blocks third email change within an hour', function () {
     $response = $this->patchJson('/settings/profile', [
         'name' => 'Test User',
         'email' => 'third@example.com',
+        'current_password' => 'Abcd@1234',
     ]);
     $response->assertStatus(429)
         ->assertJson([
@@ -89,6 +94,7 @@ it('resets throttle counter after one hour', function () {
     $response = $this->patchJson('/settings/profile', [
         'name' => 'Test User',
         'email' => 'first@example.com',
+        'current_password' => 'Abcd@1234',
     ]);
     $response->assertSuccessful();
 
@@ -96,6 +102,7 @@ it('resets throttle counter after one hour', function () {
     $response = $this->patchJson('/settings/profile', [
         'name' => 'Test User',
         'email' => 'second@example.com',
+        'current_password' => 'Abcd@1234',
     ]);
     $response->assertSuccessful();
 
@@ -103,6 +110,7 @@ it('resets throttle counter after one hour', function () {
     $response = $this->patchJson('/settings/profile', [
         'name' => 'Test User',
         'email' => 'third@example.com',
+        'current_password' => 'Abcd@1234',
     ]);
     $response->assertStatus(429);
 
@@ -112,6 +120,7 @@ it('resets throttle counter after one hour', function () {
     $response = $this->patchJson('/settings/profile', [
         'name' => 'Test User',
         'email' => 'third@example.com',
+        'current_password' => 'Abcd@1234',
     ]);
     $response->assertSuccessful();
 });

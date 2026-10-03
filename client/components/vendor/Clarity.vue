@@ -2,7 +2,7 @@
 
 <script setup>
 import Clarity from '@microsoft/clarity'
-import { useIsAuthenticated } from '~/composables/useAuthFlow'
+import { useIsAuthenticated } from '~/composables/useIsAuthenticated.js'
 
 const authStore = useAuthStore()
 const user = computed(() => authStore.user)
@@ -48,5 +48,4 @@ onMounted(() => {
   loadClarity()
 })
 </script>
-
 

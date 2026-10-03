@@ -21,3 +21,4 @@ client/.env.*
 !.env.example
 !api/.env.example
 !client/.env.example
+.help-center-docs/

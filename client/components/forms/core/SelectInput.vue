@@ -6,6 +6,7 @@
 
     <v-select
       v-model="compVal"
+      :id="id || name"
       :dusk="name"
       :data="finalOptions"
       :label="label"

@@ -718,23 +718,17 @@ class FormLogicConditionChecker
             case 'content_length_less_than_or_equal_to':
                 return $this->checkLength($propertyCondition, $value, '<=');
             case 'matches_regex':
-                try {
-                    if (!is_string($propertyCondition['value']) || !is_string($value)) {
-                        return false;
-                    }
-                    return (bool) preg_match('/' . $propertyCondition['value'] . '/', $value);
-                } catch (\Exception $e) {
+                if (! is_string($propertyCondition['value']) || ! is_string($value)) {
                     return false;
                 }
+                return FormRegex::matches($propertyCondition['value'], $value) ?? false;
             case 'does_not_match_regex':
-                try {
-                    if (!is_string($propertyCondition['value']) || !is_string($value)) {
-                        return true;
-                    }
-                    return !(bool) preg_match('/' . $propertyCondition['value'] . '/', $value);
-                } catch (\Exception $e) {
+                if (! is_string($propertyCondition['value']) || ! is_string($value)) {
                     return true;
                 }
+                $matches = FormRegex::matches($propertyCondition['value'], $value);
+
+                return $matches === null ? true : ! $matches;
             case 'exists_in_submissions':
                 return $this->checkExistsInSubmissions($propertyCondition, $value);
             case 'does_not_exist_in_submissions':

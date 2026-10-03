@@ -185,6 +185,50 @@ describe('PdfCacheService', function () {
         expect(Storage::exists($path1))->toBeTrue();
         expect(Storage::exists($path2))->toBeTrue();
     });
+
+    it('invalidates cache when computed variable definitions change', function () {
+        $pdfContent = createCacheTestPdf();
+        $templatePath = 'pdf-templates/1/template.pdf';
+        Storage::put($templatePath, $pdfContent);
+
+        $form = createCacheTestForm([
+            'computed_variables' => [
+                ['id' => 'cv_total', 'name' => 'Total', 'formula' => '{amount} * 2'],
+            ],
+        ]);
+
+        $template = PdfTemplate::create([
+            'form_id' => $form->id,
+            'name' => 'Computed Variable Template',
+            'filename' => 'template.pdf',
+            'original_filename' => 'Template.pdf',
+            'file_path' => $templatePath,
+            'file_size' => strlen($pdfContent),
+            'page_count' => 1,
+            'zone_mappings' => [],
+        ]);
+
+        $submission = $form->submissions()->create([
+            'data' => ['amount' => 10],
+        ]);
+
+        $cacheService = new PdfCacheService();
+        $generator = new PdfGeneratorService();
+
+        $path1 = $cacheService->getOrGenerateFromTemplate($form, $submission, $template, $generator);
+
+        $form->update([
+            'computed_variables' => [
+                ['id' => 'cv_total', 'name' => 'Total', 'formula' => '{amount} * 3'],
+            ],
+        ]);
+
+        $path2 = $cacheService->getOrGenerateFromTemplate($form->refresh(), $submission, $template, $generator);
+
+        expect($path2)->not->toBe($path1)
+            ->and(Storage::exists($path1))->toBeTrue()
+            ->and(Storage::exists($path2))->toBeTrue();
+    });
 });
 
 /**

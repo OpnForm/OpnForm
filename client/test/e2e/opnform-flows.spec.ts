@@ -219,15 +219,21 @@ async function openRegister(page: Page) {
 }
 
 async function selectHearAboutUs(page: Page) {
-  await page.getByRole("button", { name: "Select option", exact: true }).click()
-  await page.getByText("Friend or Colleague", { exact: true }).click()
+  const select = page.getByRole("button", { name: "How did you hear about us?", exact: true })
+
+  await expect(async () => {
+    await select.click()
+    await expect(select).toHaveAttribute("aria-expanded", "true")
+  }).toPass({ timeout: 15_000 })
+
+  await page.getByRole("option", { name: "Friend or Colleague", exact: true }).click()
 }
 
 async function registerUi(page: Page, email: string) {
   await openRegister(page)
+  await selectHearAboutUs(page)
   await page.locator('input[name="name"]').fill("Playwright User")
   await page.locator('input[name="email"]').fill(email)
-  await selectHearAboutUs(page)
   await page.locator('input[name="password"]').fill("Abcd@1234")
   await page.locator('input[name="password_confirmation"]').fill("Abcd@1234")
   await page.locator('input[name="agree_terms"]').check({ force: true })
@@ -354,6 +360,18 @@ async function apiCreateForm(request: APIRequestContext, options: {
   }
 
   throw new Error(`Failed to create form via API (${lastFailure?.status}): ${lastFailure?.body}`)
+}
+
+async function apiListSubmissions(request: APIRequestContext, token: string, slug: string) {
+  const response = await request.get(`${API_BASE_URL}/open/forms/${slug}/submissions`, {
+    headers: {
+      Accept: "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  })
+
+  expect(response.ok()).toBeTruthy()
+  return response.json()
 }
 
 async function submitPublicForm(page: Page, slug: string, visitorName = "Playwright Visitor") {
@@ -540,6 +558,41 @@ test("editing an existing form title persists after save", async ({ page, reques
   await expect(page.getByRole("heading", { name: updatedTitle, exact: true })).toBeVisible()
 })
 
+test("font picker opens from Design and applies a font", async ({ page, request }) => {
+  const form = await apiCreateForm(request, { title: uniqueTitle("Font Picker") })
+  await page.route("**/fonts", route => route.fulfill({ json: ["Roboto", "Open Sans"] }))
+
+  const token = await apiLogin(request)
+  const baseURL = test.info().project.use.baseURL
+  if (!baseURL) throw new Error("Playwright baseURL is required")
+  await page.context().addCookies([{ name: "opnform_token", value: token, url: baseURL }])
+  await page.goto(`/forms/${form.slug}/edit`)
+  await expect(page.locator("#form-editor")).toBeVisible()
+
+  // Exercise the enabled UI without requiring a Google Fonts API key in CI.
+  await page.evaluate(() => {
+    const payload = (window as typeof window & {
+      __NUXT__: { state: Record<string, { services: { google: { fonts: boolean } } }> }
+    }).__NUXT__
+    payload.state["$sfeatureFlags"].services.google.fonts = true
+  })
+
+  const pageErrors: string[] = []
+  page.on("pageerror", error => pageErrors.push(error.message))
+
+  await page.getByText("Design", { exact: true }).click()
+  const fontFamily = page.getByText("Font Family", { exact: true }).locator("..")
+  await fontFamily.getByRole("button").click()
+  await expect(page.getByText("The quick brown fox jumped over the lazy dog").first()).toBeVisible()
+  await page.getByText("Roboto", { exact: true }).last().click()
+  await page.getByRole("button", { name: "Apply", exact: true }).click()
+
+  await expect(fontFamily.getByRole("button")).toContainText("Roboto")
+  await fontFamily.getByRole("button").click()
+  await expect(page.getByText("The quick brown fox jumped over the lazy dog").first()).toBeVisible()
+  expect(pageErrors).toEqual([])
+})
+
 test("form save errors open the invalid field section and computed variable", async ({ page, request }) => {
   const form = await apiCreateForm(request, {
     title: uniqueTitle("Save Error Form"),
@@ -655,6 +708,145 @@ test("public submissions are accepted and visible in the submissions dashboard",
   await expect(page.getByTestId("form-submissions-page")).toBeVisible()
   await expect(page.getByText(visitorName)).toBeVisible()
   await expect(page.getByText(visitorEmail)).toBeVisible()
+})
+
+test("public form URL attribution is stored separately from submitted answers", async ({ page, request }) => {
+  const form = await apiCreateForm(request, { title: uniqueTitle("Attributed Submission") })
+  const visitorName = `Attributed Visitor ${Date.now()}`
+  const visitorEmail = uniqueEmail("attributed")
+
+  await gotoPageWithRetry(
+    page,
+    `/forms/${form.slug}?utm_source=playwright&utm_campaign=e2e&gclid=browser-click&email=must-not-track`,
+    async () => {
+      await expect(page.getByTestId("public-form-page")).toBeVisible()
+    },
+  )
+  await fillFieldInput(page, "default_name", visitorName)
+  await fillFieldInput(page, "default_email", visitorEmail)
+  await fillFieldInput(page, "default_message", "Attribution browser test")
+  await page.getByRole("button", { name: /submit/i }).click()
+  await expectSubmissionSuccess(page)
+
+  const token = await apiLogin(request)
+  const submissionsResponse = await request.get(
+    `${API_BASE_URL}/open/forms/${form.slug}/submissions`,
+    {
+      headers: {
+        Accept: "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  )
+
+  expect(submissionsResponse.ok()).toBeTruthy()
+  const submissions = await submissionsResponse.json()
+  const submission = submissions.data.find((record: {
+    data: Record<string, unknown>,
+  }) => record.data.default_name === visitorName)
+
+  expect(submission).toBeTruthy()
+  expect(submission.data).not.toHaveProperty("tracking_parameters")
+  expect(submission.meta).toEqual({
+    attribution: {
+      utm_source: "playwright",
+      utm_campaign: "e2e",
+      gclid: "browser-click",
+    },
+  })
+
+  await loginUi(page)
+  await page.goto(`/forms/${form.slug}/show/submissions`)
+  await expect(page.getByTestId("form-submissions-page")).toBeVisible()
+  await page.getByRole("button", { name: "Columns", exact: true }).click()
+
+  const columnsDialog = page.getByRole("dialog", { name: "Columns" })
+  await expect(columnsDialog.getByText("utm_source", { exact: true })).toHaveCount(0)
+  await columnsDialog.getByRole("button", { name: /Attribution & tracking/ }).click()
+  await expect(columnsDialog.getByText("utm_source", { exact: true })).toBeVisible()
+  await columnsDialog.getByRole("button", { name: "Show detected", exact: true }).click()
+
+  const attributedRow = page.getByRole("row").filter({ hasText: visitorName })
+  await expect(attributedRow).toContainText("playwright")
+  await expect(attributedRow).toContainText("e2e")
+  await expect(attributedRow).toContainText("browser-click")
+
+  await columnsDialog.getByRole("button", { name: "Hide URL parameters", exact: true }).click()
+  await expect(page.getByRole("columnheader", { name: "utm_source", exact: true })).toHaveCount(0)
+  await expect(page.getByRole("columnheader", { name: "utm_campaign", exact: true })).toHaveCount(0)
+  await expect(page.getByRole("columnheader", { name: "gclid", exact: true })).toHaveCount(0)
+})
+
+test("SDK parent attribution is captured before an embedded auto-submit", async ({ page, request }) => {
+  const form = await apiCreateForm(request, {
+    title: uniqueTitle("SDK Auto Submit Attribution"),
+    payloadOverrides: {
+      properties: [
+        {
+          type: "nf-text",
+          content: "<h1>SDK auto-submit attribution</h1>",
+          name: "Title",
+          id: "default_title",
+        },
+        buildTextField("sdk_auto_name", "Name"),
+      ],
+    },
+  })
+  const token = await apiLogin(request)
+  const iframeUrl = `/forms/${form.slug}?auto_submit=true&sdk_auto_name=Auto%20SDK`
+
+  await page.goto("/?utm_source=sdk-parent&utm_campaign=auto-submit")
+  await page.setContent(`
+    <!doctype html>
+    <html>
+      <body>
+        <iframe id="${form.slug}" src="${iframeUrl}"></iframe>
+        <script>
+          setTimeout(() => {
+            const sdk = document.createElement('script')
+            sdk.src = '/widgets/opnform-sdk.js'
+            sdk.onload = () => window.opnform.init({ autoResize: false, preventRedirect: true })
+            document.body.appendChild(sdk)
+          }, 750)
+        </script>
+      </body>
+    </html>
+  `)
+
+  let submission: { meta?: { attribution?: Record<string, string> } } | undefined
+  await expect.poll(async () => {
+    const submissions = await apiListSubmissions(request, token, form.slug)
+    submission = submissions.data.find((record: { data: Record<string, unknown> }) => (
+      record.data.sdk_auto_name === "Auto SDK"
+    ))
+    return submission
+  }, { timeout: 20_000 }).toBeTruthy()
+
+  expect(submission?.meta?.attribution).toEqual({
+    utm_source: "sdk-parent",
+    utm_campaign: "auto-submit",
+  })
+})
+
+test("popup embed falls back to valid parent attribution when its form URL value is empty", async ({ page, request }) => {
+  const form = await apiCreateForm(request, { title: uniqueTitle("Popup Attribution") })
+  const formUrl = `/forms/${form.slug}?utm_source=`
+  const widgetData = JSON.stringify({ formurl: formUrl }).replaceAll('"', '&quot;')
+
+  await page.goto("/?utm_source=popup-parent&utm_campaign=popup-test")
+  await page.setContent(`
+    <!doctype html>
+    <html>
+      <body>
+        <script data-nf="${widgetData}" src="/widgets/embed.js"></script>
+      </body>
+    </html>
+  `)
+  await page.locator(".nf-emoji").click()
+
+  const popupUrl = new URL(await page.locator(".nf-popup iframe").getAttribute("src") || "", page.url())
+  expect(popupUrl.searchParams.get("utm_source")).toBe("popup-parent")
+  expect(popupUrl.searchParams.get("utm_campaign")).toBe("popup-test")
 })
 
 test("classic public form submits successfully with mixed field components", async ({ page, request }) => {

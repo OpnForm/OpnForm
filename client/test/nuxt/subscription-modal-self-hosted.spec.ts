@@ -56,7 +56,7 @@ vi.mock('~/composables/query/useAuth.js', async () => {
   }
 })
 
-vi.mock('~/composables/useAuthFlow.js', async () => {
+vi.mock('~/composables/useIsAuthenticated.js', async () => {
   const vue = await import('vue')
 
   return {

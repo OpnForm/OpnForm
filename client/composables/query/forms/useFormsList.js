@@ -10,7 +10,7 @@ export function useFormsList(workspaceId, options = {}) {
   const query = useInfiniteQuery({
     queryKey: computed(() => ['forms', 'list', workspaceId.value]),
     queryFn: ({ pageParam = 1 }) => {
-      const apiFilters = { page: pageParam }
+      const apiFilters = { page: pageParam, per_page: 50 }
       // Note: List endpoint returns lightweight form data (no properties).
       // Individual form detail queries will fetch the full form when needed.
       return formsApi.list(workspaceId.value, { params: apiFilters })

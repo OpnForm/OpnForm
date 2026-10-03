@@ -2,6 +2,8 @@
 
 namespace App\Rules\PropertyValidators;
 
+use App\Service\Forms\AgentFormFieldCatalog;
+
 /**
  * Validates type-specific property fields based on the property type.
  * Only validates fields that are relevant to each specific type.
@@ -77,8 +79,14 @@ class TypePropertyValidator implements PropertyValidatorInterface
         $errors = [];
         $type = $property['type'] ?? null;
 
-        if (!$type) {
+        if (! is_string($type) || $type === '') {
             return $errors; // Type validation handled by CorePropertyValidator
+        }
+
+        if (! in_array($type, AgentFormFieldCatalog::types(), true)) {
+            $errors['type'] = "The field type [{$type}] is not supported.";
+
+            return $errors;
         }
 
         // Skip layout blocks (nf-*) - they have no type-specific rules

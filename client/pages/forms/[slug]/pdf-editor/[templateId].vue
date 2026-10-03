@@ -24,6 +24,11 @@
 
     <!-- Editor Layout (only when loaded) -->
     <template v-else>
+      <PdfObsoleteFieldZonesModal
+        v-model:open="isObsoleteZonesModalOpen"
+        :zones="removedObsoleteFieldZones"
+      />
+
       <PdfEditorNavbar
         @go-back="goBack"
         @save-pdf-template="saveTemplate"
@@ -53,6 +58,7 @@
 <script setup>
 import { usePdfTemplates } from '~/composables/query/forms/usePdfTemplates'
 import PdfEditorNavbar from '~/components/open/pdf-editor/PdfEditorNavbar.vue'
+import PdfObsoleteFieldZonesModal from '~/components/open/pdf-editor/PdfObsoleteFieldZonesModal.vue'
 import PdfLeftSidebar from '~/components/open/pdf-editor/PdfLeftSidebar.vue'
 import PdfRightSidebar from '~/components/open/pdf-editor/PdfRightSidebar.vue'
 import PdfZoneEditor from '~/components/open/pdf-editor/PdfZoneEditor.vue'
@@ -89,14 +95,25 @@ const updateTemplate = update(
 )
 
 const isLoading = computed(() => formLoading.value || templateLoading.value)
+const isObsoleteZonesModalOpen = ref(false)
+const removedObsoleteFieldZones = ref([])
+const hasCheckedObsoleteZones = ref(false)
 
 // Initialize store from template and form
-watch([() => templateData.value?.data, form], ([t, f]) => {
+watch([() => templateData.value?.data, form, isLoading], ([t, f, loading]) => {
   if (t) {
     pdfStore.set(t)
   }
   if (f) {
     pdfStore.setForm(f)
+  }
+  if (!loading && t && f && !hasCheckedObsoleteZones.value) {
+    hasCheckedObsoleteZones.value = true
+    removedObsoleteFieldZones.value = pdfStore.obsoleteFieldZones.map(zone => ({ ...zone }))
+    if (removedObsoleteFieldZones.value.length) {
+      pdfStore.removeObsoleteFieldZones()
+      isObsoleteZonesModalOpen.value = true
+    }
   }
 }, { immediate: true })
 

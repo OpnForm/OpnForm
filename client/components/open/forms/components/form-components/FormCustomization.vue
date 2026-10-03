@@ -225,7 +225,7 @@
     <toggle-switch-input
       name="confetti_on_submission"
       :form="form"
-      label="Confetti on successful submisison"
+      label="Confetti on successful submission"
       @update:model-value="onChangeConfettiOnSubmission"
     />
     <ToggleSwitchInput

@@ -1,5 +1,5 @@
 <template>
-  <transition @leave="(el, done) => sidebarMotion?.leave(done)">
+  <transition name="slide-right">
     <div
       v-if="show"
       ref="elementRef"
@@ -27,8 +27,7 @@
 </template>
 
 <script setup>
-import { slideRight, useMotion } from '@vueuse/motion'
-import { watch, computed } from 'vue'
+import { computed } from 'vue'
 import { useResizable } from '~/composables/components/useResizable'
 import ResizeHandle from '@/components/global/ResizeHandle.vue'
 
@@ -60,21 +59,19 @@ const {
   maxWidth: () => Math.min(600, window.innerWidth * 0.6)
 })
 
-// Motion animation
-const sidebarMotion = ref(null)
-
 // Enable resizing only when prop is true and breakpoint allows it
 const isResizable = computed(() => props.resizable && isResizableBase.value)
-
-// Watch for show prop changes (existing functionality)  
-watch(
-  () => props.show,
-  (newVal) => {
-    if (newVal) {
-      nextTick(() => {
-        sidebarMotion.value = useMotion(elementRef.value, slideRight)
-      })
-    }
-  },
-)
 </script>
+
+<style scoped>
+.slide-right-enter-active,
+.slide-right-leave-active {
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.slide-right-enter-from,
+.slide-right-leave-to {
+  opacity: 0;
+  transform: translateX(100%);
+}
+</style>

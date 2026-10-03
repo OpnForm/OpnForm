@@ -29,7 +29,7 @@ Authorization: Bearer <token>
 
 | Field   | Type   | Required | Description                                                                                                       |
 | ------- | ------ | -------- | ----------------------------------------------------------------------------------------------------------------- |
-| columns | object | Yes      | Keys are field IDs (or `created_at`); values are booleans indicating whether to include the column in the export. |
+| columns | object | Yes      | Keys are field IDs, system columns, or attribution columns such as `meta.attribution.utm_source`; values indicate whether to include them. |
 
 Example payload exporting two fields and the created_at timestamp:
 
@@ -38,6 +38,7 @@ Example payload exporting two fields and the created_at timestamp:
     "columns": {
         "field_name": true,
         "field_email": true,
+        "meta.attribution.utm_source": true,
         "created_at": true
     }
 }

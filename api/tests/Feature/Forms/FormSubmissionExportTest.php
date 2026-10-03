@@ -3,6 +3,7 @@
 use App\Models\User;
 use App\Models\Forms\FormSubmission;
 use App\Service\Forms\FormExportService;
+use App\Service\Forms\SubmissionAttribution;
 use App\Service\Storage\FileUploadPathService;
 use Carbon\Carbon;
 use Illuminate\Routing\Middleware\ThrottleRequests;
@@ -70,6 +71,44 @@ it('can export form submissions with selected columns', function () {
 
     $response->assertSuccessful()
         ->assertHeader('content-disposition', 'attachment; filename=' . $form->slug . '-submission-data.csv');
+});
+
+it('exports selected attribution columns and leaves unselected attribution out', function () {
+    $user = $this->actingAsProUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace);
+    $textField = collect($form->properties)->firstWhere('type', 'text');
+
+    $submissionData = $this->generateFormSubmissionData($form, [
+        $textField['id'] => 'Attributed submission',
+    ]);
+    $submissionData['tracking_parameters'] = [
+        'utm_source' => 'newsletter',
+        'gclid' => 'not-exported',
+    ];
+
+    $this->postJson(route('forms.answer', $form->slug), $submissionData)
+        ->assertSuccessful();
+
+    $response = $this->postJson(route('open.forms.submissions.export', [
+        'form' => $form,
+    ]), [
+        'columns' => [
+            $textField['id'] => true,
+            SubmissionAttribution::columnId('utm_source') => true,
+        ],
+    ]);
+
+    $response->assertSuccessful();
+
+    ob_start();
+    $response->sendContent();
+    $rows = parseCsvRows(ob_get_clean());
+
+    expect($rows[0])->toContain('utm_source')
+        ->not->toContain('gclid')
+        ->and($rows[1])->toContain('newsletter')
+        ->not->toContain('not-exported');
 });
 
 it('exports only the selected submission ids', function () {

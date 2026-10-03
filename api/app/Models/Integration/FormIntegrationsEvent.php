@@ -15,6 +15,7 @@ class FormIntegrationsEvent extends Model
 
     protected $fillable = [
         'integration_id',
+        'tracking_id',
         'status',
         'data'
     ];

@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Settings;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Http\Exceptions\ThrottleRequestsException;
+use Illuminate\Validation\ValidationException;
 
 class ProfileController extends Controller
 {
@@ -17,17 +19,44 @@ class ProfileController extends Controller
     public function update(Request $request)
     {
         $user = $request->user();
+        $requestedEmail = $request->input('email');
+        $emailChanged = is_string($requestedEmail)
+            && strtolower($requestedEmail) !== strtolower($user->email);
 
-        $this->validate($request, [
+        $rules = [
             'name' => 'required',
             'email' => 'required|email|unique:users,email,' . $user->id,
-        ]);
+        ];
 
-        // Check if email is actually changing
-        $emailChanged = strtolower($request->email) !== strtolower($user->email);
+        if ($emailChanged && $user->canChangeEmail()) {
+            $rules['current_password'] = ['required', 'string'];
+        }
 
-        // Apply throttling only if email is changing
+        $this->validate($request, $rules);
+
         if ($emailChanged) {
+            if (!$user->canChangeEmail()) {
+                throw ValidationException::withMessages([
+                    'email' => ['Your email address is managed by your sign-in provider and cannot be changed here.'],
+                ]);
+            }
+
+            $reauthKey = 'profile-email-reauth:' . $user->id;
+
+            if (RateLimiter::tooManyAttempts($reauthKey, 5)) {
+                throw new ThrottleRequestsException('Too Many Attempts.');
+            }
+
+            if (!Hash::check($request->current_password, $user->password)) {
+                RateLimiter::hit($reauthKey, 60);
+
+                throw ValidationException::withMessages([
+                    'current_password' => ['The current password is incorrect.'],
+                ]);
+            }
+
+            RateLimiter::clear($reauthKey);
+
             $key = 'profilechange:' . $user->id;
             $attempts = RateLimiter::attempts($key);
 

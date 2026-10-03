@@ -44,7 +44,7 @@ class PaymentPropertyValidator implements PropertyValidatorInterface
         $properties = $context['properties'] ?? [];
         $paymentBlockCount = 0;
         foreach ($properties as $prop) {
-            if (($prop['type'] ?? null) === 'payment') {
+            if (is_array($prop) && ($prop['type'] ?? null) === 'payment') {
                 $paymentBlockCount++;
             }
         }
@@ -76,26 +76,34 @@ class PaymentPropertyValidator implements PropertyValidatorInterface
             self::$stripeCurrencyCodes = array_column($stripeCurrencies, 'code');
         }
 
-        if (!isset($property['currency']) || !in_array(strtoupper($property['currency']), self::$stripeCurrencyCodes)) {
+        if (! is_string($property['currency'] ?? null)
+            || ! in_array(strtoupper($property['currency']), self::$stripeCurrencyCodes, true)) {
             $errors['currency'] = 'Currency must be a valid currency';
             return $errors;
         }
 
         // Stripe account validation
-        if (!isset($property['stripe_account_id']) || empty($property['stripe_account_id'])) {
+        $stripeAccountId = $property['stripe_account_id'] ?? null;
+        if ((! is_string($stripeAccountId) && ! is_int($stripeAccountId)) || $stripeAccountId === '') {
             $errors['stripe_account_id'] = 'Stripe account is required';
             return $errors;
         }
 
+        // Guest form definitions have no workspace security boundary yet. Defer
+        // provider lookup until the draft is claimed so validation cannot be
+        // used to enumerate OAuth provider IDs from other accounts.
+        if ($this->workspace === null) {
+            return $errors;
+        }
+
         try {
-            $provider = OAuthProvider::find($property['stripe_account_id']);
+            $provider = OAuthProvider::find($stripeAccountId);
             if ($provider === null) {
                 $errors['stripe_account_id'] = 'Failed to validate Stripe account';
                 return $errors;
             }
 
-            // Check if the provider is associated with the workspace (if workspace is provided)
-            if ($this->workspace && !$this->workspace->hasProvider($provider->id)) {
+            if (!$this->workspace->hasProvider($provider->id)) {
                 Log::error('Attempted to use Stripe account not associated with the workspace', [
                     'stripe_account_id' => $property['stripe_account_id'],
                     'provider_id' => $provider->id,
@@ -104,10 +112,10 @@ class PaymentPropertyValidator implements PropertyValidatorInterface
                 $errors['stripe_account_id'] = 'The configured Stripe account is not associated with this workspace';
                 return $errors;
             }
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::error('Failed to validate Stripe account', [
                 'error' => $e->getMessage(),
-                'account_id' => $property['stripe_account_id']
+                'account_id' => $stripeAccountId,
             ]);
             $errors['stripe_account_id'] = 'Failed to validate Stripe account';
             return $errors;

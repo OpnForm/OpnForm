@@ -11,6 +11,7 @@ use App\Models\Forms\FormSubmission;
 use App\Service\Billing\Feature;
 use App\Service\Forms\FormAutoIncrementSequence;
 use App\Service\Forms\FormLogicPropertyResolver;
+use App\Service\Forms\SubmissionAttribution;
 use App\Service\Storage\FilenameUrlEncoder;
 use App\Service\Storage\StorageFileNameParser;
 use Illuminate\Bus\Queueable;
@@ -64,6 +65,8 @@ class StoreFormSubmissionJob implements ShouldQueue
     private bool $isPartial = false;
     private bool $isClientProvidedSubmissionId = false;
     private ?string $submitterIp = null;
+    private array $attribution = [];
+    private array $storedMeta = [];
 
     /**
      * Create a new job instance.
@@ -89,7 +92,7 @@ class StoreFormSubmissionJob implements ShouldQueue
         $this->storeSubmission($this->formData);
         $this->formData['submission_id'] = $this->submissionId;
         if (!$this->isPartial) {
-            FormSubmitted::dispatch($this->form, $this->formData);
+            FormSubmitted::dispatch($this->form, $this->formData, $this->storedMeta);
         }
     }
 
@@ -104,6 +107,11 @@ class StoreFormSubmissionJob implements ShouldQueue
      */
     private function extractMetadata(): void
     {
+        $this->attribution = app(SubmissionAttribution::class)->sanitize(
+            $this->submissionData['tracking_parameters'] ?? null
+        );
+        unset($this->submissionData['tracking_parameters']);
+
         if (isset($this->submissionData['completion_time'])) {
             $this->completionTime = $this->submissionData['completion_time'];
             unset($this->submissionData['completion_time']);
@@ -205,6 +213,8 @@ class StoreFormSubmissionJob implements ShouldQueue
                 $submission->form_id = $this->form->id;
             }
 
+            $isNewSubmission = !$submission->exists;
+
             if ($this->isPartial) {
                 foreach ($formData as $fieldId => $value) {
                     if ($value === self::AUTO_INCREMENT_ID_PLACEHOLDER) {
@@ -246,14 +256,26 @@ class StoreFormSubmissionJob implements ShouldQueue
                 $submission->public_id = Str::uuid()->toString();
             }
 
+            $existingMeta = $submission->meta ?? [];
+            $metaChanged = false;
+
+            if ($isNewSubmission && !empty($this->attribution)) {
+                $existingMeta['attribution'] = $this->attribution;
+                $metaChanged = true;
+            }
+
             if ($this->form->enable_ip_tracking && $this->form->workspace->hasFeature('enable_ip_tracking') && $this->submitterIp) {
-                $existingMeta = $submission->meta ?? [];
                 $existingMeta['ip_address'] = $this->submitterIp;
+                $metaChanged = true;
+            }
+
+            if ($metaChanged) {
                 $submission->meta = $existingMeta;
             }
 
             $submission->save();
             $this->submissionId = $submission->id;
+            $this->storedMeta = $submission->meta ?? [];
         });
     }
 

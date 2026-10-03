@@ -20,6 +20,11 @@ enum AccessTokenAbility: string
     case WorkspaceUsersRead = 'workspace-users-read';
     case WorkspaceUsersWrite = 'workspace-users-write';
 
+    public static function adminValues(): array
+    {
+        return ['admin:users:read', 'admin:billing:read', 'admin:forms:read', 'admin:users:block', 'admin:users:unblock', 'admin:users:password-reset', 'admin:users:disable-2fa', 'admin:users:clear-cache', 'admin:billing:discount', 'admin:billing:extend-trial', 'admin:billing:cancel', 'admin:billing:refund', 'admin:billing:update', 'admin:forms:restore', 'admin:templates:create'];
+    }
+
     public static function values(): array
     {
         return array_map(

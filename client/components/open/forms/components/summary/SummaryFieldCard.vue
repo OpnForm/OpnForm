@@ -36,7 +36,10 @@
           <button
             v-for="mode in ['bar', 'pie']"
             :key="mode"
-            class="px-2 py-1 rounded-md text-xs font-medium transition-all"
+            type="button"
+            :aria-label="`${mode === 'pie' ? 'Pie' : 'Bar'} chart for ${field.name}`"
+            :aria-pressed="mode === 'pie' ? showPieChart : !showPieChart"
+            class="px-2 py-1 rounded-md text-xs font-medium transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
             :class="[
               (mode === 'pie' ? showPieChart : !showPieChart) 
                 ? 'bg-white text-neutral-900 shadow-sm' 
@@ -51,7 +54,7 @@
     </div>
 
     <!-- Content -->
-    <div class="max-h-96 overflow-y-auto overflow-x-auto custom-scrollbar">
+    <div class="overflow-y-auto overflow-x-auto custom-scrollbar" :class="{ 'max-h-96': !showPieChart }">
       <component
         :is="summaryComponent"
         :field="field"
@@ -99,4 +102,3 @@ const summaryComponent = computed(() => {
   return componentMap[props.field.summary_type] || TextListSummary
 })
 </script>
-

@@ -12,7 +12,7 @@ const submissionHashes = ref(new Map())
  * @param {import('vue').ComputedRef<Object>} formDataRef - Computed reference to the reactive form data.
  * @param {Object} pendingSubmissionService - The instantiated service from usePendingSubmission.
  */
-export function usePartialSubmission(formConfig, formDataRef, pendingSubmissionService) {
+export function usePartialSubmission(formConfig, formDataRef, pendingSubmissionService, attribution = null) {
 
   let syncTimeout = null
   let dataWatcher = null
@@ -87,7 +87,10 @@ export function usePartialSubmission(formConfig, formDataRef, pendingSubmissionS
       const response = await formsApi.submissions.answer(config.slug, {
         ...currentData,
         'is_partial': true,
-        'submission_hash': getSubmissionHash() // Use the updated getter
+        'submission_hash': getSubmissionHash(), // Use the updated getter
+        ...(Object.keys(toValue(attribution) || {}).length > 0
+          ? { tracking_parameters: toValue(attribution) }
+          : {}),
       })
       if (response.submission_hash) {
         setSubmissionHash(response.submission_hash) // Use the updated setter

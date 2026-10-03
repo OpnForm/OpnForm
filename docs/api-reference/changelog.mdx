@@ -3,6 +3,12 @@ title: "Changelog"
 description: "Notable updates to the OpnForm API."
 ---
 
+## 2026-10-01 – Removed unused public form users endpoint
+
+`GET /forms/{form}/users` has been removed and now returns `404`. The application does not use this endpoint.
+
+To list workspace members, use the authenticated `GET /open/workspaces/{workspaceId}/users` endpoint with the `workspace-users-read` token ability.
+
 ## 2026-05-27 – Workspace invite listing requires admin access
 
 The workspace invite listing endpoint now requires workspace admin access:

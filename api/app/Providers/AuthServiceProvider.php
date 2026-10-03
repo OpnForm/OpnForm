@@ -16,6 +16,7 @@ use App\Policies\PersonalAccessTokenPolicy;
 use App\Policies\TemplatePolicy;
 use App\Policies\WorkspacePolicy;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
+use Illuminate\Support\Facades\Gate;
 use Laravel\Sanctum\PersonalAccessToken;
 
 class AuthServiceProvider extends ServiceProvider
@@ -43,8 +44,13 @@ class AuthServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        \Illuminate\Support\Facades\Gate::define('viewMailcoach', function ($user = null) {
+        Gate::define('viewMailcoach', function ($user = null) {
             return optional($user)->admin;
+        });
+
+        Gate::define('manage-instance-settings', function ($user = null) {
+            return config('app.self_hosted')
+                && $user?->workspaces()->wherePivot('role', \App\Models\User::ROLE_ADMIN)->exists();
         });
     }
 }

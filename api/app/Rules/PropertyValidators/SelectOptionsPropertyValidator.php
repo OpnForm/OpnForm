@@ -48,18 +48,20 @@ class SelectOptionsPropertyValidator implements PropertyValidatorInterface
 
         // Validate options array
         $options = $property[$type]['options'] ?? null;
-
-        if ($options === null) {
-            // Options not set - might be using legacy format, skip validation
-            return $errors;
-        }
+        $allowsCreation = ($property['allow_creation'] ?? false) === true;
 
         if (!is_array($options)) {
-            $errors["{$type}.options"] = 'The options must be an array.';
+            if ($allowsCreation && $options === null) {
+                return $errors;
+            }
+
+            $errors["{$type}.options"] = $options === null
+                ? 'At least one option is required.'
+                : 'The options must be an array.';
             return $errors;
         }
 
-        if (count($options) < 1) {
+        if (count($options) < 1 && ! $allowsCreation) {
             $errors["{$type}.options"] = 'At least one option is required.';
             return $errors;
         }
@@ -89,14 +91,14 @@ class SelectOptionsPropertyValidator implements PropertyValidatorInterface
             return $errors;
         }
 
-        // Validate option name (always required)
-        if (empty($option['name'] ?? null)) {
+        // Option names are the persisted response values and must be usable strings.
+        // In particular, "0" is a valid option name and must not be treated as empty.
+        if (! array_key_exists('name', $option)
+            || $option['name'] === null
+            || (is_string($option['name']) && trim($option['name']) === '')) {
             $errors['name'] = 'The option name is required.';
-        }
-
-        // Validate option id (always required)
-        if (empty($option['id'] ?? null)) {
-            $errors['id'] = 'The option id is required.';
+        } elseif (!is_string($option['name'])) {
+            $errors['name'] = 'The option name must be a string.';
         }
 
         // Validate option image based on display mode

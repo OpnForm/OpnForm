@@ -8,6 +8,7 @@ use App\Models\Forms\FormSubmission;
 use App\Models\PdfTemplate;
 use App\Service\Branding\BrandingPolicy;
 use App\Service\Forms\FormSubmissionFormatter;
+use App\Service\Formulas\ComputedVariableEvaluator;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use setasign\Fpdi\Fpdi;
@@ -199,7 +200,7 @@ class PdfGeneratorService
             $value = $this->getFieldValue($fieldId, $submissionData);
         }
 
-        if (empty($value)) {
+        if ($value === null || $value === '') {
             return;
         }
 
@@ -216,10 +217,14 @@ class PdfGeneratorService
     /**
      * Get field value from submission data.
      */
-    private function getFieldValue(string $fieldId, array $submissionData): mixed
+    private function getFieldValue(?string $fieldId, array $submissionData): mixed
     {
-        // Check for direct field match
-        if (isset($submissionData[$fieldId])) {
+        if ($fieldId === null || $fieldId === '') {
+            return null;
+        }
+
+        // Check for direct field / computed variable match
+        if (array_key_exists($fieldId, $submissionData)) {
             return $submissionData[$fieldId];
         }
 
@@ -241,7 +246,7 @@ class PdfGeneratorService
     {
         $formatter = new FormSubmissionFormatter($form, $submission->data);
         $formatted = $formatter->outputStringsOnly()->showHiddenFields()->getFieldsWithValue();
-        $rawData = $submission->data;
+        $rawData = $submission->data ?? [];
 
         $data = [];
         foreach ($formatted as $field) {
@@ -260,6 +265,37 @@ class PdfGeneratorService
         $data['submission_date'] = $submission->created_at ? $submission->created_at->format('Y-m-d H:i:s') : now()->format('Y-m-d H:i:s');
         $data['form_name'] = $form->title;
 
+        // Add computed variable values evaluated from raw submission data
+        foreach (ComputedVariableEvaluator::evaluateForSubmission($form, $rawData) as $variableId => $value) {
+            $data[$variableId] = $this->formatComputedValue($value);
+        }
+
         return $data;
+    }
+
+    /**
+     * Format a computed variable value for PDF rendering.
+     *
+     * Booleans become Yes/No (same as mentions/summaries).
+     * Explicit formula string/number results are left unchanged — e.g.
+     * IF(..., "yes", "no") stays "yes", while IF(..., TRUE, FALSE) becomes "Yes".
+     */
+    private function formatComputedValue(mixed $value): mixed
+    {
+        if (is_bool($value)) {
+            return $value ? 'Yes' : 'No';
+        }
+
+        if (is_array($value)) {
+            return implode(', ', array_map(function ($item) {
+                if (is_bool($item)) {
+                    return $item ? 'Yes' : 'No';
+                }
+
+                return is_scalar($item) ? (string) $item : '';
+            }, $value));
+        }
+
+        return $value;
     }
 }

@@ -23,6 +23,22 @@ Include the SDK script after your form iframe:
     them. No additional setup required.
 </Note>
 
+## Automatic campaign attribution
+
+The SDK automatically captures supported campaign parameters from the parent
+page and stores them with the submission under `meta.attribution`. Parameters
+already present in the iframe `src` take precedence over values from the parent
+page.
+
+Supported campaign parameters are `utm_source`, `utm_medium`, `utm_campaign`,
+`utm_id`, `utm_term`, `utm_content`, `utm_source_platform`,
+`utm_creative_format`, `utm_marketing_tactic`, `gclid`, `gbraid`, `wbraid`,
+`dclid`, `fbclid`, `ttclid`, and `msclkid`.
+
+Only these parameters are transmitted to the form. Other URL parameters and the
+complete parent URL are not captured. A raw cross-origin iframe without the SDK
+can only capture parameters included directly in its own `src`.
+
 ## Quick Start
 
 ```javascript
@@ -50,7 +66,7 @@ Listen to form events to trigger custom actions, send data to analytics, or inte
 | Event          | Description                        | Payload                                                 |
 | -------------- | ---------------------------------- | ------------------------------------------------------- |
 | `ready`        | Form iframe loaded and ready       | `{ form, slug, id }`                                    |
-| `submit`       | Form submitted successfully        | `{ form, data, submissionId, completionTime }`          |
+| `submit`       | Form submitted successfully        | `{ form, data, submissionId, completionTime, meta? }`   |
 | `submitStart`  | Submission started                 | `{ form }`                                              |
 | `submitError`  | Submission failed                  | `{ form, errors }`                                      |
 | `dataChange`   | Form data changed                  | `{ form, data, changedField, previousValue, newValue }` |
@@ -286,6 +302,12 @@ opnform.init({
 
 ### Programmatic Form Creation
 
+Use `opnform.create(slugOrUrl, options)` to create an iframe for an existing
+form. Pass either its slug or its full share URL.
+
+With a slug, the iframe loads from `https://opnform.com` by default, regardless
+of your page's domain or where you load the SDK script.
+
 ```javascript
 opnform.create("my-form-slug", {
     container: "#form-container", // CSS selector or element
@@ -297,6 +319,41 @@ opnform.create("my-form-slug", {
     },
 });
 ```
+
+If you have the form's share URL, pass it directly. This works with OpnForm
+Cloud, custom domains, subdomains, and self-hosted instances:
+
+```javascript
+opnform.create("https://forms.example.com/forms/my-form-slug?email=user%40example.com", {
+    container: "#form-container",
+});
+```
+
+The URL must use `http://` or `https://` and point to a public form at
+`/forms/{slug}`. Its query parameters and fragment are preserved. You can
+access the resulting form with `opnform.get("my-form-slug")` as usual.
+
+If you only have the slug, pass `baseUrl` to select a custom domain or a
+self-hosted instance. Include the protocol:
+
+```javascript
+opnform.create("my-form-slug", {
+    container: "#form-container",
+    baseUrl: "https://forms.example.com",
+});
+```
+
+This loads `https://forms.example.com/forms/my-form-slug` inside the iframe.
+
+- A full URL takes precedence over `baseUrl`; its host is never replaced.
+- With a slug, `baseUrl` defaults to `https://opnform.com`. The SDK does not
+  look up the form's custom domain automatically.
+- An explicit `darkMode` option overrides the value in the URL. The SDK sets
+  its own `_sdkToken` and `_sdkParentOrigin` parameters for iframe communication.
+- Existing iframes keep their own `src`.
+
+If your integration previously relied on `create()` loading from the page's
+domain, pass that instance's `baseUrl` explicitly or use the full share URL.
 
 ---
 

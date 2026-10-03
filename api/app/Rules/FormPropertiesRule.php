@@ -10,6 +10,7 @@ use App\Rules\PropertyValidators\PropertyValidatorInterface;
 use App\Rules\PropertyValidators\SelectOptionsPropertyValidator;
 use App\Rules\PropertyValidators\TypePropertyValidator;
 use Closure;
+use Illuminate\Contracts\Validation\DataAwareRule;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Contracts\Validation\ValidatorAwareRule;
 use Illuminate\Validation\Validator;
@@ -22,7 +23,7 @@ use Illuminate\Validation\Validator;
  * This dramatically improves performance for forms with many properties
  * by avoiding Laravel's validation framework overhead per property.
  */
-class FormPropertiesRule implements ValidationRule, ValidatorAwareRule
+class FormPropertiesRule implements ValidationRule, ValidatorAwareRule, DataAwareRule
 {
     /**
      * @var PropertyValidatorInterface[]
@@ -32,6 +33,8 @@ class FormPropertiesRule implements ValidationRule, ValidatorAwareRule
     private ?Workspace $workspace;
 
     private ?Validator $validator = null;
+
+    private array $data = [];
 
     public function __construct(?Workspace $workspace = null)
     {
@@ -56,6 +59,13 @@ class FormPropertiesRule implements ValidationRule, ValidatorAwareRule
         return $this;
     }
 
+    public function setData(array $data): static
+    {
+        $this->data = $data;
+
+        return $this;
+    }
+
     /**
      * Run the validation rule.
      *
@@ -71,14 +81,29 @@ class FormPropertiesRule implements ValidationRule, ValidatorAwareRule
         $allErrors = [];
         $context = [
             'properties' => $value,
+            'computed_variables' => is_array($this->data['computed_variables'] ?? null)
+                ? $this->data['computed_variables']
+                : [],
             'workspace' => $this->workspace,
         ];
+
+        $seenIds = [];
 
         // Single pass through all properties
         foreach ($value as $index => $property) {
             if (!is_array($property)) {
                 $allErrors["properties.{$index}"] = ["Property at index {$index} must be an array."];
                 continue;
+            }
+
+            $propertyId = $property['id'] ?? null;
+            if (is_string($propertyId) && $propertyId !== '') {
+                if (isset($seenIds[$propertyId])) {
+                    $firstIndex = $seenIds[$propertyId];
+                    $allErrors["properties.{$index}.id"][] = "The field ID [{$propertyId}] is already used by field ".($firstIndex + 1).'.';
+                } else {
+                    $seenIds[$propertyId] = $index;
+                }
             }
 
             // Run each validator on this property

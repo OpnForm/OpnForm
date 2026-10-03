@@ -77,50 +77,44 @@ export function useFormStructure(formConfig, managerState, formData, fieldState)
   })
 
   /**
-   * Calculates the start and end indices for each page.
+   * Calculates the start and end indices for each rendered page.
+   * Empty pages are ignored here just as they are in calculateFieldGroups.
    * @returns {Array<Object>} Array of boundary objects { start, end }.
    */
-    const calculatePageBoundaries = () => {
+  const calculatePageBoundaries = () => {
     const properties = form.value.properties || []
     if (properties.length === 0) {
-        return [{ start: 0, end: -1 }] // Empty form
+      return [{ start: 0, end: -1 }]
     }
 
     const boundaries = []
     let startIndex = 0
-    let visibleBreakFound = false
+    let hasRenderableField = false
 
     properties.forEach((field, index) => {
-        // Check if the field is a page break AND it's not hidden
-        if (field.type === 'nf-page-break' && !isFieldHidden(field)) {
-            visibleBreakFound = true
-            // The page ends *at* the page break field
-            boundaries.push({ start: startIndex, end: index })
-            // The next page starts *after* the page break field
-            startIndex = index + 1
+      if (field.type !== 'nf-page-break') {
+        hasRenderableField = true
+      }
+
+      if (field.type === 'nf-page-break' && !isFieldHidden(field)) {
+        if (hasRenderableField) {
+          boundaries.push({ start: startIndex, end: index })
         }
+        startIndex = index + 1
+        hasRenderableField = false
+      }
     })
 
-    // If no visible page breaks were found, the entire form is a single page
-    if (!visibleBreakFound) {
-        return [{ start: 0, end: properties.length - 1 }]
+    if (hasRenderableField) {
+      boundaries.push({ start: startIndex, end: properties.length - 1 })
     }
 
-    // Add the boundary for the last page if there are fields after the last visible break
-    if (startIndex < properties.length) {
-        boundaries.push({ start: startIndex, end: properties.length - 1 })
-    }
-    // If the last field was a visible page break, startIndex will equal properties.length,
-    // and we don't add an extra empty page boundary.
-
-    // Safety check: Ensure at least one boundary exists if properties are not empty
-    if (boundaries.length === 0 && properties.length > 0) {
-         return [{ start: 0, end: properties.length - 1 }]
+    if (boundaries.length === 0) {
+      return [{ start: 0, end: properties.length - 1 }]
     }
 
     return boundaries
-    }
-
+  }
 
   /**
    * Reactive computed property holding the page boundaries.
@@ -238,10 +232,13 @@ export function useFormStructure(formConfig, managerState, formData, fieldState)
       if (fieldIndex >= start && fieldIndex <= end) {
         return i
       }
+      // Page breaks from ignored empty pages belong to the next rendered page.
+      if (fieldIndex < start) {
+        return i
+      }
     }
 
-    // Fallback: Should technically not be reached with correct boundaries
-    console.warn(`[useFormStructure] getPageForField: Field index ${fieldIndex} not found within calculated boundaries. Returning last page index.`)
+    // A trailing page break after the final rendered page stays on that page.
     return Math.max(0, boundaries.length - 1)
   }
 
@@ -373,4 +370,4 @@ export function useFormStructure(formConfig, managerState, formData, fieldState)
     determineInsertIndex, // Calculate where to insert a new field
     setPageForField // Set the current page to the page containing the specified field
   }
-} 
+}

@@ -194,13 +194,14 @@ describe('SelectOptionsPropertyValidator image size validation', function () {
 });
 
 describe('SelectOptionsPropertyValidator options array validation', function () {
-    it('skips validation when options not set (legacy format)', function () {
+    it('requires options when they are not set', function () {
         $validator = new SelectOptionsPropertyValidator();
         $property = [
             'type' => 'select',
         ];
         $errors = $validator->validate($property, 0, []);
-        expect($errors)->toBeEmpty();
+        expect($errors)->toHaveKey('select.options');
+        expect($errors['select.options'])->toBe('At least one option is required.');
     });
 
     it('fails when options is not an array', function () {
@@ -214,6 +215,21 @@ describe('SelectOptionsPropertyValidator options array validation', function () 
         $errors = $validator->validate($property, 0, []);
         expect($errors)->toHaveKey('select.options');
         expect($errors['select.options'])->toBe('The options must be an array.');
+    });
+
+    it('allows an empty option list when respondents can create values', function () {
+        $validator = new SelectOptionsPropertyValidator();
+
+        expect($validator->validate([
+            'type' => 'select',
+            'allow_creation' => true,
+            'select' => ['options' => []],
+        ], 0, []))->toBeEmpty();
+
+        expect($validator->validate([
+            'type' => 'multi_select',
+            'allow_creation' => true,
+        ], 0, []))->toBeEmpty();
     });
 
     it('fails when options array is empty', function () {
@@ -259,13 +275,13 @@ describe('SelectOptionsPropertyValidator option field validation', function () {
         expect($errors['select.options.0.name'])->toBe('The option name is required.');
     });
 
-    it('fails when option name is empty string', function () {
+    it('fails when option name contains only whitespace', function () {
         $validator = new SelectOptionsPropertyValidator();
         $property = [
             'type' => 'select',
             'select' => [
                 'options' => [
-                    ['id' => 'opt1', 'name' => ''],
+                    ['id' => 'opt1', 'name' => '   '],
                 ],
             ],
         ];
@@ -273,7 +289,7 @@ describe('SelectOptionsPropertyValidator option field validation', function () {
         expect($errors)->toHaveKey('select.options.0.name');
     });
 
-    it('fails when option id is missing', function () {
+    it('allows an option id to be omitted because response values use option names', function () {
         $validator = new SelectOptionsPropertyValidator();
         $property = [
             'type' => 'select',
@@ -284,11 +300,10 @@ describe('SelectOptionsPropertyValidator option field validation', function () {
             ],
         ];
         $errors = $validator->validate($property, 0, []);
-        expect($errors)->toHaveKey('select.options.0.id');
-        expect($errors['select.options.0.id'])->toBe('The option id is required.');
+        expect($errors)->toBeEmpty();
     });
 
-    it('fails when option id is empty string', function () {
+    it('allows an empty option id because it is not a response value', function () {
         $validator = new SelectOptionsPropertyValidator();
         $property = [
             'type' => 'select',
@@ -299,10 +314,10 @@ describe('SelectOptionsPropertyValidator option field validation', function () {
             ],
         ];
         $errors = $validator->validate($property, 0, []);
-        expect($errors)->toHaveKey('select.options.0.id');
+        expect($errors)->toBeEmpty();
     });
 
-    it('collects multiple errors for same option', function () {
+    it('only reports the missing response name for an otherwise empty option', function () {
         $validator = new SelectOptionsPropertyValidator();
         $property = [
             'type' => 'select',
@@ -313,8 +328,38 @@ describe('SelectOptionsPropertyValidator option field validation', function () {
             ],
         ];
         $errors = $validator->validate($property, 0, []);
-        expect($errors)->toHaveKey('select.options.0.id');
         expect($errors)->toHaveKey('select.options.0.name');
+        expect($errors)->toHaveCount(1);
+    });
+
+    it('accepts zero as a string option name', function () {
+        $validator = new SelectOptionsPropertyValidator();
+        $property = [
+            'type' => 'select',
+            'select' => [
+                'options' => [
+                    ['id' => '0', 'name' => '0'],
+                ],
+            ],
+        ];
+
+        expect($validator->validate($property, 0, []))->toBeEmpty();
+    });
+
+    it('rejects a non-string option name', function () {
+        $validator = new SelectOptionsPropertyValidator();
+        $property = [
+            'type' => 'select',
+            'select' => [
+                'options' => [
+                    ['id' => 'opt1', 'name' => 123],
+                ],
+            ],
+        ];
+
+        $errors = $validator->validate($property, 0, []);
+        expect($errors)->toHaveKey('select.options.0.name');
+        expect($errors['select.options.0.name'])->toBe('The option name must be a string.');
     });
 });
 
@@ -462,7 +507,7 @@ describe('SelectOptionsPropertyValidator multi_select type', function () {
         expect($errors)->toBeEmpty();
     });
 
-    it('reports errors with multi_select prefix', function () {
+    it('allows multi_select options without internal ids', function () {
         $validator = new SelectOptionsPropertyValidator();
         $property = [
             'type' => 'multi_select',
@@ -473,7 +518,7 @@ describe('SelectOptionsPropertyValidator multi_select type', function () {
             ],
         ];
         $errors = $validator->validate($property, 0, []);
-        expect($errors)->toHaveKey('multi_select.options.0.id');
+        expect($errors)->toBeEmpty();
     });
 
     it('fails when multi_select options is empty', function () {
@@ -500,7 +545,7 @@ describe('SelectOptionsPropertyValidator multiple options validation', function 
                 'options' => [
                     ['id' => 'opt1', 'name' => 'Option 1'], // Missing image
                     ['id' => 'opt2'], // Missing name and image
-                    ['name' => 'Option 3', 'image' => 'https://example.com/3.png'], // Missing id
+                    ['name' => 'Option 3', 'image' => 'https://example.com/3.png'], // Optional id omitted
                 ],
             ],
         ];
@@ -508,7 +553,7 @@ describe('SelectOptionsPropertyValidator multiple options validation', function 
         expect($errors)->toHaveKey('select.options.0.image');
         expect($errors)->toHaveKey('select.options.1.name');
         expect($errors)->toHaveKey('select.options.1.image');
-        expect($errors)->toHaveKey('select.options.2.id');
+        expect($errors)->not->toHaveKey('select.options.2.id');
     });
 
     it('passes with multiple valid options', function () {

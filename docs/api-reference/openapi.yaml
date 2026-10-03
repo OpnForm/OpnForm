@@ -579,6 +579,8 @@ paths:
                                 is_partial:
                                     type: boolean
                                     description: "If you want to submit your form as partial"
+                                tracking_parameters:
+                                    $ref: "#/components/schemas/SubmissionAttribution"
             responses:
                 "200":
                     description: "Form submission saved successfully"
@@ -733,7 +735,7 @@ paths:
                                     type: object
                                     additionalProperties:
                                         type: boolean
-                                    description: "Object mapping field IDs to booleans to include columns in CSV."
+                                    description: "Object mapping field IDs, system columns, or namespaced attribution columns (for example meta.attribution.utm_source) to booleans."
             responses:
                 "200":
                     description: "Synchronous export (CSV file) or asynchronous export (job status)"
@@ -1506,6 +1508,33 @@ components:
                     description: "Contains form field responses plus metadata (status, created_at, id)"
                     additionalProperties: true
                     readOnly: true
+                meta:
+                    type: object
+                    readOnly: true
+                    properties:
+                        attribution:
+                            $ref: "#/components/schemas/SubmissionAttribution"
+        SubmissionAttribution:
+            type: object
+            description: "Allowlisted campaign attribution. Values are strings with a maximum length of 2,048 characters."
+            additionalProperties: false
+            properties:
+                utm_source: { type: string, maxLength: 2048 }
+                utm_medium: { type: string, maxLength: 2048 }
+                utm_campaign: { type: string, maxLength: 2048 }
+                utm_id: { type: string, maxLength: 2048 }
+                utm_term: { type: string, maxLength: 2048 }
+                utm_content: { type: string, maxLength: 2048 }
+                utm_source_platform: { type: string, maxLength: 2048 }
+                utm_creative_format: { type: string, maxLength: 2048 }
+                utm_marketing_tactic: { type: string, maxLength: 2048 }
+                gclid: { type: string, maxLength: 2048 }
+                gbraid: { type: string, maxLength: 2048 }
+                wbraid: { type: string, maxLength: 2048 }
+                dclid: { type: string, maxLength: 2048 }
+                fbclid: { type: string, maxLength: 2048 }
+                ttclid: { type: string, maxLength: 2048 }
+                msclkid: { type: string, maxLength: 2048 }
         UserWorkspaceMember:
             type: object
             properties:

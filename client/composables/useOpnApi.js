@@ -40,6 +40,7 @@ function addCustomDomainHeader(request, options) {
 }
 
 export function getOpnRequestsOptions(request, opts) {
+  const nuxtApp = useNuxtApp()
   const config = useRuntimeConfig()
 
   if (opts.body && opts.body instanceof FormData) {
@@ -72,7 +73,8 @@ export function getOpnRequestsOptions(request, opts) {
         // Do not run token-expiry UX during SSR. Server-side bootstrap requests can
         // fail for context-specific reasons and should be retried client-side first.
         if (import.meta.client) {
-          const { handleTokenExpiry } = useAuthFlow()
+          const authFlow = await import('~/composables/useAuthFlow')
+          const { handleTokenExpiry } = nuxtApp.runWithContext(() => authFlow.useAuthFlow())
           await handleTokenExpiry()
         }
       } else if (status === 420) {

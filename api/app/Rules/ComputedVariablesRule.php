@@ -8,6 +8,7 @@ use Closure;
 use Illuminate\Contracts\Validation\DataAwareRule;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Contracts\Validation\ValidatorAwareRule;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Validator;
 
 /**
@@ -16,6 +17,8 @@ use Illuminate\Validation\Validator;
  */
 class ComputedVariablesRule implements ValidationRule, ValidatorAwareRule, DataAwareRule
 {
+    public const MAX_VARIABLE_COUNT = 500;
+
     private const MAX_CHAIN_DEPTH = 20;
 
     private const VALID_RESULT_TYPES = ['number', 'text', 'auto'];
@@ -62,28 +65,39 @@ class ComputedVariablesRule implements ValidationRule, ValidatorAwareRule, DataA
             return;
         }
 
+        if (count($value) > self::MAX_VARIABLE_COUNT) {
+            $fail('A form cannot contain more than '.self::MAX_VARIABLE_COUNT.' computed variables.');
+
+            return;
+        }
+
         $allErrors = [];
         $seenNames = [];
         $seenIds = [];
 
         // Get form properties for field reference validation
-        $properties = $this->data['properties'] ?? [];
+        $properties = is_array($this->data['properties'] ?? null)
+            ? $this->data['properties']
+            : [];
         $availableFields = $this->buildAvailableFields($properties);
+        $fieldIds = array_fill_keys(array_column($availableFields, 'id'), true);
 
         foreach ($value as $index => $variable) {
-            $errors = $this->validateVariable($variable, $index, $availableFields, $value, $seenNames, $seenIds);
+            $errors = $this->validateVariable($variable, $index, $availableFields, $value, $seenNames, $seenIds, $fieldIds);
 
-            foreach ($errors as $field => $message) {
+            foreach ($errors as $field => $messages) {
                 $errorKey = "computed_variables.{$index}.{$field}";
                 if (! isset($allErrors[$errorKey])) {
                     $allErrors[$errorKey] = [];
                 }
-                $allErrors[$errorKey][] = $message;
+                foreach ((array) $messages as $message) {
+                    $allErrors[$errorKey][] = $message;
+                }
             }
 
             // Track seen names and IDs for uniqueness checks
             if (isset($variable['name']) && is_string($variable['name'])) {
-                $seenNames[strtolower($variable['name'])] = $index;
+                $seenNames[Str::lower($variable['name'])] = $index;
             }
             if (isset($variable['id']) && is_string($variable['id'])) {
                 $seenIds[$variable['id']] = $index;
@@ -92,15 +106,18 @@ class ComputedVariablesRule implements ValidationRule, ValidatorAwareRule, DataA
 
         // Check for circular dependencies
         $circularErrors = $this->detectCircularDependencies($value);
-        foreach ($circularErrors as $error) {
-            $allErrors['computed_variables'][] = $error;
+        foreach ($circularErrors as $errorKey => $messages) {
+            foreach ($messages as $message) {
+                $allErrors[$errorKey][] = $message;
+            }
         }
 
         // Check for maximum chain depth (only if no cycles)
         if (empty($circularErrors)) {
-            $chainDepthError = $this->checkChainDepth($value);
-            if ($chainDepthError !== null) {
-                $allErrors['computed_variables'][] = $chainDepthError;
+            foreach ($this->chainDepthErrors($value) as $errorKey => $messages) {
+                foreach ($messages as $message) {
+                    $allErrors[$errorKey][] = $message;
+                }
             }
         }
 
@@ -124,7 +141,8 @@ class ComputedVariablesRule implements ValidationRule, ValidatorAwareRule, DataA
         array $availableFields,
         array $allVariables,
         array $seenNames,
-        array $seenIds
+        array $seenIds,
+        array $fieldIds,
     ): array {
         $errors = [];
 
@@ -137,6 +155,8 @@ class ComputedVariablesRule implements ValidationRule, ValidatorAwareRule, DataA
             $errors['id'] = 'The computed variable ID is required.';
         } elseif (! preg_match('/^cv_/', $variable['id'])) {
             $errors['id'] = 'The computed variable ID must start with "cv_".';
+        } elseif (isset($fieldIds[$variable['id']])) {
+            $errors['id'] = "The computed variable ID [{$variable['id']}] is already used by a form field.";
         } elseif (isset($seenIds[$variable['id']])) {
             $errors['id'] = 'Duplicate computed variable ID.';
         }
@@ -144,31 +164,31 @@ class ComputedVariablesRule implements ValidationRule, ValidatorAwareRule, DataA
         // Validate name
         if (! isset($variable['name']) || ! is_string($variable['name'])) {
             $errors['name'] = 'The computed variable name is required.';
-        } elseif (strlen($variable['name']) === 0) {
+        } elseif (trim($variable['name']) === '') {
             $errors['name'] = 'The computed variable name cannot be empty.';
-        } elseif (strlen($variable['name']) > 100) {
+        } elseif (Str::length($variable['name']) > 100) {
             $errors['name'] = 'The computed variable name must not exceed 100 characters.';
-        } elseif (isset($seenNames[strtolower($variable['name'])])) {
+        } elseif (isset($seenNames[Str::lower($variable['name'])])) {
             $errors['name'] = 'Duplicate computed variable name. Variable names must be unique.';
         }
 
         // Validate formula
         if (! isset($variable['formula']) || ! is_string($variable['formula'])) {
             $errors['formula'] = 'The formula is required.';
-        } elseif (strlen($variable['formula']) === 0) {
+        } elseif (trim($variable['formula']) === '') {
             $errors['formula'] = 'The formula cannot be empty.';
-        } elseif (strlen($variable['formula']) > 2000) {
+        } elseif (Str::length($variable['formula']) > 2000) {
             $errors['formula'] = 'The formula must not exceed 2000 characters.';
         } else {
             // Validate formula syntax and field references
             $formulaErrors = $this->validateFormula(
                 $variable['formula'],
-                $variable['id'] ?? null,
+                is_string($variable['id'] ?? null) ? $variable['id'] : null,
                 $availableFields,
                 $allVariables
             );
             if (! empty($formulaErrors)) {
-                $errors['formula'] = $formulaErrors[0]; // Return first error
+                $errors['formula'] = $formulaErrors;
             }
         }
 
@@ -193,7 +213,9 @@ class ComputedVariablesRule implements ValidationRule, ValidatorAwareRule, DataA
     ): array {
         // Build available variables (excluding current one to prevent self-reference)
         $availableVariables = collect($allVariables)
-            ->filter(fn ($v) => isset($v['id']) && $v['id'] !== $currentVariableId)
+            ->filter(fn ($v) => is_array($v)
+                && is_string($v['id'] ?? null)
+                && $v['id'] !== $currentVariableId)
             ->map(fn ($v) => ['id' => $v['id'], 'name' => $v['name'] ?? ''])
             ->values()
             ->all();
@@ -219,7 +241,9 @@ class ComputedVariablesRule implements ValidationRule, ValidatorAwareRule, DataA
     private function buildAvailableFields(array $properties): array
     {
         return collect($properties)
-            ->filter(fn ($p) => isset($p['id']) && isset($p['type']))
+            ->filter(fn ($p) => is_array($p)
+                && is_string($p['id'] ?? null)
+                && is_string($p['type'] ?? null))
             ->map(fn ($p) => [
                 'id' => $p['id'],
                 'name' => $p['name'] ?? '',
@@ -235,37 +259,38 @@ class ComputedVariablesRule implements ValidationRule, ValidatorAwareRule, DataA
     private function detectCircularDependencies(array $variables): array
     {
         $errors = [];
-        $graph = [];
-        $variableMap = [];
+        $validVariables = collect($variables)
+            ->filter(fn ($variable) => is_array($variable)
+                && is_string($variable['id'] ?? null)
+                && is_string($variable['formula'] ?? null))
+            ->values()
+            ->all();
 
-        // Build dependency graph
-        foreach ($variables as $variable) {
-            if (! isset($variable['id']) || ! isset($variable['formula'])) {
-                continue;
-            }
-
-            $variableMap[$variable['id']] = $variable['name'] ?? $variable['id'];
-            $dependencies = FormulaValidator::extractFieldReferences($variable['formula']);
-
-            // Only keep dependencies that are other computed variables
-            $variableDeps = array_filter($dependencies, function ($dep) use ($variables) {
-                return collect($variables)->contains('id', $dep);
-            });
-
-            $graph[$variable['id']] = $variableDeps;
+        if ($validVariables === []) {
+            return [];
         }
 
-        // DFS to detect cycles
-        $visited = [];
-        $recursionStack = [];
+        $resolver = DependencyResolver::fromVariables($validVariables);
+        $cycles = $resolver->detectCycles();
+        $variablesById = collect($variables)
+            ->filter(fn ($variable) => is_array($variable) && is_string($variable['id'] ?? null))
+            ->keyBy('id');
 
-        foreach (array_keys($graph) as $nodeId) {
-            $cycle = $this->findCycle($nodeId, $graph, $visited, $recursionStack, []);
-            if ($cycle !== null) {
-                $cycleNames = array_map(fn ($id) => $variableMap[$id] ?? $id, $cycle);
-                $errors[] = 'Circular dependency detected: ' . implode(' → ', $cycleNames);
+        foreach ($cycles as $cycle) {
+            $cycleIds = array_values(array_unique($cycle));
+            $cycleNames = array_map(
+                fn (string $id) => $variablesById->get($id)['name'] ?? $id,
+                $cycleIds,
+            );
+            $message = 'Circular dependency detected: '.implode(' → ', [...$cycleNames, $cycleNames[0]]);
 
-                break; // Report only the first cycle
+            foreach ($cycleIds as $cycleId) {
+                $variableIndex = collect($variables)->search(
+                    fn ($variable) => is_array($variable) && ($variable['id'] ?? null) === $cycleId,
+                );
+                if ($variableIndex !== false) {
+                    $errors["computed_variables.{$variableIndex}.formula"][] = $message;
+                }
             }
         }
 
@@ -273,56 +298,49 @@ class ComputedVariablesRule implements ValidationRule, ValidatorAwareRule, DataA
     }
 
     /**
-     * DFS helper to find cycles in the dependency graph.
+     * Check if the dependency chain depth exceeds the maximum.
      */
-    private function findCycle(
-        string $nodeId,
-        array $graph,
-        array &$visited,
-        array &$recursionStack,
-        array $path
-    ): ?array {
-        if (isset($recursionStack[$nodeId])) {
-            // Found a cycle - extract it from the path
-            $cycleStart = array_search($nodeId, $path);
+    private function chainDepthErrors(array $variables): array
+    {
+        $variablesById = collect($variables)
+            ->filter(fn ($variable) => is_array($variable)
+                && is_string($variable['id'] ?? null)
+                && is_string($variable['formula'] ?? null))
+            ->keyBy('id');
+        $memo = [];
 
-            return array_merge(array_slice($path, $cycleStart), [$nodeId]);
-        }
+        $depthFor = function (string $variableId) use (&$depthFor, &$memo, $variablesById): int {
+            if (isset($memo[$variableId])) {
+                return $memo[$variableId];
+            }
 
-        if (isset($visited[$nodeId])) {
-            return null;
-        }
+            $variable = $variablesById->get($variableId);
+            if (! is_array($variable)) {
+                return 0;
+            }
 
-        $visited[$nodeId] = true;
-        $recursionStack[$nodeId] = true;
-        $path[] = $nodeId;
-
-        foreach ($graph[$nodeId] ?? [] as $depId) {
-            if (isset($graph[$depId])) {
-                $cycle = $this->findCycle($depId, $graph, $visited, $recursionStack, $path);
-                if ($cycle !== null) {
-                    return $cycle;
+            $depth = 1;
+            foreach (FormulaValidator::extractFieldReferences($variable['formula']) as $dependencyId) {
+                if ($variablesById->has($dependencyId)) {
+                    $depth = max($depth, 1 + $depthFor($dependencyId));
                 }
+            }
+
+            return $memo[$variableId] = $depth;
+        };
+
+        $errors = [];
+        foreach ($variables as $index => $variable) {
+            if (! is_array($variable) || ! is_string($variable['id'] ?? null) || ! $variablesById->has($variable['id'])) {
+                continue;
+            }
+
+            $depth = $depthFor($variable['id']);
+            if ($depth > self::MAX_CHAIN_DEPTH) {
+                $errors["computed_variables.{$index}.formula"][] = "Variable dependency chain is too deep ({$depth} levels). Maximum allowed is ".self::MAX_CHAIN_DEPTH.'.';
             }
         }
 
-        unset($recursionStack[$nodeId]);
-
-        return null;
-    }
-
-    /**
-     * Check if the dependency chain depth exceeds the maximum.
-     */
-    private function checkChainDepth(array $variables): ?string
-    {
-        $resolver = DependencyResolver::fromVariables($variables);
-        $depth = $resolver->getMaxChainDepth();
-
-        if ($depth > self::MAX_CHAIN_DEPTH) {
-            return "Variable dependency chain is too deep ({$depth} levels). Maximum allowed is " . self::MAX_CHAIN_DEPTH . '.';
-        }
-
-        return null;
+        return $errors;
     }
 }

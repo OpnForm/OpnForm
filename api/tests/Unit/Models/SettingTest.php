@@ -12,6 +12,7 @@ describe('Setting', function () {
         Setting::whereIn('key', [
             SettingsKey::INSTANCE_ID->value,
             SettingsKey::INSTANCE_CREATED_AT->value,
+            SettingsKey::MCP_ENABLED->value,
         ])->delete();
     });
 
@@ -66,5 +67,15 @@ describe('Setting', function () {
             Setting::set(SettingsKey::INSTANCE_ID, 123);
             expect(Setting::get(SettingsKey::INSTANCE_ID))->toBe(123);
         });
+    });
+
+    it('stores boolean feature overrides without losing false values', function () {
+        Setting::set(SettingsKey::MCP_ENABLED, false);
+
+        expect(Setting::get(SettingsKey::MCP_ENABLED))->toBeFalse();
+
+        Setting::set(SettingsKey::MCP_ENABLED, true);
+
+        expect(Setting::get(SettingsKey::MCP_ENABLED))->toBeTrue();
     });
 });

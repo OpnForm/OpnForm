@@ -16,11 +16,22 @@ export default defineNuxtConfig({
   ...(viteCacheDir ? {vite: {cacheDir: viteCacheDir}} : {}),
   css: ['~/css/app.css'],
 
+  hooks: {
+      'build:manifest': (manifest) => {
+          // Nuxt follows every dynamicImports edge while generating resource hints,
+          // including all route middleware, locales and optional form/editor code.
+          // Keep those chunks on-demand; modules actually rendered during SSR are
+          // still tracked and emitted through their regular manifest imports.
+          Object.values(manifest).forEach((entry) => {
+              if (entry.dynamicImports) entry.dynamicImports = []
+          })
+      },
+  },
+
   // Disable certain plugins during testing
   modules: isUnitTestMode ? [] : [
       '@pinia/nuxt', 
       '@vueuse/nuxt', 
-      '@vueuse/motion/nuxt', 
       '@nuxtjs/sitemap',
       '@nuxt/ui', 
       'nuxt-utm', 
@@ -86,7 +97,8 @@ export default defineNuxtConfig({
   },
 
   experimental: {
-      inlineRouteRules: true
+      inlineRouteRules: true,
+      emitRouteChunkError: 'manual'
   },
 
   sentry: {
@@ -94,6 +106,15 @@ export default defineNuxtConfig({
           authToken: process.env.SENTRY_AUTH_TOKEN,
           org: "opnform",
           project: "opnform-vue",
+      },
+      unstable_sentryBundlerPluginOptions: {
+          bundleSizeOptimizations: {
+              excludeDebugStatements: true,
+              excludeTracing: true,
+              excludeReplayShadowDom: true,
+              excludeReplayIframe: true,
+              excludeReplayWorker: true,
+          },
       },
   },
 
@@ -147,6 +168,9 @@ export default defineNuxtConfig({
   },
 
   icon: {
+      // Managed E2E worktrees place buildDir outside client/node_modules, so
+      // locally-installed JSON collections cannot be resolved at runtime there.
+      serverBundle: (isE2EMode || buildDir) ? 'remote' : 'auto',
       customCollections: [
           {
               prefix: 'opnform',
@@ -158,9 +182,7 @@ export default defineNuxtConfig({
               'ix:mandatory',
           ],
           includeCustomCollections: true,
-          scan: {
-              globInclude: ['**/*.vue', '**/*.json'],
-          },
+          scan: false,
       },
     },
 

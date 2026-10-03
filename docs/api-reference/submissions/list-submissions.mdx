@@ -56,7 +56,13 @@ Authorization: Bearer <token>
             },
             "completion_time": 45,
             "form_id": 123,
-            "id": 615432
+            "id": 615432,
+            "meta": {
+                "attribution": {
+                    "utm_source": "newsletter",
+                    "utm_campaign": "summer-launch"
+                }
+            }
         }
     ],
     "links": {
@@ -104,6 +110,7 @@ Each submission object contains:
 | `completion_time` | number/null | Time taken to complete the form in seconds  |
 | `form_id`         | number      | ID of the parent form                       |
 | `id`              | number      | Unique submission ID                        |
+| `meta`            | object/null | Owner-only submission metadata, including campaign attribution when captured |
 
 #### Data Object Structure
 

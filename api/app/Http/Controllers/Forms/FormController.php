@@ -9,12 +9,16 @@ use App\Http\Requests\UploadAssetRequest;
 use App\Http\Resources\FormListResource;
 use App\Http\Resources\FormResource;
 use App\Models\Forms\Form;
-use App\Models\Forms\FormSubmission;
 use App\Models\Version;
 use App\Models\Workspace;
 use App\Notifications\Forms\MobileEditorEmail;
 use App\Service\Billing\Feature;
 use App\Service\Forms\FormCleaner;
+use App\Service\Forms\FormCreationService;
+use App\Service\Forms\FormDataNormalizer;
+use App\Service\Forms\FormListStatsLoader;
+use App\Service\Forms\FormStructureValidator;
+use App\Service\Forms\FormUpdateService;
 use App\Service\Storage\FileUploadPathService;
 use App\Service\Storage\StorageFileNameParser;
 use App\Service\Storage\UploadSecurityService;
@@ -30,13 +34,17 @@ class FormController extends Controller
 
     private FormCleaner $formCleaner;
 
-    public function __construct()
-    {
+    public function __construct(
+        private readonly FormCreationService $formCreation,
+        private readonly FormUpdateService $formUpdate,
+        private readonly FormDataNormalizer $formDataNormalizer,
+        private readonly FormStructureValidator $formStructureValidator,
+    ) {
         $this->middleware('auth', ['except' => ['uploadAsset']]);
         $this->formCleaner = new FormCleaner();
     }
 
-    public function index(Request $request, Workspace $workspace)
+    public function index(Request $request, Workspace $workspace, FormListStatsLoader $statsLoader)
     {
         $this->authorize('ownsWorkspace', $workspace);
         $this->authorize('viewAny', Form::class);
@@ -59,11 +67,12 @@ class FormController extends Controller
                 'updated_at',
             ])
             ->with(['workspace'])
-            ->withCount(['submissions as submissions_count' => fn ($q) => $q->where('status', FormSubmission::STATUS_COMPLETED)])
-            ->withTotalViews()
             ->orderByDesc('updated_at')
+            ->orderByDesc('id')
             ->paginate($perPage)
             ->withQueryString();
+
+        $statsLoader->load($forms->getCollection());
 
         return FormListResource::collection($forms);
     }
@@ -133,21 +142,10 @@ class FormController extends Controller
         $this->authorize('ownsWorkspace', $workspace);
         $this->authorize('create', [Form::class, $workspace]);
 
-        $formData = $this->formCleaner
-            ->processRequest($request)
-            ->simulateCleaning($workspace)
-            ->getData();
+        $created = $this->formCreation->create($request->validated(), $request->user(), $workspace);
+        $form = $created['form'];
 
-        $form = Form::create(array_merge($formData, [
-            'creator_id' => $request->user()->id,
-        ]));
-
-        if (config('app.self_hosted') && !empty($formData['slug'])) {
-            $form->slug = $formData['slug'];
-            $form->save();
-        }
-
-        if ($this->formCleaner->hasCleaned()) {
+        if ($created['has_cleaned']) {
             $formStatus = $form->workspace->is_trialing ? 'Non-trial' : 'Pro';
             $message =  'Form successfully created, but the ' . $formStatus . ' features you used will be disabled when sharing your form:';
         } else {
@@ -156,7 +154,7 @@ class FormController extends Controller
 
         return $this->success([
             'message' => $message . ($form->visibility == 'draft' ? ' But other people won\'t be able to see the form since it\'s currently in draft mode' : ''),
-            'form' => (new FormResource($form))->setCleanings($this->formCleaner->getPerformedCleanings()),
+            'form' => (new FormResource($form))->setCleanings($created['cleanings']),
             'users_first_form' => $request->user()->forms()->count() == 1,
         ]);
     }
@@ -165,26 +163,11 @@ class FormController extends Controller
     {
         $this->authorize('update', $form);
 
-        $formData = $this->formCleaner
-            ->processRequest($request)
-            ->simulateCleaning($form->workspace)
-            ->getData();
+        $updated = $this->formUpdate->update($form, $request->validated());
+        $form = $updated['form'];
 
-        // Set Removed Properties (pre-compute lookup set to avoid O(n²) complexity)
-        $newPropertyIds = collect($formData['properties'])->pluck('id')->flip()->all();
-        $formData['removed_properties'] = array_merge(
-            $form->removed_properties,
-            collect($form->properties)->filter(function ($field) use ($newPropertyIds) {
-                return !Str::of($field['type'])->startsWith('nf-') && !isset($newPropertyIds[$field['id']]);
-            })->toArray()
-        );
-
-        $form->slug = (config('app.self_hosted') && !empty($formData['slug'])) ? $formData['slug'] : $form->slug;
-
-        $form->update($formData);
-
-        if ($this->formCleaner->hasCleaned()) {
-            $requiredUpgrade = collect($this->formCleaner->getCleaningKeys())
+        if ($updated['has_cleaned']) {
+            $requiredUpgrade = collect($updated['cleaning_keys'])
                 ->flatten()
                 ->map(fn (string $feature) => app(\App\Service\Billing\PlanAccessService::class)->getFormFeatureRequiredTier($feature))
                 ->filter()
@@ -200,7 +183,17 @@ class FormController extends Controller
 
         return $this->success([
             'message' => $message . ($form->visibility == 'draft' ? ' But other people won\'t be able to see the form since it\'s currently in draft mode' : ''),
-            'form' => (new FormResource($form))->setCleanings($this->formCleaner->getPerformedCleanings()),
+            'form' => (new FormResource($form))->setCleanings($updated['cleanings']),
+        ]);
+    }
+
+    public function validateDefinition(UpdateFormRequest $request, Form $form)
+    {
+        $this->authorize('update', $form);
+
+        return $this->success([
+            'valid' => true,
+            'message' => 'The form definition is valid.',
         ]);
     }
 
@@ -219,8 +212,16 @@ class FormController extends Controller
     {
         $this->authorize('update', $form);
 
+        $normalizedStructure = $this->formDataNormalizer->normalize([
+            'properties' => $form->properties ?? [],
+            'computed_variables' => $form->computed_variables ?? [],
+        ]);
+        $this->formStructureValidator->validate($normalizedStructure, $form->workspace);
+
         // Create copy
         $formCopy = $form->replicate();
+        $formCopy->properties = $normalizedStructure['properties'];
+        $formCopy->computed_variables = $normalizedStructure['computed_variables'];
         // generate new slug before changing title
         if (Str::isUuid($formCopy->slug)) {
             $formCopy->slug = Str::uuid();
