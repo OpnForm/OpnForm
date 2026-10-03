@@ -227,7 +227,8 @@ for (const presentation of ['classic', 'focused']) {
   }
 }
 
-test('editor compound controls retain animated keyboard focus', async ({ page, request }) => {
+test('editor compound controls retain animated keyboard focus', async ({ page, request }, testInfo) => {
+  test.skip(testInfo.project.name === 'mobile-chromium', 'The form editor requires a desktop viewport')
   const form = await createFocusForm(request, { title: `Focus editor ${Date.now()}` })
   await page.goto('/login')
   await page.locator('input[name="email"]').fill('e2e@example.test')
