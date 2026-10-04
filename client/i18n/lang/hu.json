@@ -70,7 +70,7 @@
         },
         "validation_error": "Érvényesítési hiba",
         "validation_error_with_count": "Érvényesítési hiba ({count} mező)",
-        "submission_error": "Hiba történt az űrlap beküldése közben. Kérjük, próbálja újra.",
+        "submission_error": "Hiba történt az űrlap beküldése közben. Kérjük, próbáld újra.",
         "toggle": {
             "yes": "Igen",
             "no": "Nem"
