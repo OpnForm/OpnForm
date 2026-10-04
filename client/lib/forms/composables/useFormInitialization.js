@@ -82,6 +82,7 @@ export function useFormInitialization(formConfig, form, pendingSubmission) {
     
     // Clone the data to avoid mutating the original
     const cleanData = clonedeep(formData)
+    const uncheckedDefaults = []
     
     // Process select fields to convert IDs to names
     if (!formConfig.value || !formConfig.value.properties || !Array.isArray(formConfig.value.properties)) {
@@ -100,7 +101,8 @@ export function useFormInitialization(formConfig, form, pendingSubmission) {
       // Focused Yes/No selectors must remain unanswered until a selection is made.
       const isFocusedToggle = formConfig.value.presentation_style === 'focused' && field.use_focused_toggle !== false
       if (field.type === 'checkbox' && (cleanData[field.id] == null || cleanData[field.id] === '') && !isFocusedToggle) {
-        cleanData[field.id] = false
+        uncheckedDefaults.push(field.id)
+        return
       }
 
       // Skip only when value is truly undefined or null
@@ -141,6 +143,12 @@ export function useFormInitialization(formConfig, form, pendingSubmission) {
     
     // Fill with cleaned data
     form.resetAndFill(cleanData)
+
+    // Match mounted inputs without retaining an unanswered default as an explicit answer.
+    // This lets a new configured prefill apply when the form is reinitialized.
+    uncheckedDefaults.forEach(fieldId => {
+      form[fieldId] = false
+    })
   }
 
   /**

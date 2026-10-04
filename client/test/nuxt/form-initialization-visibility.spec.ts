@@ -115,6 +115,41 @@ describe('form visibility before inputs mount', () => {
     expect(fixture.fieldState.getState(fixture.config.value.properties[1]).hidden).toBe(true)
   })
 
+  it('applies a new configured prefill when reinitializing an initially unanswered checkbox', async () => {
+    const { config, form, initialization } = createFixture()
+    await initialization.initialize()
+    expect(form.include_files).toBe(false)
+
+    config.value = {
+      ...config.value,
+      properties: config.value.properties.map(field => field.id === 'include_files' ? { ...field, prefill: true } : field),
+    }
+    await initialization.initialize()
+
+    expect(form.include_files).toBe(true)
+  })
+
+  it('retains an explicit unchecked answer when reinitializing with a checked prefill', async () => {
+    const { config, form, initialization } = createFixture()
+    await initialization.initialize({ defaultData: { include_files: false } })
+    config.value.properties[0].prefill = true
+
+    await initialization.initialize()
+
+    expect(form.include_files).toBe(false)
+  })
+
+  it.each([undefined, null])('applies a changed prefill after initializing an unanswered %s checkbox value', async (value) => {
+    const { config, form, initialization } = createFixture()
+    await initialization.initialize({ defaultData: { include_files: value } })
+    expect(form.include_files).toBe(false)
+    config.value.properties[0].prefill = true
+
+    await initialization.initialize()
+
+    expect(form.include_files).toBe(true)
+  })
+
   it('adds an unchecked default when restoring a draft that omits the checkbox', async () => {
     const { config, form, initialization, fieldState } = createFixture({}, { feedback: 'Saved feedback' })
 
@@ -184,4 +219,31 @@ describe('form visibility before inputs mount', () => {
     expect(structure.pageCount.value).toBe(1)
     expect(structure.getPageFields(0).map(field => field.id)).toContain('email')
   })
+
+  for (const style of ['classic', 'focused']) {
+    for (const source of ['default data', 'draft', 'submission']) {
+      it(`preserves other ${style} answers loaded from ${source} without mutating the source`, async () => {
+        const data = {
+          include_files: true, text: 'Original answer', number: 7, date: '2026-10-01',
+          matrix: { Service: 'Good' }, select: 'first', multi: ['first'], submission_hash: 'stored-hash',
+        }
+        const original = structuredClone(data)
+        const fixture = createFixture({ presentation_style: style }, source === 'draft' ? data : null)
+        fixture.config.value.properties.push(
+          { id: 'text', type: 'text' }, { id: 'number', type: 'number' }, { id: 'date', type: 'date' },
+          { id: 'matrix', type: 'matrix' },
+          { id: 'select', type: 'select', select: { options: [{ id: 'first', name: 'First' }] } },
+          { id: 'multi', type: 'multi_select', multi_select: { options: [{ id: 'first', name: 'First' }] } },
+        )
+        if (source === 'submission') vi.mocked(formsApi.submissions.get).mockResolvedValue({ data })
+
+        await fixture.initialization.initialize(source === 'default data'
+          ? { defaultData: data }
+          : source === 'submission' ? { submissionId: 'stored-id' } : {})
+
+        expect(fixture.form.data()).toMatchObject({ ...data, select: 'First', multi: ['First'] })
+        expect(data).toEqual(original)
+      })
+    }
+  }
 })

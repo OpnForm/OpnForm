@@ -1,4 +1,5 @@
 import { expect, test, type APIRequestContext, type Page } from "@playwright/test"
+import { hash } from "../../lib/utils.js"
 
 test.setTimeout(240_000)
 
@@ -391,6 +392,7 @@ async function openPublicForm(page: Page, slug: string) {
   await gotoPageWithRetry(page, `/forms/${slug}`, async () => {
     await expect(page.getByTestId("public-form-page")).toBeVisible()
   })
+  await page.waitForLoadState("networkidle")
 }
 
 async function expectSubmissionSuccess(page: Page) {
@@ -999,6 +1001,163 @@ for (const toggle of [false, true]) {
     })
   }
 }
+
+for (const toggle of [false, true]) {
+  test(`initialized ${toggle ? "toggle" : "checkbox"} preserves required validation and submitted answers`, async ({ page, request }) => {
+    const form = await apiCreateForm(request, {
+      payloadOverrides: {
+        auto_save: false,
+        properties: [
+          buildCheckboxField("consent", "Consent", { required: true, use_toggle_switch: toggle }),
+          buildCheckboxField("optional", "Optional checkbox"),
+          buildCheckboxField("internal", "Internal checkbox", { hidden: true, required: true }),
+          buildTextField("details", "Details", {
+            required: true,
+            logic: {
+              conditions: { identifier: "consent", value: {
+                operator: "is_not_checked", property_meta: { id: "consent", type: "checkbox" },
+              } },
+              actions: ["hide-block"],
+            },
+          }),
+        ],
+      },
+    })
+    await openPublicForm(page, form.slug)
+    await page.waitForLoadState("networkidle")
+    await expect(getOpenFormField(page, "details")).toHaveCount(0)
+    await page.getByRole("button", { name: /submit/i }).click()
+    await expectFieldError(page, "consent", /Consent.*accepted/)
+
+    const control = page.getByRole(toggle ? "switch" : "checkbox", { name: "Consent", exact: true })
+    await control.focus()
+    await control.press("Space")
+    await expect(control).toBeChecked()
+    await expect(getOpenFormField(page, "details")).toBeVisible()
+    await page.getByRole("button", { name: /submit/i }).click()
+    await expectFieldError(page, "details", /Details.*required/)
+    await fillFieldInput(page, "details", "Preserved answer")
+    await page.getByRole("button", { name: /submit/i }).click()
+    await expectSubmissionSuccess(page)
+
+    const submissions = await apiListSubmissions(request, await apiLogin(request), form.slug)
+    expect(submissions.data).toHaveLength(1)
+    expect(submissions.data[0].data).toMatchObject({ consent: true, optional: false, details: "Preserved answer" })
+  })
+}
+
+for (const checked of [false, true]) {
+  test(`checkbox initialization preserves ${checked ? "a checked" : "an unchecked"} draft, autosave and other answers`, async ({ page, request }, testInfo) => {
+    const form = await apiCreateForm(request, {
+      payloadOverrides: {
+        auto_save: true,
+        properties: [
+          buildCheckboxField("include_files", "Include files", { prefill: !checked }),
+          buildTextField("feedback", "Feedback", { prefill: "Configured answer" }),
+          buildTextField("details", "Details", {
+            logic: { conditions: { identifier: "include_files", value: {
+              operator: "is_not_checked", property_meta: { id: "include_files", type: "checkbox" },
+            } }, actions: ["hide-block"] },
+          }),
+        ],
+      },
+    })
+    const definition = await request.get(`${API_BASE_URL}/forms/${form.slug}`)
+    const publicForm = await definition.json()
+    const url = new URL(`/forms/${form.slug}`, testInfo.project.use.baseURL as string).href
+    const key = `${publicForm.form_pending_submission_key}-${hash(url)}`
+    await page.addInitScript(({ key, checked }) => {
+      if (localStorage.getItem(key) === null) {
+        localStorage.setItem(key, JSON.stringify({ include_files: checked, feedback: "Saved answer" }))
+      }
+    }, { key, checked })
+    await openPublicForm(page, form.slug)
+    await page.waitForLoadState("networkidle")
+    const control = page.getByRole("checkbox", { name: "Include files", exact: true })
+    await expect(control).toBeChecked({ checked })
+    await expect(page.getByLabel("Feedback", { exact: true })).toHaveValue("Saved answer")
+    await expect(getOpenFormField(page, "details")).toHaveCount(checked ? 1 : 0)
+    await fillFieldInput(page, "feedback", "Updated answer")
+    await control.click()
+    await expect.poll(async () => page.evaluate((key) => JSON.parse(localStorage.getItem(key) || "{}"), key))
+      .toMatchObject({ include_files: !checked, feedback: "Updated answer" })
+    await page.reload()
+    await page.waitForLoadState("networkidle")
+    await expect(control).toBeChecked({ checked: !checked })
+    await expect(page.getByLabel("Feedback", { exact: true })).toHaveValue("Updated answer")
+    await expect(getOpenFormField(page, "details")).toHaveCount(checked ? 0 : 1)
+    await page.getByRole("button", { name: /submit/i }).click()
+    await expectSubmissionSuccess(page)
+    const submissions = await apiListSubmissions(request, await apiLogin(request), form.slug)
+    expect(submissions.data[0].data).toMatchObject({ include_files: !checked, feedback: "Updated answer" })
+    await expect.poll(async () => page.evaluate((key) => localStorage.getItem(key), key)).toBeNull()
+  })
+}
+
+for (const required of [false, true]) {
+  test(`focused ${required ? "required Yes" : "optional No"} checkbox stays unanswered and submits the selected value`, async ({ page, request }) => {
+    const form = await apiCreateForm(request, {
+      presentationStyle: "focused",
+      payloadOverrides: {
+        auto_save: false,
+        settings: { navigation_arrows: true, auto_next: false },
+        properties: [buildCheckboxField("choice", "Your choice", { required })],
+      },
+    })
+    await openPublicForm(page, form.slug)
+    await page.waitForLoadState("networkidle")
+    const yes = page.getByRole("option", { name: /Yes/i })
+    const no = page.getByRole("option", { name: /No/i })
+    await expect(yes).toHaveAttribute("aria-selected", "false")
+    await expect(no).toHaveAttribute("aria-selected", "false")
+    if (required) {
+      const validation = page.waitForResponse((response) => response.url().endsWith(`/forms/${form.slug}/answer`))
+      await page.getByRole("button", { name: /submit/i }).click()
+      expect((await validation).status()).toBe(422)
+      await expect(yes).toHaveAttribute("aria-selected", "false")
+      await expect(no).toHaveAttribute("aria-selected", "false")
+    }
+    await (required ? yes : no).click()
+    await expect(required ? yes : no).toHaveAttribute("aria-selected", "true")
+    await page.getByRole("button", { name: /submit/i }).click()
+    await expectSubmissionSuccess(page)
+    const submissions = await apiListSubmissions(request, await apiLogin(request), form.slug)
+    expect(submissions.data[0].data.choice).toBe(required)
+  })
+}
+
+test("checkbox initialization preserves answers when editing a stored submission", async ({ page, request }) => {
+  const form = await apiCreateForm(request, {
+    payloadOverrides: {
+      auto_save: false,
+      editable_submissions: true,
+      properties: [
+        buildCheckboxField("choice", "Your choice"),
+        buildTextField("feedback", "Feedback", { required: true }),
+      ],
+    },
+  })
+  await openPublicForm(page, form.slug)
+  await page.waitForLoadState("networkidle")
+  await fillFieldInput(page, "feedback", "Original answer")
+  const submitted = page.waitForResponse((response) => response.url().endsWith(`/forms/${form.slug}/answer`))
+  await page.getByRole("button", { name: /submit/i }).click()
+  await expectSubmissionSuccess(page)
+  const { submission_id: submissionId } = await (await submitted).json()
+  expect(submissionId).toBeTruthy()
+
+  await openPublicForm(page, `${form.slug}?submission_id=${submissionId}`)
+  await page.waitForLoadState("networkidle")
+  await expect(page.getByRole("checkbox", { name: "Your choice", exact: true })).not.toBeChecked()
+  await expect(page.getByLabel("Feedback", { exact: true })).toHaveValue("Original answer")
+  await page.getByRole("checkbox", { name: "Your choice", exact: true }).check()
+  await fillFieldInput(page, "feedback", "Edited answer")
+  await page.getByRole("button", { name: /submit/i }).click()
+  await expectSubmissionSuccess(page)
+  const submissions = await apiListSubmissions(request, await apiLogin(request), form.slug)
+  expect(submissions.data).toHaveLength(1)
+  expect(submissions.data[0].data).toMatchObject({ choice: true, feedback: "Edited answer" })
+})
 
 test("public form logic reveals and requires follow-up details conditionally", async ({ page, request }) => {
   const form = await apiCreateForm(request, {
