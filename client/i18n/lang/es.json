@@ -7,7 +7,8 @@
             "submit": "Enviar",
             "next": "Siguiente",
             "previous": "Anterior",
-            "re_fill": "Enviar otra respuesta"
+            "re_fill": "Enviar otra respuesta",
+            "download_pdf": "Descargar PDF"
         },
         "powered_by": "Desarrollado por",
         "password_protected": "Este formulario está protegido por contraseña.",
@@ -69,6 +70,7 @@
         },
         "validation_error": "Error de validación",
         "validation_error_with_count": "Error de validación ({count} campos)",
+        "submission_error": "Se produjo un error al enviar el formulario. Inténtalo de nuevo.",
         "toggle": {
             "yes": "Sí",
             "no": "No"

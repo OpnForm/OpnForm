@@ -7,7 +7,8 @@
             "submit": "Bidali",
             "next": "Hurrengoa",
             "previous": "Aurrekoa",
-            "re_fill": "Beste erantzun bat bidali"
+            "re_fill": "Beste erantzun bat bidali",
+            "download_pdf": "Deskargatu PDFa"
         },
         "powered_by": "Honek sortua",
         "password_protected": "Inprimaki hau pasahitz bidez babestuta dago.",
@@ -69,6 +70,7 @@
         },
         "validation_error": "Balidazio errorea",
         "validation_error_with_count": "Balidazio errorea ({count} eremu)",
+        "submission_error": "Errore bat gertatu da formularioa bidaltzean. Saiatu berriro.",
         "toggle": {
             "yes": "Bai",
             "no": "Ez"

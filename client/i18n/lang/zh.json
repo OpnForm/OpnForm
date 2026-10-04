@@ -7,7 +7,8 @@
             "submit": "提交",
             "next": "下一个",
             "previous": "上一个",
-            "re_fill": "提交另一个回复"
+            "re_fill": "提交另一个回复",
+            "download_pdf": "下载 PDF"
         },
         "powered_by": "开发者",
         "password_protected": "此表单受密码保护。",
@@ -69,6 +70,7 @@
         },
         "validation_error": "验证错误",
         "validation_error_with_count": "验证错误 ({count} 个字段)",
+        "submission_error": "提交表单时出错，请重试。",
         "toggle": {
             "yes": "是",
             "no": "否"

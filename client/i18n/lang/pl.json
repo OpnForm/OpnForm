@@ -7,7 +7,8 @@
             "submit": "Wyślij",
             "next": "Dalej",
             "previous": "Poprzedni",
-            "re_fill": "Wyślij kolejną odpowiedź"
+            "re_fill": "Wyślij kolejną odpowiedź",
+            "download_pdf": "Pobierz PDF"
         },
         "powered_by": "Obsługiwane przez",
         "password_protected": "Ten formularz jest chroniony hasłem.",
@@ -69,6 +70,7 @@
         },
         "validation_error": "Błąd walidacji",
         "validation_error_with_count": "Błąd walidacji ({count} pola)",
+        "submission_error": "Wystąpił błąd podczas wysyłania formularza. Spróbuj ponownie.",
         "toggle": {
             "yes": "Tak",
             "no": "Nie"

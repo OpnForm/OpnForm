@@ -7,7 +7,8 @@
             "submit": "Kirim",
             "next": "Sabanjure",
             "previous": "Sadurunge",
-            "re_fill": "Kirim jawaban liyane"
+            "re_fill": "Kirim jawaban liyane",
+            "download_pdf": "Undhuh PDF"
         },
         "powered_by": "Dipungkasi dening",
         "password_protected": "Formulir iki dilindhungi tembung sandi.",
@@ -69,6 +70,7 @@
         },
         "validation_error": "Kesalahan validasi",
         "validation_error_with_count": "Kesalahan validasi ({count} kolom)",
+        "submission_error": "Ana kesalahan nalika ngirim formulir. Mangga coba maneh.",
         "toggle": {
             "yes": "Ya",
             "no": "Ora"

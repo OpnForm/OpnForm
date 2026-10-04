@@ -7,7 +7,8 @@
             "submit": "Verzenden",
             "next": "Volgende",
             "previous": "Vorige",
-            "re_fill": "Nog een antwoord indienen"
+            "re_fill": "Nog een antwoord indienen",
+            "download_pdf": "PDF downloaden"
         },
         "powered_by": "Mogelijk gemaakt door",
         "password_protected": "Dit formulier is beveiligd met een wachtwoord.",
@@ -69,6 +70,7 @@
         },
         "validation_error": "Validatiefout",
         "validation_error_with_count": "Validatiefout ({count} velden)",
+        "submission_error": "Er is een fout opgetreden bij het verzenden van het formulier. Probeer het opnieuw.",
         "toggle": {
             "yes": "Ja",
             "no": "Nee"
