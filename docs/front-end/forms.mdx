@@ -15,7 +15,9 @@ Our form system consists of three main parts:
 2. **useFormInput Composable** (`client/components/forms/useFormInput.js`) - Input component logic
 3. **Form Components** (`client/components/forms/`) - Reusable input components
 
-Public forms initialize checkbox values before evaluating conditional visibility and rendering server HTML. Empty checkboxes and switches start at `false`, including hidden controls, so rules such as **is not checked** apply on the first render. URL prefill, configured defaults, and restored answers retain their values. Implicit unchecked defaults remain distinct from explicit answers, allowing a new configured prefill to apply when the form is reinitialized. Focused Yes/No questions remain unanswered until the respondent selects an option. Saved drafts reside in browser storage and are restored on the client.
+Public forms normalize answers before evaluating conditional visibility and rendering server HTML. Empty checkboxes and switches start at `false`; empty ratings and sliders start at `0`, including hidden controls. Numeric prefills for ratings, sliders, and scales are converted to numbers while preserving decimals. Implicit defaults remain distinct from explicit answers, allowing a new configured prefill to apply when the form is reinitialized. Focused Yes/No questions and empty scales remain unanswered until the respondent selects an option.
+
+Computed variables derive from the normalized answers in dependency order during both server rendering and client updates. Browser-only drafts are restored after hydration, with autosave paused until restoration finishes. This keeps control attributes, conditional visibility, and submitted answers consistent without overwriting the saved draft with server defaults.
 
 ## Creating a Basic Form
 

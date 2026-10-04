@@ -99,6 +99,12 @@ export function useFormManager(initialFormConfig, initialMode = FormMode.LIVE, o
     } catch { /* no-op */ }
   }
 
+  function restorePendingSubmission() {
+    if (!initialization.restorePendingSubmission()) return false
+    replaceStructure()
+    return true
+  }
+
   const validation = useFormValidation(config, form, state)
   const payment = useFormPayment(config, form)
   const submission = useFormSubmission(config, form, submissionAttribution.attribution)
@@ -438,6 +444,7 @@ export function useFormManager(initialFormConfig, initialMode = FormMode.LIVE, o
 
     // Core Methods
     initialize,
+    restorePendingSubmission,
     updateConfig,   // New method to update form config
     nextPage,
     previousPage,

@@ -93,4 +93,22 @@ describe('usePendingSubmission', () => {
     })
     expect(pendingSubmission.getSubmissionHash()).toBe('submission-hash-2')
   })
+
+  it('keeps a stored draft intact while server answers hydrate, then autosaves restored answers', async () => {
+    const { formData, pendingSubmission } = createPendingSubmission({ auto_save: true })
+    formData.value = { choice: true, feedback: 'Saved answer' }
+    await flushAutosave()
+
+    pendingSubmission.pauseAutosave()
+    formData.value = { choice: false, feedback: 'Server prefill' }
+    await flushAutosave()
+    expect(pendingSubmission.get()).toEqual({ choice: true, feedback: 'Saved answer' })
+
+    formData.value = pendingSubmission.get()
+    pendingSubmission.resumeAutosave()
+    await flushAutosave()
+    formData.value = { choice: false, feedback: 'Updated answer' }
+    await flushAutosave()
+    expect(pendingSubmission.get()).toEqual({ choice: false, feedback: 'Updated answer' })
+  })
 })

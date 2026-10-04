@@ -83,7 +83,7 @@ export function usePendingSubmission(formConfig, formDataRef) {
   }
 
   // Watch formDataRef with throttling
-  watchThrottled(
+  const autosave = watchThrottled(
     formDataRef,
     (newData) => {
       // Only persist full draft when auto-save is on (not only partial-submission metadata)
@@ -141,6 +141,8 @@ export function usePendingSubmission(formConfig, formDataRef) {
   return {
     formPendingSubmissionKey, // Keep for potential external use (e.g., partial submission hash map key)
     enabled,
+    pauseAutosave: autosave.pause,
+    resumeAutosave: autosave.resume,
     get,                  // Method to retrieve stored data
     remove,               // Method to clear stored data
     setSubmissionHash,    // Method to specifically set the submission hash

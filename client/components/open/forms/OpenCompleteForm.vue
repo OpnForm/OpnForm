@@ -188,7 +188,7 @@ const showFirstSubmissionModal = ref(false)
 const queryString = route.fullPath.split('?')[1] || ''
 
 // Check for auto_submit parameter during setup
-const isAutoSubmit = ref(import.meta.client && window.location.href.includes('auto_submit=true'))
+const isAutoSubmit = ref(new URLSearchParams(queryString).get('auto_submit') === 'true')
 
 
 // Create a reactive reference directly from the prop
@@ -203,6 +203,8 @@ provide('formBorderRadius', computed(() => props.form.border_radius || 'small'))
 provide('formPresentationStyle', computed(() => props.form.presentation_style || 'classic'))
 
 let formManager = null
+let restoreDraftAfterHydration = false
+let draftRestoration = Promise.resolve()
 const sdkBridge = shallowRef(null)
 let resolveSdkBridgeReady
 const sdkBridgeReady = new Promise((resolve) => {
@@ -214,10 +216,27 @@ if (props.form) {
     mode: modeRef
   })
 
+  // Hydrate the server's answers first. Browser-only drafts must update mounted
+  // controls, rather than hydrating a different value into the server's markup.
+  restoreDraftAfterHydration = import.meta.client && nuxtApp.isHydrating &&
+    !submissionId.value && formManager.pendingSubmission.enabled.value
+  if (restoreDraftAfterHydration) {
+    formManager.pendingSubmission.pauseAutosave()
+    draftRestoration = new Promise((resolve) => {
+      const removeHook = nuxtApp.hooks.hookOnce('app:suspense:resolve', () => {
+        formManager.restorePendingSubmission()
+        formManager.pendingSubmission.resumeAutosave()
+        resolve()
+      })
+      onBeforeUnmount(removeHook)
+    })
+  }
+
   // Await initialization so SSR includes form structure and fields
   await formManager.initialize({
     submissionId: submissionId.value,
     urlParams: new URLSearchParams(queryString),
+    skipPendingSubmission: restoreDraftAfterHydration,
   })
 
 }
@@ -259,6 +278,7 @@ onMounted(() => {
   if (isAutoSubmit.value && formManager) {
     // Using nextTick to ensure form is fully rendered and initialized
     nextTick(async () => {
+      await draftRestoration
       const bridge = shouldLoadSdkBridge.value ? await sdkBridgeReady : null
       await bridge?.waitForHandshake?.()
       triggerSubmit()

@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, reactive, ref } from 'vue'
+import { computed, createSSRApp, h, reactive, ref, watch } from 'vue'
+import { renderToString } from 'vue/server-renderer'
 import { formsApi } from '~/api'
 import Form from '~/composables/lib/vForm/Form.js'
 import { createFormModeStrategy, FormMode } from '~/lib/forms/FormModeStrategy'
@@ -8,6 +9,7 @@ import { useFieldState } from '~/lib/forms/composables/useFieldState'
 import { useFormInitialization } from '~/lib/forms/composables/useFormInitialization'
 import { useFocusedStructure } from '~/lib/forms/composables/useFocusedStructure'
 import { useFormStructure } from '~/lib/forms/composables/useFormStructure'
+import { useComputedVariables } from '~/composables/forms/useComputedVariables'
 
 vi.mock('~/api', () => ({
   apiService: {},
@@ -139,6 +141,16 @@ describe('form visibility before inputs mount', () => {
     expect(form.include_files).toBe(false)
   })
 
+  it('allows a new prefill after an initially empty checkbox string', async () => {
+    const { config, form, initialization } = createFixture()
+    await initialization.initialize({ defaultData: { include_files: '' } })
+    config.value.properties[0].prefill = true
+
+    await initialization.initialize()
+
+    expect(form.include_files).toBe(true)
+  })
+
   it.each([undefined, null])('applies a changed prefill after initializing an unanswered %s checkbox value', async (value) => {
     const { config, form, initialization } = createFixture()
     await initialization.initialize({ defaultData: { include_files: value } })
@@ -221,6 +233,63 @@ describe('form visibility before inputs mount', () => {
   })
 
   for (const style of ['classic', 'focused']) {
+    it.each(['rating', 'slider'])(`preserves an explicit zero ${style} %s answer on reinitialization`, async (type) => {
+      const fixture = createFixture({ presentation_style: style })
+      fixture.config.value.properties[0] = { id: 'control', type, prefill: 4 }
+      await fixture.initialization.initialize({ defaultData: { control: 0 } })
+
+      await fixture.initialization.initialize()
+
+      expect(fixture.form.control).toBe(0)
+    })
+    it.each([undefined, null, ''])(`keeps an empty ${style} scale unanswered (%s)`, async (value) => {
+      const fixture = createFixture({ presentation_style: style })
+      fixture.config.value.properties[0] = { id: 'control', type: 'scale' }
+
+      await fixture.initialization.initialize({ defaultData: { control: value } })
+
+      expect(fixture.form.control).toBe(value)
+    })
+    for (const type of ['rating', 'slider']) {
+      it.each([undefined, null, ''])(`initializes an empty ${style} ${type} before resolving visibility (%s)`, async (value) => {
+        const fixture = createFixture({ presentation_style: style })
+        fixture.config.value.properties[0] = { id: 'control', type, hidden: true }
+        fixture.config.value.properties[1].logic.conditions = {
+          identifier: 'control', value: {
+            operator: 'equals', property_meta: { id: 'control', type }, value: 0,
+          },
+        }
+
+        await fixture.initialization.initialize({ defaultData: { control: value } })
+
+        expect(fixture.form.control).toBe(0)
+        expect(fixture.fieldState.getState(fixture.config.value.properties[1]).hidden).toBe(true)
+        fixture.config.value.properties[0].prefill = 4
+        await fixture.initialization.initialize()
+        expect(fixture.form.control).toBe(4)
+      })
+    }
+    it.each(['configured prefill', 'URL', 'default data', 'draft', 'submission'])(`normalizes a ${style} decimal scale from %s without changing the source answer`, async (source) => {
+      const data = { control: '2.5' }
+      const fixture = createFixture({ presentation_style: style }, source === 'draft' ? data : null)
+      fixture.config.value.properties[0] = { id: 'control', type: 'scale', prefill: '2.5' }
+      fixture.config.value.properties[1].logic.conditions = {
+        identifier: 'control', value: {
+          operator: 'equals', property_meta: { id: 'control', type: 'scale' }, value: 2.5,
+        },
+      }
+      if (source === 'submission') vi.mocked(formsApi.submissions.get).mockResolvedValue({ data })
+
+      await fixture.initialization.initialize(source === 'URL'
+        ? { urlParams: new URLSearchParams(data) }
+        : source === 'default data' ? { defaultData: data }
+        : source === 'submission' ? { submissionId: 'stored-id' } : {})
+
+      expect(fixture.form.control).toBe(2.5)
+      expect(fixture.fieldState.getState(fixture.config.value.properties[1]).hidden).toBe(true)
+      expect(data.control).toBe('2.5')
+    })
+
     for (const source of ['default data', 'draft', 'submission']) {
       it(`preserves other ${style} answers loaded from ${source} without mutating the source`, async () => {
         const data = {
@@ -246,4 +315,50 @@ describe('form visibility before inputs mount', () => {
       })
     }
   }
+
+  it.each(['configured prefill', 'URL', 'default data', 'submission'])('renders chained computed visibility from %s during SSR', async (source) => {
+    vi.stubGlobal('ref', ref)
+    vi.stubGlobal('computed', computed)
+    vi.stubGlobal('watch', watch)
+    const data = { control: 5 }
+    if (source === 'submission') vi.mocked(formsApi.submissions.get).mockResolvedValue({ data })
+    const app = createSSRApp({
+      async setup() {
+        const fixture = createFixture({
+          properties: [
+            { id: 'control', type: 'number', ...(source === 'configured prefill' ? { prefill: 5 } : {}) },
+            { id: 'dependent', type: 'text', logic: {
+              conditions: { identifier: 'cv_total', value: {
+                operator: 'greater_than', property_meta: { id: 'cv_total', type: 'computed', result_type: 'number' }, value: 10,
+              } }, actions: ['hide-block'],
+            } },
+          ],
+          computed_variables: [
+            { id: 'cv_total', name: 'Total', formula: '{cv_double} + 1' },
+            { id: 'cv_double', name: 'Double', formula: '{control} * 2' },
+          ],
+        })
+        const variables = useComputedVariables(fixture.config, computed(() => fixture.form.data()))
+        // Resolve once before initialization, as consumers can do during setup.
+        expect(variables.values.value.cv_total).toBeNull()
+        const states = useFieldState(computed(() => fixture.form.data()), fixture.config,
+          ref(createFormModeStrategy(FormMode.LIVE)), variables.values)
+        await fixture.initialization.initialize(source === 'URL'
+          ? { urlParams: new URLSearchParams({ control: '5' }) }
+          : source === 'default data' ? { defaultData: data }
+          : source === 'submission' ? { submissionId: 'stored-id' } : {})
+        return () => h('div', [
+          h('span', String(variables.values.value.cv_total)),
+          ...(states.getState(fixture.config.value.properties[1]).hidden ? [] : [h('input', { name: 'dependent' })]),
+        ])
+      },
+    })
+    try {
+      const html = await renderToString(app)
+      expect(html).toContain('<span>11</span>')
+      expect(html).not.toContain('name="dependent"')
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
 })
