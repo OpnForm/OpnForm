@@ -83,18 +83,30 @@ export function usePendingSubmission(formConfig, formDataRef) {
   }
 
   // Watch formDataRef with throttling
+  let autosavePaused = false
   const autosave = watchThrottled(
     formDataRef,
-    (newData) => {
+    () => {
       // Only persist full draft when auto-save is on (not only partial-submission metadata)
-      if (import.meta.client && enabled.value) {
-        saveData(mergeStoredMetadata(newData))
+      // A trailing throttle callback can still run after the watcher is paused.
+      if (import.meta.client && enabled.value && !autosavePaused) {
+        saveData(mergeStoredMetadata(formDataRef.value))
       }
     },
     { deep: true, throttle: 1000 } // Throttle saving to once per second
   )
 
   // --- Exposed Methods ---
+
+  const pauseAutosave = () => {
+    autosavePaused = true
+    autosave.pause()
+  }
+
+  const resumeAutosave = () => {
+    autosavePaused = false
+    autosave.resume()
+  }
 
   const remove = () => {
     // Clear the data from storage
@@ -141,8 +153,8 @@ export function usePendingSubmission(formConfig, formDataRef) {
   return {
     formPendingSubmissionKey, // Keep for potential external use (e.g., partial submission hash map key)
     enabled,
-    pauseAutosave: autosave.pause,
-    resumeAutosave: autosave.resume,
+    pauseAutosave,
+    resumeAutosave,
     get,                  // Method to retrieve stored data
     remove,               // Method to clear stored data
     setSubmissionHash,    // Method to specifically set the submission hash

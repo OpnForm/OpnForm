@@ -322,3 +322,64 @@ for (const fragment of ['', '#section']) {
     expect(warnings).toEqual([])
   })
 }
+
+for (const autoSubmit of [false, true]) {
+  test(`encoded and repeated query values survive SSR and ${autoSubmit ? 'auto-submission' : 'refilling'}`, async ({ page, request, browser }, testInfo) => {
+    const warnings = collectHydrationWarnings(page)
+    const prefill = 'Why? #section & A+B 100%'
+    const form = await createForm(request, [
+      { id: 'feedback', name: 'Feedback', type: 'text', required: true },
+      { id: 'choices', name: 'Choices', type: 'multi_select', hidden: true,
+        multi_select: { options: [{ id: 'one', name: 'One' }, { id: 'two', name: 'Two' }] } },
+    ], { auto_save: true, re_fillable: true, re_fill_button_text: 'Fill again' })
+    const publicForm = await (await request.get(`${api}/forms/${form.slug}`)).json()
+    const query = new URLSearchParams({ feedback: prefill })
+    query.append('choices[]', 'one')
+    query.append('choices[]', 'two')
+    if (autoSubmit) query.append('auto_submit', 'true')
+    const path = `/forms/${form.slug}?${query}#section`
+
+    const ssr = await browser.newContext({ javaScriptEnabled: false, baseURL: testInfo.project.use.baseURL as string })
+    try {
+      const serverPage = await ssr.newPage()
+      await serverPage.goto(path)
+      if (autoSubmit) {
+        await expect(serverPage.getByLabel('Feedback', { exact: true })).toHaveCount(0)
+      } else {
+        await expect(serverPage.getByLabel('Feedback', { exact: true })).toHaveValue(prefill)
+      }
+    } finally {
+      await ssr.close()
+    }
+
+    const submissions: Record<string, unknown>[] = []
+    await page.route(`**/forms/${form.slug}/answer`, route => {
+      submissions.push(route.request().postDataJSON())
+      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ submission_id: 'saved-submission' }) })
+    })
+    await page.goto(path)
+    await page.waitForLoadState('networkidle')
+    // Vue Router canonicalizes escaped query characters; drafts use the browser URL.
+    const key = `${publicForm.form_pending_submission_key}-${hash(page.url())}`
+    if (!autoSubmit) {
+      await expect(page.getByLabel('Feedback', { exact: true })).toHaveValue(prefill)
+      await page.getByRole('button', { name: /submit/i }).click()
+    }
+    await expect(page.getByRole('button', { name: 'Fill again', exact: true })).toBeVisible()
+    expect(submissions).toHaveLength(1)
+    expect(submissions[0]).toMatchObject({ feedback: prefill, choices: ['One', 'Two'] })
+    await page.waitForTimeout(1100)
+    expect(await page.evaluate(key => localStorage.getItem(key), key)).toBeNull()
+
+    if (!autoSubmit) {
+      await page.getByRole('button', { name: 'Fill again', exact: true }).click()
+      await expect(page.getByLabel('Feedback', { exact: true })).toHaveValue(prefill)
+      await page.getByLabel('Feedback', { exact: true }).fill('New draft after refilling')
+      await expect.poll(async () => page.evaluate(key => JSON.parse(localStorage.getItem(key) || '{}'), key))
+        .toMatchObject({ feedback: 'New draft after refilling', choices: ['One', 'Two'] })
+      await page.reload()
+      await expect(page.getByLabel('Feedback', { exact: true })).toHaveValue('New draft after refilling')
+    }
+    expect(warnings).toEqual([])
+  })
+}

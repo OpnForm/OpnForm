@@ -189,10 +189,17 @@ const isRestoringDraft = ref(!!props.form.auto_save && !submissionId.value)
 const submittedData = ref(null)
 const showFirstSubmissionModal = ref(false)
 
-const queryString = route.fullPath.split('#')[0].split('?')[1] || ''
+const getUrlParams = () => {
+  const params = new URLSearchParams()
+  Object.entries(route.query).forEach(([key, value]) => {
+    const values = Array.isArray(value) ? value : [value]
+    values.forEach(value => params.append(key, value ?? ''))
+  })
+  return params
+}
 
 // Check for auto_submit parameter during setup
-const isAutoSubmit = ref(new URLSearchParams(queryString).get('auto_submit') === 'true')
+const isAutoSubmit = ref(getUrlParams().get('auto_submit') === 'true')
 
 
 // Create a reactive reference directly from the prop
@@ -229,8 +236,7 @@ if (props.form) {
     draftRestoration = new Promise((resolve) => {
       const removeHook = nuxtApp.hooks.hookOnce('app:suspense:resolve', () => {
         formManager.restorePendingSubmission()
-        formManager.pendingSubmission.resumeAutosave()
-        formManager.startPartialSubmissionSync()
+        formManager.startBackgroundSync()
         restoreDraftAfterHydration = false
         isRestoringDraft.value = false
         resolve()
@@ -242,9 +248,9 @@ if (props.form) {
   // Await initialization so SSR includes form structure and fields
   await formManager.initialize({
     submissionId: submissionId.value,
-    urlParams: new URLSearchParams(queryString),
+    urlParams: getUrlParams(),
     skipPendingSubmission: restoreDraftAfterHydration,
-    deferPartialSubmissionSync: restoreDraftAfterHydration,
+    deferBackgroundSync: restoreDraftAfterHydration,
   })
 
   if (import.meta.client && !restoreDraftAfterHydration) isRestoringDraft.value = false
@@ -258,7 +264,7 @@ watch(() => props.form, (newForm) => {
     // Update form manager with the new config
     formManager.updateConfig(newForm, {
       submissionId: submissionId.value,
-      urlParams: new URLSearchParams(queryString),
+      urlParams: getUrlParams(),
     })
   }
 })
@@ -474,8 +480,7 @@ const restart = async () => {
   if (!formManager) return
   submittedData.value = null
   submissionId.value = null
-  const queryString = route.fullPath.split('#')[0].split('?')[1] || ''
-  const urlParams = new URLSearchParams(queryString)
+  const urlParams = getUrlParams()
   
   // Determine if we should clear the form completely for a fresh start
   const shouldClearUrl = props.form.editable_submissions
