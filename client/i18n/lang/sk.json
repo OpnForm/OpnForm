@@ -7,7 +7,8 @@
             "submit": "Odoslať",
             "next": "Ďalší",
             "previous": "Predchádzajúci",
-            "re_fill": "Odoslať ďalšiu odpoveď"
+            "re_fill": "Odoslať ďalšiu odpoveď",
+            "download_pdf": "Stiahnuť PDF"
         },
         "powered_by": "Vytvorené pomocou",
         "password_protected": "Tento formulár je chránený heslom.",
@@ -69,6 +70,7 @@
         },
         "validation_error": "Chyba overenia",
         "validation_error_with_count": "Chyba overenia ({count} polí)",
+        "submission_error": "Pri odosielaní formulára sa vyskytla chyba. Skúste to prosím znova.",
         "toggle": {
             "yes": "Áno",
             "no": "Nie"

@@ -99,6 +99,19 @@ export function useFormManager(initialFormConfig, initialMode = FormMode.LIVE, o
     } catch { /* no-op */ }
   }
 
+  function restorePendingSubmission() {
+    if (!initialization.restorePendingSubmission()) return false
+    replaceStructure()
+    return true
+  }
+
+  function startBackgroundSync() {
+    pendingSubmissionService.resumeAutosave()
+    if (import.meta.client && config.value.enable_partial_submissions && strategy.value.submission.enablePartialSubmissions) {
+      partialSubmissionService.startSync()
+    }
+  }
+
   const validation = useFormValidation(config, form, state)
   const payment = useFormPayment(config, form)
   const submission = useFormSubmission(config, form, submissionAttribution.attribution)
@@ -154,10 +167,8 @@ export function useFormManager(initialFormConfig, initialMode = FormMode.LIVE, o
     // Ensure structure is built after initialization
     replaceStructure()
     
-    // Start partial submission sync if enabled in both config and strategy
-    if (import.meta.client && config.value.enable_partial_submissions && strategy.value.submission.enablePartialSubmissions) {
-      partialSubmissionService.startSync()
-    }
+    // Resume draft saving and partial sync only once the answers are ready.
+    if (!options.deferBackgroundSync) startBackgroundSync()
     
     state.isProcessing = false
   }
@@ -315,6 +326,7 @@ export function useFormManager(initialFormConfig, initialMode = FormMode.LIVE, o
       }
       
       // 7. Clear pending submission data on successful submit
+      pendingSubmissionService?.pauseAutosave()
       pendingSubmissionService?.clear()
       
       // 8. Clear partial submission hash to prevent stale data
@@ -438,6 +450,8 @@ export function useFormManager(initialFormConfig, initialMode = FormMode.LIVE, o
 
     // Core Methods
     initialize,
+    restorePendingSubmission,
+    startBackgroundSync,
     updateConfig,   // New method to update form config
     nextPage,
     previousPage,

@@ -7,7 +7,8 @@
             "submit": "제출",
             "next": "다음",
             "previous": "이전",
-            "re_fill": "다른 답변 제출"
+            "re_fill": "다른 답변 제출",
+            "download_pdf": "PDF 다운로드"
         },
         "powered_by": "제공",
         "password_protected": "이 양식은 비밀번호로 보호되어 있습니다.",
@@ -69,6 +70,7 @@
         },
         "validation_error": "유효성 검사 오류",
         "validation_error_with_count": "유효성 검사 오류 ({count}개 필드)",
+        "submission_error": "양식을 제출하는 중 오류가 발생했습니다. 다시 시도해 주세요.",
         "toggle": {
             "yes": "예",
             "no": "아니오"

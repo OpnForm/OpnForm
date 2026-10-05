@@ -7,7 +7,8 @@
             "submit": "إرسال",
             "next": "التالي",
             "previous": "السابق",
-            "re_fill": "إرسال رد آخر"
+            "re_fill": "إرسال رد آخر",
+            "download_pdf": "تنزيل PDF"
         },
         "powered_by": "مشغل بواسطة",
         "password_protected": "هذا النموذج محمي بكلمة مرور.",
@@ -69,6 +70,7 @@
         },
         "validation_error": "خطأ في التحقق",
         "validation_error_with_count": "خطأ في التحقق ({count} حقول)",
+        "submission_error": "حدث خطأ أثناء إرسال النموذج. يرجى المحاولة مرة أخرى.",
         "toggle": {
             "yes": "نعم",
             "no": "لا"

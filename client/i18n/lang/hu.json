@@ -7,7 +7,8 @@
             "submit": "Beküldés",
             "next": "Tovább",
             "previous": "Vissza",
-            "re_fill": "Új válasz beküldése"
+            "re_fill": "Új válasz beküldése",
+            "download_pdf": "PDF letöltése"
         },
         "powered_by": "Működteti",
         "password_protected": "Ez az űrlap jelszóval védett.",
@@ -69,6 +70,7 @@
         },
         "validation_error": "Érvényesítési hiba",
         "validation_error_with_count": "Érvényesítési hiba ({count} mező)",
+        "submission_error": "Hiba történt az űrlap beküldése közben. Kérjük, próbáld újra.",
         "toggle": {
             "yes": "Igen",
             "no": "Nem"

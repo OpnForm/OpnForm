@@ -7,7 +7,8 @@
             "submit": "Enviar",
             "next": "Següent",
             "previous": "Anterior",
-            "re_fill": "Enviar una altra resposta"
+            "re_fill": "Enviar una altra resposta",
+            "download_pdf": "Descarrega el PDF"
         },
         "powered_by": "Desenvolupat per",
         "password_protected": "Aquest formulari està protegit amb contrasenya.",
@@ -69,6 +70,7 @@
         },
         "validation_error": "Error de validació",
         "validation_error_with_count": "Error de validació ({count} camps)",
+        "submission_error": "S'ha produït un error en enviar el formulari. Torneu-ho a provar.",
         "toggle": {
             "yes": "Sí",
             "no": "No"

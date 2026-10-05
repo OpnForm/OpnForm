@@ -7,7 +7,8 @@
             "submit": "Pošalji",
             "next": "Dalje",
             "previous": "Nazad",
-            "re_fill": "Pošalji još jedan odgovor"
+            "re_fill": "Pošalji još jedan odgovor",
+            "download_pdf": "Preuzmi PDF"
         },
         "powered_by": "Pokreće",
         "password_protected": "Ovaj formular je zaštićen lozinkom.",
@@ -69,6 +70,7 @@
         },
         "validation_error": "Greška pri validaciji",
         "validation_error_with_count": "Greška pri validaciji ({count} polja)",
+        "submission_error": "Došlo je do greške prilikom slanja obrasca. Pokušajte ponovo.",
         "toggle": {
             "yes": "Da",
             "no": "Ne"
