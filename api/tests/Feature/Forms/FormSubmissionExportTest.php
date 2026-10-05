@@ -542,3 +542,31 @@ it('allows export status polling when the general api rate limit is exhausted', 
         ->assertSuccessful()
         ->assertJsonPath('status', 'processing');
 });
+
+it('serves export status at the documented path with the documented fields', function () {
+    $user = $this->actingAsProUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace);
+
+    $jobId = app(FormExportService::class)->initializeAsyncExport($form, $user->id);
+
+    // Keep in sync with docs/api-reference/submissions/export-status.mdx
+    $response = $this->getJson("/open/forms/{$form->id}/submissions/export/status/{$jobId}")
+        ->assertSuccessful()
+        ->assertJsonPath('job_id', $jobId)
+        ->assertJsonPath('status', 'queued')
+        ->assertJsonPath('progress', 0);
+
+    expect(array_keys($response->json()))->toEqualCanonicalizing([
+        'job_id',
+        'status',
+        'progress',
+        'processed_submissions',
+        'total_submissions',
+        'file_url',
+        'error_message',
+        'expires_at',
+        'created_at',
+        'updated_at',
+    ]);
+});

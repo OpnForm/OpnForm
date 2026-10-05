@@ -1,5 +1,5 @@
 ---
-openapi: get /open/forms/{id}/submissions/export/{job_id}/status
+openapi: get /open/forms/{id}/submissions/export/status/{job_id}
 ---
 
 # Check Export Status
@@ -13,7 +13,7 @@ Requires `forms-read` ability.
 ## Request
 
 ```http
-GET /open/forms/{id}/submissions/export/{job_id}/status HTTP/1.1
+GET /open/forms/{id}/submissions/export/status/{job_id} HTTP/1.1
 Host: api.opnform.com
 Authorization: Bearer <token>
 ```
@@ -33,13 +33,14 @@ Authorization: Bearer <token>
 {
     "status": "processing",
     "progress": 65,
-    "form_id": 123,
-    "user_id": 456,
     "processed_submissions": 650,
     "total_submissions": 1000,
+    "file_url": null,
+    "error_message": null,
+    "expires_at": null,
     "created_at": "2024-06-12T09:15:23.000Z",
     "updated_at": "2024-06-12T09:16:10.000Z",
-    "job_id": "export_abc123def456"
+    "job_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d"
 }
 ```
 
@@ -49,15 +50,14 @@ Authorization: Bearer <token>
 {
     "status": "completed",
     "progress": 100,
-    "form_id": 123,
-    "user_id": 456,
     "processed_submissions": 1000,
     "total_submissions": 1000,
     "file_url": "https://storage.example.com/exports/form-123-submissions-2024-06-12-09-15-23.csv",
+    "error_message": null,
     "expires_at": "2024-06-13T09:15:23.000Z",
     "created_at": "2024-06-12T09:15:23.000Z",
     "updated_at": "2024-06-12T09:16:30.000Z",
-    "job_id": "export_abc123def456"
+    "job_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d"
 }
 ```
 
@@ -67,12 +67,14 @@ Authorization: Bearer <token>
 {
     "status": "failed",
     "progress": 0,
-    "form_id": 123,
-    "user_id": 456,
+    "processed_submissions": null,
+    "total_submissions": null,
+    "file_url": null,
     "error_message": "Database connection timeout",
+    "expires_at": null,
     "created_at": "2024-06-12T09:15:23.000Z",
     "updated_at": "2024-06-12T09:15:45.000Z",
-    "job_id": "export_abc123def456"
+    "job_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d"
 }
 ```
 
@@ -80,10 +82,8 @@ Authorization: Bearer <token>
 
 | Field                   | Type   | Description                                          |
 | ----------------------- | ------ | ---------------------------------------------------- |
-| `status`                | string | Job status: `processing`, `completed`, or `failed`   |
+| `status`                | string | Job status: `queued`, `processing`, `completed`, or `failed` |
 | `progress`              | number | Completion percentage (0-100)                        |
-| `form_id`               | number | ID of the form being exported                        |
-| `user_id`               | number | ID of the user who initiated the export              |
 | `job_id`                | string | Export job identifier                                |
 | `processed_submissions` | number | Number of submissions processed so far               |
 | `total_submissions`     | number | Total number of submissions to process               |
@@ -94,8 +94,8 @@ Authorization: Bearer <token>
 | `updated_at`            | string | Last update timestamp                                |
 
 <Note>
-    Only `status`, `progress`, `form_id`, `user_id`, `job_id`, `created_at`, and
-    `updated_at` are always present. Other fields appear based on the job state.
+    Every field is always present. Fields that do not apply to the current job
+    state are `null`.
 </Note>
 
 <Warning>

@@ -754,13 +754,13 @@ paths:
                                               example: "Export started. Large export will be processed in the background."
                                           job_id:
                                               type: string
-                                              example: "export_abc123def456"
+                                              example: "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d"
                                           is_async:
                                               type: boolean
                                               example: true
                 "403":
                     description: Forbidden
-    "/open/forms/{id}/submissions/export/{job_id}/status":
+    "/open/forms/{id}/submissions/export/status/{job_id}":
         get:
             tags:
                 - Submissions
@@ -1571,19 +1571,13 @@ components:
             properties:
                 status:
                     type: string
-                    enum: [processing, completed, failed]
+                    enum: [queued, processing, completed, failed]
                     description: "Current status of the export job"
                 progress:
                     type: number
                     minimum: 0
                     maximum: 100
                     description: "Completion percentage (0-100)"
-                form_id:
-                    type: number
-                    description: "ID of the form being exported"
-                user_id:
-                    type: number
-                    description: "ID of the user who initiated the export"
                 job_id:
                     type: string
                     description: "Export job identifier"
