@@ -7,7 +7,8 @@
             "submit": "送信",
             "next": "次へ",
             "previous": "前へ",
-            "re_fill": "別の回答を送信"
+            "re_fill": "別の回答を送信",
+            "download_pdf": "PDFをダウンロード"
         },
         "powered_by": "開発者",
         "password_protected": "このフォームはパスワードで保護されています。",
@@ -69,6 +70,7 @@
         },
         "validation_error": "検証エラー",
         "validation_error_with_count": "検証エラー（{count}フィールド）",
+        "submission_error": "フォームの送信中にエラーが発生しました。もう一度お試しください。",
         "toggle": {
             "yes": "はい",
             "no": "いいえ"

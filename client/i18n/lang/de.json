@@ -7,7 +7,8 @@
             "submit": "Absenden",
             "next": "Weiter",
             "previous": "Zurück",
-            "re_fill": "Eine weitere Antwort senden"
+            "re_fill": "Eine weitere Antwort senden",
+            "download_pdf": "PDF herunterladen"
         },
         "powered_by": "Bereitgestellt von",
         "password_protected": "Dieses Formular ist passwortgeschützt.",
@@ -69,6 +70,7 @@
         },
         "validation_error": "Validierungsfehler",
         "validation_error_with_count": "Validierungsfehler ({count} Felder)",
+        "submission_error": "Beim Absenden des Formulars ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.",
         "toggle": {
             "yes": "Ja",
             "no": "Nein"

@@ -7,7 +7,8 @@
             "submit": "Gönder",
             "next": "Sonraki",
             "previous": "Önceki",
-            "re_fill": "Başka bir yanıt gönder"
+            "re_fill": "Başka bir yanıt gönder",
+            "download_pdf": "PDF indir"
         },
         "powered_by": "Tarafından desteklenmektedir",
         "password_protected": "Bu form şifre korumalıdır.",
@@ -69,6 +70,7 @@
         },
         "validation_error": "Doğrulama Hatası",
         "validation_error_with_count": "Doğrulama Hatası ({count} alan)",
+        "submission_error": "Form gönderilirken bir hata oluştu. Lütfen tekrar deneyin.",
         "toggle": {
             "yes": "Evet",
             "no": "Hayır"

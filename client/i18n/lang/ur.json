@@ -7,7 +7,8 @@
             "submit": "جمع کرائیں",
             "next": "آگے",
             "previous": "پچھلا",
-            "re_fill": "ایک اور جواب جمع کروائیں"
+            "re_fill": "ایک اور جواب جمع کروائیں",
+            "download_pdf": "PDF ڈاؤن لوڈ کریں"
         },
         "powered_by": "پاور بائی",
         "password_protected": "یہ فارم پاس ورڈ سے محفوظ ہے۔",
@@ -69,6 +70,7 @@
         },
         "validation_error": "تصدیق کی خرابی",
         "validation_error_with_count": "تصدیق کی خرابی ({count} فیلڈز)",
+        "submission_error": "فارم جمع کرواتے وقت ایک خرابی پیش آئی۔ براہ کرم دوبارہ کوشش کریں۔",
         "toggle": {
             "yes": "ہاں",
             "no": "نہیں"

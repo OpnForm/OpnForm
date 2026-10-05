@@ -7,7 +7,8 @@
       "submit": "Invia",
       "next": "Avanti",
       "previous": "Indietro",
-      "re_fill": "Invia un'altra risposta"
+      "re_fill": "Invia un'altra risposta",
+      "download_pdf": "Scarica PDF"
     },
     "powered_by": "Realizzato con",
     "password_protected": "Questo modulo è protetto da password.",
@@ -69,6 +70,7 @@
     },
     "validation_error": "Errore di validazione",
     "validation_error_with_count": "Errore di validazione ({count} campi)",
+    "submission_error": "Si è verificato un errore durante l'invio del modulo. Riprova.",
     "toggle": {
       "yes": "Sì",
       "no": "No"

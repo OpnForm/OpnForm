@@ -7,7 +7,8 @@
             "submit": "Skicka",
             "next": "Nästa",
             "previous": "Föregående",
-            "re_fill": "Skicka ett annat svar"
+            "re_fill": "Skicka ett annat svar",
+            "download_pdf": "Ladda ner PDF"
         },
         "powered_by": "Drivs av",
         "password_protected": "Detta formulär är lösenordsskyddat.",
@@ -69,6 +70,7 @@
         },
         "validation_error": "Valideringsfel",
         "validation_error_with_count": "Valideringsfel ({count} fält)",
+        "submission_error": "Ett fel uppstod när formuläret skickades. Försök igen.",
         "toggle": {
             "yes": "Ja",
             "no": "Nej"
