@@ -46,8 +46,7 @@ export function useFormInitialization(formConfig, form, pendingSubmission) {
     }
     
     // 3. Try loading from pendingSubmission
-    if (!(options.skipPendingSubmission ?? false) && tryLoadFromPendingSubmission()) {
-      updateSpecialFields()
+    if (!(options.skipPendingSubmission ?? false) && restorePendingSubmission()) {
       return // Exit if loaded successfully
     }
     
@@ -65,16 +64,12 @@ export function useFormInitialization(formConfig, form, pendingSubmission) {
       applyDefaultValues(defaultValuesToApply, config?.properties)
     }
     
-    // 7. Process any select fields to ensure IDs are converted to names
-    // This is crucial when receiving data that might contain IDs instead of names
-    const currentData = form.data()
-    if (Object.keys(currentData).length > 0) {
-      resetAndFill(currentData)
-    }
+    // 7. Normalize field values before resolving visibility or rendering inputs.
+    resetAndFill(form.data())
   }
   
   /**
-   * Wrapper for form.resetAndFill that converts select option IDs to names
+   * Normalize input values before rendering and convert select option IDs to names.
    * @param {Object} formData - Form data to clean and fill
    */
   const resetAndFill = (formData) => {
@@ -85,6 +80,7 @@ export function useFormInitialization(formConfig, form, pendingSubmission) {
     
     // Clone the data to avoid mutating the original
     const cleanData = clonedeep(formData)
+    const implicitDefaults = {}
     
     // Process select fields to convert IDs to names
     if (!formConfig.value || !formConfig.value.properties || !Array.isArray(formConfig.value.properties)) {
@@ -98,11 +94,36 @@ export function useFormInitialization(formConfig, form, pendingSubmission) {
       // Basic validation
       if (!field || typeof field !== 'object') return
       if (!field.id || !field.type) return
+
+      // Match unchecked inputs before SSR/visibility evaluation, including hidden checkboxes.
+      // Focused Yes/No selectors must remain unanswered until a selection is made.
+      const isFocusedToggle = formConfig.value.presentation_style === 'focused' && field.use_focused_toggle !== false
+      if (field.type === 'checkbox' && (cleanData[field.id] == null || cleanData[field.id] === '') && !isFocusedToggle) {
+        implicitDefaults[field.id] = false
+        delete cleanData[field.id]
+        return
+      }
+
+      // Rating and slider inputs previously supplied these defaults only on mount.
+      // Include hidden controls so their conditions never depend on render order.
+      const value = cleanData[field.id]
+      if ((field.type === 'rating' && (value == null || value === '')) ||
+          (field.type === 'slider' && (value == null || value === '' || !Number.isFinite(Number(value))))) {
+        implicitDefaults[field.id] = 0
+        delete cleanData[field.id]
+        return
+      }
+
       // Skip only when value is truly undefined or null
       if (cleanData[field.id] === undefined || cleanData[field.id] === null) return
       
+      // Preserve fractional scale values; parseInt on mount used to truncate them.
+      if (['rating', 'slider', 'scale'].includes(field.type) &&
+          typeof value === 'string' && value.trim() !== '' && Number.isFinite(Number(value))) {
+        cleanData[field.id] = Number(value)
+      }
       // Process checkbox fields - convert string and numeric values to boolean
-      if (field.type === 'checkbox') {
+      else if (field.type === 'checkbox') {
         const value = cleanData[field.id]
         if (typeof value === 'string' && value.toLowerCase() === 'true' || value === '1' || value === 1) {
           cleanData[field.id] = true
@@ -136,6 +157,12 @@ export function useFormInitialization(formConfig, form, pendingSubmission) {
     
     // Fill with cleaned data
     form.resetAndFill(cleanData)
+
+    // Match mounted inputs without retaining an unanswered default as an explicit answer.
+    // This lets a new configured prefill apply when the form is reinitialized.
+    Object.entries(implicitDefaults).forEach(([fieldId, value]) => {
+      form[fieldId] = value
+    })
   }
 
   /**
@@ -278,7 +305,15 @@ export function useFormInitialization(formConfig, form, pendingSubmission) {
       return false
     }
     
-    resetAndFill(pendingData)
+    // Apply configured prefill to omitted draft fields before initializing checkbox defaults.
+    form.resetAndFill(pendingData)
+    return true
+  }
+
+  const restorePendingSubmission = () => {
+    if (!tryLoadFromPendingSubmission()) return false
+    updateSpecialFields()
+    resetAndFill(form.data())
     return true
   }
 
@@ -286,6 +321,7 @@ export function useFormInitialization(formConfig, form, pendingSubmission) {
     initialize,
     applyUrlParameters,
     applyDefaultValues,
+    restorePendingSubmission,
     resetAndFill // Export our wrapped function for use elsewhere
   }
 }
