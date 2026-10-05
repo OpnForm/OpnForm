@@ -2,6 +2,8 @@
   <div
     v-if="form"
     class="open-complete-form flex flex-col min-h-full"
+    :inert="isRestoringDraft || undefined"
+    :aria-busy="isRestoringDraft || undefined"
     :dir="form?.layout_rtl ? 'rtl' : 'ltr'"
     :style="formStyle"
   >
@@ -182,10 +184,12 @@ const passwordForm = useForm({ password: null })
 // Removed unused hidePasswordDisabledMsg (was always false and unused)
 // submission_id is a public UUID identifier
 const submissionId = ref(route.query.submission_id || null)
+// Match SSR markup while keeping browser-only draft restoration non-interactive.
+const isRestoringDraft = ref(!!props.form.auto_save && !submissionId.value)
 const submittedData = ref(null)
 const showFirstSubmissionModal = ref(false)
 
-const queryString = route.fullPath.split('?')[1] || ''
+const queryString = route.fullPath.split('#')[0].split('?')[1] || ''
 
 // Check for auto_submit parameter during setup
 const isAutoSubmit = ref(new URLSearchParams(queryString).get('auto_submit') === 'true')
@@ -226,6 +230,9 @@ if (props.form) {
       const removeHook = nuxtApp.hooks.hookOnce('app:suspense:resolve', () => {
         formManager.restorePendingSubmission()
         formManager.pendingSubmission.resumeAutosave()
+        formManager.startPartialSubmissionSync()
+        restoreDraftAfterHydration = false
+        isRestoringDraft.value = false
         resolve()
       })
       onBeforeUnmount(removeHook)
@@ -237,7 +244,10 @@ if (props.form) {
     submissionId: submissionId.value,
     urlParams: new URLSearchParams(queryString),
     skipPendingSubmission: restoreDraftAfterHydration,
+    deferPartialSubmissionSync: restoreDraftAfterHydration,
   })
+
+  if (import.meta.client && !restoreDraftAfterHydration) isRestoringDraft.value = false
 
 }
 
@@ -404,6 +414,7 @@ const handleScrollToError = () => {
 }
 
 const triggerSubmit = () => {
+  if (restoreDraftAfterHydration) return draftRestoration.then(triggerSubmit)
   if (!formManager || isProcessing.value) return
 
   // Emit SDK submitStart event
@@ -463,7 +474,7 @@ const restart = async () => {
   if (!formManager) return
   submittedData.value = null
   submissionId.value = null
-  const queryString = route.fullPath.split('?')[1] || ''
+  const queryString = route.fullPath.split('#')[0].split('?')[1] || ''
   const urlParams = new URLSearchParams(queryString)
   
   // Determine if we should clear the form completely for a fresh start

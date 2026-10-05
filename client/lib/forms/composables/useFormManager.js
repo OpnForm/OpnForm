@@ -105,6 +105,12 @@ export function useFormManager(initialFormConfig, initialMode = FormMode.LIVE, o
     return true
   }
 
+  function startPartialSubmissionSync() {
+    if (import.meta.client && config.value.enable_partial_submissions && strategy.value.submission.enablePartialSubmissions) {
+      partialSubmissionService.startSync()
+    }
+  }
+
   const validation = useFormValidation(config, form, state)
   const payment = useFormPayment(config, form)
   const submission = useFormSubmission(config, form, submissionAttribution.attribution)
@@ -161,9 +167,7 @@ export function useFormManager(initialFormConfig, initialMode = FormMode.LIVE, o
     replaceStructure()
     
     // Start partial submission sync if enabled in both config and strategy
-    if (import.meta.client && config.value.enable_partial_submissions && strategy.value.submission.enablePartialSubmissions) {
-      partialSubmissionService.startSync()
-    }
+    if (!options.deferPartialSubmissionSync) startPartialSubmissionSync()
     
     state.isProcessing = false
   }
@@ -445,6 +449,7 @@ export function useFormManager(initialFormConfig, initialMode = FormMode.LIVE, o
     // Core Methods
     initialize,
     restorePendingSubmission,
+    startPartialSubmissionSync,
     updateConfig,   // New method to update form config
     nextPage,
     previousPage,

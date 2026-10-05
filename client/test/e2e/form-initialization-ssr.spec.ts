@@ -1,4 +1,5 @@
 import { test, expect, type APIRequestContext, type Page } from '@playwright/test'
+import { readFileSync } from 'node:fs'
 import { hash } from '../../lib/utils.js'
 
 const api = process.env.PLAYWRIGHT_API_BASE_URL || 'http://127.0.0.1:8089'
@@ -45,6 +46,25 @@ async function nextFocusedStep(page: Page) {
   // The outgoing step remains in the DOM for the slide transition.
   await expect(next).toHaveCount(1)
   await next.click()
+}
+
+async function holdRatingInput(page: Page) {
+  const component = 'components/forms/heavy/RatingInput.vue'
+  let pattern = `**/${component}*`
+  if (process.env.PLAYWRIGHT_DEV_SERVER !== '1') {
+    const manifest = readFileSync(new URL('../../.output/server/chunks/build/client.manifest.mjs', import.meta.url), 'utf8')
+    const file = manifest.match(/"components\/forms\/heavy\/RatingInput.vue":\s*\{[\s\S]*?"file":\s*"([^"]+)"/)?.[1]
+    expect(file, 'RatingInput must have an async client bundle').toBeTruthy()
+    pattern = `**/_nuxt/${file}`
+  }
+  let held = false
+  let release: () => void
+  const blocked = new Promise<void>(resolve => { release = resolve })
+  await page.route(pattern, route => {
+    held = true
+    return blocked.then(() => route.continue())
+  })
+  return { isHeld: () => held, release: () => release() }
 }
 
 const numericCases = [
@@ -217,27 +237,88 @@ test('focused drafts restore No and lazy numeric controls before stepping and su
   expect(warnings).toEqual([])
 })
 
-test('auto-submit uses restored draft answers after hydration without flashing the form', async ({ page, request }, testInfo) => {
-  const warnings = collectHydrationWarnings(page)
-  const form = await createForm(request, [
-    { id: 'choice', name: 'Choice', type: 'checkbox', use_toggle_switch: true, prefill: false, required: true },
-    { id: 'feedback', name: 'Feedback', type: 'text', required: true },
-    { id: 'scale', name: 'Scale', type: 'scale', scale_min_value: 1, scale_max_value: 5, scale_step_value: 0.5 },
-  ], { auto_save: true })
-  const publicForm = await (await request.get(`${api}/forms/${form.slug}`)).json()
-  const path = `/forms/${form.slug}?auto_submit=true`
-  const response = await request.get(path)
-  expect(response.ok()).toBeTruthy()
-  expect(await response.text()).not.toContain('data-testid="open-form-field-choice"')
-  const key = `${publicForm.form_pending_submission_key}-${hash(new URL(path, testInfo.project.use.baseURL as string).href)}`
-  await page.addInitScript(key => {
-    localStorage.setItem(key, JSON.stringify({ choice: true, feedback: 'Saved auto-submit answer', scale: '2.5' }))
-  }, key)
-  const submission = page.waitForResponse(response => response.request().method() === 'POST' &&
-    response.url().endsWith(`/forms/${form.slug}/answer`))
-  await page.goto(path)
-  expect((await submission).ok()).toBeTruthy()
-  expect((await submission).request().postDataJSON()).toMatchObject({ choice: true, feedback: 'Saved auto-submit answer', scale: 2.5 })
-  await page.waitForLoadState('networkidle')
-  expect(warnings).toEqual([])
-})
+for (const partialSync of [true, false]) {
+  test(`slow draft hydration protects ${partialSync ? 'partial synchronization' : 'manual editing and submission'}`, async ({ page, request }, testInfo) => {
+    const warnings = collectHydrationWarnings(page)
+    const form = await createForm(request, [
+      { id: 'rating', name: 'Rating', type: 'rating', rating_max_value: 5 },
+      { id: 'choice', name: 'Choice', type: 'checkbox', use_toggle_switch: true },
+      { id: 'feedback', name: 'Feedback', type: 'text', prefill: 'Configured answer' },
+    ], { auto_save: true, enable_partial_submissions: partialSync })
+    const publicForm = await (await request.get(`${api}/forms/${form.slug}`)).json()
+    const path = `/forms/${form.slug}`
+    const key = `${publicForm.form_pending_submission_key}-${hash(new URL(path, testInfo.project.use.baseURL as string).href)}`
+    const draft = { rating: 4, choice: true, feedback: 'Saved answer', ...(partialSync ? { submission_hash: 'saved-partial-hash' } : {}) }
+    await page.addInitScript(({ key, draft }) => localStorage.setItem(key, JSON.stringify(draft)), { key, draft })
+    const submissions: Record<string, unknown>[] = []
+    await page.route(`**/forms/${form.slug}/answer`, route => {
+      submissions.push(route.request().postDataJSON())
+      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({
+        submission_id: 'saved-submission', submission_hash: 'saved-partial-hash',
+      }) })
+    })
+    const input = await holdRatingInput(page)
+    try {
+      await page.goto(path, { waitUntil: 'domcontentloaded' })
+      await expect.poll(input.isHeld).toBe(true)
+      await expect(page.locator('.open-complete-form')).toHaveAttribute('inert', '')
+      if (!partialSync) {
+        // Native events must not change or submit the SSR answers while a draft is pending.
+        await page.getByLabel('Feedback', { exact: true }).click({ force: true })
+        await page.keyboard.type('Premature answer')
+        await page.getByRole('button', { name: /submit/i }).click({ force: true })
+      }
+      // Cross the partial-sync debounce while the component is deliberately held.
+      await page.waitForTimeout(2500)
+      expect(submissions).toEqual([])
+      expect(await page.evaluate(key => JSON.parse(localStorage.getItem(key) || '{}'), key)).toEqual(draft)
+
+      input.release()
+      await expect(page.locator('.open-complete-form')).not.toHaveAttribute('inert')
+      await expect(page.getByLabel('Feedback', { exact: true })).toHaveValue('Saved answer')
+      await expect(page.getByRole('switch', { name: 'Choice', exact: true })).toBeChecked()
+      if (partialSync) {
+        await expect.poll(() => submissions.length).toBe(1)
+        expect(submissions[0]).toMatchObject({ ...draft, is_partial: true })
+      } else {
+        await page.getByLabel('Feedback', { exact: true }).fill('Updated answer')
+        await page.getByRole('button', { name: /submit/i }).click()
+        await expect.poll(() => submissions.length).toBe(1)
+        expect(submissions[0]).toMatchObject({ rating: 4, choice: true, feedback: 'Updated answer' })
+        await expect.poll(async () => page.evaluate(key => localStorage.getItem(key), key)).toBeNull()
+        await page.waitForTimeout(1100)
+        expect(await page.evaluate(key => localStorage.getItem(key), key)).toBeNull()
+      }
+      expect(warnings).toEqual([])
+    } finally {
+      input.release()
+    }
+  })
+}
+
+for (const fragment of ['', '#section']) {
+  test(`auto-submit uses restored draft answers after hydration without flashing the form${fragment}`, async ({ page, request }, testInfo) => {
+    const warnings = collectHydrationWarnings(page)
+    const form = await createForm(request, [
+      { id: 'choice', name: 'Choice', type: 'checkbox', use_toggle_switch: true, prefill: false, required: true },
+      { id: 'feedback', name: 'Feedback', type: 'text', required: true },
+      { id: 'scale', name: 'Scale', type: 'scale', scale_min_value: 1, scale_max_value: 5, scale_step_value: 0.5 },
+    ], { auto_save: true })
+    const publicForm = await (await request.get(`${api}/forms/${form.slug}`)).json()
+    const path = `/forms/${form.slug}?auto_submit=true${fragment}`
+    const response = await request.get(path)
+    expect(response.ok()).toBeTruthy()
+    expect(await response.text()).not.toContain('data-testid="open-form-field-choice"')
+    const key = `${publicForm.form_pending_submission_key}-${hash(new URL(path, testInfo.project.use.baseURL as string).href)}`
+    await page.addInitScript(key => {
+      localStorage.setItem(key, JSON.stringify({ choice: true, feedback: 'Saved auto-submit answer', scale: '2.5' }))
+    }, key)
+    const submission = page.waitForResponse(response => response.request().method() === 'POST' &&
+      response.url().endsWith(`/forms/${form.slug}/answer`))
+    await page.goto(path)
+    expect((await submission).ok()).toBeTruthy()
+    expect((await submission).request().postDataJSON()).toMatchObject({ choice: true, feedback: 'Saved auto-submit answer', scale: 2.5 })
+    await page.waitForLoadState('networkidle')
+    expect(warnings).toEqual([])
+  })
+}
