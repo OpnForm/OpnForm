@@ -3,6 +3,12 @@ title: "Changelog"
 description: "Notable updates to the OpnForm API."
 ---
 
+## 2026-10-03 – Manual integration retries
+
+`POST /open/forms/{form}/integrations/{integrationid}/events/{event}/retry` retries an eligible failure for one integration. It requires `manage-integrations`, preserves attribution metadata, and uses the latest saved submission and current integration settings. The endpoint allows 10 retry requests per minute per user.
+
+Event responses include `can_retry` and `retry_unavailable_reason`. Only the latest eligible failed attempt can be retried. Email retries are blocked if any recipient may already have received the message. The response describes the actual attempt, including failed or skipped outcomes.
+
 ## 2026-10-01 – Removed unused public form users endpoint
 
 `GET /forms/{form}/users` has been removed and now returns `404`. The application does not use this endpoint.

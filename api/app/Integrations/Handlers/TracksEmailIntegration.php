@@ -3,6 +3,7 @@
 namespace App\Integrations\Handlers;
 
 use App\Service\Integrations\EmailDeliveryTracker;
+use App\Models\Integration\FormIntegrationsEvent;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
 use App\Notifications\Forms\FormEmailNotification;
@@ -12,10 +13,10 @@ trait TracksEmailIntegration
     private ?string $emailTrackingId = null;
     private bool $emailSendAttempted = false;
 
-    public function run(): void
+    public function run(?FormIntegrationsEvent $attempt = null): FormIntegrationsEvent
     {
         $this->emailTrackingId = (string) Str::uuid();
-        $this->formIntegration->events()->createQuietly([
+        $attributes = [
             'tracking_id' => $this->emailTrackingId,
             'status' => 'processing',
             'data' => [
@@ -23,7 +24,14 @@ trait TracksEmailIntegration
                 'notion_page_id' => $this->submissionData['notion_page_id'] ?? null,
                 'email' => ['version' => 1, 'recipients' => []],
             ],
-        ]);
+        ];
+        if ($attempt) {
+            $attributes['data'] = array_merge((array) $attempt->data, $attributes['data']);
+            $attempt->fill($attributes)->saveQuietly();
+            $integrationEvent = $attempt;
+        } else {
+            $integrationEvent = $this->formIntegration->events()->createQuietly($attributes);
+        }
         try {
             $this->handle();
         } catch (\Throwable $e) {
@@ -45,6 +53,7 @@ trait TracksEmailIntegration
                 'tracking_id' => $this->emailTrackingId, 'exception_type' => get_class($e),
             ]);
         }
+        return $integrationEvent->refresh();
     }
 
     private function emailSkipped(string $reason): void

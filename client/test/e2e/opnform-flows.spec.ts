@@ -1037,3 +1037,58 @@ test("focused public form accepts a complete stepped response flow", async ({ pa
 
   await expectSubmissionSuccess(page)
 })
+
+for (const viewport of [{ name: "desktop", width: 1280 }, { name: "mobile", width: 390 }]) {
+  test(`integration retry confirms its submission and refreshes the outcome on ${viewport.name}`, async ({ page, request }) => {
+    await page.setViewportSize({ width: viewport.width, height: 844 })
+    const form = await apiCreateForm(request, { title: uniqueTitle("Integration Retry") })
+    const token = await apiLogin(request)
+    const created = await request.post(`${API_BASE_URL}/open/forms/${form.id}/integrations`, {
+      headers: { Accept: "application/json", Authorization: `Bearer ${token}` },
+      data: { status: "active", integration_id: "webhook", data: { webhook_url: "https://example.com/retry-test" } },
+    })
+    expect(created.ok()).toBeTruthy()
+    const integrationId = (await created.json()).form_integration.id
+    const eventsPath = `**/open/forms/${form.id}/integrations/${integrationId}/events`
+    const failure = { id: 9001, date: "2026-10-03 14:00", status: "Error", data: { submission_id: 123 }, can_retry: true }
+    const reason = "A more recent attempt exists for this submission."
+    let retryCount = 0
+    await page.route(eventsPath, route => route.fulfill({ json: retryCount
+      ? [{ ...failure, can_retry: false, retry_unavailable_reason: reason }, { ...failure, id: 9002, status: "Skipped", can_retry: false }]
+      : [failure] }))
+    await page.route(`${eventsPath}/9001/retry`, route => {
+      expect(route.request().method()).toBe("POST")
+      retryCount++
+      return route.fulfill({ json: { type: "warning", message: "No request was sent because the integration conditions were not met." } })
+    })
+
+    await loginUi(page)
+    await page.goto(`/forms/${form.slug}/show/integrations`)
+    const card = page.getByText("Webhook Notification", { exact: true }).locator("..").locator("..")
+    await card.locator('button[aria-haspopup="menu"]').click()
+    await page.getByRole("menuitem", { name: "Past Events" }).click()
+    const history = page.getByRole("dialog", { name: "Integration events", exact: true })
+    const retryButton = history.getByRole("button", { name: "Retry event 9001 for submission 123" })
+    await expect(retryButton).toBeVisible()
+    if (viewport.name === "mobile") {
+      const table = history.getByLabel("Integration event history")
+      expect(await table.evaluate(element => element.scrollWidth > element.clientWidth)).toBe(true)
+    }
+
+    await retryButton.click()
+    const confirmation = page.getByRole("dialog", { name: "Retry this integration?", exact: true })
+    await expect(confirmation).toContainText("Resend submission #123")
+    await expect(confirmation).toContainText("latest saved answers")
+    await expect(confirmation).toContainText("may create a duplicate")
+    await confirmation.getByRole("button", { name: "Cancel", exact: true }).click()
+    await expect(confirmation).not.toBeVisible()
+    expect(retryCount).toBe(0)
+
+    await retryButton.click()
+    await confirmation.getByRole("button", { name: "Retry integration", exact: true }).click()
+    await expect(history.getByText("Skipped", { exact: true })).toBeVisible()
+    await expect(history.getByText(reason, { exact: true })).toBeVisible()
+    await expect(retryButton).toHaveCount(0)
+    expect(retryCount).toBe(1)
+  })
+}

@@ -1088,6 +1088,69 @@ paths:
                     description: Forbidden – insufficient permissions
                 "404":
                     description: Form or integration not found
+    "/open/forms/{form}/integrations/{integrationid}/events/{event}/retry":
+        post:
+            tags:
+                - Integrations
+            summary: Retry an Integration Event
+            description: "Retry the latest eligible failed event with current settings and saved submission data. Requires manage-integrations and workspace write access. Limited to 10 requests per minute per user."
+            security:
+                - bearerAuth: []
+            parameters:
+                - name: form
+                  in: path
+                  required: true
+                  schema:
+                      type: integer
+                - name: integrationid
+                  in: path
+                  required: true
+                  schema:
+                      type: integer
+                - name: event
+                  in: path
+                  required: true
+                  schema:
+                      type: integer
+            responses:
+                "200":
+                    description: Attempt completed. Inspect type and event.status for its delivery outcome.
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    type:
+                                        type: string
+                                        enum: [success, error, warning]
+                                    message:
+                                        type: string
+                                    event:
+                                        $ref: "#/components/schemas/IntegrationEvent"
+                "401":
+                    description: Authentication required
+                "403":
+                    description: Insufficient permissions
+                "404":
+                    description: Form, integration, or event not found in the requested scope
+                "422":
+                    description: Event is no longer eligible for retry
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    message:
+                                        type: string
+                                    errors:
+                                        type: object
+                                        properties:
+                                            event:
+                                                type: array
+                                                items:
+                                                    type: string
+                "429":
+                    description: Too many retry requests; wait for Retry-After
     "/external/zapier/validate":
         get:
             tags:
@@ -1645,34 +1708,37 @@ components:
             type: object
             properties:
                 id:
-                    type: number
-                    description: Unique identifier for the event record.
+                    type: integer
                     readOnly: true
-                integration_id:
-                    type: number
-                    description: The ID of the webhook integration that generated this event.
-                    readOnly: true
-                event:
+                date:
                     type: string
-                    description: The type of event.
-                    example: "submission.created"
+                    description: Event date formatted as YYYY-MM-DD HH:mm.
                 status:
                     type: string
-                    enum: [success, failed, timeout]
-                    description: Result of the webhook dispatch.
-                response_code:
-                    type: number
-                    nullable: true
-                    description: HTTP status code returned by the webhook endpoint.
-                error_message:
+                    enum: [Success, Error, Skipped, Processing, Accepted, Delivered, Unknown]
+                tracking_id:
                     type: string
                     nullable: true
-                    description: Error details if the webhook dispatch failed.
-                created_at:
+                email_tracking:
+                    type: boolean
+                legacy_email:
+                    type: boolean
+                updated_at:
                     type: string
                     format: date-time
-                    description: ISO 8601 timestamp of when the webhook was dispatched.
-                    readOnly: true
+                    nullable: true
+                data:
+                    type: object
+                    nullable: true
+                    additionalProperties: true
+                    description: Submission ID, failure details, or email recipient outcomes.
+                can_retry:
+                    type: boolean
+                    description: Whether this is the latest eligible failed attempt for an available completed submission.
+                retry_unavailable_reason:
+                    type: string
+                    nullable: true
+                    description: Why retry is unavailable; null when eligible.
     securitySchemes:
         bearerAuth:
             type: http
