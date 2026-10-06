@@ -13,7 +13,7 @@ return [
     'before_or_equal' => ':attribute يجب أن يكون تاريخا سابقا أو مطابقا للتاريخ :date.',
     'between' => [
         'numeric' => 'يجب أن تكون قيمة :attribute بين :min و :max.',
-        'file' => 'يجب أن يكون حجم الملف :attribute بين :min و :max ��يلوبايت.',
+        'file' => 'يجب أن يكون حجم الملف :attribute بين :min و :max كيلوبايت.',
         'string' => 'يجب أن يكون عدد حروف النّص :attribute بين :min و :max.',
         'array' => 'يجب أن يحتوي :attribute على عدد من العناصر بين :min و :max.',
     ],
@@ -66,12 +66,12 @@ return [
     ],
     'max' => [
         'numeric' => 'يجب أن تكون قيمة :attribute مساوية أو أصغر من :max.',
-        'file' => 'يجب أن لا يتجاوز حجم الملف :attribute :max كيلوبا��ت.',
+        'file' => 'يجب أن لا يتجاوز حجم الملف :attribute :max كيلوبايت.',
         'string' => 'يجب أن لا يتجاوز طول النّص :attribute :max حروفٍ/حرفًا.',
         'array' => 'يجب أن لا يحتوي :attribute على أكثر من :max عناصر/عنصر.',
     ],
-    'mimes' => 'يجب أن يكون ملفًا من نوع : :values.',
-    'mimetypes' => 'يجب أن يكون ملفًا من نوع : :values.',
+    'mimes' => 'يجب أن يكون :attribute ملفًا من نوع: :values.',
+    'mimetypes' => 'يجب أن يكون :attribute ملفًا من نوع: :values.',
     'min' => [
         'numeric' => 'يجب أن تكون قيمة :attribute مساوية أو أكبر من :min.',
         'file' => 'يجب أن يكون حجم الملف :attribute على الأقل :min كيلوبايت.',
@@ -120,4 +120,11 @@ return [
     'complete_captcha' => 'يرجى إكمال التحقق من صحة الحقل.',
     'yes' => 'نعم',
     'no' => 'لا',
+
+    'from_date_required' => 'تاريخ البداية مطلوب',
+    'to_date_required' => 'تاريخ النهاية مطلوب',
+    'from_date_before_or_equal' => 'يجب أن يكون تاريخ البداية قبل تاريخ النهاية أو مساويًا له',
+    'rating_min' => 'يجب اختيار تقييم',
+    'select_min' => 'يرجى اختيار :min خيارات على الأقل',
+    'select_max' => 'يرجى اختيار :max خيارات كحد أقصى',
 ];

@@ -120,4 +120,11 @@ return [
     'complete_captcha' => 'Vui lòng nhập mã bảo vệ.',
     'yes' => 'Có',
     'no' => 'Không',
+
+    'from_date_required' => 'Ngày bắt đầu là bắt buộc',
+    'to_date_required' => 'Ngày kết thúc là bắt buộc',
+    'from_date_before_or_equal' => 'Ngày bắt đầu phải trước hoặc bằng ngày kết thúc',
+    'rating_min' => 'Phải chọn một mức đánh giá',
+    'select_min' => 'Vui lòng chọn ít nhất :min lựa chọn',
+    'select_max' => 'Vui lòng chọn không quá :max lựa chọn',
 ];

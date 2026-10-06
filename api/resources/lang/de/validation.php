@@ -120,4 +120,11 @@ return [
     'complete_captcha' => 'Bitte füllen Sie die CAPTCHA aus.',
     'yes' => 'Ja',
     'no' => 'Nein',
+
+    'from_date_required' => 'Das Startdatum ist erforderlich',
+    'to_date_required' => 'Das Enddatum ist erforderlich',
+    'from_date_before_or_equal' => 'Das Startdatum muss vor oder am Enddatum liegen',
+    'rating_min' => 'Eine Bewertung muss ausgewählt werden',
+    'select_min' => 'Bitte wählen Sie mindestens :min Optionen aus',
+    'select_max' => 'Bitte wählen Sie höchstens :max Optionen aus',
 ];
