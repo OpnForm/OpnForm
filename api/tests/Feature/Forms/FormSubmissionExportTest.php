@@ -542,3 +542,81 @@ it('allows export status polling when the general api rate limit is exhausted', 
         ->assertSuccessful()
         ->assertJsonPath('status', 'processing');
 });
+
+it('serves export status at the documented path with the documented fields', function (string $authentication) {
+    $user = $this->createProUser();
+    if ($authentication === 'token') {
+        $this->withToken($user->createToken('Export status', ['forms-read'])->plainTextToken);
+    } else {
+        $this->actingAsProUser($user);
+    }
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace);
+
+    $jobId = app(FormExportService::class)->initializeAsyncExport($form, $user->id);
+
+    // Keep in sync with docs/api-reference/submissions/export-status.mdx
+    $response = $this->getJson("/open/forms/{$form->id}/submissions/export/status/{$jobId}")
+        ->assertSuccessful()
+        ->assertJsonPath('job_id', $jobId)
+        ->assertJsonPath('status', 'queued')
+        ->assertJsonPath('progress', 0);
+
+    expect(array_keys($response->json()))->toEqualCanonicalizing([
+        'job_id',
+        'status',
+        'progress',
+        'processed_submissions',
+        'total_submissions',
+        'file_url',
+        'error_message',
+        'expires_at',
+        'created_at',
+        'updated_at',
+    ]);
+})->with(['session', 'token']);
+
+it('rejects export status tokens without read access', function (array $abilities) {
+    $user = $this->createProUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace);
+    $jobId = app(FormExportService::class)->initializeAsyncExport($form, $user->id);
+
+    $this->withToken($user->createToken('Export status', $abilities)->plainTextToken)
+        ->getJson("/open/forms/{$form->id}/submissions/export/status/{$jobId}")
+        ->assertForbidden();
+})->with([
+    'write only' => [['forms-write']],
+    'integration management only' => [['manage-integrations']],
+    'no abilities' => [[]],
+]);
+
+it('rejects export jobs belonging to another form', function (string $authentication) {
+    $user = $this->createProUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace);
+    $otherUser = $this->createProUser();
+    $otherForm = $this->createForm($otherUser, $this->createUserWorkspace($otherUser));
+    $jobId = app(FormExportService::class)->initializeAsyncExport($otherForm, $otherUser->id);
+
+    if ($authentication === 'token') {
+        $this->withToken($user->createToken('Export status', ['forms-read'])->plainTextToken);
+    } else {
+        $this->actingAsProUser($user);
+    }
+
+    $this->getJson("/open/forms/{$form->id}/submissions/export/status/{$jobId}")
+        ->assertNotFound();
+    $this->getJson("/open/forms/{$otherForm->id}/submissions/export/status/{$jobId}")
+        ->assertForbidden();
+})->with(['session', 'token']);
+
+it('returns not found for unknown export jobs', function () {
+    $user = $this->createProUser();
+    $form = $this->createForm($user, $this->createUserWorkspace($user));
+    $jobId = (string) Str::uuid();
+
+    $this->withToken($user->createToken('Export status', ['forms-read'])->plainTextToken)
+        ->getJson("/open/forms/{$form->id}/submissions/export/status/{$jobId}")
+        ->assertNotFound();
+});
