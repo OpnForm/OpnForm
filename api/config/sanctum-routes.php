@@ -13,6 +13,7 @@ return [
         'open.forms.submissions.index',
         'open.forms.submissions.update',
         'open.forms.submissions.export',
+        'open.forms.submissions.export.status',
         'open.forms.submissions.destroy',
 
         // Form Integrations

@@ -788,7 +788,7 @@ paths:
                             schema:
                                 $ref: "#/components/schemas/ExportJobStatus"
                 "404":
-                    description: "Export job not found or has expired"
+                    description: "Export job not found, has expired, or belongs to another form"
                 "403":
                     description: Forbidden
     "/open/forms/{id}/submissions/{submission_id}":
