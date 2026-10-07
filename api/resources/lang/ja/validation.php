@@ -31,7 +31,7 @@ return [
     'ends_with' => ':attributeは、次のいずれかで終わる必要があります。: :values',
     'exists' => '選択された:attributeは、有効ではありません。',
     'file' => ':attributeには、ファイルを指定してください。',
-    'filled' => ':attributeには、値を指��してください。',
+    'filled' => ':attributeには、値を指定してください。',
     'gt' => [
         'numeric' => ':attributeは、:valueより大きくなければなりません。',
         'file' => ':attributeは、:value KBより大きくなければなりません。',
@@ -120,4 +120,11 @@ return [
     'complete_captcha' => 'CAPTCHAを完了してください。',
     'yes' => 'はい',
     'no' => 'いいえ',
+
+    'from_date_required' => '開始日は必須です',
+    'to_date_required' => '終了日は必須です',
+    'from_date_before_or_equal' => '開始日は終了日以前でなければなりません',
+    'rating_min' => '評価を選択してください',
+    'select_min' => ':min 個以上の選択肢を選択してください',
+    'select_max' => '選択できる選択肢は :max 個までです',
 ];

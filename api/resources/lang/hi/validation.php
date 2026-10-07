@@ -70,7 +70,7 @@ return [
         'string' => ':attribute, :max वर्णों से बड़ा नहीं हो सकता है।',
         'array' => ':attribute में :max से अधिक आइटम नहीं हो सकते हैं।',
     ],
-    'mimes' => ':attribute एक प्रकार की फ़ाइल: :values होनी च��हिए।',
+    'mimes' => ':attribute एक प्रकार की फ़ाइल: :values होनी चाहिए।',
     'mimetypes' => ':attribute एक प्रकार की फ़ाइल: :values होनी चाहिए।',
     'min' => [
         'numeric' => ':attribute कम से कम :min होना चाहिए।',
@@ -100,7 +100,7 @@ return [
         'array' => ':attribute में :size आइटम होने चाहिए।',
     ],
     'starts_with' => ':attribute निम्न में से किसी एक से शुरू होना चाहिए: :values',
-    'string' => ':attribute एक स्ट्रिंग हो��ी चाहिए।',
+    'string' => ':attribute एक स्ट्रिंग होनी चाहिए।',
     'timezone' => ':attribute एक मान्य क्षेत्र होना चाहिए।',
     'unique' => ':attribute पहले से ही लिया गया है।',
     'uploaded' => ':attribute अपलोड करने में विफल रहा।',
@@ -120,4 +120,11 @@ return [
     'complete_captcha' => 'कृपया कैप्चा भरें।',
     'yes' => 'है',
     'no' => 'नहीं',
+
+    'from_date_required' => 'प्रारंभ तिथि आवश्यक है',
+    'to_date_required' => 'समाप्ति तिथि आवश्यक है',
+    'from_date_before_or_equal' => 'प्रारंभ तिथि समाप्ति तिथि से पहले या उसके बराबर होनी चाहिए',
+    'rating_min' => 'एक रेटिंग चुनना आवश्यक है',
+    'select_min' => 'कृपया कम से कम :min विकल्प चुनें',
+    'select_max' => 'कृपया अधिकतम :max विकल्प चुनें',
 ];
