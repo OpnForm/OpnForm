@@ -209,6 +209,33 @@ describe('useFormInput', () => {
   })
 
   describe('Validation Error Handling', () => {
+    it('uses the accent color for focus when the field is valid', () => {
+      const props = {
+        name: 'simple_field',
+        form: mockForm,
+        modelValue: undefined,
+        color: '#f73be7'
+      }
+
+      const { inputStyle } = useFormInput(props, mockContext)
+
+      expect(inputStyle.value['--form-focus-color']).toBe('#f73be7')
+    })
+
+    it('uses the error color for focus when the field is invalid', () => {
+      mockForm.errors.has = vi.fn(() => true)
+      const props = {
+        name: 'simple_field',
+        form: mockForm,
+        modelValue: undefined,
+        color: '#f73be7'
+      }
+
+      const { inputStyle } = useFormInput(props, mockContext)
+
+      expect(inputStyle.value['--form-focus-color']).toBe('var(--color-red-500)')
+    })
+
     it('should clear validation errors when value is set', () => {
       mockForm.errors.has = vi.fn(() => true)
 
@@ -452,4 +479,3 @@ describe('useFormInput', () => {
     })
   })
 })
-

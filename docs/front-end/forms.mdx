@@ -97,6 +97,27 @@ const handleSubmit = () => {
 
 ## Form Input Components
 
+### Focus feedback and themes
+
+Form controls animate their border and a color-matched focus halo over 200ms. The
+`default`, `simple`, `notion`, and `minimal` themes use a halo; transparent text
+fields and editors use an animated underline. Keyboard focus remains visible on
+option lists, switches, ratings, and sliders. If you prefer reduced motion, the
+focus state appears without a transition.
+
+When you build a compound input, apply `inputStyle` from `useFormInput` to the
+element that draws its focus indicator. It supplies `--form-focus-color`, which
+tracks the input's `color` prop and switches to red while validation fails. Use
+the shared primitives in `client/lib/forms/themes/focus-ring.theme.js` for focus,
+keyboard focus, focus within an editor, and open popovers.
+
+To check focus behavior against a seeded local worktree, run
+`./scripts/codex-worktree-test-e2e.sh form-focus.spec.ts`. The browser tests cover
+all five themes in light and dark modes, with classic and focused presentations.
+For Chromium, Firefox, WebKit, and mobile coverage, install the Playwright
+browsers and run
+`./scripts/codex-worktree-test-e2e.sh --config=playwright.focus.config.ts`.
+
 ### Using Form Inputs
 
 All form inputs accept a common set of props through the `useFormInput` composable:
@@ -382,4 +403,4 @@ const handleLogin = () => {
 
 <Check>
 **Validation**: Combine client-side validation (required, email, etc.) with server-side validation for the best user experience.
-</Check> 
+</Check>

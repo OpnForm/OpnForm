@@ -12,6 +12,7 @@
         :disabled="disabled ? true : null"
         :name="name"
         :color="color"
+        :has-error="hasError"
       />
       <div>
         <slot

@@ -9,9 +9,13 @@
         :id="id ? id : name"
         v-model="compVal"
         :disabled="disabled ? true : null"
-        :style="colorStyle"
+        :style="inputStyle"
         :ui="{
-          base: 'data-[state=checked]:bg-[var(--form-color,#3B82F6)] focus-visible:outline-[var(--form-color,#3B82F6)]'
+          base: [
+            'data-[state=checked]:bg-[var(--form-color,#3B82F6)]',
+            formControlTransition,
+            formControlFocusVisibleHalo
+          ]
         }"
         @keydown="handleKeydown"
       />
@@ -68,6 +72,7 @@
 import {inputProps, useFormInput} from "../useFormInput.js"
 import InputHelp from "~/components/forms/core/components/InputHelp.vue"
 import { toggleSwitchInputTheme } from "~/lib/forms/themes/toggle-switch-input.theme.js"
+import { formControlFocusVisibleHalo, formControlTransition } from "~/lib/forms/themes/focus-ring.theme.js"
 
 export default {
   name: "ToggleSwitchInput",
@@ -82,10 +87,6 @@ export default {
       variants: toggleSwitchInputTheme
     })
 
-    const colorStyle = computed(() => ({
-      '--form-color': props.color
-    }))
-
     const handleKeydown = (event) => {
       if (props.disabled) return
 
@@ -97,7 +98,8 @@ export default {
 
     return {
       ...formInput,
-      colorStyle,
+      formControlFocusVisibleHalo,
+      formControlTransition,
       handleKeydown,
       props
     }

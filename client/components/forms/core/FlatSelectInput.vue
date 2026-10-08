@@ -11,6 +11,7 @@
     />
     <div
       v-else
+      :style="inputStyle"
       :class="[
         ui.container({ class: props.ui?.slots?.container }),
         hasImages ? imageContainerClass : ''

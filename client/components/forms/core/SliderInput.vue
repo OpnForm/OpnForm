@@ -13,17 +13,22 @@
             {{ compVal }}
           </div>
         </div>
-        <input
-          ref="range"
-          v-model.number="compVal"
-          type="range"
-          :class="[ui.slider({ class: props.ui?.slots?.slider }), 'slider']"
-          :style="{ '--thumb-color': color }"
-          :disabled="disabled"
-          :min="minSlider"
-          :max="maxSlider"
-          :step="stepSlider"
+        <div
+          :class="ui.control({ class: props.ui?.slots?.control })"
+          :style="inputStyle"
         >
+          <input
+            ref="range"
+            v-model.number="compVal"
+            type="range"
+            :class="[ui.slider({ class: props.ui?.slots?.slider }), 'slider']"
+            :style="[inputStyle, { '--thumb-color': color }]"
+            :disabled="disabled"
+            :min="minSlider"
+            :max="maxSlider"
+            :step="stepSlider"
+          >
+        </div>
           <div class="grid grid-cols-3 gap-2 -mt-1">
             <div
               v-for="(i, idx) in sliderLabelsList"

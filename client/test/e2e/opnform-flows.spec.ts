@@ -185,6 +185,8 @@ async function gotoPageWithRetry(page: Page, path: string, readyCheck: () => Pro
       const response = await page.goto(path, { waitUntil: "commit", timeout: 10_000 })
       expect(response?.status(), `unexpected status for ${path} on attempt ${attempt}`).toBeLessThan(500)
       await readyCheck()
+      // SSR inputs can appear before hydration installs their event handlers.
+      await page.waitForLoadState("networkidle")
       if (process.env.PLAYWRIGHT_DEV_SERVER === "1") {
         await page.waitForTimeout(5000)
       }
@@ -572,6 +574,7 @@ test("font picker opens from Design and applies a font", async ({ page, request 
   await expect(page.locator("#form-editor")).toBeVisible()
 
   // Exercise the enabled UI without requiring a Google Fonts API key in CI.
+  await page.waitForLoadState("networkidle")
   await page.evaluate(() => {
     const payload = (window as typeof window & {
       __NUXT__: { state: Record<string, { services: { google: { fonts: boolean } } }> }

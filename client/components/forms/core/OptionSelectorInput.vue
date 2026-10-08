@@ -6,6 +6,7 @@
 
     <div
       :class="[
+        variants().container({ class: props.ui?.slots?.container }),
         seamless ? 'flex -space-x-px' : `grid ${gridClass} gap-2`
       ]"
       :style="optionStyle"
@@ -111,7 +112,8 @@ const {
   compVal,
   inputWrapperProps,
   resolvedTheme,
-  resolvedSize
+  resolvedSize,
+  hasError
 } = useFormInput(props, { emit })
 
 // Local state
@@ -122,7 +124,9 @@ const root = ref(null)
 const gridClass = computed(() => `grid-cols-${props.columns}`)
 
 const optionStyle = computed(() => ({
-  '--bg-form-color': props.color
+  '--bg-form-color': props.color,
+  '--form-color': props.color,
+  '--form-focus-color': hasError.value ? 'var(--color-red-500)' : props.color
 }))
 
 const variants = computed(() => tv(optionSelectorInputTheme, props.ui))
