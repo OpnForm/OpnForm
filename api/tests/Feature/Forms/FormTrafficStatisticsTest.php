@@ -124,3 +124,52 @@ it('returns empty breakdowns for forms without metadata history or views', funct
         expect($response->json('meta_stats.' . $field))->toBe([]);
     }
 });
+
+it('preserves an earlier view that becomes visible after aggregation', function () {
+    $pendingView = $this->form->views()->create(['meta' => ['source' => 'Direct']]);
+    $this->form->views()->whereKey($pendingView->id)->delete();
+    $view = $this->form->views()->create(['meta' => ['source' => 'Google']]);
+    $view->forceFill(['created_at' => now()->subDay()])->save();
+
+    // Simulate a previously allocated ID committing after the aggregate read.
+    FormStatistic::created(function () use ($pendingView) {
+        $this->form->views()->insert([
+            'id' => $pendingView->id,
+            'form_id' => $this->form->id,
+            'meta' => json_encode(['source' => 'Direct']),
+            'created_at' => now()->subDay(),
+            'updated_at' => now()->subDay(),
+        ]);
+    });
+    try {
+        Artisan::call('forms:database-cleanup');
+    } finally {
+        FormStatistic::flushEventListeners();
+    }
+
+    expect($this->form->views()->count())->toBe(0);
+    expect($this->form->statistics()->first()->data['views'])->toBe(2);
+    $this->getJson($this->statsUrl)->assertSuccessful()
+        ->assertJsonPath('meta_stats.source.Google', 1)
+        ->assertJsonPath('meta_stats.source.Direct', 1);
+});
+
+it('processes multiple bounded batches without losing or duplicating counts', function () {
+    $rows = array_fill(0, 1005, [
+        'form_id' => $this->form->id,
+        'meta' => json_encode(['source' => 'Google']),
+        'created_at' => now()->subDay(),
+        'updated_at' => now()->subDay(),
+    ]);
+    $this->form->views()->insert($rows);
+
+    Artisan::call('forms:database-cleanup');
+    Artisan::call('forms:database-cleanup');
+
+    expect($this->form->views()->count())->toBe(0);
+    expect($this->form->statistics()->count())->toBe(1);
+    expect($this->form->statistics()->first()->data['views'])->toBe(1005);
+    $this->getJson($this->statsUrl)->assertSuccessful()
+        ->assertJsonPath('meta_stats.source.Google', 1005)
+        ->assertJsonPath('meta_stats.device.Unknown', 1005);
+});
