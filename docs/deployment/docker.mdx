@@ -293,6 +293,13 @@ dos2unix api/artisan
 
 ### Cache Issues
 
+The hourly database cleanup preserves traffic breakdown counts (sources,
+devices, browsers, operating systems, and countries) in daily statistics before
+deleting individual views. Analytics combines these counts with recent views;
+traffic breakdown results are cached for up to five minutes and refreshed after
+cleanup. Metadata deleted by older versions cannot be recovered, so historical
+view totals may exceed the available traffic breakdown counts.
+
 Clear various caches:
 
 ```bash
