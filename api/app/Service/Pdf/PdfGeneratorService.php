@@ -38,13 +38,13 @@ class PdfGeneratorService
         $submissionData = $this->getFormattedSubmissionData($form, $submission);
 
         // Check if branding should be added
-        $addBranding = !app(BrandingPolicy::class)->canRemoveBranding($form, (bool) $template->remove_branding);
+        $addBranding = ! app(BrandingPolicy::class)->canRemoveBranding($form, (bool) $template->remove_branding);
 
         // Generate the PDF
         $pdfContent = $this->generatePdfContent($template, $zoneMappings, $submissionData, $addBranding);
 
         // Store in consistent temp folder for lifecycle cleanup
-        $tempPath = self::TEMP_FOLDER . '/' . Str::uuid() . '.pdf';
+        $tempPath = self::TEMP_FOLDER.'/'.Str::uuid().'.pdf';
         Storage::put($tempPath, $pdfContent);
 
         return $tempPath;
@@ -78,7 +78,7 @@ class PdfGeneratorService
         }
 
         $pageManifest = $template->page_manifest;
-        if (!is_array($pageManifest) || empty($pageManifest)) {
+        if (! is_array($pageManifest) || empty($pageManifest)) {
             @unlink($tempFile);
             throw new PdfNotSupportedException('Template page manifest is missing or invalid.');
         }
@@ -87,10 +87,10 @@ class PdfGeneratorService
         $zonesByPage = [];
         foreach ($zoneMappings as $zone) {
             $pageId = $zone['page_id'] ?? null;
-            if (!is_string($pageId) || $pageId === '') {
+            if (! is_string($pageId) || $pageId === '') {
                 continue;
             }
-            if (!isset($zonesByPage[$pageId])) {
+            if (! isset($zonesByPage[$pageId])) {
                 $zonesByPage[$pageId] = [];
             }
             $zonesByPage[$pageId][] = $zone;
@@ -103,6 +103,8 @@ class PdfGeneratorService
             $pageId = $entry['id'] ?? null;
 
             try {
+                // A shaped text overlay may become FPDI's current source.
+                $pdf->setSourceFile($tempFile);
                 if ($type === 'source' && $sourcePage !== null && $sourcePage >= 1 && $sourcePage <= $sourcePageCount) {
                     $templateId = $pdf->importPage($sourcePage);
                     $size = $pdf->getTemplateSize($templateId);
@@ -120,8 +122,13 @@ class PdfGeneratorService
             }
 
             if (is_string($pageId) && isset($zonesByPage[$pageId])) {
-                foreach ($zonesByPage[$pageId] as $zone) {
-                    $this->addZoneContent($pdf, $zone, $submissionData, $size);
+                try {
+                    foreach ($zonesByPage[$pageId] as $zone) {
+                        $this->addZoneContent($pdf, $zone, $submissionData, $size);
+                    }
+                } catch (Throwable $e) {
+                    @unlink($tempFile);
+                    throw $e;
                 }
             }
 
@@ -191,9 +198,9 @@ class PdfGeneratorService
         // Check for static content first (text or image)
         $staticText = $zone['static_text'] ?? null;
         $staticImage = $zone['static_image'] ?? null;
-        if (!empty($staticText)) {
+        if (! empty($staticText)) {
             $value = $staticText;
-        } elseif (!empty($staticImage)) {
+        } elseif (! empty($staticImage)) {
             $value = $staticImage;
         } else {
             $fieldId = $zone['field_id'] ?? null;
@@ -254,7 +261,7 @@ class PdfGeneratorService
             if (in_array($field['type'], ['files', 'signature']) && isset($rawData[$field['id']])) {
                 $files = $rawData[$field['id']];
                 // Get first file if it's an array (for single image in PDF zone)
-                $data[$field['id']] = is_array($files) && !empty($files) ? $files[0] : $files;
+                $data[$field['id']] = is_array($files) && ! empty($files) ? $files[0] : $files;
             } else {
                 $data[$field['id']] = $field['value'];
             }

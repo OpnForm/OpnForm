@@ -60,7 +60,8 @@
               "configuration/custom-domain",
               "configuration/subdomain-redirect",
               "configuration/oidc-sso",
-              "configuration/disable-2fa"
+              "configuration/disable-2fa",
+              "configuration/pdf-devanagari"
             ]
           },
           {

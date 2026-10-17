@@ -27,6 +27,19 @@ class PdfRichTextRenderer
     ): void {
         $baseFontSize = (int) ($zone['font_size'] ?? self::DEFAULT_FONT_SIZE);
         $baseColor = $this->colorParser->parseColor($zone['font_color'] ?? null);
+        if (PdfDevanagariTextRenderer::isRequired($text)) {
+            (new PdfDevanagariTextRenderer())->render(
+                $pdf,
+                $this->parseHtmlToSegments($text, $baseFontSize, $baseColor),
+                $x,
+                $y,
+                $width,
+                $height
+            );
+
+            return;
+        }
+
         $zoneBottom = $y + $height;
 
         // Set margins so text wraps inside the zone width.
@@ -50,7 +63,7 @@ class PdfRichTextRenderer
                 break;
             }
 
-            $style = ($segment['bold'] ? 'B' : '') . ($segment['italic'] ? 'I' : '') . ($segment['underline'] ? 'U' : '');
+            $style = ($segment['bold'] ? 'B' : '').($segment['italic'] ? 'I' : '').($segment['underline'] ? 'U' : '');
             $fontSize = $segment['fontSize'];
             $color = $segment['color'];
             $lineHeight = $fontSize * 0.4;
@@ -81,7 +94,7 @@ class PdfRichTextRenderer
         $paragraphs = explode("\n", str_replace("\r", '', $text));
         foreach ($paragraphs as $paragraphIndex => $paragraph) {
             if ($paragraphIndex > 0) {
-                if (!$this->moveToNextLine($pdf, $lineHeight, $x, $currentLineX, $zoneBottom)) {
+                if (! $this->moveToNextLine($pdf, $lineHeight, $x, $currentLineX, $zoneBottom)) {
                     return;
                 }
             }
@@ -95,7 +108,7 @@ class PdfRichTextRenderer
                 $encodedToken = $this->encodeTextForFpdf($token);
                 $tokenWidth = $pdf->GetStringWidth($encodedToken);
                 if ($currentLineX > $x && $currentLineX + $tokenWidth > $x + $width) {
-                    if (!$this->moveToNextLine($pdf, $lineHeight, $x, $currentLineX, $zoneBottom)) {
+                    if (! $this->moveToNextLine($pdf, $lineHeight, $x, $currentLineX, $zoneBottom)) {
                         return;
                     }
                     if (trim($token) === '') {
@@ -142,11 +155,11 @@ class PdfRichTextRenderer
     {
         $segments = [];
 
-        $wrapped = '<div>' . $html . '</div>';
+        $wrapped = '<div>'.$html.'</div>';
         $doc = new \DOMDocument();
         $internalErrors = libxml_use_internal_errors(true);
         $doc->loadHTML(
-            '<?xml encoding="UTF-8">' . $wrapped,
+            '<?xml encoding="UTF-8">'.$wrapped,
             LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD
         );
         libxml_use_internal_errors($internalErrors);
@@ -198,6 +211,7 @@ class PdfRichTextRenderer
                     'newline' => false,
                 ];
             }
+
             return;
         }
 
@@ -225,15 +239,15 @@ class PdfRichTextRenderer
             }
             if ($node->hasAttribute('class') && preg_match('/ql-color-(#[0-9A-Fa-f]{6}|[0-9A-Fa-f]{6})/', $node->getAttribute('class'), $cm)) {
                 $hex = $cm[1];
-                if (!str_starts_with($hex, '#')) {
-                    $hex = '#' . $hex;
+                if (! str_starts_with($hex, '#')) {
+                    $hex = '#'.$hex;
                 }
                 $segmentColor = $this->colorParser->parseColor($hex);
             }
         }
 
         $blockElements = ['p', 'div', 'br', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'];
-        if (in_array($name, $blockElements, true) && !empty($segments)) {
+        if (in_array($name, $blockElements, true) && ! empty($segments)) {
             $segments[] = [
                 'text' => '',
                 'bold' => false,
@@ -255,6 +269,7 @@ class PdfRichTextRenderer
                 'color' => $baseColor,
                 'newline' => true,
             ];
+
             return;
         }
 

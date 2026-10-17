@@ -40,6 +40,7 @@ RUN apk add --no-cache \
     unzip \
     bash \
     icu-libs \
+    pango-tools \
     && rm -rf /var/cache/apk/*
 
 # Install build dependencies and PHP extensions
@@ -80,6 +81,7 @@ COPY --from=builder /app/ ./
 
 # Set version as environment variable
 ENV APP_VERSION_DOCKER=$APP_VERSION
+ENV PDF_PANGO_BINARY=/usr/bin/pango-view
 
 # Setup entrypoint
 COPY docker/php-fpm-entrypoint /usr/local/bin/opnform-entrypoint

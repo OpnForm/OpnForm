@@ -10,6 +10,9 @@ return [
     'custom_code' => [
         'enable_self_hosted' => env('CUSTOM_CODE_ENABLE_SELF_HOSTED', false),
     ],
+    'pdf' => [
+        'pango_binary' => env('PDF_PANGO_BINARY'),
+    ],
     'public_uploads' => [
         'rate_limit' => [
             'per_minute' => (int) env('PUBLIC_UPLOADS_RATE_LIMIT_PER_MINUTE', 30),
