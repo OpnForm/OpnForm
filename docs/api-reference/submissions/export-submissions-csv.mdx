@@ -72,3 +72,8 @@ The API automatically determines whether to process the export synchronously or 
 ### Error Responses
 
 `403 Forbidden` – The token lacks `forms-read` or you don't have access.
+
+
+The `columns` map may include `ip_address`. IP metadata is emitted only when
+IP tracking is enabled on the form and available in its workspace plan. Field
+columns are matched by their exact saved IDs, including removed fields.
