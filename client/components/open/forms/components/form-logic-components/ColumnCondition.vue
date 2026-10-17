@@ -121,6 +121,12 @@ export default {
         componentData.columns = this.property.columns
       }
 
+      // Regex patterns are plain text, regardless of the field being checked.
+      // In particular, PhoneInput would format/reject the regex as a phone number.
+      if (this.selectedOperator()?.format?.type === 'regex') {
+        componentData.component = "TextInput"
+      }
+
       // Pass mention props for MentionInput
       if (componentData.component === 'MentionInput') {
         componentData.mentions = this.mentionFields
