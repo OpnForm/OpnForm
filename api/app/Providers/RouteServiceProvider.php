@@ -93,6 +93,20 @@ class RouteServiceProvider extends ServiceProvider
             return Limit::perMinute(180)->by($request->user()?->id ?: $request->ip());
         });
 
+        // A submissions page may show hundreds of attachment thumbnails. Keep
+        // signed downloads out of the general API bucket, but still bound them
+        // per client and form (including unauthenticated image requests).
+        RateLimiter::for('submission-files', function (Request $request) {
+            $form = $request->route('form');
+            $formId = $form instanceof \App\Models\Forms\Form ? $form->getKey() : $form;
+            $key = hash('sha256', $request->ip() . '|' . (string) $formId);
+
+            return [
+                Limit::perMinute(600)->by('submission-files:minute:' . $key),
+                Limit::perHour(3000)->by('submission-files:hour:' . $key),
+            ];
+        });
+
         RateLimiter::for('ai-formula-generation', function (Request $request) {
             $identifier = $request->user()
                 ? 'user:' . $request->user()->getAuthIdentifier()
