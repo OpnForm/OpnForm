@@ -18,7 +18,9 @@ class FormExportService
 
     public const EXPORT_FILE_PATH = 'exports/temp/';
 
-    public function __construct(private ExternalSubmissionFileLinkPolicy $externalFileLinkPolicy) {}
+    public function __construct(private ExternalSubmissionFileLinkPolicy $externalFileLinkPolicy)
+    {
+    }
 
     public function fileLinkExpiresAt(Form $form): Carbon
     {
