@@ -37,7 +37,7 @@ class PdfCacheService
         }
 
         // Use atomic lock to prevent concurrent PDF generation
-        $lockKey = $cacheKey . ':lock';
+        $lockKey = $cacheKey.':lock';
 
         return Cache::lock($lockKey, self::LOCK_TTL)->block(self::LOCK_TTL, function () use ($cacheKey, $form, $submission, $template, $generator) {
             // Check cache again after acquiring lock (another request may have generated it)
@@ -70,7 +70,7 @@ class PdfCacheService
         $computedVariablesVersion = hash('sha256', serialize($form->computed_variables ?? []));
 
         return sprintf(
-            'pdf:%d:%d:%d:%d:%s',
+            'pdf:text-v2:%d:%d:%d:%d:%s',
             $form->id,
             $submission->id,
             $template->id,

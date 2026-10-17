@@ -1,0 +1,78 @@
+---
+title: 'Marathi and Devanagari PDF text'
+description: 'Enable shaped Marathi text in PDF templates using Pango, HarfBuzz and the bundled Noto font.'
+---
+
+PDF templates normally use the existing Helvetica renderer. Text areas containing
+Devanagari characters (including Marathi) use a separate, local Pango/HarfBuzz
+renderer so consonant conjuncts and vowel marks are shaped correctly. Text remains
+selectable in the generated PDF. No text is sent to an external service.
+
+The application includes the unmodified Noto Sans Devanagari Regular font
+(219,212 bytes), with its SIL Open Font License in
+`api/resources/fonts/noto-devanagari/OFL.txt`. Pango/Cairo embed only a font subset
+in each document. Existing Latin-only text areas retain their current rendering.
+
+## Docker and local installations
+
+The API Docker image includes Alpine's `pango-tools` package and sets
+`PDF_PANGO_BINARY=/usr/bin/pango-view`. Rebuild the API image to obtain the binary;
+a code-only container update is insufficient.
+
+For a Debian/Ubuntu runtime, install `pango1.0-tools`. On macOS, Homebrew's `pango`
+package provides `pango-view`. Set the **absolute path** in the API environment:
+
+```dotenv
+PDF_PANGO_BINARY=/usr/bin/pango-view
+```
+
+Keep the bundled font directory readable and the system temporary directory
+writable. The renderer creates a private temporary directory for each text area,
+uses a private Fontconfig configuration containing only the bundled font, and
+removes the input/output and temporary font cache afterward. It uses a ten-second
+subprocess timeout and rejects text areas over 64 KiB of markup. Text wraps within
+the saved area and is clipped at its boundary. Expand the area to show more text.
+
+## Laravel Vapor / Lambda
+
+A normal Composer deployment does **not** provide Pango. Before enabling this on
+Vapor, prepare and verify a native layer for the exact deployed runtime. The
+current production runtime is PHP 8.3 on Amazon Linux 2023 ARM64.
+
+1. Build `pango-view` with Cairo PDF support, HarfBuzz, Fontconfig, FreeType and
+   their shared-library dependencies in an Amazon Linux 2023 ARM64 build image.
+   Do not copy a macOS binary or Alpine/musl libraries into Lambda.
+2. Package the executable under `/opt/bin/pango-view` and dependencies under
+   `/opt/lib`; check `ldd` in the same runtime image and configure its library
+   search path. Keep dependency licence notices with the layer.
+3. Run the native integration check and the synthetic multilingual preview in an
+   isolated runtime with the bundled font directory. Verify conjuncts, vowel
+   positioning, clipping, text extraction, three original template pages, memory
+   use and timeout behavior. Check one PDF containing Latin-only text too.
+4. Attach the verified layer to the API **and worker** functions in staging, set
+   `PDF_PANGO_BINARY=/opt/bin/pango-view`, and test a synthetic submission PDF and
+   an email attachment. Deploying to production is a separate operation.
+
+The layer is not built, uploaded or attached by this code change. Until that
+runtime prerequisite is satisfied, Devanagari generation returns an explicit
+unsupported-text error instead of silently replacing the text with question
+marks. Do not announce Marathi PDF support as available after a code-only deploy.
+
+## Verification
+
+For backend tests, prepare the normal test environment and run:
+
+```bash
+PDF_TEST_PANGO_BINARY=/usr/bin/pango-view ./vendor/bin/pest \
+  tests/Feature/Integrations/Pdf/PdfDevanagariTextRendererTest.php \
+  tests/Feature/Integrations/Pdf/PdfGeneratorServiceTest.php \
+  tests/Feature/Integrations/Pdf/PdfCacheServiceTest.php
+```
+
+The native check also requires Poppler's `pdftotext`; CI installs it alongside
+Pango. Without `PDF_TEST_PANGO_BINARY`, only the native integration test is skipped;
+missing-runtime behavior and script detection are still tested. Production must
+not set `PDF_TEST_PANGO_BINARY` in place of `PDF_PANGO_BINARY`.
+
+This change targets Devanagari. It does not claim complete support for every
+Unicode script or emoji.

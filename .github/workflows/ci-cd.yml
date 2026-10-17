@@ -279,10 +279,14 @@ jobs:
         working-directory: ./api
         run: chmod -R 777 storage bootstrap/cache
 
+      - name: Install native PDF text and extraction tools
+        run: sudo apt-get update && sudo apt-get install -y pango1.0-tools poppler-utils
+
       - name: Run tests (Unit and Feature)
         working-directory: ./api
         run: ./vendor/bin/pest -p
         env:
+          PDF_TEST_PANGO_BINARY: /usr/bin/pango-view
           DB_CONNECTION: ${{ matrix.connection }}
           DB_HOST: ${{ matrix.host }}
           DB_PORT: ${{ matrix.port }}
