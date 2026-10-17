@@ -18,7 +18,6 @@
       >
         <img
           class="h-full w-full object-cover"
-          loading="lazy"
           :src="file.file_url"
           :alt="file.file_name"
           @error="failedImages.push(file.file_url)"
