@@ -18,11 +18,18 @@ it('detects Devanagari text including HTML entities without changing Latin text'
 
 it('reports an unavailable Devanagari renderer instead of silently corrupting text', function () {
     config(['opnform.pdf.pango_binary' => null]);
-    $pdf = new Fpdi;
+    $pdf = new Fpdi();
     $pdf->AddPage();
 
-    expect(fn () => (new PdfRichTextRenderer)->render(
-        $pdf, 'प्रशिक्षण अर्ज', 10, 10, 80, 15, ['font_size' => 12], 210
+    expect(fn () => (new PdfRichTextRenderer())->render(
+        $pdf,
+        'प्रशिक्षण अर्ज',
+        10,
+        10,
+        80,
+        15,
+        ['font_size' => 12],
+        210
     ))->toThrow(PdfNotSupportedException::class, 'required text renderer is not enabled');
 });
 
@@ -37,7 +44,7 @@ it('embeds shaped text and keeps the original source for subsequent template pag
     $user = $this->actingAsUser();
     $workspace = $this->createUserWorkspace($user);
     $form = $this->createForm($user, $workspace);
-    $source = new Fpdi;
+    $source = new Fpdi();
     for ($page = 1; $page <= 3; $page++) {
         $source->AddPage();
         $source->SetFont('Helvetica', '', 12);
@@ -58,11 +65,11 @@ it('embeds shaped text and keeps the original source for subsequent template pag
     ]);
     $submission = new FormSubmission(['form_id' => $form->id, 'data' => []]);
     $submission->id = 0;
-    $path = (new PdfGeneratorService)->generateFromTemplate($form, $submission, $template);
+    $path = (new PdfGeneratorService())->generateFromTemplate($form, $submission, $template);
     $output = Storage::get($path);
     expect($output)->toStartWith('%PDF')->and(strlen($output))->toBeLessThan(150000);
 
-    $read = new Fpdi;
+    $read = new Fpdi();
     expect($read->setSourceFile(\setasign\Fpdi\PdfParser\StreamReader::createByString($output)))->toBe(3);
 
     $text = new Process(['pdftotext', '-', '-']);
@@ -70,4 +77,7 @@ it('embeds shaped text and keeps the original source for subsequent template pag
     expect($text->getOutput())->toContain('ORIGINAL PAGE 1', 'ORIGINAL PAGE 2', 'ORIGINAL PAGE 3', 'प्रशिक्षण अर्ज', 'क्ष आणि ज्ञ', '<span>', '&');
     expect(substr_count($text->getOutput(), 'प्रशिक्षण अर्ज'))->toBe(3);
     expect($text->getErrorOutput())->toBe('');
+    $fonts = new Process(['pdffonts', '-']);
+    $fonts->setInput($output)->mustRun();
+    expect($fonts->getOutput())->toContain('NotoSansDevanagari-Regular', 'NotoSans-Regular')->not->toContain('Kohinoor');
 });

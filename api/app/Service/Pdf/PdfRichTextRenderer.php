@@ -12,7 +12,7 @@ class PdfRichTextRenderer
 
     public function __construct(?PdfColorParser $colorParser = null)
     {
-        $this->colorParser = $colorParser ?? new PdfColorParser;
+        $this->colorParser = $colorParser ?? new PdfColorParser();
     }
 
     public function render(
@@ -28,10 +28,13 @@ class PdfRichTextRenderer
         $baseFontSize = (int) ($zone['font_size'] ?? self::DEFAULT_FONT_SIZE);
         $baseColor = $this->colorParser->parseColor($zone['font_color'] ?? null);
         if (PdfDevanagariTextRenderer::isRequired($text)) {
-            (new PdfDevanagariTextRenderer)->render(
+            (new PdfDevanagariTextRenderer())->render(
                 $pdf,
                 $this->parseHtmlToSegments($text, $baseFontSize, $baseColor),
-                $x, $y, $width, $height
+                $x,
+                $y,
+                $width,
+                $height
             );
 
             return;
@@ -153,7 +156,7 @@ class PdfRichTextRenderer
         $segments = [];
 
         $wrapped = '<div>'.$html.'</div>';
-        $doc = new \DOMDocument;
+        $doc = new \DOMDocument();
         $internalErrors = libxml_use_internal_errors(true);
         $doc->loadHTML(
             '<?xml encoding="UTF-8">'.$wrapped,

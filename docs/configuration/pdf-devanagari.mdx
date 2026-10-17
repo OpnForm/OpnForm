@@ -8,8 +8,8 @@ Devanagari characters (including Marathi) use a separate, local Pango/HarfBuzz
 renderer so consonant conjuncts and vowel marks are shaped correctly. Text remains
 selectable in the generated PDF. No text is sent to an external service.
 
-The application includes the unmodified Noto Sans Devanagari Regular font
-(219,212 bytes), with its SIL Open Font License in
+The application includes unmodified Noto Sans Devanagari Regular and Noto Sans
+Regular fallback fonts (about770KiB combined), with their SIL Open Font License in
 `api/resources/fonts/noto-devanagari/OFL.txt`. Pango/Cairo embed only a font subset
 in each document. Existing Latin-only text areas retain their current rendering.
 
@@ -28,7 +28,8 @@ PDF_PANGO_BINARY=/usr/bin/pango-view
 
 Keep the bundled font directory readable and the system temporary directory
 writable. The renderer creates a private temporary directory for each text area,
-uses a private Fontconfig configuration containing only the bundled font, and
+forces the Fontconfig backend (including on macOS), uses a private configuration
+containing only the bundled font, and
 removes the input/output and temporary font cache afterward. It uses a ten-second
 subprocess timeout and rejects text areas over 64 KiB of markup. Text wraps within
 the saved area and is clipped at its boundary. Expand the area to show more text.
@@ -53,7 +54,11 @@ current production runtime is PHP 8.3 on Amazon Linux 2023 ARM64.
    `PDF_PANGO_BINARY=/opt/bin/pango-view`, and test a synthetic submission PDF and
    an email attachment. Deploying to production is a separate operation.
 
-The layer is not built, uploaded or attached by this code change. Until that
+A reproducible local layer build is available with
+`scripts/build-pdf-pango-layer.sh <output-directory>`. It produces a ZIP, package
+versions, per-file hashes, library reports and synthetic PDFs, then tests the
+packaged executable in a fresh Amazon Linux 2023 ARM64 container. The script does
+not upload or attach the layer. Until that
 runtime prerequisite is satisfied, Devanagari generation returns an explicit
 unsupported-text error instead of silently replacing the text with question
 marks. Do not announce Marathi PDF support as available after a code-only deploy.

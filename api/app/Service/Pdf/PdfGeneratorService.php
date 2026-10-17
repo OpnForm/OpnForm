@@ -70,11 +70,11 @@ class PdfGeneratorService
 
         try {
             // Create FPDI instance
-            $pdf = new Fpdi;
+            $pdf = new Fpdi();
             $sourcePageCount = $pdf->setSourceFile($tempFile);
         } catch (Throwable $e) {
             @unlink($tempFile);
-            throw new PdfNotSupportedException;
+            throw new PdfNotSupportedException();
         }
 
         $pageManifest = $template->page_manifest;
@@ -118,7 +118,7 @@ class PdfGeneratorService
                 }
             } catch (Throwable $e) {
                 @unlink($tempFile);
-                throw new PdfNotSupportedException;
+                throw new PdfNotSupportedException();
             }
 
             if (is_string($pageId) && isset($zonesByPage[$pageId])) {

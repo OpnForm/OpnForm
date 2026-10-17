@@ -39,7 +39,8 @@ class PdfDevanagariTextRenderer
 
         try {
             $fontDirectory = resource_path('fonts/noto-devanagari');
-            if (! is_readable($fontDirectory.'/NotoSansDevanagari-Regular.ttf')) {
+            if (! is_readable($fontDirectory.'/NotoSansDevanagari-Regular.ttf')
+                || ! is_readable($fontDirectory.'/NotoSans-Regular.ttf')) {
                 throw new \RuntimeException('Required font is unavailable.');
             }
             $cacheDirectory = $directory.'/font-cache';
@@ -56,7 +57,7 @@ class PdfDevanagariTextRenderer
                 '--markup', '--wrap=word-char',
                 '--width='.max(1, (int) round($width * 72 / 25.4)),
                 '--output='.$directory.'/text.pdf', $directory.'/input.txt',
-            ], null, ['FONTCONFIG_FILE' => $directory.'/fonts.conf']);
+            ], null, ['FONTCONFIG_FILE' => $directory.'/fonts.conf', 'PANGOCAIRO_BACKEND' => 'fc']);
             $process->setTimeout(10);
             $process->run();
             if (! $process->isSuccessful() || ! is_file($directory.'/text.pdf')) {
@@ -69,9 +70,12 @@ class PdfDevanagariTextRenderer
             // long omitted run to one ellipsis can create an invalid ToUnicode
             // CMap. Keep the shaped vector content at its natural aspect ratio.
             $scale = 72 / 25.4;
-            $pdf->_out(sprintf('q %.4F %.4F %.4F %.4F re W n',
-                $x * $scale, ($pdf->GetPageHeight() - $y - $height) * $scale,
-                $width * $scale, $height * $scale
+            $pdf->_out(sprintf(
+                'q %.4F %.4F %.4F %.4F re W n',
+                $x * $scale,
+                ($pdf->GetPageHeight() - $y - $height) * $scale,
+                $width * $scale,
+                $height * $scale
             ));
             try {
                 $pdf->useTemplate($overlay, $x, $y, $width);
