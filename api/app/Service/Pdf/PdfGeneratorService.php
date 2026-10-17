@@ -71,6 +71,8 @@ class PdfGeneratorService
         try {
             // Create FPDI instance
             $pdf = new Fpdi();
+            // The manifest and fixed-position zones define pagination, including near the page edge.
+            $pdf->SetAutoPageBreak(false);
             $sourcePageCount = $pdf->setSourceFile($tempFile);
         } catch (Throwable $e) {
             @unlink($tempFile);
