@@ -266,8 +266,8 @@ Route::group(['middleware' => 'auth.multi'], function () {
                     ->middleware('throttle:export-status')
                     ->name('export.status');
                 Route::get('/file/{filename}', [FormSubmissionController::class, 'submissionFile'])
-                    ->middleware('signed:relative')
-                    ->withoutMiddleware(['auth.multi'])
+                    ->middleware(['signed:relative', 'throttle:submission-files'])
+                    ->withoutMiddleware(['auth.multi', 'throttle:100,1'])
                     ->name('file');
                 Route::delete('/{submission_id}', [FormSubmissionController::class, 'destroy'])->name('destroy');
                 Route::post('/multi', [FormSubmissionController::class, 'destroyMulti'])->name('destroy-multi');
