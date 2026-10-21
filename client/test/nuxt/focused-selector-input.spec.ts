@@ -375,6 +375,7 @@ describe('FocusedSelectorInput Component', () => {
     it('should disable all option buttons when component disabled', () => {
       const wrapper = createWrapper({ disabled: true })
       const buttons = wrapper.findAll('button[role="option"]')
+      expect(wrapper.find('[role="listbox"]').attributes('tabindex')).toBe('-1')
       
       buttons.forEach(button => {
         expect(button.attributes('disabled')).toBeDefined()

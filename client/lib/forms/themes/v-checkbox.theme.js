@@ -1,14 +1,18 @@
+import { formControlFocusVisibleWithin, formControlTransition } from './focus-ring.theme.js'
+
 /**
  * VCheckbox tailwind-variants configuration
  * Used for checkbox input components
  */
 export const vCheckboxTheme = {
   slots: {
+    control: ['inline-flex rounded', formControlTransition, formControlFocusVisibleWithin],
     container: 'flex items-center',
     input: [
       'rounded border-neutral-500 checkbox',
       'size-5', // Default size, overridden by variants
-      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-form/100 focus-visible:border-transparent'
+      'focus-visible:outline-none focus-visible:ring-0 focus-visible:border-[var(--form-focus-color)]',
+      formControlTransition,
     ],
     label: [
       'text-neutral-700 dark:text-neutral-300 ml-2'

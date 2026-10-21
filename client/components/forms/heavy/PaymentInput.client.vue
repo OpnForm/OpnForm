@@ -4,7 +4,10 @@
       <slot name="label" />
     </template>
 
-    <div :class="ui.container({ class: props.ui?.slots?.container })">
+    <div
+      :class="ui.container({ class: props.ui?.slots?.container })"
+      :style="inputStyle"
+    >
       <div v-if="!oauthProviderId">
         <div class="space-y-4 mt-3">
           <div class="animate-pulse flex flex-col gap-3">
@@ -162,7 +165,7 @@ const props = defineProps({
 })
 
 const emit = defineEmits([])
-const { compVal, hasError, inputWrapperProps, ui } = useFormInput(props, { emit }, {
+const { compVal, hasError, inputWrapperProps, inputStyle, ui } = useFormInput(props, { emit }, {
   variants: paymentInputTheme
 })
 
