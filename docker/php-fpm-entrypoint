@@ -82,13 +82,6 @@ apply_php_configuration() {
     else
         echo "post_max_size = 55M" >> $PHP_CUSTOM_CONFIG_FILE
     fi
-
-    # Disable native PHP session upload progress by default (CVE-2026-109619 mitigation)
-    if [ -n "$PHP_SESSION_UPLOAD_PROGRESS" ]; then
-        echo "session.upload_progress.enabled = $PHP_SESSION_UPLOAD_PROGRESS" >> $PHP_CUSTOM_CONFIG_FILE
-    else
-        echo "session.upload_progress.enabled = 0" >> $PHP_CUSTOM_CONFIG_FILE
-    fi
     
     # Log applied configuration
     echo "Applied PHP configuration:"
