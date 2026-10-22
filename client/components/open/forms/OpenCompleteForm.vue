@@ -100,7 +100,7 @@
                 v-if="pdfDownloadEnabled"
                 :form="form"
                 icon="i-heroicons-document-arrow-down"
-                :loading="pdfDownloading"
+                native-type="button"
                 @click="downloadPdf"
               >
                 {{ form.pdf_download_button_text || t('forms.buttons.download_pdf', 'Download PDF') }}
@@ -151,7 +151,6 @@ import Loader from '~/components/global/Loader.vue'
 import { tailwindcssPaletteGenerator } from '~/lib/colors.js'
 import { useRouter } from 'vue-router'
 import { clearFormatterCache } from '~/components/forms/components/FormSubmissionFormatter.js'
-import { formsApi } from '~/api'
 import { clearLoadedMentionCache } from '~/lib/forms/mention-parser-loader.js'
 
 const OpenForm = defineAsyncComponent(() => import('./OpenForm.vue'))
@@ -184,6 +183,7 @@ const passwordForm = useForm({ password: null })
 // Removed unused hidePasswordDisabledMsg (was always false and unused)
 // submission_id is a public UUID identifier
 const submissionId = ref(route.query.submission_id || null)
+const pdfDownloadUrl = ref(null)
 // Match SSR markup while keeping browser-only draft restoration non-interactive.
 const isRestoringDraft = ref(!!props.form.auto_save && !submissionId.value)
 const submittedData = ref(null)
@@ -431,6 +431,7 @@ const triggerSubmit = () => {
   }).then(result => {
       if (result) {
         submittedData.value = formManager.form.data()
+        pdfDownloadUrl.value = result.pdf_download_url || null
         
         if (result?.submission_id) {
           submissionId.value = result.submission_id
@@ -480,6 +481,7 @@ const restart = async () => {
   if (!formManager) return
   submittedData.value = null
   submissionId.value = null
+  pdfDownloadUrl.value = null
   const urlParams = getUrlParams()
   
   // Determine if we should clear the form completely for a fresh start
@@ -506,39 +508,16 @@ const restart = async () => {
   emit('restarted', true)
 }
 
-// PDF Download functionality
-const pdfDownloading = ref(false)
-const pdfDownloadEnabled = computed(() => {
-  // Check if PDF download is enabled and we have a submission ID
-  if (!props.form.pdf_download_enabled || !submissionId.value) return false
-  
-  // Check if we have a PDF template ID
-  const templateId = props.form.pdf_template_id
-  return !!templateId
-})
+// The completed submission response supplies a signed URL for this respondent.
+const pdfDownloadEnabled = computed(() => (
+  !!props.form.pdf_download_enabled && !!pdfDownloadUrl.value
+))
 
-const downloadPdf = async () => {
-  if (!pdfDownloadEnabled.value || pdfDownloading.value) return
-  
-  const templateId = props.form.pdf_template_id
-  if (!templateId) return
-  
-  pdfDownloading.value = true
-  try {
-    // Get signed URL from backend
-    const response = await formsApi.pdfTemplates.getSubmissionSignedUrl(
-      props.form.id,
-      templateId,
-      submissionId.value
-    )
-    // Open signed URL in new tab to trigger download
-    window.open(response.url, '_blank')
-  } catch (error) {
-    console.error('PDF download failed:', error)
-    alert.error('Failed to download PDF. Please try again.')
-  } finally {
-    pdfDownloading.value = false
-  }
+const downloadPdf = () => {
+  if (!pdfDownloadEnabled.value) return
+
+  // Keep navigation synchronous with the click to avoid popup blocking.
+  window.open(pdfDownloadUrl.value, '_blank', 'noopener,noreferrer')
 }
 
 const editSubmission = () => {
