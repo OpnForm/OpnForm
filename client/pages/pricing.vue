@@ -544,7 +544,7 @@
     </section>
 
     <section class="py-14 sm:py-28 px-8 lg:px-12 bg-white">
-      <FeatureComparison />
+      <FeatureComparison :yearly="pricingIsYearly" />
     </section>
 
     <section class="pt-10 pb-4 sm:pt-12 sm:pb-6 px-8 lg:px-12 bg-white">

@@ -24,6 +24,8 @@ OpnForm is an open-source form builder.
 
 The easiest way to get started with OpnForm is to sign up for our [managed service in the Cloud](https://opnform.com/). You get support, backups, upgrades, and more. Your data is safe and secure, and you don't need to worry about maintenance or infrastructure. Check out our quick overview of [cloud vs self-hosting](https://docs.opnform.com/deployment/cloud-vs-self-hosting).
 
+The cloud [pricing page](https://opnform.com/pricing) shows monthly equivalents for yearly billing by default. The Monthly / Yearly selector updates both the plan cards and the feature comparison table; yearly plans are billed annually.
+
 ## Key Features
 
 -   🚀 No-code builder with unlimited forms & submissions
