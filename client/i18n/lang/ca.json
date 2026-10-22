@@ -28,6 +28,7 @@
             "create": "Crear"
         },
         "fileInput": {
+            "invalidFileType": "Tipus de fitxer incorrecte. Només es permeten: {types}",
             "chooseFiles": "Fes clic per triar arxiu(s) o arrossega aquí | Fes clic per triar un arxiu o arrossega aquí",
             "sizeLimit": "Límit de mida: {count}MB per arxiu",
             "uploadingFile": "Pujant el teu arxiu..."

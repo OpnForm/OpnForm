@@ -28,6 +28,7 @@
             "create": "만들기"
         },
         "fileInput": {
+            "invalidFileType": "잘못된 파일 형식입니다. 허용되는 형식: {types}",
             "chooseFiles": "파일을 선택하거나 여기로 드래그하세요 | 파일을 선택하거나 여기로 드래그하세요",
             "sizeLimit": "크기 제한: 파일당 {count}MB",
             "uploadingFile": "파일을 업로드하는 중..."

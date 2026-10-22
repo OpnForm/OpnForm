@@ -28,6 +28,7 @@
             "create": "作成"
         },
         "fileInput": {
+            "invalidFileType": "ファイル形式が正しくありません。許可されている形式: {types}",
             "chooseFiles": "クリックしてファイルを選択するか、ここにドロップしてください | クリックしてファイルを選択するか、ここにドロップしてください",
             "sizeLimit": "サイズ制限：ファイルあたり{count}MB",
             "uploadingFile": "ファイルをアップロード中..."

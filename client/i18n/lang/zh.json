@@ -28,6 +28,7 @@
             "create": "创建"
         },
         "fileInput": {
+            "invalidFileType": "文件类型不正确。仅允许：{types}",
             "chooseFiles": "点击选择文件或将文件拖放到此处 | 点击选择文件或将文件拖放到此处",
             "sizeLimit": "大小限制：每个文件 {count}MB",
             "uploadingFile": "正在上传您的文件..."

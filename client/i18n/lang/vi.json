@@ -28,6 +28,7 @@
             "create": "Tạo"
         },
         "fileInput": {
+            "invalidFileType": "Loại tệp không hợp lệ. Chỉ cho phép: {types}",
             "chooseFiles": "Nhấp để chọn tệp hoặc kéo vào đây | Nhấp để chọn tệp hoặc kéo vào đây",
             "sizeLimit": "Giới hạn kích thước: {count}MB mỗi tệp",
             "uploadingFile": "Đang tải tệp của bạn lên..."

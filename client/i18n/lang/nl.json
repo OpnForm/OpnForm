@@ -28,6 +28,7 @@
             "create": "Aanmaken"
         },
         "fileInput": {
+            "invalidFileType": "Onjuist bestandstype. Alleen toegestaan: {types}",
             "chooseFiles": "Klik om bestand(en) te kiezen of sleep hier | Klik om een bestand te kiezen of sleep hier",
             "sizeLimit": "Groottelimiet: {count}MB per bestand",
             "uploadingFile": "Je bestand wordt geüpload..."

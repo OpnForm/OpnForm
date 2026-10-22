@@ -28,6 +28,7 @@
             "create": "Créer"
         },
         "fileInput": {
+            "invalidFileType": "Type de fichier incorrect. Types autorisés : {types}",
             "chooseFiles": "Cliquez pour choisir un/des fichier(s) ou déposez-le(s) ici | Cliquez pour choisir un fichier ou déposez-le ici",
             "sizeLimit": "Taille limite: {count}MB par fichier",
             "uploadingFile": "Envoi de votre fichier en cours..."

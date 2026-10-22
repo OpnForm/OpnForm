@@ -28,6 +28,7 @@
             "create": "Erstellen"
         },
         "fileInput": {
+            "invalidFileType": "Ungültiger Dateityp. Erlaubt sind nur: {types}",
             "chooseFiles": "Klicken Sie, um Datei(en) auszuwählen oder hierher zu ziehen | Klicken Sie, um eine Datei auszuwählen oder hierher zu ziehen",
             "sizeLimit": "Größenbeschränkung: {count}MB pro Datei",
             "uploadingFile": "Ihre Datei wird hochgeladen..."

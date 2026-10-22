@@ -28,6 +28,7 @@
             "create": "Vytvoriť"
         },
         "fileInput": {
+            "invalidFileType": "Nesprávny typ súboru. Povolené sú iba: {types}",
             "chooseFiles": "Kliknite pre výber súboru(ov) alebo pretiahnite sem | Kliknite pre výber súboru alebo pretiahnite sem",
             "sizeLimit": "Limit veľkosti: {count}MB na súbor",
             "uploadingFile": "Nahrávanie vášho súboru..."

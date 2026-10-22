@@ -28,6 +28,7 @@
             "create": "Skapa"
         },
         "fileInput": {
+            "invalidFileType": "Felaktig filtyp. Endast följande tillåts: {types}",
             "chooseFiles": "Klicka för att välja fil(er) eller dra hit | Klicka för att välja en fil eller dra hit",
             "sizeLimit": "Storleksgräns: {count}MB per fil",
             "uploadingFile": "Laddar upp din fil..."

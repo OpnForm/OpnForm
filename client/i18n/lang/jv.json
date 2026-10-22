@@ -28,6 +28,7 @@
             "create": "Gawe"
         },
         "fileInput": {
+            "invalidFileType": "Jinis berkas ora bener. Sing diidini mung: {types}",
             "chooseFiles": "Klik kanggo milih berkas utawa seret mrene | Klik kanggo milih berkas utawa seret mrene",
             "sizeLimit": "Watesan ukuran: {count}MB saben berkas",
             "uploadingFile": "Berkas sampeyan lagi diunggah..."

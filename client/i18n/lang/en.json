@@ -28,6 +28,7 @@
             "create": "Create"
         },
         "fileInput": {
+            "invalidFileType": "Incorrect file type. Allowed only: {types}",
             "chooseFiles": "Click to choose file(s) or drag here | Click to choose a file or drag here",
             "sizeLimit": "Size limit: {count}MB per file",
             "uploadingFile": "Uploading your file..."

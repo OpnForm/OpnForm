@@ -28,6 +28,7 @@
             "create": "Kreiraj"
         },
         "fileInput": {
+            "invalidFileType": "Погрешан тип датотеке. Дозвољени су само: {types}",
             "chooseFiles": "Kliknite da izaberete fajl(ove) ili prevucite ovde | Kliknite da izaberete fajl ili prevucite ovde",
             "sizeLimit": "Ograničenje veličine: {count}MB po fajlu",
             "uploadingFile": "Otpremanje vašeg fajla..."

@@ -156,17 +156,13 @@ export default {
     currentUrl() {
       return this.form[this.name]
     },
+    allowedExtensions() {
+      return this.accept.split(',')
+        .map(extension => extension.trim().replace(/^\./, '').toLowerCase())
+        .filter(Boolean)
+    },
     acceptExtensions() {
-      if (!this.accept) {
-        return null
-      }
-      return this.accept
-        .split(',')
-        .map((i) => {
-          if (!i) return null
-          return '.' + i.trim()
-        })
-        .join(',')
+      return this.allowedExtensions.map(extension => '.' + extension).join(',') || null
     }
   },
 
@@ -273,6 +269,13 @@ export default {
     },
     uploadFileToServer(file) {
       if (this.disabled) return
+      const extension = file.name.includes('.') ? file.name.split('.').pop().toLowerCase() : ''
+      if (this.allowedExtensions.length && !this.allowedExtensions.includes(extension)) {
+        useAlert().error(this.$t('forms.fileInput.invalidFileType', {
+          types: this.allowedExtensions.join(', ')
+        }))
+        return
+      }
       this.loading = true
       storeFile(file)
         .then((response) => {

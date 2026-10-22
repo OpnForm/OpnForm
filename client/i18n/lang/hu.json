@@ -28,6 +28,7 @@
             "create": "Létrehozás"
         },
         "fileInput": {
+            "invalidFileType": "Helytelen fájltípus. Csak ezek engedélyezettek: {types}",
             "chooseFiles": "Kattints a fájl(ok) kiválasztásához vagy húzd ide | Kattints egy fájl kiválasztásához vagy húzd ide",
             "sizeLimit": "Méretkorlát: {count} MB fájlonként",
             "uploadingFile": "A fájl feltöltése folyamatban..."

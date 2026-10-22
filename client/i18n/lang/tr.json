@@ -28,6 +28,7 @@
             "create": "Oluştur"
         },
         "fileInput": {
+            "invalidFileType": "Geçersiz dosya türü. Yalnızca izin verilenler: {types}",
             "chooseFiles": "Dosyaları seçmek için tıklayın veya buraya sürükleyin | Dosya seçmek için tıklayın veya buraya sürükleyin",
             "sizeLimit": "Boyut sınırı: dosya başına {count}MB",
             "uploadingFile": "Dosyanız yükleniyor..."

@@ -28,6 +28,7 @@
             "create": "Sortu"
         },
         "fileInput": {
+            "invalidFileType": "Fitxategi mota okerra. Hauek bakarrik onartzen dira: {types}",
             "chooseFiles": "Egin klik fitxategia(k) aukeratzeko edo arrastatu hona | Egin klik fitxategia aukeratzeko edo arrastatu hona",
             "sizeLimit": "Tamaina muga: {count}MB fitxateko",
             "uploadingFile": "Zure fitxategia kargatzen..."
