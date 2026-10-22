@@ -77,3 +77,6 @@ The API automatically determines whether to process the export synchronously or 
 The `columns` map may include `ip_address`. IP metadata is emitted only when
 IP tracking is enabled on the form and available in its workspace plan. Field
 columns are matched by their exact saved IDs, including removed fields.
+
+If a form field also uses `ip_address` as its ID, its answer is exported in
+its own named column alongside any permitted IP metadata.

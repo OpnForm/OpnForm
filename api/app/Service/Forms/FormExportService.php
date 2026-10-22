@@ -68,8 +68,7 @@ class FormExportService
                     if ($form->enable_ip_tracking && $form->workspace->hasFeature('enable_ip_tracking')) {
                         $filteredData['ip_address'] = $submission->meta['ip_address'] ?? '';
                     }
-
-                    continue;
+                    // A form field can also use this ID; preserve its answer below.
                 }
 
                 $key = collect($formattedData)->keys()->first(fn ($key) => str_ends_with($key, ' ('.$column.')'));

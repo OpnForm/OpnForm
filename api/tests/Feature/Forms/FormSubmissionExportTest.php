@@ -672,3 +672,26 @@ it('matches requested field IDs exactly when another label contains the ID', fun
         ->and($row['Nom (nom)'])->toBe('Dupont');
     expect(array_values($row))->toContain('Archived');
 });
+
+it('preserves a form field whose ID matches the IP metadata column', function (bool $tracking) {
+    $user = $this->actingAsBusinessUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace, [
+        'enable_ip_tracking' => $tracking,
+        'properties' => [['id' => 'ip_address', 'name' => 'Server IP', 'type' => 'text']],
+    ]);
+    $submission = $form->submissions()->create([
+        'data' => ['ip_address' => '203.0.113.10'],
+        'meta' => ['ip_address' => '192.0.2.15'],
+        'status' => FormSubmission::STATUS_COMPLETED,
+    ]);
+
+    $row = app(FormExportService::class)->formatSubmissionForExport($form, $submission, ['ip_address' => true]);
+
+    expect($row['Server IP (ip_address)'] ?? null)->toBe('203.0.113.10');
+    if ($tracking) {
+        expect($row['ip_address'])->toBe('192.0.2.15');
+    } else {
+        expect($row)->not->toHaveKey('ip_address');
+    }
+})->with([true, false]);
