@@ -4,7 +4,9 @@ use App\Mcp\Servers\OpnFormServer;
 use App\Mcp\Tools\GetFormDraftTool;
 use App\Mcp\Tools\PreviewFormDraftTool;
 use App\Mcp\Tools\RestoreFormDraftVersionTool;
+use App\Models\Forms\Form;
 use App\Service\Forms\AgentFormDraftService;
+use App\Service\Forms\McpFormManagementService;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\URL;
 
@@ -115,6 +117,27 @@ it('keeps signed snapshots readable after saving without exposing later account 
     expect(fn () => $service->restore($created['token'], 2, 1))->toThrow(ValidationException::class);
     $this->travel(8)->days();
     $this->getJson($firstUrl)->assertForbidden();
+});
+
+it('keeps the guest draft independent when ChatGPT saves a copy in an account', function () {
+    $service = app(AgentFormDraftService::class);
+    $created = versionedDraft();
+    $source = versionedPreviewSource($created['draft']);
+    $user = $this->createUser();
+    $workspace = $this->createUserWorkspace($user);
+    $saved = app(McpFormManagementService::class)->create($user, $workspace->id, $created['draft']->definition);
+    $form = Form::query()->findOrFail($saved['form']['id']);
+
+    $service->patch($created['token'], 1, [['op' => 'set_form_values', 'values' => ['title' => 'Guest v2']]]);
+    expect($form->refresh()->title)->toBe('Contact v1');
+    $form->forceFill(['title' => 'Edited in the account'])->save();
+    $restored = $service->restore($created['token'], 2, 1);
+
+    expect($restored->version)->toBe(3)
+        ->and($restored->definition['title'])->toBe('Contact v1')
+        ->and($service->get($created['token'])->isAvailable())->toBeTrue()
+        ->and($form->refresh()->title)->toBe('Edited in the account');
+    $this->getJson($source)->assertOk()->assertJsonPath('draft.version', 1)->assertJsonPath('draft.definition.title', 'Contact v1');
 });
 
 it('does not open a newer draft from a historical preview', function () {

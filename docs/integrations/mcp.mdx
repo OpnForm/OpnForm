@@ -265,7 +265,9 @@ Each new interactive preview is pinned to the draft version it displays. Later c
 - Restoration does not save or publish an account form. After restoring, request a new preview and continue the normal save flow.
 - An old preview cannot silently open a newer version in the editor. Restore it first, or use the latest preview. A version-pinned editor link is checked both when created and when opened; if the draft changes in between, request a new link.
 
-History follows the seven-day guest draft lifetime. Existing signed, version-pinned previews remain readable for the rest of that lifetime after you save the draft into your account. They continue to show the guest snapshot, even if you later edit the saved form. Guest editing and restoration stop when you save the draft; this feature does not provide revision history or rollback for saved account forms. Versions overwritten before this feature was enabled cannot be recovered, and previously generated unversioned preview links are not retroactively pinned.
+History follows the seven-day guest draft lifetime. Saving through the browser editor claims the guest draft: guest editing and restoration stop, but existing signed, version-pinned previews remain readable until the original expiry. Saving through ChatGPT with `create_form_in_account` instead creates an independent account form and leaves the guest draft active until expiry, so you can still compare or restore its versions. Guest edits and restoration never update the saved account form, and account-form edits never change the guest snapshots. Use account tools for changes to saved forms; this feature does not add account-form revision history or rollback.
+
+Versions overwritten before this feature was enabled cannot be recovered, and previously generated unversioned preview links are not retroactively pinned.
 
 Self-hosted deployments must run the database migration before enabling the updated MCP code. Refresh tools in your AI assistant to discover the restoration tool and optional version parameters.
 
