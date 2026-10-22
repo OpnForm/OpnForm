@@ -109,11 +109,3 @@ By offering Enterprise features alongside our open-source core, we can continue 
 Public submissions use the form's language for API validation messages. When adding a translated validation message, update the catalogs under `api/resources/lang/` for all languages in `Form::LANGUAGES`, preserving placeholders such as `:attribute`, `:min`, and `:max`.
 
 Run `vendor/bin/pest --filter=FormValidationTranslationsTest` from `api/` to check supported catalogs and render invalid date range, rating, selection, and Arabic file-type errors. The tests do not require a database. The catalog check excludes custom attribute aliases and the legacy password key, whose structure differs between Laravel versions. Client text coverage is checked separately by `test/unit/form-locale-keys.test.ts` in `client/`.
-
-### File upload restrictions
-
-In a File upload block, set **Allowed file types** to comma-separated extensions
-(for example, `pdf,jpg,png`), or leave it blank to allow all file types. Picker,
-drag-and-drop, and camera uploads reject disallowed extensions before uploading.
-The API also checks the extension of newly uploaded files when you submit a form.
-These restrictions check filenames, not file contents.
