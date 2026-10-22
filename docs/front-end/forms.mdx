@@ -382,4 +382,14 @@ const handleLogin = () => {
 
 <Check>
 **Validation**: Combine client-side validation (required, email, etc.) with server-side validation for the best user experience.
-</Check> 
+</Check>
+
+## Respondent PDF Downloads
+
+When PDF download is enabled and a template is selected for a public form, the completed submission response includes `pdf_download_url`. The URL is signed for that submission and template and expires after 24 hours. A partial draft, disabled PDF download, or a template outside the form does not receive a download URL.
+
+The completion screen uses this URL directly when the respondent clicks **Download PDF**. It does not call the authenticated template `signed-url` endpoint, which remains restricted to form administrators. Open the supplied URL synchronously from the click handler to avoid browser popup blocking.
+
+Keep the signed URL in the completion screen's memory and clear it when restarting the form. Treat it as a temporary credential: do not log it or place it in analytics events. Reopening a form with only a submission UUID does not grant a fresh download URL. Administrators can generate a new URL through the authenticated endpoint when needed.
+
+Deploy the API response addition and its completion-screen consumer together. An expired link, a failure to generate a PDF, and a missing email notification are separate issues; a successful signed download does not prove email delivery.
