@@ -256,6 +256,19 @@ A logic condition may use that calculated value by setting `property_meta.type` 
 
 With `patch_form_draft`, replace the complete `computed_variables` list through `set_form_values`, and add or modify a block's `logic` through `add_block` or `update_block`. The draft is normalized and validated atomically before its version changes.
 
+### Compare and restore draft versions
+
+Each new interactive preview is pinned to the draft version it displays. Later chat or editor changes do not update that earlier preview. Ask your assistant to “show version 1” to compare it, or “return to version 1” to continue from it.
+
+- `get_form_draft` and `preview_form_draft` accept an optional `version`. Omit it to use the current version.
+- `restore_form_draft_version` takes `draft_handle`, the latest `expected_version`, and the historical `version` to restore. It creates a new current version without deleting intervening versions. For example, restoring V1 while on V3 creates V4 with V1's content.
+- Restoration does not save or publish an account form. After restoring, request a new preview and continue the normal save flow.
+- An old preview cannot silently open a newer version in the editor. Restore it first, or use the latest preview. A version-pinned editor link is checked both when created and when opened; if the draft changes in between, request a new link.
+
+History follows the seven-day guest draft lifetime. Existing signed, version-pinned previews remain readable for the rest of that lifetime after you save the draft into your account. They continue to show the guest snapshot, even if you later edit the saved form. Guest editing and restoration stop when you save the draft; this feature does not provide revision history or rollback for saved account forms. Versions overwritten before this feature was enabled cannot be recovered, and previously generated unversioned preview links are not retroactively pinned.
+
+Self-hosted deployments must run the database migration before enabling the updated MCP code. Refresh tools in your AI assistant to discover the restoration tool and optional version parameters.
+
 ## Self-hosted OAuth configuration
 
 The following settings apply only to self-hosted instances.

@@ -8,4 +8,4 @@ Distinguish missing tools from missing authentication.
 - In local Codex, the user can authenticate through **Settings → MCP servers → OpnForm → Authenticate** or run `codex mcp login opnform`. A new conversation may be required afterward because existing MCP clients do not always hot-reload credentials.
 - Do not loop on an OAuth challenge or claim that connection succeeded without a successful account-scoped result.
 - If a guest-safe request can continue without authentication, keep using guest tools.
-- If a preview URL fails, call `preview_form_draft` for a fresh render. If the seven-day draft itself expired, explain that it must be recreated.
+- If a preview URL fails while the guest draft is active, call `preview_form_draft` for a fresh render, passing the displayed `version` when known so recovery does not substitute the latest content. If the seven-day draft itself expired, explain that it must be recreated. After saving to an account, existing signed snapshots remain readable until expiry, but guest tools cannot generate new previews or restore the saved form.

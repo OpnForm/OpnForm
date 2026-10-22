@@ -14,12 +14,18 @@ class AgentFormDraftController extends Controller
 {
     public const SESSION_HEADER = 'x-agent-draft-session';
 
-    public function preview(AgentFormDraft $draft, AgentFormDraftService $drafts): JsonResponse
+    public function preview(Request $request, AgentFormDraft $draft, AgentFormDraftService $drafts): JsonResponse
     {
-        abort_unless($draft->isAvailable(), Response::HTTP_NOT_FOUND);
+        $validated = $request->validate(['version' => ['sometimes', 'integer', 'min:1']]);
+        // Existing signed snapshot links remain readable after saving the draft.
+        // Unversioned links and guest editing capabilities keep their active-only lifecycle.
+        $savedSnapshot = isset($validated['version'])
+            && $draft->status === AgentFormDraft::STATUS_CLAIMED
+            && $draft->expires_at->isFuture();
+        abort_unless($draft->isAvailable() || $savedSnapshot, Response::HTTP_NOT_FOUND);
 
         return response()->json([
-            'draft' => $drafts->serialize($draft),
+            'draft' => $drafts->serialize($drafts->atVersion($draft, isset($validated['version']) ? (int) $validated['version'] : null)),
         ])->header('Cache-Control', 'private, no-store, max-age=0');
     }
 
