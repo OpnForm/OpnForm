@@ -81,3 +81,25 @@ it('embeds shaped text and keeps the original source for subsequent template pag
     $fonts->setInput($output)->mustRun();
     expect($fonts->getOutput())->toContain('NotoSansDevanagari-Regular', 'NotoSans-Regular')->not->toContain('Kohinoor');
 });
+
+it('keeps the configured font size when a shaped cluster is wider than the text area', function () {
+    $binary = getenv('PDF_TEST_PANGO_BINARY');
+    if (! $binary || ! is_executable($binary)) {
+        $this->markTestSkipped('Set PDF_TEST_PANGO_BINARY to run the native Pango/font integration check.');
+    }
+    config(['opnform.pdf.pango_binary' => $binary]);
+    $pdf = new Fpdi();
+    $pdf->AddPage();
+
+    (new PdfRichTextRenderer())->render($pdf, 'मराठी', 10, 10, 1, 100, ['font_size' => 72], 210);
+
+    $text = new Process(['pdftotext', '-bbox', '-', '-']);
+    $text->setInput($pdf->Output('S'))->mustRun();
+    $document = new \DOMDocument();
+    $document->loadXML($text->getOutput());
+    $words = $document->getElementsByTagName('word');
+    expect($words->length)->toBeGreaterThan(0);
+    $word = $words->item(0);
+    // A narrow zone clips the glyphs, but must not scale a 72 pt font down.
+    expect((float) $word->getAttribute('yMax') - (float) $word->getAttribute('yMin'))->toBeGreaterThan(50);
+});

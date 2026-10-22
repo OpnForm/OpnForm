@@ -78,7 +78,10 @@ class PdfDevanagariTextRenderer
                 $height * $scale
             ));
             try {
-                $pdf->useTemplate($overlay, $x, $y, $width);
+                // Pango can widen its output when a cluster exceeds the wrap
+                // width. Import at the original size so clipping, rather than
+                // font scaling, handles text that cannot fit the area.
+                $pdf->useTemplate($overlay, $x, $y);
             } finally {
                 $pdf->_out('Q');
             }

@@ -32,7 +32,9 @@ forces the Fontconfig backend (including on macOS), uses a private configuration
 containing only the bundled font, and
 removes the input/output and temporary font cache afterward. It uses a ten-second
 subprocess timeout and rejects text areas over 64 KiB of markup. Text wraps within
-the saved area and is clipped at its boundary. Expand the area to show more text.
+the saved area and is clipped at its boundary, preserving the configured font
+size even when a single shaped cluster is wider than the area. Expand the area to
+show more text.
 
 ## Laravel Vapor / Lambda
 
