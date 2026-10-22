@@ -13,6 +13,18 @@ describe('isAgentDraftVersionConflict', () => {
     })).toBe(true)
   })
 
+  it('recognizes Laravel errors wrapped by the Nuxt proxy', () => {
+    expect(isAgentDraftVersionConflict({
+      response: {
+        status: 422,
+        _data: {
+          statusCode: 422,
+          data: { errors: { expected_version: ['Draft version conflict.'] } },
+        },
+      },
+    })).toBe(true)
+  })
+
   it('does not treat definition validation errors as version conflicts', () => {
     expect(isAgentDraftVersionConflict({
       statusCode: 422,

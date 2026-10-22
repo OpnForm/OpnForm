@@ -14,7 +14,7 @@
     <FormEditor
       v-else
       class="w-full grow"
-      :loading="saving"
+      :loading="claiming"
       :save-handler="syncDraft"
       :back-button="false"
     >
@@ -77,7 +77,6 @@ const { isAuthenticated } = useIsAuthenticated()
 provide('disableCustomCodeExecution', true)
 
 const loading = ref(true)
-const saving = ref(false)
 const claiming = ref(false)
 const fatalError = ref(null)
 const version = ref(null)
@@ -89,6 +88,8 @@ const workspaceModalOpen = ref(false)
 const claimAfterLogin = ref(false)
 const hydratingEditor = ref(true)
 let syncPromise = null
+let editorForm = null
+let editorActive = true
 
 const syncLabel = computed(() => ({
   saving: 'Saving draft…',
@@ -117,47 +118,44 @@ const applyDraft = (draft) => {
   version.value = draft.version
   const definition = cleanDefinition(draft.definition)
   lastSavedFingerprint.value = JSON.stringify(definition)
-  workingFormStore.set(useForm(definition))
+  editorForm = useForm(definition)
+  if (editorActive) workingFormStore.set(editorForm)
   syncState.value = 'saved'
 }
 
 const refreshDraft = () => $fetch('/api/agent-drafts/current').then((response) => {
+  hydratingEditor.value = true
   applyDraft(response.draft)
-  return response.draft
+  return nextTick().then(() => {
+    lastSavedFingerprint.value = JSON.stringify(cleanDefinition(editorForm?.data()))
+    hydratingEditor.value = false
+    return response.draft
+  })
 })
 
 const performSync = (rawData, keepalive = false) => {
-  const definition = cleanDefinition(rawData || workingFormStore.content?.data())
+  if (syncPromise) {
+    // Read the latest editor state after the previous save (or conflict refresh).
+    return syncPromise.then(() => performSync(undefined, keepalive))
+  }
+  const definition = cleanDefinition(rawData || editorForm?.data())
   const fingerprint = JSON.stringify(definition)
   if (!definition || fingerprint === lastSavedFingerprint.value) {
     return Promise.resolve()
   }
-  if (syncPromise) {
-    return syncPromise.then(() => performSync(definition, keepalive))
-  }
 
-  saving.value = true
   syncState.value = 'saving'
   syncPromise = $fetch('/api/agent-drafts/current', {
     method: 'PUT',
     body: { expected_version: version.value, definition },
     keepalive,
   }).then((response) => {
-    const serverDefinition = cleanDefinition(response.draft.definition)
-    const serverFingerprint = JSON.stringify(serverDefinition)
-    const currentData = workingFormStore.content?.data?.()
-    const currentFingerprint = currentData
-      ? JSON.stringify(cleanDefinition(currentData))
-      : null
-
     version.value = response.draft.version
-    lastSavedFingerprint.value = serverFingerprint
-
-    // Reflect deterministic server cleanups without overwriting edits made
-    // while this request was in flight.
-    if (currentFingerprint === fingerprint && serverFingerprint !== fingerprint) {
-      workingFormStore.set(useForm(serverDefinition))
-    }
+    // Acknowledge the submitted snapshot, not the server's normalized shape.
+    // Replacing the form here makes editor defaults (e.g. settings {} vs [])
+    // look like new edits and can start an endless autosave/rehydration loop.
+    // Later edits remain dirty and will be saved by the next queued sync.
+    lastSavedFingerprint.value = fingerprint
 
     syncState.value = 'saved'
   }).catch((exception) => {
@@ -170,7 +168,6 @@ const performSync = (rawData, keepalive = false) => {
     useAlert().error(exception?.data?.message || 'Unable to save this draft right now.')
     throw exception
   }).finally(() => {
-    saving.value = false
     syncPromise = null
   })
 
@@ -184,11 +181,21 @@ const syncDraft = (data) => performSync(data).then(() => {
 const draftAutosave = createAgentDraftAutosave(({ keepalive }) => performSync(undefined, keepalive))
 
 const scheduleSync = () => {
-  if (loading.value || claiming.value || hydratingEditor.value) return
+  if (!editorActive || loading.value || claiming.value || hydratingEditor.value) return
   draftAutosave.schedule()
 }
 
 const flushPendingSync = () => draftAutosave.flush().catch(() => {})
+
+const warnBeforeUnload = (event) => {
+  if (loading.value || !editorForm) return
+  const fingerprint = JSON.stringify(cleanDefinition(editorForm.data()))
+  if (!syncPromise && fingerprint === lastSavedFingerprint.value) return
+
+  // A pagehide flush queued behind an ordinary PUT may never run on teardown.
+  event.preventDefault()
+  event.returnValue = ''
+}
 
 watch(() => workingFormStore.content?.data?.(), scheduleSync, { deep: true })
 
@@ -249,6 +256,7 @@ const claimDraft = () => {
 
 onMounted(() => {
   window.addEventListener('pagehide', flushPendingSync)
+  window.addEventListener('beforeunload', warnBeforeUnload)
 
   const sessionRequest = getAgentDraftSessionRequest(window.location.hash)
   if (sessionRequest.consumesHandoff) {
@@ -262,7 +270,7 @@ onMounted(() => {
     loading.value = false
     if (!fatalError.value) {
       nextTick().then(() => {
-        lastSavedFingerprint.value = JSON.stringify(cleanDefinition(workingFormStore.content?.data()))
+        lastSavedFingerprint.value = JSON.stringify(cleanDefinition(editorForm?.data()))
         hydratingEditor.value = false
       })
     }
@@ -277,7 +285,9 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  editorActive = false
   window.removeEventListener('pagehide', flushPendingSync)
+  window.removeEventListener('beforeunload', warnBeforeUnload)
   flushPendingSync()
 })
 </script>
