@@ -80,6 +80,7 @@ The core follow-up was committed as `9a06a5d86f0baaf24391fd19dfe9f71ff7e2ccad`; 
 - `fontless@0.2.1` uses a targeted esbuild 0.28.2 override. The i18n compiler retains its compatible esbuild 0.25.12: it is outside [GHSA-g7r4-m6w7-qqqr's affected interval](https://github.com/advisories/GHSA-g7r4-m6w7-qqqr), which starts at 0.27.3. Version checks reject the affected interval across every installed copy.
 - The Notion Vue KaTeX wrapper uses KaTeX 0.18.2 through a targeted override. Tests exercise real inline/display rendering, rejected untrusted links/HTML extensions and inherited prototype trust, covering [GHSA-238p-pmpm-9mq7](https://github.com/advisories/GHSA-238p-pmpm-9mq7).
 - Quill semantic HTML is sanitized before reaching `modelValue`. Real Quill tests enable the formula/video exporters to exercise hostile HTML, then check mention metadata, formatting and escaped literal HTML. Default application formats exclude formula/video; this is defense in depth, not evidence that the default configuration was exploitable. Visual QA also saves a mention and literal HTML through the real editor/API.
+- The font picker keeps one stable grid element inside the scrollbar host. A regression test reproduces the previous Vue `insertBefore` failure when the plugin reparents slot nodes; real browser cases cover immediate/deferred font responses, preview/application and reopening without browser errors.
 - `dev`, `docker-dev` and `generate` no longer disable TLS verification. For a private local CA, use [Node's `NODE_EXTRA_CA_CERTS`](https://nodejs.org/api/cli.html#node_extra_ca_certsfile) instead.
 - Local server icon collections are traced as JSON with `serverBundle.externalizeIconsJson`, avoiding giant JavaScript ASTs during Nitro bundling. Linux image and Amplify runtime health checks request real Heroicons/Lucide JSON and a repository SVG icon. Managed E2E build directories retain their remote collection mode.
 - Docker build memory is bounded by `NODE_BUILD_HEAP_MB` (4096 by default; the Linux CI Amplify build exhausted 3072 MiB). The npm scripts honor inherited `NODE_OPTIONS` rather than overriding the builder with an 8/10 GiB heap.
@@ -114,23 +115,23 @@ Amplify's own pre-build phase also runs the version checks and audit policy in b
 
 The previous 61/62 browser result plus 4/4 targeted rerun was insufficient. A subsequent complete 60/62 attempt exposed missing Business entitlements in the isolated seed. The E2E workspace now explicitly has the required Business tier; no application feature gate is bypassed. After that correction the complete browser suite passes **62/62** on the final production client and PHP 8.3.36 API.
 
-Current local follow-up evidence (application sources and deployment configuration from the code commit above; CI results are reported separately):
+Local follow-up snapshot before the final font-picker CI correction (the expanded browser suite now contains 63 scenarios; latest results are in [PR #1336 checks](https://github.com/OpnForm/OpnForm/pull/1336/checks)):
 
 | Check | Follow-up result |
 | --- | --- |
 | Node 24.22.1 clean install / dependency tree | `npm ci` and `npm ls --all` pass without forced peer resolution |
 | Unit/component tests | 1,030 passed across 87 files, including real Quill/KaTeX security regressions |
-| Native production build, 3 GiB V8 heap | Passes; classic 412.7 KiB and Focused 374.6 KiB gzip, below the unchanged 420 KiB limit |
+| Native production build, 3 GiB V8 heap | Passes; classic 412.6 KiB and Focused 374.4 KiB gzip, below the unchanged 420 KiB limit |
 | Built CSS | 38 assets checked; zero uncompiled Tailwind directives |
-| Node audit/release/CSS/bundle/email/cache/MCP guards | 42 passed in total; includes real npm cyclic inheritance, docs-only PRs and invalid Amplify artifacts |
+| Node audit/release/CSS/bundle/email/cache/MCP guards | 43 passed in total; includes real npm cyclic inheritance, docs-only PRs and invalid Amplify artifacts |
 | Visual QA | Editor, mention styling and persistence, escaped HTML, real field drag reorder, template lists at 1440/390px pass; a stable capture is taken after popover closure |
 | Follow-up raw npm scans | Exit 1 in both scopes; policy separately accepts only the three dated exceptions |
 | Patched PHP general suite | PHP 8.3.36, actual SQLite PDO: 2,341 passed, 2 skipped, 2 deprecations, 19,144 assertions |
 | Real database compatibility | PHP 8.3.36; actual PDO `pgsql` / PostgreSQL 16.14 and `mysql` / MySQL 8.4.13: all dedicated checks pass |
 | Complete browser suite on patched API | 62/62 pass in one final complete run (8 minutes); prior failed/interrupted runs retained |
-| Amplify target | Actual preset build and manifest pass, Node 24 compute, 51,983,761 bytes, real entrypoint login SSR smoke passes locally |
+| Amplify target | Actual preset build and manifest pass, Node 24 compute, 73,858,631 bytes in the Linux artifact, standalone native entrypoint auth/MCP/public SSR and local-icon smokes pass |
 | Linux frontend image/runtime | Dedicated PR CI job added: build without publishing, inspect Linux/Node version, inspect emitted CSS and exercise auth/public SSR against a real PHP/PostgreSQL API; remote result pending |
 
-Visual-only native checks used PHP 8.4.19 and are explicitly not patched-runtime evidence. The attempted bind-mounted and isolated PHP runs, MySQL startup and API runtime encountered Docker memory pressure; interrupted logs remain available. Docker was not restarted, shared containers were not pruned, and subsequent builds are coordinated and bounded. The local MySQL check adds `pdo_mysql` from the matching PHP source inside its disposable 768 MiB / one-CPU QA container; no new shared Docker image build is launched. The Linux image result remains pending until the dedicated CI job completes. Docker context also excludes generated Amplify output and local Passport key files.
+Visual-only native checks used PHP 8.4.19 and are explicitly not patched-runtime evidence. The attempted bind-mounted and isolated PHP runs, MySQL startup and API runtime encountered Docker memory pressure; interrupted logs remain available. Docker was not restarted, shared containers were not pruned, and subsequent builds are coordinated and bounded. The local MySQL check adds `pdo_mysql` from the matching PHP source inside its disposable 768 MiB / one-CPU QA container; no new shared Docker image build is launched. The Linux image result remains pending until the dedicated CI job completes. Its first smoke found a too-short QA JWT fixture and missing `artisan serve --no-reload`; these are corrected in the harness, with Laravel failure logs retained. The first Linux browser run found the font-picker DOM bug above and correctly blocked readiness. Docker context also excludes generated Amplify output and local Passport key files.
 
 Existing PHPUnit metadata/mbstring deprecations and two skipped tests remain visible. No Sentry maps were uploaded without a token. Production, remote CI, deployed layers, external OAuth/payment providers, actual S3 signed uploads and delivered integrations remain separate validation boundaries. Nothing is merged or deployed.

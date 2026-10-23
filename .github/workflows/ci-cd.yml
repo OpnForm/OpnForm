@@ -526,7 +526,7 @@ jobs:
       APP_KEY: base64:ZGF0YWJhc2UtY29tcGF0aWJpbGl0eS1xYS1rZXktMDA=
       APP_URL: http://127.0.0.1:8089
       FRONT_URL: http://127.0.0.1:3100
-      JWT_SECRET: isolated-linux-image-ci-only
+      JWT_SECRET: isolated-linux-image-ci-only-32-byte-key
       SELF_HOSTED: "false"
       DB_CONNECTION: pgsql
       DB_HOST: 127.0.0.1
@@ -566,7 +566,8 @@ jobs:
           composer install --prefer-dist --no-interaction --no-progress --optimize-autoloader
           php artisan migrate --force
           php artisan db:seed --class='Database\Seeders\E2ETestSeeder' --force
-          php artisan serve --host=127.0.0.1 --port=8089 > ../image-api.log 2>&1 &
+          php artisan passport:keys --force
+          php artisan serve --no-reload --host=127.0.0.1 --port=8089 > ../image-api.log 2>&1 &
       - name: Build Linux frontend image without publishing
         run: docker build --build-arg NODE_BUILD_HEAP_MB=4096 --iidfile client-image.id -f docker/Dockerfile.client -t opnform-client-qa .
       - name: Inspect image and exercise real SSR routes
@@ -607,6 +608,7 @@ jobs:
             client-image.id
             client-image.log
             image-api.log
+            api/storage/logs/laravel.log
           retention-days: 7
 
   dependency-security:

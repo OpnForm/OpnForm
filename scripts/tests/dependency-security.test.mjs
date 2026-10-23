@@ -143,3 +143,12 @@ test('Amplify explicitly emits Node 24 compute and validates the target output',
   assert.match(smoke.run, /runner\.temp/)
   assert.ok(pipeline.jobs['release-readiness'].needs.includes('linux_client_image'))
 })
+
+test('image QA uses a valid JWT fixture and preserves server environment', () => {
+  assert.ok(pipeline.jobs.linux_client_image.env.JWT_SECRET.length >= 32)
+  const preparation = pipeline.jobs.linux_client_image.steps.find(step => step.name === 'Prepare real API for image health checks').run
+  assert.match(preparation, /artisan serve --no-reload/)
+  assert.match(preparation, /passport:keys/)
+  const evidence = pipeline.jobs.linux_client_image.steps.find(step => step.with?.name === 'linux-client-image-evidence')
+  assert.match(evidence.with.path, /api\/storage\/logs\/laravel\.log/)
+})

@@ -588,41 +588,60 @@ test("editing an existing form title persists after save", async ({ page, reques
   await expect(page.getByRole("heading", { name: updatedTitle, exact: true })).toBeVisible()
 })
 
-test("font picker opens from Design and applies a font", async ({ page, request }) => {
-  const form = await apiCreateForm(request, { title: uniqueTitle("Font Picker") })
-  await page.route("**/fonts", route => route.fulfill({ json: ["Roboto", "Open Sans"] }))
+for (const deferredFonts of [false, true]) {
+  test(`font picker opens from Design and applies a font${deferredFonts ? " after a delayed response" : ""}`, async ({ page, request }) => {
+    const form = await apiCreateForm(request, { title: uniqueTitle("Font Picker") })
+    let releaseFonts = () => {}
+    let fontsRequested = false
+    const pendingFonts = new Promise<void>(resolve => { releaseFonts = resolve })
+    await page.route("**/fonts", async route => {
+      fontsRequested = true
+      if (deferredFonts) await pendingFonts
+      return route.fulfill({ json: ["Roboto", "Open Sans"] })
+    })
+    // The test covers the picker and applied font style without requiring a CDN connection.
+    await page.route("https://fonts.googleapis.com/**", route => route.fulfill({ contentType: 'text/css', body: '' }))
 
-  const token = await apiLogin(request)
-  const baseURL = test.info().project.use.baseURL
-  if (!baseURL) throw new Error("Playwright baseURL is required")
-  await page.context().addCookies([{ name: "opnform_token", value: token, url: baseURL }])
-  await page.goto(`/forms/${form.slug}/edit`)
-  await expect(page.locator("#form-editor")).toBeVisible()
+    const token = await apiLogin(request)
+    const baseURL = test.info().project.use.baseURL
+    if (!baseURL) throw new Error("Playwright baseURL is required")
+    await page.context().addCookies([{ name: "opnform_token", value: token, url: baseURL }])
+    await page.goto(`/forms/${form.slug}/edit`)
+    await expect(page.locator("#form-editor")).toBeVisible()
 
-  // Exercise the enabled UI without requiring a Google Fonts API key in CI.
-  await page.evaluate(() => {
-    // Nuxt 4 keeps the hydrated payload on the app rather than window.__NUXT__.
-    const root = document.querySelector('#__nuxt') as Element & {
-      __vue_app__: { $nuxt: { payload: { state: Record<string, { services: { google: { fonts: boolean } } }> } } }
+    // Exercise the enabled UI without requiring a Google Fonts API key in CI.
+    await page.evaluate(() => {
+      // Nuxt 4 keeps the hydrated payload on the app rather than window.__NUXT__.
+      const root = document.querySelector('#__nuxt') as Element & {
+        __vue_app__: { $nuxt: { payload: { state: Record<string, { services: { google: { fonts: boolean } } }> } } }
+      }
+      root.__vue_app__.$nuxt.payload.state["$sfeatureFlags"].services.google.fonts = true
+    })
+
+    const pageErrors: string[] = []
+    page.on("pageerror", error => pageErrors.push(error.message))
+    page.on("console", message => { if (message.type() === 'error') pageErrors.push(message.text()) })
+
+    await page.getByText("Design", { exact: true }).click()
+    const fontFamily = page.getByText("Font Family", { exact: true }).locator("..")
+    await fontFamily.getByRole("button").click()
+    if (deferredFonts) {
+      await expect.poll(() => fontsRequested).toBe(true)
+      await expect(page.getByText("The quick brown fox jumped over the lazy dog")).toHaveCount(0)
+      releaseFonts()
     }
-    root.__vue_app__.$nuxt.payload.state["$sfeatureFlags"].services.google.fonts = true
+    await expect(page.getByText("The quick brown fox jumped over the lazy dog").first()).toBeVisible()
+    await page.getByText("Roboto", { exact: true }).last().click()
+    await page.getByRole("button", { name: "Apply", exact: true }).click()
+
+    await expect(fontFamily.getByRole("button")).toContainText("Roboto")
+    await expect(fontFamily.getByRole("button").getByText("Roboto", { exact: true })).toHaveCSS('font-family', 'Roboto')
+    await expect(page.locator(".form-editor-preview .open-complete-form")).toHaveCSS("--font-family", "Roboto")
+    await fontFamily.getByRole("button").click()
+    await expect(page.getByText("The quick brown fox jumped over the lazy dog").first()).toBeVisible()
+    expect(pageErrors).toEqual([])
   })
-
-  const pageErrors: string[] = []
-  page.on("pageerror", error => pageErrors.push(error.message))
-
-  await page.getByText("Design", { exact: true }).click()
-  const fontFamily = page.getByText("Font Family", { exact: true }).locator("..")
-  await fontFamily.getByRole("button").click()
-  await expect(page.getByText("The quick brown fox jumped over the lazy dog").first()).toBeVisible()
-  await page.getByText("Roboto", { exact: true }).last().click()
-  await page.getByRole("button", { name: "Apply", exact: true }).click()
-
-  await expect(fontFamily.getByRole("button")).toContainText("Roboto")
-  await fontFamily.getByRole("button").click()
-  await expect(page.getByText("The quick brown fox jumped over the lazy dog").first()).toBeVisible()
-  expect(pageErrors).toEqual([])
-})
+}
 
 test("form save errors open the invalid field section and computed variable", async ({ page, request }) => {
   const form = await apiCreateForm(request, {
