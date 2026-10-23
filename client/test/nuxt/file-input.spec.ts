@@ -66,6 +66,20 @@ describe('FileInput allowed file types', () => {
     expect(showError).not.toHaveBeenCalled()
   })
 
+  it('keeps a newly uploaded file when the initial value is null', async () => {
+    const wrapper = createWrapper({ modelValue: null })
+    await flushPromises()
+    const download = vi.spyOn(wrapper.vm, 'getFileFromUrl').mockResolvedValue(new File(['wrong'], 'downloaded.pdf'))
+    const file = new File(['document'], 'document.pdf')
+    await wrapper.get('[role="button"]').trigger('drop', { dataTransfer: { files: fileList([file]) } })
+    await flushPromises()
+
+    // A temporary upload key is not a downloadable URL. Keep the local File.
+    expect(download).not.toHaveBeenCalled()
+    expect(wrapper.vm.files[0].file).toBe(file)
+    expect(wrapper.emitted('update:modelValue').at(-1)).toEqual([['document_upload-id.pdf']])
+  })
+
   it('keeps accepted files when a mixed batch contains a rejected file', async () => {
     const wrapper = createWrapper()
     await flushPromises()

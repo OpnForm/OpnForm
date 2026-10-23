@@ -176,7 +176,9 @@ export default {
     'compVal': {
       deep: true,
       handler(newVal, oldVal) {
-        if (!oldVal) {
+        // Newly uploaded files already have a local File. Their temporary
+        // storage keys cannot be fetched as URLs when the initial value is null.
+        if (!oldVal && this.files.length === 0) {
           this.handleCompValChange()
         }
       }
