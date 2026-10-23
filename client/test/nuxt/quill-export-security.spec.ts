@@ -3,6 +3,7 @@ import Quill from 'quill'
 import katex from 'katex'
 import '~/lib/quill/quillPatches'
 import registerMentionExtension from '~/lib/quill/quillMentionExtension'
+import { sanitizeQuillHtml } from '~/lib/quill/sanitizeQuillHtml'
 
 function editor(formats) {
   const container = document.createElement('div')
@@ -11,6 +12,33 @@ function editor(formats) {
 }
 
 describe('Quill HTML export security boundary', () => {
+  it('preserves safe new-tab links from the real Quill exporter', () => {
+    const quill = editor(['link'])
+    quill.setContents([
+      { insert: 'Help', attributes: { link: 'https://example.test/help' } },
+      { insert: '\n' },
+    ])
+    const target = document.createElement('div')
+    target.innerHTML = quill.getSemanticHTML()
+    const link = target.querySelector('a')
+    expect(link?.getAttribute('href')).toBe('https://example.test/help')
+    expect(link?.getAttribute('target')).toBe('_blank')
+    expect(link?.getAttribute('rel')).toBe('noopener noreferrer')
+  })
+
+  it('drops arbitrary browsing targets and secures allowed new-tab links', () => {
+    const target = document.createElement('div')
+    target.innerHTML = sanitizeQuillHtml('<a href="https://example.test" target="_blank" rel="opener" onclick="alert(1)">safe</a><a href="https://example.test" target="_top">top</a><a href="https://example.test" target="named-window">named</a><a href="javascript:alert(1)" target="_blank">bad</a><form target="_top"><button>submit</button></form>')
+    const links = target.querySelectorAll('a')
+    expect(links[0].getAttribute('target')).toBe('_blank')
+    expect(links[0].getAttribute('rel')).toBe('noopener noreferrer')
+    expect(links[0].hasAttribute('onclick')).toBe(false)
+    expect(links[1].hasAttribute('target')).toBe(false)
+    expect(links[2].hasAttribute('target')).toBe(false)
+    expect(links[3].hasAttribute('href')).toBe(false)
+    expect(target.querySelector('form[target]')).toBeNull()
+  })
+
   it('sanitizes a formula export using the real Quill exporter', () => {
     window.katex = katex
     const quill = editor(['formula'])
