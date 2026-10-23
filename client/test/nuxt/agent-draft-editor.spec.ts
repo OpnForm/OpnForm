@@ -6,6 +6,7 @@ import DraftEditor from '~/pages/agent-drafts/edit.vue'
 
 const mocks = vi.hoisted(() => ({
   store: null as any,
+  fetch: vi.fn(),
   authenticated: false,
   alert: { success: vi.fn(), warning: vi.fn(), error: vi.fn() },
 }))
@@ -13,6 +14,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock('~/composables/useIsAuthenticated', () => ({
   useIsAuthenticated: () => ({ isAuthenticated: computed(() => mocks.authenticated) }),
 }))
+mockNuxtImport('$fetch', () => mocks.fetch)
 mockNuxtImport('useOpnSeoMeta', () => () => {})
 vi.mock('~/composables/useAlert', () => ({ useAlert: () => mocks.alert }))
 mockNuxtImport('useWindowMessage', () => () => ({ listen: vi.fn() }))
@@ -71,7 +73,7 @@ describe('agent draft editor autosave', () => {
     vi.clearAllMocks()
     mocks.authenticated = false
     mocks.store = reactive({ content: null, set(form: any) { this.content = form } })
-    fetchMock = vi.fn().mockResolvedValue({ draft: draft() })
+    fetchMock = mocks.fetch.mockReset().mockResolvedValue({ draft: draft() })
     vi.stubGlobal('$fetch', fetchMock)
     vi.stubGlobal('useWorkingFormStore', () => mocks.store)
     vi.stubGlobal('useAppStore', () => ({}))

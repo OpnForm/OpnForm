@@ -1,4 +1,5 @@
 import { expect, test, type APIRequestContext, type Page } from "@playwright/test"
+import { waitForAnonymousApiBudget, waitForAuthenticatedApiBudget } from "./api-budget"
 import { hash } from "../../lib/utils.js"
 
 test.setTimeout(240_000)
@@ -185,6 +186,13 @@ async function gotoPageWithRetry(page: Page, path: string, readyCheck: () => Pro
       const response = await page.goto(path, { waitUntil: "commit", timeout: 10_000 })
       expect(response?.status(), `unexpected status for ${path} on attempt ${attempt}`).toBeLessThan(500)
       await readyCheck()
+      // SSR inputs are actionable before Vue attaches their event handlers.
+      await page.waitForFunction(() => {
+        const root = document.querySelector('#__nuxt') as Element & {
+          __vue_app__?: { $nuxt?: { isHydrating: boolean } }
+        }
+        return root?.__vue_app__?.$nuxt?.isHydrating === false
+      })
       if (process.env.PLAYWRIGHT_DEV_SERVER === "1") {
         await page.waitForTimeout(5000)
       }
@@ -239,7 +247,22 @@ async function registerUi(page: Page, email: string) {
   await page.locator('input[name="password_confirmation"]').fill("Abcd@1234")
   await page.locator('input[name="agree_terms"]').check({ force: true })
 
-  await page.getByRole("button", { name: "Create account", exact: true }).click()
+  // The preceding public SSR cases can exhaust the shared anonymous API bucket.
+  // Honor the real server limit rather than disabling it for browser tests.
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const [response] = await Promise.all([
+      page.waitForResponse(response => response.url() === `${API_BASE_URL}/register` && response.request().method() === 'POST'),
+      page.getByRole("button", { name: "Create account", exact: true }).click(),
+    ])
+    if (response.status() !== 429 || attempt === 1) {
+      expect(response.ok()).toBeTruthy()
+      break
+    }
+    const retryAfter = Number(response.headers()['retry-after'])
+    expect(retryAfter).toBeGreaterThan(0)
+    expect(retryAfter).toBeLessThanOrEqual(60)
+    await new Promise(resolve => setTimeout(resolve, retryAfter * 1000 + 250))
+  }
   await expect(page).toHaveURL(/\/forms\/create$/, { timeout: 30_000 })
 }
 
@@ -442,7 +465,12 @@ async function selectFlatOption(page: Page, fieldId: string, optionName: string,
   await getOpenFormField(page, fieldId).getByRole(role, { name: optionName, exact: true }).click()
 }
 
-test.beforeEach(async ({ page }, testInfo) => {
+let apiBudgetToken: string | undefined
+
+test.beforeEach(async ({ page, request }, testInfo) => {
+  await waitForAnonymousApiBudget(request, testInfo)
+  apiBudgetToken ??= await apiLogin(request)
+  await waitForAuthenticatedApiBudget(request, testInfo, { Authorization: `Bearer ${apiBudgetToken}` })
   const browserLogs: string[] = []
   browserLogsByTest.set(testInfo.testId, browserLogs)
 
@@ -573,10 +601,11 @@ test("font picker opens from Design and applies a font", async ({ page, request 
 
   // Exercise the enabled UI without requiring a Google Fonts API key in CI.
   await page.evaluate(() => {
-    const payload = (window as typeof window & {
-      __NUXT__: { state: Record<string, { services: { google: { fonts: boolean } } }> }
-    }).__NUXT__
-    payload.state["$sfeatureFlags"].services.google.fonts = true
+    // Nuxt 4 keeps the hydrated payload on the app rather than window.__NUXT__.
+    const root = document.querySelector('#__nuxt') as Element & {
+      __vue_app__: { $nuxt: { payload: { state: Record<string, { services: { google: { fonts: boolean } } }> } } }
+    }
+    root.__vue_app__.$nuxt.payload.state["$sfeatureFlags"].services.google.fonts = true
   })
 
   const pageErrors: string[] = []
@@ -1253,9 +1282,13 @@ test("focused public form accepts a complete stepped response flow", async ({ pa
 
   await openPublicForm(page, form.slug)
   await fillLabeledInput(page, "Your name", "Focused User")
-  await page.getByRole("button", { name: /next/i }).click()
+  const next = page.getByRole("button", { name: /next/i })
+  // The outgoing step stays in the DOM until its slide animation completes.
+  await expect(next).toHaveCount(1)
+  await next.click()
   await fillLabeledInput(page, "Your email", uniqueEmail("focused"))
-  await page.getByRole("button", { name: /next/i }).click()
+  await expect(next).toHaveCount(1)
+  await next.click()
   await page.getByRole("option", { name: /Lead generation/i }).click()
 
   await expectSubmissionSuccess(page)

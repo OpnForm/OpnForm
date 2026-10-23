@@ -10,9 +10,12 @@ const buildDir = process.env.NUXT_BUILD_DIR
 const viteCacheDir = process.env.NUXT_VITE_CACHE_DIR
 
 export default defineNuxtConfig({
+  // Keep the existing app paths while using Nuxt 4 runtime behavior.
+  srcDir: '.',
+  dir: { app: 'app' },
   loglevel: process.env.NUXT_LOG_LEVEL || 'info',
   devtools: {enabled: isDevtoolsEnabled},
-  ...(buildDir ? {buildDir} : {}),
+  buildDir: buildDir || '.nuxt',
   ...(viteCacheDir ? {vite: {cacheDir: viteCacheDir}} : {}),
   css: ['~/css/app.css'],
 
@@ -38,7 +41,7 @@ export default defineNuxtConfig({
       '@nuxtjs/i18n',
       '@nuxt/icon', 
       ...(isE2EMode ? [] : ['@sentry/nuxt/module']),
-      '@zadigetvoltaire/nuxt-gtm',
+      '~/modules/ui-locale-chunks.js',
   ],
 
   // Skip plugin initialization during tests
@@ -88,7 +91,6 @@ export default defineNuxtConfig({
         { code: 'zh', name: 'Chinese', iso: 'zh-CN', file: 'zh.json' },
       ],
       defaultLocale: 'en',
-      lazy: true,
       langDir: 'lang/',
       strategy: 'no_prefix',
       detectBrowserLanguage: {
@@ -102,19 +104,15 @@ export default defineNuxtConfig({
   },
 
   sentry: {
-      sourceMapsUploadOptions: {
-          authToken: process.env.SENTRY_AUTH_TOKEN,
-          org: "opnform",
-          project: "opnform-vue",
-      },
-      unstable_sentryBundlerPluginOptions: {
-          bundleSizeOptimizations: {
-              excludeDebugStatements: true,
-              excludeTracing: true,
-              excludeReplayShadowDom: true,
-              excludeReplayIframe: true,
-              excludeReplayWorker: true,
-          },
+      authToken: process.env.SENTRY_AUTH_TOKEN,
+      org: "opnform",
+      project: "opnform-vue",
+      bundleSizeOptimizations: {
+          excludeDebugStatements: true,
+          excludeTracing: true,
+          excludeReplayShadowDom: true,
+          excludeReplayIframe: true,
+          excludeReplayWorker: true,
       },
   },
 

@@ -14,9 +14,9 @@
         <div
           class="fixed z-[9999] left-0 bottom-0 p-4" id="admin-actions"
         >
-          <UButtonGroup size="sm">
+          <UFieldGroup size="sm">
             <LazyToolsStopImpersonation />
-          </UButtonGroup>
+          </UFieldGroup>
         </div>
 
         <LazyVendorClarity />

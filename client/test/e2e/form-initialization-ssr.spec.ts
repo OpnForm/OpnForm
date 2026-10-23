@@ -1,10 +1,16 @@
 import { test, expect, type APIRequestContext, type Page } from '@playwright/test'
-import { readFileSync } from 'node:fs'
+import { existsSync } from 'node:fs'
+import { waitForAnonymousApiBudget, waitForAuthenticatedApiBudget } from './api-budget'
 import { hash } from '../../lib/utils.js'
 
 const api = process.env.PLAYWRIGHT_API_BASE_URL || 'http://127.0.0.1:8089'
 let headers: Record<string, string>
 let workspaceId: number
+
+test.beforeEach(async ({ request }, testInfo) => {
+  await waitForAnonymousApiBudget(request, testInfo)
+  await waitForAuthenticatedApiBudget(request, testInfo, headers)
+})
 
 test.beforeAll(async ({ request }) => {
   const login = await request.post(`${api}/login`, { data: {
@@ -52,8 +58,12 @@ async function holdRatingInput(page: Page) {
   const component = 'components/forms/heavy/RatingInput.vue'
   let pattern = `**/${component}*`
   if (process.env.PLAYWRIGHT_DEV_SERVER !== '1') {
-    const manifest = readFileSync(new URL('../../.output/server/chunks/build/client.manifest.mjs', import.meta.url), 'utf8')
-    const file = manifest.match(/"components\/forms\/heavy\/RatingInput.vue":\s*\{[\s\S]*?"file":\s*"([^"]+)"/)?.[1]
+    const artifactManifest = new URL('../../.output/qa/client.manifest.mjs', import.meta.url)
+    const manifestPath = existsSync(artifactManifest)
+      ? artifactManifest
+      : new URL('../../.nuxt/dist/server/client.manifest.mjs', import.meta.url)
+    const { default: manifest } = await import(manifestPath.href)
+    const file = Object.values(manifest).find((entry: any) => entry.name === 'RatingInput')?.file
     expect(file, 'RatingInput must have an async client bundle').toBeTruthy()
     pattern = `**/_nuxt/${file}`
   }

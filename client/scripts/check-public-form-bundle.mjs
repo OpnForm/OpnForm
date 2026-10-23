@@ -1,10 +1,16 @@
 import { readFileSync, existsSync } from 'node:fs'
 import { gzipSync } from 'node:zlib'
+import { resolve } from 'node:path'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 
-const manifestPath = new URL('../.nuxt/dist/server/client.manifest.json', import.meta.url)
+// Nuxt 4 emits an ES module manifest; older builds used JSON.
+const buildDir = resolve(fileURLToPath(new URL('../', import.meta.url)), process.env.NUXT_BUILD_DIR || '.nuxt')
+const jsonManifestPath = pathToFileURL(resolve(buildDir, 'dist/server/client.manifest.json'))
+const moduleManifestPath = pathToFileURL(resolve(buildDir, 'dist/server/client.manifest.mjs'))
+const manifestPath = existsSync(moduleManifestPath) ? moduleManifestPath : jsonManifestPath
 // Inspect Vite's client output, shared by all Nitro deployment presets.
 // Amplify publishes to .amplify-hosting instead of .output/public.
-const buildAssetsUrl = new URL('../.nuxt/dist/client/_nuxt/', import.meta.url)
+const buildAssetsUrl = pathToFileURL(`${resolve(buildDir, 'dist/client/_nuxt')}/`)
 const maximumGzipBytes = 420 * 1024
 const routeEntry = 'pages/forms/[slug]/index.vue'
 const scenarios = {
@@ -16,6 +22,7 @@ const forbiddenSources = [
   '/codemirror/',
   '/crisp-sdk-web/',
   '/amplitude-js/',
+  '/@amplitude/analytics-browser/',
   '/vue-draggable-plus/',
   '/overlayscrollbars/',
   '/overlayscrollbars-vue/',
@@ -28,7 +35,9 @@ if (!existsSync(manifestPath)) {
   throw new Error('Nuxt client manifest not found. Run this check after `nuxt build`.')
 }
 
-const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
+const manifest = manifestPath === moduleManifestPath
+  ? (await import(moduleManifestPath.href)).default
+  : JSON.parse(readFileSync(manifestPath, 'utf8'))
 
 if (!manifest[routeEntry]) {
   throw new Error(`Missing ${routeEntry} from the Nuxt client manifest.`)

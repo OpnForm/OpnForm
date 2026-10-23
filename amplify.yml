@@ -3,6 +3,8 @@ frontend:
   phases:
     preBuild:
       commands:
+        - nvm install 24.22.1
+        - nvm use 24.22.1
         - cd client
         - npm ci
     build:

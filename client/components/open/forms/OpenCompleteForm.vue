@@ -386,13 +386,13 @@ useHead({
   )
 })
 
-watch(() => props.form?.language, (newLanguage) => {
-  if (newLanguage && typeof newLanguage === 'string') {
-    setLocale(newLanguage)
-  } else {
-    setLocale('en')
-  }
-}, { immediate: true })
+const formLocale = computed(() => {
+  return typeof props.form?.language === 'string' && props.form.language ? props.form.language : 'en'
+})
+// Nuxt i18n loads messages asynchronously. Resolve the initial language before
+// SSR and hydration render the form, including the matching Nuxt UI locale.
+await setLocale(formLocale.value)
+watch(formLocale, (language) => setLocale(language))
 
 onBeforeUnmount(() => {
   setLocale('en')

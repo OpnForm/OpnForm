@@ -1,4 +1,4 @@
-FROM node:24-alpine AS javascript-builder
+FROM node:24.22.1-alpine AS javascript-builder
 WORKDIR /app
 
 # It's best to add as few files as possible before running the build commands
@@ -39,7 +39,7 @@ RUN --mount=type=tmpfs,target=/tmp \
     NUXT_BUILD_CONCURRENCY=1 \
     npm run build
 
-FROM node:24-alpine
+FROM node:24.22.1-alpine
 WORKDIR /app
 COPY --from=javascript-builder /app/.output/ /app/
 RUN ls /app/
