@@ -84,7 +84,7 @@ Run the browser suite against the running worktree with:
 
 The API resolves dependencies for PHP 8.3.36; use a patched PHP 8.3 or 8.4 runtime compatible with the lock and run `composer check-platform-reqs`. The client requires Node `^22.22.3 || ^24.15.0 || >=26`; CI and Docker use 24.22.1, also recorded in `client/.nvmrc`.
 
-See [dependency security migration and QA](docs/contributing/dependency-security.mdx) for the Laravel 12 / MCP 1.1 / Nuxt 4 changes, audit commands, remaining advisories and validation boundaries.
+The executable npm audit policy is in [security/npm-exceptions.json](security/npm-exceptions.json).
 
 ## PDF template fields
 

@@ -8,7 +8,7 @@ import { createRequire } from 'node:module'
 import { evaluateNpmAudit } from '../audit-npm.mjs'
 const require = createRequire(new URL('../../client/package.json', import.meta.url))
 const { parse } = require('yaml')
-const policy = JSON.parse(readFileSync(new URL('../../docs/security/npm-exceptions.json', import.meta.url)))
+const policy = JSON.parse(readFileSync(new URL('../../security/npm-exceptions.json', import.meta.url)))
 const reviewed = policy.exceptions.find(entry => entry.package === 'braces')
 const audit = () => ({
   auditReportVersion: 2,

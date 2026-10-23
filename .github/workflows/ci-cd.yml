@@ -17,7 +17,7 @@ on:
       - "scripts/check-database-compatibility.php"
       - "scripts/check-linux-client-health.mjs"
       - "scripts/check-amplify-runtime.mjs"
-      - "docs/security/npm-exceptions.json"
+      - "security/npm-exceptions.json"
       - "scripts/tests/dependency-security.test.mjs"
       - "scripts/docker-setup.sh"
       - "scripts/e2e-*.sh"
