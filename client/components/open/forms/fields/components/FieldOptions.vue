@@ -208,6 +208,17 @@
       />
     </div>
 
+    <div
+      v-if="field.type === 'number'"
+      class="px-4"
+    >
+      <EditorSectionHeader
+        icon="i-heroicons-hashtag-20-solid"
+        title="Number"
+      />
+      <NumberFormatPopover :field="field" />
+    </div>
+
     <MatrixFieldOptions
       :model-value="field"
       @update:model-value="field = $event"
@@ -656,10 +667,12 @@ import { format } from 'date-fns'
 import { default as _has } from 'lodash/has'
 import blocksTypes from '~/data/blocks_types.json'
 import BlockMediaOptions from '~/components/open/forms/components/media/BlockMediaOptions.vue'
+import NumberFormatPopover from './NumberFormatPopover.vue'
+import { applyNumberFormatPreset } from '~/composables/useNumberFormat.js'
 
 export default {
   name: 'FieldOptions',
-  components: { CountryFlag, MatrixFieldOptions, HiddenRequiredDisabled, EditorSectionHeader, PaymentFieldOptions, PlanTag, BlockMediaOptions, SelectOptionEditor, MentionInput, InputMaskOptions },
+  components: { CountryFlag, MatrixFieldOptions, HiddenRequiredDisabled, EditorSectionHeader, PaymentFieldOptions, PlanTag, BlockMediaOptions, SelectOptionEditor, MentionInput, InputMaskOptions, NumberFormatPopover },
   props: {
     field: {
       type: Object,
@@ -907,6 +920,17 @@ export default {
         this.field.slider_min_value = 0
         this.field.slider_max_value = 50
         this.field.slider_step_value = 1
+      } else if (this.field.type === "number") {
+        if (!this.field.number_format) {
+          this.field.number_format = 'number'
+        }
+        if (!this.field.number_decimal_separator) {
+          this.field.number_decimal_separator = '.'
+        }
+        if (!this.field.number_thousands_separator) {
+          this.field.number_thousands_separator = 'none'
+        }
+        applyNumberFormatPreset(this.field, this.field.number_format)
       } else if (["select", "multi_select"].includes(this.field.type)) {
         if (!this.field[this.field.type]?.options) {
           this.field[this.field.type] = { options: [] }

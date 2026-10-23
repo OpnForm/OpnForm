@@ -225,6 +225,29 @@ class FormFieldSchemas
             'properties' => [
                 'type' => ['type' => 'string', 'enum' => ['number']],
                 'core' => ['$ref' => '#/definitions/baseProperty'],
+                'number_format' => [
+                    'type' => 'string',
+                    'enum' => ['number', 'percent', 'us_dollar', 'euro', 'pound', 'custom'],
+                    'description' => 'Display format for number fields. "number" = no formatting, "percent" = suffix %, "us_dollar" = prefix $, "euro" = prefix €, "pound" = prefix £, "custom" = user-defined prefix/suffix. (default: "number")'
+                ],
+                'number_decimal_separator' => [
+                    'type' => 'string',
+                    'enum' => ['.', ','],
+                    'description' => 'Decimal separator for number display (default: ".")'
+                ],
+                'number_thousands_separator' => [
+                    'type' => 'string',
+                    'enum' => ['none', ',', '.', ' '],
+                    'description' => 'Thousands separator for number display. "none" = no separator (default: "none")'
+                ],
+                'number_prefix' => [
+                    'type' => 'string',
+                    'description' => 'Custom prefix for number display when number_format is "custom" (e.g. "$", "USD ")'
+                ],
+                'number_suffix' => [
+                    'type' => 'string',
+                    'description' => 'Custom suffix for number display when number_format is "custom" (e.g. "%", " kg")'
+                ],
             ]
         ],
         'ratingProperty' => [
