@@ -67,6 +67,16 @@ test('both delivery jobs depend on the security and QA aggregate', () => {
   assert.ok(pipeline.jobs['release-readiness'].needs.includes('dependency-security'))
   assert.equal(pipeline.jobs['dependency-security'].uses, './.github/workflows/dependency-security.yml')
 })
+test('general PHP suite is honestly SQLite and real database checks gate releases', () => {
+  assert.match(pipeline.jobs.tests.name, /SQLite/)
+  assert.equal(pipeline.jobs.tests.strategy, undefined)
+  assert.equal(pipeline.jobs.tests.steps.find(step => step.name === 'Run tests (Unit and Feature)').env.DB_CONNECTION, 'sqlite')
+  assert.deepEqual(pipeline.jobs.database_compatibility.strategy.matrix.connection, ['pgsql', 'mysql'])
+  assert.ok(pipeline.jobs['release-readiness'].needs.includes('database_compatibility'))
+  const check = pipeline.jobs.database_compatibility.steps.find(step => step.name?.startsWith('Check real PDO'))
+  assert.equal(check.env.APP_ENV, 'database-compatibility')
+  assert.match(check.run, /check-database-compatibility\.php/)
+})
 test('release readiness fails for failed, skipped, cancelled or missing prerequisites', () => {
   const needs = Object.fromEntries(pipeline.jobs['release-readiness'].needs.map(name => [name, { result: 'success' }]))
   const run = value => spawnSync(process.execPath, [new URL('../check-ci-readiness.mjs', import.meta.url).pathname], { env: { ...process.env, NEEDS_JSON: JSON.stringify(value) }, encoding: 'utf8' })
@@ -118,4 +128,14 @@ test('CLI retains the raw nonzero scan, rejects a new upstream release and rejec
   assert.notEqual(run().status, 0)
   installFakeNpm(versions, true)
   assert.notEqual(run().status, 0)
+})
+
+test('Amplify explicitly emits Node 24 compute and validates the target output', () => {
+  const config = readFileSync(new URL('../../client/nuxt.config.ts', import.meta.url), 'utf8')
+  assert.match(config, /awsAmplify: \{ runtime: 'nodejs24\.x' \}/)
+  const amplify = parse(readFileSync(new URL('../../amplify.yml', import.meta.url), 'utf8'))
+  assert.ok(amplify.frontend.phases.build.commands.includes('npm run build:amplify'))
+  const pkg = JSON.parse(readFileSync(new URL('../../client/package.json', import.meta.url)))
+  assert.match(pkg.scripts['build:amplify'], /NITRO_PRESET=aws-amplify npm run build/)
+  assert.match(pkg.scripts['build:amplify'], /check-amplify-output\.mjs/)
 })

@@ -256,6 +256,7 @@ for (const partialSync of [true, false]) {
       { id: 'feedback', name: 'Feedback', type: 'text', prefill: 'Configured answer' },
     ], { auto_save: true, enable_partial_submissions: partialSync })
     const publicForm = await (await request.get(`${api}/forms/${form.slug}`)).json()
+    if (partialSync) expect(publicForm.enable_partial_submissions).toBe(true)
     const path = `/forms/${form.slug}`
     const key = `${publicForm.form_pending_submission_key}-${hash(new URL(path, testInfo.project.use.baseURL as string).href)}`
     const draft = { rating: 4, choice: true, feedback: 'Saved answer', ...(partialSync ? { submission_hash: 'saved-partial-hash' } : {}) }

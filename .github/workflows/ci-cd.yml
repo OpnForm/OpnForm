@@ -14,6 +14,8 @@ on:
       - "scripts/*security*.mjs"
       - "scripts/audit-npm.mjs"
       - "scripts/check-ci-readiness.mjs"
+      - "scripts/check-database-compatibility.php"
+      - "scripts/check-linux-client-health.mjs"
       - "docs/security/npm-exceptions.json"
       - "scripts/tests/dependency-security.test.mjs"
       - "scripts/docker-setup.sh"
@@ -116,7 +118,7 @@ jobs:
         run: npm run test:ssr-cache
 
       - name: Test public form bundle checker
-        run: node --test scripts/check-public-form-bundle.test.mjs scripts/check-built-css.test.mjs
+        run: node --test scripts/check-public-form-bundle.test.mjs scripts/check-built-css.test.mjs scripts/check-amplify-output.test.mjs
 
       - name: Test worktree runtime selection
         working-directory: .
@@ -152,6 +154,20 @@ jobs:
         with:
           name: nuxt-output
           path: client/.output
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Build and validate Amplify Node 24 compute
+        run: npm run build:amplify
+        env:
+          NODE_OPTIONS: --max-old-space-size=3072
+
+      - name: Upload Amplify deployment manifest
+        uses: actions/upload-artifact@v4
+        with:
+          name: amplify-deploy-manifest
+          path: client/.amplify-hosting/deploy-manifest.json
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 1
@@ -212,63 +228,7 @@ jobs:
   tests:
     runs-on: ubuntu-latest
 
-    services:
-      postgres:
-        # Docker Hub image
-        image: postgres:14
-        # Provide the password for postgres
-        env:
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_USER: postgres
-          POSTGRES_DB: postgres
-        # Set health checks to wait until postgres has started
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          # Maps tcp port 5432 on service container to the host
-          - 5432:5432
-      mysql:
-        # Docker Hub image
-        image: mysql:8
-        # Provide the password for mysql
-        env:
-          MYSQL_ROOT_PASSWORD: test
-          MYSQL_DATABASE: test
-          MYSQL_USER: test
-          MYSQL_PASSWORD: test
-        # Set health checks to wait until mysql has started
-        options: >-
-          --health-cmd="mysqladmin ping"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
-        ports:
-          # Maps tcp port 3306 on service container to the host
-          - 3306:3306
-
-    strategy:
-      fail-fast: true
-      matrix:
-        php: [8.3]
-        connection: [pgsql, mysql]
-        include:
-          - connection: pgsql
-            host: localhost
-            port: 5432
-            user: postgres
-            password: postgres
-            database: postgres
-          - connection: mysql
-            host: "127.0.0.1"
-            port: 3306
-            user: root
-            password: test
-            database: test
-
-    name: Run Feature & Unit tests (PHP ${{ matrix.php }} - ${{ matrix.connection }})
+    name: Run Feature & Unit tests (PHP 8.3 - SQLite)
 
     steps:
       - name: Checkout code
@@ -289,7 +249,7 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: ${{ matrix.php }}
+          php-version: 8.3
           extensions: dom, curl, mbstring, pdo, sqlite, pdo_sqlite, pdo_pgsql, pdo_mysql, bcmath, gd, zip, pcntl, intl
           tools: composer:v2
           coverage: none
@@ -309,18 +269,88 @@ jobs:
         working-directory: ./api
         run: ./vendor/bin/pest -p
         env:
-          DB_CONNECTION: ${{ matrix.connection }}
-          DB_HOST: ${{ matrix.host }}
-          DB_PORT: ${{ matrix.port }}
-          DB_DATABASE: ${{ matrix.database }}
-          DB_USERNAME: ${{ matrix.user }}
-          DB_PASSWORD: ${{ matrix.password }}
+          APP_ENV: testing
+          DB_CONNECTION: sqlite
+          DB_DATABASE: ":memory:"
 
       - name: "Archive log results"
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: log-results-${{ matrix.connection }}
+          name: log-results-sqlite
+          path: api/storage/logs/laravel.log
+          retention-days: 3
+
+  database_compatibility:
+    name: Database compatibility (${{ matrix.connection }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        connection: [pgsql, mysql]
+        include:
+          - connection: pgsql
+            port: 5432
+            password: postgres
+          - connection: mysql
+            port: 3306
+            password: test
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_DB: opnform_compat_pgsql
+        options: >-
+          --health-cmd pg_isready --health-interval 10s
+          --health-timeout 5s --health-retries 5
+        ports: [5432:5432]
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: test
+          MYSQL_DATABASE: opnform_compat_mysql
+        options: >-
+          --health-cmd="mysqladmin ping" --health-interval=10s
+          --health-timeout=5s --health-retries=5
+        ports: [3306:3306]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.3
+          extensions: dom, curl, mbstring, pdo_pgsql, pdo_mysql, bcmath, gd, zip, intl
+          tools: composer:v2
+          coverage: none
+      - name: Prepare isolated compatibility environment
+        run: cp api/.env.example api/.env
+      - name: Install Composer dependencies
+        working-directory: api
+        run: composer install --prefer-dist --no-interaction --no-progress --optimize-autoloader
+      - name: Check real PDO driver, migrate and exercise application paths
+        run: php scripts/check-database-compatibility.php "${{ matrix.connection }}"
+        env:
+          APP_ENV: database-compatibility
+          APP_KEY: base64:ZGF0YWJhc2UtY29tcGF0aWJpbGl0eS1xYS1rZXktMDA=
+          APP_URL: http://localhost
+          JWT_SECRET: database-compatibility-isolated-ci-only
+          SELF_HOSTED: "false"
+          CACHE_DRIVER: array
+          QUEUE_CONNECTION: sync
+          MAIL_MAILER: array
+          MAIL_FROM_ADDRESS: qa@example.test
+          MAIL_FROM_NAME: Compatibility QA
+          DB_CONNECTION: ${{ matrix.connection }}
+          DB_HOST: 127.0.0.1
+          DB_PORT: ${{ matrix.port }}
+          DB_DATABASE: opnform_compat_${{ matrix.connection }}
+          DB_USERNAME: ${{ matrix.connection == 'pgsql' && 'postgres' || 'root' }}
+          DB_PASSWORD: ${{ matrix.password }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: database-compatibility-${{ matrix.connection }}
           path: api/storage/logs/laravel.log
           retention-days: 3
 
@@ -484,6 +514,86 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
+  linux_client_image:
+    name: Linux frontend image and health
+    runs-on: ubuntu-latest
+    needs: [client_checks]
+    timeout-minutes: 30
+    env:
+      SOURCE_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      APP_ENV: image-qa
+      APP_KEY: base64:ZGF0YWJhc2UtY29tcGF0aWJpbGl0eS1xYS1rZXktMDA=
+      APP_URL: http://127.0.0.1:8089
+      FRONT_URL: http://127.0.0.1:3100
+      JWT_SECRET: isolated-linux-image-ci-only
+      SELF_HOSTED: "false"
+      DB_CONNECTION: pgsql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_DATABASE: opnform_image_qa
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      CACHE_DRIVER: array
+      QUEUE_CONNECTION: sync
+      MAIL_MAILER: array
+      MAIL_FROM_ADDRESS: qa@example.test
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: opnform_image_qa
+        options: >-
+          --health-cmd pg_isready --health-interval 10s
+          --health-timeout 5s --health-retries 5
+        ports: [5432:5432]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.3
+          extensions: dom, curl, mbstring, pdo_pgsql, bcmath, gd, zip, intl
+          tools: composer:v2
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24.22.1"
+      - name: Prepare real API for image health checks
+        working-directory: api
+        run: |
+          cp .env.example .env
+          composer install --prefer-dist --no-interaction --no-progress --optimize-autoloader
+          php artisan migrate --force
+          php artisan db:seed --class='Database\Seeders\E2ETestSeeder' --force
+          php artisan serve --host=127.0.0.1 --port=8089 > ../image-api.log 2>&1 &
+      - name: Build Linux frontend image without publishing
+        run: docker build --build-arg NODE_BUILD_HEAP_MB=3072 --iidfile client-image.id -f docker/Dockerfile.client -t opnform-client-qa .
+      - name: Inspect image and exercise real SSR routes
+        run: |
+          docker image inspect opnform-client-qa > client-image-inspect.json
+          docker run -d --name opnform-client-qa --network host --memory=1g --cpus=2 \
+            -e NITRO_HOST=127.0.0.1 -e NITRO_PORT=3100 \
+            -e NUXT_PUBLIC_API_BASE=http://127.0.0.1:8089 \
+            -e NUXT_PRIVATE_API_BASE=http://127.0.0.1:8089 \
+            -e NUXT_PUBLIC_APP_URL=http://127.0.0.1:3100 opnform-client-qa
+          docker exec opnform-client-qa node -e 'if(process.platform!=="linux"||process.version!=="v24.22.1")process.exit(1);console.log(JSON.stringify({platform:process.platform,node:process.version}))' | tee client-image-runtime.json
+          docker cp client/scripts/check-built-css.mjs opnform-client-qa:/tmp/check-built-css.mjs
+          docker exec opnform-client-qa node /tmp/check-built-css.mjs /app/public
+          node scripts/check-linux-client-health.mjs
+      - name: Capture image and API logs
+        if: always()
+        run: docker logs opnform-client-qa > client-image.log 2>&1 || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: linux-client-image-evidence
+          path: |
+            client-image*.json
+            client-image.id
+            client-image.log
+            image-api.log
+          retention-days: 7
+
   dependency-security:
     uses: ./.github/workflows/dependency-security.yml
     permissions:
@@ -492,7 +602,7 @@ jobs:
   release-readiness:
     name: Release readiness
     if: always()
-    needs: [code_lint, client_checks, sync_check, tests, e2e, dependency-security]
+    needs: [code_lint, client_checks, sync_check, tests, database_compatibility, e2e, linux_client_image, dependency-security]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

@@ -22,7 +22,8 @@
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:dev": "PLAYWRIGHT_BASE_URL=${PLAYWRIGHT_BASE_URL:-http://127.0.0.1:3100} playwright test",
     "check:public-form-bundle": "node scripts/check-public-form-bundle.mjs",
-    "check:built-css": "node scripts/check-built-css.mjs"
+    "check:built-css": "node scripts/check-built-css.mjs",
+    "build:amplify": "NITRO_PRESET=aws-amplify npm run build && node scripts/check-amplify-output.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",

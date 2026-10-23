@@ -12,7 +12,7 @@ frontend:
         - node ../scripts/audit-npm.mjs production npm-audit-production.json
     build:
       commands:
-        - npm run build
+        - npm run build:amplify
   artifacts:
     baseDirectory: client/.amplify-hosting
     files:

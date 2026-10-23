@@ -18,6 +18,7 @@ export default defineNuxtConfig({
   buildDir: buildDir || '.nuxt',
   ...(viteCacheDir ? {vite: {cacheDir: viteCacheDir}} : {}),
   css: ['~/css/app.css'],
+  nitro: { awsAmplify: { runtime: 'nodejs24.x' } },
   // Process component styles as well as Nuxt UI's global Tailwind entry.
   postcss: { plugins: { '@tailwindcss/postcss': {} } },
 

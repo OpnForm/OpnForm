@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-const root = resolve(process.argv[2] || '.output/public')
+const root = resolve(process.argv[2] || (process.env.NITRO_PRESET === 'aws-amplify' ? '.amplify-hosting/static' : '.output/public'))
 const files = readdirSync(root, { recursive: true, withFileTypes: true })
   .filter(entry => entry.isFile() && entry.name.endsWith('.css'))
   .map(entry => resolve(entry.parentPath, entry.name))
