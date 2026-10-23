@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { mkdtempSync, mkdirSync, writeFileSync, truncateSync, rmSync } from 'node:fs'
+import { mkdtempSync, mkdirSync, writeFileSync, truncateSync, rmSync, symlinkSync, unlinkSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { spawnSync } from 'node:child_process'
@@ -15,6 +15,9 @@ test('rejects old Amplify runtimes, missing entrypoints and oversized compute ar
   assert.notEqual(run().status, 0)
   writeFileSync(join(folder, 'server.js'), 'console.log("ready")')
   assert.equal(run().status, 0)
+  symlinkSync(join(root, 'deploy-manifest.json'), join(folder, 'outside-compute.json'))
+  assert.notEqual(run().status, 0)
+  unlinkSync(join(folder, 'outside-compute.json'))
   manifest('nodejs20.x')
   assert.notEqual(run().status, 0)
   manifest('nodejs24.x')

@@ -26,7 +26,7 @@ ADD ./client/ /app/
 
 # Respect this bound through npm's build script; the former nested 8/10 GiB
 # overrides exceeded the memory available to shared Docker Desktop builders.
-ARG NODE_BUILD_HEAP_MB=3072
+ARG NODE_BUILD_HEAP_MB=4096
 ENV NODE_OPTIONS="--max-old-space-size=${NODE_BUILD_HEAP_MB}"
 ENV NODE_ENV=production
 ENV GENERATE_SOURCEMAP=false

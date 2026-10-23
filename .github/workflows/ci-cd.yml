@@ -16,6 +16,7 @@ on:
       - "scripts/check-ci-readiness.mjs"
       - "scripts/check-database-compatibility.php"
       - "scripts/check-linux-client-health.mjs"
+      - "scripts/check-amplify-runtime.mjs"
       - "docs/security/npm-exceptions.json"
       - "scripts/tests/dependency-security.test.mjs"
       - "scripts/docker-setup.sh"
@@ -161,13 +162,13 @@ jobs:
       - name: Build and validate Amplify Node 24 compute
         run: npm run build:amplify
         env:
-          NODE_OPTIONS: --max-old-space-size=3072
+          NODE_OPTIONS: --max-old-space-size=4096
 
-      - name: Upload Amplify deployment manifest
+      - name: Upload standalone Amplify artifact
         uses: actions/upload-artifact@v4
         with:
-          name: amplify-deploy-manifest
-          path: client/.amplify-hosting/deploy-manifest.json
+          name: amplify-output
+          path: client/.amplify-hosting
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 1
@@ -567,7 +568,7 @@ jobs:
           php artisan db:seed --class='Database\Seeders\E2ETestSeeder' --force
           php artisan serve --host=127.0.0.1 --port=8089 > ../image-api.log 2>&1 &
       - name: Build Linux frontend image without publishing
-        run: docker build --build-arg NODE_BUILD_HEAP_MB=3072 --iidfile client-image.id -f docker/Dockerfile.client -t opnform-client-qa .
+        run: docker build --build-arg NODE_BUILD_HEAP_MB=4096 --iidfile client-image.id -f docker/Dockerfile.client -t opnform-client-qa .
       - name: Inspect image and exercise real SSR routes
         run: |
           docker image inspect opnform-client-qa > client-image-inspect.json
@@ -580,6 +581,20 @@ jobs:
           docker cp client/scripts/check-built-css.mjs opnform-client-qa:/tmp/check-built-css.mjs
           docker exec opnform-client-qa node /tmp/check-built-css.mjs /app/public
           node scripts/check-linux-client-health.mjs
+      - uses: actions/download-artifact@v4
+        with:
+          name: amplify-output
+          path: ${{ runner.temp }}/opnform-amplify-qa
+      - name: Smoke standalone Amplify compute on Linux Node 24
+        run: node scripts/check-amplify-runtime.mjs "${{ runner.temp }}/opnform-amplify-qa"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: amplify-runtime-evidence
+          path: |
+            amplify-runtime*.json
+            amplify-runtime.log
+          retention-days: 7
       - name: Capture image and API logs
         if: always()
         run: docker logs opnform-client-qa > client-image.log 2>&1 || true
