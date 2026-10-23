@@ -62,7 +62,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   assert.ok(!scan.error && [0, 1].includes(scan.status), `npm audit failed: ${scan.error || scan.stderr}`)
   const report = JSON.parse(scan.stdout)
   const lock = JSON.parse(readFileSync('package-lock.json', 'utf8'))
-  const policy = JSON.parse(readFileSync(new URL('../security/npm-exceptions.json', import.meta.url), 'utf8'))
+  const policy = JSON.parse(readFileSync(new URL('./npm-exceptions.json', import.meta.url), 'utf8'))
   const result = evaluateNpmAudit(report, lock, policy)
   assert.equal(scan.status, report.metadata.vulnerabilities.total > 0 ? 1 : 0, 'Unexpected raw scanner exit status')
   // npm's fixAvailable can mean a downgrade (including Quill 2.0.2), not

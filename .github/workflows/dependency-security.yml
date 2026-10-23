@@ -3,10 +3,10 @@ name: Dependency security
 on:
   workflow_call:
   pull_request:
-    paths: ["api/composer.*", "client/package*.json", "scripts/check-security-versions.mjs", "scripts/audit-npm.mjs", "security/npm-exceptions.json", ".github/workflows/dependency-security.yml"]
+    paths: ["api/composer.*", "client/package*.json", "scripts/check-security-versions.mjs", "scripts/audit-npm.mjs", "scripts/npm-exceptions.json", ".github/workflows/dependency-security.yml"]
   push:
     branches: [main]
-    paths: ["api/composer.*", "client/package*.json", "scripts/check-security-versions.mjs", "scripts/audit-npm.mjs", "security/npm-exceptions.json", ".github/workflows/dependency-security.yml"]
+    paths: ["api/composer.*", "client/package*.json", "scripts/check-security-versions.mjs", "scripts/audit-npm.mjs", "scripts/npm-exceptions.json", ".github/workflows/dependency-security.yml"]
   schedule:
     - cron: "17 7 * * 1"
   workflow_dispatch:
