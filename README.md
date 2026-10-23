@@ -80,6 +80,12 @@ Run the browser suite against the running worktree with:
 ./scripts/codex-worktree-test-e2e.sh
 ```
 
+## Dependency security
+
+The API resolves dependencies for PHP 8.3.36; use a patched PHP 8.3 or 8.4 runtime compatible with the lock and run `composer check-platform-reqs`. The client requires Node `^22.22.3 || ^24.15.0 || >=26`; CI and Docker use 24.22.1, also recorded in `client/.nvmrc`.
+
+See [dependency security migration and QA](docs/contributing/dependency-security.mdx) for the Laravel 12 / MCP 1.1 / Nuxt 4 changes, audit commands, remaining advisories and validation boundaries.
+
 ## PDF template fields
 
 The PDF editor removes zones linked to deleted fields and lists them before you continue. Save the template to keep the cleanup. Mappings retain field names when created or saved, so deleted fields can still be identified. Older mappings without a saved name appear as “Deleted field” with their page number.

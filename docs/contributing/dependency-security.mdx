@@ -1,0 +1,107 @@
+---
+title: "Dependency security migration — 23 October 2026"
+description: "Laravel 12, MCP 1.1, Nuxt 4 and Node 24 migration, validation evidence and remaining advisories."
+---
+
+## Versions and scope
+
+This branch starts at `769496b684ff8da2892b1a8d457ff9208ae87932`. The changes are isolated from the main checkout. No production deployment or merge is part of this work.
+
+| Component | Before | Locked after |
+| --- | --- | --- |
+| Laravel | 11.48.0 | 12.70.1 |
+| Laravel MCP | 0.8.2 | 1.1.1 |
+| Symfony HTTP Foundation / Kernel / Routing | 7.4.5 / 7.4.5 / 7.4.4 | 7.4.21 |
+| Laravel Excel / PhpSpreadsheet | 3.1.67 / 1.30.2 | 3.1.70 / 1.30.7 |
+| SVG sanitizer | 0.22.0 | 1.1.1 |
+| Nuxt | 3.17.5 | 4.6.2 |
+| Nuxt UI | 3.2.0 | 4.12.0 |
+| Vitest / UI | 3.2.4 | 5.0.5 |
+| Happy DOM | 12.10.3 | 21.0.4 |
+| Node CI / Docker | 22.17.0 / floating 24 | 24.22.1 |
+| PHP Docker | floating 8.3 | 8.3.36 |
+
+The Composer changes and direct npm package changes are recorded in [versions.json](../security/dependencies-2026-10-23/versions.json). Composer resolution targets PHP 8.3.36 so resolving with a newer local PHP cannot silently select PHP 8.4/8.5-only packages. `composer check-platform-reqs` still verifies the actual runtime and extensions. CI and Docker installations no longer ignore platform requirements. The locked `lcobucci/clock` library, used by JWT, rejects PHP 8.5; the worktree selector skips that runtime instead of bypassing Composer's platform check.
+
+The Nuxt migration retains the existing source directory. UI ButtonGroup becomes FieldGroup; Sentry build options use the v11 shape. The GTM integration uses the underlying Vue library because its former Nuxt wrapper requires Nuxt 3. Amplitude moves to the Browser SDK, preserving named events, user properties and attribution while explicitly disabling new automatic event collection. Nuxt UI locale chunks load on demand with request-local SSR state and the previous locale fallback behavior. Form initialization awaits its language before rendering so the lazy message catalogs and UI locale agree during hydration. The public bundle budget remains 420 KiB gzip. The checked-in minified embed SDK is regenerated with the upgraded esbuild and matches the tested production asset.
+
+## MCP migration and separate advisory checks
+
+MCP 1.x invokes tools through `ToolInvoker`. The application adapter keeps the tool-level OAuth challenge in `_meta["mcp/www_authenticate"]`. Dynamic registration retains Passport 12 compatibility after MCP refreshes its client model. The application owns one named, throttled registration route.
+
+- [GHSA-mx2h-h55v-pm44](https://github.com/laravel/mcp/security/advisories/GHSA-mx2h-h55v-pm44): deceptive loopback redirects are rejected by regression tests and an HTTP smoke check.
+- [GHSA-m25c-38v7-94p8](https://github.com/laravel/mcp/security/advisories/GHSA-m25c-38v7-94p8): a regression test prevents unadvertised OAuth resource metadata from receiving a client secret. Application code serves MCP; it does not configure MCP client OAuth routes. The test also checks the upgraded library's client behavior.
+
+These advisories were absent from the initial Composer scan. `scripts/check-security-versions.mjs` supplements registry scanners with explicit lock floors. Tests preserve JWT, Sanctum and Passport separation, workspace authorization, PKCE, consent, refresh and revocation.
+
+## Reproducing validation
+
+Use a patched PHP 8.3 or 8.4 runtime compatible with the lock and Node 24.22.1 (`client/.nvmrc`). Install with `composer install` in `api/` and `npm ci` in `client/`. Run `composer check-platform-reqs` after installation. The existing Codex worktree scripts provide isolated database, API and UI ports.
+
+```sh
+# api/
+composer validate --no-check-publish
+composer check-platform-reqs
+composer --no-plugins --no-scripts audit --locked --format=json
+composer --no-plugins --no-scripts audit --locked --no-dev --format=json
+vendor/bin/pint --test
+vendor/bin/phpstan analyse --memory-limit=2G --no-progress
+mkdir -p storage/framework/views-security-tests
+VIEW_COMPILED_PATH="$PWD/storage/framework/views-security-tests" php -d memory_limit=1G vendor/bin/pest
+
+# client/
+npm audit --package-lock-only --ignore-scripts --json
+npm audit --package-lock-only --ignore-scripts --omit=dev --json
+npm run lint
+npm run test -- --run
+npm run test:email-events
+npm run test:ssr-cache
+npm run build
+npm run test:ssr-cache:built
+npm run test:e2e
+```
+
+`artisan test` is not registered because this repository excludes Collision/Pest's providers from package discovery. The Pest entry point exercises the same Laravel tests directly.
+
+For browser tests, the CI artifact includes the raw Nuxt client manifest at `.output/qa/client.manifest.mjs`; local builds can use `.nuxt/dist/server/client.manifest.mjs`. The test setup reserves capacity in the real anonymous and authenticated API buckets, waiting instead of disabling the limiters. The production build is fast enough to exhaust either bucket during a full suite. Browser interaction also waits until Vue has attached its event handlers to SSR inputs. The shared sliding transition keeps a stable element around its slot to avoid SSR fragment hydration mismatches with the upgraded Vue compiler. The bundle checker respects `NUXT_BUILD_DIR` so isolated worktree checks cannot accidentally measure an older default build.
+
+The upload smoke test caught an existing first-upload edge case with a null initial value: FileInput tried to fetch its own temporary storage key as a URL and replaced the local file. The watcher now preserves a file it already holds; a unit regression test first reproduced the failure.
+
+## Remaining alerts
+
+Raw scanner results are committed in `docs/security/dependencies-2026-10-23/`. Composer reports no advisories with or without development packages, down from 69 advisories across 21 packages in the initial scan. npm still reports **19 affected packages (14 high, 5 low)** in the full tree and **16 (11 high, 5 low)** with `--omit=dev`. The initial full npm scan reported 114 affected packages (9 critical, 57 high, 38 moderate and 10 low). There are now no critical or moderate npm alerts. These counts include parent packages inheriting the same leaf advisory.
+
+| Leaf dependency | Reason retained and exposure boundary |
+| --- | --- |
+| `braces` 3.0.3 | [GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm) has no patched release. It arrives through Nitro's glob tooling. Exploitation requires attacker-controlled brace patterns; no application path forwarding public request input into this tooling was found. |
+| `node-forge` 1.4.0 | [GHSA-86w9-cpqp-85rv](https://github.com/advisories/GHSA-86w9-cpqp-85rv) has no patched release. The path is Nitro → listhen → certificate tooling. The local QA service uses HTTP; no application RSA verification using this library was found. Production infrastructure was not inspected. |
+| `esbuild` 0.27.7 | [GHSA-g7r4-m6w7-qqqr](https://github.com/advisories/GHSA-g7r4-m6w7-qqqr) remains under Nuxt Fonts → fontless. The application's direct esbuild is 0.28.2. The advisory concerns a Windows development server; QA ran on macOS/Linux. No incompatible forced override is installed. |
+| `katex` 0.16.47 | [GHSA-238p-pmpm-9mq7](https://github.com/advisories/GHSA-238p-pmpm-9mq7) requires existing prototype pollution to bypass trust restrictions. It is constrained by the Notion renderer's Vue KaTeX wrapper. Notion rendering is preserved; its upstream dependency still needs migration. |
+| `quill` 2.0.3 | [GHSA-v3m3-f69x-jf25](https://github.com/advisories/GHSA-v3m3-f69x-jf25) has no patched release. OpnForm uses HTML export in QuillyEditor. Server form content/help and formatted rich text pass through Purify, but this does not establish that every client-side rendering path is safe. This low-severity alert remains open. |
+
+`npm audit` intentionally exits 1 for these alerts. The new dependency-security workflow runs both scopes for Composer and npm on dependency changes and weekly, uploads the reports and fails on remaining advisories. It contains no advisory ignore list or success override. A green local build does not make the security audit green.
+
+## Validation results and limits
+
+| Check | Local result |
+| --- | --- |
+| PHP 8.3.36 CLI image, SQLite | 2,340 passed; 2 skipped; 2 deprecated; 19,142 assertions |
+| PHP 8.4.19, isolated PostgreSQL 15.17 | 2,340 passed; 2 skipped; 2 deprecated; 19,142 assertions |
+| API Docker builder and final PHP-FPM image | Both built; install without platform ignores, final runtime platform requirements and Laravel autoload passed |
+| Pint / PHPStan | 991 files pass formatting; no static-analysis errors |
+| Node 24.22.1 clean install | `npm ci` and `npm ls --all` pass without forced peer resolution |
+| Unit/component tests | 1,024 passed across 85 files |
+| Production client build | Passes; classic 412.7 KiB and Focused 374.6 KiB gzip, within the unchanged 420 KiB limit |
+| Node bundle/email/SSR-cache regression tests | 23 passed; built SSR-cache smoke also passed |
+| Desktop/mobile visual smoke | Classic and Focused rendering inspected at 1280px and 390px; no horizontal overflow or hydration errors |
+| Worktree scripts | PHP/Node version boundaries and dependency-install lifecycle pass |
+| HTTP MCP OAuth smoke | JWT login, hostile redirect rejection, registration, browser session bridge, protected consent, S256 code exchange, authenticated tool, refresh and revocation pass |
+| Workflows | Both pass actionlint schema validation; the new audit workflow passes full actionlint. Existing CI retains pre-existing shellcheck warnings |
+| Browser suite | Full production run: 61 passed, one Focused test failed on a strict locator during its slide transition. After adding the transition wait, the targeted Focused/language/upload run passes 4/4 against the same build |
+| Dependency audits | Composer exits 0 in both scopes; npm exits 1 in both scopes for the documented residual alerts |
+
+Docker became unresponsive after the PHP image checks. The local API/browser environment and the second PHP test run therefore used a dedicated native PostgreSQL 15.17 cluster instead of sharing or restarting another project's database. Browser QA uses the production Node build and PHP 8.4.19; the independent container suite exercises the same lock under PHP 8.3.36. PHP 8.4.19 was a local test runtime, not a production patch recommendation.
+
+Tests use a separate compiled-view directory when the API is running concurrently. Existing PHPUnit doc-comment metadata and application mbstring deprecations remain; two existing tests remain skipped. The production build reports existing CSS/Notion renderer warnings, and no Sentry source maps were uploaded because no upload token was supplied.
+
+Evidence is local validation, not production acceptance or a successful remote CI run. MySQL was not run locally; its CI matrix remains configured. A full client Docker image, deployed layers, external OAuth providers, payment providers, real S3 signed uploads and externally delivered integrations require their own environment validation. No merge or deployment was performed.

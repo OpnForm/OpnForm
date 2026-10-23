@@ -1,0 +1,78 @@
+name: Dependency security
+
+on:
+  pull_request:
+    paths: ["api/composer.*", "client/package*.json", "scripts/check-security-versions.mjs", ".github/workflows/dependency-security.yml"]
+  push:
+    branches: [main]
+    paths: ["api/composer.*", "client/package*.json", "scripts/check-security-versions.mjs", ".github/workflows/dependency-security.yml"]
+  schedule:
+    - cron: "17 7 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  composer-audit:
+    name: Composer audit (${{ matrix.scope }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        scope: [all, production]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          tools: composer:v2
+          coverage: none
+      - name: Validate manifest and lock
+        working-directory: api
+        run: composer validate --no-check-publish
+      - name: Audit locked dependencies
+        working-directory: api
+        env:
+          AUDIT_SCOPE: ${{ matrix.scope }}
+        run: |
+          if [ "$AUDIT_SCOPE" = production ]; then
+            composer --no-plugins --no-scripts audit --locked --no-dev --format=json > composer-audit.json
+          else
+            composer --no-plugins --no-scripts audit --locked --format=json > composer-audit.json
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: composer-audit-${{ matrix.scope }}
+          path: api/composer-audit.json
+
+  npm-audit:
+    name: npm audit (${{ matrix.scope }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        scope: [all, production]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: client/.nvmrc
+      - name: Check independently verified security versions
+        run: node scripts/check-security-versions.mjs
+      - name: Audit locked dependencies
+        working-directory: client
+        env:
+          AUDIT_SCOPE: ${{ matrix.scope }}
+        run: |
+          if [ "$AUDIT_SCOPE" = production ]; then
+            npm audit --package-lock-only --ignore-scripts --omit=dev --json > npm-audit.json
+          else
+            npm audit --package-lock-only --ignore-scripts --json > npm-audit.json
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: npm-audit-${{ matrix.scope }}
+          path: client/npm-audit.json

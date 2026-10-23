@@ -62,7 +62,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: 8.3
-          extensions: dom, curl, mbstring, pdo, sqlite, pdo_sqlite
+          extensions: dom, curl, mbstring, pdo, sqlite, pdo_sqlite, pdo_pgsql, pdo_mysql, bcmath, gd, zip, pcntl, intl
           tools: composer:v2
           coverage: none
 
@@ -72,7 +72,11 @@ jobs:
 
       - name: Install composer dependencies
         working-directory: ./api
-        run: composer install --prefer-dist --no-interaction --no-progress --no-scripts --ignore-platform-reqs --optimize-autoloader
+        run: composer install --prefer-dist --no-interaction --no-progress --no-scripts --optimize-autoloader
+
+      - name: Validate Composer platform
+        working-directory: ./api
+        run: composer check-platform-reqs
 
       - name: Run PHP lint check
         working-directory: ./api
@@ -92,7 +96,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "22.17.0"
+          node-version: "24.22.1"
           cache: npm
           cache-dependency-path: client/package-lock.json
 
@@ -112,6 +116,15 @@ jobs:
       - name: Test SSR configuration cache
         run: npm run test:ssr-cache
 
+      - name: Test public form bundle checker
+        run: node --test scripts/check-public-form-bundle.test.mjs
+
+      - name: Test worktree runtime selection
+        working-directory: .
+        run: |
+          sh scripts/tests/codex-worktree-runtime-test.sh
+          sh scripts/tests/codex-worktree-client-lifecycle-test.sh
+
       - name: Run front-end tests
         run: npm run test -- --run
 
@@ -122,6 +135,14 @@ jobs:
         run: npm run build:e2e
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+
+      - name: Check public form bundle
+        run: npm run check:public-form-bundle
+
+      - name: Preserve client manifest for browser chunk tests
+        run: |
+          mkdir -p .output/qa
+          cp .nuxt/dist/server/client.manifest.mjs .output/qa/client.manifest.mjs
 
       - name: Test built SSR configuration cache
         run: npm run test:ssr-cache:built
@@ -270,7 +291,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
-          extensions: dom, curl, mbstring, pdo, sqlite, pdo_sqlite
+          extensions: dom, curl, mbstring, pdo, sqlite, pdo_sqlite, pdo_pgsql, pdo_mysql, bcmath, gd, zip, pcntl, intl
           tools: composer:v2
           coverage: none
 
@@ -279,7 +300,7 @@ jobs:
 
       - name: Install composer dependencies
         working-directory: ./api
-        run: composer install --prefer-dist --no-interaction --no-progress --ignore-platform-reqs --optimize-autoloader
+        run: composer install --prefer-dist --no-interaction --no-progress --optimize-autoloader
 
       - name: Directory permissions
         working-directory: ./api
@@ -330,20 +351,20 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: 8.2
+          php-version: 8.3
           extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, pdo_pgsql, pdo_sqlite, bcmath, soap, intl, gd, exif, iconv, imagick, fileinfo
           coverage: none
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "22.17.0"
+          node-version: "24.22.1"
           cache: npm
           cache-dependency-path: client/package-lock.json
 
       - name: Install composer dependencies
         working-directory: ./api
-        run: composer install --prefer-dist --no-interaction --no-progress --ignore-platform-reqs --optimize-autoloader
+        run: composer install --prefer-dist --no-interaction --no-progress --optimize-autoloader
 
       - name: Install npm dependencies
         working-directory: ./client
@@ -504,7 +525,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: 8.3
-          extensions: dom, curl, mbstring, pdo, sqlite, pdo_sqlite
+          extensions: dom, curl, mbstring, pdo, sqlite, pdo_sqlite, pdo_pgsql, pdo_mysql, bcmath, gd, zip, pcntl, intl
           tools: composer:v2
           coverage: none
 
@@ -514,7 +535,7 @@ jobs:
 
       - name: Install composer dependencies
         working-directory: ./api
-        run: composer install --prefer-dist --no-dev --no-interaction --no-progress --ignore-platform-reqs --optimize-autoloader
+        run: composer install --prefer-dist --no-dev --no-interaction --no-progress --optimize-autoloader
 
       - name: Directory permissions
         working-directory: ./api

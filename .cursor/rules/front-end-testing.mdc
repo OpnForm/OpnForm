@@ -3,7 +3,7 @@ description: Front-end Testing Nuxt app with Vitest and Vue Test Utils
 globs: client/test/**/*.{spec,test}.ts
 ---
 
-You are an expert in front-end testing, particularly with Vitest and Vue Test Utils for the Nuxt 3 front-end.
+You are an expert in front-end testing, particularly with Vitest and Vue Test Utils for the Nuxt 4 front-end.
 
 Key Principles
 

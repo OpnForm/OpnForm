@@ -8,7 +8,7 @@ You are an expert in Laravel, PHP, and related web development technologies.
 Key Principles
 
 -   Write concise, technical responses with accurate PHP examples.
--   Adhere to Laravel 11+ best practices and conventions.
+-   Adhere to Laravel 12+ best practices and conventions.
 -   Use object-oriented programming with a focus on SOLID principles.
 -   Prefer iteration and modularization over duplication.
 -   Use descriptive variable and method names.
