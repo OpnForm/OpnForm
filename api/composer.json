@@ -17,7 +17,7 @@
         "aws/aws-php-sns-message-validator": "^1.10",
         "aws/aws-sdk-php": "*",
         "doctrine/dbal": "*",
-        "enshrined/svg-sanitize": "^0.22",
+        "enshrined/svg-sanitize": "^1.1.1",
         "fakerphp/faker": "^1.23",
         "giggsey/libphonenumber-for-php": "*",
         "google/apiclient": "^2.16",
@@ -25,9 +25,9 @@
         "jolicode/slack-php-api": "^4.8",
         "laragear/two-factor": "^3.0",
         "laravel/cashier": "*",
-        "laravel/framework": "^11.9",
+        "laravel/framework": "^12.70.1",
         "laravel/horizon": "*",
-        "laravel/mcp": "^0.8.2",
+        "laravel/mcp": "^1.1.1",
         "laravel/passport": "^12.4",
         "laravel/sanctum": "^4.0",
         "laravel/socialite": "*",
@@ -36,7 +36,7 @@
         "laravel/vapor-cli": "*",
         "laravel/vapor-core": "*",
         "league/flysystem-aws-s3-v3": "*",
-        "maatwebsite/excel": "^3.1",
+        "maatwebsite/excel": "^3.1.70",
         "mpociot/versionable": "^4.4",
         "openai-php/client": "*",
         "propaganistas/laravel-disposable-email": "*",
@@ -60,8 +60,8 @@
         "laravel/sail": "^1.26",
         "mockery/mockery": "^1.6",
         "nunomaduro/collision": "*",
-        "pestphp/pest": "^2.0",
-        "pestphp/pest-plugin-laravel": "^2.4",
+        "pestphp/pest": "^3.0",
+        "pestphp/pest-plugin-laravel": "^3.0",
         "spatie/laravel-ignition": "*"
     },
     "config": {
@@ -69,6 +69,7 @@
         "preferred-install": "dist",
         "sort-packages": true,
         "platform": {
+          "php": "8.3.36",
           "ext-pcntl": "8.0",
           "ext-posix": "8.0"
         },

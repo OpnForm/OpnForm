@@ -1,5 +1,5 @@
 # Build stage - using PHP CLI image with extensions
-FROM php:8.3-cli AS builder
+FROM php:8.3.36-cli AS builder
 
 # Install composer and extensions needed for dependency installation
 RUN apt-get update && apt-get install -y \
@@ -11,6 +11,7 @@ RUN apt-get update && apt-get install -y \
     bcmath \
     gd \
     zip \
+    pcntl \
     && curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
 WORKDIR /app
@@ -19,13 +20,10 @@ WORKDIR /app
 COPY api/ .
 
 # Install dependencies including dev dependencies
-RUN composer install --optimize-autoloader --no-interaction \
-    --ignore-platform-req=php \
-    --ignore-platform-req=ext-bcmath \
-    --ignore-platform-req=ext-gd
+RUN composer install --optimize-autoloader --no-interaction
 
 # Final stage - smaller runtime image
-FROM php:8.3-fpm-alpine
+FROM php:8.3.36-fpm-alpine
 
 # Accept version build argument
 ARG APP_VERSION=unknown
@@ -59,6 +57,7 @@ RUN apk add --no-cache --virtual .build-deps \
     pgsql \
     pdo_pgsql \
     bcmath \
+    pcntl \
     && pecl install redis \
     && docker-php-ext-enable redis \
     && apk del .build-deps
