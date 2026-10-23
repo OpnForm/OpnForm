@@ -6,10 +6,16 @@ on:
     tags:
       - "v*"
     paths:
+      - "amplify.yml"
       - "api/**"
       - "client/**"
       - "docker/**"
       - "docker-compose*.yml"
+      - "scripts/*security*.mjs"
+      - "scripts/audit-npm.mjs"
+      - "scripts/check-ci-readiness.mjs"
+      - "docs/security/npm-exceptions.json"
+      - "scripts/tests/dependency-security.test.mjs"
       - "scripts/docker-setup.sh"
       - "scripts/e2e-*.sh"
       - "scripts/setup-env.sh"
@@ -17,17 +23,6 @@ on:
       - "scripts/tests/mcp-draft-preview.test.mjs"
       - ".github/workflows/**"
   pull_request:
-    paths:
-      - "api/**"
-      - "client/**"
-      - "docker/**"
-      - "docker-compose*.yml"
-      - "scripts/docker-setup.sh"
-      - "scripts/e2e-*.sh"
-      - "scripts/setup-env.sh"
-      - "scripts/tests/setup-env-test.sh"
-      - "scripts/tests/mcp-draft-preview.test.mjs"
-      - ".github/workflows/**"
   workflow_dispatch:
 
 concurrency:
@@ -49,7 +44,7 @@ jobs:
       - name: Get Composer cache directory
         id: composer-cache
         run: |
-          echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+          echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
 
       - uses: actions/cache@v4
         with:
@@ -103,6 +98,10 @@ jobs:
       - name: Install npm dependencies
         run: npm ci --no-audit --no-progress --silent
 
+      - name: Test security audit policy and release gate
+        working-directory: .
+        run: node --test scripts/tests/dependency-security.test.mjs
+
       - name: Test MCP draft preview version pinning
         working-directory: .
         run: node --test scripts/tests/mcp-draft-preview.test.mjs
@@ -117,7 +116,7 @@ jobs:
         run: npm run test:ssr-cache
 
       - name: Test public form bundle checker
-        run: node --test scripts/check-public-form-bundle.test.mjs
+        run: node --test scripts/check-public-form-bundle.test.mjs scripts/check-built-css.test.mjs
 
       - name: Test worktree runtime selection
         working-directory: .
@@ -137,7 +136,7 @@ jobs:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
 
       - name: Check public form bundle
-        run: npm run check:public-form-bundle
+        run: npm run check:public-form-bundle && npm run check:built-css
 
       - name: Preserve client manifest for browser chunk tests
         run: |
@@ -278,7 +277,7 @@ jobs:
       - name: Get Composer cache directory
         id: composer-cache
         run: |
-          echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+          echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
 
       - uses: actions/cache@v4
         with:
@@ -324,20 +323,6 @@ jobs:
           name: log-results-${{ matrix.connection }}
           path: api/storage/logs/laravel.log
           retention-days: 3
-
-  required-tests-pgsql:
-    needs: tests
-    runs-on: ubuntu-latest
-    name: Run Feature & Unit tests (PHP 8.2 - pgsql)
-    steps:
-      - run: echo "PHP 8.3 pgsql tests passed in the tests matrix."
-
-  required-tests-mysql:
-    needs: tests
-    runs-on: ubuntu-latest
-    name: Run Feature & Unit tests (PHP 8.2 - mysql)
-    steps:
-      - run: echo "PHP 8.3 mysql tests passed in the tests matrix."
 
   e2e:
     runs-on: ubuntu-latest
@@ -435,7 +420,7 @@ jobs:
             node --require ./scripts/e2e-runtime-guard.cjs .output/server/index.mjs > ../.e2e-ui.log 2>&1 &
           echo $! > ../.e2e-ui.pid
 
-          for attempt in $(seq 1 90); do
+          for _attempt in $(seq 1 90); do
             login_html="$(curl -fsS http://127.0.0.1:3100/login || true)"
             register_html="$(curl -fsS http://127.0.0.1:3100/register || true)"
 
@@ -499,8 +484,28 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
+  dependency-security:
+    uses: ./.github/workflows/dependency-security.yml
+    permissions:
+      contents: read
+
+  release-readiness:
+    name: Release readiness
+    if: always()
+    needs: [code_lint, client_checks, sync_check, tests, e2e, dependency-security]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: client/.nvmrc
+      - name: Require every security and QA job
+        run: node scripts/check-ci-readiness.mjs
+        env:
+          NEEDS_JSON: ${{ toJSON(needs) }}
+
   production-deploy:
-    needs: [code_lint, client_checks, sync_check, tests, e2e]
+    needs: [release-readiness]
     if: success() && github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     name: Triggers Deployment (Vapor & Amplify)
@@ -512,7 +517,7 @@ jobs:
       - name: Get Composer cache directory
         id: composer-cache
         run: |
-          echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+          echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
 
       - uses: actions/cache@v4
         with:
@@ -559,7 +564,7 @@ jobs:
 
   publish-docker-images:
     name: Push Docker images to Docker Hub
-    needs: [code_lint, client_checks, sync_check, tests, e2e]
+    needs: [release-readiness]
     if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') }}
     runs-on: ubuntu-latest
     permissions:
@@ -569,9 +574,11 @@ jobs:
       - name: Get version info
         run: |
           if [[ $GITHUB_REF == refs/tags/* ]]; then
-            echo "VERSION=${GITHUB_REF#refs/*/v}" >> $GITHUB_ENV
-            echo "API_TAGS=${{secrets.DOCKER_API_REPO}}:latest,${{secrets.DOCKER_API_REPO}}:${GITHUB_REF#refs/*/v}" >> $GITHUB_ENV
-            echo "UI_TAGS=${{secrets.DOCKER_UI_REPO}}:latest,${{secrets.DOCKER_UI_REPO}}:${GITHUB_REF#refs/*/v}" >> $GITHUB_ENV
+            {
+              echo "VERSION=${GITHUB_REF#refs/*/v}"
+              echo "API_TAGS=${{secrets.DOCKER_API_REPO}}:latest,${{secrets.DOCKER_API_REPO}}:${GITHUB_REF#refs/*/v}"
+              echo "UI_TAGS=${{secrets.DOCKER_UI_REPO}}:latest,${{secrets.DOCKER_UI_REPO}}:${GITHUB_REF#refs/*/v}"
+            } >> "$GITHUB_ENV"
           fi
 
       - name: Check out the repo

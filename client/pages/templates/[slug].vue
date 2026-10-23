@@ -388,7 +388,7 @@ useOpnSeoMeta(
 </script>
 
 <style>
-@reference '~/css/app.css';
+@reference '../../css/app.css';
 
 .nf-text {
   @apply space-y-4;

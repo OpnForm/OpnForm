@@ -37,3 +37,7 @@ client/yarn-error.log*
 **/.git/
 **/.idea/
 **/.vscode/
+
+# Worktree QA runtimes and browser artifacts
+.e2e/
+.playwright/

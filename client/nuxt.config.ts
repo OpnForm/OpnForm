@@ -18,6 +18,8 @@ export default defineNuxtConfig({
   buildDir: buildDir || '.nuxt',
   ...(viteCacheDir ? {vite: {cacheDir: viteCacheDir}} : {}),
   css: ['~/css/app.css'],
+  // Process component styles as well as Nuxt UI's global Tailwind entry.
+  postcss: { plugins: { '@tailwindcss/postcss': {} } },
 
   hooks: {
       'build:manifest': (manifest) => {

@@ -3,12 +3,12 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "npm run build:sdk && NODE_OPTIONS='--max-old-space-size=8192' nuxt build && npm run check:public-form-bundle",
-    "build:e2e": "npm run build:sdk && E2E=1 NODE_OPTIONS='--max-old-space-size=8192' nuxt build",
+    "build": "npm run build:sdk && NODE_OPTIONS=\"${NODE_OPTIONS:---max-old-space-size=8192}\" nuxt build && npm run check:public-form-bundle && npm run check:built-css",
+    "build:e2e": "npm run build:sdk && E2E=1 NODE_OPTIONS=\"${NODE_OPTIONS:---max-old-space-size=8192}\" nuxt build",
     "build:sdk": "esbuild public/widgets/opnform-sdk.js --minify --legal-comments=inline --banner:js='/* eslint-disable */' --outfile=public/widgets/opnform-sdk.min.js",
-    "dev": "export NODE_TLS_REJECT_UNAUTHORIZED=0; node --import ./scripts/node-localstorage-polyfill.mjs ./node_modules/nuxt/bin/nuxt.mjs dev",
-    "docker-dev": "export NODE_TLS_REJECT_UNAUTHORIZED=0; node --import ./scripts/node-localstorage-polyfill.mjs ./node_modules/nuxt/bin/nuxt.mjs dev --host 0.0.0.0",
-    "generate": "npm run build:sdk && NODE_TLS_REJECT_UNAUTHORIZED=0 nuxt generate",
+    "dev": "node --import ./scripts/node-localstorage-polyfill.mjs ./node_modules/nuxt/bin/nuxt.mjs dev",
+    "docker-dev": "node --import ./scripts/node-localstorage-polyfill.mjs ./node_modules/nuxt/bin/nuxt.mjs dev --host 0.0.0.0",
+    "generate": "npm run build:sdk && nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
     "test:ssr-cache:built": "node --test tests/ssr-config-cache-built.test.mjs",
@@ -21,7 +21,8 @@
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:dev": "PLAYWRIGHT_BASE_URL=${PLAYWRIGHT_BASE_URL:-http://127.0.0.1:3100} playwright test",
-    "check:public-form-bundle": "node scripts/check-public-form-bundle.mjs"
+    "check:public-form-bundle": "node scripts/check-public-form-bundle.mjs",
+    "check:built-css": "node scripts/check-built-css.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
@@ -57,7 +58,8 @@
     "vitest": "^5.0.5",
     "vue": "^3.5.44",
     "vue-eslint-parser": "^10.4.1",
-    "vue-router": "^5.4.0"
+    "vue-router": "^5.4.0",
+    "yaml": "^2.9.1"
   },
   "dependencies": {
     "@amplitude/analytics-browser": "^2.48.1",
@@ -88,6 +90,7 @@
     "crisp-sdk-web": "^1.0.25",
     "date-fns": "^2.30.0",
     "debounce": "^1.2.1",
+    "dompurify": "^3.4.17",
     "embedkit": "^0.1.7",
     "esbuild": "^0.28.2",
     "fuse.js": "^7.0.0",
@@ -120,5 +123,13 @@
   ],
   "engines": {
     "node": "^22.22.3 || ^24.15.0 || >=26.0.0"
+  },
+  "overrides": {
+    "fontless@0.2.1": {
+      "esbuild": "0.28.2"
+    },
+    "@janniks/vue3-katex": {
+      "katex": "0.18.2"
+    }
   }
 }

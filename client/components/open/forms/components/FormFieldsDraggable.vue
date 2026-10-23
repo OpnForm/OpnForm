@@ -70,6 +70,8 @@ function getFieldWidthClasses(width) {
 </script>
 
 <style lang="scss" scoped>
+@reference '../../../../css/app.css';
+
 .ghost-item {
   @apply bg-blue-100 dark:bg-blue-900 rounded-md;
 }
