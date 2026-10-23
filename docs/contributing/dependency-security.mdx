@@ -20,6 +20,9 @@ This branch starts at `769496b684ff8da2892b1a8d457ff9208ae87932`. The changes ar
 | Happy DOM | 12.10.3 | 21.0.4 |
 | Node CI / Docker | 22.17.0 / floating 24 | 24.22.1 |
 | PHP Docker | floating 8.3 | 8.3.36 |
+| fontless esbuild | 0.27.7 | 0.28.2 (targeted override) |
+| Notion renderer KaTeX | 0.16.47 | 0.18.2 (targeted override) |
+| Quill export sanitizer | absent | DOMPurify 3.4.17 |
 
 The Composer changes and direct npm package changes are recorded in [versions.json](../security/dependencies-2026-10-23/versions.json). Composer resolution targets PHP 8.3.36 so resolving with a newer local PHP cannot silently select PHP 8.4/8.5-only packages. `composer check-platform-reqs` still verifies the actual runtime and extensions. CI and Docker installations no longer ignore platform requirements. The locked `lcobucci/clock` library, used by JWT, rejects PHP 8.5; the worktree selector skips that runtime instead of bypassing Composer's platform check.
 
@@ -47,7 +50,7 @@ composer --no-plugins --no-scripts audit --locked --no-dev --format=json
 vendor/bin/pint --test
 vendor/bin/phpstan analyse --memory-limit=2G --no-progress
 mkdir -p storage/framework/views-security-tests
-VIEW_COMPILED_PATH="$PWD/storage/framework/views-security-tests" php -d memory_limit=1G vendor/bin/pest
+VIEW_COMPILED_PATH="$PWD/storage/framework/views-security-tests" DB_CONNECTION=sqlite DB_DATABASE=:memory: php -d memory_limit=1G vendor/bin/pest
 
 # client/
 npm audit --package-lock-only --ignore-scripts --json
@@ -56,7 +59,9 @@ npm run lint
 npm run test -- --run
 npm run test:email-events
 npm run test:ssr-cache
+node --test scripts/check-built-css.test.mjs scripts/check-public-form-bundle.test.mjs
 npm run build
+npm run build:amplify
 npm run test:ssr-cache:built
 npm run test:e2e
 ```
@@ -67,41 +72,64 @@ For browser tests, the CI artifact includes the raw Nuxt client manifest at `.ou
 
 The upload smoke test caught an existing first-upload edge case with a null initial value: FileInput tried to fetch its own temporary storage key as a URL and replaced the local file. The watcher now preserves a file it already holds; a unit regression test first reproduced the failure.
 
-## Remaining alerts
+## Available fixes closed after independent review
 
-Raw scanner results are committed in `docs/security/dependencies-2026-10-23/`. Composer reports no advisories with or without development packages, down from 69 advisories across 21 packages in the initial scan. npm still reports **19 affected packages (14 high, 5 low)** in the full tree and **16 (11 high, 5 low)** with `--omit=dev`. The initial full npm scan reported 114 affected packages (9 critical, 57 high, 38 moderate and 10 low). There are now no critical or moderate npm alerts. These counts include parent packages inheriting the same leaf advisory.
+The follow-up code is committed as `9a06a5d86f0baaf24391fd19dfe9f71ff7e2ccad`.
 
-| Leaf dependency | Reason retained and exposure boundary |
+- Component styles now pass through the explicit Tailwind PostCSS plugin. Components reference the application stylesheet using filesystem-relative paths; the two legacy `@screen md` rules become native media queries. A build guard rejects residual `@apply`, `@screen` or `@reference` directives, including in CI and Docker builds. The previous 16 residual directives across seven emitted files are gone from the 38-asset native production build.
+- `fontless@0.2.1` uses a targeted esbuild 0.28.2 override. The i18n compiler retains its compatible esbuild 0.25.12: it is outside [GHSA-g7r4-m6w7-qqqr's affected interval](https://github.com/advisories/GHSA-g7r4-m6w7-qqqr), which starts at 0.27.3. Version checks reject the affected interval across every installed copy.
+- The Notion Vue KaTeX wrapper uses KaTeX 0.18.2 through a targeted override. Tests exercise real inline/display rendering, rejected untrusted links/HTML extensions and inherited prototype trust, covering [GHSA-238p-pmpm-9mq7](https://github.com/advisories/GHSA-238p-pmpm-9mq7).
+- Quill semantic HTML is sanitized before reaching `modelValue`. Real Quill tests enable the formula/video exporters to exercise hostile HTML, then check mention metadata, formatting and escaped literal HTML. Default application formats exclude formula/video; this is defense in depth, not evidence that the default configuration was exploitable. Visual QA also saves a mention and literal HTML through the real editor/API.
+- `dev`, `docker-dev` and `generate` no longer disable TLS verification. For a private local CA, use [Node's `NODE_EXTRA_CA_CERTS`](https://nodejs.org/api/cli.html#node_extra_ca_certsfile) instead.
+- Docker build memory is bounded by `NODE_BUILD_HEAP_MB` (3072 by default). The npm scripts honor inherited `NODE_OPTIONS` rather than overriding the builder with an 8/10 GiB heap.
+
+## Remaining alerts and dated policy
+
+Raw scanner results remain committed in `docs/security/dependencies-2026-10-23/`, including the first-pass npm results. Composer initially reported 69 advisories across 21 packages; the previous complete scan reports zero in both scopes. npm moves from **114 affected packages initially**, to **19 after the first pass**, to **15 (14 high, 1 low)** in the full follow-up tree and **12 (11 high, 1 low)** with `--omit=dev`. There are no critical or moderate npm alerts. Parent packages inherit the same three leaf advisories; these counts are not independent exploits or a deployed-bundle inventory.
+
+| Leaf dependency | Exposure boundary and mitigation |
 | --- | --- |
-| `braces` 3.0.3 | [GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm) has no patched release. It arrives through Nitro's glob tooling. Exploitation requires attacker-controlled brace patterns; no application path forwarding public request input into this tooling was found. |
-| `node-forge` 1.4.0 | [GHSA-86w9-cpqp-85rv](https://github.com/advisories/GHSA-86w9-cpqp-85rv) has no patched release. The path is Nitro → listhen → certificate tooling. The local QA service uses HTTP; no application RSA verification using this library was found. Production infrastructure was not inspected. |
-| `esbuild` 0.27.7 | [GHSA-g7r4-m6w7-qqqr](https://github.com/advisories/GHSA-g7r4-m6w7-qqqr) remains under Nuxt Fonts → fontless. The application's direct esbuild is 0.28.2. The advisory concerns a Windows development server; QA ran on macOS/Linux. No incompatible forced override is installed. |
-| `katex` 0.16.47 | [GHSA-238p-pmpm-9mq7](https://github.com/advisories/GHSA-238p-pmpm-9mq7) requires existing prototype pollution to bypass trust restrictions. It is constrained by the Notion renderer's Vue KaTeX wrapper. Notion rendering is preserved; its upstream dependency still needs migration. |
-| `quill` 2.0.3 | [GHSA-v3m3-f69x-jf25](https://github.com/advisories/GHSA-v3m3-f69x-jf25) has no patched release. OpnForm uses HTML export in QuillyEditor. Server form content/help and formatted rich text pass through Purify, but this does not establish that every client-side rendering path is safe. This low-severity alert remains open. |
+| `braces` 3.0.3 | [GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm): no patched upstream release at review. Nitro glob tooling; no application route forwarding untrusted brace patterns was found. |
+| `node-forge` 1.4.0 | [GHSA-86w9-cpqp-85rv](https://github.com/advisories/GHSA-86w9-cpqp-85rv): no patched upstream release at review. Transitive listhen certificate tooling; no application RSA-verification path was found. Production infrastructure was not inspected. |
+| `quill` 2.0.3 | [GHSA-v3m3-f69x-jf25](https://github.com/advisories/GHSA-v3m3-f69x-jf25): no patched upstream release at review. Default formats exclude the affected formula/video formats; DOMPurify additionally protects the semantic-HTML export boundary. The scanner alert remains open. |
 
-`npm audit` intentionally exits 1 for these alerts. The new dependency-security workflow runs both scopes for Composer and npm on dependency changes and weekly, uploads the reports and fails on remaining advisories. It contains no advisory ignore list or success override. A green local build does not make the security audit green.
+`npm audit` still exits **1**. The policy gate is a separate decision and never relabels that scan as zero vulnerabilities. `docs/security/npm-exceptions.json` records the exact advisory URLs, leaf versions/paths, affected package names, reviewed upstream latest versions and exposure reasons. Exceptions expire on **6 November 2026 (UTC)**.
+
+The gate rejects new advisories, affected packages or paths, different vulnerable versions or severities, expired exceptions, a changed upstream latest release and registry/parse failures. npm's valid Nuxt/Nitro and site-config dependency cycles are resolved to a fixed point of reviewed advisory roots; cycles without such roots fail. Tests cover the actual scanner graph and CLI behavior. `fixAvailable` alone is not proof of an upstream patch: npm can suggest a downgrade (including Quill 2.0.2 or Nuxt 4.1.3). The separate latest-release checks force review when an upstream version changes.
+
+CI always uploads the unfiltered JSON. Accepted residual findings produce a visible warning and remain in the policy result. No `npm audit fix --force`, broad severity suppression or platform-ignore flag is used.
+
+## Required CI and delivery paths
+
+`CI/CD Pipeline` calls the reusable dependency-security workflow. **`Release readiness`** aggregates `code_lint`, `client_checks`, `sync_check`, the SQLite PHP suite, the real PostgreSQL/MySQL compatibility matrix, `e2e`, `linux_client_image` and `dependency-security`. It fails for a failed, skipped, cancelled or missing prerequisite, and is the dependency of both the Vapor/Amplify deployment job and Docker publication. Pull requests have no path filter, so a docs-only PR also receives this stable check. Tests cover this case and the dependency graph. Both workflows pass full actionlint, including shellcheck.
+
+Amplify's own pre-build phase also runs the version checks and audit policy in both scopes, including builds started outside the GitHub webhook path. `build:amplify` selects the actual `aws-amplify` preset and explicitly configures `nitro.awsAmplify.runtime = 'nodejs24.x'`; Nitro 2.13.5 otherwise emits `nodejs20.x` even when the build uses Node 24. The build checks the resulting deployment manifest, entrypoint and 220 MB uncompressed compute limit. CI builds this target separately and retains the manifest. The native follow-up artifact has a 51,983,761-byte compute bundle and its real `server.js` entrypoint serves the login SSR page locally.
+
+**Remote setting still required before merge:** the independent GitHub protection read at `2026-10-23T12:43:55Z` lists only the legacy `Run Feature & Unit tests (PHP 8.2 - mysql)` and `Run Feature & Unit tests (PHP 8.2 - pgsql)` checks, with strict mode enabled. Replace these required contexts with exactly **`Release readiness`** after its first remote run, retaining strict/up-to-date checking and the existing review requirements. The misleading PHP 8.2 alias jobs are removed. Remote protection settings remain unchanged. The branch is being published as a draft PR to obtain dedicated Linux CI evidence; local workflow validation is not a successful remote CI run.
 
 ## Validation results and limits
 
-| Check | Local result |
+**Database evidence correction:** the first pass incorrectly labeled one 2,340-test run as PostgreSQL. `phpunit.xml` forces SQLite, and the application intentionally forbids another driver in `APP_ENV=testing`. That result proves SQLite only. The general CI suite is now honestly named SQLite and asserts the actual PDO driver. The safety guard is unchanged. Separate disposable `opnform_compat_pgsql` / `opnform_compat_mysql` checks assert `PDO::ATTR_DRIVER_NAME`, server version and the server-selected database before migrations. They reject existing databases, unsafe environment/configuration overrides and errors with a nonzero exit. They cover all migrations, model CRUD/JSON, row locks, commit/rollback, unique/foreign-key constraints, JWT HTTP auth, public submissions/history, MCP account authorization, tool-level OAuth challenge, JWT rejection on MCP and dynamic Passport client registration.
+
+The previous 61/62 browser result plus 4/4 targeted rerun was insufficient. A subsequent complete 60/62 attempt exposed missing Business entitlements in the isolated seed. The E2E workspace now explicitly has the required Business tier; no application feature gate is bypassed. After that correction the complete browser suite passes **62/62** on the final production client and PHP 8.3.36 API.
+
+Current local follow-up evidence (application sources and deployment configuration from the code commit above; CI results are reported separately):
+
+| Check | Follow-up result |
 | --- | --- |
-| PHP 8.3.36 CLI image, SQLite | 2,340 passed; 2 skipped; 2 deprecated; 19,142 assertions |
-| PHP 8.4.19, isolated PostgreSQL 15.17 | 2,340 passed; 2 skipped; 2 deprecated; 19,142 assertions |
-| API Docker builder and final PHP-FPM image | Both built; install without platform ignores, final runtime platform requirements and Laravel autoload passed |
-| Pint / PHPStan | 991 files pass formatting; no static-analysis errors |
-| Node 24.22.1 clean install | `npm ci` and `npm ls --all` pass without forced peer resolution |
-| Unit/component tests | 1,024 passed across 85 files |
-| Production client build | Passes; classic 412.7 KiB and Focused 374.6 KiB gzip, within the unchanged 420 KiB limit |
-| Node bundle/email/SSR-cache regression tests | 23 passed; built SSR-cache smoke also passed |
-| Desktop/mobile visual smoke | Classic and Focused rendering inspected at 1280px and 390px; no horizontal overflow or hydration errors |
-| Worktree scripts | PHP/Node version boundaries and dependency-install lifecycle pass |
-| HTTP MCP OAuth smoke | JWT login, hostile redirect rejection, registration, browser session bridge, protected consent, S256 code exchange, authenticated tool, refresh and revocation pass |
-| Workflows | Both pass actionlint schema validation; the new audit workflow passes full actionlint. Existing CI retains pre-existing shellcheck warnings |
-| Browser suite | Full production run: 61 passed, one Focused test failed on a strict locator during its slide transition. After adding the transition wait, the targeted Focused/language/upload run passes 4/4 against the same build |
-| Dependency audits | Composer exits 0 in both scopes; npm exits 1 in both scopes for the documented residual alerts |
+| Node 24.22.1 clean install / dependency tree | `npm ci` and `npm ls --all` pass without forced peer resolution |
+| Unit/component tests | 1,030 passed across 87 files, including real Quill/KaTeX security regressions |
+| Native production build, 3 GiB V8 heap | Passes; classic 412.5 KiB and Focused 374.4 KiB gzip, below the unchanged 420 KiB limit |
+| Built CSS | 38 assets checked; zero uncompiled Tailwind directives |
+| Node audit/release/CSS/bundle/email/cache/MCP guards | 42 passed in total; includes real npm cyclic inheritance, docs-only PRs and invalid Amplify artifacts |
+| Visual QA | Editor, mention styling and persistence, escaped HTML, real field drag reorder, template lists at 1440/390px pass; a stable capture is taken after popover closure |
+| Follow-up raw npm scans | Exit 1 in both scopes; policy separately accepts only the three dated exceptions |
+| Patched PHP general suite | PHP 8.3.36, actual SQLite PDO: 2,341 passed, 2 skipped, 2 deprecations, 19,144 assertions |
+| Real database compatibility | PHP 8.3.36; actual PDO `pgsql` / PostgreSQL 16.14 and `mysql` / MySQL 8.4.13: all dedicated checks pass |
+| Complete browser suite on patched API | 62/62 pass in one final complete run (8 minutes); prior failed/interrupted runs retained |
+| Amplify target | Actual preset build and manifest pass, Node 24 compute, 51,983,761 bytes, real entrypoint login SSR smoke passes locally |
+| Linux frontend image/runtime | Dedicated PR CI job added: build without publishing, inspect Linux/Node version, inspect emitted CSS and exercise auth/public SSR against a real PHP/PostgreSQL API; remote result pending |
 
-Docker became unresponsive after the PHP image checks. The local API/browser environment and the second PHP test run therefore used a dedicated native PostgreSQL 15.17 cluster instead of sharing or restarting another project's database. Browser QA uses the production Node build and PHP 8.4.19; the independent container suite exercises the same lock under PHP 8.3.36. PHP 8.4.19 was a local test runtime, not a production patch recommendation.
+Visual-only native checks used PHP 8.4.19 and are explicitly not patched-runtime evidence. The attempted bind-mounted and isolated PHP runs, MySQL startup and API runtime encountered Docker memory pressure; interrupted logs remain available. Docker was not restarted, shared containers were not pruned, and subsequent builds are coordinated and bounded. The local MySQL check adds `pdo_mysql` from the matching PHP source inside its disposable 768 MiB / one-CPU QA container; no new shared Docker image build is launched. The Linux image result remains pending until the dedicated CI job completes. Docker context also excludes generated Amplify output and local Passport key files.
 
-Tests use a separate compiled-view directory when the API is running concurrently. Existing PHPUnit doc-comment metadata and application mbstring deprecations remain; two existing tests remain skipped. The production build reports existing CSS/Notion renderer warnings, and no Sentry source maps were uploaded because no upload token was supplied.
-
-Evidence is local validation, not production acceptance or a successful remote CI run. MySQL was not run locally; its CI matrix remains configured. A full client Docker image, deployed layers, external OAuth providers, payment providers, real S3 signed uploads and externally delivered integrations require their own environment validation. No merge or deployment was performed.
+Existing PHPUnit metadata/mbstring deprecations and two skipped tests remain visible. No Sentry maps were uploaded without a token. Production, remote CI, deployed layers, external OAuth/payment providers, actual S3 signed uploads and delivered integrations remain separate validation boundaries. Nothing is merged or deployed.

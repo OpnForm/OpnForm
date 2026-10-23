@@ -295,12 +295,12 @@
     },
     {
       "package": "@eslint/js",
-      "before": "9.31.0",
+      "before": null,
       "after": "9.39.5"
     },
     {
       "package": "@gtm-support/vue-gtm",
-      "before": "2.2.0",
+      "before": null,
       "after": "3.2.0"
     },
     {
@@ -409,6 +409,11 @@
       "after": "10.6.1"
     },
     {
+      "package": "dompurify",
+      "before": null,
+      "after": "3.4.17"
+    },
+    {
       "package": "esbuild",
       "before": "0.23.1",
       "after": "0.28.2"
@@ -430,7 +435,7 @@
     },
     {
       "package": "globals",
-      "before": "16.3.0",
+      "before": null,
       "after": "17.13.0"
     },
     {
@@ -480,13 +485,32 @@
     },
     {
       "package": "vue-eslint-parser",
-      "before": "10.2.0",
+      "before": null,
       "after": "10.4.1"
     },
     {
       "package": "vue-router",
       "before": "4.5.1",
       "after": "5.4.0"
+    },
+    {
+      "package": "yaml",
+      "before": null,
+      "after": "2.9.1"
+    }
+  ],
+  "npm_transitive_security": [
+    {
+      "path": "node_modules/@intlify/bundle-utils/node_modules/esbuild",
+      "after": "0.25.12"
+    },
+    {
+      "path": "node_modules/esbuild",
+      "after": "0.28.2"
+    },
+    {
+      "path": "node_modules/katex",
+      "after": "0.18.2"
     }
   ]
 }

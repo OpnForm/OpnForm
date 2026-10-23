@@ -1,26 +1,6 @@
 {
   "auditReportVersion": 2,
   "vulnerabilities": {
-    "@janniks/vue3-katex": {
-      "name": "@janniks/vue3-katex",
-      "severity": "low",
-      "isDirect": false,
-      "via": [
-        "katex"
-      ],
-      "effects": [
-        "vue-notion"
-      ],
-      "range": "*",
-      "nodes": [
-        "node_modules/@janniks/vue3-katex"
-      ],
-      "fixAvailable": {
-        "name": "vue-notion",
-        "version": "1.7.1",
-        "isSemVerMajor": true
-      }
-    },
     "@nuxt/nitro-server": {
       "name": "@nuxt/nitro-server",
       "severity": "high",
@@ -137,35 +117,6 @@
         "isSemVerMajor": true
       }
     },
-    "esbuild": {
-      "name": "esbuild",
-      "severity": "low",
-      "isDirect": false,
-      "via": [
-        {
-          "source": 1120680,
-          "name": "esbuild",
-          "dependency": "esbuild",
-          "title": "esbuild allows arbitrary file read when running the development server on Windows",
-          "url": "https://github.com/advisories/GHSA-g7r4-m6w7-qqqr",
-          "severity": "low",
-          "cwe": [
-            "CWE-22"
-          ],
-          "cvss": {
-            "score": 2.5,
-            "vectorString": "CVSS:3.1/AV:L/AC:H/PR:L/UI:N/S:U/C:N/I:L/A:N"
-          },
-          "range": ">=0.27.3 <0.28.1"
-        }
-      ],
-      "effects": [],
-      "range": "0.27.3 - 0.28.0",
-      "nodes": [
-        "node_modules/fontless/node_modules/esbuild"
-      ],
-      "fixAvailable": true
-    },
     "fast-glob": {
       "name": "fast-glob",
       "severity": "high",
@@ -204,41 +155,6 @@
       "fixAvailable": {
         "name": "nuxt",
         "version": "4.1.3",
-        "isSemVerMajor": true
-      }
-    },
-    "katex": {
-      "name": "katex",
-      "severity": "low",
-      "isDirect": false,
-      "via": [
-        {
-          "source": 1241206,
-          "name": "katex",
-          "dependency": "katex",
-          "title": "KaTeX: Existing prototype pollution can bypass trust restrictions",
-          "url": "https://github.com/advisories/GHSA-238p-pmpm-9mq7",
-          "severity": "low",
-          "cwe": [
-            "CWE-807"
-          ],
-          "cvss": {
-            "score": 0,
-            "vectorString": null
-          },
-          "range": ">=0.11.0 <0.18.2"
-        }
-      ],
-      "effects": [
-        "@janniks/vue3-katex"
-      ],
-      "range": "0.11.0 - 0.18.1",
-      "nodes": [
-        "node_modules/katex"
-      ],
-      "fixAvailable": {
-        "name": "vue-notion",
-        "version": "1.7.1",
         "isSemVerMajor": true
       }
     },
@@ -439,42 +355,24 @@
         "node_modules/quill"
       ],
       "fixAvailable": true
-    },
-    "vue-notion": {
-      "name": "vue-notion",
-      "severity": "low",
-      "isDirect": true,
-      "via": [
-        "@janniks/vue3-katex"
-      ],
-      "effects": [],
-      "range": ">=3.0.0-alpha.0",
-      "nodes": [
-        "node_modules/vue-notion"
-      ],
-      "fixAvailable": {
-        "name": "vue-notion",
-        "version": "1.7.1",
-        "isSemVerMajor": true
-      }
     }
   },
   "metadata": {
     "vulnerabilities": {
       "info": 0,
-      "low": 5,
+      "low": 1,
       "moderate": 0,
       "high": 14,
       "critical": 0,
-      "total": 19
+      "total": 15
     },
     "dependencies": {
       "prod": 952,
       "dev": 219,
-      "optional": 271,
+      "optional": 246,
       "peer": 9,
       "peerOptional": 0,
-      "total": 1385
+      "total": 1360
     }
   }
 }

@@ -1,0 +1,18 @@
+{
+  "rawScannerExit": 1,
+  "policy": "passed",
+  "affectedPackages": 12,
+  "acceptedAdvisories": [
+    "https://github.com/advisories/GHSA-86w9-cpqp-85rv",
+    "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm",
+    "https://github.com/advisories/GHSA-v3m3-f69x-jf25"
+  ],
+  "vulnerabilities": {
+    "info": 0,
+    "low": 1,
+    "moderate": 0,
+    "high": 11,
+    "critical": 0,
+    "total": 12
+  }
+}
