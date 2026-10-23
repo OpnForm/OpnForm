@@ -138,4 +138,8 @@ test('Amplify explicitly emits Node 24 compute and validates the target output',
   const pkg = JSON.parse(readFileSync(new URL('../../client/package.json', import.meta.url)))
   assert.match(pkg.scripts['build:amplify'], /NITRO_PRESET=aws-amplify npm run build/)
   assert.match(pkg.scripts['build:amplify'], /check-amplify-output\.mjs/)
+  const smoke = pipeline.jobs.linux_client_image.steps.find(step => step.name === 'Smoke standalone Amplify compute on Linux Node 24')
+  assert.match(smoke.run, /check-amplify-runtime\.mjs/)
+  assert.match(smoke.run, /runner\.temp/)
+  assert.ok(pipeline.jobs['release-readiness'].needs.includes('linux_client_image'))
 })

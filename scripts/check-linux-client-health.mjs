@@ -27,5 +27,10 @@ const html = await (await read(`${ui}/forms/${form.slug}`)).text()
 assert.match(html, /Product feedback/)
 assert.match(html, /Full name/)
 assert.match(html, /open-complete-form/)
-writeFileSync(process.env.IMAGE_QA_OUTPUT || 'client-image-health.json', JSON.stringify({ testedSha: process.env.GITHUB_SHA || null, headSha: process.env.SOURCE_HEAD_SHA || null, ui, api, login: true, register: true, authenticatedApi: true, publicFormSSR: true }, null, 2)+'\n')
-console.log('Frontend health passed: auth SSR, authenticated API and public form SSR.')
+// Verify local JSON collections and a repository SVG icon on the real runtime.
+for (const [collection, icon] of [['heroicons', 'check'], ['lucide', 'link'], ['opnform', 'fillout']]) {
+  const icons = await (await read(`${ui}/_nuxt_icon/${collection}.json?icons=${icon}`)).json()
+  assert.ok(icons.icons?.[icon]?.body, `Local ${collection}:${icon} icon is served`)
+}
+writeFileSync(process.env.IMAGE_QA_OUTPUT || 'client-image-health.json', JSON.stringify({ testedSha: process.env.GITHUB_SHA || null, headSha: process.env.SOURCE_HEAD_SHA || null, ui, api, login: true, register: true, authenticatedApi: true, publicFormSSR: true, localIcons: true }, null, 2)+'\n')
+console.log('Frontend health passed: auth SSR, authenticated API and public form SSR and local icons.')

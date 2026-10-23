@@ -173,7 +173,7 @@ export default defineNuxtConfig({
       localApiEndpoint: '/_nuxt_icon',
       // Managed E2E worktrees place buildDir outside client/node_modules, so
       // locally-installed JSON collections cannot be resolved at runtime there.
-      serverBundle: (isE2EMode || buildDir) ? 'remote' : 'auto',
+      serverBundle: (isE2EMode || buildDir) ? 'remote' : { externalizeIconsJson: true },
       customCollections: [
           {
               prefix: 'opnform',
