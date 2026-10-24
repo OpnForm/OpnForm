@@ -86,6 +86,10 @@ The API resolves dependencies for PHP 8.3.36; use a patched PHP 8.3 or 8.4 runti
 
 The executable npm audit policy is in [scripts/npm-exceptions.json](scripts/npm-exceptions.json). Dependabot checks Composer, client npm packages, and GitHub Actions weekly, with up to three open version-update PRs per ecosystem. Compatible application updates are grouped; major application dependency updates remain separate except for the coordinated VueUse packages. GitHub Actions updates are grouped together. Security update handling is unchanged.
 
+## Date fields
+
+Clearing a date with a click, Enter, or Space keeps the calendar closed. Reopen it to choose another date.
+
 ## Spreadsheet exports
 
 Spreadsheet exports preserve numeric zero values, account identifiers with leading zeroes, and Unicode. Null and empty fields remain blank.

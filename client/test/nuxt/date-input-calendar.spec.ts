@@ -77,4 +77,13 @@ describe('DateInput with the installed calendar and date formatter', () => {
     expect(wrapper.emitted('update:modelValue')?.at(-1)?.[0]).toBeNull()
     expect(wrapper.find('button').attributes('aria-label')).toBe('Select date')
   })
+
+  it.each(['Enter', ' '])('clears with the %s key without reopening the calendar', async (key) => {
+    const wrapper = createWrapper({ modelValue: '2026-10-25T12:30:00' })
+    await nextTick()
+    await wrapper.find('button[aria-label="Clear date"]').trigger('keydown', { key })
+    await nextTick()
+    expect(wrapper.emitted('update:modelValue')?.at(-1)?.[0]).toBeNull()
+    expect(wrapper.find('button[aria-label="Select date"]').attributes('aria-expanded')).toBe('false')
+  })
 })
