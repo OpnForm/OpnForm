@@ -23,7 +23,7 @@ jobs:
       matrix:
         scope: [all, production]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
@@ -42,7 +42,7 @@ jobs:
           else
             composer --no-plugins --no-scripts audit --locked --format=json > composer-audit.json
           fi
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: composer-audit-${{ matrix.scope }}
@@ -56,8 +56,8 @@ jobs:
       matrix:
         scope: [all, production]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version-file: client/.nvmrc
       - name: Check independently verified security versions
@@ -67,7 +67,7 @@ jobs:
         env:
           AUDIT_SCOPE: ${{ matrix.scope }}
         run: node ../scripts/audit-npm.mjs "$AUDIT_SCOPE" npm-audit.json
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: npm-audit-${{ matrix.scope }}
