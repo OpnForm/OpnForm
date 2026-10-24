@@ -85,7 +85,7 @@
     "clone-deep": "^4.0.1",
     "codemirror": "^6.0.1",
     "crisp-sdk-web": "^1.0.25",
-    "date-fns": "^2.30.0",
+    "date-fns": "^4.4.0",
     "debounce": "^1.2.1",
     "dompurify": "^3.4.17",
     "embedkit": "^0.1.7",
