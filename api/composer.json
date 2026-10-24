@@ -36,7 +36,7 @@
         "laravel/vapor-cli": "*",
         "laravel/vapor-core": "*",
         "league/flysystem-aws-s3-v3": "*",
-        "maatwebsite/excel": "^3.1.70",
+        "maatwebsite/excel": "^4.0.5",
         "mpociot/versionable": "^4.4",
         "openai-php/client": "*",
         "propaganistas/laravel-disposable-email": "*",
