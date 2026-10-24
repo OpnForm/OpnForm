@@ -588,6 +588,52 @@ test("editing an existing form title persists after save", async ({ page, reques
   await expect(page.getByRole("heading", { name: updatedTitle, exact: true })).toBeVisible()
 })
 
+test("editor undo and redo preserve a renamed form through save", async ({ page, request }) => {
+  const form = await apiCreateForm(request, { title: uniqueTitle("History Original") })
+  const updatedTitle = uniqueTitle("History Edited")
+  await loginUi(page)
+  await page.goto(`/forms/${form.slug}/edit`)
+  await expect(page.locator("#form-editor")).toBeVisible()
+  // UndoRedo clears the initial mounted state after 500 ms.
+  await page.waitForTimeout(650)
+  const undo = page.locator("#form-editor button").filter({ has: page.locator('[class*="undo"]') }).first()
+  const redo = page.locator("#form-editor button").filter({ has: page.locator('[class*="redo"]') }).first()
+  await expect(undo).toBeDisabled()
+  await renameEditorTitle(page, updatedTitle)
+  await expect(undo).toBeEnabled()
+  await undo.click()
+  await expect(page.locator("#form-editor-title")).toHaveText(form.title)
+  await expect(redo).toBeEnabled()
+  await redo.click()
+  await expect(page.locator("#form-editor-title")).toHaveText(updatedTitle)
+  await page.getByTestId("save-form-button").click()
+  await expect(page).toHaveURL(new RegExp(`/forms/${form.slug}/show/share$`), { timeout: 30_000 })
+  await expect(page.getByRole("heading", { name: updatedTitle, exact: true })).toBeVisible()
+})
+
+test("calendar selection and clear preserve the submitted day", async ({ page, request }) => {
+  const form = await apiCreateForm(request, {
+    title: uniqueTitle("Calendar Compatibility"),
+    payloadOverrides: { properties: [{ id: "appointment", name: "Appointment", type: "date", required: true, date_format: "yyyy-MM-dd" }] },
+  })
+  await openPublicForm(page, form.slug)
+  await page.getByRole("button", { name: "Select date", exact: true }).click()
+  const day = page.locator(".vc-day:not(.is-not-in-month)").filter({ has: page.locator(".vc-day-content").filter({ hasText: /^15$/ }) }).first()
+  const selectedDay = (await day.getAttribute("class"))?.match(/(?:^|\s)id-(\d{4}-\d{2}-\d{2})(?:\s|$)/)?.[1]
+  expect(selectedDay).toBeTruthy()
+  await day.getByRole("button").click()
+  await expect(page.getByRole("button", { name: `Selected date: ${selectedDay}`, exact: true })).toBeVisible()
+  await page.getByRole("button", { name: "Clear date", exact: true }).click()
+  await expect(page.getByRole("button", { name: "Select date", exact: true })).toBeVisible()
+  await page.getByRole("button", { name: "Select date", exact: true }).click()
+  await day.getByRole("button").click()
+  await page.getByRole("button", { name: /submit/i }).click()
+  await expectSubmissionSuccess(page)
+  const token = await apiLogin(request)
+  const submissions = await apiListSubmissions(request, token, form.slug)
+  expect(submissions.data[0].data.appointment.slice(0, 10)).toBe(selectedDay)
+})
+
 for (const deferredFonts of [false, true]) {
   test(`font picker opens from Design and applies a font${deferredFonts ? " after a delayed response" : ""}`, async ({ page, request }) => {
     const form = await apiCreateForm(request, { title: uniqueTitle("Font Picker") })
