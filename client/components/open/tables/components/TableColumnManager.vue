@@ -12,16 +12,14 @@
 
       <template #content>
         <div class="w-80 p-2 flex flex-col">
-          <!-- Header -->
           <div class="flex items-center justify-between">
             <UInput
+              v-model="searchQuery"
               variant="outline"
               placeholder="Search columns..."
               icon="i-heroicons-magnifying-glass"
               size="sm"
-              v-model="searchQuery"
             />
-            <div class="flex items-center gap-1">
             <UButton
               size="sm"
               variant="ghost"
@@ -30,25 +28,20 @@
               @click="tableState.resetPreferences()"
             />
           </div>
-          </div>
 
-          <!-- Column Sections -->
           <ScrollableContainer class="mt-1">
             <template v-for="section in columnSections" :key="section.type">
-            <div 
-              v-if="section.columns.length > 0"
-              class="flex flex-col"
-            >
-              <div class="flex items-center justify-between">
-                <h4 class="text-xs text-neutral-500">{{ section.title }}</h4>
-                <UButton
-                  size="xs"
-                  variant="link"
-                  :label="section.actionLabel"
-                  @click="toggleAllColumns(section.targetVisibility)"
-                />
-              </div>
-              
+              <div v-if="section.columns.length > 0" class="flex flex-col">
+                <div class="flex items-center justify-between">
+                  <h4 class="text-xs text-neutral-500">{{ section.title }}</h4>
+                  <UButton
+                    size="xs"
+                    variant="link"
+                    :label="section.actionLabel"
+                    @click="setColumnsVisibility(section.columns, section.targetVisibility)"
+                  />
+                </div>
+
                 <VueDraggable
                   :model-value="section.columns"
                   item-key="id"
@@ -60,80 +53,177 @@
                   @add="handleColumnAdd"
                   @update="handleColumnUpdate"
                 >
-                  <template #default>
-                    <div v-for="column in section.columns" :key="column.id" class="group">
-                      <div class="flex items-center gap-1 p-2 rounded-md hover:bg-neutral-50 transition-colors">
-                        <!-- Drag Handle -->
-                        <div class="w-4 h-4 flex items-center justify-center opacity-60 group-hover:opacity-100 transition-opacity">
-                          <UIcon name="clarity:drag-handle-line" class="h-6 w-6 -ml-1 shrink-0 text-neutral-400" />
-                        </div>
-
-                        <!-- Column Icon -->
-                        <div class="w-4 h-4 flex items-center justify-center">
-                          <BlockTypeIcon 
-                            v-if="column.type"
-                            :type="column.type"
-                            bg-class="bg-transparent"
-                            text-class="text-neutral-600"
-                            class="flex-shrink-0"
-                          />
-                        </div>
-
-                        <!-- Column Name with Tooltip -->
-                        <UTooltip :text="column.header || column.id" :content="{ align: 'start' }">
-                          <span class="flex-1 text-sm truncate">
-                            {{ column.header || column.id }}
-                          </span>
-                        </UTooltip>
-
-                        <!-- Removed Indicator -->
-                        <UTooltip v-if="column.isRemoved" text="Column was removed from form" :content="{ align: 'end' }">
-                          <UIcon name="i-heroicons-trash" class="w-3 h-3 text-neutral-400" />
-                        </UTooltip>
-
-                        <!-- Column Actions -->
-                        <div class="flex items-center gap-1">
-                          <!-- Pin Toggle -->
-                          <UTooltip :text="getPinTooltip(column.id)">
-                            <UButton
-                              size="xs"
-                              :variant="columnPreferencesMap[column.id]?.pinned ? 'soft' : 'ghost'"
-                              :icon="getPinIcon(column.id)"
-                              :color="columnPreferencesMap[column.id]?.pinned ? 'primary' : 'neutral'"
-                              @click.prevent="tableState.toggleColumnPin(column.id)"
-                            />
-                          </UTooltip>
-
-                          <!-- Wrap Toggle -->
-                          <UTooltip :text="columnPreferencesMap[column.id]?.wrapped ? 'Disable text wrapping' : 'Enable text wrapping'">
-                            <UButton
-                              size="xs"
-                              :variant="columnPreferencesMap[column.id]?.wrapped ? 'soft' : 'ghost'"
-                              icon="i-ic-baseline-wrap-text"
-                              :color="columnPreferencesMap[column.id]?.wrapped ? 'primary' : 'neutral'"
-                              @click.prevent="tableState.toggleColumnWrapping(column.id)"
-                            />
-                          </UTooltip>
-
-                          <!-- Visibility Toggle Button -->
-                          <UTooltip :text="columnVisibilityMap[column.id] ? 'Hide' : 'Show'">
-                            <UButton
-                              size="xs"
-                              variant="ghost"
-                              color="neutral"
-                              :icon="columnVisibilityMap[column.id] ? 'i-heroicons-eye-solid' : 'i-heroicons-eye-slash-solid'"
-                              @click.prevent="props.tableState.toggleColumnVisibility(column.id)"
-                            />
-                          </UTooltip>
-                        </div>
-                      </div>
-                    </div>
-                  </template>
+                  <TableColumnManagerRow
+                    v-for="column in section.columns"
+                    :key="column.id"
+                    :column="column"
+                    :table-state="tableState"
+                    :preference="columnPreferencesMap[column.id]"
+                    :visible="columnVisibilityMap[column.id]"
+                    :display-name="columnDisplayName(column)"
+                    :technical-name="columnTechnicalName(column)"
+                  />
                 </VueDraggable>
+              </div>
+            </template>
+
+            <div
+              v-if="showAttributionGroup"
+              class="mt-2 pt-2 border-t border-neutral-200 dark:border-neutral-700"
+            >
+              <button
+                type="button"
+                class="w-full flex items-start gap-2 p-2 rounded-md text-left hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
+                :aria-expanded="attributionGroupExpanded"
+                aria-controls="attribution-column-options"
+                @click="isAttributionExpanded = !isAttributionExpanded"
+              >
+                <UIcon name="i-lucide-chart-no-axes-combined" class="size-4 mt-0.5 text-neutral-500 shrink-0" />
+                <span class="flex-1 min-w-0">
+                  <span class="flex items-center gap-2">
+                    <span class="text-sm font-medium">Attribution &amp; tracking</span>
+                    <UBadge
+                      v-if="detectedAttributionCount > 0"
+                      size="xs"
+                      variant="soft"
+                      color="neutral"
+                      :label="`${detectedAttributionCount} on this page`"
+                    />
+                  </span>
+                  <span class="block mt-0.5 text-xs text-neutral-500 leading-4">
+                    Campaign parameters captured from form URLs
+                  </span>
+                </span>
+                <UIcon
+                  name="i-lucide-chevron-down"
+                  class="size-4 mt-0.5 text-neutral-500 transition-transform"
+                  :class="{ 'rotate-180': attributionGroupExpanded }"
+                />
+              </button>
+
+              <div v-if="attributionGroupExpanded" id="attribution-column-options" class="mt-1 pl-2">
+                <div
+                  v-if="visibleAttributionColumns.length > 0"
+                  class="flex items-center justify-between px-2 py-1"
+                >
+                  <span class="text-xs text-neutral-500">
+                    {{ visibleAttributionColumns.length }} shown in table
+                  </span>
+                  <UButton
+                    size="xs"
+                    variant="link"
+                    color="neutral"
+                    label="Hide URL parameters"
+                    @click="setColumnsVisibility(visibleAttributionColumns, false)"
+                  />
+                </div>
+
+                <div v-if="hiddenDetectedAttributionColumns.length > 0">
+                  <div class="flex items-center justify-between px-2">
+                    <h5 class="text-xs text-neutral-500">Detected on this page</h5>
+                    <UButton
+                      size="xs"
+                      variant="link"
+                      label="Show detected"
+                      @click="setColumnsVisibility(hiddenDetectedAttributionColumns, true)"
+                    />
+                  </div>
+
+                  <VueDraggable
+                    :model-value="hiddenDetectedAttributionColumns"
+                    item-key="id"
+                    :ghost-class="['opacity-50', 'bg-blue-50', 'rounded-md']"
+                    :chosen-class="['bg-blue-100', 'rounded-md']"
+                    :animation="200"
+                    group="columns"
+                    data-section-type="hidden"
+                    @add="handleColumnAdd"
+                    @update="handleColumnUpdate"
+                  >
+                    <TableColumnManagerRow
+                      v-for="column in hiddenDetectedAttributionColumns"
+                      :key="column.id"
+                      :column="column"
+                      :table-state="tableState"
+                      :preference="columnPreferencesMap[column.id]"
+                      :visible="false"
+                      :display-name="columnDisplayName(column)"
+                      :technical-name="columnTechnicalName(column)"
+                    />
+                  </VueDraggable>
+                </div>
+
+                <p
+                  v-else-if="detectedAttributionCount > 0 && !normalizedSearchQuery"
+                  class="px-2 py-1 text-xs text-neutral-500"
+                >
+                  All detected parameters are shown in the table.
+                </p>
+
+                <div v-if="hiddenOtherAttributionColumns.length > 0" class="mt-1">
+                  <button
+                    type="button"
+                    class="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-left hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
+                    :aria-expanded="otherAttributionExpanded"
+                    aria-controls="other-attribution-column-options"
+                    @click="isOtherAttributionExpanded = !isOtherAttributionExpanded"
+                  >
+                    <UIcon
+                      name="i-lucide-chevron-right"
+                      class="size-3.5 text-neutral-500 transition-transform"
+                      :class="{ 'rotate-90': otherAttributionExpanded }"
+                    />
+                    <span class="flex-1 text-xs font-medium text-neutral-600 dark:text-neutral-300">
+                      Other supported parameters
+                    </span>
+                    <span class="text-xs text-neutral-500">{{ hiddenOtherAttributionColumns.length }}</span>
+                  </button>
+
+                  <div v-if="otherAttributionExpanded" id="other-attribution-column-options">
+                    <div class="flex justify-end px-2">
+                      <UButton
+                        size="xs"
+                        variant="link"
+                        label="Show all"
+                        @click="setColumnsVisibility(hiddenOtherAttributionColumns, true)"
+                      />
+                    </div>
+
+                    <VueDraggable
+                      :model-value="hiddenOtherAttributionColumns"
+                      item-key="id"
+                      :ghost-class="['opacity-50', 'bg-blue-50', 'rounded-md']"
+                      :chosen-class="['bg-blue-100', 'rounded-md']"
+                      :animation="200"
+                      group="columns"
+                      data-section-type="hidden"
+                      @add="handleColumnAdd"
+                      @update="handleColumnUpdate"
+                    >
+                      <TableColumnManagerRow
+                        v-for="column in hiddenOtherAttributionColumns"
+                        :key="column.id"
+                        :column="column"
+                        :table-state="tableState"
+                        :preference="columnPreferencesMap[column.id]"
+                        :visible="false"
+                        :display-name="columnDisplayName(column)"
+                        :technical-name="columnTechnicalName(column)"
+                      />
+                    </VueDraggable>
+                  </div>
+                </div>
+              </div>
             </div>
-          </template>
+
+            <p
+              v-if="filteredColumns.length === 0 && !showAttributionGroup"
+              class="px-2 py-4 text-center text-sm text-neutral-500"
+            >
+              No columns found.
+            </p>
           </ScrollableContainer>
-          <div class="w-full h-1"></div>
+          <div class="w-full h-1" />
         </div>
       </template>
     </UPopover>
@@ -142,13 +232,23 @@
 
 <script setup>
 import { VueDraggable } from 'vue-draggable-plus'
-import BlockTypeIcon from '~/components/open/forms/components/BlockTypeIcon.vue'
 import ScrollableContainer from '~/components/dashboard/ScrollableContainer.vue'
+import TableColumnManagerRow from './TableColumnManagerRow.vue'
+import {
+  ATTRIBUTION_PARAMETER_LABELS,
+  attributionParameterFromColumnId,
+  detectedAttributionParameters,
+  isColumnVisibilityTransition,
+} from '~/lib/forms/submissionAttribution'
 
 const props = defineProps({
   tableState: {
     type: Object,
     required: true,
+  },
+  data: {
+    type: Array,
+    default: () => [],
   },
   popoverContent: {
     type: Object,
@@ -159,17 +259,18 @@ const props = defineProps({
   },
 })
 
-
-
 const isPopoverOpen = ref(false)
 const searchQuery = ref('')
+const isAttributionExpanded = ref(false)
+const isOtherAttributionExpanded = ref(false)
 
-// Computed maps for better performance - avoid repeated function calls in templates
+const normalizedSearchQuery = computed(() => searchQuery.value.trim().toLowerCase())
+
 const columnVisibilityMap = computed(() => {
   const map = {}
   const visibility = props.tableState.columnVisibility.value || {}
   const columns = props.tableState.orderedColumns.value || []
-  
+
   columns.forEach(column => {
     map[column.id] = visibility[column.id] !== false
   })
@@ -179,70 +280,107 @@ const columnVisibilityMap = computed(() => {
 const columnPreferencesMap = computed(() => {
   const map = {}
   const columns = props.tableState.orderedColumns.value || []
-  
+
   columns.forEach(column => {
     map[column.id] = props.tableState.getColumnPreference(column.id)
   })
   return map
 })
 
+const columnAttributionParameter = column => attributionParameterFromColumnId(column.id)
+const isAttributionColumn = column => columnAttributionParameter(column) !== null
 
+const columnDisplayName = (column) => {
+  const parameter = columnAttributionParameter(column)
+  return parameter ? ATTRIBUTION_PARAMETER_LABELS[parameter] : (column.header || column.id)
+}
 
-// Filter columns based on search query and maintain order
+const columnTechnicalName = (column) => columnAttributionParameter(column) || ''
+
+const columnMatchesQuery = (column) => {
+  if (!normalizedSearchQuery.value) return true
+
+  return [column.id, column.header, columnDisplayName(column)]
+    .filter(Boolean)
+    .some(value => String(value).toLowerCase().includes(normalizedSearchQuery.value))
+}
+
 const filteredColumns = computed(() => {
   const columns = props.tableState.orderedColumns.value || []
   if (!Array.isArray(columns)) return []
-  
-  const query = searchQuery.value.toLowerCase()
-  return columns.filter(column => 
-    column.id !== 'actions' && 
-    (column.header || column.id).toLowerCase().includes(query)
-  )
+
+  return columns.filter(column => column.id !== 'actions' && columnMatchesQuery(column))
 })
 
-// Computed visible columns (reactive to table state) - now using the map
-const visibleColumns = computed(() => {
-  const visibilityMap = columnVisibilityMap.value
-  return filteredColumns.value.filter(column => visibilityMap[column.id] !== false)
+const attributionColumns = computed(() => {
+  const columns = props.tableState.orderedColumns.value || []
+  if (!Array.isArray(columns)) return []
+
+  return columns.filter(column => column.id !== 'actions' && isAttributionColumn(column))
 })
 
-// Computed hidden columns (reactive to table state) - now using the map
-const hiddenColumns = computed(() => {
-  const visibilityMap = columnVisibilityMap.value
-  return filteredColumns.value.filter(column => visibilityMap[column.id] === false)
-})
+const visibleColumns = computed(() => filteredColumns.value.filter(column => (
+  columnVisibilityMap.value[column.id] !== false
+)))
 
-// Column sections configuration (now fully reactive)
-const columnSections = computed(() => {
-  return [
-    {
-      type: 'visible',
-      title: 'Shown in table',
-      actionLabel: 'Hide All',
-      targetVisibility: false,
-      columns: visibleColumns.value
-    },
-    {
-      type: 'hidden',
-      title: 'Hidden in table',
-      actionLabel: 'Show All',
-      targetVisibility: true,
-      columns: hiddenColumns.value
-    }
-  ]
-})
+const hiddenColumns = computed(() => filteredColumns.value.filter(column => (
+  columnVisibilityMap.value[column.id] === false && !isAttributionColumn(column)
+)))
 
-// Handle drag end event
+const hiddenAttributionColumns = computed(() => filteredColumns.value.filter(column => (
+  columnVisibilityMap.value[column.id] === false && isAttributionColumn(column)
+)))
+
+const visibleAttributionColumns = computed(() => attributionColumns.value.filter(column => (
+  columnVisibilityMap.value[column.id] !== false
+)))
+
+const detectedAttributionParameterSet = computed(() => new Set(detectedAttributionParameters(props.data)))
+const detectedAttributionCount = computed(() => detectedAttributionParameterSet.value.size)
+
+const hiddenDetectedAttributionColumns = computed(() => hiddenAttributionColumns.value.filter(column => (
+  detectedAttributionParameterSet.value.has(columnAttributionParameter(column))
+)))
+
+const hiddenOtherAttributionColumns = computed(() => hiddenAttributionColumns.value.filter(column => (
+  !detectedAttributionParameterSet.value.has(columnAttributionParameter(column))
+)))
+
+const showAttributionGroup = computed(() => filteredColumns.value.some(isAttributionColumn))
+const attributionGroupExpanded = computed(() => isAttributionExpanded.value || normalizedSearchQuery.value.length > 0)
+const otherAttributionExpanded = computed(() => isOtherAttributionExpanded.value || normalizedSearchQuery.value.length > 0)
+
+const columnSections = computed(() => [
+  {
+    type: 'visible',
+    title: 'Shown in table',
+    actionLabel: 'Hide All',
+    targetVisibility: false,
+    columns: visibleColumns.value,
+  },
+  {
+    type: 'hidden',
+    title: 'Hidden in table',
+    actionLabel: 'Show All',
+    targetVisibility: true,
+    columns: hiddenColumns.value,
+  },
+])
+
 const handleColumnAdd = async (evt) => {
   const column = evt.data || evt.clonedData
   if (!column) return
-  const isVisibleTarget = evt.to?.dataset?.sectionType === 'visible'
+
+  const sourceSectionType = evt.from?.dataset?.sectionType
+  const targetSectionType = evt.to?.dataset?.sectionType
+  if (!isColumnVisibilityTransition(sourceSectionType, targetSectionType)) return
+
+  const isVisibleTarget = targetSectionType === 'visible'
   if (isVisibleTarget) {
     props.tableState.toggleColumnVisibility(column.id)
     await nextTick()
     props.tableState.setColumnOrder(column.id, evt.newIndex)
   } else {
-    // Moved into hidden
     props.tableState.toggleColumnVisibility(column.id)
   }
 }
@@ -253,40 +391,11 @@ const handleColumnUpdate = (evt) => {
   props.tableState.setColumnOrder(column.id, evt.newIndex)
 }
 
-// Get pin icon - now using computed map
-const getPinIcon = (columnId) => {
-  const pref = columnPreferencesMap.value[columnId]
-  return pref?.pinned === 'left' ? 'i-ic-baseline-push-pin' : 'i-ic-baseline-push-pin'
-}
-
-// Get pin tooltip - now using computed map
-const getPinTooltip = (columnId) => {
-  const pref = columnPreferencesMap.value[columnId]
-  return pref?.pinned === 'left' ? 'Unpin column' : 'Pin column to left'
-}
-
-// Toggle all columns visibility - now using computed map
-const toggleAllColumns = (targetVisibility) => {
-  const columns = props.tableState.orderedColumns.value || []
-  const visibilityMap = columnVisibilityMap.value
-  
-  columns
-    .filter(column => column.id !== 'actions')
-    .forEach(column => {
-      if ((visibilityMap[column.id] !== false) !== targetVisibility) {
-        props.tableState.toggleColumnVisibility(column.id)
-      }
-    })
+const setColumnsVisibility = (columns, targetVisibility) => {
+  columns.forEach(column => {
+    if ((columnVisibilityMap.value[column.id] !== false) !== targetVisibility) {
+      props.tableState.toggleColumnVisibility(column.id)
+    }
+  })
 }
 </script>
-
-<style scoped>
-/* Ensure drag cursor is applied to the entire row */
-.group {
-  cursor: grab;
-}
-
-.group:active {
-  cursor: grabbing;
-}
-</style>

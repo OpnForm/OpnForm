@@ -37,6 +37,10 @@ The easiest way to get started with OpnForm is to sign up for our [managed servi
 
 For a complete list of features and detailed documentation, visit our [Technical Documentation](https://docs.opnform.com).
 
+## AI agents and MCP
+
+OpnForm's remote MCP server lets AI agents create and preview a private form draft without requiring a login. OAuth adds workspace-aware form management and read-only submission search, statistics, and exports. The installable portable and native plugin package lives in [`plugins/opnform/`](./plugins/opnform). See the [MCP integration guide](https://docs.opnform.com/integrations/mcp).
+
 ## Quick Start
 
 The easiest way to get started with OpnForm is through our [official managed service in the Cloud](https://opnform.com/).

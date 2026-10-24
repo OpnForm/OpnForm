@@ -28,6 +28,7 @@ main() {
         echo "Running setup for API role..."
         apply_db_migrations
         initialize_instance
+        initialize_mcp_oauth_keys
         optimize_application
         echo "Starting server for API role with command: $@"
         exec "$@"
@@ -128,6 +129,34 @@ apply_db_migrations() {
 initialize_instance() {
     echo "Initializing instance for telemetry"
     php ./artisan telemetry:initialize-instance
+}
+
+initialize_mcp_oauth_keys() {
+    if [ -n "${PASSPORT_PRIVATE_KEY:-}" ] && [ -n "${PASSPORT_PUBLIC_KEY:-}" ]; then
+        echo "Using Passport keys from the environment"
+        return 0
+    fi
+
+    if [ -n "${PASSPORT_PRIVATE_KEY:-}" ] || [ -n "${PASSPORT_PUBLIC_KEY:-}" ]; then
+        echo "PASSPORT_PRIVATE_KEY and PASSPORT_PUBLIC_KEY must be configured together" >&2
+        exit 1
+    fi
+
+    if [ -f ./storage/oauth-private.key ] && [ -f ./storage/oauth-public.key ]; then
+        echo "Reusing Passport keys from storage"
+        return 0
+    fi
+
+    if [ -f ./storage/oauth-private.key ] || [ -f ./storage/oauth-public.key ]; then
+        echo "Incomplete Passport key pair in storage" >&2
+        exit 1
+    fi
+
+    echo "Generating Passport keys for MCP OAuth"
+    php ./artisan passport:keys --force
+    chown www-data:www-data ./storage/oauth-private.key ./storage/oauth-public.key
+    chmod 600 ./storage/oauth-private.key
+    chmod 644 ./storage/oauth-public.key
 }
 
 optimize_application() {

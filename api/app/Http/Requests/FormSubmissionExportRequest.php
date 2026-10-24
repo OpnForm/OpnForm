@@ -6,6 +6,7 @@ use App\Models\Forms\Form;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use App\Service\Forms\SubmissionAttribution;
 
 class FormSubmissionExportRequest extends FormRequest
 {
@@ -24,6 +25,9 @@ class FormSubmissionExportRequest extends FormRequest
         ))->pluck('id')->toArray();
         $validColumns[] = 'created_at';
         $validColumns[] = 'status';
+        foreach (SubmissionAttribution::PARAMETERS as $parameter) {
+            $validColumns[] = SubmissionAttribution::columnId($parameter);
+        }
 
         return [
             'columns' => [

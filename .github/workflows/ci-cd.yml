@@ -315,14 +315,6 @@ jobs:
           cache: npm
           cache-dependency-path: client/package-lock.json
 
-      - name: Cache Playwright Browsers
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-${{ hashFiles('client/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-playwright-
-
       - name: Install composer dependencies
         working-directory: ./api
         run: composer install --prefer-dist --no-interaction --no-progress --ignore-platform-reqs --optimize-autoloader
@@ -337,9 +329,21 @@ jobs:
           name: nuxt-output
           path: client/.output
 
-      - name: Install Playwright Browsers
+      - name: Configure stable Ubuntu package mirror
+        run: |
+          if [ -f /etc/apt/apt-mirrors.txt ]; then
+            sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' /etc/apt/apt-mirrors.txt
+          fi
+
+      - name: Install Playwright system dependencies
+        timeout-minutes: 5
         working-directory: ./client
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install-deps chromium
+
+      - name: Install Playwright Chromium
+        timeout-minutes: 5
+        working-directory: ./client
+        run: npx playwright install chromium
 
       - name: Start E2E Stack
         run: ./scripts/e2e-up.sh

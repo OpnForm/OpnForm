@@ -129,4 +129,5 @@ class AppServiceProvider extends ServiceProvider
 
         throw new RuntimeException('Unsafe testing sqlite configuration detected.');
     }
+
 }

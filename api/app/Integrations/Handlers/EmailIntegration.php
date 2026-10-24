@@ -29,6 +29,7 @@ class EmailIntegration extends AbstractIntegrationHandler
             'email_content' => 'required',
             'include_submission_data' => 'boolean',
             'include_hidden_fields_submission_data' => ['nullable', 'boolean'],
+            'embed_uploaded_images' => ['nullable', 'boolean'],
             'reply_to' => 'nullable',
             'link_edit_submission' => ['nullable', 'boolean'],
             'logo_url' => ['nullable', 'url', 'starts_with:https://'],

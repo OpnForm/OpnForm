@@ -18,6 +18,7 @@ done
 
 write_codex_env_files
 ensure_php_dependencies
+ensure_mcp_oauth_keys
 ensure_node_dependencies
 ensure_codex_database
 print_codex_environment_summary

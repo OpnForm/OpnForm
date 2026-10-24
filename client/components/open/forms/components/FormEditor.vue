@@ -160,6 +160,11 @@ const props = defineProps({
     required: false,
     type: Boolean,
     default: false,
+  },
+  saveHandler: {
+    required: false,
+    type: Function,
+    default: null,
   }
 })
 
@@ -361,6 +366,11 @@ const proceedWithSave = () => {
     // Clean invalid logic before saving using the comprehensive validator
     const { validatePropertiesLogic } = useFormLogic()
     form.value.properties = validatePropertiesLogic(form.value.properties)
+  }
+
+  if (props.saveHandler) {
+    props.saveHandler(form.value.data())
+    return
   }
 
   if (props.isGuest) {

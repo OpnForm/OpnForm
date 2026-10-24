@@ -87,6 +87,13 @@ class PaymentPropertyValidator implements PropertyValidatorInterface
             return $errors;
         }
 
+        // Guest form definitions have no workspace security boundary yet. Defer
+        // provider lookup until the draft is claimed so validation cannot be
+        // used to enumerate OAuth provider IDs from other accounts.
+        if ($this->workspace === null) {
+            return $errors;
+        }
+
         try {
             $provider = OAuthProvider::find($property['stripe_account_id']);
             if ($provider === null) {
@@ -94,8 +101,7 @@ class PaymentPropertyValidator implements PropertyValidatorInterface
                 return $errors;
             }
 
-            // Check if the provider is associated with the workspace (if workspace is provided)
-            if ($this->workspace && !$this->workspace->hasProvider($provider->id)) {
+            if (!$this->workspace->hasProvider($provider->id)) {
                 Log::error('Attempted to use Stripe account not associated with the workspace', [
                     'stripe_account_id' => $property['stripe_account_id'],
                     'provider_id' => $provider->id,

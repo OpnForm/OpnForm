@@ -56,6 +56,11 @@ class FormExportService
 
         foreach ($displayColumns as $column => $value) {
             if ($value === true) {
+                if ($parameter = SubmissionAttribution::parameterFromColumnId($column)) {
+                    $filteredData[$parameter] = $submission->meta['attribution'][$parameter] ?? '';
+                    continue;
+                }
+
                 $key = collect($formattedData)->keys()->first(fn ($key) => str_contains($key, $column));
                 if ($key) {
                     $filteredData[$key] = $formattedData[$key];

@@ -13,20 +13,31 @@ use App\Service\Forms\SubmissionUrlService;
 use App\Service\Formulas\ComputedVariableEvaluator;
 use App\Service\Pdf\PdfCacheService;
 use App\Service\Pdf\PdfGeneratorService;
+use App\Service\Storage\FileUploadPathService;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Symfony\Component\Mime\Email;
+use Symfony\Component\Mime\Part\DataPart;
 
 class FormEmailNotification extends Notification
 {
     private const MAX_PDF_ATTACHMENTS = 3;
     private const MAX_TOTAL_ATTACHMENT_BYTES = 15 * 1024 * 1024;
+    private const MAX_INLINE_IMAGE_BYTES = 6 * 1024 * 1024;
+    private const INLINE_IMAGE_MIME_TYPES = [
+        'image/gif',
+        'image/jpeg',
+        'image/png',
+    ];
 
     public FormSubmitted $event;
     private ?array $computedValues = null;
+    private array $inlineImages = [];
+    private int $inlineImageBytes = 0;
+    private int $pdfAttachmentBytes = 0;
 
     /**
      * Create a new notification instance.
@@ -106,15 +117,17 @@ class FormEmailNotification extends Notification
             ->mailer($this->getMailer())
             ->replyTo($this->getReplyToEmail($this->event->form->creator->email))
             ->from($this->getFromEmail(), $this->getSenderName())
-            ->subject($this->getSubject())
-            ->withSymfonyMessage(function (Email $message) {
-                $this->addCustomHeaders($message);
-            })
-            ->markdown('mail.form.email-notification', $this->getMailData());
+            ->subject($this->getSubject());
 
+        // Explicitly selected PDF attachments take priority over optional inline images.
         $this->attachPdfTemplatesIfRequested($mail);
 
-        return $mail;
+        return $mail
+            ->withSymfonyMessage(function (Email $message) {
+                $this->addCustomHeaders($message);
+                $this->addInlineImages($message);
+            })
+            ->markdown('mail.form.email-notification', $this->getMailData());
     }
 
     /**
@@ -122,6 +135,7 @@ class FormEmailNotification extends Notification
      */
     private function attachPdfTemplatesIfRequested(MailMessage $mail): void
     {
+        $this->pdfAttachmentBytes = 0;
         $form = $this->event->form;
 
         $templateIds = $this->integrationData->pdf_template_ids ?? [];
@@ -167,6 +181,7 @@ class FormEmailNotification extends Notification
                     $filename = $template->resolveFilename($form, $submission);
                     $mail->attachData($content, $filename, ['mime' => 'application/pdf']);
                     $totalBytes += $nextSize;
+                    $this->pdfAttachmentBytes += $nextSize;
                 }
             } catch (\Throwable $e) {
                 report($e);
@@ -289,6 +304,7 @@ class FormEmailNotification extends Notification
     {
         $form = $this->event->form;
         $hasAdvancedEmailCustomization = $form->workspace?->hasFeature(Feature::EMAIL_ADVANCED) ?? false;
+        $fields = $this->prepareInlineImages($this->formatSubmissionData());
 
         $emailAppearance = $hasAdvancedEmailCustomization ? [
             'logoUrl' => $this->integrationData->logo_url ?? null,
@@ -300,13 +316,115 @@ class FormEmailNotification extends Notification
 
         return [
             'emailContent' => $this->getEmailContent(),
-            'fields' => $this->formatSubmissionData(),
+            'fields' => $fields,
             'form' => $form,
             'integrationData' => $this->integrationData,
             'noBranding' => app(BrandingPolicy::class)->canRemoveFormBranding($form),
             'submission_id' => $this->getEncodedSubmissionId(),
             'emailAppearance' => $emailAppearance,
         ];
+    }
+
+    private function prepareInlineImages(array $fields): array
+    {
+        $this->inlineImages = [];
+        $this->inlineImageBytes = 0;
+
+        if (
+            !($this->integrationData->include_submission_data ?? false)
+            || !($this->integrationData->embed_uploaded_images ?? false)
+        ) {
+            return $fields;
+        }
+
+        foreach ($fields as &$field) {
+            if (empty($field['email_data']) || !is_array($field['email_data'])) {
+                continue;
+            }
+
+            foreach ($field['email_data'] as &$file) {
+                $inlineImage = $this->prepareInlineImage($file);
+                if ($inlineImage) {
+                    $file['inline_cid'] = $inlineImage['cid'];
+                }
+            }
+            unset($file);
+        }
+        unset($field);
+
+        return $fields;
+    }
+
+    private function prepareInlineImage(array $file): ?array
+    {
+        if (!($file['is_image'] ?? false) || empty($file['file_name'])) {
+            return null;
+        }
+
+        try {
+            $path = FileUploadPathService::getFileUploadPath(
+                $this->event->form->id,
+                $file['file_name']
+            );
+
+            if (!Storage::exists($path)) {
+                return null;
+            }
+
+            $cid = hash('sha256', $this->event->form->id . '|' . $file['file_name']) . '@opnform';
+            if (isset($this->inlineImages[$cid])) {
+                return $this->inlineImages[$cid];
+            }
+
+            $size = Storage::size($path);
+            if (
+                $size <= 0
+                || $size > self::MAX_INLINE_IMAGE_BYTES
+                || ($this->pdfAttachmentBytes + $this->inlineImageBytes + $size) > self::MAX_TOTAL_ATTACHMENT_BYTES
+            ) {
+                return null;
+            }
+
+            $contents = Storage::get($path);
+            $actualSize = strlen($contents);
+            if (
+                $actualSize <= 0
+                || $actualSize > self::MAX_INLINE_IMAGE_BYTES
+                || ($this->pdfAttachmentBytes + $this->inlineImageBytes + $actualSize) > self::MAX_TOTAL_ATTACHMENT_BYTES
+            ) {
+                return null;
+            }
+
+            $mimeType = (new \finfo(FILEINFO_MIME_TYPE))->buffer($contents);
+            if (!is_string($mimeType) || !in_array(strtolower($mimeType), self::INLINE_IMAGE_MIME_TYPES, true)) {
+                return null;
+            }
+
+            $this->inlineImages[$cid] = [
+                'cid' => $cid,
+                'contents' => $contents,
+                'file_name' => $file['label'] ?? $file['file_name'],
+                'mime_type' => strtolower($mimeType),
+            ];
+            $this->inlineImageBytes += $actualSize;
+
+            return $this->inlineImages[$cid];
+        } catch (\Throwable $exception) {
+            report($exception);
+
+            return null;
+        }
+    }
+
+    private function addInlineImages(Email $message): void
+    {
+        foreach ($this->inlineImages as $image) {
+            $message->addPart(
+                (new DataPart($image['contents'], $image['file_name'], $image['mime_type']))
+                    ->asInline()
+                    ->setContentId($image['cid'])
+            );
+        }
     }
 
     private function getEmailContent(): string

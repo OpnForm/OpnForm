@@ -206,6 +206,27 @@ ensure_php_dependencies() {
   fi
 }
 
+ensure_mcp_oauth_keys() {
+  select_php_runtime
+
+  public_key="$ROOT_DIR/api/storage/oauth-public.key"
+  private_key="$ROOT_DIR/api/storage/oauth-private.key"
+
+  if [ -f "$public_key" ] && [ -f "$private_key" ]; then
+    return 0
+  fi
+
+  if [ -f "$public_key" ] || [ -f "$private_key" ]; then
+    echo "Incomplete Passport key pair in api/storage. Remove the remaining key and rerun setup." >&2
+    exit 1
+  fi
+
+  (
+    cd "$ROOT_DIR/api"
+    APP_ENV=codex "$CODEX_PHP_BIN" artisan passport:keys --force --env=codex
+  )
+}
+
 php_version_is_supported() {
   version="$1"
   major=${version%%.*}
