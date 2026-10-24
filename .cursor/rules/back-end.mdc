@@ -50,9 +50,8 @@ Laravel Best Practices
 
 Debugging
 
--   Always use ray() for debugging
--   Never add any import for ray like use Illuminate\Support\Facades\Ray, just use ray() function direcly
--   Use ray methods to add more context and improve display when needed @https://myray.app/docs/php/vanilla-php/reference
+-   Use Laravel logging for diagnostic context.
+-   Use `dump()` or `dd()` only during local debugging and remove temporary calls before committing.
 
 Route Model Binding
 

@@ -46,7 +46,6 @@
         "setasign/fpdi": "^2.6",
         "socialiteproviders/stripe": "^4.1",
         "spatie/laravel-data": "^4.6",
-        "spatie/laravel-ray": "*",
         "spatie/laravel-sitemap": "*",
         "spatie/laravel-sluggable": "*",
         "stevebauman/purify": "*",
