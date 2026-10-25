@@ -59,6 +59,19 @@
       </section>
 
       <section class="px-5 py-12 sm:px-8 sm:py-16 lg:px-12">
+        <figure
+          v-if="integration.heroImage"
+          class="mx-auto mb-12 max-w-4xl overflow-hidden rounded-2xl border border-neutral-200 bg-white sm:mb-16"
+        >
+          <img
+            :src="integration.heroImage"
+            :alt="integration.heroImageAlt || integration.title"
+            width="1536"
+            height="1024"
+            class="h-auto w-full"
+            decoding="async"
+          />
+        </figure>
         <div class="mx-auto max-w-3xl">
           <article class="min-w-0 animate-fade-in-up animation-delay-200">
             <ContentRenderer

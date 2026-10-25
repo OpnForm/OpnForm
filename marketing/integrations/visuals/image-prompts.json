@@ -1,0 +1,71 @@
+{
+  "tool": "image_gen",
+  "style": "Use case: product-mockup. Create one standalone 1536x1024 landscape workflow illustration for an OpnForm integration page. Match supplied STYLE REFERENCE ONLY: white/light neutral canvas, near-black geometric sans text, saturated blue #2563EB, restrained pale-blue dot grid, fine borders, subtle rounded cards and soft shadows, flat purposeful product illustration. Generous margins. Short legible English text. No large page headline, navigation, browser/device bezel, traffic-light controls, watermark, purple gradient, 3D objects, fake business metrics or testimonial. Illustrative UI, never pretend this is an exact application screenshot. Distinct integration subject: ",
+  "images": [
+    {
+      "slug": "email",
+      "prompt": "An OpnForm contact response card, with Name, Email and Message fields, connected by a blue dotted arrow to an email inbox card titled New form submission. Show two small recipient chips Sales and Support. Short illustrative message only.",
+      "output": "/client/public/img/pages/integrations/email-hero.webp"
+    },
+    {
+      "slug": "slack",
+      "prompt": "An OpnForm demo request card with Name, Company, Interest fields, connected by a blue dotted arrow to a Slack-style channel panel titled #sales showing a New demo request notification and a View submission action. Small Slack mark, no invented exact setup screen.",
+      "output": "/client/public/img/pages/integrations/slack-hero.webp"
+    },
+    {
+      "slug": "discord",
+      "prompt": "An OpnForm community application card with Username, Interests fields, connected by a blue dotted arrow to a Discord-style channel panel titled #applications with a New community application notification. Small Discord mark.",
+      "output": "/client/public/img/pages/integrations/discord-hero.webp"
+    },
+    {
+      "slug": "webhook",
+      "prompt": "An OpnForm response card connected by a blue dotted arrow marked POST to a clean API endpoint card labeled Webhook, displaying a tiny JSON snippet with name and email keys and a small 200 OK badge. Use placeholder data.",
+      "output": "/client/public/img/pages/integrations/webhook-hero.webp"
+    },
+    {
+      "slug": "zapier",
+      "prompt": "A clean left-to-right workflow: OpnForm New submission trigger card, an orange-accented Zapier action card, then a CRM contact card and a team notification card. Short labels New submission, Create contact, Notify team. Blue connective dotted arrows.",
+      "output": "/client/public/img/pages/integrations/zapier-hero.webp"
+    },
+    {
+      "slug": "google-sheets",
+      "prompt": "An OpnForm event registration card with Name, Email, Session fields connected by a blue dotted arrow to a Google Sheets-style spreadsheet with columns Name, Email, Session and one pale-blue highlighted new row. Small green Sheets mark.",
+      "output": "/client/public/img/pages/integrations/google-sheets-hero.webp"
+    },
+    {
+      "slug": "telegram",
+      "prompt": "An OpnForm service request card with Name, Request fields connected by a blue dotted arrow to a flat Telegram chat panel titled Form alerts with a New service request message and View submission action. No phone bezel. Small Telegram mark.",
+      "output": "/client/public/img/pages/integrations/telegram-hero.webp"
+    },
+    {
+      "slug": "stripe",
+      "prompt": "An OpnForm Workshop registration form card with Name, Email fields and a payment line Workshop fee $25 connected to a simplified Stripe secure payment card with card details placeholders and a Pay $25 button. Small Stripe wordmark. Illustrative fixed one-time payment.",
+      "output": "/client/public/img/pages/integrations/stripe-hero.webp"
+    },
+    {
+      "slug": "n8n",
+      "prompt": "An OpnForm New submission trigger node feeding an n8n workflow with three spaced nodes labeled Validate data, Internal API, Notify team. Use tidy blue connectors and restrained coral n8n accent. A small JSON data card beneath one node.",
+      "output": "/client/public/img/pages/integrations/n8n-hero.webp"
+    },
+    {
+      "slug": "activepieces",
+      "prompt": "An OpnForm Volunteer signup form card feeding an Activepieces flow with clear stacked cards labeled New submission, Add to roster, Send welcome message. Blue connectors, restrained amber accent, generous whitespace.",
+      "output": "/client/public/img/pages/integrations/activepieces-hero.webp"
+    },
+    {
+      "slug": "make",
+      "prompt": "An OpnForm Request form card feeding a Make workflow visual with a central router splitting to two paths labeled Sales request and Support request, ending in CRM and Help desk cards. Restrained violet Make accent, blue connective lines.",
+      "output": "/client/public/img/pages/integrations/make-hero.webp"
+    },
+    {
+      "slug": "pabbly",
+      "prompt": "An OpnForm Event signup card feeding a Pabbly Connect workflow with clean cards New submission, Add attendee, Send confirmation. Spreadsheet-like attendee card at the right. Restrained green accent and blue connectors.",
+      "output": "/client/public/img/pages/integrations/pabbly-hero.webp"
+    },
+    {
+      "slug": "albato",
+      "prompt": "An OpnForm Inquiry form card feeding an Albato automation panel with cards New submission, Map fields, Create CRM lead. Show short mapping rows Email → Email, Company → Company. Restrained coral accent, blue connectors.",
+      "output": "/client/public/img/pages/integrations/albato-hero.webp"
+    }
+  ]
+}
