@@ -144,7 +144,7 @@ test('CLI retains the raw nonzero scan, rejects a new upstream release and rejec
   assert.notEqual(run().status, 0)
 })
 
-test('Amplify explicitly emits Node 24 compute and validates the target output', () => {
+test('legacy Amplify recovery configuration remains valid but regular CI does not build it', () => {
   const config = readFileSync(new URL('../../client/nuxt.config.ts', import.meta.url), 'utf8')
   assert.match(config, /awsAmplify: \{ runtime: 'nodejs24\.x' \}/)
   const amplify = parse(readFileSync(new URL('../../amplify.yml', import.meta.url), 'utf8'))
@@ -153,8 +153,9 @@ test('Amplify explicitly emits Node 24 compute and validates the target output',
   assert.match(pkg.scripts['build:amplify'], /NITRO_PRESET=aws-amplify npm run build/)
   assert.match(pkg.scripts['build:amplify'], /check-amplify-output\.mjs/)
   const smoke = pipeline.jobs.linux_client_image.steps.find(step => step.name === 'Smoke standalone Amplify compute on Linux Node 24')
-  assert.match(smoke.run, /check-amplify-runtime\.mjs/)
-  assert.match(smoke.run, /runner\.temp/)
+  assert.equal(smoke, undefined)
+  assert.equal(pipeline.jobs.client_checks.steps.some(step => step.run?.includes('npm run build:amplify')), false)
+  assert.equal(pipeline.jobs.linux_client_image.steps.some(step => step.with?.name === 'amplify-output'), false)
   assert.ok(pipeline.jobs['release-readiness'].needs.includes('linux_client_image'))
 })
 
