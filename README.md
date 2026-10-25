@@ -127,8 +127,3 @@ By offering Enterprise features alongside our open-source core, we can continue 
 Public submissions use the form's language for API validation messages. When adding a translated validation message, update the catalogs under `api/resources/lang/` for all languages in `Form::LANGUAGES`, preserving placeholders such as `:attribute`, `:min`, and `:max`.
 
 Run `vendor/bin/pest --filter=FormValidationTranslationsTest` from `api/` to check supported catalogs and render invalid date range, rating, selection, and Arabic file-type errors. The tests do not require a database. The catalog check excludes custom attribute aliases and the legacy password key, whose structure differs between Laravel versions. Client text coverage is checked separately by `test/unit/form-locale-keys.test.ts` in `client/`.
-
-### Hosted production delivery
-
-The Scaleway/Coolify runtime, private image publication and explicit promotion
-procedure are documented in [the hosted production guide](docs/deployment/scaleway-production.md).
