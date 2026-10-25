@@ -1,6 +1,14 @@
 # OpnForm — évaluation des rapports de sécurité
 
-La branche **`codex/report-triage-fixes`** reprend le commit initial `34683ad1`, son compte rendu de validation et les corrections de revue du 25 octobre ; elle traite quatre familles de corrections partagées avec NoteForms et améliore l'accès au signalement d'abus. Les failles historiques réellement dangereuses sur les réponses prévisibles et les fichiers actifs sont déjà corrigées dans la base actuelle ; elles ont été vérifiées par leurs tests, sans réimplémentation.
+La branche **`codex/report-triage-fixes`** réunit désormais le triage initial, `origin/main` au commit `a469476f` et la branche PDF PSEC au commit `ae85e6f1`. Les constats et validations du 3 octobre ci-dessous restent un historique ; la validation intégrée du 25 octobre fait foi pour la version combinée.
+
+## Validation intégrée — 25 octobre 2026
+
+Les conflits ont été résolus en conservant la suppression des anciens liens de reset, les limites de mot de passe, les noms sûrs et les preuves DNS avec toutes les protections PSEC. Les revues ont également corrigé trois défauts OpnForm : réponse retardée enregistrée dans le mauvais cache workspace, confusion entre fournisseur OAuth et compte Stripe, et autorisations MCP survivant à la rotation du mot de passe. Les conditions de formulaires sont alignées avec le navigateur pour zéro, faux, les matrices et les groupes vides. Les dernières revues indépendantes en sous-agents ne trouvent plus de finding actionnable.
+
+Sur le résultat final : **2 447 tests serveur / 19 454 assertions**, **1 086 tests frontend**, lint et build passent. Les **68 scénarios navigateur** ont été validés, dont quatre au rejeu après des incidents de chargement du serveur local ; **25 parcours sensibles supplémentaires passent sur le build production final**. Les migrations et contrats applicatifs passent sur PostgreSQL 16.14 et MySQL 8.4.13 isolés. Deux skips et deux dépréciations serveur préexistants restent visibles dans les logs.
+
+Composer ne remonte aucune advisory. Les politiques npm passent avec deux advisories racines déjà exemptées, node-forge high et Quill low, jusqu'au **6 novembre 2026**. Ce résultat ne constitue pas un audit sans vulnérabilité. Les migrations, le déploiement coordonné API/client, les parcours fournisseurs réels et la configuration infrastructure restent à valider avant production. Voir aussi `docs/security-remediation-2026-10.md`. Les branches restent locales, sans push ni déploiement.
 
 ## Périmètre et méthode
 

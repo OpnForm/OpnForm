@@ -124,6 +124,11 @@ class FormLogicConditionChecker
             return $this->propertyConditionMet($condition, $value);
         }
 
+        if (in_array($conditions['operatorIdentifier'], ['and', 'or'], true)
+            && (!is_array($conditions['children'] ?? null) || $conditions['children'] === [])) {
+            return false;
+        }
+
         if ($conditions['operatorIdentifier'] === 'and') {
             $isvalid = true;
             foreach ($conditions['children'] as $childrenCondition) {
@@ -253,7 +258,7 @@ class FormLogicConditionChecker
 
     private function checkMatrixContains($condition, $fieldValue): bool
     {
-        if (!isset($condition['value'])) {
+        if (!isset($condition['value']) || !is_array($condition['value'])) {
             return false;
         }
         if (!is_array($fieldValue)) {
@@ -341,7 +346,7 @@ class FormLogicConditionChecker
             return count($fieldValue) === 0;
         }
 
-        return $fieldValue == '' || $fieldValue == null || !$fieldValue;
+        return $fieldValue === '' || $fieldValue === null;
     }
 
     /**

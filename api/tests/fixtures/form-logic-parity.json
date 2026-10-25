@@ -1,0 +1,267 @@
+[
+  {
+    "name": "numeric zero is answered",
+    "type": "number",
+    "operator": "is_empty",
+    "answer": 0,
+    "expected": false
+  },
+  {
+    "name": "numeric zero is not empty",
+    "type": "number",
+    "operator": "is_not_empty",
+    "answer": 0,
+    "expected": true
+  },
+  {
+    "name": "text zero is answered",
+    "type": "number",
+    "operator": "is_empty",
+    "answer": "0",
+    "expected": false
+  },
+  {
+    "name": "false checkbox is answered",
+    "type": "checkbox",
+    "operator": "is_empty",
+    "answer": false,
+    "expected": false
+  },
+  {
+    "name": "null is empty",
+    "type": "number",
+    "operator": "is_empty",
+    "answer": null,
+    "expected": true
+  },
+  {
+    "name": "empty text is empty",
+    "type": "email",
+    "operator": "is_empty",
+    "answer": "",
+    "expected": true
+  },
+  {
+    "name": "matrix partial match contains",
+    "type": "matrix",
+    "operator": "contains",
+    "value": {
+      "a": "yes",
+      "b": "no"
+    },
+    "answer": {
+      "a": "yes",
+      "b": "yes"
+    },
+    "expected": true
+  },
+  {
+    "name": "matrix all matches contains",
+    "type": "matrix",
+    "operator": "contains",
+    "value": {
+      "a": "yes",
+      "b": "no"
+    },
+    "answer": {
+      "a": "yes",
+      "b": "no"
+    },
+    "expected": true
+  },
+  {
+    "name": "matrix no match does not contain",
+    "type": "matrix",
+    "operator": "contains",
+    "value": {
+      "a": "yes",
+      "b": "no"
+    },
+    "answer": {
+      "a": "no",
+      "b": "yes"
+    },
+    "expected": false
+  },
+  {
+    "name": "matrix missing first row still contains later match",
+    "type": "matrix",
+    "operator": "contains",
+    "value": {
+      "a": "yes",
+      "b": "no"
+    },
+    "answer": {
+      "b": "no"
+    },
+    "expected": true
+  },
+  {
+    "name": "matrix absent does not contain",
+    "type": "matrix",
+    "operator": "contains",
+    "value": {
+      "a": "yes",
+      "b": "no"
+    },
+    "answer": null,
+    "expected": false
+  },
+  {
+    "name": "matrix empty condition does not contain",
+    "type": "matrix",
+    "operator": "contains",
+    "value": {},
+    "answer": {
+      "a": "yes"
+    },
+    "expected": false
+  },
+  {
+    "name": "matrix empty answer does not contain",
+    "type": "matrix",
+    "operator": "contains",
+    "value": {
+      "a": "yes"
+    },
+    "answer": {},
+    "expected": false
+  },
+  {
+    "name": "negative matrix partial match",
+    "type": "matrix",
+    "operator": "does_not_contain",
+    "value": {
+      "a": "yes",
+      "b": "no"
+    },
+    "answer": {
+      "a": "yes",
+      "b": "yes"
+    },
+    "expected": false
+  },
+  {
+    "name": "negative matrix no match",
+    "type": "matrix",
+    "operator": "does_not_contain",
+    "value": {
+      "a": "yes",
+      "b": "no"
+    },
+    "answer": {
+      "a": "no",
+      "b": "yes"
+    },
+    "expected": true
+  },
+  {
+    "name": "empty AND group never triggers an action",
+    "group": "and",
+    "children": [],
+    "answer": null,
+    "expected": false
+  },
+  {
+    "name": "empty OR group never triggers an action",
+    "group": "or",
+    "children": [],
+    "answer": null,
+    "expected": false
+  },
+  {
+    "name": "false scalar remains answered",
+    "type": "email",
+    "operator": "is_empty",
+    "answer": false,
+    "expected": false
+  },
+  {
+    "name": "false scalar is not empty",
+    "type": "email",
+    "operator": "is_not_empty",
+    "answer": false,
+    "expected": true
+  },
+  {
+    "name": "empty list is empty",
+    "type": "multi_select",
+    "operator": "is_empty",
+    "answer": [],
+    "expected": true
+  },
+  {
+    "name": "nonempty list is not empty",
+    "type": "multi_select",
+    "operator": "is_not_empty",
+    "answer": [
+      "choice"
+    ],
+    "expected": true
+  },
+  {
+    "name": "matrix array-valued row matches deeply",
+    "type": "matrix",
+    "operator": "contains",
+    "value": {
+      "a": [
+        "x",
+        "y"
+      ],
+      "b": [
+        "z"
+      ]
+    },
+    "answer": {
+      "a": [
+        "x",
+        "y"
+      ]
+    },
+    "expected": true
+  },
+  {
+    "name": "matrix array-valued row differs",
+    "type": "matrix",
+    "operator": "contains",
+    "value": {
+      "a": [
+        "x",
+        "y"
+      ]
+    },
+    "answer": {
+      "a": [
+        "x"
+      ]
+    },
+    "expected": false
+  },
+  {
+    "name": "matrix missing row skips to array-valued match",
+    "type": "matrix",
+    "operator": "contains",
+    "value": {
+      "a": "absent",
+      "b": [
+        "x"
+      ]
+    },
+    "answer": {
+      "b": [
+        "x"
+      ]
+    },
+    "expected": true
+  },
+  {
+    "name": "matrix malformed condition does not contain",
+    "type": "matrix",
+    "operator": "contains",
+    "value": "invalid",
+    "answer": {
+      "a": "yes"
+    },
+    "expected": false
+  }
+]

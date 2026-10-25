@@ -195,7 +195,7 @@ function checkMatrixContains(condition, fieldValue)
     return false
   }
   const entries = Object.entries(condition.value)
-  return entries.length > 0 && entries.every(([key, value]) => _isEqual(value, fieldValue[key]))
+  return entries.some(([key, value]) => Object.prototype.hasOwnProperty.call(fieldValue, key) && _isEqual(value, fieldValue[key]))
 }
 
 function checkContains(condition, fieldValue) {

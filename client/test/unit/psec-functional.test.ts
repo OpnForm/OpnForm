@@ -21,10 +21,10 @@ describe('PSEC functional regressions', () => {
       expect(conditionsMet(condition('rich_text', operator, '['), { field: 'answer' })).toBe(false)
     }
   })
-  it('requires every matrix entry and tolerates an absent matrix', () => {
+  it('accepts any matching matrix entry and tolerates an absent matrix', () => {
     const rule = condition('matrix', 'contains', { a: 'yes', b: 'no' })
     expect(conditionsMet(rule, { field: null })).toBe(false)
-    expect(conditionsMet(rule, { field: { a: 'yes', b: 'yes' } })).toBe(false)
+    expect(conditionsMet(rule, { field: { a: 'yes', b: 'yes' } })).toBe(true)
     expect(conditionsMet(rule, { field: { a: 'yes', b: 'no' } })).toBe(true)
   })
   it('shares answers only with explicit creator permission', () => {
