@@ -66,6 +66,7 @@
     "@gtm-support/vue-gtm": "^3.2.0",
     "@iconify-json/material-symbols": "^1.2.95",
     "@microsoft/clarity": "^1.0.2",
+    "@nuxt/content": "3.16.2",
     "@nuxt/ui": "^4.12.0",
     "@pinia/nuxt": "^0.11.0",
     "@popperjs/core": "^2.11.8",
@@ -81,6 +82,7 @@
     "@vueuse/nuxt": "^15.0.0",
     "@vueuse/router": "^15.0.0",
     "@zxing/library": "^0.23.0",
+    "better-sqlite3": "^12.11.1",
     "chart.js": "^4.5.1",
     "clone-deep": "^4.0.1",
     "codemirror": "^6.0.1",
@@ -121,6 +123,9 @@
     "node": "^22.22.3 || ^24.15.0 || >=26.0.0"
   },
   "overrides": {
+    "@nuxt/content": {
+      "zod": "^4.6.6"
+    },
     "fontless@0.2.1": {
       "esbuild": "0.28.2"
     },
