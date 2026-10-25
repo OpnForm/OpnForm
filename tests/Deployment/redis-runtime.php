@@ -55,7 +55,9 @@ $check($expiry > 0 && $expiry <= config('session.lifetime') * 60000);
 
 $state = app('redis')->connection('state');
 $queue = app('redis')->connection('default');
-$pending = $queue->llen('queues:default');
+$queueKey = 'queues:'.config('queue.connections.redis.queue');
+$check($queueKey !== 'queues:default');
+$pending = $queue->llen($queueKey);
 $check($pending > 0); // The real HTTP submission is waiting for its worker.
 $memory = $state->info('memory');
 $state->command('config', ['SET', 'maxmemory', (string) ($memory['used_memory'] + 100000)]);
@@ -69,7 +71,7 @@ try {
     $check($oom);
     $check(Cache::get('runtime-counter') === 2);
     $check(Cache::store('auth')->get($session->getId()) !== null);
-    $check($queue->llen('queues:default') === $pending);
+    $check($queue->llen($queueKey) === $pending);
     $check($state->info('stats')['evicted_keys'] === 0);
 } finally {
     $state->command('config', ['SET', 'maxmemory', '32mb']);

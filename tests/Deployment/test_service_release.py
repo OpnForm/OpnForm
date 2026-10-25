@@ -3,6 +3,8 @@ import importlib.util
 import json
 import os
 from pathlib import Path
+import shutil
+import subprocess
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -94,6 +96,44 @@ class ServiceReleaseTests(unittest.TestCase):
             self.release.controller(target, self.candidate)
         self.assertEqual(execute.call_args.args[0], ['docker', 'exec', '-i', 'coolify', 'php'])
         ssh.assert_not_called()
+
+    def run_controller_fixture(self, directory, candidate, **options):
+        target = {'controller_local': True, 'service_uuid': 's' * 24,
+                  'server_id': 5, 'project_id': 4, 'team_id': 0, 'native_address': '100.65.151.96'}
+        with patch.object(self.release, 'execute', return_value='{}') as execute:
+            self.release.controller(target, candidate, **options)
+        # Execute the exact generated PHP against a model double. Only its
+        # bootstrap and private history root are substituted for this fixture.
+        program = '$x=json_decode' + execute.call_args.kwargs['input'].split('$x=json_decode', 1)[1]
+        program = program.replace('/var/www/html/storage/app/opnform-release-history', directory)
+        fixture = Path(__file__).with_name('coolify-model-fixture.php').read_text()
+        return subprocess.run(['php'], input=fixture + '\nnamespace {\n' + program + '\n}\n',
+                              capture_output=True, text=True, timeout=10)
+
+    @unittest.skipUnless(shutil.which('php'), 'PHP is required for the generated controller fixture')
+    def test_successful_same_sha_reruns_have_independent_history_and_release_their_lease(self):
+        with tempfile.TemporaryDirectory() as directory:
+            for attempt in (1, 2):
+                candidate = {**self.candidate, 'run_attempt': attempt}
+                applied = self.run_controller_fixture(directory, candidate, apply=True)
+                self.assertEqual(applied.returncode, 0, applied.stderr)
+                finished = self.run_controller_fixture(directory, candidate, finish=True)
+                self.assertEqual(finished.returncode, 0, finished.stderr)
+            root = Path(directory) / ('s' * 24)
+            self.assertEqual(len(list(root.glob('*.json'))), 2)
+            self.assertFalse((root / '.promotion-active').exists())
+
+    @unittest.skipUnless(shutil.which('php'), 'PHP is required for the generated controller fixture')
+    def test_another_attempt_of_the_same_sha_cannot_release_an_active_promotion(self):
+        with tempfile.TemporaryDirectory() as directory:
+            applied = self.run_controller_fixture(directory, self.candidate, apply=True)
+            self.assertEqual(applied.returncode, 0, applied.stderr)
+            other = {**self.candidate, 'run_attempt': 2}
+            finished = self.run_controller_fixture(directory, other, finish=True)
+            self.assertNotEqual(finished.returncode, 0)
+            self.assertTrue((Path(directory) / ('s' * 24) / '.promotion-active').exists())
+            finished = self.run_controller_fixture(directory, self.candidate, finish=True)
+            self.assertEqual(finished.returncode, 0, finished.stderr)
 
     def test_new_image_pins_are_persisted_only_after_successful_runtime_verification(self):
         with tempfile.TemporaryDirectory() as directory:

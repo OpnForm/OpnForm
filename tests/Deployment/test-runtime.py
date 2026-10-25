@@ -111,7 +111,7 @@ add rule inet {firewall_table} forward_guard iifname "{bridge}" oifname != "{bri
                 'APP_URL': 'http://api.fixture.test', 'FRONT_URL': 'http://client.fixture.test',
                 'DB_CONNECTION': 'pgsql', 'DB_HOST': db, 'DB_PORT': '5432',
                 'DB_DATABASE': 'opnform_fixture', 'DB_USERNAME': 'postgres', 'DB_PASSWORD': 'fictional-local-only',
-                'QUEUE_CONNECTION': 'redis', 'REDIS_HOST': queue, 'REDIS_QUEUE_RETRY_AFTER': '3700',
+                'QUEUE_CONNECTION': 'redis', 'REDIS_HOST': queue, 'REDIS_QUEUE': 'custom-fixture', 'REDIS_QUEUE_RETRY_AFTER': '3700',
                 'REDIS_CACHE_HOST': cache, 'REDIS_STATE_HOST':state,'REDIS_AUTH_HOST':state,'REDIS_DB':'0','REDIS_CACHE_DB':'1','REDIS_AUTH_DB':'2','REDIS_STATE_DB':'3','REDIS_PREFIX':'opnform_fixture:', 'OPNFORM_STATE_MODE':'redis-fresh', 'CACHE_DRIVER': 'redis',
                 'MAIL_MAILER': 'log', 'FILESYSTEM_DRIVER': 'local', 'WORKER_COUNT': '1',
                 'OPNFORM_ANONYMOUS_TELEMETRY_DISABLED': 'true', 'SESSION_DRIVER': 'redis','SESSION_STORE':'auth','SESSION_CONNECTION':'auth',
@@ -229,7 +229,7 @@ $job=Illuminate\\Queue\\CallQueuedClosure::create(function () {
             wait_for(lambda: (fixture / 'retry-finished').exists(), 'third worker attempt')
             assert (fixture / 'retry-count').read_text() == '3'
             assert '--tries=3' in docker('exec', jobs, 'pgrep', '-af', 'artisan queue:work redis').stdout
-            record('worker global three-attempt contract retries a synthetic job through success')
+            record('worker consumes the configured custom queue and retries a synthetic job through success')
             docker('exec', api, 'php', '/fixtures/queue.php')
             wait_for(lambda: (fixture / 'job-started').exists(), 'queued synthetic job')
             docker('stop', '-t', '15', jobs)

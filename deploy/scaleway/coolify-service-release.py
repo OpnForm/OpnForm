@@ -130,6 +130,7 @@ def github(path):
 
 def controller(target, release, apply=False, finish=False):
     payload = base64.b64encode(json.dumps({'target': target, 'release': release,
+        'release_id': release['sha'] + '-' + str(release['run_id']) + '-' + str(release['run_attempt']),
         'native_images': {role: native_image_name(image) for role, image in release['images'].items()},
         'apply': apply, 'finish': finish}).encode()).decode()
     program = r'''<?php
@@ -146,14 +147,14 @@ if(array_diff($roles,array_keys($raw['services']))||array_diff(array_keys($raw['
 $dir='/var/www/html/storage/app/opnform-release-history/'.$s->uuid;$lease=$dir.'/.promotion-active';
 if($x['finish']){
  $active=json_decode(file_get_contents($lease),true,512,JSON_THROW_ON_ERROR);
- if($active['sha']!==$x['release']['sha'])throw new RuntimeException('Promotion lease differs');
+ if($active['release_id']!==$x['release_id'])throw new RuntimeException('Promotion lease differs');
  if(!unlink($lease))throw new RuntimeException('Cannot release promotion lease');
 }elseif(file_exists($lease))throw new RuntimeException('Prior promotion needs inspection');
 if($x['apply']){
  if(!is_dir($dir)&&!mkdir($dir,0700,true))throw new RuntimeException('Cannot save previous configuration');
  $handle=fopen($lease,'x');if($handle===false)throw new RuntimeException('Another promotion acquired the service');
- chmod($lease,0600);fwrite($handle,json_encode(['sha'=>$x['release']['sha'],'started_at'=>time()]));fclose($handle);
- $file=$dir.'/'.$x['release']['sha'].'.json';
+ chmod($lease,0600);fwrite($handle,json_encode(['release_id'=>$x['release_id'],'started_at'=>time()]));fclose($handle);
+ $file=$dir.'/'.$x['release_id'].'.json';
  if(file_exists($file))throw new RuntimeException('Prior promotion needs inspection');
  if(file_put_contents($file,$s->docker_compose_raw,LOCK_EX)===false)throw new RuntimeException('Cannot save previous configuration');chmod($file,0600);
  foreach($roles as$r)$raw['services'][$r]['image']=$x['native_images'][$r==='frontend'?'frontend':'backend'];
