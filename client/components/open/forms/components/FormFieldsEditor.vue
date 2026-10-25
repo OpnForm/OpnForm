@@ -232,6 +232,8 @@ export default {
 </script>
 
 <style lang='scss'>
+@reference '../../../../css/app.css';
+
 .v-popover {
   .trigger {
     @apply truncate w-full;

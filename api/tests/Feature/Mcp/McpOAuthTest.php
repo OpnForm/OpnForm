@@ -154,7 +154,8 @@ it('creates and previews a guest form over HTTP without an OAuth challenge', fun
     ], mcpHeaders())->assertOk()
         ->assertJsonPath('result.isError', false)
         ->assertJsonPath('result.structuredContent.draft.definition.title', 'Contact form')
-        ->assertJsonPath('result.structuredContent.preview_url', fn (string $url): bool => str_starts_with($url, 'https://opnform.test/'))
+        ->assertJsonMissingPath('result.structuredContent.preview_url')
+        ->assertJsonPath('result._meta.preview_url', fn (string $url): bool => str_starts_with($url, 'https://opnform.test/'))
         ->assertJsonPath('result.structuredContent.draft_handle', $draftHandle)
         ->assertJsonMissingPath('result.structuredContent.editor_url')
         ->assertJsonMissingPath('result._meta.mcp/www_authenticate');

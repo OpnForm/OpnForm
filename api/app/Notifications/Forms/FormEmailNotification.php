@@ -34,6 +34,8 @@ class FormEmailNotification extends Notification
     ];
 
     public FormSubmitted $event;
+    public ?string $emailTransport = null;
+    public ?array $emailTracking = null;
     private ?array $computedValues = null;
     private array $inlineImages = [];
     private int $inlineImageBytes = 0;
@@ -114,7 +116,14 @@ class FormEmailNotification extends Notification
     public function toMail($notifiable)
     {
         $mail = (new MailMessage())
-            ->mailer($this->getMailer())
+            ->mailer($mailer = $this->getMailer())
+            ->withSymfonyMessage(function ($message) use ($mailer) {
+                $this->emailTransport = config("mail.mailers.$mailer.transport", $mailer);
+                if ($this->emailTracking) {
+                    $message->getHeaders()->addTextHeader('X-Form-Email-Event-ID', $this->emailTracking['event']);
+                    $message->getHeaders()->addTextHeader('X-Form-Email-Recipient-ID', $this->emailTracking['recipient']);
+                }
+            })
             ->replyTo($this->getReplyToEmail($this->event->form->creator->email))
             ->from($this->getFromEmail(), $this->getSenderName())
             ->subject($this->getSubject());

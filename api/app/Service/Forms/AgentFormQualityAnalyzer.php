@@ -3,10 +3,16 @@
 namespace App\Service\Forms;
 
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class AgentFormQualityAnalyzer
 {
     private const MAX_WARNINGS = 50;
+
+    private const BLOCKING_CODES = [
+        'machine_like_label',
+        'markdown_text_content',
+    ];
 
     private const RAW_LABELS = [
         'name',
@@ -43,6 +49,20 @@ class AgentFormQualityAnalyzer
                 'Add a concise nf-text heading and supporting sentence unless this form is intentionally minimal.',
                 'properties',
             );
+        }
+
+        foreach ($properties as $index => $property) {
+            if (($property['type'] ?? null) !== 'nf-text') {
+                continue;
+            }
+
+            if ($this->looksLikeMarkdown((string) ($property['content'] ?? ''))) {
+                $warnings[] = $this->warning(
+                    'markdown_text_content',
+                    'Replace Markdown with sanitized HTML in nf-text content, for example <h1>Contact us</h1><p>How can we help?</p>.',
+                    "properties.{$index}.content",
+                );
+            }
         }
 
         foreach ($inputProperties as $index => $property) {
@@ -108,6 +128,23 @@ class AgentFormQualityAnalyzer
         return array_slice($warnings, 0, self::MAX_WARNINGS);
     }
 
+    public function assertReadyForAgentPersistence(array $definition): void
+    {
+        $blockingWarnings = collect($this->analyze($definition))
+            ->where('blocking', true)
+            ->values();
+
+        if ($blockingWarnings->isEmpty()) {
+            return;
+        }
+
+        throw ValidationException::withMessages([
+            'definition' => $blockingWarnings
+                ->map(fn (array $warning): string => "{$warning['path']}: {$warning['message']}")
+                ->all(),
+        ]);
+    }
+
     private function hasVisibleIntroduction(array $properties): bool
     {
         foreach ($properties as $property) {
@@ -130,6 +167,15 @@ class AgentFormQualityAnalyzer
         }
 
         return $label === Str::lower($label) && in_array($label, self::RAW_LABELS, true);
+    }
+
+    private function looksLikeMarkdown(string $content): bool
+    {
+        return preg_match('/(^|\n)\s{0,3}#{1,6}\s+\S/m', $content) === 1
+            || preg_match('/\*\*[^*\n]+\*\*/', $content) === 1
+            || preg_match('/__[^_\n]+__/', $content) === 1
+            || preg_match('/(^|\n)\s*```/m', $content) === 1
+            || preg_match('/(?<!!)\[[^\]\n]+\]\([^)\n]+\)/', $content) === 1;
     }
 
     private function wouldBenefitFromPlaceholder(array $property): bool
@@ -177,6 +223,11 @@ class AgentFormQualityAnalyzer
 
     private function warning(string $code, string $message, string $path): array
     {
-        return compact('code', 'message', 'path');
+        return [
+            'code' => $code,
+            'message' => $message,
+            'path' => $path,
+            'blocking' => in_array($code, self::BLOCKING_CODES, true),
+        ];
     }
 }

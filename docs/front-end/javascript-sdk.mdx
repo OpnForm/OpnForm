@@ -302,6 +302,12 @@ opnform.init({
 
 ### Programmatic Form Creation
 
+Use `opnform.create(slugOrUrl, options)` to create an iframe for an existing
+form. Pass either its slug or its full share URL.
+
+With a slug, the iframe loads from `https://opnform.com` by default, regardless
+of your page's domain or where you load the SDK script.
+
 ```javascript
 opnform.create("my-form-slug", {
     container: "#form-container", // CSS selector or element
@@ -313,6 +319,41 @@ opnform.create("my-form-slug", {
     },
 });
 ```
+
+If you have the form's share URL, pass it directly. This works with OpnForm
+Cloud, custom domains, subdomains, and self-hosted instances:
+
+```javascript
+opnform.create("https://forms.example.com/forms/my-form-slug?email=user%40example.com", {
+    container: "#form-container",
+});
+```
+
+The URL must use `http://` or `https://` and point to a public form at
+`/forms/{slug}`. Its query parameters and fragment are preserved. You can
+access the resulting form with `opnform.get("my-form-slug")` as usual.
+
+If you only have the slug, pass `baseUrl` to select a custom domain or a
+self-hosted instance. Include the protocol:
+
+```javascript
+opnform.create("my-form-slug", {
+    container: "#form-container",
+    baseUrl: "https://forms.example.com",
+});
+```
+
+This loads `https://forms.example.com/forms/my-form-slug` inside the iframe.
+
+- A full URL takes precedence over `baseUrl`; its host is never replaced.
+- With a slug, `baseUrl` defaults to `https://opnform.com`. The SDK does not
+  look up the form's custom domain automatically.
+- An explicit `darkMode` option overrides the value in the URL. The SDK sets
+  its own `_sdkToken` and `_sdkParentOrigin` parameters for iframe communication.
+- Existing iframes keep their own `src`.
+
+If your integration previously relied on `create()` loading from the page's
+domain, pass that instance's `baseUrl` explicitly or use the full share URL.
 
 ---
 

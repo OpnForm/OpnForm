@@ -73,3 +73,17 @@ bun run preview
 ```
 
 Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
+
+## Public JavaScript SDK
+
+Edit `public/widgets/opnform-sdk.js`, then regenerate the committed minified
+asset before testing or committing:
+
+```bash
+npm run build:sdk
+```
+
+This uses esbuild to write `public/widgets/opnform-sdk.min.js` and preserves
+the SDK and bundled iFrame Resizer license comments. Do not edit the minified
+file directly. The production build, E2E build, and static generation commands
+also run this step before Nuxt copies the public assets.

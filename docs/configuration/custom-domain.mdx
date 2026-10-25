@@ -17,7 +17,14 @@ To use a custom domain (or subdomain) with OpnForm:
 
 1. Purchase a domain (if needed)
 2. Configure DNS records to point to your OpnForm instance
-3. Update OpnForm configuration:
+3. Update an existing Docker installation with your public origin:
+
+   ```bash
+   ./scripts/docker-setup.sh --public-url https://forms.example.com
+   ```
+
+   The command updates the following configuration while preserving existing
+   keys and secrets:
    - Set both `APP_URL` and `FRONT_URL` in `api/.env`
    - Set `NUXT_PUBLIC_APP_URL` and `NUXT_PUBLIC_API_BASE` in `client/.env`
 4. Secure with SSL certificate
@@ -37,8 +44,8 @@ NUXT_PUBLIC_API_BASE=https://forms.example.com/api
 `FRONT_URL` is used by the backend when it creates frontend callback URLs,
 including OIDC callbacks. Keep it aligned with the public frontend URL.
 
-After changing these files, recreate the containers; a restart alone does not
-load new environment values. See [Updating Environment Variables](./environment-variables#updating-environment-variables).
+If you change these files manually, recreate the containers; a restart alone
+does not load new environment values. See [Updating Environment Variables](./environment-variables#updating-environment-variables).
 
 <Note>
     If an OIDC connection already exists, edit it afterwards, use **Use current

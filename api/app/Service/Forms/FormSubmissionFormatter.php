@@ -417,7 +417,7 @@ class FormSubmissionFormatter
             // See: https://github.com/OpnForm/OpnForm/issues/1024
             $encodedFilename = FilenameUrlEncoder::encode($file);
 
-            return $this->useSignedUrlForFiles ? URL::temporarySignedRoute(
+            return $this->useSignedUrlForFiles ? URL::temporaryPublicSignedRoute(
                 'open.forms.submissions.file',
                 $this->signedFileUrlExpiration ?? now()->addMinutes(self::SIGNED_FILE_URL_EXPIRATION_MINUTES),
                 [$formId, $encodedFilename]

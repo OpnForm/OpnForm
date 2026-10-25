@@ -58,7 +58,8 @@ if (config('app.self_hosted')) {
 Route::middleware('mcp.enabled')->group(function () {
     Route::prefix('agent-drafts')->name('agent-drafts.')->middleware('mcp.guest-drafts')->group(function () {
         Route::get('/preview/{draft}', [AgentFormDraftController::class, 'preview'])
-            ->middleware(['signed', 'throttle:60,1'])
+            ->withoutMiddleware('throttle:100,1')
+            ->middleware(['signed', 'throttle:agent-draft-preview'])
             ->name('preview');
         Route::post('/handoff/consume', [AgentFormDraftController::class, 'consume'])
             ->withoutMiddleware('throttle:100,1')
@@ -118,6 +119,7 @@ Route::group(['middleware' => 'auth.multi'], function () {
         Route::patch('/password', [PasswordController::class, 'update']);
 
         Route::prefix('/tokens')->name('tokens.')->group(function () {
+            Route::get('/abilities', [\App\Http\Controllers\Settings\TokenController::class, 'abilities'])->name('abilities');
             Route::get('/', [TokenController::class, 'index'])->name('index');
             Route::post('/', [TokenController::class, 'store'])->name('store');
             Route::delete('{token}', [TokenController::class, 'destroy'])->name('destroy');
@@ -245,6 +247,7 @@ Route::group(['middleware' => 'auth.multi'], function () {
 
         Route::prefix('forms')->name('forms.')->group(function () {
             Route::post('/', [FormController::class, 'store'])->name('store');
+            Route::post('/{form}/validate-definition', [FormController::class, 'validateDefinition'])->name('validate-definition');
             Route::post('/{form}/workspace/{workspace}', [FormController::class, 'updateWorkspace'])->name('workspace.update');
             Route::put('/{form}', [FormController::class, 'update'])->name('update');
             Route::delete('/{form}', [FormController::class, 'destroy'])->name('destroy');
@@ -263,8 +266,8 @@ Route::group(['middleware' => 'auth.multi'], function () {
                     ->middleware('throttle:export-status')
                     ->name('export.status');
                 Route::get('/file/{filename}', [FormSubmissionController::class, 'submissionFile'])
-                    ->middleware('signed')
-                    ->withoutMiddleware(['auth.multi'])
+                    ->middleware(['signed:relative', 'throttle:submission-files'])
+                    ->withoutMiddleware(['auth.multi', 'throttle:100,1'])
                     ->name('file');
                 Route::delete('/{submission_id}', [FormSubmissionController::class, 'destroy'])->name('destroy');
                 Route::post('/multi', [FormSubmissionController::class, 'destroyMulti'])->name('destroy-multi');
@@ -275,7 +278,7 @@ Route::group(['middleware' => 'auth.multi'], function () {
                 '/{form}/regenerate-link/{option}',
                 [FormController::class, 'regenerateLink']
             )
-                ->where('option', '(uuid|slug)')
+                ->where('option', '(uuid|slug|custom)')
                 ->name('regenerate-link');
             Route::post(
                 '/{form}/duplicate',
@@ -321,6 +324,11 @@ Route::group(['middleware' => 'auth.multi'], function () {
                 '/{form}/integrations/{integrationid}/events',
                 [FormIntegrationsEventController::class, 'index']
             )->name('integrations.events');
+            Route::post(
+                '/{form}/integrations/{integrationid}/events/{event}/retry',
+                [FormIntegrationsEventController::class, 'retry']
+            )->whereNumber(['integrationid', 'event'])
+                ->middleware('throttle:integration-retries')->name('integrations.events.retry');
 
             // PDF Templates
             Route::prefix('/{form}/pdf-templates')->name('pdf-templates.')->group(function () {
@@ -349,7 +357,7 @@ Route::group(['middleware' => 'auth.multi'], function () {
                 '/{form}/pdf-templates/{pdfTemplate}/submissions/{submission_id}/download',
                 [PdfGenerateController::class, 'downloadByTemplate']
             )
-                ->middleware('signed')
+                ->middleware('signed:relative')
                 ->withoutMiddleware(['auth.multi'])
                 ->name('pdf-templates.download-submission');
 
@@ -358,7 +366,7 @@ Route::group(['middleware' => 'auth.multi'], function () {
                 '/{form}/pdf-templates/{pdfTemplate}/preview',
                 [PdfGenerateController::class, 'previewBySignature']
             )
-                ->middleware('signed')
+                ->middleware('signed:relative')
                 ->withoutMiddleware(['auth.multi'])
                 ->name('pdf-templates.preview-signed');
         });
@@ -436,7 +444,8 @@ Route::group(['middleware' => 'guest:api'], function () {
     Route::post('login', [LoginController::class, 'login'])->name('login');
     Route::post('register', [RegisterController::class, 'register']);
 
-    Route::post('password/email', [ForgotPasswordController::class, 'sendResetLinkEmail']);
+    Route::post('password/email', [ForgotPasswordController::class, 'sendResetLinkEmail'])
+        ->middleware('throttle:password-reset');
     Route::post('password/reset', [ResetPasswordController::class, 'reset']);
 
     Route::post('email/verify/{user}', [VerificationController::class, 'verify'])->name('verification.verify');
@@ -488,12 +497,6 @@ Route::prefix('forms')->name('forms.')->group(function () {
         Route::post('{form}/answer', [PublicFormController::class, 'answer'])->name('answer')->middleware(HandlePrecognitiveRequests::class);
         Route::get('{form}/stripe-connect/get-account', [FormPaymentController::class, 'getAccount'])->name('stripe-connect.get-account')->middleware(HandlePrecognitiveRequests::class);
         Route::post('{form}/stripe-connect/payment-intent', [FormPaymentController::class, 'createIntent'])->name('stripe-connect.create-intent')->middleware(HandlePrecognitiveRequests::class);
-
-        // Form content endpoints (user lists, relation lists etc.)
-        Route::get(
-            '{form}/users',
-            [PublicFormController::class, 'listUsers']
-        )->name('users.index');
     });
 
     // File uploads
@@ -563,7 +566,7 @@ Route::post(
 )->middleware('throttle:public-uploads')->name('upload-file');
 
 Route::get('local/temp/{path}', function (Request $request, string $path) {
-    if (!$request->hasValidSignature()) {
+    if (!$request->hasValidRelativeSignature()) {
         abort(401);
     }
 
@@ -572,3 +575,6 @@ Route::get('local/temp/{path}', function (Request $request, string $path) {
 
 Route::get('caddy/ask-certificate/{secret?}', [\App\Http\Controllers\CaddyController::class, 'ask'])
     ->name('caddy.ask')->middleware(\App\Http\Middleware\CaddyRequestMiddleware::class);
+
+Route::post('/aws/sns/ses/integration-events', \App\Http\Controllers\Integrations\SesIntegrationFeedbackController::class)
+    ->withoutMiddleware(['throttle:100,1', 'throttle:150,1', 'throttle:api']);

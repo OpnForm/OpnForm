@@ -3,11 +3,16 @@ frontend:
   phases:
     preBuild:
       commands:
+        - nvm install 24.22.1
+        - nvm use 24.22.1
         - cd client
         - npm ci
+        - node ../scripts/check-security-versions.mjs
+        - node ../scripts/audit-npm.mjs all npm-audit.json
+        - node ../scripts/audit-npm.mjs production npm-audit-production.json
     build:
       commands:
-        - npm run build
+        - npm run build:amplify
   artifacts:
     baseDirectory: client/.amplify-hosting
     files:

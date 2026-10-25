@@ -15,7 +15,7 @@ use Laravel\Mcp\Server\Tools\Annotations\IsOpenWorld;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Name('get_form_draft')]
-#[Description('Fetch the current canonical definition and version of a private guest draft. Use this after a version conflict or whenever the current state is uncertain.')]
+#[Description('Fetch a private guest draft. Omit version for the current canonical definition, especially after a conflict. Provide version to inspect an earlier saved revision without changing the current draft.')]
 #[IsReadOnly]
 #[IsDestructive(false)]
 #[IsOpenWorld(false)]
@@ -25,16 +25,18 @@ class GetFormDraftTool extends GuestDraftMcpTool
     {
         $validated = $request->validate([
             'draft_handle' => ['required', 'string', 'size:43'],
+            'version' => ['sometimes', 'integer', 'min:1'],
         ]);
 
         return Response::structured([
-            'draft' => $drafts->serialize($drafts->get($validated['draft_handle'])),
+            'draft' => $drafts->serialize($drafts->get($validated['draft_handle'], $validated['version'] ?? null)),
         ]);
     }
 
     public function schema(JsonSchema $schema): array
     {
         return [
+            'version' => $schema->integer()->min(1)->description('Optional historical version. Omit to read the latest version.'),
             'draft_handle' => $schema->string()
                 ->description('Opaque reference returned by create_form_draft. Pass it unchanged.')
                 ->min(43)

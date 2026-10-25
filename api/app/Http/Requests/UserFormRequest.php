@@ -14,6 +14,8 @@ use Illuminate\Validation\Rule;
 use Illuminate\Http\Request;
 use App\Rules\CssOnlyRule;
 use App\Service\Forms\FormDataNormalizer;
+use App\Service\Forms\FormStructureValidator;
+use App\Service\Forms\FormValidationIssueMapper;
 
 /**
  * Abstract class to validate create/update forms
@@ -58,14 +60,21 @@ abstract class UserFormRequest extends \Illuminate\Foundation\Http\FormRequest
         ];
 
         // Log to both default channel and Slack
-        if (!app()->environment('testing')) {
+        if (! app()->environment('testing') && ! $this->routeIs('open.forms.validate-definition')) {
             Log::channel('slack_errors')->warning(
                 'Frontend validation bypass detected in form submission',
                 $logData
             );
         }
 
-        throw new ValidationException($validator);
+        $issueMapper = app(FormValidationIssueMapper::class);
+        $issues = $issueMapper->fromErrors($errors);
+
+        throw new ValidationException($validator, response()->json([
+            'message' => $issueMapper->summary($issueMapper->count($errors)),
+            'errors' => $errors,
+            'issues' => $issues,
+        ], 422));
     }
 
     /**
@@ -175,7 +184,7 @@ abstract class UserFormRequest extends \Illuminate\Foundation\Http\FormRequest
 
             // Properties - Single-pass validation for performance
             // Replaces ~35 wildcard rules (properties.*) with one efficient rule
-            'properties' => ['required', 'array', new FormPropertiesRule($workspace)],
+            'properties' => ['required', 'array', 'max:'.FormStructureValidator::MAX_PROPERTY_COUNT, new FormPropertiesRule($workspace)],
 
             // Computed Variables - Single-pass validation with formula syntax checking
             'computed_variables' => ['nullable', 'array', new ComputedVariablesRule()],

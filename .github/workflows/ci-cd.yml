@@ -6,18 +6,26 @@ on:
     tags:
       - "v*"
     paths:
+      - "amplify.yml"
       - "api/**"
       - "client/**"
       - "docker/**"
       - "docker-compose*.yml"
+      - "scripts/*security*.mjs"
+      - "scripts/audit-npm.mjs"
+      - "scripts/check-ci-readiness.mjs"
+      - "scripts/check-database-compatibility.php"
+      - "scripts/check-linux-client-health.mjs"
+      - "scripts/check-amplify-runtime.mjs"
+      - "scripts/npm-exceptions.json"
+      - "scripts/tests/dependency-security.test.mjs"
+      - "scripts/docker-setup.sh"
+      - "scripts/e2e-*.sh"
+      - "scripts/setup-env.sh"
+      - "scripts/tests/setup-env-test.sh"
+      - "scripts/tests/mcp-draft-preview.test.mjs"
       - ".github/workflows/**"
   pull_request:
-    paths:
-      - "api/**"
-      - "client/**"
-      - "docker/**"
-      - "docker-compose*.yml"
-      - ".github/workflows/**"
   workflow_dispatch:
 
 concurrency:
@@ -31,14 +39,17 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
+
+      - name: Test Docker environment setup
+        run: bash scripts/tests/setup-env-test.sh
 
       - name: Get Composer cache directory
         id: composer-cache
         run: |
-          echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+          echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
 
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: ${{ steps.composer-cache.outputs.dir }}
           key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
@@ -49,7 +60,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: 8.3
-          extensions: dom, curl, mbstring, pdo, sqlite, pdo_sqlite
+          extensions: dom, curl, mbstring, pdo, sqlite, pdo_sqlite, pdo_pgsql, pdo_mysql, bcmath, gd, zip, pcntl, intl
           tools: composer:v2
           coverage: none
 
@@ -59,7 +70,11 @@ jobs:
 
       - name: Install composer dependencies
         working-directory: ./api
-        run: composer install --prefer-dist --no-interaction --no-progress --no-scripts --ignore-platform-reqs --optimize-autoloader
+        run: composer install --prefer-dist --no-interaction --no-progress --no-scripts --optimize-autoloader
+
+      - name: Validate Composer platform
+        working-directory: ./api
+        run: composer check-platform-reqs
 
       - name: Run PHP lint check
         working-directory: ./api
@@ -74,20 +89,43 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
-          node-version: "22.17.0"
+          node-version: "24.22.1"
           cache: npm
           cache-dependency-path: client/package-lock.json
 
       - name: Install npm dependencies
         run: npm ci --no-audit --no-progress --silent
 
+      - name: Test security audit policy and release gate
+        working-directory: .
+        run: node --test scripts/tests/dependency-security.test.mjs
+
+      - name: Test MCP draft preview version pinning
+        working-directory: .
+        run: node --test scripts/tests/mcp-draft-preview.test.mjs
+
       - name: Run ESLint
         run: npm run lint
+
+      - name: Test integration email event rendering
+        run: npm run test:email-events
+
+      - name: Test SSR configuration cache
+        run: npm run test:ssr-cache
+
+      - name: Test public form bundle checker
+        run: node --test scripts/check-public-form-bundle.test.mjs scripts/check-built-css.test.mjs scripts/check-amplify-output.test.mjs
+
+      - name: Test worktree runtime selection
+        working-directory: .
+        run: |
+          sh scripts/tests/codex-worktree-runtime-test.sh
+          sh scripts/tests/codex-worktree-client-lifecycle-test.sh
 
       - name: Run front-end tests
         run: npm run test -- --run
@@ -100,12 +138,37 @@ jobs:
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
 
+      - name: Check public form bundle
+        run: npm run check:public-form-bundle && npm run check:built-css
+
+      - name: Preserve client manifest for browser chunk tests
+        run: |
+          mkdir -p .output/qa
+          cp .nuxt/dist/server/client.manifest.mjs .output/qa/client.manifest.mjs
+
+      - name: Test built SSR configuration cache
+        run: npm run test:ssr-cache:built
+
       - name: Upload Nuxt Output Artifact
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: nuxt-output
           path: client/.output
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Build and validate Amplify Node 24 compute
+        run: npm run build:amplify
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
+
+      - name: Upload standalone Amplify artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: amplify-output
+          path: client/.amplify-hosting
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 1
@@ -115,7 +178,7 @@ jobs:
     name: Verify shared files are in sync
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Check file sync
         run: |
@@ -166,74 +229,18 @@ jobs:
   tests:
     runs-on: ubuntu-latest
 
-    services:
-      postgres:
-        # Docker Hub image
-        image: postgres:14
-        # Provide the password for postgres
-        env:
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_USER: postgres
-          POSTGRES_DB: postgres
-        # Set health checks to wait until postgres has started
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          # Maps tcp port 5432 on service container to the host
-          - 5432:5432
-      mysql:
-        # Docker Hub image
-        image: mysql:8
-        # Provide the password for mysql
-        env:
-          MYSQL_ROOT_PASSWORD: test
-          MYSQL_DATABASE: test
-          MYSQL_USER: test
-          MYSQL_PASSWORD: test
-        # Set health checks to wait until mysql has started
-        options: >-
-          --health-cmd="mysqladmin ping"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
-        ports:
-          # Maps tcp port 3306 on service container to the host
-          - 3306:3306
-
-    strategy:
-      fail-fast: true
-      matrix:
-        php: [8.3]
-        connection: [pgsql, mysql]
-        include:
-          - connection: pgsql
-            host: localhost
-            port: 5432
-            user: postgres
-            password: postgres
-            database: postgres
-          - connection: mysql
-            host: "127.0.0.1"
-            port: 3306
-            user: root
-            password: test
-            database: test
-
-    name: Run Feature & Unit tests (PHP ${{ matrix.php }} - ${{ matrix.connection }})
+    name: Run Feature & Unit tests (PHP 8.3 - SQLite)
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Get Composer cache directory
         id: composer-cache
         run: |
-          echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+          echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
 
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: ${{ steps.composer-cache.outputs.dir }}
           key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
@@ -243,8 +250,8 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: ${{ matrix.php }}
-          extensions: dom, curl, mbstring, pdo, sqlite, pdo_sqlite
+          php-version: 8.3
+          extensions: dom, curl, mbstring, pdo, sqlite, pdo_sqlite, pdo_pgsql, pdo_mysql, bcmath, gd, zip, pcntl, intl
           tools: composer:v2
           coverage: none
 
@@ -253,7 +260,7 @@ jobs:
 
       - name: Install composer dependencies
         working-directory: ./api
-        run: composer install --prefer-dist --no-interaction --no-progress --ignore-platform-reqs --optimize-autoloader
+        run: composer install --prefer-dist --no-interaction --no-progress --optimize-autoloader
 
       - name: Directory permissions
         working-directory: ./api
@@ -263,34 +270,90 @@ jobs:
         working-directory: ./api
         run: ./vendor/bin/pest -p
         env:
-          DB_CONNECTION: ${{ matrix.connection }}
-          DB_HOST: ${{ matrix.host }}
-          DB_PORT: ${{ matrix.port }}
-          DB_DATABASE: ${{ matrix.database }}
-          DB_USERNAME: ${{ matrix.user }}
-          DB_PASSWORD: ${{ matrix.password }}
+          APP_ENV: testing
+          DB_CONNECTION: sqlite
+          DB_DATABASE: ":memory:"
 
       - name: "Archive log results"
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
-          name: log-results-${{ matrix.connection }}
+          name: log-results-sqlite
           path: api/storage/logs/laravel.log
           retention-days: 3
 
-  required-tests-pgsql:
-    needs: tests
+  database_compatibility:
+    name: Database compatibility (${{ matrix.connection }})
     runs-on: ubuntu-latest
-    name: Run Feature & Unit tests (PHP 8.2 - pgsql)
+    strategy:
+      fail-fast: false
+      matrix:
+        connection: [pgsql, mysql]
+        include:
+          - connection: pgsql
+            port: 5432
+            password: postgres
+          - connection: mysql
+            port: 3306
+            password: test
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_DB: opnform_compat_pgsql
+        options: >-
+          --health-cmd pg_isready --health-interval 10s
+          --health-timeout 5s --health-retries 5
+        ports: [5432:5432]
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: test
+          MYSQL_DATABASE: opnform_compat_mysql
+        options: >-
+          --health-cmd="mysqladmin ping" --health-interval=10s
+          --health-timeout=5s --health-retries=5
+        ports: [3306:3306]
     steps:
-      - run: echo "PHP 8.3 pgsql tests passed in the tests matrix."
-
-  required-tests-mysql:
-    needs: tests
-    runs-on: ubuntu-latest
-    name: Run Feature & Unit tests (PHP 8.2 - mysql)
-    steps:
-      - run: echo "PHP 8.3 mysql tests passed in the tests matrix."
+      - uses: actions/checkout@v7
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.3
+          extensions: dom, curl, mbstring, pdo_pgsql, pdo_mysql, bcmath, gd, zip, intl
+          tools: composer:v2
+          coverage: none
+      - name: Prepare isolated compatibility environment
+        run: cp api/.env.example api/.env
+      - name: Install Composer dependencies
+        working-directory: api
+        run: composer install --prefer-dist --no-interaction --no-progress --optimize-autoloader
+      - name: Check real PDO driver, migrate and exercise application paths
+        run: php scripts/check-database-compatibility.php "${{ matrix.connection }}"
+        env:
+          APP_ENV: database-compatibility
+          APP_KEY: base64:ZGF0YWJhc2UtY29tcGF0aWJpbGl0eS1xYS1rZXktMDA=
+          APP_URL: http://localhost
+          JWT_SECRET: database-compatibility-isolated-ci-only
+          SELF_HOSTED: "false"
+          CACHE_DRIVER: array
+          QUEUE_CONNECTION: sync
+          MAIL_MAILER: array
+          MAIL_FROM_ADDRESS: qa@example.test
+          MAIL_FROM_NAME: Compatibility QA
+          DB_CONNECTION: ${{ matrix.connection }}
+          DB_HOST: 127.0.0.1
+          DB_PORT: ${{ matrix.port }}
+          DB_DATABASE: opnform_compat_${{ matrix.connection }}
+          DB_USERNAME: ${{ matrix.connection == 'pgsql' && 'postgres' || 'root' }}
+          DB_PASSWORD: ${{ matrix.password }}
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: database-compatibility-${{ matrix.connection }}
+          path: api/storage/logs/laravel.log
+          retention-days: 3
 
   e2e:
     runs-on: ubuntu-latest
@@ -299,32 +362,32 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: 8.2
+          php-version: 8.3
           extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, pdo_pgsql, pdo_sqlite, bcmath, soap, intl, gd, exif, iconv, imagick, fileinfo
           coverage: none
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
-          node-version: "22.17.0"
+          node-version: "24.22.1"
           cache: npm
           cache-dependency-path: client/package-lock.json
 
       - name: Install composer dependencies
         working-directory: ./api
-        run: composer install --prefer-dist --no-interaction --no-progress --ignore-platform-reqs --optimize-autoloader
+        run: composer install --prefer-dist --no-interaction --no-progress --optimize-autoloader
 
       - name: Install npm dependencies
         working-directory: ./client
         run: npm ci --no-audit --no-progress --silent
 
       - name: Download Nuxt Output Artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: nuxt-output
           path: client/.output
@@ -388,7 +451,7 @@ jobs:
             node --require ./scripts/e2e-runtime-guard.cjs .output/server/index.mjs > ../.e2e-ui.log 2>&1 &
           echo $! > ../.e2e-ui.pid
 
-          for attempt in $(seq 1 90); do
+          for _attempt in $(seq 1 90); do
             login_html="$(curl -fsS http://127.0.0.1:3100/login || true)"
             register_html="$(curl -fsS http://127.0.0.1:3100/register || true)"
 
@@ -424,7 +487,7 @@ jobs:
 
       - name: Upload Playwright HTML Report
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-report
           path: .playwright/playwright-report
@@ -433,7 +496,7 @@ jobs:
 
       - name: Upload Playwright Test Results
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-test-results
           path: .playwright/test-results
@@ -442,7 +505,7 @@ jobs:
 
       - name: Upload E2E Debug Logs
         if: ${{ failure() && !cancelled() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: e2e-debug-logs
           path: |
@@ -452,22 +515,138 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
+  linux_client_image:
+    name: Linux frontend image and health
+    runs-on: ubuntu-latest
+    needs: [client_checks]
+    timeout-minutes: 30
+    env:
+      SOURCE_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      APP_ENV: image-qa
+      APP_KEY: base64:ZGF0YWJhc2UtY29tcGF0aWJpbGl0eS1xYS1rZXktMDA=
+      APP_URL: http://127.0.0.1:8089
+      FRONT_URL: http://127.0.0.1:3100
+      JWT_SECRET: isolated-linux-image-ci-only-32-byte-key
+      SELF_HOSTED: "false"
+      DB_CONNECTION: pgsql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_DATABASE: opnform_image_qa
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      CACHE_DRIVER: array
+      QUEUE_CONNECTION: sync
+      MAIL_MAILER: array
+      MAIL_FROM_ADDRESS: qa@example.test
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: opnform_image_qa
+        options: >-
+          --health-cmd pg_isready --health-interval 10s
+          --health-timeout 5s --health-retries 5
+        ports: [5432:5432]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.3
+          extensions: dom, curl, mbstring, pdo_pgsql, bcmath, gd, zip, intl
+          tools: composer:v2
+          coverage: none
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24.22.1"
+      - name: Prepare real API for image health checks
+        working-directory: api
+        run: |
+          cp .env.example .env
+          composer install --prefer-dist --no-interaction --no-progress --optimize-autoloader
+          php artisan migrate --force
+          php artisan db:seed --class='Database\Seeders\E2ETestSeeder' --force
+          php artisan passport:keys --force
+          php artisan serve --no-reload --host=127.0.0.1 --port=8089 > ../image-api.log 2>&1 &
+      - name: Build Linux frontend image without publishing
+        run: docker build --build-arg NODE_BUILD_HEAP_MB=4096 --iidfile client-image.id -f docker/Dockerfile.client -t opnform-client-qa .
+      - name: Inspect image and exercise real SSR routes
+        run: |
+          docker image inspect opnform-client-qa > client-image-inspect.json
+          docker run -d --name opnform-client-qa --network host --memory=1g --cpus=2 \
+            -e NITRO_HOST=127.0.0.1 -e NITRO_PORT=3100 \
+            -e NUXT_PUBLIC_API_BASE=http://127.0.0.1:8089 \
+            -e NUXT_PRIVATE_API_BASE=http://127.0.0.1:8089 \
+            -e NUXT_PUBLIC_APP_URL=http://127.0.0.1:3100 opnform-client-qa
+          docker exec opnform-client-qa node -e 'if(process.platform!=="linux"||process.version!=="v24.22.1")process.exit(1);console.log(JSON.stringify({platform:process.platform,node:process.version}))' | tee client-image-runtime.json
+          docker cp client/scripts/check-built-css.mjs opnform-client-qa:/tmp/check-built-css.mjs
+          docker exec opnform-client-qa node /tmp/check-built-css.mjs /app/public
+          node scripts/check-linux-client-health.mjs
+      - uses: actions/download-artifact@v8
+        with:
+          name: amplify-output
+          path: ${{ runner.temp }}/opnform-amplify-qa
+      - name: Smoke standalone Amplify compute on Linux Node 24
+        run: node scripts/check-amplify-runtime.mjs "${{ runner.temp }}/opnform-amplify-qa"
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: amplify-runtime-evidence
+          path: |
+            amplify-runtime*.json
+            amplify-runtime.log
+          retention-days: 7
+      - name: Capture image and API logs
+        if: always()
+        run: docker logs opnform-client-qa > client-image.log 2>&1 || true
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: linux-client-image-evidence
+          path: |
+            client-image*.json
+            client-image.id
+            client-image.log
+            image-api.log
+            api/storage/logs/laravel.log
+          retention-days: 7
+
+  dependency-security:
+    uses: ./.github/workflows/dependency-security.yml
+    permissions:
+      contents: read
+
+  release-readiness:
+    name: Release readiness
+    if: always()
+    needs: [code_lint, client_checks, sync_check, tests, database_compatibility, e2e, linux_client_image, dependency-security]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: client/.nvmrc
+      - name: Require every security and QA job
+        run: node scripts/check-ci-readiness.mjs
+        env:
+          NEEDS_JSON: ${{ toJSON(needs) }}
+
   production-deploy:
-    needs: [code_lint, client_checks, sync_check, tests, e2e]
+    needs: [release-readiness]
     if: success() && github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     name: Triggers Deployment (Vapor & Amplify)
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Get Composer cache directory
         id: composer-cache
         run: |
-          echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+          echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
 
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: ${{ steps.composer-cache.outputs.dir }}
           key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
@@ -478,7 +657,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: 8.3
-          extensions: dom, curl, mbstring, pdo, sqlite, pdo_sqlite
+          extensions: dom, curl, mbstring, pdo, sqlite, pdo_sqlite, pdo_pgsql, pdo_mysql, bcmath, gd, zip, pcntl, intl
           tools: composer:v2
           coverage: none
 
@@ -488,7 +667,7 @@ jobs:
 
       - name: Install composer dependencies
         working-directory: ./api
-        run: composer install --prefer-dist --no-dev --no-interaction --no-progress --ignore-platform-reqs --optimize-autoloader
+        run: composer install --prefer-dist --no-dev --no-interaction --no-progress --optimize-autoloader
 
       - name: Directory permissions
         working-directory: ./api
@@ -512,7 +691,7 @@ jobs:
 
   publish-docker-images:
     name: Push Docker images to Docker Hub
-    needs: [code_lint, client_checks, sync_check, tests, e2e]
+    needs: [release-readiness]
     if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') }}
     runs-on: ubuntu-latest
     permissions:
@@ -522,19 +701,21 @@ jobs:
       - name: Get version info
         run: |
           if [[ $GITHUB_REF == refs/tags/* ]]; then
-            echo "VERSION=${GITHUB_REF#refs/*/v}" >> $GITHUB_ENV
-            echo "API_TAGS=${{secrets.DOCKER_API_REPO}}:latest,${{secrets.DOCKER_API_REPO}}:${GITHUB_REF#refs/*/v}" >> $GITHUB_ENV
-            echo "UI_TAGS=${{secrets.DOCKER_UI_REPO}}:latest,${{secrets.DOCKER_UI_REPO}}:${GITHUB_REF#refs/*/v}" >> $GITHUB_ENV
+            {
+              echo "VERSION=${GITHUB_REF#refs/*/v}"
+              echo "API_TAGS=${{secrets.DOCKER_API_REPO}}:latest,${{secrets.DOCKER_API_REPO}}:${GITHUB_REF#refs/*/v}"
+              echo "UI_TAGS=${{secrets.DOCKER_UI_REPO}}:latest,${{secrets.DOCKER_UI_REPO}}:${GITHUB_REF#refs/*/v}"
+            } >> "$GITHUB_ENV"
           fi
 
       - name: Check out the repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@v4
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
@@ -543,7 +724,7 @@ jobs:
           password: ${{ secrets.DOCKER_ACCESS_TOKEN }}
 
       - name: Build and push API image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: docker/Dockerfile.api
@@ -558,7 +739,7 @@ jobs:
           cache-to: type=inline
 
       - name: Build and push Client image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: docker/Dockerfile.client

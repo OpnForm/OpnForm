@@ -15,7 +15,9 @@ it('provides one shared authoring baseline to MCP resources and native prompts',
         ->toHaveKeys(['objective', 'rules', 'validation'])
         ->and($reference['rules'])->toHaveKeys(['context', 'copy', 'fields', 'layout', 'completion', 'integrity'])
         ->and($completePrompt)->toContain(
-            'human-facing labels in sentence case',
+            'respondent-facing labels in sentence case with natural spaces',
+            'never expose full_name, contact_email',
+            'sanitized HTML, never Markdown',
             'Use placeholders only for a useful example or expected format',
             'Use a contextual submit label',
             'Do not invent legal consent',
@@ -44,6 +46,7 @@ it('injects the shared authoring baseline into native form prompts', function ()
         ->toContain('Use a contextual submit label')
         ->not->toContain('{authoringGuidelines}')
         ->and($fieldsPrompt->compiled())
-        ->toContain('Use human-facing labels in sentence case')
+        ->toContain('respondent-facing labels in sentence case with natural spaces')
+        ->toContain('sanitized HTML, never Markdown')
         ->not->toContain('{authoringGuidelines}');
 });

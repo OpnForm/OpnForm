@@ -16,7 +16,7 @@ use Laravel\Mcp\Server\Tools\Annotations\IsOpenWorld;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Name('validate_form_definition')]
-#[Description('Normalize and validate an OpnForm agent form definition without storing it. Returns the canonical definition with defaults, stable block IDs, sanitized content, normalized aliases, and non-blocking authoring-quality warnings.')]
+#[Description('Normalize and validate an OpnForm agent form definition without storing it. Returns the canonical definition with defaults, stable block IDs, sanitized content, normalized aliases, and authoring-quality warnings. Resolve every warning with blocking=true before create or save; correct other relevant warnings unless they conflict with an intentional user choice.')]
 #[IsReadOnly]
 #[IsDestructive(false)]
 #[IsIdempotent]
@@ -62,6 +62,7 @@ class ValidateFormDefinitionTool extends GuestMcpTool
                     'code' => $schema->string()->required(),
                     'message' => $schema->string()->required(),
                     'path' => $schema->string()->required(),
+                    'blocking' => $schema->boolean()->required(),
                 ]))
                 ->required(),
         ];

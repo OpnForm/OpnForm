@@ -13,7 +13,6 @@ import { usePartialSubmission } from '~/composables/forms/usePartialSubmission.j
 import { useIsIframe } from '~/composables/useIsIframe'
 import { useAmplitude } from '~/composables/useAmplitude'
 import { useConfetti } from '~/composables/useConfetti'
-import { cloneDeep } from 'lodash'
 import { useFieldState } from './useFieldState'
 import { useComputedVariables } from '~/composables/forms/useComputedVariables'
 import { useSubmissionAttribution } from './useSubmissionAttribution'
@@ -100,6 +99,19 @@ export function useFormManager(initialFormConfig, initialMode = FormMode.LIVE, o
     } catch { /* no-op */ }
   }
 
+  function restorePendingSubmission() {
+    if (!initialization.restorePendingSubmission()) return false
+    replaceStructure()
+    return true
+  }
+
+  function startBackgroundSync() {
+    pendingSubmissionService.resumeAutosave()
+    if (import.meta.client && config.value.enable_partial_submissions && strategy.value.submission.enablePartialSubmissions) {
+      partialSubmissionService.startSync()
+    }
+  }
+
   const validation = useFormValidation(config, form, state)
   const payment = useFormPayment(config, form)
   const submission = useFormSubmission(config, form, submissionAttribution.attribution)
@@ -155,10 +167,8 @@ export function useFormManager(initialFormConfig, initialMode = FormMode.LIVE, o
     // Ensure structure is built after initialization
     replaceStructure()
     
-    // Start partial submission sync if enabled in both config and strategy
-    if (import.meta.client && config.value.enable_partial_submissions && strategy.value.submission.enablePartialSubmissions) {
-      partialSubmissionService.startSync()
-    }
+    // Resume draft saving and partial sync only once the answers are ready.
+    if (!options.deferBackgroundSync) startBackgroundSync()
     
     state.isProcessing = false
   }
@@ -316,6 +326,7 @@ export function useFormManager(initialFormConfig, initialMode = FormMode.LIVE, o
       }
       
       // 7. Clear pending submission data on successful submit
+      pendingSubmissionService?.pauseAutosave()
       pendingSubmissionService?.clear()
       
       // 8. Clear partial submission hash to prevent stale data
@@ -334,6 +345,7 @@ export function useFormManager(initialFormConfig, initialMode = FormMode.LIVE, o
       if (import.meta.client) {
         const isIframe = useIsIframe()
         const formConfig = toValue(config)
+        const { default: cloneDeep } = await import('clone-deep')
         const payload = cloneDeep({
           type: 'form-submitted',
           form: {
@@ -438,6 +450,8 @@ export function useFormManager(initialFormConfig, initialMode = FormMode.LIVE, o
 
     // Core Methods
     initialize,
+    restorePendingSubmission,
+    startBackgroundSync,
     updateConfig,   // New method to update form config
     nextPage,
     previousPage,

@@ -136,7 +136,7 @@ describe('MentionParser', function () {
         expect($result)->toBe('<p>John is 30 years old</p>');
     });
 
-    test('it uses fallback when value is not found', function () {
+    test('uses fallback for an unknown placeholder', function () {
         $content = '<p>Hello <span mention mention-field-id="123" mention-fallback="Friend">Placeholder</span></p>';
         $data = [];
 

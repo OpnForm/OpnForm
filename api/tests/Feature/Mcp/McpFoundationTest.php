@@ -32,15 +32,13 @@ it('exposes the OpnForm MCP endpoint and initializes the protocol', function () 
         ->assertJsonPath('result.instructions', function (string $instructions): bool {
             $discoveryInstructions = substr($instructions, 0, 1024);
 
-            return str_contains($discoveryInstructions, 'Default every request to create a new form to the guest draft workflow')
-                && str_contains($discoveryInstructions, 'textarea is not a valid field type')
-                && str_contains($discoveryInstructions, 'correct and revalidate the definition before creating a draft')
-                && str_contains($discoveryInstructions, 'A natural request such as "create a contact form" needs no login')
-                && str_contains($discoveryInstructions, 'Never ask the user to connect')
-                && str_contains($discoveryInstructions, 'OAuth is required only for connected-account operations')
-                && str_contains($discoveryInstructions, 'Enabling or selecting the plugin is not OAuth authentication')
-                && str_contains($discoveryInstructions, 'Follow the catalog authoring guidelines')
-                && str_contains($discoveryInstructions, 'quality_warnings');
+            return str_contains($discoveryInstructions, 'natural request to create a form as a guest workflow')
+                && str_contains($discoveryInstructions, 'Create and patch are data-only')
+                && str_contains($discoveryInstructions, 'preview_form_draft exactly once')
+                && str_contains($discoveryInstructions, 'Use sanitized HTML, never Markdown')
+                && str_contains($discoveryInstructions, 'respondent-facing label in sentence case')
+                && str_contains($discoveryInstructions, 'Correct relevant quality_warnings before persistence')
+                && str_contains($discoveryInstructions, 'OAuth is only for saving or managing account forms');
         });
 });
 
@@ -87,6 +85,7 @@ it('advertises explicit safety annotations for every MCP tool', function () {
     ];
     $destructivePrivateWrites = [
         'patch_form_draft',
+        'restore_form_draft_version',
     ];
     $destructiveOpenWorldWrites = [
         'trash_form',
@@ -173,7 +172,13 @@ it('publishes the versioned form definition schema', function () {
         ->assertOk()
         ->assertSee('agent-form-definition/v1.json')
         ->assertSee('schema_version')
-        ->assertSee('properties');
+        ->assertSee('properties')
+        ->assertSee('computedVariable')
+        ->assertSee('displayLogic')
+        ->assertSee('property_meta')
+        ->assertSee('Respondent-facing label')
+        ->assertSee('sanitized HTML fragment')
+        ->assertSee('never Markdown');
 });
 
 it('keeps every normalized top-level key represented in the published schema', function () {
@@ -198,12 +203,16 @@ it('publishes the canonical form field catalog', function () {
         ->assertSee('focused')
         ->assertSee('authoring_guidelines')
         ->assertSee('polished respondent-facing form')
+        ->assertSee('sentence case')
+        ->assertSee('natural words and spaces')
+        ->assertSee('sanitized HTML')
+        ->assertSee('never Markdown')
         ->assertSee('block_media')
         ->assertSee('trycloudflare.com')
         ->assertSee('save');
 });
 
-it('returns non-blocking authoring quality warnings with a valid definition', function () {
+it('returns authoring quality warnings with their persistence severity', function () {
     OpnFormServer::tool(ValidateFormDefinitionTool::class, [
         'definition' => [
             'title' => 'Contact form',
@@ -225,7 +234,7 @@ it('returns non-blocking authoring quality warnings with a valid definition', fu
                 fn (AssertableJson $warnings) => $warnings
                 ->each(
                     fn (AssertableJson $warning) => $warning
-                    ->hasAll(['code', 'message', 'path'])
+                    ->hasAll(['code', 'message', 'path', 'blocking'])
                 )
             )
         );
@@ -264,6 +273,32 @@ it('documents block media in the published form definition schema', function () 
         ->and($schema['$defs']['blockImage']['properties']['url']['type'])->toBe(['string', 'null'])
         ->and($schema['$defs']['blockImage']['properties']['layout']['enum'])
         ->toContain('right-split', 'background');
+});
+
+it('documents computed variables and recursive display logic in the published resources', function () {
+    $schema = app(AgentFormDefinition::class)->jsonSchema();
+    $catalog = \App\Service\Forms\AgentFormFieldCatalog::reference();
+
+    expect($schema['properties']['computed_variables']['items']['$ref'])
+        ->toBe('#/$defs/computedVariable')
+        ->and($schema['$defs']['computedVariable']['required'])
+        ->toBe(['id', 'name', 'formula'])
+        ->and($schema['$defs']['computedVariable']['properties']['id']['pattern'])
+        ->toBe('^cv_')
+        ->and($schema['$defs']['block']['properties']['logic']['anyOf'][0]['$ref'])
+        ->toBe('#/$defs/displayLogic')
+        ->and($schema['$defs']['logicConditionGroup']['properties']['children']['items']['$ref'])
+        ->toBe('#/$defs/logicCondition')
+        ->and($schema['$defs']['logicConditionValue']['properties']['property_meta']['properties']['type']['enum'])
+        ->toContain('number', 'computed')
+        ->and($schema['$defs']['logicConditionValue']['properties']['operator']['enum'])
+        ->toContain('greater_than', 'contains', 'is_empty')
+        ->and($catalog['computed_variables']['example']['formula'])
+        ->toBe('{budget} * 1.2')
+        ->and($catalog['display_logic']['operators_by_reference_type']['computed'])
+        ->toContain('greater_than', 'equals')
+        ->and($catalog['display_logic']['example']['conditions']['children'][0]['value']['property_meta'])
+        ->toBe(['id' => 'cv_priority_score', 'type' => 'computed']);
 });
 
 it('applies the public media URL policy to block images', function () {

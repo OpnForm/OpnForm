@@ -150,6 +150,8 @@ useJsonLd("template-type-schema", templateTypeSchema)
 </script>
 
 <style lang="scss">
+@reference '../../../css/app.css';
+
 .nf-text {
   @apply space-y-4;
   h2 {

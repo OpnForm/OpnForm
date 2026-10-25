@@ -10,8 +10,8 @@ class AgentFormAuthoringGuide
             'Keep short forms short. Ask only for information that serves the stated purpose and do not duplicate questions.',
         ],
         'copy' => [
-            'Unless the form is intentionally trivial, begin with a concise nf-text heading and one supporting sentence that explains the form purpose.',
-            'Use human-facing labels in sentence case. Use short noun labels for identity fields and direct, unbiased questions for surveys; never expose raw identifiers or snake_case.',
+            'Unless the form is intentionally trivial, begin with a concise nf-text heading and one supporting sentence that explains the form purpose. Its content is sanitized HTML, never Markdown: use <h1>Contact us</h1><p>How can we help?</p>, not # Contact us.',
+            'Use the name property only for respondent-facing labels in sentence case with natural spaces, such as Full name and Email address. Technical identifiers belong in id, which may be omitted; never expose full_name, contact_email, kebab-case, database keys, or variable names.',
             'Use placeholders only for a useful example or expected format. Never use a placeholder instead of a visible label or merely repeat the label.',
             'Use help text only for constraints, unfamiliar information, formatting guidance, or why the information is requested.',
         ],
@@ -39,7 +39,7 @@ class AgentFormAuthoringGuide
         return [
             'objective' => 'Create a polished respondent-facing form, not merely the smallest valid schema.',
             'rules' => self::RULES,
-            'validation' => 'Treat quality warnings from validate_form_definition as non-blocking editorial guidance. Correct relevant warnings before creating or saving, while preserving intentional user choices.',
+            'validation' => 'Resolve every quality warning marked blocking before creating or saving. Correct other relevant warnings while preserving intentional user choices.',
         ];
     }
 

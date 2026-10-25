@@ -120,4 +120,11 @@ return [
     'complete_captcha' => 'Vänligen fyll i CAPTCHA.',
     'yes' => 'Ja',
     'no' => 'Nej',
+
+    'from_date_required' => 'Startdatum krävs',
+    'to_date_required' => 'Slutdatum krävs',
+    'from_date_before_or_equal' => 'Startdatum måste vara före eller samma som slutdatum',
+    'rating_min' => 'Ett betyg måste väljas',
+    'select_min' => 'Välj minst :min alternativ',
+    'select_max' => 'Välj högst :max alternativ',
 ];

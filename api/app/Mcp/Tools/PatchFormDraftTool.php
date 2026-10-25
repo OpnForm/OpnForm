@@ -2,9 +2,9 @@
 
 namespace App\Mcp\Tools;
 
-use App\Mcp\Apps\FormDraftPreviewApp;
 use App\Mcp\Support\McpOutputSchema;
 use App\Models\Forms\Form;
+use App\Rules\PropertyValidators\LogicPropertyValidator;
 use App\Service\Forms\AgentFormFieldCatalog;
 use App\Service\Forms\AgentFormDraftService;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
@@ -13,14 +13,12 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
-use Laravel\Mcp\Server\Attributes\RendersApp;
 use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 use Laravel\Mcp\Server\Tools\Annotations\IsOpenWorld;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Name('patch_form_draft')]
-#[Description('Use this when the user asks to change the current guest form draft. Apply validated semantic operations and return the updated interactive preview automatically. Requires expected_version, so concurrent agent or editor changes cannot be silently overwritten. Supported ops: set_form_values, add_block, update_block, remove_block, move_block. Before changing presentation_style, fields, layout, or media, read opnform://reference/form-fields/v1. Style values are strict: border_radius is none, small, or full; width is centered or full; size is sm, md, or lg; theme is default, simple, notion, minimal, or transparent. Classic mode uses nf-page-break for explicit pagination; focused mode derives one step per block and must not use page breaks.')]
-#[RendersApp(resource: FormDraftPreviewApp::class)]
+#[Description('Apply semantic operations to the current guest draft. This tool is data-only and never renders a widget. Requires the latest expected_version and rejects conflicts without overwriting newer work. On success, call preview_form_draft exactly once with the returned draft_handle so the user sees one updated preview. Do not retry after success. Correct validation errors and retry with the same current version; after a version conflict, fetch the draft before retrying. Supported ops: set_form_values, add_block, update_block, remove_block, move_block.')]
 #[IsReadOnly(false)]
 #[IsDestructive]
 #[IsOpenWorld(false)]
@@ -45,8 +43,6 @@ class PatchFormDraftTool extends GuestDraftMcpTool
         return Response::structured([
             'draft_handle' => $validated['draft_handle'],
             'draft' => $drafts->serialize($draft),
-            'preview_url' => $drafts->previewUrl($draft),
-            'next_step' => 'The refreshed interactive preview is included in this result; present it before any text summary.',
         ]);
     }
 
@@ -80,22 +76,37 @@ class PatchFormDraftTool extends GuestDraftMcpTool
                         'show_progress_bar' => $schema->boolean(),
                         'submit_button_text' => $schema->string(),
                         'settings' => $schema->object(),
-                    ])->description('Top-level form values for set_form_values. Do not put properties here.'),
+                        'computed_variables' => $schema->array()
+                            ->items($schema->object([
+                                'id' => $schema->string()->description('Unique technical ID beginning with cv_.')->required(),
+                                'name' => $schema->string()->description('Unique human-readable variable name.')->required(),
+                                'formula' => $schema->string()->description('Formula using brace references such as {budget} * 1.2.')->required(),
+                                'result_type' => $schema->string()->enum(['number', 'text', 'auto']),
+                            ]))
+                            ->max(500)
+                            ->description('Complete replacement list of computed variables. Use [] to remove all variables.'),
+                    ])->description('Top-level form values for set_form_values, including computed_variables. Do not put properties here.'),
                     'block' => $schema->object([
                         'name' => $schema->string()->required(),
                         'type' => $schema->string()->enum(AgentFormFieldCatalog::types())->required(),
+                        'content' => $schema->string()->description('For nf-text blocks: sanitized HTML, never Markdown.'),
                         'placeholder' => $schema->string()->nullable(),
                         'help' => $schema->string()->nullable(),
+                        'hidden' => $schema->boolean(),
                         'required' => $schema->boolean(),
                         'width' => $schema->string()->enum(['full', '1/2', '1/3', '2/3', '1/4', '3/4']),
+                        'logic' => $this->logicSchema($schema)->nullable(),
                     ])->description('Complete block for add_block. Use type nf-page-break only in classic mode.'),
                     'patch' => $schema->object([
                         'name' => $schema->string(),
                         'type' => $schema->string()->enum(AgentFormFieldCatalog::types()),
+                        'content' => $schema->string()->description('For nf-text blocks: sanitized HTML, never Markdown.'),
                         'placeholder' => $schema->string()->nullable(),
                         'help' => $schema->string()->nullable(),
+                        'hidden' => $schema->boolean(),
                         'required' => $schema->boolean(),
                         'width' => $schema->string()->enum(['full', '1/2', '1/3', '2/3', '1/4', '3/4']),
+                        'logic' => $this->logicSchema($schema)->nullable(),
                     ])->description('Fields to merge into the selected block for update_block. Block id cannot change.'),
                     'block_id' => $schema->string()->description('Stable block id from the latest draft.'),
                     'index' => $schema->integer()->description('Zero-based block index. For add_block, insertion at the final count is allowed.')->min(0),
@@ -107,13 +118,36 @@ class PatchFormDraftTool extends GuestDraftMcpTool
         ];
     }
 
+    private function logicSchema(JsonSchema $schema): mixed
+    {
+        return $schema->object([
+            'conditions' => $schema->object([
+                'operatorIdentifier' => $schema->string()->enum(['and', 'or']),
+                'children' => $schema->array()->items($schema->object()),
+                'identifier' => $schema->string()->description('Referenced field or computed-variable ID.'),
+                'value' => $schema->object([
+                    'operator' => $schema->string()->enum(AgentFormFieldCatalog::logicOperators()),
+                    'property_meta' => $schema->object([
+                        'id' => $schema->string()->description('Referenced field or computed-variable ID.'),
+                        'type' => $schema->string()
+                            ->enum(array_keys(AgentFormFieldCatalog::logicOperatorsByReferenceType()))
+                            ->description('Use computed for a computed-variable reference.'),
+                    ]),
+                    'value' => $schema->union(['string', 'number', 'boolean', 'object', 'array', 'null'])
+                        ->description('Comparison value. Omit it for operators that do not take a value, such as is_empty or is_checked.'),
+                ]),
+            ])->description('A condition leaf or a nested and/or group. See opnform://schemas/agent-form-definition/v1 for the recursive shape.'),
+            'actions' => $schema->array()
+                ->items($schema->string()->enum(LogicPropertyValidator::ACTIONS_VALUES))
+                ->min(1),
+        ])->description('Conditional behavior for the target block. Empty or safely invalid logic is removed during normalization.');
+    }
+
     public function outputSchema(JsonSchema $schema): array
     {
         return [
             'draft_handle' => $schema->string()->min(43)->max(43)->required(),
             'draft' => McpOutputSchema::draft($schema)->required(),
-            'preview_url' => $schema->string()->format('uri')->required(),
-            'next_step' => $schema->string()->required(),
         ];
     }
 }

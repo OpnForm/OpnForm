@@ -755,3 +755,49 @@ function emailTinyPngBytes(): string
         true
     ) ?: '';
 }
+
+it('tracks a real email integration from handler through SES response and subsequent delivery', function () {
+    $user = $this->actingAsProUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace);
+    \Illuminate\Support\Facades\Event::fake([\App\Events\Models\FormIntegrationsEventCreated::class]);
+    $integration = \App\Models\Integration\FormIntegration::createQuietly([
+        'form_id' => $form->id, 'integration_id' => 'email', 'status' => 'active',
+        'data' => [
+            'send_to' => "recipient@example.com\ninvalid-address", 'sender_name' => 'Test',
+            'subject' => 'Tracking test', 'email_content' => 'Local test only',
+            'include_submission_data' => false,
+        ],
+    ]);
+    $raw = null;
+    $ses = new \Aws\Ses\SesClient([
+        'version' => 'latest', 'region' => 'eu-west-2', 'credentials' => ['key' => 'local', 'secret' => 'local'],
+        'handler' => function ($command) use (&$raw) {
+            $raw = (string) $command['RawMessage']['Data'];
+            return \GuzzleHttp\Promise\Create::promiseFor(new \Aws\Result(['MessageId' => 'real-handler-ses-id']));
+        },
+    ]);
+    config(['mail.default' => 'ses']);
+    \Illuminate\Support\Facades\Mail::extend('ses', fn () => new \Illuminate\Mail\Transport\SesTransport($ses));
+    \Illuminate\Support\Facades\Mail::purge('ses');
+    \Illuminate\Support\Facades\Event::forget(\Illuminate\Mail\Events\MessageSending::class);
+    (new \App\Integrations\Handlers\EmailIntegration(new \App\Events\Forms\FormSubmitted($form, []), $integration, []))->run();
+    $event = $integration->events()->sole();
+    expect($event->status)->toBe('error'); // One invalid recipient, not a global false success.
+    $recipients = (array) $event->data->email->recipients;
+    $recipientId = array_key_first($recipients);
+    expect($recipients[$recipientId]->status)->toBe('accepted');
+    expect($recipients[$recipientId]->provider_message_id)->toBe('real-handler-ses-id');
+    expect($raw)->toContain('X-Form-Email-Event-ID: '.$event->tracking_id)
+        ->toContain('X-Form-Email-Recipient-ID: '.$recipientId);
+    app(\App\Service\Integrations\EmailDeliveryTracker::class)->feedback([
+        'notificationType' => 'Delivery',
+        'mail' => ['messageId' => 'real-handler-ses-id', 'headers' => [
+            ['name' => 'X-Form-Email-Event-ID', 'value' => $event->tracking_id],
+            ['name' => 'X-Form-Email-Recipient-ID', 'value' => $recipientId],
+        ]],
+        'delivery' => ['recipients' => ['recipient@example.com']],
+    ]);
+    expect(data_get($event->fresh()->data, 'email.recipients.'.$recipientId.'.status'))->toBe('delivered');
+    expect($integration->events()->count())->toBe(1);
+});

@@ -5,7 +5,7 @@ use App\Service\Forms\AgentFormQualityAnalyzer;
 
 uses(Tests\TestCase::class);
 
-it('returns actionable non-blocking warnings for a minimal machine-like form', function () {
+it('returns actionable warnings with severity for a minimal machine-like form', function () {
     $definition = app(AgentFormDefinition::class)->normalizeAndValidate([
         'title' => 'Contact form',
         'properties' => [
@@ -25,7 +25,13 @@ it('returns actionable non-blocking warnings for a minimal machine-like form', f
         'long_answer_should_be_multiline',
         'generic_submit_label',
         'generic_completion_message',
-    )->and($warnings)->each->toHaveKeys(['code', 'message', 'path']);
+    )->and($warnings)->each->toHaveKeys(['code', 'message', 'path', 'blocking'])
+        ->and($warnings)->toContainEqual([
+            'code' => 'machine_like_label',
+            'message' => 'Replace the raw label [name] with clear respondent-facing copy in sentence case.',
+            'path' => 'properties.0.name',
+            'blocking' => true,
+        ]);
 });
 
 it('does not warn for a polished contact form', function () {
@@ -51,4 +57,26 @@ it('does not warn for a polished contact form', function () {
     ]);
 
     expect(app(AgentFormQualityAnalyzer::class)->analyze($definition))->toBe([]);
+});
+
+it('flags markdown in text blocks because OpnForm renders sanitized HTML', function () {
+    $definition = app(AgentFormDefinition::class)->normalizeAndValidate([
+        'title' => 'Contact requests',
+        'properties' => [
+            [
+                'name' => 'Introduction',
+                'type' => 'nf-text',
+                'content' => '# Contact us\n\n**Tell us how we can help.**',
+            ],
+            ['name' => 'Email address', 'type' => 'email'],
+        ],
+    ]);
+
+    expect(app(AgentFormQualityAnalyzer::class)->analyze($definition))
+        ->toContainEqual([
+            'code' => 'markdown_text_content',
+            'message' => 'Replace Markdown with sanitized HTML in nf-text content, for example <h1>Contact us</h1><p>How can we help?</p>.',
+            'path' => 'properties.0.content',
+            'blocking' => true,
+        ]);
 });

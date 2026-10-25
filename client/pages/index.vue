@@ -194,7 +194,7 @@
 import LiveDemo from "~/components/pages/welcome/LiveDemo.vue"
 import Features from "~/components/pages/welcome/Features.vue"
 import MoreFeatures from "../components/pages/welcome/MoreFeatures.vue"
-import { useIsAuthenticated } from "~/composables/useAuthFlow"
+import { useIsAuthenticated } from "~/composables/useIsAuthenticated.js"
 
 definePageMeta({
   layout: "default",
@@ -232,7 +232,7 @@ const { isAuthenticated: authenticated } = useIsAuthenticated()
   color: #2563eb;
 }
 
-@screen md {
+@media (width >= 48rem) {
   #macbook-video {
     position: absolute;
     max-width: 84.8% !important;

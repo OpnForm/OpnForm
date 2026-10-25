@@ -4,11 +4,15 @@ namespace App\Console\Commands;
 
 use App\Models\Forms\FormStatistic;
 use App\Models\Forms\FormView;
+use App\Service\Forms\Analytics\FormViewStatistics;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class CleanDatabase extends Command
 {
+    private const VIEW_BATCH_SIZE = 1000;
+
     /**
      * The name and signature of the console command.
      *
@@ -43,52 +47,63 @@ class CleanDatabase extends Command
     private function cleanFormStatistics()
     {
         $this->line('Aggregating form views...');
+        $statistics = app(FormViewStatistics::class);
         $now = now();
-        $finalData = [];
+        $maxId = FormView::max('id') ?? 0;
 
-        // Form Views
-        FormView::select('form_id', DB::raw('DATE(created_at) as date'), DB::raw('count(*) as views'))
-            ->where('created_at', '<', $now)
-            ->orderBy('date')
-            ->groupBy('form_id', 'date')
-            ->get()->each(function ($row) use (&$finalData) {
-                $finalData[$row->form_id.'-'.$row->date] = [
-                    'form_id' => $row->form_id,
-                    'date' => $row->date,
-                    'data' => [
-                        'views' => $row->views,
-                        'submissions' => 0,
-                    ],
-                ];
-            });
-
-        if ($finalData) {
-            $this->line('Storing aggregated data...');
-            $created = 0;
-            $updated = 0;
-            // Insert into Form Statistic
-            foreach ($finalData as $row) {
-                $found = FormStatistic::where([['form_id', $row['form_id']], ['date', $row['date']]])->first();
-                if ($found !== null) { // If found update
-                    $newData = $found->data;
-                    $newData['views'] = $newData['views'] + $row['data']['views'];
-                    $newData['submissions'] = 0;
-                    $found->update(['data' => $newData]);
-                    $updated++;
-                } else {  // Otherwise create new
-                    FormStatistic::create($row);
-                    $created++;
+        do {
+            $batch = DB::transaction(function () use ($statistics, $now, $maxId) {
+                $ids = DB::table('form_views')->where('created_at', '<', $now)->where('id', '<=', $maxId)
+                    ->orderBy('id')->limit(self::VIEW_BATCH_SIZE)->lockForUpdate()->pluck('id');
+                if ($ids->isEmpty()) {
+                    return null;
                 }
+
+                $views = DB::table('form_views')->whereIn('id', $ids);
+                $finalData = [];
+
+                $statistics->groupedViews((clone $views)->select('form_id')->selectRaw('DATE(created_at) as date'))
+                    ->groupBy('form_id')->groupByRaw('DATE(created_at)')->orderBy('form_id')->orderBy('date')
+                    ->get()->each(function ($row) use (&$finalData, $statistics) {
+                        $key = $row->form_id . '-' . $row->date;
+                        $finalData[$key] ??= [
+                            'form_id' => $row->form_id,
+                            'date' => $row->date,
+                            'data' => ['views' => 0, 'submissions' => 0, 'meta_stats' => $statistics->emptyMetadata()],
+                        ];
+                        $finalData[$key]['data']['views'] += (int) $row->count;
+                        $finalData[$key]['data']['meta_stats'] = $statistics->mergeMetadata(
+                            $finalData[$key]['data']['meta_stats'],
+                            $statistics->rowMetadata($row)
+                        );
+                    });
+
+                // Serialize daily-row creation even when concurrent batches have disjoint views.
+                $formIds = array_unique(array_column($finalData, 'form_id'));
+                DB::table('forms')->whereIn('id', $formIds)->orderBy('id')->lockForUpdate()->get(['id']);
+
+                foreach ($finalData as $row) {
+                    $found = FormStatistic::where('form_id', $row['form_id'])->where('date', $row['date'])->lockForUpdate()->first();
+                    if ($found !== null) {
+                        $data = $found->data;
+                        $data['views'] = ($data['views'] ?? 0) + $row['data']['views'];
+                        $data['meta_stats'] = $statistics->mergeMetadata($data['meta_stats'] ?? [], $row['data']['meta_stats']);
+                        $found->update(['data' => $data]);
+                    } else {
+                        FormStatistic::create($row);
+                    }
+                }
+
+                // Delete only the exact locked rows whose counts have been stored.
+                return ['removed' => $views->delete(), 'form_ids' => $formIds];
+            }, 3);
+
+            if ($batch !== null) {
+                foreach ($batch['form_ids'] as $formId) {
+                    Cache::forget('form_stats_metadata_v2_' . $formId);
+                }
+                $this->line($batch['removed'] . ' form views records aggregated and deleted.');
             }
-
-            $this->line($created.' form statistics records created.');
-            $this->line($updated.' form statistics records updated.');
-
-            // Delete Form Views those are migrated
-            $formViewRemovedCount = FormView::where('created_at', '<', $now)->delete();
-            $this->line($formViewRemovedCount.' form views records deleted.');
-        } else {
-            $this->line('No aggregate to store.');
-        }
+        } while ($batch !== null);
     }
 }

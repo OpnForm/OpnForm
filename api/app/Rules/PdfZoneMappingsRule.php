@@ -30,14 +30,20 @@ class PdfZoneMappingsRule implements ValidationRule
             return;
         }
 
-        // Get valid field IDs from form properties
+        // Get valid field IDs and computed variable IDs from the form
         $validFieldIds = [];
-        if ($this->form && is_array($this->form->properties)) {
-            $validFieldIds = array_column($this->form->properties, 'id');
+        $validComputedVariableIds = [];
+        if ($this->form) {
+            if (is_array($this->form->properties)) {
+                $validFieldIds = array_column($this->form->properties, 'id');
+            }
+            if (is_array($this->form->computed_variables)) {
+                $validComputedVariableIds = array_column($this->form->computed_variables, 'id');
+            }
         }
 
         foreach ($value as $index => $zone) {
-            $this->validateZone($zone, $index, $validFieldIds);
+            $this->validateZone($zone, $index, $validFieldIds, $validComputedVariableIds);
         }
 
         if (!empty($this->errors)) {
@@ -48,7 +54,7 @@ class PdfZoneMappingsRule implements ValidationRule
     /**
      * Validate a single zone.
      */
-    private function validateZone(mixed $zone, int $index, array $validFieldIds): void
+    private function validateZone(mixed $zone, int $index, array $validFieldIds, array $validComputedVariableIds = []): void
     {
         if (!is_array($zone)) {
             $this->errors[] = "Zone at index {$index} must be an array";
@@ -79,9 +85,14 @@ class PdfZoneMappingsRule implements ValidationRule
         }
 
         // Either field_id, static_text, or static_image must be present (key existence defines zone type)
-        $hasFieldId = isset($zone['field_id']) && $zone['field_id'] !== '';
+        $fieldId = $zone['field_id'] ?? null;
+        $hasFieldId = is_string($fieldId) && trim($fieldId) !== '';
         $hasStaticText = array_key_exists('static_text', $zone);
         $hasStaticImage = array_key_exists('static_image', $zone);
+
+        if (array_key_exists('field_id', $zone) && $fieldId !== null && $fieldId !== '' && !$hasFieldId) {
+            $this->errors[] = "Zone {$index}: field_id must be a non-empty string";
+        }
 
         if (!$hasFieldId && !$hasStaticText && !$hasStaticImage) {
             $this->errors[] = "Zone {$index}: must have 'field_id', 'static_text', or 'static_image'";
@@ -98,12 +109,15 @@ class PdfZoneMappingsRule implements ValidationRule
             $this->errors[] = "Static image should not be empty";
         }
 
-        // If field_id is set and we have valid IDs, validate it exists
-        if ($hasFieldId && !empty($validFieldIds) && !in_array($zone['field_id'], $validFieldIds)) {
-            // Allow special fields like submission_id, submission_date, form_name
+        // If field_id is set and we have a form context, validate it exists
+        if ($hasFieldId && $this->form !== null) {
             $specialFields = ['submission_id', 'submission_date', 'form_name'];
-            if (!in_array($zone['field_id'], $specialFields)) {
-                $this->errors[] = "Zone {$index}: field_id '{$zone['field_id']}' does not exist in form";
+            $isValidField = in_array($fieldId, $validFieldIds, true);
+            $isSpecialField = in_array($fieldId, $specialFields, true);
+            $isComputedVariable = in_array($fieldId, $validComputedVariableIds, true);
+
+            if (!$isValidField && !$isSpecialField && !$isComputedVariable) {
+                $this->errors[] = "Zone {$index}: field_id '{$fieldId}' does not exist in form";
             }
         }
 

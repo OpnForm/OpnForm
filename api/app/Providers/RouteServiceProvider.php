@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Models\Forms\AgentFormDraft;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Foundation\Support\Providers\RouteServiceProvider as ServiceProvider;
 use Illuminate\Http\Request;
@@ -51,6 +52,23 @@ class RouteServiceProvider extends ServiceProvider
             return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
         });
 
+        RateLimiter::for('integration-retries', function (Request $request) {
+            return Limit::perMinute(10)->by($request->user()?->id ?: $request->ip());
+        });
+
+        RateLimiter::for('password-reset', function (Request $request) {
+            $ip = $request->ip();
+            $requestedEmail = $request->input('email');
+            $email = is_string($requestedEmail) ? strtolower(trim($requestedEmail)) : 'invalid';
+            $emailKey = hash('sha256', $email !== '' ? $email : 'unknown');
+
+            return [
+                Limit::perMinute(5)->by('password-reset:minute:ip:' . $ip),
+                Limit::perHour(30)->by('password-reset:hour:ip:' . $ip),
+                Limit::perHour(5)->by('password-reset:hour:email:' . $emailKey),
+            ];
+        });
+
         RateLimiter::for('oidc-init', function (Request $request) {
             $connection = (string) ($request->route('slug') ?? 'unknown');
             $key = hash('sha256', $request->ip() . '|' . $connection);
@@ -77,6 +95,20 @@ class RouteServiceProvider extends ServiceProvider
 
         RateLimiter::for('export-status', function (Request $request) {
             return Limit::perMinute(180)->by($request->user()?->id ?: $request->ip());
+        });
+
+        // A submissions page may show hundreds of attachment thumbnails. Keep
+        // signed downloads out of the general API bucket, but still bound them
+        // per client and form (including unauthenticated image requests).
+        RateLimiter::for('submission-files', function (Request $request) {
+            $form = $request->route('form');
+            $formId = $form instanceof \App\Models\Forms\Form ? $form->getKey() : $form;
+            $key = hash('sha256', $request->ip() . '|' . (string) $formId);
+
+            return [
+                Limit::perMinute(600)->by('submission-files:minute:' . $key),
+                Limit::perHour(3000)->by('submission-files:hour:' . $key),
+            ];
         });
 
         RateLimiter::for('ai-formula-generation', function (Request $request) {
@@ -120,6 +152,21 @@ class RouteServiceProvider extends ServiceProvider
 
         RateLimiter::for('mcp-oauth-registration', function (Request $request) {
             return Limit::perHour(20)->by('mcp-oauth-registration:'.$request->ip());
+        });
+
+        RateLimiter::for('agent-draft-preview', function (Request $request) {
+            $routeDraft = $request->route('draft');
+            $draftId = (string) ($routeDraft instanceof AgentFormDraft ? $routeDraft->getKey() : $routeDraft);
+            $identifier = ctype_digit($draftId)
+                ? 'draft:'.$draftId
+                : 'invalid:'.$request->ip();
+
+            return [
+                Limit::perMinute(max(1, config('opnform.mcp.rate_limit.draft_preview_requests_per_minute', 240)))
+                    ->by('agent-draft-preview:'.$identifier),
+                Limit::perMinute(max(1, config('opnform.mcp.rate_limit.draft_proxy_pool_per_minute', 6000)))
+                    ->by('agent-draft-preview:proxy:'.$request->ip()),
+            ];
         });
 
         RateLimiter::for('agent-draft-handoff', function (Request $request) {

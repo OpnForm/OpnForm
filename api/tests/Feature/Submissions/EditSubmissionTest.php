@@ -81,7 +81,7 @@ it('keeps an existing upload canonical when an edited submission submits its sig
         'status' => FormSubmission::STATUS_COMPLETED,
     ]);
 
-    $signedUploadUrl = URL::signedRoute(
+    $signedUploadUrl = URL::publicSignedRoute(
         'open.forms.submissions.file',
         [$form->id, FilenameUrlEncoder::encode($fileName)]
     );

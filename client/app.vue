@@ -14,24 +14,20 @@
         <div
           class="fixed z-[9999] left-0 bottom-0 p-4" id="admin-actions"
         >
-          <UButtonGroup size="sm">
-            <ToolsStopImpersonation />
-          </UButtonGroup>
+          <UFieldGroup size="sm">
+            <LazyToolsStopImpersonation />
+          </UFieldGroup>
         </div>
 
-        <Clarity />
-        <FeatureBase />
-        <SubscriptionModal />
-        <QuickRegister />
+        <LazyVendorClarity />
+        <LazyVendorFeatureBase />
+        <LazyQuickRegister />
       </ClientOnly>
     </div>
   </AppProvider>
 </template>
 
 <script setup>
-import FeatureBase from "~/components/vendor/FeatureBase.vue"
-import Clarity from "~/components/vendor/Clarity.vue"
-
 const config = useRuntimeConfig()
 const route = useRoute()
 

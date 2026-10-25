@@ -22,7 +22,11 @@ final class FormUpdateService
         $formData['removed_properties'] = array_merge(
             $form->removed_properties ?? [],
             collect($form->properties)
-                ->filter(fn (array $field): bool => ! Str::of($field['type'])->startsWith('nf-') && ! isset($newPropertyIds[$field['id']]))
+                ->filter(fn ($field): bool => is_array($field)
+                    && is_string($field['id'] ?? null)
+                    && is_string($field['type'] ?? null)
+                    && ! Str::of($field['type'])->startsWith('nf-')
+                    && ! isset($newPropertyIds[$field['id']]))
                 ->all(),
         );
 

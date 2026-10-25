@@ -32,18 +32,25 @@ it('publishes a neutral draft handle contract and accurate preview annotations',
     $open = app(OpenFormDraftInEditorTool::class)->toArray();
 
     expect($create['outputSchema']['properties'])->toHaveKey('draft_handle')
-        ->and($create['outputSchema']['properties'])->toHaveKey('preview_url')
+        ->and($create['outputSchema']['properties'])->not->toHaveKey('preview_url')
         ->and($create['outputSchema']['properties'])->not->toHaveKey('draft_token')
-        ->and($create['_meta']['ui']['resourceUri'])->toBe('ui://opnform/form-draft-preview-v4')
-        ->and(app(PatchFormDraftTool::class)->toArray()['_meta']['ui']['resourceUri'])
-        ->toBe('ui://opnform/form-draft-preview-v4')
+        ->and($create['_meta'])->not->toHaveKey('ui')
+        ->and(app(PatchFormDraftTool::class)->toArray()['_meta'])->not->toHaveKey('ui')
+        ->and($preview['_meta']['ui']['resourceUri'])->toBe('ui://opnform/form-draft-preview.html')
+        ->and($preview['_meta']['openai/outputTemplate'])->toBe('ui://opnform/form-draft-preview.html')
         ->and($preview['inputSchema']['properties'])->toHaveKey('draft_handle')
+        ->and($preview['description'])
+        ->toContain('modify the draft again or save it', 'Do not request OAuth unless the user chooses save')
+        ->and($preview['outputSchema']['properties'])->toHaveKey('next_step')
         ->and($preview['outputSchema']['properties'])->not->toHaveKeys([
+            'preview_url',
             'editor_url',
             'editor_link_expires_at',
         ])
         ->and($preview['annotations']['readOnlyHint'])->toBeTrue()
         ->and($open['_meta']['ui']['visibility'])->toBe(['model', 'app'])
+        ->and($open['outputSchema']['properties'])->toHaveKey('editor_handoff_ready')
+        ->and($open['outputSchema']['properties'])->not->toHaveKey('editor_url')
         ->and($open['outputSchema']['properties'])->not->toHaveKey('handoff_token');
 });
 
@@ -54,10 +61,9 @@ it('creates a seven-day server-side guest draft and returns an opaque handle', f
         'definition' => guestDraftDefinition(['visibility' => 'public']),
     ])->assertOk()
         ->assertSee('draft_handle')
-        ->assertSee('preview_url')
+        ->assertDontSee('preview_url')
         ->assertDontSee('capability secret')
-        ->assertSee('Customer intake')
-        ->assertSee('expected_version');
+        ->assertSee('Customer intake');
 
     $draft = AgentFormDraft::query()->sole();
 
@@ -115,7 +121,7 @@ it('patches form values and blocks with optimistic versioning', function () {
     $response->assertOk()
         ->assertSee('Qualified lead')
         ->assertSee('Full legal name')
-        ->assertSee('preview_url')
+        ->assertDontSee('preview_url')
         ->assertSee('version');
 
     $updated = $created['draft']->refresh();
@@ -152,6 +158,78 @@ it('describes strict style values in the patch schema and field catalog', functi
         ->and($styleProperties['border_radius']['enum'])->toBe(['none', 'small', 'full'])
         ->and(\App\Service\Forms\AgentFormFieldCatalog::reference()['form_style']['border_radius'])
         ->toBe(['none', 'small', 'full']);
+});
+
+it('publishes and applies computed variable and display logic draft patches', function () {
+    $schema = app(PatchFormDraftTool::class)->schema(new \Illuminate\JsonSchema\JsonSchemaTypeFactory());
+    $operationProperties = $schema['operations']->toArray()['items']['properties'];
+
+    expect($operationProperties['values']['properties']['computed_variables']['items']['properties'])
+        ->toHaveKeys(['id', 'name', 'formula', 'result_type'])
+        ->and($operationProperties['block']['properties'])
+        ->toHaveKeys(['hidden', 'logic'])
+        ->and($operationProperties['patch']['properties'])
+        ->toHaveKeys(['hidden', 'logic'])
+        ->and($operationProperties['patch']['properties']['logic']['type'])
+        ->toBe(['object', 'null'])
+        ->and($operationProperties['patch']['properties']['logic']['properties']['conditions']['properties']['value']['properties']['value']['type'])
+        ->toBe(['string', 'number', 'boolean', 'object', 'array', 'null'])
+        ->and($operationProperties['patch']['properties']['logic']['properties']['actions']['items']['enum'])
+        ->toContain('show-block', 'hide-block', 'require-answer');
+
+    $drafts = app(AgentFormDraftService::class);
+    $created = $drafts->create(guestDraftDefinition([
+        'properties' => [
+            ['id' => 'budget', 'name' => 'Budget', 'type' => 'number'],
+            ['id' => 'details', 'name' => 'Details', 'type' => 'text'],
+        ],
+    ]));
+
+    OpnFormServer::tool(PatchFormDraftTool::class, [
+        'draft_handle' => $created['token'],
+        'expected_version' => 1,
+        'operations' => [
+            [
+                'op' => 'set_form_values',
+                'values' => [
+                    'computed_variables' => [[
+                        'id' => 'cv_priority_score',
+                        'name' => 'Priority score',
+                        'formula' => '{budget} * 1.5',
+                        'result_type' => 'number',
+                    ]],
+                ],
+            ],
+            [
+                'op' => 'update_block',
+                'block_id' => 'details',
+                'patch' => [
+                    'hidden' => true,
+                    'logic' => [
+                        'conditions' => [
+                            'operatorIdentifier' => 'and',
+                            'children' => [[
+                                'identifier' => 'cv_priority_score',
+                                'value' => [
+                                    'operator' => 'greater_than',
+                                    'property_meta' => ['id' => 'cv_priority_score', 'type' => 'computed'],
+                                    'value' => 15000,
+                                ],
+                            ]],
+                        ],
+                        'actions' => ['show-block'],
+                    ],
+                ],
+            ],
+        ],
+    ])->assertOk();
+
+    $definition = $created['draft']->refresh()->definition;
+    expect($created['draft']->version)->toBe(2)
+        ->and($definition['computed_variables'][0]['formula'])->toBe('{budget} * 1.5')
+        ->and($definition['properties'][1]['hidden'])->toBeTrue()
+        ->and($definition['properties'][1]['logic']['conditions']['children'][0]['value']['value'])
+        ->toBe(15000);
 });
 
 it('returns actionable validation errors for invalid style values', function () {
@@ -211,6 +289,50 @@ it('rolls back invalid patch operations and preserves the previous version', fun
         ->and($created['draft']->definition['properties'])->toHaveCount(1);
 });
 
+it('cleans dependent variables and logic after removing an MCP draft block', function () {
+    $drafts = app(AgentFormDraftService::class);
+    $created = $drafts->create(guestDraftDefinition([
+        'properties' => [
+            ['id' => 'amount', 'name' => 'Amount', 'type' => 'number'],
+            [
+                'id' => 'details',
+                'name' => 'Details',
+                'type' => 'text',
+                'hidden' => true,
+                'logic' => [
+                    'conditions' => [
+                        'identifier' => 'cv_double',
+                        'value' => [
+                            'operator' => 'greater_than',
+                            'property_meta' => ['id' => 'cv_double', 'type' => 'computed'],
+                            'value' => 10,
+                        ],
+                    ],
+                    'actions' => ['show-block'],
+                ],
+            ],
+        ],
+        'computed_variables' => [
+            ['id' => 'cv_base', 'name' => 'Base', 'formula' => '{amount}', 'result_type' => 'number'],
+            ['id' => 'cv_double', 'name' => 'Double', 'formula' => '{cv_base} * 2', 'result_type' => 'number'],
+        ],
+    ]));
+
+    OpnFormServer::tool(PatchFormDraftTool::class, [
+        'draft_handle' => $created['token'],
+        'expected_version' => 1,
+        'operations' => [[
+            'op' => 'remove_block',
+            'block_id' => 'amount',
+        ]],
+    ])->assertOk();
+
+    $definition = $created['draft']->refresh()->definition;
+    expect($definition['computed_variables'])->toBeEmpty()
+        ->and($definition['properties'][0]['id'])->toBe('details')
+        ->and($definition['properties'][0])->not->toHaveKey('logic');
+});
+
 it('rejects malformed, expired, and claimed draft capabilities with one generic error', function () {
     $drafts = app(AgentFormDraftService::class);
     $created = $drafts->create(guestDraftDefinition());
@@ -241,7 +363,114 @@ it('rejects duplicate block ids', function () {
                 ['id' => 'duplicate', 'name' => 'Two', 'type' => 'email'],
             ],
         ]),
-    ])->assertHasErrors(['unique id']);
+    ])->assertHasErrors([
+        'properties.1.id',
+        'The field ID [duplicate] is already used by field 1.',
+    ]);
+});
+
+it('accepts computed variables as display logic sources', function () {
+    OpnFormServer::tool(CreateFormDraftTool::class, [
+        'definition' => guestDraftDefinition([
+            'properties' => [
+                ['id' => 'amount', 'name' => 'Amount', 'type' => 'number'],
+                [
+                    'id' => 'details',
+                    'name' => 'Details',
+                    'type' => 'text',
+                    'hidden' => true,
+                    'logic' => [
+                        'conditions' => [
+                            'operatorIdentifier' => 'and',
+                            'children' => [[
+                                'identifier' => 'cv_total',
+                                'value' => [
+                                    'operator' => 'greater_than',
+                                    'property_meta' => ['id' => 'cv_total', 'type' => 'computed'],
+                                    'value' => 100,
+                                ],
+                            ]],
+                        ],
+                        'actions' => ['show-block'],
+                    ],
+                ],
+            ],
+            'computed_variables' => [[
+                'id' => 'cv_total',
+                'name' => 'Total',
+                'formula' => '{amount} * 2',
+                'result_type' => 'number',
+            ]],
+        ]),
+    ])->assertOk();
+
+    $this->assertDatabaseCount('agent_form_drafts', 1);
+    $condition = AgentFormDraft::query()->firstOrFail()
+        ->definition['properties'][1]['logic']['conditions']['children'][0];
+    expect($condition['identifier'])->toBe('cv_total')
+        ->and($condition['value']['property_meta'])->toBe(['id' => 'cv_total', 'type' => 'computed']);
+});
+
+it('removes display logic with missing MCP references before persisting', function () {
+    OpnFormServer::tool(CreateFormDraftTool::class, [
+        'definition' => guestDraftDefinition([
+            'properties' => [[
+                'id' => 'details',
+                'name' => 'Details',
+                'type' => 'text',
+                'logic' => [
+                    'conditions' => [
+                        'operatorIdentifier' => 'and',
+                        'children' => [[
+                            'identifier' => 'removed',
+                            'value' => [
+                                'operator' => 'equals',
+                                'property_meta' => ['id' => 'removed', 'type' => 'text'],
+                                'value' => 'yes',
+                            ],
+                        ]],
+                    ],
+                    'actions' => ['show-block'],
+                ],
+            ]],
+        ]),
+    ])->assertOk();
+
+    $this->assertDatabaseCount('agent_form_drafts', 1);
+    expect(AgentFormDraft::query()->firstOrFail()->definition['properties'][0])->not->toHaveKey('logic');
+});
+
+it('rejects machine-like labels before persisting a guest draft', function () {
+    OpnFormServer::tool(CreateFormDraftTool::class, [
+        'definition' => guestDraftDefinition([
+            'properties' => [
+                ['id' => 'full-name', 'name' => 'full_name', 'type' => 'text'],
+                ['id' => 'contact-email', 'name' => 'contact_email', 'type' => 'email'],
+            ],
+        ]),
+    ])->assertHasErrors([
+        'properties.0.name: Replace the raw label [full_name] with clear respondent-facing copy in sentence case.',
+        'properties.1.name: Replace the raw label [contact_email] with clear respondent-facing copy in sentence case.',
+    ]);
+
+    $this->assertDatabaseCount('agent_form_drafts', 0);
+});
+
+it('rejects markdown text blocks before persisting a guest draft', function () {
+    OpnFormServer::tool(CreateFormDraftTool::class, [
+        'definition' => guestDraftDefinition([
+            'properties' => [[
+                'id' => 'introduction',
+                'name' => 'Introduction',
+                'type' => 'nf-text',
+                'content' => '# Contact us\n\n**Tell us how we can help.**',
+            ]],
+        ]),
+    ])->assertHasErrors([
+        'properties.0.content: Replace Markdown with sanitized HTML',
+    ]);
+
+    $this->assertDatabaseCount('agent_form_drafts', 0);
 });
 
 it('rejects oversized draft definitions before persistence', function () {
