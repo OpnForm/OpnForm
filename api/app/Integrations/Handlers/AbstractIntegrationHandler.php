@@ -113,8 +113,28 @@ abstract class AbstractIntegrationHandler
             ], $this->extractEventDataFromException($e)));
         }
 
-        // A persistence failure after a possible send must not become a retryable delivery error.
-        return $this->recordEvent($attributes, $attempt);
+        try {
+            return $this->recordEvent($attributes, $attempt);
+        } catch (\Exception $exception) {
+            if ($attempt) {
+                // Keep the durable retry reservation and never classify storage errors as delivery failures.
+                throw $exception;
+            }
+
+            Log::error('Could not record integration outcome', [
+                'form_id' => $this->form->id,
+                'integration_id' => $this->formIntegration->id,
+                'exception_type' => get_class($exception),
+            ]);
+
+            // A recoverable history write failure must not prevent the other integrations from running.
+            return $this->recordEvent([
+                'status' => 'unknown',
+                'data' => array_merge($attributes['data'] ?? [], [
+                    'message' => 'The integration outcome could not be recorded. Check the destination before sending again.',
+                ]),
+            ]);
+        }
     }
 
     protected function recordEvent(array $attributes, ?FormIntegrationsEvent $attempt = null): FormIntegrationsEvent

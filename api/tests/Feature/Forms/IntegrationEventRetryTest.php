@@ -251,3 +251,29 @@ it('blocks tracked email failures without structured recipient outcomes', functi
     $this->postJson($this->retryUrl)->assertUnprocessable();
     Mail::assertNothingSent();
 });
+
+it('continues other integrations without making a sent event retryable when its success cannot be recorded', function () {
+    $firstIntegrationId = $this->integration->id;
+    \App\Models\Integration\FormIntegrationsEvent::creating(function ($event) use ($firstIntegrationId) {
+        if ($event->integration_id === $firstIntegrationId && $event->status === 'success') {
+            throw new RuntimeException('Simulated persistence failure after sending');
+        }
+    });
+    $other = FormIntegration::create([
+        'form_id' => $this->form->id, 'status' => 'active', 'integration_id' => 'webhook',
+        'data' => ['webhook_url' => 'https://example.com/other'],
+    ]);
+
+    (new \App\Listeners\Forms\NotifyFormSubmission())->handle(new \App\Events\Forms\FormSubmitted(
+        $this->form,
+        ['name' => 'Latest answer', 'submission_id' => $this->submission->id]
+    ));
+
+    Http::assertSentCount(2);
+    Http::assertSent(fn ($request) => $request->url() === 'https://example.com/other');
+    $uncertain = $this->integration->events()->latest('id')->first();
+    expect($uncertain->status)->toBe('unknown');
+    expect($uncertain->canRetry())->toBeFalse();
+    expect($this->failedEvent->canRetry())->toBeFalse();
+    expect($other->events()->first()->status)->toBe('success');
+});

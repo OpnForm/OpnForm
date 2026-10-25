@@ -53,7 +53,21 @@ trait TracksEmailIntegration
                 'tracking_id' => $this->emailTrackingId, 'exception_type' => get_class($e),
             ]);
         }
-        return $integrationEvent->refresh();
+        try {
+            return $integrationEvent->refresh();
+        } catch (\Throwable $exception) {
+            if ($attempt) {
+                throw $exception;
+            }
+
+            // Reading delivery history must not replay an ordinary notification or stop other integrations.
+            \Illuminate\Support\Facades\Log::error('Could not read final email outcome', [
+                'tracking_id' => $this->emailTrackingId,
+                'exception_type' => get_class($exception),
+            ]);
+
+            return $integrationEvent;
+        }
     }
 
     private function emailSkipped(string $reason): void
