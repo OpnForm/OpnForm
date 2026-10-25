@@ -1,31 +1,6 @@
 import { WindowMessageTypes, useWindowMessage } from "~/composables/useWindowMessage"
 import { authApi } from "~/api"
-
-/**
- * Lightweight authentication check that doesn't require Vue Query context
- * Use this when you only need to check if user is authenticated
- */
-export const useIsAuthenticated = () => {
-  const authStore = useAuthStore()
-  
-  const isAuthenticated = computed(() => {
-    return !!authStore.token
-  })
-  
-  return { isAuthenticated }
-}
-
-/**
- * Initialize vendor clients (Amplitude, Crisp) from the current user.
- * Safe to call from middleware or anywhere outside setup context.
- */
-export const initServiceClients = (userData) => {
-  if (import.meta.server) return
-  if (!userData) return
-  
-  useAmplitude().setUser(userData)
-  useCrisp().setUser(userData)
-}
+import { initServiceClients } from '~/composables/useServiceClients.js'
 
 // Shared state for 2FA modal - ensures all instances of useAuthFlow share the same state
 const showTwoFactorModal = ref(false)

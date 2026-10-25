@@ -1,5 +1,6 @@
 import { apiService } from './base'
 import { getOpnRequestsOptions } from '~/composables/useOpnApi'
+import { resolvePdfDownloadUrl } from '~/lib/pdf-editor'
 
 export const formsApi = {
   // Form views
@@ -14,11 +15,12 @@ export const formsApi = {
   
   create: (data) => apiService.post('/open/forms', data),
   update: (id, data) => apiService.put(`/open/forms/${id}`, data),
+  validateDefinition: (id, data) => apiService.post(`/open/forms/${id}/validate-definition`, data),
   delete: (id) => apiService.delete(`/open/forms/${id}`),
   duplicate: (id) => apiService.post(`/open/forms/${id}/duplicate`),
 
   // Form utilities
-  regenerateLink: (id, option) => apiService.put(`/open/forms/${id}/regenerate-link/${option}`),
+  regenerateLink: (id, option, data = null) => apiService.put(`/open/forms/${id}/regenerate-link/${option}`, data),
   mobileEditorEmail: (id) => apiService.get(`/open/forms/${id}/mobile-editor-email`),
   updateWorkspace: (id, workspaceId, data) => apiService.post(`/open/forms/${id}/workspace/${workspaceId}`, data),
 
@@ -56,6 +58,8 @@ export const formsApi = {
   ai: {
     generate: (data) => apiService.post('/forms/ai/generate', data),
     generateFields: (data) => apiService.post('/forms/ai/generate-fields', data),
+    generateFormula: (data) => apiService.post('/forms/ai/generate-formula', data),
+    getFormula: (generationId, options) => apiService.get(`/forms/ai/formula/${generationId}`, options),
     get: (generationId, options) => apiService.get(`/forms/ai/${generationId}`, options)
   },
 
@@ -71,7 +75,8 @@ export const formsApi = {
     create: (formId, data) => apiService.post(`/open/forms/${formId}/integrations`, data),
     update: (formId, integrationId, data) => apiService.put(`/open/forms/${formId}/integrations/${integrationId}`, data),
     delete: (formId, integrationId) => apiService.delete(`/open/forms/${formId}/integrations/${integrationId}`),
-    events: (formId, integrationId, options) => apiService.get(`/open/forms/${formId}/integrations/${integrationId}/events`, options)
+    events: (formId, integrationId, options) => apiService.get(`/open/forms/${formId}/integrations/${integrationId}/events`, options),
+    retryEvent: (formId, integrationId, eventId) => apiService.post(`/open/forms/${formId}/integrations/${integrationId}/events/${eventId}/retry`)
   },
 
   // Zapier webhooks
@@ -91,8 +96,9 @@ export const formsApi = {
     getDownloadRequest: (formId, templateId) => {
       const endpoint = `/open/forms/${formId}/pdf-templates/${templateId}/download`
       const requestOptions = getOpnRequestsOptions(endpoint, {})
+      const origin = import.meta.client ? window.location.origin : undefined
       return {
-        url: new URL(endpoint, requestOptions.baseURL).toString(),
+        url: resolvePdfDownloadUrl(endpoint, requestOptions.baseURL, origin),
         httpHeaders: requestOptions.headers,
       }
     },

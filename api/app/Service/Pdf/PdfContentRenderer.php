@@ -3,6 +3,7 @@
 namespace App\Service\Pdf;
 
 use App\Models\Forms\Form;
+use App\Service\Storage\FilenameUrlEncoder;
 use Illuminate\Support\Facades\Log;
 use setasign\Fpdi\Fpdi;
 
@@ -83,6 +84,10 @@ class PdfContentRenderer
 
     private function isImageReference(string $value): bool
     {
+        if (FilenameUrlEncoder::isEncoded($value)) {
+            return true;
+        }
+
         if (preg_match('/\.(jpg|jpeg|png|gif|webp)$/i', $value)) {
             return true;
         }

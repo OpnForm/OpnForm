@@ -203,6 +203,7 @@ When enabled:
 -   Users attempting password login receive: "Password-based login is disabled. Please use OIDC authentication."
 -   The login form automatically redirects users to their OIDC provider based on email domain
 -   If `force_login` is enabled but no OIDC connections exist, password login remains available as a fallback
+-   A user who is securely linking a pre-existing OpnForm account may sign in with that account's password once. The temporary link request is bound to the same email address and expires after 15 minutes.
 
 ### Use Cases
 
@@ -310,11 +311,11 @@ In production, all OIDC redirects require HTTPS. Ensure your application is serv
 
 OpnForm generates and validates an OIDC `state` value by default for login redirects. Callback requests without a valid, unexpired state are rejected to prevent login CSRF.
 
-State validation can be disabled explicitly on an OIDC connection by setting `options.require_state` to `false`, but this is not recommended unless required for a legacy identity provider.
+State validation can be disabled explicitly on an OIDC connection by setting `options.require_state` to `false`, but this is not recommended unless required for a legacy identity provider. Keep it enabled for Microsoft Entra ID and other standard OIDC providers.
 
 ### Account Linking
 
-For security, OpnForm prevents automatic linking of existing accounts. If a user with the same email already exists but isn't linked to the OIDC connection, authentication will fail with a message to contact the administrator.
+For security, OpnForm prevents automatic linking of existing accounts. If a user with the same email already exists but is not linked to the OIDC connection, OpnForm asks that user to sign in once with their existing OpnForm password. It then links the SSO identity only when the temporary link request and authenticated account have the same email address. The link request expires after 15 minutes.
 
 ### SSO-Only Accounts
 

@@ -4,8 +4,11 @@ namespace App\Models\Forms\AI;
 
 use App\Jobs\Form\GenerateAiForm;
 use App\Jobs\Form\GenerateAiFormFields;
+use App\Jobs\Form\GenerateAiFormula;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class AiFormCompletion extends Model
 {
@@ -18,11 +21,13 @@ class AiFormCompletion extends Model
 
     public const TYPE_FORM = 'form';
     public const TYPE_FIELDS = 'fields';
+    public const TYPE_FORMULA = 'formula';
 
     protected $table = 'ai_form_completions';
 
     protected $fillable = [
         'form_prompt',
+        'user_id',
         'status',
         'result',
         'ip',
@@ -45,6 +50,11 @@ class AiFormCompletion extends Model
         ];
     }
 
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
     protected static function booted()
     {
         // Dispatch completion job on creation
@@ -53,6 +63,8 @@ class AiFormCompletion extends Model
                 GenerateAIForm::dispatch($completion);
             } elseif ($completion->type === self::TYPE_FIELDS) {
                 GenerateAiFormFields::dispatch($completion);
+            } elseif ($completion->type === self::TYPE_FORMULA) {
+                GenerateAiFormula::dispatch($completion);
             }
         });
     }

@@ -29,6 +29,7 @@ function createBridgeHarness(dom: JSDOM, options: {
   initialSdkToken?: string | null
   initialTrustedOrigin?: string | null
   onCommand?: ReturnType<typeof vi.fn>
+  onHandshake?: ReturnType<typeof vi.fn>
 } = {}) {
   const { window, mockParent } = installIframeWindow(dom)
   const parentMessages: Array<{ message: unknown, origin: string }> = []
@@ -47,6 +48,7 @@ function createBridgeHarness(dom: JSDOM, options: {
       mockParent.postMessage(message, origin)
     },
     onCommand,
+    onHandshake: options.onHandshake,
   })
 
   function dispatchMessage(data: Record<string, unknown>, overrides: {
@@ -98,6 +100,36 @@ describe('SDK bridge messaging security', () => {
       },
       origin: PARENT_ORIGIN,
     })
+  })
+
+  it('delivers parent attribution only after a trusted handshake', () => {
+    const onHandshake = vi.fn()
+    const { dispatchMessage } = createBridgeHarness(dom, { onHandshake })
+
+    dispatchMessage({
+      type: `${MSG_PREFIX}handshake`,
+      formSlug: FORM_SLUG,
+      _sdkToken: 'bridge-token',
+      parentOrigin: PARENT_ORIGIN,
+      trackingParameters: { utm_source: 'parent', secret: 'ignored-by-form-manager' },
+    })
+
+    expect(onHandshake).toHaveBeenCalledWith({ utm_source: 'parent' })
+  })
+
+  it('does not deliver attribution from an untrusted handshake', () => {
+    const onHandshake = vi.fn()
+    const { dispatchMessage } = createBridgeHarness(dom, { onHandshake })
+
+    dispatchMessage({
+      type: `${MSG_PREFIX}handshake`,
+      formSlug: FORM_SLUG,
+      _sdkToken: 'bridge-token',
+      parentOrigin: 'https://attacker.example.test',
+      trackingParameters: { utm_source: 'attacker' },
+    })
+
+    expect(onHandshake).not.toHaveBeenCalled()
   })
 
   it('rejects handshake when parentOrigin does not match event origin', () => {

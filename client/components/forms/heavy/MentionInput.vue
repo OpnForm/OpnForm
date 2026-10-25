@@ -175,6 +175,10 @@ const getPlainText = (html) => {
   return temp.textContent.trim()
 }
 
+function getHtmlValue(value) {
+  return value === null || value === undefined ? '' : String(value)
+}
+
 const updateCompVal = () => {
   const html = editableDiv.value.innerHTML
   const plainText = getPlainText(html)
@@ -188,14 +192,15 @@ const onInput = () => {
 }
 
 onMounted(() => {
-  if (compVal.value) {
-    editableDiv.value.innerHTML = compVal.value
+  if (compVal.value !== null && compVal.value !== undefined) {
+    editableDiv.value.innerHTML = getHtmlValue(compVal.value)
   }
 })
 
 watch(compVal, (newVal) => {
-  if (editableDiv.value && editableDiv.value.innerHTML !== newVal) {
-    editableDiv.value.innerHTML = newVal
+  const htmlValue = getHtmlValue(newVal)
+  if (editableDiv.value && editableDiv.value.innerHTML !== htmlValue) {
+    editableDiv.value.innerHTML = htmlValue
   }
 })
 

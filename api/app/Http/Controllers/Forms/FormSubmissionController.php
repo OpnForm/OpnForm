@@ -13,6 +13,7 @@ use App\Jobs\Form\ExportFormSubmissionsJob;
 use App\Models\Forms\Form;
 use App\Models\Forms\FormSubmission;
 use App\Service\Forms\FormExportService;
+use App\Service\Forms\DeleteFormSubmission;
 use App\Service\Storage\FileUploadPathService;
 use App\Service\Storage\FilenameUrlEncoder;
 use Illuminate\Support\Facades\Storage;
@@ -27,7 +28,7 @@ class FormSubmissionController extends Controller
     public function __construct()
     {
         $this->middleware('auth', ['except' => ['submissionFile']]);
-        $this->middleware('signed', ['only' => ['submissionFile']]);
+        $this->middleware('signed:relative', ['only' => ['submissionFile']]);
     }
 
     public function submissions(Form $form)
@@ -122,10 +123,14 @@ class FormSubmissionController extends Controller
     {
         $this->authorize('view', $form);
 
+        if ($token = Auth::user()->currentAccessToken()) {
+            abort_unless($token->can('forms-read'), 403);
+        }
+
         $cacheKey = $exportService->getCacheKey($jobId);
         $jobData = Cache::get($cacheKey);
 
-        if (!$jobData) {
+        if (!$jobData || ($jobData['form_id'] ?? null) !== $form->id) {
             return $this->error([
                 'message' => 'Export job not found or has expired.'
             ], 404);
@@ -213,19 +218,20 @@ class FormSubmissionController extends Controller
         );
     }
 
-    public function destroy(Form $form, $submission_id)
+    public function destroy(Form $form, $submission_id, DeleteFormSubmission $deleteSubmission)
     {
         $this->authorize('delete', $form);
 
-        $submission = $form->submissions()->where('id', $submission_id)->firstOrFail();
-        $submission->delete();
+        if (!$deleteSubmission->execute($form, (int) $submission_id)) {
+            abort(404);
+        }
 
         return $this->success([
             'message' => 'Record successfully removed.',
         ]);
     }
 
-    public function destroyMulti(Request $request, Form $form)
+    public function destroyMulti(Request $request, Form $form, DeleteFormSubmission $deleteSubmission)
     {
         $request->validate([
             'submissionIds' => 'required|array',
@@ -238,14 +244,7 @@ class FormSubmissionController extends Controller
 
         $this->authorize('delete', $form);
 
-        $submissionIds = $request->submissionIds;
-        $form->submissions()
-            ->whereIn('id', $submissionIds)
-            ->chunk(100, function ($submissions) {
-                foreach ($submissions as $submission) {
-                    $submission->delete();
-                }
-            });
+        $deleteSubmission->executeMany($form, $request->submissionIds);
 
         return $this->success([
             'message' => 'Records successfully removed.',

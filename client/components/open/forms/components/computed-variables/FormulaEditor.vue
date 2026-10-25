@@ -291,6 +291,8 @@ watch(() => props.modelValue, (newVal) => {
       editorRef.value.innerHTML = toDisplayFormat(newVal)
     }
   }
+
+  validateAndEmit()
 })
 
 // Debounce timer for highlighting

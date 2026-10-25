@@ -120,4 +120,11 @@ return [
     'complete_captcha' => 'Prosím, vyplňte CAPTCHA.',
     'yes' => 'Áno',
     'no' => 'Nie',
+
+    'from_date_required' => 'Počiatočný dátum je povinný',
+    'to_date_required' => 'Koncový dátum je povinný',
+    'from_date_before_or_equal' => 'Počiatočný dátum musí byť pred koncovým dátumom alebo rovnaký',
+    'rating_min' => 'Je potrebné vybrať hodnotenie',
+    'select_min' => 'Vyberte aspoň :min možností',
+    'select_max' => 'Vyberte najviac :max možností',
 ];

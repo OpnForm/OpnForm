@@ -69,6 +69,23 @@ This ensures you retain all existing form fields and don't accidentally overwrit
 **Best Practice Example:** If you only want to change form visibility, fetch the form first, update only the `visibility` field locally, then send the complete form back with all its properties intact.
 </Tip>
 
+### Automatically delete old submissions
+
+Set `submission_retention_value` and `submission_retention_unit` together to permanently delete submissions after a retention period. The period is measured from each submission's last update, and the cleanup runs hourly.
+
+```json
+{
+    "submission_retention_value": 3,
+    "submission_retention_unit": "day"
+}
+```
+
+The unit accepts `day`, `week`, `month`, or `year`. Set both fields to `null` to disable automatic deletion.
+
+<Warning>
+Expired submissions, uploaded files, and submission versions are permanently deleted and cannot be restored. Shortening an existing retention period can make older submissions eligible during the next hourly cleanup.
+</Warning>
+
 ### Body Example
 
 Example request updating title and visibility (note: all required fields must be included):

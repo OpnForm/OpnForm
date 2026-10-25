@@ -4,6 +4,8 @@ use App\Models\Forms\FormSubmission;
 use Illuminate\Support\Str;
 
 it('sanitizes rich_text and maps files in FormSubmissionResource', function () {
+    config()->set('app.url', 'https://forms.example.test');
+
     $user = $this->actingAsUser();
     $workspace = $this->createUserWorkspace($user);
     $form = $this->createForm($user, $workspace);
@@ -55,8 +57,34 @@ it('sanitizes rich_text and maps files in FormSubmissionResource', function () {
     expect($data[$filesId])->toBeArray();
     expect($data[$filesId])->toHaveCount(2);
     expect($data[$filesId][0]['file_name'])->toBe($files[0]);
-    expect($data[$filesId][0]['file_url'])->toBeString();
+    expect($data[$filesId][0]['file_url'])
+        ->toStartWith('https://forms.example.test/open/forms/')
+        ->toContain('signature=');
 
     // Plain text remains raw (escaping is at render time)
     expect($data[$textId])->toBe($textPayload);
+});
+
+it('normalizes an encoded legacy file name before exposing its signed URL', function () {
+    $user = $this->actingAsUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace);
+    $filesId = 'fl_' . Str::uuid()->toString();
+    $form->properties = array_merge($form->properties, [
+        ['id' => $filesId, 'name' => 'Files', 'type' => 'files'],
+    ]);
+    $form->save();
+
+    $fileName = 'receipt_550e8400-e29b-41d4-a716-446655440000.png';
+    $submission = $form->submissions()->create([
+        'data' => [$filesId => [\App\Service\Storage\FilenameUrlEncoder::encode($fileName)]],
+        'status' => FormSubmission::STATUS_COMPLETED,
+    ]);
+
+    $response = $this->getJson(route('open.forms.submissions.fetch', [$form->id, $submission->id]))
+        ->assertOk();
+
+    $file = $response->json('data')[$filesId][0];
+    expect($file['file_name'])->toBe($fileName)
+        ->and($file['file_url'])->toContain(\App\Service\Storage\FilenameUrlEncoder::encode($fileName));
 });

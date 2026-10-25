@@ -36,9 +36,11 @@ export const oidcApi = {
       headers['X-OIDC-State-Verifier'] = stateVerifier
     }
 
-    // Use GET with Accept: application/json header to get JSON response
+    // Authorization codes are single-use. Never let the fetch client replay
+    // this callback after an error response such as account-linking required.
     return apiService.get(url, {
-      headers
+      headers,
+      retry: false,
     })
   },
 

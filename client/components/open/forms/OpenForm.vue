@@ -56,41 +56,30 @@
         </div>
 
         <div v-else-if="shouldDisplayForm" :key="formPageIndex" class="form-group flex flex-wrap w-full">
-          <VueDraggable
-            :model-value="currentFields"
-            group="form-elements"
-            item-key="id"
-            class="grid grid-cols-12 relative transition-all w-full"
-            :class="[
-              draggingNewBlock ? 'rounded-md bg-blue-50 dark:bg-neutral-800' : '',
-            ]"
-            ghost-class="ghost-item"
-            filter=".not-draggable"
-            :animation="200"
-            :disabled="!allowDragging"
-            @add="handleDragAdd"
-            @update="handleDragUpdate"
-          >
-            <template #default>
-              <div
-                v-for="element in currentFields"
-                :key="element.id"
-                :class="getFieldWidthClasses(element.width)"
-              >
-                <VTransition name="fadeHeight">
-                  <open-form-field
-                    :field="element"
-                    :form-manager="formManager"
-                  />
-                </VTransition>
-              </div>
-            </template>
-          </VueDraggable>
+          <LazyOpenFormsComponentsFormFieldsDraggable
+            v-if="allowDragging"
+            :fields="currentFields"
+            :form-manager="formManager"
+          />
+          <div v-else class="grid grid-cols-12 relative transition-all w-full">
+            <div
+              v-for="element in currentFields"
+              :key="element.id"
+              :class="getFieldWidthClasses(element.width)"
+            >
+              <VTransition name="fadeHeight">
+                <open-form-field
+                  :field="element"
+                  :form-manager="formManager"
+                />
+              </VTransition>
+            </div>
+          </div>
         </div>
       </transition>
 
       <!-- Captcha -->
-      <CaptchaWrapper v-if="form.use_captcha && !isSubmitted" :form-manager="formManager" />
+      <LazyCaptchaWrapper v-if="form.use_captcha && !isSubmitted" :form-manager="formManager" />
 
       <!--  Submit, Next and previous buttons  -->
       <div v-if="shouldDisplayForm" class="flex flex-wrap justify-center w-full">
@@ -156,14 +145,11 @@
 </template>
 
 <script setup>
-import { VueDraggable } from 'vue-draggable-plus'
 import OpenFormButton from './OpenFormButton.vue'
 import BlockMediaLayout from './components/BlockMediaLayout.vue'
-import CaptchaWrapper from '~/components/forms/heavy/components/CaptchaWrapper.vue'
 import OpenFormField from './OpenFormField.vue'
 import FormProgressbar from './FormProgressbar.vue'
 import PoweredBy from '~/components/pages/forms/show/PoweredBy.vue'
-import { useWorkingFormStore } from '~/stores/working_form'
 import { FormMode } from '~/lib/forms/FormModeStrategy.js'
 import { useIsIframe } from '~/composables/useIsIframe'
 
@@ -173,7 +159,6 @@ const props = defineProps({
 
 const emit = defineEmits(['submit'])
 
-const workingFormStore = useWorkingFormStore()
 const isIframe = useIsIframe()
 
 // Derive everything from formManager
@@ -205,7 +190,6 @@ const currentFieldsPageBreak = computed(() => structure.value?.currentPageBreak?
 const previousFieldsPageBreak = computed(() => structure.value?.previousPageBreak?.value ?? null)
 
 const allowDragging = computed(() => strategy.value.admin.allowDragging)
-const draggingNewBlock = computed(() => workingFormStore.draggingNewBlock)
 
 const handlePreviousClick = () => {
   props.formManager.previousPage()
@@ -218,25 +202,6 @@ const handleNextClick = () => {
   })
 }
 
-const getAbsoluteIndex = (relativeIndex) => {
-  return structure.value.getTargetDropIndex(relativeIndex, state.value.currentPage)
-}
-
-const handleDragAdd = (evt) => {
-  if (!structure.value) return
-  const targetIndex = getAbsoluteIndex(evt.newIndex)
-  const payload = evt?.clonedData
-  workingFormStore.addBlock(payload, targetIndex, false)
-}
-
-const handleDragUpdate = (evt) => {
-  if (!structure.value) return
-  const oldTargetIndex = getAbsoluteIndex(evt.oldIndex)
-  const newTargetIndex = getAbsoluteIndex(evt.newIndex)
-  if (oldTargetIndex !== newTargetIndex) {
-    workingFormStore.moveField(oldTargetIndex, newTargetIndex)
-  }
-}
 
 const isProcessing = computed(() => props.formManager.state.isProcessing)
 
@@ -283,9 +248,3 @@ const getFieldWidthClasses = (width) => {
 // Branding display control comes from strategy; default to true
 const showBranding = computed(() => props.formManager?.strategy?.value?.display?.showBranding ?? true)
 </script>
-
-<style lang='scss' scoped>
-.ghost-item {
-  @apply bg-blue-100 dark:bg-blue-900 rounded-md;
-}
-</style>

@@ -32,9 +32,10 @@ Authorization: Bearer <token>
 
 ### Query Parameters
 
-| Parameter | Type   | Description                                    | Default |
-|-----------|--------|------------------------------------------------|---------|
-| page      | number | Page number for pagination.                    | 1       |
+| Parameter | Type   | Description                                      | Default |
+|-----------|--------|--------------------------------------------------|---------|
+| page      | number | Page number for pagination.                      | 1       |
+| per_page  | number | Number of forms per page (minimum 1, maximum 100). | 10      |
 
 ## Response
 
@@ -78,4 +79,3 @@ To get the full form including fields (`properties`), call the [Get Form](./get-
 `403 Forbidden` – The token does not include the required `forms-read` ability, or you do not have access to the workspace.
 
 `404 Not Found` – The workspace does not exist.
-

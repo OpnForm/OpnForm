@@ -40,7 +40,7 @@
           :columns="6"
         />
         <OptionSelectorInput
-          v-if="['nf-text', 'nf-image', 'nf-video'].includes(field.type)"
+          v-if="['nf-text', 'nf-image', 'nf-video', 'nf-audio'].includes(field.type)"
           v-model="field.align"
           name="align"
           class="mt-4 w-2/3"
@@ -126,10 +126,23 @@
     </div>
 
     <div
+      v-else-if="field.type == 'nf-audio'"
+      class="border-t mt-4"
+    >
+      <AudioInput
+        name="audio_block"
+        class="mx-4"
+        :form="field"
+        label="Audio"
+        help="Upload an audio file or paste a URL. It will be displayed as an audio block."
+      />
+    </div>
+
+    <div
       v-else-if="field.type == 'nf-code'"
       class="border-t mt-6"
     >
-      <CodeInput
+      <LazyCodeInput
         :allow-fullscreen="true"
         name="content"
         class="mt-4 mx-4"

@@ -114,16 +114,17 @@ describe('Submission Versions', function () {
 
 describe('Form Version Preview', function () {
     it('can preview a form version as pro user', function () {
+        $this->freezeTime();
+
         $user = $this->actingAsBusinessUser();
         $workspace = $this->createUserWorkspace($user);
         $form = $this->createForm($user, $workspace);
         $originalTitle = $form->title;
+        // Capture the initial snapshot before creating a second version.
+        // latest() is ambiguous when both versions share a created_at timestamp.
+        $version = $form->versions()->sole();
 
-        // Update form to create a version
         $form->update(['title' => 'Changed Title']);
-
-        // Get the version (should have the original title)
-        $version = $form->versions()->latest()->first();
 
         // Preview the versioned form via API (form restore is frontend-only)
         $response = $this->getJson(route('open.forms.show', $form->slug) . "?version_id={$version->version_id}")

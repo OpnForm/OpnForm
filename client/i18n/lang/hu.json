@@ -7,7 +7,8 @@
             "submit": "Beküldés",
             "next": "Tovább",
             "previous": "Vissza",
-            "re_fill": "Új válasz beküldése"
+            "re_fill": "Új válasz beküldése",
+            "download_pdf": "PDF letöltése"
         },
         "powered_by": "Működteti",
         "password_protected": "Ez az űrlap jelszóval védett.",
@@ -27,6 +28,7 @@
             "create": "Létrehozás"
         },
         "fileInput": {
+            "invalidFileType": "Helytelen fájltípus. Csak ezek engedélyezettek: {types}",
             "chooseFiles": "Kattints a fájl(ok) kiválasztásához vagy húzd ide | Kattints egy fájl kiválasztásához vagy húzd ide",
             "sizeLimit": "Méretkorlát: {count} MB fájlonként",
             "uploadingFile": "A fájl feltöltése folyamatban..."
@@ -69,6 +71,7 @@
         },
         "validation_error": "Érvényesítési hiba",
         "validation_error_with_count": "Érvényesítési hiba ({count} mező)",
+        "submission_error": "Hiba történt az űrlap beküldése közben. Kérjük, próbáld újra.",
         "toggle": {
             "yes": "Igen",
             "no": "Nem"

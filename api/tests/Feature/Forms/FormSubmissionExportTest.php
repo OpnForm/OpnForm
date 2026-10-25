@@ -1,8 +1,9 @@
 <?php
 
-use App\Models\User;
 use App\Models\Forms\FormSubmission;
+use App\Models\User;
 use App\Service\Forms\FormExportService;
+use App\Service\Forms\SubmissionAttribution;
 use App\Service\Storage\FileUploadPathService;
 use Carbon\Carbon;
 use Illuminate\Routing\Middleware\ThrottleRequests;
@@ -42,14 +43,14 @@ it('can export form submissions with selected columns', function () {
                 'name' => 'Email',
                 'type' => 'email',
                 'required' => true,
-            ]
-        ]
+            ],
+        ],
     ]);
 
     // Create some submissions
     $submissions = [
         ['name_field' => 'John Doe', 'email_field' => 'john@example.com'],
-        ['name_field' => 'Jane Smith', 'email_field' => 'jane@example.com']
+        ['name_field' => 'Jane Smith', 'email_field' => 'jane@example.com'],
     ];
 
     foreach ($submissions as $submission) {
@@ -64,12 +65,50 @@ it('can export form submissions with selected columns', function () {
         'columns' => [
             'name_field' => true,
             'email_field' => true,
-            'created_at' => true
-        ]
+            'created_at' => true,
+        ],
     ]));
 
     $response->assertSuccessful()
-        ->assertHeader('content-disposition', 'attachment; filename=' . $form->slug . '-submission-data.csv');
+        ->assertHeader('content-disposition', 'attachment; filename='.$form->slug.'-submission-data.csv');
+});
+
+it('exports selected attribution columns and leaves unselected attribution out', function () {
+    $user = $this->actingAsProUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace);
+    $textField = collect($form->properties)->firstWhere('type', 'text');
+
+    $submissionData = $this->generateFormSubmissionData($form, [
+        $textField['id'] => 'Attributed submission',
+    ]);
+    $submissionData['tracking_parameters'] = [
+        'utm_source' => 'newsletter',
+        'gclid' => 'not-exported',
+    ];
+
+    $this->postJson(route('forms.answer', $form->slug), $submissionData)
+        ->assertSuccessful();
+
+    $response = $this->postJson(route('open.forms.submissions.export', [
+        'form' => $form,
+    ]), [
+        'columns' => [
+            $textField['id'] => true,
+            SubmissionAttribution::columnId('utm_source') => true,
+        ],
+    ]);
+
+    $response->assertSuccessful();
+
+    ob_start();
+    $response->sendContent();
+    $rows = parseCsvRows(ob_get_clean());
+
+    expect($rows[0])->toContain('utm_source')
+        ->not->toContain('gclid')
+        ->and($rows[1])->toContain('newsletter')
+        ->not->toContain('not-exported');
 });
 
 it('exports only the selected submission ids', function () {
@@ -165,7 +204,7 @@ it('accepts status as a valid export column', function () {
     ]);
 
     $response->assertSuccessful()
-        ->assertHeader('content-disposition', 'attachment; filename=' . $form->slug . '-submission-data.csv');
+        ->assertHeader('content-disposition', 'attachment; filename='.$form->slug.'-submission-data.csv');
 });
 
 it('cannot export form submissions with invalid columns', function () {
@@ -178,16 +217,16 @@ it('cannot export form submissions with invalid columns', function () {
                 'name' => 'Name',
                 'type' => 'text',
                 'required' => true,
-            ]
-        ]
+            ],
+        ],
     ]);
 
     $response = $this->postJson(route('open.forms.submissions.export', [
         'form' => $form,
         'columns' => [
             'invalid_field' => true,
-            'name_field' => true
-        ]
+            'name_field' => true,
+        ],
     ]));
 
     $response->assertStatus(422)
@@ -212,7 +251,7 @@ it('cannot export form submissions from another user form', function () {
     ]);
 
     $response->assertJson([
-        'message' => 'This action is unauthorized.'
+        'message' => 'This action is unauthorized.',
     ]);
 });
 
@@ -236,7 +275,7 @@ it('includes status column when partial submissions are enabled', function () {
     $emailField = collect($form->properties)->firstWhere('type', 'email');
     $completedSubmissionData = $this->generateFormSubmissionData($form, [
         $textField['id'] => 'Jane Complete',
-        $emailField['id'] => 'jane@example.com'
+        $emailField['id'] => 'jane@example.com',
     ]);
     $completedResponse = $this->postJson(route('forms.answer', $form->slug), $completedSubmissionData);
     $completedResponse->assertSuccessful();
@@ -252,11 +291,11 @@ it('includes status column when partial submissions are enabled', function () {
         'columns' => [
             $textField['id'] => true,
             $emailField['id'] => true,
-        ]
+        ],
     ]));
 
     $response->assertSuccessful()
-        ->assertHeader('content-disposition', 'attachment; filename=' . $form->slug . '-submission-data.csv');
+        ->assertHeader('content-disposition', 'attachment; filename='.$form->slug.'-submission-data.csv');
 
     // Verify the exported CSV contains status column and correct values
     ob_start();
@@ -341,7 +380,7 @@ it('does not include status column when partial submissions are disabled', funct
         'form' => $form,
         'columns' => [
             $textField['id'] => true,
-        ]
+        ],
     ]));
 
     $response->assertSuccessful();
@@ -447,7 +486,23 @@ it('uses the workspace policy for asynchronous CSV download links', function () 
     parse_str((string) parse_url($fileUrl, PHP_URL_QUERY), $queryParameters);
 
     expect((int) ($queryParameters['expiration'] ?? 0))->toBe($now->copy()->addHours(72)->timestamp);
-    Storage::assertExists(FormExportService::EXPORT_FILE_PATH . 'weekend-submissions.csv');
+    Storage::assertExists(FormExportService::EXPORT_FILE_PATH.'weekend-submissions.csv');
+});
+
+it('includes a UTF-8 BOM in asynchronous CSV exports', function () {
+    Storage::fake();
+    $exportService = app(FormExportService::class);
+    $fileName = 'unicode-submissions.csv';
+
+    $exportService->generateAndUploadCsvFile([
+        ['name' => 'பெயர்'],
+    ], $fileName, now()->addHour());
+
+    $csv = Storage::get(FormExportService::EXPORT_FILE_PATH.$fileName);
+
+    expect($csv)
+        ->toStartWith("\xEF\xBB\xBF")
+        ->toContain('பெயர்');
 });
 
 it('allows export status polling when the general api rate limit is exhausted', function () {
@@ -463,7 +518,7 @@ it('allows export status polling when the general api rate limit is exhausted', 
     $form = $this->createForm($user, $workspace);
 
     $jobId = (string) Str::uuid();
-    Cache::put('form_export_job:' . $jobId, [
+    Cache::put('form_export_job:'.$jobId, [
         'status' => 'processing',
         'progress' => 50,
         'form_id' => $form->id,
@@ -487,3 +542,156 @@ it('allows export status polling when the general api rate limit is exhausted', 
         ->assertSuccessful()
         ->assertJsonPath('status', 'processing');
 });
+
+it('serves export status at the documented path with the documented fields', function (string $authentication) {
+    $user = $this->createProUser();
+    if ($authentication === 'token') {
+        $this->withToken($user->createToken('Export status', ['forms-read'])->plainTextToken);
+    } else {
+        $this->actingAsProUser($user);
+    }
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace);
+
+    $jobId = app(FormExportService::class)->initializeAsyncExport($form, $user->id);
+
+    // Keep in sync with docs/api-reference/submissions/export-status.mdx
+    $response = $this->getJson("/open/forms/{$form->id}/submissions/export/status/{$jobId}")
+        ->assertSuccessful()
+        ->assertJsonPath('job_id', $jobId)
+        ->assertJsonPath('status', 'queued')
+        ->assertJsonPath('progress', 0);
+
+    expect(array_keys($response->json()))->toEqualCanonicalizing([
+        'job_id',
+        'status',
+        'progress',
+        'processed_submissions',
+        'total_submissions',
+        'file_url',
+        'error_message',
+        'expires_at',
+        'created_at',
+        'updated_at',
+    ]);
+})->with(['session', 'token']);
+
+it('rejects export status tokens without read access', function (array $abilities) {
+    $user = $this->createProUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace);
+    $jobId = app(FormExportService::class)->initializeAsyncExport($form, $user->id);
+
+    $this->withToken($user->createToken('Export status', $abilities)->plainTextToken)
+        ->getJson("/open/forms/{$form->id}/submissions/export/status/{$jobId}")
+        ->assertForbidden();
+})->with([
+    'write only' => [['forms-write']],
+    'integration management only' => [['manage-integrations']],
+    'no abilities' => [[]],
+]);
+
+it('rejects export jobs belonging to another form', function (string $authentication) {
+    $user = $this->createProUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace);
+    $otherUser = $this->createProUser();
+    $otherForm = $this->createForm($otherUser, $this->createUserWorkspace($otherUser));
+    $jobId = app(FormExportService::class)->initializeAsyncExport($otherForm, $otherUser->id);
+
+    if ($authentication === 'token') {
+        $this->withToken($user->createToken('Export status', ['forms-read'])->plainTextToken);
+    } else {
+        $this->actingAsProUser($user);
+    }
+
+    $this->getJson("/open/forms/{$form->id}/submissions/export/status/{$jobId}")
+        ->assertNotFound();
+    $this->getJson("/open/forms/{$otherForm->id}/submissions/export/status/{$jobId}")
+        ->assertForbidden();
+})->with(['session', 'token']);
+
+it('returns not found for unknown export jobs', function () {
+    $user = $this->createProUser();
+    $form = $this->createForm($user, $this->createUserWorkspace($user));
+    $jobId = (string) Str::uuid();
+
+    $this->withToken($user->createToken('Export status', ['forms-read'])->plainTextToken)
+        ->getJson("/open/forms/{$form->id}/submissions/export/status/{$jobId}")
+        ->assertNotFound();
+});
+
+it('exports IP metadata through the same request used by the submissions table', function () {
+    $user = $this->actingAsBusinessUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace, ['enable_ip_tracking' => true]);
+    $form->submissions()->create([
+        'data' => [], 'meta' => ['ip_address' => '192.0.2.15'],
+        'status' => FormSubmission::STATUS_COMPLETED,
+    ]);
+    $response = $this->postJson(route('open.forms.submissions.export', ['form' => $form]), [
+        'columns' => ['ip_address' => true, 'created_at' => true],
+    ])->assertSuccessful();
+    ob_start();
+    $response->sendContent();
+    $rows = parseCsvRows(ob_get_clean());
+    expect($rows[0])->toContain('ip_address')->and($rows[1])->toContain('192.0.2.15');
+});
+
+it('does not expose stored IP metadata without the tracking setting and feature', function (bool $tracking, bool $business) {
+    $user = $business ? $this->actingAsBusinessUser() : $this->actingAsProUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace, ['enable_ip_tracking' => $tracking]);
+    $submission = $form->submissions()->create([
+        'data' => [], 'meta' => ['ip_address' => '192.0.2.15'],
+        'status' => FormSubmission::STATUS_COMPLETED,
+    ]);
+    $row = app(FormExportService::class)->formatSubmissionForExport($form, $submission, ['ip_address' => true]);
+    expect($row)->not->toHaveKey('ip_address')->not->toContain('192.0.2.15');
+})->with([[false, true], [true, false]]);
+
+it('matches requested field IDs exactly when another label contains the ID', function () {
+    $user = $this->actingAsProUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace, [
+        'properties' => [
+            ['id' => 'prenom', 'name' => 'Prénom', 'type' => 'text'],
+            ['id' => 'nom', 'name' => 'Nom', 'type' => 'text'],
+        ],
+        'removed_properties' => [['id' => 'old_nom', 'name' => 'Old Nom', 'type' => 'text']],
+    ]);
+    $submission = $form->submissions()->create([
+        'data' => ['prenom' => 'Alice', 'nom' => 'Dupont', 'old_nom' => 'Archived'],
+        'status' => FormSubmission::STATUS_COMPLETED,
+    ]);
+    $row = app(FormExportService::class)->formatSubmissionForExport($form, $submission, [
+        'prenom' => true, 'nom' => true, 'old_nom' => true,
+    ]);
+    expect($row)->toHaveCount(4)
+        ->and($row['Prénom (prenom)'])->toBe('Alice')
+        ->and($row['Nom (nom)'])->toBe('Dupont');
+    expect(array_values($row))->toContain('Archived');
+});
+
+it('preserves a form field whose ID matches the IP metadata column', function (bool $tracking) {
+    $user = $this->actingAsBusinessUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace, [
+        'enable_ip_tracking' => $tracking,
+        'properties' => [['id' => 'ip_address', 'name' => 'Server IP', 'type' => 'text']],
+    ]);
+    $submission = $form->submissions()->create([
+        'data' => ['ip_address' => '203.0.113.10'],
+        'meta' => ['ip_address' => '192.0.2.15'],
+        'status' => FormSubmission::STATUS_COMPLETED,
+    ]);
+
+    $row = app(FormExportService::class)->formatSubmissionForExport($form, $submission, ['ip_address' => true]);
+
+    expect($row['Server IP (ip_address)'] ?? null)->toBe('203.0.113.10');
+    if ($tracking) {
+        expect($row['ip_address'])->toBe('192.0.2.15');
+    } else {
+        expect($row)->not->toHaveKey('ip_address');
+    }
+})->with([true, false]);

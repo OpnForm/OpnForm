@@ -1,6 +1,4 @@
 import { defineAsyncComponent } from 'vue'
-import FocusedSelectorInput from '~/components/forms/core/FocusedSelectorInput.vue'
-import FocusedToggleInput from '~/components/forms/core/FocusedToggleInput.vue'
 
 const integrationRegistry = new Map([
   ['webhook', () => import('~/components/open/integrations/WebhookIntegration.vue')],
@@ -27,6 +25,9 @@ const actionRegistry = new Map([
   ['EmailIntegrationActions', () => import('~/components/open/integrations/components/EmailIntegrationActions.vue')],
   ['N8nIntegrationActions', () => import('~/components/open/integrations/components/N8nIntegrationActions.vue')],
   ['ActivepiecesIntegrationActions', () => import('~/components/open/integrations/components/ActivepiecesIntegrationActions.vue')],
+  ['MakeIntegrationActions', () => import('~/components/open/integrations/components/MakeIntegrationActions.vue')],
+  ['PabblyIntegrationActions', () => import('~/components/open/integrations/components/PabblyIntegrationActions.vue')],
+  ['AlbatoIntegrationActions', () => import('~/components/open/integrations/components/AlbatoIntegrationActions.vue')],
 ])
 
 const providerRegistry = new Map([
@@ -39,6 +40,7 @@ const heavyFormComponentsRegistry = new Map([
   ['SignatureInput', () => import('~/components/forms/heavy/SignatureInput.vue')],
   ['FileInput', () => import('~/components/forms/heavy/FileInput.vue')],
   ['ImageInput', () => import('~/components/forms/heavy/ImageInput.vue')],
+  ['AudioInput', () => import('~/components/forms/heavy/AudioInput.vue')],
   ['LogicConfirmationModal', () => import('~/components/forms/heavy/LogicConfirmationModal.vue')],
   ['MatrixInput', () => import('~/components/forms/heavy/MatrixInput.vue')],
   ['PhoneInput', () => import('~/components/forms/heavy/PhoneInput.vue')],
@@ -47,8 +49,8 @@ const heavyFormComponentsRegistry = new Map([
 ])
 
 const focusedFormComponentsRegistry = new Map([
-  ['FocusedSelectorInput', FocusedSelectorInput],
-  ['FocusedToggleInput', FocusedToggleInput],
+  ['FocusedSelectorInput', () => import('~/components/forms/core/FocusedSelectorInput.vue')],
+  ['FocusedToggleInput', () => import('~/components/forms/core/FocusedToggleInput.vue')],
 ])
 
 // Component loading cache to avoid duplicate imports
@@ -194,9 +196,9 @@ export function useComponentRegistry() {
     }
 
     if (focusedFormComponentsRegistry.has(componentName)) {
-      const component = focusedFormComponentsRegistry.get(componentName)
+      const loader = focusedFormComponentsRegistry.get(componentName)
       return {
-        component,
+        component: createAsyncComponent(loader),
         clientOnly: false
       }
     }

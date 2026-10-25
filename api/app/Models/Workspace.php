@@ -237,7 +237,7 @@ class Workspace extends Model implements CachableAttributes
         return $this->hasMany(UserInvite::class);
     }
 
-    public function owners()
+    public function owners(): BelongsToMany
     {
         return $this->users()->wherePivot('role', 'admin');
     }

@@ -6,6 +6,59 @@ use App\Service\Formulas\Functions\FunctionRegistry;
 
 class Validator
 {
+    private const FUNCTION_ARGUMENTS = [
+        // Math functions
+        'SUM' => ['min' => 1],
+        'AVERAGE' => ['min' => 1],
+        'MIN' => ['min' => 1],
+        'MAX' => ['min' => 1],
+        'ROUND' => ['min' => 1, 'max' => 2],
+        'FLOOR' => ['min' => 1, 'max' => 1],
+        'CEIL' => ['min' => 1, 'max' => 1],
+        'ABS' => ['min' => 1, 'max' => 1],
+        'MOD' => ['min' => 2, 'max' => 2],
+        'POWER' => ['min' => 2, 'max' => 2],
+        'SQRT' => ['min' => 1, 'max' => 1],
+
+        // Text functions
+        'CONCAT' => ['min' => 1],
+        'UPPER' => ['min' => 1, 'max' => 1],
+        'LOWER' => ['min' => 1, 'max' => 1],
+        'TRIM' => ['min' => 1, 'max' => 1],
+        'LEFT' => ['min' => 2, 'max' => 2],
+        'RIGHT' => ['min' => 2, 'max' => 2],
+        'MID' => ['min' => 3, 'max' => 3],
+        'LEN' => ['min' => 1, 'max' => 1],
+        'SUBSTITUTE' => ['min' => 3, 'max' => 4],
+        'REPLACE' => ['min' => 4, 'max' => 4],
+        'FIND' => ['min' => 2, 'max' => 3],
+        'SEARCH' => ['min' => 2, 'max' => 3],
+        'REPT' => ['min' => 2, 'max' => 2],
+        'TEXT' => ['min' => 2, 'max' => 2],
+
+        // Logic functions
+        'IF' => ['min' => 2, 'max' => 3],
+        'AND' => ['min' => 1],
+        'OR' => ['min' => 1],
+        'NOT' => ['min' => 1, 'max' => 1],
+        'XOR' => ['min' => 2],
+        'ISBLANK' => ['min' => 1, 'max' => 1],
+        'ISNUMBER' => ['min' => 1, 'max' => 1],
+        'ISTEXT' => ['min' => 1, 'max' => 1],
+        'IFERROR' => ['min' => 2, 'max' => 2],
+        'IFBLANK' => ['min' => 2, 'max' => 2],
+        'COALESCE' => ['min' => 1],
+        'SWITCH' => ['min' => 3],
+        'IFS' => ['min' => 2],
+        'CHOOSE' => ['min' => 2],
+
+        // Array functions
+        'COUNT' => ['min' => 1, 'max' => 1],
+        'ISEMPTY' => ['min' => 1, 'max' => 1],
+        'CONTAINS' => ['min' => 2, 'max' => 2],
+        'JOIN' => ['min' => 1, 'max' => 2],
+    ];
+
     private array $availableFields;
     private array $availableVariables;
     private ?string $currentVariableId;
@@ -92,6 +145,30 @@ class Validator
             } else {
                 $result->addError("Unknown function \"{$funcName}\"");
             }
+            return;
+        }
+
+        $requirements = self::FUNCTION_ARGUMENTS[$funcName] ?? null;
+        $argumentCount = count($node['args']);
+
+        if ($requirements !== null && isset($requirements['min']) && $argumentCount < $requirements['min']) {
+            $minimum = $requirements['min'];
+            $argumentLabel = $minimum === 1 ? 'argument' : 'arguments';
+
+            if (($requirements['max'] ?? null) === $minimum) {
+                $result->addError("Function {$funcName}() requires exactly {$minimum} {$argumentLabel}, but got {$argumentCount}.");
+            } else {
+                $result->addError("Function {$funcName}() requires at least {$minimum} {$argumentLabel}, but got {$argumentCount}.");
+            }
+
+            return;
+        }
+
+        if ($requirements !== null && isset($requirements['max']) && $argumentCount > $requirements['max']) {
+            $maximum = $requirements['max'];
+            $argumentLabel = $maximum === 1 ? 'argument' : 'arguments';
+            $result->addError("Function {$funcName}() accepts at most {$maximum} {$argumentLabel}, but got {$argumentCount}.");
+
             return;
         }
 

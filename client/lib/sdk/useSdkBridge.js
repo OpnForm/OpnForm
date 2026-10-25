@@ -686,11 +686,19 @@ export function useSdkBridge(options) {
     formData,
     formErrors,
     formManager,
-    darkMode
+    darkMode,
+    attribution,
   } = options
 
   const isIframe = useIsIframe()
   let messageHandler = null
+  let handshakeReceived = !isIframe
+  let resolveHandshake = null
+  const handshakePromise = handshakeReceived
+    ? Promise.resolve()
+    : new Promise((resolve) => {
+        resolveHandshake = resolve
+      })
 
   const initialSdkToken = typeof window !== 'undefined' ? readSdkTokenFromUrl() : null
   const initialTrustedOrigin = typeof window !== 'undefined'
@@ -916,7 +924,25 @@ export function useSdkBridge(options) {
       postMessageSafe(window.parent, message, origin)
     },
     onCommand: handleCommand,
+    onHandshake: (trackingParameters) => {
+      formManager?.mergeParentAttribution?.(trackingParameters)
+      handshakeReceived = true
+      resolveHandshake?.()
+      resolveHandshake = null
+    },
   })
+
+  function waitForHandshake(timeoutMs = 3000) {
+    if (!import.meta.client || handshakeReceived) return Promise.resolve()
+
+    return new Promise((resolve) => {
+      const timeoutId = setTimeout(resolve, timeoutMs)
+      handshakePromise.then(() => {
+        clearTimeout(timeoutId)
+        resolve()
+      })
+    })
+  }
 
   /**
    * Handle incoming messages
@@ -1023,10 +1049,14 @@ export function useSdkBridge(options) {
   }
 
   function onSubmitSuccess(submissionData) {
+    const trackingParameters = toValue(attribution) || {}
     emitEvent(EVENTS.SUBMIT, {
       data: submissionData.data || toValue(formData),
       submissionId: submissionData.submissionId,
-      completionTime: submissionData.completionTime
+      completionTime: submissionData.completionTime,
+      ...(Object.keys(trackingParameters).length > 0
+        ? { meta: { attribution: trackingParameters } }
+        : {}),
     })
   }
 
@@ -1077,6 +1107,7 @@ export function useSdkBridge(options) {
     onSubmitSuccess,
     onSubmitError,
     onReset,
+    waitForHandshake,
     EVENTS
   }
 }

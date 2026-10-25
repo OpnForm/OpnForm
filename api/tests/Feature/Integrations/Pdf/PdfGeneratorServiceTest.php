@@ -10,6 +10,8 @@ use App\Service\Pdf\PdfGeneratorService;
 use App\Service\Pdf\PdfImageRenderer;
 use App\Service\Pdf\PdfImageResolver;
 use App\Service\Pdf\PdfRichTextRenderer;
+use App\Service\Storage\FileUploadPathService;
+use App\Service\Storage\FilenameUrlEncoder;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use setasign\Fpdi\Fpdi;
@@ -190,6 +192,96 @@ describe('PdfGeneratorService', function () {
         expect(Storage::exists($resultPath))->toBeTrue();
     });
 
+    it('resolves computed variables in zone mappings', function () {
+        $pdfContent = createTestPdf();
+        $templatePath = 'pdf-templates/1/template.pdf';
+        Storage::put($templatePath, $pdfContent);
+
+        $form = createTestForm([
+            'properties' => [
+                ['id' => 'agree', 'name' => 'Agree', 'type' => 'checkbox'],
+                ['id' => 'score', 'name' => 'Score', 'type' => 'number'],
+            ],
+            'computed_variables' => [
+                [
+                    'id' => 'cv_bool',
+                    'name' => 'Bool Result',
+                    'formula' => 'IF({agree}, TRUE, FALSE)',
+                ],
+                [
+                    'id' => 'cv_label',
+                    'name' => 'String Label',
+                    'formula' => 'IF({agree}, "yes", "no")',
+                ],
+                [
+                    'id' => 'cv_double',
+                    'name' => 'Double Score',
+                    'formula' => '{score} * 2',
+                ],
+            ],
+        ]);
+
+        $template = PdfTemplate::create([
+            'form_id' => $form->id,
+            'name' => 'Computed Variable Template',
+            'filename' => 'template.pdf',
+            'original_filename' => 'Template.pdf',
+            'file_path' => $templatePath,
+            'file_size' => strlen($pdfContent),
+            'page_count' => 1,
+            'page_manifest' => [
+                ['id' => 'page-1', 'type' => 'source', 'source_page' => 1],
+            ],
+            'zone_mappings' => [
+                [
+                    'id' => 'zone_bool',
+                    'page_id' => 'page-1',
+                    'x' => 10,
+                    'y' => 10,
+                    'width' => 40,
+                    'height' => 8,
+                    'field_id' => 'cv_bool',
+                    'font_size' => 12,
+                    'font_color' => '#000000',
+                ],
+                [
+                    'id' => 'zone_double',
+                    'page_id' => 'page-1',
+                    'x' => 10,
+                    'y' => 25,
+                    'width' => 40,
+                    'height' => 8,
+                    'field_id' => 'cv_double',
+                    'font_size' => 12,
+                    'font_color' => '#000000',
+                ],
+            ],
+            'filename_pattern' => 'output',
+        ]);
+
+        $submission = $form->submissions()->create([
+            'data' => [
+                'agree' => true,
+                'score' => 21,
+            ],
+        ]);
+
+        $service = new PdfGeneratorService();
+
+        $method = new ReflectionMethod(PdfGeneratorService::class, 'getFormattedSubmissionData');
+        $formattedData = $method->invoke($service, $form, $submission);
+
+        // Booleans → Yes/No; explicit formula strings kept as written
+        expect($formattedData['cv_bool'])->toBe('Yes')
+            ->and($formattedData['cv_label'])->toBe('yes')
+            ->and($formattedData['cv_double'])->toBe(42.0);
+
+        $resultPath = $service->generateFromTemplate($form, $submission, $template);
+
+        expect(Storage::exists($resultPath))->toBeTrue();
+        expect(Storage::get($resultPath))->toStartWith('%PDF');
+    });
+
     it('uses default filename pattern when not specified', function () {
         $pdfContent = createTestPdf();
         $templatePath = 'pdf-templates/1/template.pdf';
@@ -270,6 +362,54 @@ describe('PdfGeneratorService', function () {
         expect(Storage::exists($resultPath))->toBeTrue();
         expect(Storage::get($resultPath))->toStartWith('%PDF');
         Http::assertSentCount(1);
+    });
+
+    it('generates a PDF with both a legacy encoded upload and a signature', function () {
+        $pdfContent = createTestPdf();
+        $templatePath = 'pdf-templates/1/template.pdf';
+        Storage::put($templatePath, $pdfContent);
+
+        $form = createTestForm([
+            'properties' => [
+                ['id' => 'receipt', 'name' => 'Receipt', 'type' => 'files'],
+                ['id' => 'signature', 'name' => 'Signature', 'type' => 'signature'],
+            ],
+        ]);
+        $receiptFileName = 'receipt_550e8400-e29b-41d4-a716-446655440000.png';
+        $signatureFileName = 'sign_550e8400-e29b-41d4-a716-446655440001.png';
+        Storage::put(FileUploadPathService::getFileUploadPath($form->id, $receiptFileName), tinyPngBytes());
+        Storage::put(FileUploadPathService::getFileUploadPath($form->id, $signatureFileName), tinyPngBytes());
+
+        $template = PdfTemplate::create([
+            'form_id' => $form->id,
+            'name' => 'Upload and signature template',
+            'filename' => 'template.pdf',
+            'original_filename' => 'Template.pdf',
+            'file_path' => $templatePath,
+            'file_size' => strlen($pdfContent),
+            'page_count' => 1,
+            'page_manifest' => [
+                ['id' => 'page-1', 'type' => 'source', 'source_page' => 1],
+            ],
+            'zone_mappings' => [
+                ['id' => 'receipt-zone', 'page_id' => 'page-1', 'field_id' => 'receipt', 'x' => 10, 'y' => 10, 'width' => 30, 'height' => 20],
+                ['id' => 'signature-zone', 'page_id' => 'page-1', 'field_id' => 'signature', 'x' => 50, 'y' => 10, 'width' => 30, 'height' => 20],
+            ],
+            'filename_pattern' => 'output',
+        ]);
+
+        $submission = $form->submissions()->create([
+            'data' => [
+                'receipt' => [FilenameUrlEncoder::encode($receiptFileName)],
+                'signature' => $signatureFileName,
+            ],
+        ]);
+
+        $resultPath = (new PdfGeneratorService())->generateFromTemplate($form, $submission, $template);
+        $result = Storage::get($resultPath);
+
+        expect($result)->toStartWith('%PDF')
+            ->and(substr_count($result, '/Subtype /Image'))->toBeGreaterThanOrEqual(2);
     });
 });
 
@@ -390,6 +530,71 @@ describe('PdfContentRenderer scalar values', function () {
         );
 
         expect($richTextRenderer->rendered)->toBeFalse();
+    });
+
+    it('renders encoded upload names as images instead of PDF text', function () {
+        $imageResolver = new class () extends PdfImageResolver {
+            public array $resolvedValues = [];
+
+            public function resolveContent(string $imageValue): ?string
+            {
+                $this->resolvedValues[] = $imageValue;
+
+                return tinyPngBytes();
+            }
+        };
+
+        $imageRenderer = new class () extends PdfImageRenderer {
+            public ?string $renderedContent = null;
+
+            public function render(
+                Fpdi $pdf,
+                string $imageContent,
+                float $x,
+                float $y,
+                float $width,
+                float $height
+            ): void {
+                $this->renderedContent = $imageContent;
+            }
+        };
+
+        $richTextRenderer = new class () extends PdfRichTextRenderer {
+            public bool $rendered = false;
+
+            public function render(
+                Fpdi $pdf,
+                string $text,
+                float $x,
+                float $y,
+                float $width,
+                float $height,
+                array $zone,
+                float $pageWidth
+            ): void {
+                $this->rendered = true;
+            }
+        };
+
+        $renderer = new PdfContentRenderer(null, $imageResolver, $imageRenderer, $richTextRenderer);
+        $pdf = new Fpdi();
+        $pdf->AddPage();
+        $encodedFileName = FilenameUrlEncoder::encode('receipt_550e8400-e29b-41d4-a716-446655440000.png');
+
+        $renderer->renderContent(
+            $pdf,
+            $encodedFileName,
+            10,
+            10,
+            80,
+            20,
+            ['font_size' => 12, 'font_color' => '#000000'],
+            210
+        );
+
+        expect($imageResolver->resolvedValues)->toBe([$encodedFileName])
+            ->and($imageRenderer->renderedContent)->toBe(tinyPngBytes())
+            ->and($richTextRenderer->rendered)->toBeFalse();
     });
 
     it('renders inline rich text segments without dropping styled required marks', function () {

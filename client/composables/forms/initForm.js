@@ -1,6 +1,6 @@
 import clonedeep from 'clone-deep'
 import { isReadonly } from 'vue'
-import { generateUUID } from "~/lib/utils.js"
+import { generateUUID } from "../../lib/utils.js"
 export const DEFAULT_COLOR = '#3B82F6'
 
 export const initForm = (defaultValue = {}, withDefaultProperties = false) => {
@@ -41,6 +41,8 @@ export const initForm = (defaultValue = {}, withDefaultProperties = false) => {
     max_submissions_count: null,
     max_submissions_reached_text:
       "This form has now reached the maximum number of allowed submissions and is now closed.",
+    submission_retention_value: null,
+    submission_retention_unit: null,
     editable_submissions_button_text: "Edit submission",
     confetti_on_submission: false,
 
@@ -130,14 +132,14 @@ export function setFormDefaults(formData) {
     }
   }
 
-  // Handle required nested properties
-  if (filledFormData.properties && Array.isArray(filledFormData.properties)) {
-    filledFormData.properties = filledFormData.properties.map(property => ({
-      ...property,
-      name: property.name === '' || property.name === null || property.name === undefined ? 'Untitled' : property.name,
-    }))
-  }
-  
+  // Entries that are not objects cannot represent form blocks. Discarding
+  // them prevents legacy malformed data from breaking the editor while real
+  // blocks remain available for localized validation.
+  const properties = Array.isArray(filledFormData.properties) ? filledFormData.properties : []
+  filledFormData.properties = properties.filter(property => {
+    return property !== null && typeof property === 'object' && !Array.isArray(property)
+  })
+
   // Ensure settings object exists and is a plain object (not a readonly proxy)
   ensureSettingsObject(filledFormData)
 

@@ -117,6 +117,69 @@
         </ToggleSwitchInput>
       </div>
 
+      <div class="mb-8 border-t pt-4">
+        <h4 class="font-semibold">
+          Submission Retention
+        </h4>
+        <p class="text-neutral-500 text-sm mb-4">
+          Control how long submitted data remains stored in OpnForm.
+        </p>
+
+        <ToggleSwitchInput
+          v-model="retentionEnabled"
+          name="submission_retention_enabled"
+          label="Automatically delete old submissions"
+          help="Permanently deletes submissions after the selected period, measured from their last update."
+        />
+
+        <div
+          v-if="retentionEnabled"
+          class="mt-4 max-w-lg rounded-lg border border-neutral-200 bg-neutral-50 p-4"
+        >
+          <div class="flex flex-col gap-4 sm:flex-row sm:items-end">
+            <TextInput
+              name="submission_retention_value"
+              :form="form"
+              native-type="number"
+              :min="1"
+              :max="3650"
+              :required="true"
+              label="Delete after"
+              class="w-full sm:max-w-40"
+            />
+            <SelectInput
+              name="submission_retention_unit"
+              :form="form"
+              :options="SUBMISSION_RETENTION_UNITS"
+              :required="true"
+              class="w-full sm:max-w-48"
+            />
+          </div>
+
+          <div class="mt-4 flex flex-wrap gap-2">
+            <UButton
+              v-for="shortcut in SUBMISSION_RETENTION_SHORTCUTS"
+              :key="shortcut.label"
+              :label="shortcut.label"
+              color="neutral"
+              variant="soft"
+              size="xs"
+              type="button"
+              @click="applyRetentionShortcut(shortcut)"
+            />
+          </div>
+
+          <UAlert
+            color="warning"
+            icon="i-heroicons-exclamation-triangle"
+            variant="subtle"
+            title="Permanent deletion"
+            description="Changing to a shorter period can delete existing submissions during the next hourly cleanup. Deleted data and uploaded files cannot be restored."
+            class="mt-4"
+          />
+        </div>
+      </div>
+
       <ToggleSwitchInput
         class="mt-4"
         name="enable_ip_tracking"
@@ -286,6 +349,13 @@
 <script setup>
 import PlanTag from "~/components/app/PlanTag.vue"
 import { usePdfTemplates } from '~/composables/query/forms/usePdfTemplates'
+import {
+  SUBMISSION_RETENTION_SHORTCUTS,
+  SUBMISSION_RETENTION_UNITS,
+  applySubmissionRetentionShortcut,
+  setSubmissionRetentionEnabled,
+  syncSubmissionRetentionEnabled
+} from '~/lib/forms/submissionRetention.js'
 
 const workingFormStore = useWorkingFormStore()
 const { content: form } = storeToRefs(workingFormStore)
@@ -333,6 +403,45 @@ const filterableFields = computed(() => {
 const clearEmptyFieldsOnUpdate = computed({
   get: () => form.value.clear_empty_fields_on_update ?? false,
   set: (value) => { form.value.clear_empty_fields_on_update = value }
+})
+
+const isRetentionEnabled = ref(Boolean(
+  form.value.submission_retention_value
+  && form.value.submission_retention_unit
+))
+
+const retentionEnabled = computed({
+  get: () => isRetentionEnabled.value,
+  set: (enabled) => {
+    isRetentionEnabled.value = enabled
+    setSubmissionRetentionEnabled(form.value, enabled)
+  }
+})
+
+const applyRetentionShortcut = (shortcut) => {
+  applySubmissionRetentionShortcut(form.value, shortcut)
+}
+
+watch(
+  [
+    () => form.value.submission_retention_value,
+    () => form.value.submission_retention_unit
+  ],
+  ([value, unit]) => {
+    isRetentionEnabled.value = syncSubmissionRetentionEnabled(
+      isRetentionEnabled.value,
+      value,
+      unit
+    )
+  }
+)
+
+watch(() => form.value.id, () => {
+  isRetentionEnabled.value = syncSubmissionRetentionEnabled(
+    false,
+    form.value.submission_retention_value,
+    form.value.submission_retention_unit
+  )
 })
 
 watch({

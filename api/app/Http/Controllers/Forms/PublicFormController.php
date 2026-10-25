@@ -14,7 +14,6 @@ use App\Service\Forms\FormSubmissionProcessor;
 use App\Service\Forms\FormCleaner;
 use App\Service\Forms\SubmissionUrlService;
 use App\Service\Storage\SafeFileResponseService;
-use App\Service\WorkspaceHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -75,19 +74,6 @@ class PublicFormController extends Controller
         return $this->success([
             'message' => 'Form viewed.',
         ]);
-    }
-
-    public function listUsers(Request $request, Form $form)
-    {
-        // Check that form has user field
-        if (!$form->has_user_field) {
-            return [];
-        }
-
-        // Use serializer
-        $workspace = $form->workspace;
-
-        return (new WorkspaceHelper($workspace))->getAllUsers();
     }
 
     public function showAsset(string $assetFileName, SafeFileResponseService $safeFileResponseService)
@@ -174,7 +160,17 @@ class PublicFormController extends Controller
         if ($formSubmissionProcessor->shouldProcessSynchronously($form)) {
             $job->handle();
 
-            $encodedSubmissionId = SubmissionUrlService::getSubmissionIdentifierById($form, $job->getSubmissionId());
+            $submission = $form->submissions()->findOrFail($job->getSubmissionId());
+            $encodedSubmissionId = SubmissionUrlService::getSubmissionIdentifier($submission);
+
+            // Only the completed submission response grants its respondent a download URL.
+            // The owner-only signed-URL endpoint remains authenticated.
+            if ($form->pdf_download_enabled) {
+                $template = $form->pdfTemplates()->find($form->pdf_template_id);
+                if ($template) {
+                    $pdfDownloadUrl = SubmissionUrlService::buildPdfDownloadUrl($form, $template, $submission);
+                }
+            }
 
             // Update submission data with generated values for redirect URL
             $submissionData = $job->getProcessedData();
@@ -186,6 +182,7 @@ class PublicFormController extends Controller
         return $this->success(array_merge([
             'message' => 'Form submission saved.',
             'submission_id' => $encodedSubmissionId ?? null,
+            'pdf_download_url' => $pdfDownloadUrl ?? null,
             'is_first_submission' => $isFirstSubmission,
         ], $formSubmissionProcessor->getRedirectData($form, $submissionData)));
     }
