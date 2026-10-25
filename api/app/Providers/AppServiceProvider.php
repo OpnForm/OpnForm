@@ -105,6 +105,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register()
     {
+        if (config('jwt.blacklist_store') !== null) {
+            $this->app->when(\Tymon\JWTAuth\Providers\Storage\Illuminate::class)
+                ->needs(\Illuminate\Contracts\Cache\Repository::class)
+                ->give(fn ($app) => $app['cache']->store($app['config']->get('jwt.blacklist_store')));
+        }
+
         $this->app->bind(\Aws\Sns\MessageValidator::class, fn () => new \Aws\Sns\MessageValidator(
             fn ($url) => \Illuminate\Support\Facades\Cache::remember(
                 'sns-signing-cert:'.hash('sha256', $url),

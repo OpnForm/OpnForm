@@ -50,7 +50,8 @@ if (! preg_match('/^[1-9][0-9]?$/', getenv('WORKER_TRIES') ?: '3')) {
 if (config('cache.default') !== 'redis' || config('cache.stores.redis.connection') !== 'state'
     || config('session.driver') !== 'redis' || config('session.store') !== 'auth'
     || config('session.connection') !== 'auth'
-    || config('jwt.providers.storage') !== App\Service\Deployment\UnifiedRedisJwtStorage::class
+    || config('jwt.providers.storage') !== Tymon\JWTAuth\Providers\Storage\Illuminate::class
+    || config('jwt.blacklist_store') !== 'auth'
     || config('jwt.blacklist_enabled') !== true) {
     $fail('Hosted runtime requires the existing Redis cache, session and JWT stores');
 }

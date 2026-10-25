@@ -15,6 +15,24 @@ $check = static function (bool $condition): void {
     }
 };
 $check(Cache::getStore() instanceof Illuminate\Cache\RedisStore);
+
+// Seed the same tagged repository the removed adapter used, then resolve the
+// stock provider through Laravel's container. Reading must preserve its expiry.
+$auth = Cache::store('auth');
+$legacyValue = ['valid_until' => time() + 120];
+$auth->tags('tymon.jwt')->put('existing-runtime-revocation', $legacyValue, 120);
+$key = $auth->getStore()->getPrefix().$auth->tags('tymon.jwt')->taggedItemKey('existing-runtime-revocation');
+$redisAuth = app('redis')->connection('auth');
+$expiresAt = $redisAuth->pexpiretime($key);
+$jwtStorage = app('tymon.jwt.provider.storage');
+$check(get_class($jwtStorage) === Tymon\JWTAuth\Providers\Storage\Illuminate::class);
+$check($jwtStorage->get('existing-runtime-revocation') === $legacyValue);
+$check($redisAuth->pexpiretime($key) === $expiresAt && $expiresAt > time() * 1000);
+$check(Cache::tags('tymon.jwt')->get('existing-runtime-revocation') === null);
+$jwtStorage->forever('new-runtime-revocation', $legacyValue);
+$check($auth->tags('tymon.jwt')->get('new-runtime-revocation') === $legacyValue);
+$check(Cache::tags('tymon.jwt')->get('new-runtime-revocation') === null);
+
 Cache::put('runtime-counter', 1, 120);
 $check(Cache::increment('runtime-counter') === 2);
 $lock = Cache::lock('runtime-lock', 10);
