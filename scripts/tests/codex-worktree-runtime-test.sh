@@ -24,6 +24,7 @@ assert_php_version_rejected() {
 assert_php_version_rejected "8.2.29"
 assert_php_version_supported "8.3.0"
 assert_php_version_supported "8.4.3"
+assert_php_version_rejected "8.5.0"
 assert_php_version_rejected "9.0.0"
 assert_php_version_rejected "invalid"
 
@@ -51,3 +52,15 @@ if select_php_candidate "$fake_php"; then
 fi
 
 echo "Codex PHP runtime selection tests passed."
+
+for version in 20.20.1 22.17.0 22.22.2 24.14.0 25.9.0 invalid; do
+  if node_version_is_supported "$version"; then
+    echo "Expected Node $version to be rejected." >&2
+    exit 1
+  fi
+done
+for version in 22.22.3 22.23.0 24.15.0 24.22.1 26.0.0; do
+  node_version_is_supported "$version"
+done
+
+echo "Codex Node runtime selection tests passed."

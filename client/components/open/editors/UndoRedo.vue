@@ -1,5 +1,5 @@
 <template>
-  <UButtonGroup
+  <UFieldGroup
     size="sm"
     orientation="horizontal"
     class="shadow-none"
@@ -34,7 +34,7 @@
         @click="redo"
       />
     </UTooltip>
-  </UButtonGroup>
+  </UFieldGroup>
 </template>
 
 <script setup>

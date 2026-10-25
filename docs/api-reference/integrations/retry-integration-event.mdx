@@ -1,0 +1,70 @@
+---
+title: "Retry an Integration Event"
+description: "Retry an eligible failed delivery for one form integration."
+openapi: post /open/forms/{form}/integrations/{integrationid}/events/{event}/retry
+---
+
+## Authentication & Scope
+
+Use a Personal Access Token with `manage-integrations` and write access to the form's workspace.
+
+## Before you retry
+
+In the form's **Integrations** tab, open **Past Events** for the affected integration. You can also [list integration events](/api-reference/integrations/list-webhook-events) through the API. Choose an event with `can_retry: true`.
+
+A retry sends the submission's latest saved answers and attribution metadata using the integration's current settings. Only that integration runs. The original event remains in the history, and the retry creates a new event.
+
+You can retry only the latest failed attempt for a completed submission that still exists, and the integration must be active. Older events without a submission ID cannot be retried.
+
+For emails, retry is available only when tracking confirms that no recipient received or may have received the message. Emails with partial delivery, uncertain delivery, bounces, complaints, or unavailable tracking details require you to review the recipient outcomes first.
+
+<Warning>
+A failed webhook response does not prove that the destination did nothing. Check the destination before retrying. Use `submission_id` in your receiver to identify repeat deliveries where appropriate for your workflow.
+</Warning>
+
+## Request
+
+Send an empty POST request. All three identifiers must refer to the same form and integration.
+
+<RequestExample>
+```bash cURL
+curl -X POST 'https://api.opnform.com/open/forms/123/integrations/42/events/1000/retry' \
+  -H 'Authorization: Bearer YOUR_PAT' \
+  -H 'Accept: application/json'
+```
+</RequestExample>
+
+## Response
+
+`200 OK` returns the event produced by this attempt. Inspect `type` and `event.status`: `200` means that the attempt completed, and its delivery may still have failed or been skipped.
+
+<ResponseExample>
+```json Success
+{
+  "type": "success",
+  "message": "Event retried successfully.",
+  "event": {
+    "id": 1001,
+    "date": "2026-10-03 14:00",
+    "status": "Success",
+    "tracking_id": null,
+    "email_tracking": false,
+    "legacy_email": false,
+    "updated_at": "2026-10-03T14:00:00Z",
+    "data": { "submission_id": 1234 },
+    "can_retry": false,
+    "retry_unavailable_reason": "Only failed events can be retried."
+  }
+}
+```
+</ResponseExample>
+
+The `type` is `success`, `error`, or `warning`. An email marked `Accepted` is accepted by the mail transport; delivery is not yet confirmed. `Skipped` means that the current integration conditions prevented a send. `Unknown` means that delivery could not be confirmed.
+
+## Error responses
+
+- `401 Unauthorized`: authentication is missing or invalid.
+- `403 Forbidden`: the token lacks `manage-integrations` or the user lacks write access.
+- `404 Not Found`: the form, integration, or event is missing or belongs to a different parent.
+- `422 Unprocessable Entity`: the event is no longer eligible. The response includes a `message` and `errors.event`. Refresh the history to review the latest attempt.
+- `429 Too Many Requests`: you exceeded 10 retry requests per minute. Wait for `Retry-After` before trying again.

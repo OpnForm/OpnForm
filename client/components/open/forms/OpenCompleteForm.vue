@@ -2,6 +2,8 @@
   <div
     v-if="form"
     class="open-complete-form flex flex-col min-h-full"
+    :inert="isRestoringDraft || undefined"
+    :aria-busy="isRestoringDraft || undefined"
     :dir="form?.layout_rtl ? 'rtl' : 'ltr'"
     :style="formStyle"
   >
@@ -46,7 +48,7 @@
           #alerts
           v-if="isPublicFormPage && (form.is_closed || form.visibility=='closed' || form.max_number_of_submissions_reached)"
         >
-          <UAlert
+          <LazyUAlert
             v-if="form.is_closed || form.visibility=='closed'"
             icon="i-heroicons-lock-closed-20-solid"
             color="warning"
@@ -56,8 +58,8 @@
             <template #description>
               <div class="break-words whitespace-break-spaces" v-html="form.closed_text" />
             </template>
-          </UAlert>
-          <UAlert
+          </LazyUAlert>
+          <LazyUAlert
             v-else
             icon="i-heroicons-lock-closed-20-solid"
             color="warning"
@@ -67,7 +69,7 @@
             <template #description>
               <div class="break-words whitespace-break-spaces" v-html="form.max_submissions_reached_text" />
             </template>
-          </UAlert>
+          </LazyUAlert>
         </template>
 
         <template #cleanings>
@@ -98,7 +100,7 @@
                 v-if="pdfDownloadEnabled"
                 :form="form"
                 icon="i-heroicons-document-arrow-down"
-                :loading="pdfDownloading"
+                native-type="button"
                 @click="downloadPdf"
               >
                 {{ form.pdf_download_button_text || t('forms.buttons.download_pdf', 'Download PDF') }}
@@ -149,7 +151,6 @@ import Loader from '~/components/global/Loader.vue'
 import { tailwindcssPaletteGenerator } from '~/lib/colors.js'
 import { useRouter } from 'vue-router'
 import { clearFormatterCache } from '~/components/forms/components/FormSubmissionFormatter.js'
-import { formsApi } from '~/api'
 import { clearLoadedMentionCache } from '~/lib/forms/mention-parser-loader.js'
 
 const OpenForm = defineAsyncComponent(() => import('./OpenForm.vue'))
@@ -182,13 +183,23 @@ const passwordForm = useForm({ password: null })
 // Removed unused hidePasswordDisabledMsg (was always false and unused)
 // submission_id is a public UUID identifier
 const submissionId = ref(route.query.submission_id || null)
+const pdfDownloadUrl = ref(null)
+// Match SSR markup while keeping browser-only draft restoration non-interactive.
+const isRestoringDraft = ref(!!props.form.auto_save && !submissionId.value)
 const submittedData = ref(null)
 const showFirstSubmissionModal = ref(false)
 
-const queryString = route.fullPath.split('?')[1] || ''
+const getUrlParams = () => {
+  const params = new URLSearchParams()
+  Object.entries(route.query).forEach(([key, value]) => {
+    const values = Array.isArray(value) ? value : [value]
+    values.forEach(value => params.append(key, value ?? ''))
+  })
+  return params
+}
 
 // Check for auto_submit parameter during setup
-const isAutoSubmit = ref(import.meta.client && window.location.href.includes('auto_submit=true'))
+const isAutoSubmit = ref(getUrlParams().get('auto_submit') === 'true')
 
 
 // Create a reactive reference directly from the prop
@@ -203,6 +214,8 @@ provide('formBorderRadius', computed(() => props.form.border_radius || 'small'))
 provide('formPresentationStyle', computed(() => props.form.presentation_style || 'classic'))
 
 let formManager = null
+let restoreDraftAfterHydration = false
+let draftRestoration = Promise.resolve()
 const sdkBridge = shallowRef(null)
 let resolveSdkBridgeReady
 const sdkBridgeReady = new Promise((resolve) => {
@@ -214,11 +227,33 @@ if (props.form) {
     mode: modeRef
   })
 
+  // Hydrate the server's answers first. Browser-only drafts must update mounted
+  // controls, rather than hydrating a different value into the server's markup.
+  restoreDraftAfterHydration = import.meta.client && nuxtApp.isHydrating &&
+    !submissionId.value && formManager.pendingSubmission.enabled.value
+  if (restoreDraftAfterHydration) {
+    formManager.pendingSubmission.pauseAutosave()
+    draftRestoration = new Promise((resolve) => {
+      const removeHook = nuxtApp.hooks.hookOnce('app:suspense:resolve', () => {
+        formManager.restorePendingSubmission()
+        formManager.startBackgroundSync()
+        restoreDraftAfterHydration = false
+        isRestoringDraft.value = false
+        resolve()
+      })
+      onBeforeUnmount(removeHook)
+    })
+  }
+
   // Await initialization so SSR includes form structure and fields
   await formManager.initialize({
     submissionId: submissionId.value,
-    urlParams: new URLSearchParams(queryString),
+    urlParams: getUrlParams(),
+    skipPendingSubmission: restoreDraftAfterHydration,
+    deferBackgroundSync: restoreDraftAfterHydration,
   })
+
+  if (import.meta.client && !restoreDraftAfterHydration) isRestoringDraft.value = false
 
 }
 
@@ -229,7 +264,7 @@ watch(() => props.form, (newForm) => {
     // Update form manager with the new config
     formManager.updateConfig(newForm, {
       submissionId: submissionId.value,
-      urlParams: new URLSearchParams(queryString),
+      urlParams: getUrlParams(),
     })
   }
 })
@@ -259,6 +294,7 @@ onMounted(() => {
   if (isAutoSubmit.value && formManager) {
     // Using nextTick to ensure form is fully rendered and initialized
     nextTick(async () => {
+      await draftRestoration
       const bridge = shouldLoadSdkBridge.value ? await sdkBridgeReady : null
       await bridge?.waitForHandshake?.()
       triggerSubmit()
@@ -350,13 +386,13 @@ useHead({
   )
 })
 
-watch(() => props.form?.language, (newLanguage) => {
-  if (newLanguage && typeof newLanguage === 'string') {
-    setLocale(newLanguage)
-  } else {
-    setLocale('en')
-  }
-}, { immediate: true })
+const formLocale = computed(() => {
+  return typeof props.form?.language === 'string' && props.form.language ? props.form.language : 'en'
+})
+// Nuxt i18n loads messages asynchronously. Resolve the initial language before
+// SSR and hydration render the form, including the matching Nuxt UI locale.
+await setLocale(formLocale.value)
+watch(formLocale, (language) => setLocale(language))
 
 onBeforeUnmount(() => {
   setLocale('en')
@@ -384,6 +420,7 @@ const handleScrollToError = () => {
 }
 
 const triggerSubmit = () => {
+  if (restoreDraftAfterHydration) return draftRestoration.then(triggerSubmit)
   if (!formManager || isProcessing.value) return
 
   // Emit SDK submitStart event
@@ -394,6 +431,7 @@ const triggerSubmit = () => {
   }).then(result => {
       if (result) {
         submittedData.value = formManager.form.data()
+        pdfDownloadUrl.value = result.pdf_download_url || null
         
         if (result?.submission_id) {
           submissionId.value = result.submission_id
@@ -443,8 +481,8 @@ const restart = async () => {
   if (!formManager) return
   submittedData.value = null
   submissionId.value = null
-  const queryString = route.fullPath.split('?')[1] || ''
-  const urlParams = new URLSearchParams(queryString)
+  pdfDownloadUrl.value = null
+  const urlParams = getUrlParams()
   
   // Determine if we should clear the form completely for a fresh start
   const shouldClearUrl = props.form.editable_submissions
@@ -470,39 +508,16 @@ const restart = async () => {
   emit('restarted', true)
 }
 
-// PDF Download functionality
-const pdfDownloading = ref(false)
-const pdfDownloadEnabled = computed(() => {
-  // Check if PDF download is enabled and we have a submission ID
-  if (!props.form.pdf_download_enabled || !submissionId.value) return false
-  
-  // Check if we have a PDF template ID
-  const templateId = props.form.pdf_template_id
-  return !!templateId
-})
+// The completed submission response supplies a signed URL for this respondent.
+const pdfDownloadEnabled = computed(() => (
+  !!props.form.pdf_download_enabled && !!pdfDownloadUrl.value
+))
 
-const downloadPdf = async () => {
-  if (!pdfDownloadEnabled.value || pdfDownloading.value) return
-  
-  const templateId = props.form.pdf_template_id
-  if (!templateId) return
-  
-  pdfDownloading.value = true
-  try {
-    // Get signed URL from backend
-    const response = await formsApi.pdfTemplates.getSubmissionSignedUrl(
-      props.form.id,
-      templateId,
-      submissionId.value
-    )
-    // Open signed URL in new tab to trigger download
-    window.open(response.url, '_blank')
-  } catch (error) {
-    console.error('PDF download failed:', error)
-    alert.error('Failed to download PDF. Please try again.')
-  } finally {
-    pdfDownloading.value = false
-  }
+const downloadPdf = () => {
+  if (!pdfDownloadEnabled.value) return
+
+  // Keep navigation synchronous with the click to avoid popup blocking.
+  window.open(pdfDownloadUrl.value, '_blank', 'noopener,noreferrer')
 }
 
 const editSubmission = () => {

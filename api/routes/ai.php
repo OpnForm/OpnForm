@@ -19,9 +19,10 @@ if (config('oauth.enabled', false)) {
             'token_endpoint_auth_methods_supported' => ['none'],
         ]))->name('mcp.oauth.authorization-server');
 
-        Mcp::oauthRoutes();
+        Mcp::oauthRoutes(registration: false);
         Route::post('/oauth/register', McpOAuthRegisterController::class)
-            ->middleware('throttle:mcp-oauth-registration');
+            ->middleware('throttle:mcp-oauth-registration')
+            ->name('mcp.oauth.register');
     });
 }
 

@@ -20,7 +20,7 @@ export const formsApi = {
   duplicate: (id) => apiService.post(`/open/forms/${id}/duplicate`),
 
   // Form utilities
-  regenerateLink: (id, option) => apiService.put(`/open/forms/${id}/regenerate-link/${option}`),
+  regenerateLink: (id, option, data = null) => apiService.put(`/open/forms/${id}/regenerate-link/${option}`, data),
   mobileEditorEmail: (id) => apiService.get(`/open/forms/${id}/mobile-editor-email`),
   updateWorkspace: (id, workspaceId, data) => apiService.post(`/open/forms/${id}/workspace/${workspaceId}`, data),
 
@@ -75,7 +75,8 @@ export const formsApi = {
     create: (formId, data) => apiService.post(`/open/forms/${formId}/integrations`, data),
     update: (formId, integrationId, data) => apiService.put(`/open/forms/${formId}/integrations/${integrationId}`, data),
     delete: (formId, integrationId) => apiService.delete(`/open/forms/${formId}/integrations/${integrationId}`),
-    events: (formId, integrationId, options) => apiService.get(`/open/forms/${formId}/integrations/${integrationId}/events`, options)
+    events: (formId, integrationId, options) => apiService.get(`/open/forms/${formId}/integrations/${integrationId}/events`, options),
+    retryEvent: (formId, integrationId, eventId) => apiService.post(`/open/forms/${formId}/integrations/${integrationId}/events/${eventId}/retry`)
   },
 
   // Zapier webhooks

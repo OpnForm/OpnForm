@@ -5,15 +5,17 @@ namespace App\Service\Forms;
 use App\Models\Forms\Form;
 use App\Models\Forms\FormSubmission;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Vinkla\Hashids\Facades\Hashids;
 
 class FormExportService
 {
     public const SYNC_EXPORT_THRESHOLD = 1000;
+
     public const CACHE_KEY_PREFIX = 'form_export_job';
+
     public const EXPORT_FILE_PATH = 'exports/temp/';
 
     public function __construct(private ExternalSubmissionFileLinkPolicy $externalFileLinkPolicy)
@@ -58,10 +60,18 @@ class FormExportService
             if ($value === true) {
                 if ($parameter = SubmissionAttribution::parameterFromColumnId($column)) {
                     $filteredData[$parameter] = $submission->meta['attribution'][$parameter] ?? '';
+
                     continue;
                 }
 
-                $key = collect($formattedData)->keys()->first(fn ($key) => str_contains($key, $column));
+                if ($column === 'ip_address') {
+                    if ($form->enable_ip_tracking && $form->workspace->hasFeature('enable_ip_tracking')) {
+                        $filteredData['ip_address'] = $submission->meta['ip_address'] ?? '';
+                    }
+                    // A form field can also use this ID; preserve its answer below.
+                }
+
+                $key = collect($formattedData)->keys()->first(fn ($key) => str_ends_with($key, ' ('.$column.')'));
                 if ($key) {
                     $filteredData[$key] = $formattedData[$key];
                 }
@@ -93,13 +103,13 @@ class FormExportService
         $csvContent = $this->generateCsvContent($rows);
 
         // Upload to configured storage disk
-        $filePath = self::EXPORT_FILE_PATH . $fileName;
+        $filePath = self::EXPORT_FILE_PATH.$fileName;
         $disk = Storage::disk(config('filesystems.default'));
 
         $disk->put($filePath, $csvContent, [
             'visibility' => 'private',
             'Content-Type' => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="' . $fileName . '"'
+            'Content-Disposition' => 'attachment; filename="'.$fileName.'"',
         ]);
 
         // Generate temporary URL for download (works for all storage types)
@@ -177,6 +187,6 @@ class FormExportService
      */
     public function getCacheKey(string $jobId): string
     {
-        return self::CACHE_KEY_PREFIX . ':' . $jobId;
+        return self::CACHE_KEY_PREFIX.':'.$jobId;
     }
 }

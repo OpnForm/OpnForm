@@ -1,13 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { defineComponent, h, ref } from 'vue'
-import { mockNuxtImport } from '@nuxt/test-utils/runtime'
 import BlockRenderer from '~/components/open/forms/BlockRenderer.vue'
 import { useParseMention } from '~/composables/components/useParseMention'
 
 const mocks = vi.hoisted(() => ({ loadMentionParser: vi.fn() }))
 vi.mock('~/lib/forms/mention-parser-loader.js', () => mocks)
-mockNuxtImport('useNuxtApp', () => () => ({ runWithContext: (fn) => fn() }))
 
 vi.mock('~/composables/components/useComponentRegistry', () => ({
   useComponentRegistry: () => ({

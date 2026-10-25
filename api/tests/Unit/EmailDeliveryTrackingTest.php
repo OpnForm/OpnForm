@@ -285,6 +285,43 @@ it('does not retry the sending job when tracking persistence fails after a possi
     expect(FormIntegrationsEvent::where('integration_id', 7)->sole()->status)->toBe('processing');
 });
 
+it('does not fail ordinary email delivery when the final outcome read is unavailable', function ($reserved) {
+    $integration = new FormIntegration();
+    $integration->id = 7;
+    $attempt = $reserved ? FormIntegrationsEvent::createQuietly([
+        'integration_id' => 7, 'status' => 'processing', 'data' => [],
+    ]) : null;
+    $failRefresh = true;
+    $failedReads = 0;
+    \Illuminate\Support\Facades\DB::connection()->beforeExecuting(function ($query) use (&$failRefresh, &$failedReads) {
+        if ($failRefresh && str_starts_with($query, 'select')
+            && str_contains($query, 'form_integrations_events') && str_contains($query, '"id" =')) {
+            $failedReads++;
+            throw new RuntimeException('Outcome read unavailable after email acceptance');
+        }
+    });
+    \Illuminate\Support\Facades\Notification::shouldReceive('send')->twice()->andReturnUsing(function ($notifiable, $notification) {
+        $context = $notification->emailTracking;
+        $this->tracker->recipient($context['event'], $context['recipient'], ['status' => 'accepted']);
+    });
+
+    try {
+        $handler = new TrackedEmailHarness($integration);
+        if ($reserved) {
+            expect(fn () => $handler->run($attempt))->toThrow(RuntimeException::class);
+        } else {
+            $result = $handler->run();
+            expect($result->status)->toBe('processing');
+            expect($result->canRetry())->toBeFalse();
+        }
+    } finally {
+        $failRefresh = false;
+    }
+
+    expect($failedReads)->toBe(1);
+    expect(FormIntegrationsEvent::where('integration_id', 7)->sole()->status)->toBe('accepted');
+})->with(['ordinary delivery' => false, 'reserved retry' => true]);
+
 it('does not refresh event timestamps for unmatched or duplicate feedback', function () {
     $this->tracker->feedback(emailFeedback($this));
     $before = $this->event->fresh()->getAttributes();

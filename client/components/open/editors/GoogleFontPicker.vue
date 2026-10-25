@@ -14,10 +14,9 @@
       <OverlayScrollbarsComponent
         ref="scrollContainer"
         defer
-        class="p-5 mb-5 max-h-[24rem] border rounded-md bg-neutral-50 mt-3"
+        class="mb-5 max-h-[24rem] border rounded-md bg-neutral-50 mt-3"
       >
-        <!-- Keep Vue's list anchors inside one child when the scrollbar moves its content. -->
-        <div class="grid grid-cols-3 gap-2">
+        <div class="grid grid-cols-3 gap-2 p-5">
           <template v-if="loading">
             <div
               v-for="i in 9"

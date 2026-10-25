@@ -17,20 +17,24 @@ Use the OpnForm MCP tools exposed by the current conversation. Keep replies conc
 
 ## Create or revise a guest draft
 
-Success means the latest draft is valid and the turn contains exactly one final interactive preview.
+For creation or edits, success means the latest draft is valid and the turn contains exactly one final interactive preview. For historical comparison, show the requested version without changing the current draft.
 
 1. Read [references/form-authoring.md](references/form-authoring.md), then read `opnform://schemas/agent-form-definition/v1` and `opnform://reference/form-fields/v1` before generating or materially changing fields, layout, presentation, or media.
 2. Call `validate_form_definition`. Correct every validation error, every entry in `quality_warnings` marked `blocking`, and other relevant warnings while preserving intentional user choices.
 3. Call `create_form_draft`. It is data-only and not idempotent: after success, keep its `draft_handle` private and do not call it again.
 4. Call `preview_form_draft` exactly once with that handle. Do not finish a creation turn with text alone.
-5. For a requested revision, use `patch_form_draft` with the latest `expected_version`, then call `preview_form_draft` exactly once. Do not call the preview tool before the mutation or more than once after success.
+5. For a requested content or layout change, use `patch_form_draft` with the latest `expected_version`, then call `preview_form_draft` exactly once. Do not call the preview tool before the mutation or more than once after success.
 6. On a version conflict, call `get_form_draft`, reconcile the requested change, and retry with the current version. On a validation error, correct the operation and retry once. Never overwrite blindly.
 
 Required final reply after each successful preview: summarize the result or change in one sentence, then ask exactly one question offering two choices—make another change or save the form to the user's OpnForm account. A status-only response is incomplete. If the user already supplied the next instruction, perform it instead of repeating the question.
 
-Use `preview_form_draft` without a mutation only when the user asks to refresh or redisplay an existing preview. A preview is read-only and remains valid until its seven-day guest draft expires.
+To compare an earlier version, pass its `version` to `get_form_draft` or `preview_form_draft`. Omit `version` to fetch the current draft. Comparing history is read-only; do not patch or restore it.
 
-Call `open_form_draft_in_editor` only when the user explicitly asks to edit in OpnForm or uses the preview's **Edit in OpnForm** action. Editor links are reusable until the guest draft expires.
+When the user asks to return to an earlier version, fetch the latest draft without `version`, then call `restore_form_draft_version` with that latest `expected_version` and the historical `version`. Restoration creates a new current version and preserves intervening revisions. After success, call `preview_form_draft` exactly once. Do not reconstruct the old definition through patch operations or retry a successful restoration.
+
+Use `preview_form_draft` without a mutation when the user asks to refresh, redisplay, or compare an existing version. Each preview stays pinned until the seven-day guest draft expires. Saving via the browser editor claims the draft: guest editing and restoration stop, but existing signed, versioned previews remain readable until expiry. `create_form_in_account` creates an independent copy and leaves the guest draft active until expiry. Guest edits or restoration never update that account form; use account tools for saved-form changes.
+
+Call `open_form_draft_in_editor` only when the user explicitly asks to edit in OpnForm or uses the preview's **Edit in OpnForm** action. Pass the displayed version as `expected_version`. A pinned editor link can be reused while that version remains current and the draft has not expired. If it becomes stale, open the latest preview; restore an older version only when the user asks to return to it.
 
 ## Save and publish
 

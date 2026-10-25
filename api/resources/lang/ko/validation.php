@@ -120,4 +120,11 @@ return [
     'complete_captcha' => '캡차를 완료해 주세요.',
     'yes' => '예',
     'no' => '아니오',
+
+    'from_date_required' => '시작 날짜는 필수입니다',
+    'to_date_required' => '종료 날짜는 필수입니다',
+    'from_date_before_or_equal' => '시작 날짜는 종료 날짜보다 이전이거나 같아야 합니다',
+    'rating_min' => '평점을 선택해야 합니다',
+    'select_min' => '최소 :min개의 옵션을 선택해 주세요',
+    'select_max' => '최대 :max개의 옵션을 선택해 주세요',
 ];

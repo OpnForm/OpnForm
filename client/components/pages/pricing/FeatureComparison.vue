@@ -14,6 +14,10 @@
       </p>
     </div>
 
+    <p class="mt-4 text-center text-sm text-neutral-600">
+      Prices per month, billed {{ yearly ? "annually" : "monthly" }}.
+    </p>
+
     <div class="relative mt-12 sm:mt-16 overflow-x-auto">
       <div class="sticky top-0 z-20 bg-white">
         <table class="w-full min-w-108.75 table-fixed border-collapse">
@@ -124,12 +128,19 @@
 </template>
 
 <script setup>
+const props = defineProps({
+  yearly: {
+    type: Boolean,
+    default: true,
+  },
+})
+
 const { getPlanPrice, getTierDisplayName } = useBillingUpsell()
 
 const formatPlanPrice = (plan) => {
-  const price = getPlanPrice(plan, false)
+  const price = getPlanPrice(plan, props.yearly)
   if (price == null) return null
-  return `$${price}`
+  return price === 0 ? "$0" : `$${Math.round(price)}/mo`
 }
 
 const plans = computed(() => [

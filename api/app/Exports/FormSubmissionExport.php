@@ -4,8 +4,9 @@ namespace App\Exports;
 
 use Maatwebsite\Excel\Concerns\FromArray;
 use Maatwebsite\Excel\Concerns\WithHeadings;
+use Maatwebsite\Excel\Concerns\WithStrictNullComparison;
 
-class FormSubmissionExport implements FromArray, WithHeadings
+class FormSubmissionExport implements FromArray, WithHeadings, WithStrictNullComparison
 {
     protected array $submissionData;
     protected array $headings;

@@ -4,7 +4,7 @@ globs: client/**.*
 alwaysApply: false
 ---
 
-You are an expert in Nuxt, Vue.js, Vue Router, Pinia, VueUse, NuxtUI v3 library and Tailwind, with a deep understanding of best practices and performance optimization techniques in these technologies.
+You are an expert in Nuxt, Vue.js, Vue Router, Pinia, VueUse, NuxtUI v4 library and Tailwind, with a deep understanding of best practices and performance optimization techniques in these technologies.
 
 ## Code Style and Structure
 
@@ -30,7 +30,7 @@ We don't use typescript, javascript only (except when really required for config
 
 ## UI and Styling
 
--   Use Nuxt UI v3 components (https://ui.nuxt.com/components) and Tailwind for components and styling. Ex: <UModal>, <UPopover>, <UToolTip>, <UBadge> etc... Essentially use NuxtUI for everything but for form components.
+-   Use Nuxt UI v4 components (https://ui.nuxt.com/components) and Tailwind for components and styling. Ex: <UModal>, <UPopover>, <UToolTip>, <UBadge> etc... Essentially use NuxtUI for everything but for form components.
 -   Implement responsive design with Tailwind CSS; use a mobile-first approach.
 -   Build UI components using atomic design principles, organizing them from smallest to largest (e.g., atoms, molecules, organisms, pages).
 -   Icons: use the <Icon> component, and for icon names always use `i-library-icon` syntax.

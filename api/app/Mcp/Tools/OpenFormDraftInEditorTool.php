@@ -14,7 +14,7 @@ use Laravel\Mcp\Server\Tools\Annotations\IsOpenWorld;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Name('open_form_draft_in_editor')]
-#[Description('Create a reusable OpnForm editor link only after the user chooses to continue editing the guest draft in OpnForm. The link remains valid until the seven-day draft expires.')]
+#[Description('Create an OpnForm editor link only after the user chooses to continue editing the guest draft in OpnForm. Pass expected_version from the displayed preview to pin the link; it can be reused while that version remains current and the seven-day draft has not expired. Restore an old version before opening it.')]
 #[IsReadOnly(false)]
 #[IsDestructive(false)]
 #[IsOpenWorld(false)]
@@ -40,9 +40,10 @@ class OpenFormDraftInEditorTool extends GuestDraftMcpTool
     {
         $validated = $request->validate([
             'draft_handle' => ['required', 'string', 'size:43'],
+            'expected_version' => ['sometimes', 'integer', 'min:1'],
         ]);
 
-        $handoff = $drafts->issueEditorHandoff($validated['draft_handle']);
+        $handoff = $drafts->issueEditorHandoff($validated['draft_handle'], $validated['expected_version'] ?? null);
 
         return Response::structured([
             'editor_handoff_ready' => true,
@@ -53,6 +54,7 @@ class OpenFormDraftInEditorTool extends GuestDraftMcpTool
     public function schema(JsonSchema $schema): array
     {
         return [
+            'expected_version' => $schema->integer()->min(1)->description('Version displayed in the preview. If it is no longer current, restore that version first instead of opening a different version.'),
             'draft_handle' => $schema->string()
                 ->description('Opaque reference returned by create_form_draft. Pass it unchanged.')
                 ->min(43)

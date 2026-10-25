@@ -3,9 +3,25 @@
 namespace App\Http\Controllers;
 
 use Laravel\Mcp\Server\Http\Controllers\OAuthRegisterController;
+use Laravel\Passport\Client;
 
 class McpOAuthRegisterController extends OAuthRegisterController
 {
+    protected function grantMcpScope(mixed $client): void
+    {
+        // MCP 1.x refreshes the model here. Preserve the Passport 13 response
+        // attributes supplied by our Passport 12 repository bridge.
+        $redirectUris = $client instanceof Client ? $client->getAttribute('redirect_uris') : null;
+        $grantTypes = $client instanceof Client ? $client->getAttribute('grant_types') : null;
+
+        parent::grantMcpScope($client);
+
+        if ($client instanceof Client) {
+            $client->setAttribute('redirect_uris', $redirectUris);
+            $client->setAttribute('grant_types', $grantTypes);
+        }
+    }
+
     protected function isValidRedirectUri(string $value): bool
     {
         // Passport 12 persists multiple redirects as a comma-delimited string.

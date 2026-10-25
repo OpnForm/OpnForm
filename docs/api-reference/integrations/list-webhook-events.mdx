@@ -1,112 +1,51 @@
 ---
+title: "List Integration Events"
+description: "Review delivery attempts and retry eligibility for a form integration."
 openapi: get /open/forms/{form}/integrations/{integrationid}/events
 ---
 
-# List Webhook Events
-
-Retrieve a paginated list of webhook dispatch events for a specific integration.
-
 ## Authentication & Scope
 
-This endpoint requires a **Personal Access Token** with the `manage-integrations` ability.
+Use a Personal Access Token with `manage-integrations` and write access to the form's workspace.
 
 ## Request
 
-<ParamField path="form" type="number" required>
-The ID of the form containing the webhook.
-</ParamField>
-
-<ParamField path="integrationid" type="number" required>
-The ID of the webhook integration for which to list events.
-</ParamField>
-
-```http
-GET /open/forms/{form}/integrations/{integrationid}/events HTTP/1.1
-Host: api.opnform.com
-Authorization: Bearer <token>
-```
-
 <RequestExample>
 ```bash cURL
-curl -X GET 'https://api.opnform.com/open/forms/123/integrations/42/events' \
+curl 'https://api.opnform.com/open/forms/123/integrations/42/events' \
   -H 'Authorization: Bearer YOUR_PAT'
 ```
 </RequestExample>
 
 ## Response
 
-`200 OK` – Returns an array of event objects, ordered by creation date (newest first).
+`200 OK` returns an array of events, newest first. The endpoint currently returns the complete retained history without pagination.
 
 <ResponseExample>
 ```json Success
 [
   {
-    "id": 1001,
-    "integration_id": 42,
-    "event": "submission.created",
-    "status": "success",
-    "response_code": 200,
-    "created_at": "2024-01-15T10:30:00Z"
-  },
-  {
     "id": 1000,
-    "integration_id": 42,
-    "event": "submission.created",
-    "status": "failed",
-    "response_code": 500,
-    "error_message": "Internal Server Error",
-    "created_at": "2024-01-15T10:25:00Z"
-  },
-  {
-    "id": 999,
-    "integration_id": 42,
-    "event": "submission.created",
-    "status": "success",
-    "response_code": 200,
-    "created_at": "2024-01-15T10:20:00Z"
+    "date": "2026-10-03 14:00",
+    "status": "Error",
+    "tracking_id": null,
+    "email_tracking": false,
+    "legacy_email": false,
+    "updated_at": "2026-10-03T14:00:00Z",
+    "data": { "submission_id": 1234, "message": "Connection failed" },
+    "can_retry": true,
+    "retry_unavailable_reason": null
   }
 ]
 ```
 </ResponseExample>
 
-## Event object properties
+The `data` object contains the submission ID and any failure details. Tracked emails also include recipient outcomes. `Accepted` means that the mail transport accepted the email; delivery is not yet confirmed. `Skipped` means that no request was sent because integration conditions were not met.
 
-<ResponseField name="id" type="number">
-Unique identifier for the event record.
-</ResponseField>
-
-<ResponseField name="integration_id" type="number">
-The ID of the webhook integration that generated this event.
-</ResponseField>
-
-<ResponseField name="event" type="string">
-The type of event. Currently: `"submission.created"`.
-</ResponseField>
-
-<ResponseField name="status" type="string">
-Result of the webhook dispatch. Values: `"success"`, `"failed"`, `"timeout"`.
-</ResponseField>
-
-<ResponseField name="response_code" type="number | null">
-HTTP status code returned by your webhook endpoint (if applicable).
-</ResponseField>
-
-<ResponseField name="error_message" type="string | null">
-Error details if the webhook dispatch failed.
-</ResponseField>
-
-<ResponseField name="created_at" type="string">
-ISO 8601 timestamp of when the webhook was dispatched.
-</ResponseField>
+Use `can_retry` to determine whether an event is eligible for [manual retry](/api-reference/integrations/retry-integration-event). When retry is unavailable, `retry_unavailable_reason` explains why. Only the latest eligible failed attempt for an available completed submission can be retried. The integration must be active.
 
 ## Error responses
 
-`403 Forbidden` – The token does not have `manage-integrations` ability or insufficient form permissions.
-
-`404 Not Found` – Form or integration not found.
-
-## Use cases
-
-- **Debugging**: Check recent events to verify your webhook is receiving requests.
-- **Monitoring**: Track success/failure rates to identify reliability issues.
-- **Audit trail**: Review when submissions were sent to your endpoint.
+- `401 Unauthorized`: authentication is missing or invalid.
+- `403 Forbidden`: insufficient integration management permissions or workspace write access.
+- `404 Not Found`: the form or integration does not exist in the requested scope.

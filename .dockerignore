@@ -8,6 +8,7 @@ api/vendor/
 api/storage/framework/
 api/storage/logs/
 api/storage/app/
+api/storage/*.key
 api/.env
 api/.env.*
 api/.git/
@@ -21,6 +22,7 @@ client/node_modules/
 client/.nuxt/
 client/dist/
 client/.output/
+client/.amplify-hosting/
 client/coverage/
 client/.env
 client/.env.*
@@ -37,3 +39,7 @@ client/yarn-error.log*
 **/.git/
 **/.idea/
 **/.vscode/
+
+# Worktree QA runtimes and browser artifacts
+.e2e/
+.playwright/

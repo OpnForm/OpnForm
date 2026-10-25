@@ -342,6 +342,8 @@ const showCharLimit = computed(() => {
 </script>
 
 <style lang="scss">
+@reference '../../../css/app.css';
+
 // Transparent theme specific styles
 .rich-editor.theme-transparent {
   .ql-editor {

@@ -49,7 +49,7 @@
             v-if="fromDate && !props.disabled"
             :class="ui.clearButton({ class: props.ui?.slots?.clearButton })"
             :aria-label="'Clear date'"
-            @click.prevent="clear()"
+            @click.prevent.stop="clear()"
             @keydown="handleClearKeydown"
           >
             <Icon
@@ -278,6 +278,7 @@ const handleClearKeydown = (event) => {
     case 'Enter':
     case ' ':
       event.preventDefault()
+      event.stopPropagation()
       clear()
       break
   }

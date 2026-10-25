@@ -46,9 +46,59 @@ class AgentFormDraftService
         return ['draft' => $draft, 'token' => $token];
     }
 
-    public function get(string $token): AgentFormDraft
+    public function get(string $token, ?int $version = null): AgentFormDraft
     {
-        return $this->resolveActive($token);
+        return $this->atVersion($this->resolveActive($token), $version);
+    }
+
+    /** Return a detached view of a revision; never save this view back to the draft. */
+    public function atVersion(AgentFormDraft $draft, ?int $version): AgentFormDraft
+    {
+        if ($version === null || $version === $draft->version) {
+            return $draft;
+        }
+
+        $revision = $draft->versions()->where('version', $version)->first();
+        if (! $revision) {
+            throw ValidationException::withMessages([
+                'version' => ['This draft version is unavailable. Older versions from before version history was enabled cannot be recovered.'],
+            ]);
+        }
+
+        return (clone $draft)->forceFill([
+            'version' => $revision->version,
+            'schema_version' => $revision->schema_version,
+            'definition' => $revision->definition,
+        ]);
+    }
+
+    public function restore(string $token, int $expectedVersion, int $version): AgentFormDraft
+    {
+        return DB::transaction(function () use ($token, $expectedVersion, $version) {
+            $draft = $this->resolveActive($token, lock: true);
+            $this->assertActiveVersion($draft, $expectedVersion);
+            $definition = $this->atVersion($draft, $version)->definition;
+            $definition['visibility'] = 'draft';
+            $definition = $this->formDefinition->normalizeAndValidate($definition);
+            $this->qualityAnalyzer->assertReadyForAgentPersistence($definition);
+            $this->preserveVersion($draft);
+            $draft->forceFill([
+                'definition' => $definition,
+                'schema_version' => AgentFormDefinition::SCHEMA_VERSION,
+                'version' => $draft->version + 1,
+            ])->save();
+
+            return $draft->refresh();
+        });
+    }
+
+    private function preserveVersion(AgentFormDraft $draft): void
+    {
+        // Called while holding the parent row lock, in the same transaction as its update.
+        $draft->versions()->firstOrCreate(['version' => $draft->version], [
+            'schema_version' => $draft->schema_version,
+            'definition' => $draft->definition,
+        ]);
     }
 
     public function patch(string $token, int $expectedVersion, array $operations): AgentFormDraft
@@ -67,6 +117,7 @@ class AgentFormDraftService
             $definition = $this->formDefinition->normalizeAndValidate($definition);
             $this->qualityAnalyzer->assertReadyForAgentPersistence($definition);
 
+            $this->preserveVersion($draft);
             $draft->forceFill([
                 'definition' => $definition,
                 'schema_version' => AgentFormDefinition::SCHEMA_VERSION,
@@ -91,15 +142,19 @@ class AgentFormDraftService
     /**
      * @return array{handoff_token: string, editor_url: string, expires_at: string}
      */
-    public function issueEditorHandoff(string $draftToken): array
+    public function issueEditorHandoff(string $draftToken, ?int $expectedVersion = null): array
     {
-        return DB::transaction(function () use ($draftToken) {
+        return DB::transaction(function () use ($draftToken, $expectedVersion) {
             $draft = $this->resolveActive($draftToken, lock: true);
+            if ($expectedVersion !== null) {
+                $this->assertActiveVersion($draft, $expectedVersion);
+            }
             $handoffToken = $this->generateToken();
             $expiresAt = $draft->expires_at->copy();
 
             $draft->editorHandoffs()->create([
                 'token_hash' => $this->hashToken($handoffToken),
+                'expected_version' => $expectedVersion,
                 'expires_at' => $expiresAt,
             ]);
 
@@ -143,6 +198,12 @@ class AgentFormDraftService
                 ]);
             }
 
+            if ($handoff->expected_version !== null && $handoff->expected_version !== $draft->version) {
+                throw ValidationException::withMessages([
+                    'handoff_token' => ["This editor link points to draft v{$handoff->expected_version}, but the current version is v{$draft->version}. Open the latest preview, or ask ChatGPT to restore v{$handoff->expected_version}."],
+                ]);
+            }
+
             $editorSession = $this->editorSessionToken($draft);
             $handoff->forceFill(['last_used_at' => now()])->save();
             $draft->forceFill([
@@ -167,6 +228,7 @@ class AgentFormDraftService
 
             $definition['visibility'] = 'draft';
             $definition = $this->formDefinition->normalizeAndValidate($definition);
+            $this->preserveVersion($draft);
             $draft->forceFill([
                 'definition' => $definition,
                 'schema_version' => AgentFormDefinition::SCHEMA_VERSION,
@@ -201,6 +263,7 @@ class AgentFormDraftService
             $definition = $this->formDefinition->normalizeAndValidate($definition, $workspace);
             $created = $this->formCreation->create($definition, $user, $workspace);
 
+            $this->preserveVersion($draft);
             $draft->forceFill([
                 'status' => AgentFormDraft::STATUS_CLAIMED,
                 'claimed_form_id' => $created['form']->id,
@@ -220,7 +283,7 @@ class AgentFormDraftService
         $sourceUrl = URL::temporarySignedRoute(
             'agent-drafts.preview',
             $draft->expires_at,
-            ['draft' => $draft->id],
+            ['draft' => $draft->id, 'version' => $draft->version],
         );
 
         return front_url('/agent-drafts/preview?source='.rawurlencode($sourceUrl));

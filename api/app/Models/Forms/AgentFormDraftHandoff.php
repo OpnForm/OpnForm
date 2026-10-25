@@ -10,6 +10,7 @@ class AgentFormDraftHandoff extends Model
     protected $fillable = [
         'agent_form_draft_id',
         'token_hash',
+        'expected_version',
         'last_used_at',
         'expires_at',
     ];
@@ -21,6 +22,7 @@ class AgentFormDraftHandoff extends Model
     protected function casts(): array
     {
         return [
+            'expected_version' => 'integer',
             'last_used_at' => 'datetime',
             'expires_at' => 'datetime',
         ];
