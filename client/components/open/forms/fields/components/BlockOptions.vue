@@ -142,7 +142,7 @@
       v-else-if="field.type == 'nf-code'"
       class="border-t mt-6"
     >
-      <CodeInput
+      <LazyCodeInput
         :allow-fullscreen="true"
         name="content"
         class="mt-4 mx-4"

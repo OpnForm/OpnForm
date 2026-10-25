@@ -2,7 +2,6 @@
 
 use App\Http\Controllers\Forms\FormController;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\URL;
 
 function pngFixture(): string
 {
@@ -49,22 +48,31 @@ it('serves non-image public assets as attachments with restrictive headers', fun
 });
 
 it('serves signed local temporary files with restrictive anti-execution headers', function () {
-    Storage::fake();
+    config()->set('app.url', 'https://forms.example.test');
 
     $path = 'tmp/' . uniqid() . '.html';
-    Storage::put($path, '<html><script>alert(1)</script></html>');
+    Storage::disk('local')->put($path, '<html><script>alert(1)</script></html>');
 
-    $signedUrl = URL::temporarySignedRoute('local.temp', now()->addMinute(), ['path' => $path]);
-    $response = $this->get($signedUrl);
+    try {
+        $signedUrl = Storage::disk('local')->temporaryUrl($path, now()->addMinute());
+        expect($signedUrl)->toStartWith('https://forms.example.test/local/temp/');
 
-    $response->assertOk();
-    expect(strtolower($response->headers->get('content-type')))
-        ->toStartWith('text/html');
-    expect($response->headers->get('content-disposition'))
-        ->toStartWith('attachment;');
-    expect($response->headers->get('x-content-type-options'))
-        ->toBe('nosniff');
-    expect($response->headers->get('content-security-policy'))
-        ->toContain("script-src 'none'")
-        ->toContain('sandbox');
+        $relativeSignedUrl = parse_url($signedUrl, PHP_URL_PATH).'?'.parse_url($signedUrl, PHP_URL_QUERY);
+        $response = $this
+            ->withServerVariables(['HTTP_HOST' => 'self-hosted.example.test'])
+            ->get($relativeSignedUrl);
+
+        $response->assertOk();
+        expect(strtolower($response->headers->get('content-type')))
+            ->toStartWith('text/html');
+        expect($response->headers->get('content-disposition'))
+            ->toStartWith('attachment;');
+        expect($response->headers->get('x-content-type-options'))
+            ->toBe('nosniff');
+        expect($response->headers->get('content-security-policy'))
+            ->toContain("script-src 'none'")
+            ->toContain('sandbox');
+    } finally {
+        Storage::disk('local')->delete($path);
+    }
 });

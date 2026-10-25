@@ -96,6 +96,11 @@
 })();
 
 (function () {
+  const attributionParameters = [
+    'utm_source', 'utm_medium', 'utm_campaign', 'utm_id', 'utm_term', 'utm_content',
+    'utm_source_platform', 'utm_creative_format', 'utm_marketing_tactic',
+    'gclid', 'gbraid', 'wbraid', 'dclid', 'fbclid', 'ttclid', 'msclkid'
+  ]
   const nfData = JSON.parse(document.currentScript.getAttribute("data-nf"))
   let formUrl = nfData?.formurl || null
   if (
@@ -107,8 +112,25 @@
     return false
   }
 
-  // Add popup param to formUrl
-  formUrl = formUrl + (formUrl.indexOf("?") === -1 ? "?" : "&") + "popup=true"
+  // Add parent-page attribution without overriding explicit iframe parameters.
+  const resolvedFormUrl = new URL(formUrl, window.location.href)
+  const parentParams = new URLSearchParams(window.location.search)
+  attributionParameters.forEach((parameter) => {
+    const iframeValue = resolvedFormUrl.searchParams.getAll(parameter).find(candidate => (
+      candidate.trim() !== '' && candidate.length <= 2048
+    ))
+    if (iframeValue !== undefined) {
+      resolvedFormUrl.searchParams.set(parameter, iframeValue)
+      return
+    }
+
+    const value = parentParams.getAll(parameter).find(candidate => (
+      candidate.trim() !== '' && candidate.length <= 2048
+    ))
+    if (value !== undefined) resolvedFormUrl.searchParams.set(parameter, value)
+  })
+  resolvedFormUrl.searchParams.set('popup', 'true')
+  formUrl = resolvedFormUrl.toString()
 
   // Settings
   const emoji = nfData?.emoji || "💬"

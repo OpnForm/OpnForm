@@ -1,3 +1,5 @@
+import { sanitizeAttribution } from '../forms/submissionAttribution'
+
 export const MSG_PREFIX = 'opnform:'
 export const WILDCARD_ORIGIN = '*'
 
@@ -49,6 +51,7 @@ export function createSdkBridgeMessageHandler(options) {
     initialTrustedOrigin = null,
     postToParent,
     onCommand,
+    onHandshake,
   } = options
 
   let trustedOrigin = initialTrustedOrigin
@@ -108,6 +111,7 @@ export function createSdkBridgeMessageHandler(options) {
     }
 
     sdkToken = sdkToken || incomingToken
+    onHandshake?.(sanitizeAttribution(message.trackingParameters))
     sendHandshakeAck(true)
   }
 

@@ -87,6 +87,16 @@
         }
     }
 
+    @keyframes integration-float {
+        0%,
+        100% {
+            transform: translateY(0);
+        }
+        50% {
+            transform: translateY(-10px);
+        }
+    }
+
     @keyframes feature-float {
         0%,
         100% {
@@ -111,6 +121,7 @@
 
     --animate-fade-in-up: fade-in-up 0.7s ease-out both;
     --animate-feature-float: feature-float 5s ease-in-out infinite;
+    --animate-integration-float: integration-float 5s ease-in-out infinite;
     --animate-feature-glow: feature-glow 4s ease-in-out infinite;
 
     /* Custom sizes */
@@ -150,6 +161,9 @@
     }
     .animate-fade-in-up {
         animation: var(--animate-fade-in-up);
+    }
+    .animate-integration-float {
+        animation: var(--animate-integration-float);
     }
     .animate-feature-float {
         animation: var(--animate-feature-float);

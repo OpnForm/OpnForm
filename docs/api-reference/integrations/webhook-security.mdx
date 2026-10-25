@@ -201,6 +201,12 @@ X-Custom-Header: custom-value
       "name": "Name",
       "type": "text"
     }
+  },
+  "meta": {
+    "attribution": {
+      "utm_source": "newsletter",
+      "utm_campaign": "summer-launch"
+    }
   }
 }
 ```
@@ -210,6 +216,10 @@ backward compatibility. Provider-specific integrations such as `"make"` expose
 the same `form_id`, `form_title`, `form_slug`, `submission_id`, optional
 `edit_link`, and `data` properties while omitting the deprecated `submission`
 and `message` properties.
+
+When campaign parameters were captured, machine-oriented webhook integrations
+also receive them under `meta.attribution`. The `meta` property is omitted when
+the submission has no attribution.
 
 ## Security Best Practices
 

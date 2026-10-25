@@ -69,3 +69,24 @@ it('can validate file size', function () {
 
     $this->assertFalse($validator->passes('file', $invalidFile));
 });
+
+it('enforces PDF-only uploads through Laravel validation', function (string $extension, bool $allowed) {
+    Storage::fake();
+    $uuid = Str::uuid();
+    Storage::put(FileUploadPathService::getTmpFileUploadPath($uuid), str_repeat('x', 100));
+
+    $validator = \Illuminate\Support\Facades\Validator::make([
+        'attachment' => ['document_' . $uuid . '.' . $extension],
+    ], [
+        'attachment.*' => [new \App\Rules\StorageFile(1000000, [' PDF ', ''])],
+    ]);
+
+    expect($validator->passes())->toBe($allowed);
+    if (!$allowed) {
+        expect($validator->errors()->first('attachment.0'))->toContain('Incorrect file type');
+    }
+})->with([
+    'PNG bypassing the client' => ['png', false],
+    'PDF' => ['pdf', true],
+    'uppercase PDF' => ['PDF', true],
+]);

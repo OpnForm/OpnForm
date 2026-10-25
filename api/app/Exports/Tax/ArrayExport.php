@@ -5,8 +5,9 @@ namespace App\Exports\Tax;
 use Maatwebsite\Excel\Concerns\Exportable;
 use Maatwebsite\Excel\Concerns\FromArray;
 use Maatwebsite\Excel\Concerns\WithHeadings;
+use Maatwebsite\Excel\Concerns\WithStrictNullComparison;
 
-class ArrayExport implements FromArray, WithHeadings
+class ArrayExport implements FromArray, WithHeadings, WithStrictNullComparison
 {
     use Exportable;
 

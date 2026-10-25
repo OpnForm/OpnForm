@@ -1,4 +1,5 @@
 import Quill from 'quill'
+import { sanitizeQuillHtml } from './sanitizeQuillHtml'
 import QuillResize from 'quill-resize-module'
 import 'quill-resize-module/dist/resize.css'
   
@@ -34,7 +35,7 @@ Quill.register('modules/resize', QuillResize)
     // Raw NBSP char (just in case)
     html = normaliseNbsp(html)
 
-    return html
+    return sanitizeQuillHtml(html)
   }
 
   // 2b) Clipboard matcher so pasted content is normalised before entering Delta
