@@ -63,7 +63,7 @@
 
 <script setup>
 import LiveDemoForm from "~/components/pages/welcome/LiveDemoForm.vue"
-import { useIsAuthenticated } from "~/composables/useAuthFlow"
+import { useIsAuthenticated } from "~/composables/useIsAuthenticated.js"
 import {
   getLiveDemoMediaPreloads,
   getLiveDemoScenario,

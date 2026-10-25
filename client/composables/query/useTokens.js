@@ -74,17 +74,10 @@ export function useTokens() {
   const create = (options = {}) => {
     return useMutation({
       mutationFn: (data) => tokensApi.create(data),
-      onSuccess: (newToken) => {
-      // Built-in cache management
-      queryClient.setQueryData(['tokens', newToken.id], newToken)
-      
-      // Add to list query data
-      const currentList = queryClient.getQueryData(['tokens', 'list'])
-      if (currentList) {
-        queryClient.setQueryData(['tokens', 'list'], [newToken, ...currentList])
-      }
-      useAlert().success('Token created successfully')
-      },
+      // Creation returns a one-time secret, not a token metadata resource.
+      onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tokens', 'list'] }).then(() => {
+        useAlert().success('Token created successfully')
+      }),
       ...options
     })
   }
@@ -147,4 +140,4 @@ export function useTokens() {
     abilities,
     getAbility
   }
-} 
+}

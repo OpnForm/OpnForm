@@ -7,7 +7,8 @@
       "submit": "Invia",
       "next": "Avanti",
       "previous": "Indietro",
-      "re_fill": "Invia un'altra risposta"
+      "re_fill": "Invia un'altra risposta",
+      "download_pdf": "Scarica PDF"
     },
     "powered_by": "Realizzato con",
     "password_protected": "Questo modulo è protetto da password.",
@@ -27,6 +28,7 @@
       "create": "Crea"
     },
     "fileInput": {
+      "invalidFileType": "Tipo di file non valido. Sono consentiti solo: {types}",
       "chooseFiles": "Clicca per scegliere i file o trascina qui | Clicca per scegliere un file o trascina qui",
       "sizeLimit": "Limite di dimensione: {count}MB per file",
       "uploadingFile": "Caricamento del tuo file..."
@@ -69,6 +71,7 @@
     },
     "validation_error": "Errore di validazione",
     "validation_error_with_count": "Errore di validazione ({count} campi)",
+    "submission_error": "Si è verificato un errore durante l'invio del modulo. Riprova.",
     "toggle": {
       "yes": "Sì",
       "no": "No"

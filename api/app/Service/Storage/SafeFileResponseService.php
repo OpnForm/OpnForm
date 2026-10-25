@@ -22,7 +22,7 @@ class SafeFileResponseService
             'X-Frame-Options' => 'DENY',
         ];
 
-        if (!Str::startsWith($mimeType, 'image/')) {
+        if (!Str::startsWith($mimeType, ['image/', 'audio/'])) {
             $headers['Content-Disposition'] = 'attachment; filename="' . ($downloadName ?? basename($path)) . '"';
         }
 

@@ -13,6 +13,7 @@ return [
         'open.forms.submissions.index',
         'open.forms.submissions.update',
         'open.forms.submissions.export',
+        'open.forms.submissions.export.status',
         'open.forms.submissions.destroy',
 
         // Form Integrations
@@ -21,6 +22,7 @@ return [
         'open.forms.integrations.update',
         'open.forms.integrations.destroy',
         'open.forms.integrations.events',
+        'open.forms.integrations.events.retry',
 
         // Workspace CRUD
         'open.workspaces.index',

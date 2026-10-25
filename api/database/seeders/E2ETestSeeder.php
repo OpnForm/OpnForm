@@ -33,6 +33,8 @@ class E2ETestSeeder extends Seeder
 
         $workspace = Workspace::query()->create([
             'name' => 'E2E Workspace',
+            // Browser coverage includes Business-only partial and editable submissions.
+            'plan_overrides' => ['tier' => 'business'],
             'icon' => '🧪',
         ]);
 

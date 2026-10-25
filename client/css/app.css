@@ -76,6 +76,30 @@
         }
     }
 
+    @keyframes fade-in-up {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @keyframes integration-float {
+        0%,
+        100% {
+            transform: translateY(0);
+        }
+        50% {
+            transform: translateY(-10px);
+        }
+    }
+
+    --animate-fade-in-up: fade-in-up 0.7s ease-out both;
+    --animate-integration-float: integration-float 5s ease-in-out infinite;
+
     /* Custom sizes */
     --font-size-xxs: 0.5rem;
     --max-height-42: 10.5rem;
@@ -110,6 +134,15 @@
     }
     .animate-text {
         animation: var(--animate-text);
+    }
+    .animate-fade-in-up {
+        animation: var(--animate-fade-in-up);
+    }
+    .animate-integration-float {
+        animation: var(--animate-integration-float);
+    }
+    .animation-delay-200 {
+        animation-delay: 200ms;
     }
 
     /* Custom shadow */

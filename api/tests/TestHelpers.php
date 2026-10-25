@@ -309,12 +309,16 @@ trait TestHelpers
         return $this->actingAsUser($user);
     }
 
-    public function actingAsGuest()
+    public function actingAsGuest($guard = null)
     {
-        if (Auth::check()) {
-            Auth::logout();
+        if (Auth::guard($guard)->check()) {
+            Auth::guard($guard)->logout();
         }
-        $this->assertGuest();
+
+        parent::actingAsGuest($guard);
+        $this->assertGuest($guard);
+
+        return $this;
     }
 
     public function actingAsAdmin(?User $user = null)

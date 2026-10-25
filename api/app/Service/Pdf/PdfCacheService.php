@@ -12,6 +12,8 @@ class PdfCacheService
 {
     private const CACHE_TTL = 3600; // 1 hour
 
+    private const PAGINATION_VERSION = 'fixed-pages-v1';
+
     private const LOCK_TTL = 120; // seconds; must exceed slow PDF generation with remote images
 
     // Use same temp folder as generator for lifecycle cleanup
@@ -58,7 +60,9 @@ class PdfCacheService
 
     /**
      * Generate a unique cache key for template-based PDF.
-     * Includes template updated_at to automatically invalidate when template changes.
+     * Includes template updated_at and computed variable definitions so all inputs
+     * that affect the generated content invalidate the cached PDF. The pagination
+     * version also bypasses PDFs generated with automatic page breaks.
      */
     private function getTemplateCacheKey(
         Form $form,
@@ -66,14 +70,16 @@ class PdfCacheService
         PdfTemplate $template
     ): string {
         $templateVersion = $template->updated_at->timestamp;
+        $computedVariablesVersion = hash('sha256', serialize($form->computed_variables ?? []));
 
         return sprintf(
-            'pdf:%d:%d:%d:%d',
+            'pdf:%d:%d:%d:%d:%s',
             $form->id,
             $submission->id,
             $template->id,
-            $templateVersion
-        );
+            $templateVersion,
+            $computedVariablesVersion
+        ) . ':' . self::PAGINATION_VERSION;
     }
 
     /**

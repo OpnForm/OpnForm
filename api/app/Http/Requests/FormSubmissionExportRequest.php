@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Models\Forms\Form;
+use App\Service\Forms\SubmissionAttribution;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -24,6 +25,10 @@ class FormSubmissionExportRequest extends FormRequest
         ))->pluck('id')->toArray();
         $validColumns[] = 'created_at';
         $validColumns[] = 'status';
+        $validColumns[] = 'ip_address';
+        foreach (SubmissionAttribution::PARAMETERS as $parameter) {
+            $validColumns[] = SubmissionAttribution::columnId($parameter);
+        }
 
         return [
             'columns' => [
@@ -32,8 +37,8 @@ class FormSubmissionExportRequest extends FormRequest
                 function ($attribute, $value, $fail) use ($validColumns) {
                     $submittedColumns = array_keys($value);
                     $invalidColumns = array_diff($submittedColumns, $validColumns);
-                    if (!empty($invalidColumns)) {
-                        $fail('The columns contain invalid values: ' . implode(', ', $invalidColumns));
+                    if (! empty($invalidColumns)) {
+                        $fail('The columns contain invalid values: '.implode(', ', $invalidColumns));
                     }
                 },
             ],

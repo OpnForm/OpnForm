@@ -1,0 +1,179 @@
+{
+  "auditReportVersion": 2,
+  "metadata": {
+    "vulnerabilities": {
+      "info": 0,
+      "low": 1,
+      "moderate": 0,
+      "high": 14,
+      "critical": 0,
+      "total": 15
+    },
+    "dependencies": {
+      "prod": 952,
+      "dev": 219,
+      "optional": 246,
+      "peer": 9,
+      "peerOptional": 0,
+      "total": 1360
+    }
+  },
+  "vulnerabilities": {
+    "@nuxt/nitro-server": {
+      "severity": "high",
+      "via": [
+        "nitropack",
+        "nuxt"
+      ],
+      "nodes": [
+        "node_modules/@nuxt/nitro-server"
+      ]
+    },
+    "@nuxt/vite-builder": {
+      "severity": "high",
+      "via": [
+        "nuxt"
+      ],
+      "nodes": [
+        "node_modules/@nuxt/vite-builder"
+      ]
+    },
+    "@nuxt/vite-server": {
+      "severity": "high",
+      "via": [
+        "nuxt"
+      ],
+      "nodes": [
+        "node_modules/@nuxt/vite-server"
+      ]
+    },
+    "@nuxtjs/sitemap": {
+      "severity": "high",
+      "via": [
+        "nuxt",
+        "nuxt-site-config",
+        "nuxtseo-shared"
+      ],
+      "nodes": [
+        "node_modules/@nuxtjs/sitemap"
+      ]
+    },
+    "braces": {
+      "severity": "high",
+      "via": [
+        {
+          "name": "braces",
+          "url": "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm",
+          "severity": "high"
+        }
+      ],
+      "nodes": [
+        "node_modules/braces"
+      ]
+    },
+    "fast-glob": {
+      "severity": "high",
+      "via": [
+        "micromatch"
+      ],
+      "nodes": [
+        "node_modules/fast-glob"
+      ]
+    },
+    "globby": {
+      "severity": "high",
+      "via": [
+        "fast-glob",
+        "micromatch"
+      ],
+      "nodes": [
+        "node_modules/globby"
+      ]
+    },
+    "listhen": {
+      "severity": "high",
+      "via": [
+        "node-forge"
+      ],
+      "nodes": [
+        "node_modules/listhen"
+      ]
+    },
+    "micromatch": {
+      "severity": "high",
+      "via": [
+        "braces"
+      ],
+      "nodes": [
+        "node_modules/micromatch"
+      ]
+    },
+    "nitropack": {
+      "severity": "high",
+      "via": [
+        "globby",
+        "listhen"
+      ],
+      "nodes": [
+        "node_modules/nitropack"
+      ]
+    },
+    "node-forge": {
+      "severity": "high",
+      "via": [
+        {
+          "name": "node-forge",
+          "url": "https://github.com/advisories/GHSA-86w9-cpqp-85rv",
+          "severity": "high"
+        }
+      ],
+      "nodes": [
+        "node_modules/node-forge"
+      ]
+    },
+    "nuxt": {
+      "severity": "high",
+      "via": [
+        "@nuxt/nitro-server",
+        "@nuxt/vite-builder",
+        "@nuxt/vite-server"
+      ],
+      "nodes": [
+        "node_modules/nuxt"
+      ]
+    },
+    "nuxt-site-config": {
+      "severity": "high",
+      "via": [
+        "nuxt",
+        "nuxtseo-shared"
+      ],
+      "nodes": [
+        "node_modules/nuxt-site-config"
+      ]
+    },
+    "nuxtseo-shared": {
+      "severity": "high",
+      "via": [
+        "nuxt",
+        "nuxt-site-config"
+      ],
+      "nodes": [
+        "node_modules/nuxtseo-shared"
+      ]
+    },
+    "quill": {
+      "severity": "low",
+      "via": [
+        {
+          "name": "quill",
+          "url": "https://github.com/advisories/GHSA-v3m3-f69x-jf25",
+          "severity": "low"
+        }
+      ],
+      "nodes": [
+        "node_modules/quill"
+      ]
+    }
+  }
+}

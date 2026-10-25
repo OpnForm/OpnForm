@@ -7,7 +7,8 @@
             "submit": "Gửi",
             "next": "Tiếp theo",
             "previous": "Trước",
-            "re_fill": "Gửi một câu trả lời khác"
+            "re_fill": "Gửi một câu trả lời khác",
+            "download_pdf": "Tải xuống PDF"
         },
         "powered_by": "Được cung cấp bởi",
         "password_protected": "Biểu mẫu này được bảo vệ bằng mật khẩu.",
@@ -27,6 +28,7 @@
             "create": "Tạo"
         },
         "fileInput": {
+            "invalidFileType": "Loại tệp không hợp lệ. Chỉ cho phép: {types}",
             "chooseFiles": "Nhấp để chọn tệp hoặc kéo vào đây | Nhấp để chọn tệp hoặc kéo vào đây",
             "sizeLimit": "Giới hạn kích thước: {count}MB mỗi tệp",
             "uploadingFile": "Đang tải tệp của bạn lên..."
@@ -69,6 +71,7 @@
         },
         "validation_error": "Lỗi xác thực",
         "validation_error_with_count": "Lỗi xác thực ({count} trường)",
+        "submission_error": "Đã xảy ra lỗi khi gửi biểu mẫu. Vui lòng thử lại.",
         "toggle": {
             "yes": "Có",
             "no": "Không"

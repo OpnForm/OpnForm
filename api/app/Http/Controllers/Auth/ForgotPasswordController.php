@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\Auth\SendPasswordResetLink;
 use Illuminate\Foundation\Auth\SendsPasswordResetEmails;
 use Illuminate\Http\Request;
 
@@ -21,24 +22,32 @@ class ForgotPasswordController extends Controller
     }
 
     /**
-     * Get the response for a successful password reset link.
+     * Send a reset link without revealing whether the email is registered.
      *
-     * @param  string  $response
-     * @return \Illuminate\Http\RedirectResponse
+     * @return \Illuminate\Http\JsonResponse
      */
-    protected function sendResetLinkResponse(Request $request, $response)
+    public function sendResetLinkEmail(Request $request)
     {
-        return ['status' => trans($response)];
-    }
+        $requestedEmail = $request->input('email');
 
-    /**
-     * Get the response for a failed password reset link.
-     *
-     * @param  string  $response
-     * @return \Illuminate\Http\RedirectResponse
-     */
-    protected function sendResetLinkFailedResponse(Request $request, $response)
-    {
-        return response()->json(['email' => trans($response)], 400);
+        if (is_string($requestedEmail)) {
+            $request->merge([
+                'email' => strtolower(trim($requestedEmail)),
+            ]);
+        }
+
+        $this->validateEmail($request);
+
+        $email = $request->string('email')->toString();
+
+        if (config('queue.default') === 'sync') {
+            SendPasswordResetLink::dispatchAfterResponse($email);
+        } else {
+            SendPasswordResetLink::dispatch($email);
+        }
+
+        return response()->json([
+            'status' => trans('passwords.sent_if_exists'),
+        ]);
     }
 }

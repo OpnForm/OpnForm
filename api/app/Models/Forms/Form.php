@@ -311,12 +311,10 @@ class Form extends Model implements CachableAttributes, VersionableNestedDiff
             ? 'SUM(CAST(JSON_EXTRACT(data, "$.views") AS SIGNED))'
             : 'SUM(CAST(data->>\'views\' AS INTEGER))';
 
-        return $query->addSelect([
-            'total_views_count' => DB::raw(
-                'COALESCE((SELECT COUNT(*) FROM form_views WHERE form_views.form_id = forms.id), 0) + ' .
-                    'COALESCE((SELECT ' . $statisticsExpression . ' FROM form_statistics WHERE form_statistics.form_id = forms.id), 0)'
-            )
-        ]);
+        return $query->selectRaw(
+            'COALESCE((SELECT COUNT(*) FROM form_views WHERE form_views.form_id = forms.id), 0) + ' .
+                'COALESCE((SELECT ' . $statisticsExpression . ' FROM form_statistics WHERE form_statistics.form_id = forms.id), 0) AS total_views_count'
+        );
     }
 
 

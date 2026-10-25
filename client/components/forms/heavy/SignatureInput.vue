@@ -77,6 +77,7 @@
 import { VueSignaturePad } from 'vue-signature-pad'
 import { inputProps, useFormInput } from '../useFormInput.js'
 import { storeFile } from '~/lib/file-uploads.js'
+import { getNormalizedSignatureData } from '~/lib/forms/normalize-signature.js'
 import { signatureInputTheme } from '~/lib/forms/themes/signature-input.theme.js'
 
 export default {
@@ -139,9 +140,7 @@ export default {
       if (this.disabled) {
         this.$refs.signaturePad.clearSignature()
       } else {
-        /* eslint-disable-next-line */
-        const { isEmpty, data } = this.$refs.signaturePad?.saveSignature()
-        this.form[this.name] = !isEmpty && data ? data : null
+        this.form[this.name] = getNormalizedSignatureData(this.$refs.signaturePad)
       }
     },
     openFileUpload() {

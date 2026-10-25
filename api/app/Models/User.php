@@ -203,6 +203,12 @@ class User extends Authenticatable implements JWTSubject, CachableAttributes, Tw
         return !is_null($this->blocked_at);
     }
 
+    public function canChangeEmail(): bool
+    {
+        return !empty($this->password)
+            && ($this->meta['signup_provider'] ?? null) !== 'oidc';
+    }
+
     public function blockUser(string $reason, ?int $moderatorId): void
     {
         $this->blocked_at = now();

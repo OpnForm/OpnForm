@@ -188,4 +188,22 @@ describe('useComputedVariables', () => {
     expect(aIdx).toBeLessThan(bIdx)
     expect(bIdx).toBeLessThan(cIdx)
   })
+
+  it('resolves answers, formulas and field changes synchronously without a watcher tick', () => {
+    const form = ref({
+      computed_variables: [{ id: 'cv_total', name: 'Total', formula: '{amount} * 2' }],
+      properties: [{ id: 'amount', name: 'Amount' }],
+    })
+    const formData = ref({ amount: 5, replacement: 7 })
+    const { values } = useComputedVariables(form, formData)
+    expect(values.value.cv_total).toBe(10)
+
+    formData.value.amount = 9
+    expect(values.value.cv_total).toBe(18)
+    form.value.computed_variables[0].formula = '{replacement} * 3'
+    form.value.properties = [{ id: 'replacement', name: 'Replacement' }]
+    expect(values.value.cv_total).toBe(21)
+    form.value.computed_variables = []
+    expect(values.value).toEqual({})
+  })
 })

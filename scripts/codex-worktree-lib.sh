@@ -206,6 +206,27 @@ ensure_php_dependencies() {
   fi
 }
 
+ensure_mcp_oauth_keys() {
+  select_php_runtime
+
+  public_key="$ROOT_DIR/api/storage/oauth-public.key"
+  private_key="$ROOT_DIR/api/storage/oauth-private.key"
+
+  if [ -f "$public_key" ] && [ -f "$private_key" ]; then
+    return 0
+  fi
+
+  if [ -f "$public_key" ] || [ -f "$private_key" ]; then
+    echo "Incomplete Passport key pair in api/storage. Remove the remaining key and rerun setup." >&2
+    exit 1
+  fi
+
+  (
+    cd "$ROOT_DIR/api"
+    APP_ENV=codex "$CODEX_PHP_BIN" artisan passport:keys --force --env=codex
+  )
+}
+
 php_version_is_supported() {
   version="$1"
   major=${version%%.*}
@@ -216,7 +237,8 @@ php_version_is_supported() {
     *[!0-9.]*|.*|*.) return 1 ;;
   esac
 
-  [ "$major" -eq 8 ] && [ "$minor" -ge 3 ]
+  # The locked lcobucci/clock supports PHP 8.3 and 8.4, not 8.5.
+  [ "$major" -eq 8 ] && { [ "$minor" -eq 3 ] || [ "$minor" -eq 4 ]; }
 }
 
 select_php_candidate() {
@@ -242,7 +264,7 @@ select_php_runtime() {
       return 0
     fi
 
-    echo "CODEX_PHP_BIN must point to a PHP ^8.3 runtime." >&2
+    echo "CODEX_PHP_BIN must point to a PHP 8.3 or 8.4 runtime compatible with composer.lock." >&2
     exit 1
   fi
 
@@ -268,7 +290,7 @@ select_php_runtime() {
     fi
   done
 
-  echo "A PHP runtime compatible with ^8.3 is required." >&2
+  echo "A PHP 8.3 or 8.4 runtime compatible with composer.lock is required." >&2
   exit 1
 }
 
@@ -379,11 +401,16 @@ node_version_is_supported() {
   major=${version%%.*}
   remainder=${version#*.}
   minor=${remainder%%.*}
+  patch=${remainder#*.}
+
+  case "$major.$minor.$patch" in
+    *[!0-9.]*|.*|*.) return 1 ;;
+  esac
 
   case "$major" in
-    20) [ "$minor" -ge 11 ] ;;
-    22|24) return 0 ;;
-    *) return 1 ;;
+    22) [ "$minor" -gt 22 ] || { [ "$minor" -eq 22 ] && [ "$patch" -ge 3 ]; } ;;
+    24) [ "$minor" -ge 15 ] ;;
+    *) [ "$major" -ge 26 ] ;;
   esac
 }
 
@@ -420,23 +447,23 @@ select_node_runtime() {
       return 0
     fi
 
-    echo "CODEX_NODE_BIN must point to a supported Node 20.11+, 22.x, or 24.x runtime with npm." >&2
+    echo "CODEX_NODE_BIN must point to a supported Node ^22.22.3, ^24.15.0, or >=26 runtime with npm." >&2
     exit 1
   fi
 
-  herd_node="$HOME/Library/Application Support/Herd/config/nvm/versions/node/v20.20.1/bin/node"
+  herd_nvm="$HOME/Library/Application Support/Herd/config/nvm/versions/node"
   homebrew_node="/opt/homebrew/bin/node"
   local_node="/usr/local/bin/node"
   bundled_node="$HOME/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node"
   path_node=$(command -v node 2>/dev/null || true)
 
-  for candidate in "$herd_node" "$homebrew_node" "$local_node" "$bundled_node" "$path_node"; do
+  for candidate in "$herd_nvm"/v24.*/bin/node "$herd_nvm"/v22.*/bin/node "$homebrew_node" "$local_node" "$bundled_node" "$path_node"; do
     if select_node_candidate "$candidate"; then
       return 0
     fi
   done
 
-  echo "A supported Node runtime (20.11+, 22.x, or 24.x) with its matching npm is required." >&2
+  echo "A supported Node runtime (^22.22.3, ^24.15.0, or >=26) with its matching npm is required." >&2
   exit 1
 }
 

@@ -7,7 +7,8 @@
             "submit": "Enviar",
             "next": "Próximo",
             "previous": "Anterior",
-            "re_fill": "Enviar outra resposta"
+            "re_fill": "Enviar outra resposta",
+            "download_pdf": "Baixar PDF"
         },
         "powered_by": "Desenvolvido por",
         "password_protected": "Este formulário está protegido por senha.",
@@ -27,6 +28,7 @@
             "create": "Criar"
         },
         "fileInput": {
+            "invalidFileType": "Tipo de arquivo incorreto. Permitidos apenas: {types}",
             "chooseFiles": "Clique para escolher arquivo(s) ou arraste aqui | Clique para escolher um arquivo ou arraste aqui",
             "sizeLimit": "Limite de tamanho: {count}MB por arquivo",
             "uploadingFile": "Enviando seu arquivo..."
@@ -69,6 +71,7 @@
         },
         "validation_error": "Erro de validação",
         "validation_error_with_count": "Erro de validação ({count} campos)",
+        "submission_error": "Ocorreu um erro ao enviar o formulário. Tente novamente.",
         "toggle": {
             "yes": "Sim",
             "no": "Não"
