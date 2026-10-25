@@ -139,7 +139,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, nextTick } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { inputProps, useFormInput } from '../useFormInput.js'
 import { loadStripe } from '@stripe/stripe-js'
 import { StripeElements, StripeElement } from 'vue-stripe-js'
@@ -180,6 +180,7 @@ const cardHolderName = ref(props.prefillName || '')
 const cardHolderEmail = ref(props.prefillEmail || '')
 const isCardFocused = ref(false)
 const isStripeJsLoaded = ref(false)
+let isDisposed = false
 
 // Watch for prefill changes to update card holder details
 watch(() => props.prefillName, (newVal) => {
@@ -203,6 +204,7 @@ const setElementsInstance = computed(() => stripeElements.value?.setElementsInst
 const setCardElement = computed(() => stripeElements.value?.setCardElement)
 const setBillingDetails = computed(() => stripeElements.value?.setBillingDetails)
 const prepareStripeState = computed(() => stripeElements.value?.prepareStripeState)
+const setAccountError = computed(() => stripeElements.value?.setAccountError)
 
 // Computed to determine if we should show success state
 const showSuccessState = computed(() => {
@@ -232,7 +234,9 @@ onMounted(async () => {
     // Initialize Stripe.js globally first if needed
     if (typeof window !== 'undefined' && !window.Stripe && publishableKey.value) {
       console.debug('[PaymentInput] Loading Stripe.js with key:', publishableKey.value)
-      await loadStripe(publishableKey.value)
+      const instance = await loadStripe(publishableKey.value)
+      if (isDisposed) return
+      if (!instance) throw new Error('Stripe.js could not be initialized')
       isStripeJsLoaded.value = true
     } else if (typeof window !== 'undefined' && window.Stripe) {
       isStripeJsLoaded.value = true
@@ -248,9 +252,8 @@ onMounted(async () => {
       })
       
       // Set error state if publishable key is missing
-      if (!publishableKey.value && stripeState.value) {
-        stripeState.value.hasAccountLoadingError = true
-        stripeState.value.errorMessage = 'Missing Stripe configuration. Please check your settings.'
+      if (!publishableKey.value) {
+        setAccountError.value?.('Missing Stripe configuration. Please check your settings.')
       }
       return
     }
@@ -258,7 +261,7 @@ onMounted(async () => {
     // If compVal already contains a payment intent ID, sync it to stripeState
     if (compVal.value && isPaymentIntentId(compVal.value) && stripeState.value) {
       console.debug('[PaymentInput] Syncing existing payment intent:', compVal.value)
-      stripeState.value.intentId = compVal.value
+      stripeElements.value?.setIntentId(compVal.value)
     }
 
     // Fetch account details from the API, even in preview mode
@@ -270,6 +273,7 @@ onMounted(async () => {
         isAdminPreview: props.isAdminPreview
       })
       const result = await prepareStripeState.value(slug, props.oauthProviderId, props.isAdminPreview)
+      if (isDisposed) return
       console.debug('[PaymentInput] Stripe state preparation result:', result)
       
       if (!result.success && result.message && !result.requiresSave) {
@@ -278,13 +282,16 @@ onMounted(async () => {
       }
     }
   } catch (error) {
+    if (isDisposed) return
     console.error('[PaymentInput] Stripe initialization error:', error)
-    if (stripeState.value) {
-      stripeState.value.hasAccountLoadingError = true
-      stripeState.value.errorMessage = 'Failed to initialize Stripe. Please refresh and try again.'
-    }
+    setAccountError.value?.('Failed to initialize Stripe. Please refresh and try again.')
     alert.error('Failed to initialize Stripe. Please refresh and try again.')
   }
+})
+
+onBeforeUnmount(() => {
+  isDisposed = true
+  stripeElements.value?.resetStripeState()
 })
 
 // Watch for provider ID changes
@@ -332,10 +339,7 @@ const onStripeError = (error) => {
   
   alert.error('Failed to load payment component. ' + errorMessage)
   
-  if (stripeState.value) {
-    stripeState.value.hasAccountLoadingError = true
-    stripeState.value.errorMessage = errorMessage + '. Please check configuration or refresh.'
-  }
+  setAccountError.value?.(errorMessage + '. Please check configuration or refresh.')
 }
 
 // Card focus/blur event handlers
@@ -363,17 +367,11 @@ const onCardReady = (_element) => {
 }
 
 // Billing details
-watch(cardHolderName, (newValue) => {
+watch([cardHolderName, cardHolderEmail, stripeElements], ([name, email]) => {
   if (setBillingDetails.value) {
-    setBillingDetails.value({ name: newValue })
+    setBillingDetails.value({ name, email })
   }
-})
-
-watch(cardHolderEmail, (newValue) => {
-  if (setBillingDetails.value) {
-    setBillingDetails.value({ email: newValue })
-  }
-})
+}, { immediate: true })
 
 // Payment intent sync
 watch(() => stripeState.value?.intentId, (newValue) => {
@@ -382,7 +380,7 @@ watch(() => stripeState.value?.intentId, (newValue) => {
 
 watch(compVal, (newValue) => {
   if (newValue && stripeState.value && newValue !== stripeState.value.intentId) {
-    stripeState.value.intentId = newValue
+    stripeElements.value?.setIntentId(newValue)
   }
 }, { immediate: true })
 
@@ -435,17 +433,18 @@ const formSlug = computed(() => {
 
 // Reset card element
 const resetCard = async () => {
-  if (card.value?.stripeElement) {
-    card.value.stripeElement.unmount()
+  const element = card.value?.stripeElement
+  const mountPoint = card.value?.domElement
+  if (element && mountPoint) {
+    setCardElement.value?.(null)
+    element.unmount()
     await nextTick()
     
-    if (stripeElementsRef.value?.elements) {
-      card.value.stripeElement.mount(stripeElementsRef.value.elements)
+    if (!isDisposed && card.value?.stripeElement === element) {
+      element.mount(mountPoint)
       if (setCardElement.value) {
-        setCardElement.value(card.value.stripeElement)
+        setCardElement.value(element)
       }
-    } else {
-      console.error('Cannot remount card, Stripe Elements instance not found.')
     }
   }
 }

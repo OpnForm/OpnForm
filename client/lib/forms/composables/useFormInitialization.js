@@ -231,7 +231,7 @@ export function useFormInitialization(formConfig, form, pendingSubmission) {
         form[field.id] = {...field.prefill}
       } 
       // Handle other fields with prefill data, only if no value is set
-      else if (field.id && form[field.id] == null && field.prefill) {
+      else if (field.id && form[field.id] == null && field.prefill !== undefined && field.prefill !== null) {
         form[field.id] = field.prefill
       }
     })

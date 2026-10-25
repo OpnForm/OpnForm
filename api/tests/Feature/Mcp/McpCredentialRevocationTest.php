@@ -120,3 +120,56 @@ it('still completes fresh ticket login and PKCE consent after password rotation'
         'code' => $callback['code'],
     ])->assertOk()->assertJsonStructure(['access_token', 'refresh_token']);
 });
+
+it('keeps an existing OAuth refresh usable after a profile edit and revokes it after an email password reset', function () {
+    config(['app.jwt_skip_ip_ua_validation' => true]);
+    $consent = $this->actingAs($this->user, 'web')->get($this->authorizationUri)->assertOk();
+    preg_match('/name="auth_token" value="([^"]+)"/', $consent->getContent(), $matches);
+    $approval = $this->post('/oauth/authorize', [
+        'client_id' => $this->clientId,
+        'auth_token' => $matches[1],
+    ])->assertRedirect();
+    parse_str((string) parse_url($approval->headers->get('Location'), PHP_URL_QUERY), $callback);
+    $credentials = $this->postJson('/oauth/token', [
+        'grant_type' => 'authorization_code',
+        'client_id' => $this->clientId,
+        'redirect_uri' => 'http://localhost/callback',
+        'code_verifier' => $this->verifier,
+        'code' => $callback['code'],
+    ])->assertOk();
+
+    $this->app['auth']->forgetGuards();
+    $this->withToken(\Tymon\JWTAuth\Facades\JWTAuth::fromUser($this->user))->patchJson('/settings/profile', [
+        'name' => 'Updated account name',
+        'email' => strtoupper($this->user->email),
+    ])->assertOk();
+    $this->withoutHeader('Authorization');
+    $this->app['tymon.jwt']->unsetToken();
+    $this->app['auth']->forgetGuards();
+
+    $refreshed = $this->postJson('/oauth/token', [
+        'grant_type' => 'refresh_token',
+        'client_id' => $this->clientId,
+        'refresh_token' => $credentials->json('refresh_token'),
+    ])->assertOk()->assertJsonStructure(['access_token', 'refresh_token']);
+
+    $resetToken = \Illuminate\Support\Facades\Password::broker()->createToken($this->user->fresh());
+    $this->postJson('/password/reset', [
+        'email' => $this->user->email, 'token' => $resetToken,
+        'password' => 'Changed@12345', 'password_confirmation' => 'Changed@12345',
+    ])->assertOk();
+    $this->app['tymon.jwt']->unsetToken();
+    $this->app['auth']->forgetGuards();
+
+    $this->postJson('/oauth/token', [
+        'grant_type' => 'refresh_token',
+        'client_id' => $this->clientId,
+        'refresh_token' => $refreshed->json('refresh_token'),
+    ])->assertUnauthorized();
+
+    $this->postJson('/mcp', [
+        'jsonrpc' => '2.0', 'id' => 1, 'method' => 'initialize',
+        'params' => ['protocolVersion' => '2025-06-18', 'capabilities' => [], 'clientInfo' => ['name' => 'Compatibility test', 'version' => '1.0.0']],
+    ], ['Accept' => 'application/json, text/event-stream', 'Authorization' => 'Bearer '.$refreshed->json('access_token')])
+        ->assertUnauthorized();
+});

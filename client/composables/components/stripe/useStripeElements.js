@@ -40,6 +40,7 @@ export const createStripeElements = (initialAccountId = null) => {
     stripeAccountId: null, // Resolved Stripe connected account, separate from the OAuth provider ID
     intentId: null,
     showPreviewMessage: false,
+    errorMessage: null,
     error: null
   })
 
@@ -77,7 +78,14 @@ export const createStripeElements = (initialAccountId = null) => {
     state.stripeAccountId = null
     state.intentId = null
     state.showPreviewMessage = false
+    state.errorMessage = null
     state.error = null
+  }
+
+  const setAccountError = (message) => {
+    state.isLoadingAccount = false
+    state.hasAccountLoadingError = true
+    state.errorMessage = message
   }
 
   /**
@@ -352,7 +360,9 @@ export const createStripeElements = (initialAccountId = null) => {
     if (selectedProviderId !== accountIdStr) {
       resetStripeState()
       selectedProviderId = accountIdStr
+      return true
     }
+    return false
   }
 
   const stripeElements = {
@@ -372,6 +382,7 @@ export const createStripeElements = (initialAccountId = null) => {
     setCardElement,
     setBillingDetails,
     setIntentId,
+    setAccountError,
     setAccountId
   }
 

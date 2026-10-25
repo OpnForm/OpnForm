@@ -35,7 +35,7 @@ class CustomDomainRequest extends FormRequest
                 function ($attribute, $value, $fail) {
                     $domains = collect($value)->map(function ($domain) {
                         return is_string($domain) ? strtolower(trim($domain)) : $domain;
-                    })->filter(fn ($domain) => $domain !== '')->unique()->values();
+                    })->filter(fn ($domain) => $domain !== '' && $domain !== null)->unique()->values();
 
                     foreach ($domains as $domain) {
                         if (! is_string($domain) || strlen($domain) > 253 || ! preg_match(self::CUSTOM_DOMAINS_REGEX, $domain)) {

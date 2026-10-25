@@ -85,8 +85,15 @@ try {
     $key = openssl_pkey_new(['private_key_bits' => 2048, 'private_key_type' => OPENSSL_KEYTYPE_RSA]);
     openssl_pkey_export($key, $privateKey);
     $publicKey = openssl_pkey_get_details($key)['key'];
+    $httpPort = (int) (getenv('DB_COMPAT_HTTP_PORT') ?: 18081);
+    check($httpPort >= 1024 && $httpPort <= 65535, 'Valid dedicated HTTP port supplied');
+    $existingListener = @fsockopen('127.0.0.1', $httpPort, $errorCode, $errorMessage, 0.1);
+    if ($existingListener !== false) {
+        fclose($existingListener);
+        throw new RuntimeException('Compatibility HTTP port is already occupied');
+    }
     $server = new Symfony\Component\Process\Process(
-        [PHP_BINARY, '-S', '127.0.0.1:18081', '-t', 'public', 'public/index.php'],
+        [PHP_BINARY, '-S', '127.0.0.1:'.$httpPort, '-t', 'public', 'public/index.php'],
         __DIR__.'/../api',
         ['PASSPORT_PRIVATE_KEY' => $privateKey, 'PASSPORT_PUBLIC_KEY' => $publicKey],
     );
@@ -94,7 +101,7 @@ try {
     register_shutdown_function(static fn () => $server->stop());
     $ready = false;
     for ($attempt = 0; $attempt < 50; $attempt++) {
-        $socket = @fsockopen('127.0.0.1', 18081, $errorCode, $errorMessage, 0.1);
+        $socket = @fsockopen('127.0.0.1', $httpPort, $errorCode, $errorMessage, 0.1);
         if ($socket !== false) {
             fclose($socket);
             $ready = true;
@@ -106,7 +113,8 @@ try {
     check($ready, 'Compatibility HTTP server ready');
     function requestJson(string $method, string $path, array $data, int $status, ?string $token = null): array
     {
-        $curl = curl_init('http://127.0.0.1:18081'.$path);
+        global $httpPort;
+        $curl = curl_init('http://127.0.0.1:'.$httpPort.$path);
         $headers = ['Accept: '.($path === '/mcp' ? 'application/json, text/event-stream' : 'application/json'), 'Content-Type: application/json'];
         if ($token !== null) {
             $headers[] = 'Authorization: Bearer '.$token;
@@ -122,7 +130,7 @@ try {
             throw new RuntimeException(curl_error($curl));
         }
         curl_close($curl);
-        $result = json_decode($body, true, flags: JSON_THROW_ON_ERROR);
+        $result = $body === '' ? [] : json_decode($body, true, flags: JSON_THROW_ON_ERROR);
         if ($actual !== $status) {
             echo json_encode(['message' => $result['message'] ?? null, 'errors' => $result['errors'] ?? null], JSON_THROW_ON_ERROR)."\n";
         }
@@ -166,6 +174,31 @@ try {
     $client = requestJson('POST', '/oauth/register', ['client_name' => 'Compatibility client', 'redirect_uris' => ['http://localhost:3210/callback']], 201);
     check($client['scope'] === 'mcp:use' && $client['token_endpoint_auth_method'] === 'none', 'MCP scope and public PKCE client response');
     check(DB::table('oauth_clients')->where('id', $client['client_id'])->exists(), 'Passport client persisted on actual database');
+
+    // Credential rotation must also persist through real PostgreSQL/MySQL requests.
+    $personalToken = $user->createToken('compatibility-before-reset')->plainTextToken;
+    $resetToken = Illuminate\Support\Facades\Password::broker()->createToken($user);
+    requestJson('POST', '/password/reset', [
+        'email' => $user->email, 'token' => $resetToken,
+        'password' => 'Reset-Compatibility-1234!', 'password_confirmation' => 'Reset-Compatibility-1234!',
+    ], 200);
+    check(Laravel\Sanctum\PersonalAccessToken::findToken($personalToken) === null, 'Email reset revokes personal token on actual database');
+    check(! Illuminate\Support\Facades\Password::broker()->tokenExists($user->fresh(), $resetToken), 'Email reset removes consumed reset link');
+    requestJson('GET', '/open/workspaces', [], 401, $login['token']);
+    $resetLogin = requestJson('POST', '/login', ['email' => $user->email, 'password' => 'Reset-Compatibility-1234!'], 200);
+    requestJson('GET', '/open/workspaces', [], 200, $resetLogin['token']);
+
+    $personalToken = $user->fresh()->createToken('compatibility-before-password-change')->plainTextToken;
+    $resetToken = Illuminate\Support\Facades\Password::broker()->createToken($user->fresh());
+    requestJson('PATCH', '/settings/password', [
+        'current_password' => 'Reset-Compatibility-1234!',
+        'password' => 'Changed-Compatibility-1234!', 'password_confirmation' => 'Changed-Compatibility-1234!',
+    ], 204, $resetLogin['token']);
+    check(Laravel\Sanctum\PersonalAccessToken::findToken($personalToken) === null, 'Password change revokes personal token on actual database');
+    check(! Illuminate\Support\Facades\Password::broker()->tokenExists($user->fresh(), $resetToken), 'Password change invalidates outstanding reset link');
+    requestJson('GET', '/open/workspaces', [], 401, $resetLogin['token']);
+    $changedLogin = requestJson('POST', '/login', ['email' => $user->email, 'password' => 'Changed-Compatibility-1234!'], 200);
+    requestJson('GET', '/open/workspaces', [], 200, $changedLogin['token']);
     echo "Database compatibility checks passed for {$expected}.\n";
 
 } catch (Throwable $error) {

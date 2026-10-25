@@ -30,7 +30,10 @@ export function useFormPayment(formConfig, form) {
         // Update the account ID if the instance already exists
         // Use the proper setter method to avoid readonly errors
         if (typeof stripeElements.value.setAccountId === 'function') {
-          stripeElements.value.setAccountId(accountId)
+          const changed = stripeElements.value.setAccountId(accountId)
+          if (changed && paymentBlock.id && isPaymentIntentId(form[paymentBlock.id])) {
+            form.update({ [paymentBlock.id]: null, stripe_payment_intent_id: null, payment_status: null })
+          }
         }
       }
       
@@ -40,6 +43,24 @@ export function useFormPayment(formConfig, form) {
       }
     }
     return null
+  }
+
+  const capturePaymentContext = () => ({
+    stripe: stripeElements.value?.state?.stripe,
+    card: stripeElements.value?.state?.card,
+    accountId: stripeElements.value?.state?.stripeAccountId,
+    slug: toValue(formConfig)?.slug,
+  })
+
+  const isPaymentContextCurrent = (context) => {
+    const current = capturePaymentContext()
+    return Object.keys(context).every(key => context[key] === current[key])
+  }
+
+  const changedPaymentResult = (paymentBlockId) => {
+    const error = 'Payment configuration changed. Please reload the form before paying again.'
+    if (paymentBlockId) form.errors.set(paymentBlockId, error)
+    return { success: false, error }
   }
 
   /**
@@ -107,6 +128,7 @@ export function useFormPayment(formConfig, form) {
     
     const state = stripeElements.value.state
     const { stripe, card } = state
+    const context = capturePaymentContext()
     
     if (!stripe || !card) {
       const error = 'Stripe or card element not available'
@@ -125,6 +147,7 @@ export function useFormPayment(formConfig, form) {
         },
         receipt_email: state.cardHolderEmail
       })
+      if (!isPaymentContextCurrent(context)) return changedPaymentResult(paymentBlockId)
       
       // Check for errors
       if (result.error) {
@@ -296,11 +319,13 @@ export function useFormPayment(formConfig, form) {
       }
       
       // Create payment intent
+      const context = capturePaymentContext()
       const intentResult = await _createPaymentIntent(
         paymentBlock.amount,
         paymentBlock.currency || 'usd',
         paymentBlock.description || ''
       )
+      if (!isPaymentContextCurrent(context)) return changedPaymentResult(paymentBlockId)
       
       if (!intentResult.success || !intentResult.client_secret) {
         const error = intentResult.error || 'Failed to create payment intent'
@@ -351,4 +376,4 @@ export function useFormPayment(formConfig, form) {
     createPaymentIntent: _createPaymentIntent,
     confirmStripePayment
   }
-} 
+}

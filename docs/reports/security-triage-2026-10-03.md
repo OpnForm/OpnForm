@@ -16,6 +16,14 @@ La branche a ensuite été poussée et la PR ouverte. Une nouvelle revue indépe
 
 Le job d'image Linux utilisait un environnement refusé par le seeder sécurisé. Il utilise maintenant `e2e` dans son environnement isolé, sans modifier la protection de production ; un test protège ce contrat. L'image Linux ARM64 a été construite et les migrations, le seed PostgreSQL, SSR, l'authentification, MCP, le formulaire public, les icônes et les CSS ont été vérifiés. La contre-revue du correctif CI ne trouve plus de finding. La CI GitHub AMD64 doit confirmer le résultat sur le nouveau commit. Aucun merge ni déploiement de production n'a été effectué.
 
+## Recherche de non-régression supplémentaire — 25 octobre 2026
+
+La recherche approfondie ajoute les anciens JWT sans version, les modifications refusées, les éditions ordinaires du profil, les pannes de stockage pendant la révocation et le parcours 2FA après reset. Un défaut supplémentaire est corrigé : le reset par email et les révocations sont désormais atomiques, pour qu'une erreur ne laisse pas un mot de passe changé malgré une réponse 500. Les parcours réussis de reset et de rotation sont aussi exercés via HTTP sur PostgreSQL et MySQL isolés.
+
+Les domaines existants, leurs longueurs historiques, les limites du plan et les droits admin sont vérifiés. Une ligne vide dans la liste des domaines, convertie en null par Laravel, est de nouveau ignorée sans empêcher la sauvegarde. Les prefills configurés conservent zéro et faux.
+
+Onze nouveaux scénarios exécutent les vrais composants de paiement avec HTTP et SDK Stripe simulés : facturation préremplie sans ressaisie, changement de compte, erreurs et retry, démontage, langue, réponses tardives et remontage d'un paiement déjà réussi. Les corrections empêchent l'ancien contexte de paiement de contaminer le suivant. Elles ne prouvent pas l'acceptation d'une carte réelle ou l'idempotence financière complète. La contre-revue indépendante des correctifs ne trouve plus de finding actionnable. Les résultats CI de la PR font foi pour son commit courant ; les sections précédentes conservent l'historique des campagnes.
+
 ## Périmètre et méthode
 
 Évaluation au 3 octobre 2026 des signalements de sécurité retrouvés dans Crisp, complétée par les issues publiques OpnForm. La source des « rapports » n'était pas précisée dans la demande : ce périmètre a été annoncé pendant le travail. Les mails hors Crisp, documents privés non transmis et vulnérabilités seulement annoncées restent hors de la preuve disponible.
