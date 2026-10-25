@@ -85,6 +85,7 @@ it('advertises explicit safety annotations for every MCP tool', function () {
     ];
     $destructivePrivateWrites = [
         'patch_form_draft',
+        'restore_form_draft_version',
     ];
     $destructiveOpenWorldWrites = [
         'trash_form',

@@ -31,3 +31,12 @@ These changes are validated locally. They do not change CDN, DNS, HSTS, provider
 ## Remaining limitations
 
 Submission processing is not fully idempotent across DB/files/queue acknowledgement. Metadata updates in the tax dataset store are not protected by a dataset-wide transaction. Custom-domain scope restoration supports sequential requests, not concurrent coroutines sharing the same model scope registry. Billing event ordering other than terminal cancellation still requires a durable event strategy.
+
+## Compatibility refresh — 25 October 2026
+
+- Keep the current Laravel 12.70.1 / Nuxt 4.6.2 dependency baseline when integrating these changes; use the project-pinned Node 24 runtime.
+- Sentry 11 uses top-level upload options. Client sourcemaps remain disabled without an upload token; with a token they are hidden and deleted after upload. A real upload and CDN purge still need release validation.
+- Invalid regex conditions evaluate to false for both positive and negative operators in the browser and API. This does not impose a runtime limit on expensive valid patterns.
+- Widget emoji values are rendered as text in both source and minified distributions.
+- Explicit record defaults precede field prefills and preserve zero and false. URL answers retain priority.
+- Preserve main’s strict export form-ID check and its draft-hydration/background-sync sequencing when merging further changes.

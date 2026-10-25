@@ -123,10 +123,14 @@ class FormSubmissionController extends Controller
     {
         $this->authorize('view', $form);
 
+        if ($token = Auth::user()->currentAccessToken()) {
+            abort_unless($token->can('forms-read'), 403);
+        }
+
         $cacheKey = $exportService->getCacheKey($jobId);
         $jobData = Cache::get($cacheKey);
 
-        if (!$jobData || (int) ($jobData['form_id'] ?? 0) !== (int) $form->id) {
+        if (!$jobData || ($jobData['form_id'] ?? null) !== $form->id) {
             return $this->error([
                 'message' => 'Export job not found or has expired.'
             ], 404);

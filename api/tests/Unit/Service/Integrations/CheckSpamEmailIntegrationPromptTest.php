@@ -44,4 +44,4 @@ it('treats default forms with only hidden, disabled, or display blocks as dummy 
     $method->setAccessible(true);
 
     expect($method->invoke($prompt))->toBeTrue();
-});
+});beforeEach(fn () => config(['services.openai.api_key' => 'offline-unused-test-token']));

@@ -101,8 +101,8 @@ export default {
   },
 
   mounted() {
-    if (this.compVal && typeof this.compVal === "string") {
-      this.compVal = parseInt(this.compVal)
+    if (typeof this.compVal === "string" && this.compVal.trim() !== "" && Number.isFinite(Number(this.compVal))) {
+      this.compVal = Number(this.compVal)
     }
   },
 

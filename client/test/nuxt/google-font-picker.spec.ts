@@ -30,12 +30,18 @@ vi.mock('@vueuse/core', async (importOriginal) => {
 })
 
 vi.mock('~/components/global/OverlayScrollbarsComponent.client.vue', async () => {
-  const { h, ref } = await import('vue')
+  const { h, ref, onMounted } = await import('vue')
   return {
     default: {
       setup(_: unknown, { expose, slots }: { expose: (value: object) => void; slots: { default?: () => unknown } }) {
         const root = ref<HTMLElement | null>(null)
         expose({ getElement: () => root.value })
+        // The real plugin moves its slot DOM into a viewport after mounting.
+        onMounted(() => {
+          const viewport = document.createElement('div')
+          for (const node of Array.from(root.value!.childNodes)) viewport.appendChild(node)
+          root.value!.appendChild(viewport)
+        })
         return () => h('div', { ref: root, class: 'font-scroll-container' }, slots.default?.())
       },
     },

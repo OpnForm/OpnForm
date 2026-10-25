@@ -1,11 +1,17 @@
-export default defineNuxtPlugin(() => {
+import { createGtm, useGtm } from '@gtm-support/vue-gtm'
+
+export default defineNuxtPlugin((nuxtApp) => {
   const config = useRuntimeConfig()
-  const gtmId = config.public.gtmCode
+  const gtmId = config.public.gtm.id
 
   const route = useRoute()
   const isIframe = useIsIframe()
   const isPublicFormPage = route.name === 'forms-slug'
   
+  nuxtApp.vueApp.use(createGtm({
+    ...config.public.gtm,
+    vueRouter: useRouter(),
+  }))
   const gtm = useGtm()
 
   // Only enable GTM if not in a form page (for respondents) and not in an iframe

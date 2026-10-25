@@ -1,12 +1,13 @@
 import { evaluateFormula, buildDependencyGraph } from '~/lib/formulas/index.js'
+import { computed } from 'vue'
 
 /**
  * Composable for managing computed variables during form fill
  * Provides reactive evaluation of computed variables based on form data
  */
 export function useComputedVariables(form, formData) {
-  // Store for evaluated variable values
-  const values = ref({})
+  // Derive values directly from answers, including during SSR where watchers do not rerun.
+  const values = computed(() => evaluateAll())
   
   // Get computed variables from form
   const computedVariables = computed(() => form.value?.computed_variables || [])
@@ -66,26 +67,8 @@ export function useComputedVariables(form, formData) {
       }
     }
     
-    values.value = newValues
+    return newValues
   }
-  
-  // Watch for changes in form data and re-evaluate
-  watch(
-    () => formData.value,
-    () => {
-      evaluateAll()
-    },
-    { deep: true, immediate: true }
-  )
-  
-  // Also re-evaluate when computed variables change
-  watch(
-    computedVariables,
-    () => {
-      evaluateAll()
-    },
-    { deep: true }
-  )
   
   // Get a specific variable value
   const getValue = (variableId) => {

@@ -16,6 +16,11 @@ describe('PSEC functional regressions', () => {
     expect(conditionsMet(condition('checkbox', 'is_empty'), { field: false })).toBe(false)
     expect(conditionsMet(condition('number', 'equals', '0'), { field: 0 })).toBe(true)
   })
+  it('rejects malformed regular expressions for both comparison directions', () => {
+    for (const operator of ['matches_regex', 'does_not_match_regex']) {
+      expect(conditionsMet(condition('rich_text', operator, '['), { field: 'answer' })).toBe(false)
+    }
+  })
   it('requires every matrix entry and tolerates an absent matrix', () => {
     const rule = condition('matrix', 'contains', { a: 'yes', b: 'no' })
     expect(conditionsMet(rule, { field: null })).toBe(false)

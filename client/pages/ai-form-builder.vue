@@ -632,7 +632,7 @@ const { isAuthenticated: authenticated } = useIsAuthenticated()
   color: #2563eb;
 }
 
-@screen md {
+@media (width >= 48rem) {
   #macbook-video {
     position: absolute;
     max-width: 84.8% !important;

@@ -61,4 +61,9 @@ class AgentFormDraft extends Model
     {
         return $this->hasMany(AgentFormDraftHandoff::class);
     }
+
+    public function versions(): HasMany
+    {
+        return $this->hasMany(AgentFormDraftVersion::class);
+    }
 }

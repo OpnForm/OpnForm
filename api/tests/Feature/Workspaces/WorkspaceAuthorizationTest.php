@@ -35,6 +35,7 @@ describe('Workspace admin-only endpoints', function () {
 
         $this->putJson(route('open.workspaces.save-email-settings', $workspace), [
             'host' => 'smtp.example.com',
+            'sender_address' => 'sender@example.test',
             'port' => '587',
             'username' => 'user',
             'password' => 'secret',
@@ -47,6 +48,7 @@ describe('Workspace admin-only endpoints', function () {
 
         $this->putJson(route('open.workspaces.save-email-settings', $workspace), [
             'host' => 'smtp.example.com',
+            'sender_address' => 'sender@example.test',
             'port' => '587',
             'username' => 'user',
             'password' => 'secret',

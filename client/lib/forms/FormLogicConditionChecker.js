@@ -448,7 +448,7 @@ function textConditionMet(propertyCondition, value) {
         const regex2 = new RegExp(propertyCondition.value)
         return !regex2.test(value)
       } catch {
-        return true
+        return false
       }
   }
   return false

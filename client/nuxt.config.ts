@@ -10,11 +10,17 @@ const buildDir = process.env.NUXT_BUILD_DIR
 const viteCacheDir = process.env.NUXT_VITE_CACHE_DIR
 
 export default defineNuxtConfig({
+  // Keep the existing app paths while using Nuxt 4 runtime behavior.
+  srcDir: '.',
+  dir: { app: 'app' },
   loglevel: process.env.NUXT_LOG_LEVEL || 'info',
   devtools: {enabled: isDevtoolsEnabled},
-  ...(buildDir ? {buildDir} : {}),
+  buildDir: buildDir || '.nuxt',
   ...(viteCacheDir ? {vite: {cacheDir: viteCacheDir}} : {}),
   css: ['~/css/app.css'],
+  nitro: { awsAmplify: { runtime: 'nodejs24.x' } },
+  // Process component styles as well as Nuxt UI's global Tailwind entry.
+  postcss: { plugins: { '@tailwindcss/postcss': {} } },
 
   hooks: {
       'build:manifest': (manifest) => {
@@ -38,7 +44,7 @@ export default defineNuxtConfig({
       '@nuxtjs/i18n',
       '@nuxt/icon', 
       ...(isE2EMode ? [] : ['@sentry/nuxt/module']),
-      '@zadigetvoltaire/nuxt-gtm',
+      '~/modules/ui-locale-chunks.js',
   ],
 
   // Skip plugin initialization during tests
@@ -88,7 +94,6 @@ export default defineNuxtConfig({
         { code: 'zh', name: 'Chinese', iso: 'zh-CN', file: 'zh.json' },
       ],
       defaultLocale: 'en',
-      lazy: true,
       langDir: 'lang/',
       strategy: 'no_prefix',
       detectBrowserLanguage: {
@@ -102,21 +107,19 @@ export default defineNuxtConfig({
   },
 
   sentry: {
-      sourceMapsUploadOptions: {
-        enabled: Boolean(process.env.SENTRY_AUTH_TOKEN),
-        sourcemaps: { filesToDeleteAfterUpload: ['./.output/public/**/*.map', './.nuxt/dist/client/**/*.map'] },
-          authToken: process.env.SENTRY_AUTH_TOKEN,
-          org: "opnform",
-          project: "opnform-vue",
+      authToken: process.env.SENTRY_AUTH_TOKEN,
+      org: 'opnform',
+      project: 'opnform-vue',
+      sourcemaps: {
+          disable: !process.env.SENTRY_AUTH_TOKEN,
+          filesToDeleteAfterUpload: ['./.output/public/**/*.map', './.nuxt/dist/client/**/*.map'],
       },
-      unstable_sentryBundlerPluginOptions: {
-          bundleSizeOptimizations: {
-              excludeDebugStatements: true,
-              excludeTracing: true,
-              excludeReplayShadowDom: true,
-              excludeReplayIframe: true,
-              excludeReplayWorker: true,
-          },
+      bundleSizeOptimizations: {
+          excludeDebugStatements: true,
+          excludeTracing: true,
+          excludeReplayShadowDom: true,
+          excludeReplayIframe: true,
+          excludeReplayWorker: true,
       },
   },
 
@@ -170,9 +173,11 @@ export default defineNuxtConfig({
   },
 
   icon: {
+      // Keep Nuxt's icon endpoint outside /api, which proxies route to Laravel.
+      localApiEndpoint: '/_nuxt_icon',
       // Managed E2E worktrees place buildDir outside client/node_modules, so
       // locally-installed JSON collections cannot be resolved at runtime there.
-      serverBundle: (isE2EMode || buildDir) ? 'remote' : 'auto',
+      serverBundle: (isE2EMode || buildDir) ? 'remote' : { externalizeIconsJson: true },
       customCollections: [
           {
               prefix: 'opnform',

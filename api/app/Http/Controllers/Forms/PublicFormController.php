@@ -160,7 +160,17 @@ class PublicFormController extends Controller
         if ($formSubmissionProcessor->shouldProcessSynchronously($form)) {
             $job->handle();
 
-            $encodedSubmissionId = SubmissionUrlService::getSubmissionIdentifierById($form, $job->getSubmissionId());
+            $submission = $form->submissions()->findOrFail($job->getSubmissionId());
+            $encodedSubmissionId = SubmissionUrlService::getSubmissionIdentifier($submission);
+
+            // Only the completed submission response grants its respondent a download URL.
+            // The owner-only signed-URL endpoint remains authenticated.
+            if ($form->pdf_download_enabled) {
+                $template = $form->pdfTemplates()->find($form->pdf_template_id);
+                if ($template) {
+                    $pdfDownloadUrl = SubmissionUrlService::buildPdfDownloadUrl($form, $template, $submission);
+                }
+            }
 
             // Update submission data with generated values for redirect URL
             $submissionData = $job->getProcessedData();
@@ -172,6 +182,7 @@ class PublicFormController extends Controller
         return $this->success(array_merge([
             'message' => 'Form submission saved.',
             'submission_id' => $encodedSubmissionId ?? null,
+            'pdf_download_url' => $pdfDownloadUrl ?? null,
             'is_first_submission' => $isFirstSubmission,
         ], $formSubmissionProcessor->getRedirectData($form, $submissionData)));
     }

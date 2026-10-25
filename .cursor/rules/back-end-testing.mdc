@@ -174,7 +174,7 @@ Running Tests
 
 Debugging Tests
 
--   Use ray() for debugging test execution.
+-   Use test assertions and Laravel logging for debugging test execution.
 -   Use dd() or dump() for quick inspection of variables.
 -   Check for race conditions in asynchronous tests.
 -   Verify that the database is being properly reset between tests.

@@ -730,7 +730,7 @@ class FormLogicConditionChecker
                 }
                 $matches = FormRegex::matches($propertyCondition['value'], $value);
 
-                return $matches === null ? true : ! $matches;
+                return $matches === null ? false : ! $matches;
             case 'exists_in_submissions':
                 return $this->checkExistsInSubmissions($propertyCondition, $value);
             case 'does_not_exist_in_submissions':

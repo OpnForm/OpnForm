@@ -24,6 +24,8 @@ OpnForm is an open-source form builder.
 
 The easiest way to get started with OpnForm is to sign up for our [managed service in the Cloud](https://opnform.com/). You get support, backups, upgrades, and more. Your data is safe and secure, and you don't need to worry about maintenance or infrastructure. Check out our quick overview of [cloud vs self-hosting](https://docs.opnform.com/deployment/cloud-vs-self-hosting).
 
+The cloud [pricing page](https://opnform.com/pricing) shows monthly equivalents for yearly billing by default. The Monthly / Yearly selector updates both the plan cards and the feature comparison table; yearly plans are billed annually.
+
 ## Key Features
 
 -   🚀 No-code builder with unlimited forms & submissions
@@ -78,9 +80,25 @@ Run the browser suite against the running worktree with:
 ./scripts/codex-worktree-test-e2e.sh
 ```
 
+## Dependency security
+
+The API resolves dependencies for PHP 8.3.36; use a patched PHP 8.3 or 8.4 runtime compatible with the lock and run `composer check-platform-reqs`. The client requires Node `^22.22.3 || ^24.15.0 || >=26`; CI and Docker use 24.22.1, also recorded in `client/.nvmrc`.
+
+The executable npm audit policy is in [scripts/npm-exceptions.json](scripts/npm-exceptions.json). Dependabot checks Composer, client npm packages, and GitHub Actions weekly, with up to three open version-update PRs per ecosystem. Compatible application updates are grouped; major application dependency updates remain separate except for the coordinated VueUse packages. GitHub Actions updates are grouped together. Security update handling is unchanged.
+
+## Date fields
+
+Clearing a date with a click, Enter, or Space keeps the calendar closed. Reopen it to choose another date.
+
+## Spreadsheet exports
+
+Spreadsheet exports preserve numeric zero values, account identifiers with leading zeroes, and Unicode. Null and empty fields remain blank.
+
 ## PDF template fields
 
 The PDF editor removes zones linked to deleted fields and lists them before you continue. Save the template to keep the cleanup. Mappings retain field names when created or saved, so deleted fields can still be identified. Older mappings without a saved name appear as “Deleted field” with their page number.
+
+PDF output follows the template page order and dimensions. Zones near the bottom of a page stay on that page; text is clipped to the zone height rather than creating extra pages. The pagination cache version bypasses PDFs generated before this fix, without changing saved templates.
 
 ## Support & Community
 
@@ -105,3 +123,9 @@ By offering Enterprise features alongside our open-source core, we can continue 
 ## Security remediation rollout
 
 See [October 2026 deployment and compatibility notes](docs/security-remediation-2026-10.md) before deploying the API/client changes.
+
+### Form validation translations
+
+Public submissions use the form's language for API validation messages. When adding a translated validation message, update the catalogs under `api/resources/lang/` for all languages in `Form::LANGUAGES`, preserving placeholders such as `:attribute`, `:min`, and `:max`.
+
+Run `vendor/bin/pest --filter=FormValidationTranslationsTest` from `api/` to check supported catalogs and render invalid date range, rating, selection, and Arabic file-type errors. The tests do not require a database. The catalog check excludes custom attribute aliases and the legacy password key, whose structure differs between Laravel versions. Client text coverage is checked separately by `test/unit/form-locale-keys.test.ts` in `client/`.

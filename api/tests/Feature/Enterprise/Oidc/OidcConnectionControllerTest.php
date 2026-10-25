@@ -630,3 +630,22 @@ describe('OidcConnectionController - Delete Connection', function () {
         expect(IdentityConnection::find($connection->id))->not->toBeNull();
     });
 });
+
+describe('Global OIDC connection isolation through workspace routes', function () {
+    it('refuses workspace administrators updating or deleting a global connection', function () {
+        config(['app.self_hosted' => true, 'cashier.key' => null, 'opnform.admin_emails' => []]);
+        $user = $this->actingAsUser();
+        $workspace = Workspace::factory()->create();
+        $user->workspaces()->attach($workspace->id, ['role' => 'admin']);
+        $connection = IdentityConnection::factory()->create([
+            'workspace_id' => null,
+            'name' => 'Global identity provider',
+        ]);
+        $url = "/open/workspaces/{$workspace->id}/oidc-connections/{$connection->id}";
+
+        $this->patchJson($url, ['name' => 'Hijacked provider'])->assertForbidden();
+        $this->deleteJson($url)->assertForbidden();
+
+        expect($connection->fresh()->name)->toBe('Global identity provider');
+    });
+});

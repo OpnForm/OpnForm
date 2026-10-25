@@ -17,7 +17,10 @@ function createJwtMiddlewareRequest(string $userAgent = 'Different Browser'): Re
 
 function mockJwtPayloadWithUserAgent(string $userAgent): Payload
 {
+    $user = \App\Models\User::factory()->create();
     $payload = Mockery::mock(Payload::class);
+    $payload->shouldReceive('get')->with('sub')->andReturn($user->id);
+    $payload->shouldReceive('get')->with('auth_version')->andReturn($user->auth_version);
     $payload->shouldReceive('get')->with('impersonating')->andReturn(false);
     $payload->shouldReceive('get')->with('ua')->andReturn(Hash::make($userAgent));
 
@@ -36,13 +39,13 @@ it('keeps jwt validation enabled in the docker production env template', functio
     expect($envDocker)->toContain('JWT_SKIP_IP_UA_VALIDATION=false');
 });
 
-it('skips jwt user agent validation before token parsing when configured', function () {
+it('skips fingerprint validation after checking credential revocation when configured', function () {
     config([
         'app.jwt_skip_ip_ua_validation' => true,
         'app.front_api_secret' => 'front-secret',
     ]);
 
-    JWTAuth::shouldReceive('parseToken')->never();
+    mockJwtPayloadWithUserAgent('Valid Browser');
 
     $middleware = new AuthenticateJWT();
     $request = createJwtMiddlewareRequest('Different Browser');

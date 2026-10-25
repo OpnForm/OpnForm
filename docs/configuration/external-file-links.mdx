@@ -56,3 +56,13 @@ appear with their filename instead of exposing the raw API URL.
     example, a team that processes weekend submissions on Monday can select
     72 hours so links sent on Friday remain available through Monday.
 </Warning>
+
+
+## Download limits
+
+Signed submission-file downloads use a separate quota of 600 requests per minute
+and 3,000 per hour for each client IP and form. Image thumbnails count toward this
+quota, but do not consume the general API quota.
+
+Download links still require a valid, unexpired signature. A `429 Too Many
+Attempts` response includes a `Retry-After` header; wait that long before retrying.

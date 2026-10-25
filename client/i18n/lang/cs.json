@@ -7,7 +7,8 @@
             "submit": "Odeslat",
             "next": "Další",
             "previous": "Předchozí",
-            "re_fill": "Odeslat další odpověď"
+            "re_fill": "Odeslat další odpověď",
+            "download_pdf": "Stáhnout PDF"
         },
         "powered_by": "Vytvořeno pomocí",
         "password_protected": "Tento formulář je chráněn heslem.",
@@ -27,6 +28,7 @@
             "create": "Vytvořit"
         },
         "fileInput": {
+            "invalidFileType": "Nesprávný typ souboru. Povoleny jsou pouze: {types}",
             "chooseFiles": "Klikněte pro výběr souboru(ů) nebo přetáhněte sem | Klikněte pro výběr souboru nebo přetáhněte sem",
             "sizeLimit": "Limit velikosti: {count}MB na soubor",
             "uploadingFile": "Nahrávání vašeho souboru..."
@@ -69,6 +71,7 @@
         },
         "validation_error": "Chyba ověření",
         "validation_error_with_count": "Chyba ověření ({count} polí)",
+        "submission_error": "Při odesílání formuláře došlo k chybě. Zkuste to prosím znovu.",
         "toggle": {
             "yes": "Ano",
             "no": "Ne"

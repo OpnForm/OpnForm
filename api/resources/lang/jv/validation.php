@@ -120,4 +120,11 @@ return [
     'complete_captcha' => 'CAPTCHA kudu diisi.',
     'yes' => 'Ya',
     'no' => 'Tidak',
+
+    'from_date_required' => 'Tanggal wiwitan kudu diisi',
+    'to_date_required' => 'Tanggal pungkasan kudu diisi',
+    'from_date_before_or_equal' => 'Tanggal wiwitan kudu sadurunge utawa padha karo tanggal pungkasan',
+    'rating_min' => 'Rating kudu dipilih',
+    'select_min' => 'Mangga pilih paling ora :min pilihan',
+    'select_max' => 'Mangga pilih paling akeh :max pilihan',
 ];
