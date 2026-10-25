@@ -57,12 +57,12 @@ describe('integration event history and retries', () => {
     const wrapper = mountModal()
     await flushPromises()
     await button(wrapper, 'Retry').trigger('click')
-    expect(wrapper.text()).toContain('Resend submission #123')
+    expect(wrapper.text()).toContain('Retry submission #123?')
     expect(wrapper.text()).toContain('latest saved answers')
-    expect(wrapper.text()).toContain('may create a duplicate')
+    expect(wrapper.text()).toContain('may create duplicates')
     await button(wrapper, 'Cancel').trigger('click')
     expect(mocks.retry).not.toHaveBeenCalled()
-    expect(wrapper.find('[aria-label="Retry this integration?"]').exists()).toBe(false)
+    expect(wrapper.find('[aria-label="Retry submission #123?"]').exists()).toBe(false)
   })
 
   it('blocks further retries until the refreshed history is loaded', async () => {

@@ -1408,10 +1408,10 @@ for (const viewport of [{ name: "desktop", width: 1280 }, { name: "mobile", widt
     }
 
     await retryButton.click()
-    const confirmation = page.getByRole("dialog", { name: "Retry this integration?", exact: true })
-    await expect(confirmation).toContainText("Resend submission #123")
+    const confirmation = page.getByRole("dialog", { name: "Retry submission #123?", exact: true })
+    await expect(confirmation).toContainText("Retry submission #123?")
     await expect(confirmation).toContainText("latest saved answers")
-    await expect(confirmation).toContainText("may create a duplicate")
+    await expect(confirmation).toContainText("may create duplicates")
     await confirmation.getByRole("button", { name: "Cancel", exact: true }).click()
     await expect(confirmation).not.toBeVisible()
     expect(retryCount).toBe(0)

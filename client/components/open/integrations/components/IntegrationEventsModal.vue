@@ -77,15 +77,11 @@
 
   <UModal
     :open="eventToRetry !== null"
-    title="Retry this integration?"
-    :description="`Resend submission #${eventToRetry?.data?.submission_id ?? ''} using its latest saved answers and the current integration settings.`"
+    :title="`Retry submission #${eventToRetry?.data?.submission_id ?? ''}?`"
+    description="Only this integration will run, using the latest saved answers and current settings. This may create duplicates."
+    :ui="{ footer: 'justify-end' }"
     @update:open="value => { if (!value) eventToRetry = null }"
   >
-    <template #body>
-      <p class="text-sm text-neutral-600">
-        Only this integration will run. If the destination already processed the previous request, retrying may create a duplicate.
-      </p>
-    </template>
     <template #footer>
       <UButton color="neutral" variant="outline" label="Cancel" @click="eventToRetry = null" />
       <UButton icon="i-heroicons-arrow-path" label="Retry integration" :disabled="retryingEventId !== null" @click="retryEvent" />
