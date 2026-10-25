@@ -306,7 +306,7 @@ return [
         |
         */
 
-        'storage' => in_array(env('OPNFORM_STATE_MODE', 'historical-dynamodb'), ['redis', 'redis-fresh'], true)
+        'storage' => env('OPNFORM_STATE_MODE') === 'redis-fresh'
             ? App\Service\Deployment\UnifiedRedisJwtStorage::class
             : Tymon\JWTAuth\Providers\Storage\Illuminate::class,
 

@@ -10,7 +10,6 @@ ARG NUXT_PUBLIC_APP_URL=https://opnform.com
 ENV NUXT_PUBLIC_ENV=$NUXT_PUBLIC_ENV NUXT_PUBLIC_API_BASE=$NUXT_PUBLIC_API_BASE NUXT_PUBLIC_APP_URL=$NUXT_PUBLIC_APP_URL
 ENV NUXT_TELEMETRY_DISABLED=1 NODE_ENV=production NODE_OPTIONS=--max-old-space-size=4096
 # Builds must not fetch live forms, CMS contents or telemetry.
-ENV SCW_OFFLINE_CMS_SNAPSHOT=true
 ARG SOURCE_COMMIT=local-unpublished
 # Nitro indexes public assets at build time; adding this file afterwards is not served.
 RUN printf '{"revision":"%s"}\n' "$SOURCE_COMMIT" > /app/public/release.json

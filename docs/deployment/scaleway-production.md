@@ -12,10 +12,12 @@ jobs and scheduler. Self-hosted Docker Hub releases remain a separate workflow.
 ## Merge and publication
 
 `CI/CD Pipeline` runs the existing application/security/browser checks and the
-reusable `Scaleway runtime` gate. The latter exercises isolated Redis contracts
-and the complete Linux AMD64 image pair on fictional PostgreSQL/Redis fixtures.
-It checks the packaged sources, JWT revocations, fresh Redis admission, queue
-drain, scheduler singleton, migrations and authenticated SSR. It cannot reach
+reusable `Scaleway runtime` gate. The runtime tests in `tests/Deployment` exercise
+the actual production Laravel configuration in the complete Linux AMD64 image pair,
+with disposable PostgreSQL/Redis dependencies.
+It checks the packaged sources, standard Laravel cache/sessions/locks, explicit
+Redis saturation without eviction, JWT revocations, queue drain, scheduler singleton,
+migrations and authenticated SSR. It cannot reach
 production databases, buckets, mail or payment providers.
 
 After a successful push to `main`, `Publish validated Scaleway images` loads
@@ -94,17 +96,18 @@ Inspect migration state, active jobs and the previous raw configuration before
 continuing. After any schema or new application write, reverting DNS/images alone
 is insufficient: refreeze and reconcile SQL, Redis, files and external effects.
 
-The old application-resource preview controller (`release-poller.py` and
-`deploy-preview.py`) is disarmed by default and is **not** the Compose service
-production controller. Do not arm it against the live service.
-
 ## Runtime configuration
 
 - Preserve `APP_KEY`, JWT, Passport and SSR keys. Backend credentials belong only
   in backend roles, with the intended shared SSR secret in the frontend.
-- `OPNFORM_STATE_MODE=redis-fresh` selects the completed maintenance strategy;
-  no general DynamoDB import is required. Preserve relevant token revocations.
-  Do not change state mode or clear Redis on a normal application release.
+- `OPNFORM_STATE_MODE=redis-fresh` preserves the current cache/session/JWT bindings.
+  Cache uses Laravel’s standard `RedisStore`. The small `UnifiedRedisJwtStorage`
+  adapter only selects the existing auth store for JWT revocations; changing it to
+  the default cache would lose the effective blacklist namespace. Do not change
+  these bindings or clear Redis on an application release. There is no import mode.
+- Submission operations/outbox are already active in production. Keep their
+  migrations, dispatch sweep and integration claims. Removing them would change
+  replay and side-effect behavior; they are not an inactive migration prototype.
 - The single Redis process uses DB0 for queues, DB1 for disposable cache, DB2 for
   authentication and DB3 for state. Keep AOF/always, noeviction, non-overlapping
   prefixes and a queue reservation longer than the worker execution timeout.

@@ -11,6 +11,7 @@ on:
       - "client/**"
       - "docker/**"
       - "deploy/scaleway/**"
+      - "tests/Deployment/**"
       - "docker-compose*.yml"
       - "scripts/*security*.mjs"
       - "scripts/audit-npm.mjs"

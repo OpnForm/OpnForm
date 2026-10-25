@@ -18,7 +18,7 @@ return [
     |
     */
 
-    'default' => env('CACHE_DRIVER', in_array(env('OPNFORM_STATE_MODE', 'historical-dynamodb'), ['redis', 'redis-fresh'], true) ? 'redis' : 'file'),
+    'default' => env('CACHE_DRIVER', env('OPNFORM_STATE_MODE') === 'redis-fresh' ? 'redis' : 'file'),
 
     /*
     |--------------------------------------------------------------------------
@@ -74,8 +74,8 @@ return [
 
         'redis' => [
             'driver' => 'redis',
-            'connection' => in_array(env('OPNFORM_STATE_MODE', 'historical-dynamodb'), ['redis', 'redis-fresh'], true) ? 'state' : 'cache',
-            'prefix' => in_array(env('OPNFORM_STATE_MODE', 'historical-dynamodb'), ['redis', 'redis-fresh'], true)
+            'connection' => env('OPNFORM_STATE_MODE') === 'redis-fresh' ? 'state' : 'cache',
+            'prefix' => env('OPNFORM_STATE_MODE') === 'redis-fresh'
                 ? env('REDIS_STATE_KEY_PREFIX', 'opnform:state:') : null,
         ],
 

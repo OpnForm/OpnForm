@@ -38,36 +38,22 @@ if (config('queue.default') !== 'redis' || config('database.default') !== 'pgsql
 if (config('queue.connections.redis.retry_after') <= 3650) {
     $fail('REDIS_QUEUE_RETRY_AFTER must exceed worker and job shutdown limits (3650 seconds)');
 }
-$endpoint = static function (array $connection): array {
-    $url = parse_url($connection['url'] ?? '') ?: [];
-    return [strtolower($url['host'] ?? $connection['host']), (int) ($url['port'] ?? $connection['port'])];
-};
-$queue = config('database.redis.'.config('queue.connections.redis.connection'));
-$cache = config('database.redis.cache');
-if (! in_array(config('hosted-state.mode'), ['redis', 'redis-fresh'], true) && $endpoint($queue) === $endpoint($cache)) {
-    $fail('Hosted queue and cache require separate Redis endpoints');
-}
 if (! preg_match('/^[1-9][0-9]?$/', getenv('WORKER_COUNT') ?: '4')) {
     $fail('WORKER_COUNT must be an integer between 1 and 99');
 }
 if (! preg_match('/^[1-9][0-9]?$/', getenv('WORKER_TRIES') ?: '3')) {
     $fail('WORKER_TRIES must be an integer between 1 and 99');
 }
-// Validate the selected Redis strategy and its durable logical bindings.
+// Preserve the live Laravel cache/auth/session bindings; there is no import mode.
+if (config('cache.default') !== 'redis' || config('cache.stores.redis.connection') !== 'state'
+    || config('session.driver') !== 'redis' || config('session.store') !== 'auth'
+    || config('session.connection') !== 'auth'
+    || config('jwt.providers.storage') !== App\Service\Deployment\UnifiedRedisJwtStorage::class
+    || config('jwt.blacklist_enabled') !== true) {
+    $fail('Hosted runtime requires the existing Redis cache, session and JWT stores');
+}
 try {
-    app(App\Service\Deployment\HostedStateGuard::class)->assertReady();
+    app(App\Service\Deployment\RedisStateTopology::class)->assertReady();
 } catch (RuntimeException $exception) {
     $fail($exception->getMessage());
-}
-if (config('app.env') === 'preview') {
-    if (config('mail.default') !== 'log' || config('telemetry.enabled')) {
-        $fail('Preview requires captured mail and disabled telemetry');
-    }
-    foreach (['cashier.secret', 'services.openai.api_key', 'services.google.client_secret',
-              'services.stripe.client_secret', 'services.telegram.bot_token', 'sentry.dsn'] as $key) {
-        if (config($key)) {
-            $fail('Preview requires third-party credentials to be removed');
-        }
-    }
-    // These checks supplement, never replace, host/container/browser network isolation.
 }

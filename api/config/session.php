@@ -1,6 +1,6 @@
 <?php
 
-$redisState = in_array(env('OPNFORM_STATE_MODE', 'historical-dynamodb'), ['redis', 'redis-fresh'], true);
+$redisState = env('OPNFORM_STATE_MODE') === 'redis-fresh';
 
 return [
 

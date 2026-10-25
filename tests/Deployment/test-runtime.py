@@ -44,7 +44,6 @@ def main():
     network_created = False
     firewall_table = None
     image_checks=[]
-    state_results=[]
 
     def docker(*command, **kwargs):
         return run('docker', *command, **kwargs)
@@ -104,7 +103,7 @@ add rule inet {firewall_table} forward_guard iifname "{bridge}" oifname != "{bri
             private = run('openssl', 'genpkey', '-algorithm', 'RSA', '-pkeyopt', 'rsa_keygen_bits:2048').stdout
             public = run('openssl', 'pkey', '-pubout', input=private).stdout
             environment = {
-                'APP_ENV': 'local', 'TRUSTED_PROXIES': '127.0.0.1', 'APP_DEBUG': 'false', 'SELF_HOSTED': 'false',
+                'APP_ENV': 'production', 'TRUSTED_PROXIES': '127.0.0.1', 'APP_DEBUG': 'false', 'SELF_HOSTED': 'false',
                 'APP_KEY': 'base64:' + base64.b64encode(os.urandom(32)).decode(),
                 'JWT_SECRET': 'fictional-runtime-test-signing-secret-at-least-32-characters',
                 'FRONT_API_SECRET': base64.b64encode(os.urandom(48)).decode(),
@@ -113,7 +112,7 @@ add rule inet {firewall_table} forward_guard iifname "{bridge}" oifname != "{bri
                 'DB_CONNECTION': 'pgsql', 'DB_HOST': db, 'DB_PORT': '5432',
                 'DB_DATABASE': 'opnform_fixture', 'DB_USERNAME': 'postgres', 'DB_PASSWORD': 'fictional-local-only',
                 'QUEUE_CONNECTION': 'redis', 'REDIS_HOST': queue, 'REDIS_QUEUE_RETRY_AFTER': '3700',
-                'REDIS_CACHE_HOST': cache, 'REDIS_STATE_HOST':state,'REDIS_AUTH_HOST':state,'REDIS_DB':'0','REDIS_CACHE_DB':'1','REDIS_AUTH_DB':'2','REDIS_STATE_DB':'3','REDIS_PREFIX':'opnform_fixture:', 'OPNFORM_STATE_MODE':'redis','OPNFORM_STATE_NAMESPACE':'opnform-image-fixture','CACHE_STORE': 'redis', 'CACHE_DRIVER': 'redis',
+                'REDIS_CACHE_HOST': cache, 'REDIS_STATE_HOST':state,'REDIS_AUTH_HOST':state,'REDIS_DB':'0','REDIS_CACHE_DB':'1','REDIS_AUTH_DB':'2','REDIS_STATE_DB':'3','REDIS_PREFIX':'opnform_fixture:', 'OPNFORM_STATE_MODE':'redis-fresh', 'CACHE_DRIVER': 'redis',
                 'MAIL_MAILER': 'log', 'FILESYSTEM_DRIVER': 'local', 'WORKER_COUNT': '1',
                 'OPNFORM_ANONYMOUS_TELEMETRY_DISABLED': 'true', 'SESSION_DRIVER': 'redis','SESSION_STORE':'auth','SESSION_CONNECTION':'auth',
             }
@@ -140,19 +139,6 @@ add rule inet {firewall_table} forward_guard iifname "{bridge}" oifname != "{bri
             wait_for(lambda: docker('inspect', '-f', '{{.State.Running}}', invalid).stdout.strip() == 'false', 'invalid preflight')
             assert docker('inspect', '-f', '{{.State.ExitCode}}', invalid).stdout.strip() == '78'
             record('short Redis reservation blocks worker startup')
-            reset = app('unsafe-state-reset', 'api', override={'APP_ENV': 'production'})
-            wait_for(lambda: docker('inspect', '-f', '{{.State.Running}}', reset).stdout.strip() == 'false', 'production state guard')
-            assert docker('inspect', '-f', '{{.State.ExitCode}}', reset).stdout.strip() == '78'
-            preserved = app('preserved-state', 'api', '--entrypoint', 'php',
-                            command=('/opt/opnform/preflight.php',), override={
-                                'APP_ENV': 'production', 'OPNFORM_STATE_MODE':'historical-dynamodb','CACHE_DRIVER': 'dynamodb', 'SESSION_DRIVER': 'dynamodb','SESSION_STORE':'dynamodb','REDIS_CACHE_HOST':'legacy-cache.fixture.invalid',
-                                'AWS_DEFAULT_REGION': 'eu-west-3', 'AWS_ACCESS_KEY_ID': 'fictional-aws-key',
-                                'AWS_SECRET_ACCESS_KEY': 'fictional-aws-secret',
-                            })
-            wait_for(lambda: docker('inspect', '-f', '{{.State.Running}}', preserved).stdout.strip() == 'false', 'preserved state guard')
-            assert docker('inspect', '-f', '{{.State.ExitCode}}', preserved).stdout.strip() == '0'
-            record('production refuses empty Redis state and permits explicit DynamoDB preservation offline')
-
             source_proof=json.loads((args.output_dir/'proof.json').read_text())
             manifest={('/app/'+f[4:]):h for f,h in source_proof['source_hashes'].items() if f.startswith('api/')}
             for filename,target in [('health.php','/opt/opnform/health.php'),('preflight.php','/opt/opnform/preflight.php'),('scheduler.php','/opt/opnform/scheduler.php'),('entrypoint.sh','/usr/local/bin/entrypoint.sh'),('role-health.sh','/usr/local/bin/role-health.sh')]:
@@ -164,8 +150,7 @@ add rule inet {firewall_table} forward_guard iifname "{bridge}" oifname != "{bri
             assert 'session.upload_progress.enabled => Off' in docker('exec',probe,'php-fpm','-i').stdout
             record('actual backend image matches '+str(matched)+' frozen runtime source hashes and revision')
             image_checks.append({'runtime_source_hashes_matched':matched,'image':docker('inspect','-f','{{.Image}}',probe).stdout.strip()})
-            # The selected maintenance profile has no import receipt requirement.
-            # It must still reject an unsafe Redis configuration.
+            # Exercise the actual production profile with disposable dependencies.
             fresh = app('fresh-production-preflight', 'api', '--entrypoint', 'php',
                         override={'APP_ENV': 'production', 'OPNFORM_STATE_MODE': 'redis-fresh'},
                         command=('/opt/opnform/preflight.php',))
@@ -180,7 +165,7 @@ add rule inet {firewall_table} forward_guard iifname "{bridge}" oifname != "{bri
             docker('exec', state, 'redis-cli', 'CONFIG', 'SET', 'maxmemory-policy', 'noeviction')
             environment['OPNFORM_STATE_MODE'] = 'redis-fresh'
             environment['APP_ENV'] = 'production'
-            record('fresh production profile boots without a DynamoDB import; unsafe eviction is rejected')
+            record('production Laravel Redis bindings boot; unsafe eviction is rejected')
 
             api = app('api', 'api')
             wait_for(lambda: docker('exec', api, 'role-health.sh', check=False).returncode == 0, 'API dependencies')
@@ -216,6 +201,9 @@ add rule inet {firewall_table} forward_guard iifname "{bridge}" oifname != "{bri
                                         '-F', 'file=@/fixtures/pixel.png', 'http://127.0.0.1:8080/upload-file').stdout)
             assert uploaded.get('uuid') and uploaded.get('key', '').startswith('tmp/')
             record('public HTTP submission accepted and PNG upload stored on isolated local disk')
+            (fixture / 'redis-runtime.php').write_bytes(Path(__file__).with_name('redis-runtime.php').read_bytes())
+            docker('exec', api, 'php', '/fixtures/redis-runtime.php')
+            record('standard Laravel cache, session, locks and queued work survive explicit saturation without eviction')
 
             (fixture / 'queue.php').write_text('''<?php
 require '/app/vendor/autoload.php';
@@ -317,7 +305,7 @@ $job=Illuminate\\Queue\\CallQueuedClosure::create(function () {
             docker('network', 'rm', prefix, check=False)
         if firewall_table:
             run('nft', 'delete', 'table', 'inet', firewall_table, check=False)
-        report={'passed':passed,'state_contract_results':state_results,'backend_image':args.api_image,'frontend_image':args.client_image,'image_checks':image_checks,'runtime_inventory':runtime_inventory,'application_or_vendor_overlays':False,'synthetic_revision_witness_only_for_state_contract':False,'actual_pair_revision_verified_separately':True,'fake_signer_private_key_outside_containers':True,'execution':('native AMD64 runner' if __import__('platform').machine() in ('x86_64','amd64') else 'local ARM host running linux/amd64 under emulation'),'powerloss_or_native_RPO_or_real_identity_qualified':False,'containers_removed':all(not docker('ps','-aq','--filter','name=^'+n+'$').stdout.strip() for n in names),'network_removed':not docker('network','ls','-q','--filter','name=^'+prefix+'$').stdout.strip()}
+        report={'passed':passed,'backend_image':args.api_image,'frontend_image':args.client_image,'image_checks':image_checks,'runtime_inventory':runtime_inventory,'application_or_vendor_overlays':False,'actual_pair_revision_verified_separately':True,'execution':('native AMD64 runner' if __import__('platform').machine() in ('x86_64','amd64') else 'local ARM host running linux/amd64 under emulation'),'powerloss_or_native_RPO_or_real_identity_qualified':False,'containers_removed':all(not docker('ps','-aq','--filter','name=^'+n+'$').stdout.strip() for n in names),'network_removed':not docker('network','ls','-q','--filter','name=^'+prefix+'$').stdout.strip()}
         (args.output_dir/'runtime-proof.json').write_text(json.dumps(report,indent=2)+'\n')
         print(json.dumps({'passed':passed,'containers_removed':report['containers_removed'],'network_removed':report['network_removed']}),flush=True)
 
