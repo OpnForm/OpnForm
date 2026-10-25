@@ -52,6 +52,10 @@ class RouteServiceProvider extends ServiceProvider
             return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
         });
 
+        RateLimiter::for('integration-retries', function (Request $request) {
+            return Limit::perMinute(10)->by($request->user()?->id ?: $request->ip());
+        });
+
         RateLimiter::for('password-reset', function (Request $request) {
             $ip = $request->ip();
             $requestedEmail = $request->input('email');

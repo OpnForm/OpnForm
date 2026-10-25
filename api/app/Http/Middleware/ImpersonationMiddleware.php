@@ -13,6 +13,7 @@ class ImpersonationMiddleware
     public const ADMIN_LOG_PREFIX = '[admin_action] ';
 
     public const LOG_ROUTES = [
+        'open.forms.integrations.events.retry',
         'open.forms.store',
         'open.forms.update',
         'open.forms.duplicate',
@@ -43,6 +44,7 @@ class ImpersonationMiddleware
         'open.providers',
         'open.forms.integrations.index',
         'open.forms.integrations.events',
+        'open.forms.integrations.events.retry',
         'open.forms.pdf-templates.index',
         'open.forms.pdf-templates.show',
         'open.forms.pdf-templates.download',

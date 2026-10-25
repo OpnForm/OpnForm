@@ -325,6 +325,11 @@ Route::group(['middleware' => 'auth.multi'], function () {
                 '/{form}/integrations/{integrationid}/events',
                 [FormIntegrationsEventController::class, 'index']
             )->name('integrations.events');
+            Route::post(
+                '/{form}/integrations/{integrationid}/events/{event}/retry',
+                [FormIntegrationsEventController::class, 'retry']
+            )->whereNumber(['integrationid', 'event'])
+                ->middleware('throttle:integration-retries')->name('integrations.events.retry');
 
             // PDF Templates
             Route::prefix('/{form}/pdf-templates')->name('pdf-templates.')->group(function () {
