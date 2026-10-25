@@ -522,7 +522,7 @@ jobs:
     timeout-minutes: 30
     env:
       SOURCE_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
-      APP_ENV: image-qa
+      APP_ENV: e2e
       APP_KEY: base64:ZGF0YWJhc2UtY29tcGF0aWJpbGl0eS1xYS1rZXktMDA=
       APP_URL: http://127.0.0.1:8089
       FRONT_URL: http://127.0.0.1:3100

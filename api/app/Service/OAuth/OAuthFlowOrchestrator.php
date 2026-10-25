@@ -130,8 +130,11 @@ class OAuthFlowOrchestrator
         try {
             $userData = $this->userDataService->extractFromRedirect($providerService);
             return $this->handleIntent(
-                $context['intent'], $providerService, $userData,
-                $context['invite_token'] ?? null, $context['invited_email'] ?? null
+                $context['intent'],
+                $providerService,
+                $userData,
+                $context['invite_token'] ?? null,
+                $context['invited_email'] ?? null
             );
         } finally {
             $this->contextService->clearContext($stateToken);

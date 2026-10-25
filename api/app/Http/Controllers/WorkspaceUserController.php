@@ -154,8 +154,11 @@ class WorkspaceUserController extends Controller
             Workspace::whereKey($workspace->id)->lockForUpdate()->firstOrFail();
             $isAdmin = $workspace->users()->whereKey($user->id)->wherePivot('role', User::ROLE_ADMIN)->exists();
             if ($isAdmin && $role !== User::ROLE_ADMIN) {
-                abort_if($workspace->users()->wherePivot('role', User::ROLE_ADMIN)->count() <= 1, 422,
-                    'Assign another workspace administrator before removing the last administrator.');
+                abort_if(
+                    $workspace->users()->wherePivot('role', User::ROLE_ADMIN)->count() <= 1,
+                    422,
+                    'Assign another workspace administrator before removing the last administrator.'
+                );
             }
             $mutation();
         });

@@ -62,8 +62,11 @@ class CustomDomainRestriction
         } finally {
             $scopes = Workspace::getAllGlobalScopes();
             foreach ([Workspace::class, Form::class] as $model) {
-                if (isset($originalScopes[$model])) $scopes[$model] = $originalScopes[$model];
-                else unset($scopes[$model]);
+                if (isset($originalScopes[$model])) {
+                    $scopes[$model] = $originalScopes[$model];
+                } else {
+                    unset($scopes[$model]);
+                }
             }
             Workspace::setAllGlobalScopes($scopes);
         }

@@ -145,6 +145,7 @@ test('Amplify explicitly emits Node 24 compute and validates the target output',
 })
 
 test('image QA uses a valid JWT fixture and preserves server environment', () => {
+  assert.equal(pipeline.jobs.linux_client_image.env.APP_ENV, 'e2e')
   assert.ok(pipeline.jobs.linux_client_image.env.JWT_SECRET.length >= 32)
   const preparation = pipeline.jobs.linux_client_image.steps.find(step => step.name === 'Prepare real API for image health checks').run
   assert.match(preparation, /artisan serve --no-reload/)

@@ -2,7 +2,6 @@
 
 use App\Http\Middleware\CustomDomainRestriction;
 use App\Models\Forms\Form;
-use App\Models\Workspace;
 use Illuminate\Http\Request;
 
 it('rejects unknown domains and restores scopes after successful or failed requests', function () {

@@ -211,7 +211,8 @@ class Validator
     {
         try {
             return array_values(array_map(fn (Token $token) => trim($token->value), array_filter(
-                (new Lexer($formula))->tokenize(), fn (Token $token) => $token->type === Token::FIELD_REF
+                (new Lexer($formula))->tokenize(),
+                fn (Token $token) => $token->type === Token::FIELD_REF
             )));
         } catch (FormulaException $exception) {
             return [];

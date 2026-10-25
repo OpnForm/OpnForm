@@ -12,7 +12,8 @@ it('invalidates generated PDFs when answer data changes within the same second',
     $form = $this->createForm($user, $workspace);
     $submission = $form->submissions()->create(['data' => ['field' => 'old']]);
     $template = new PdfTemplate(['form_id' => $form->id]);
-    $template->id = 1; $template->updated_at = now();
+    $template->id = 1;
+    $template->updated_at = now();
     $generator = Mockery::mock(PdfGeneratorService::class);
     $generator->shouldReceive('generateFromTemplate')->twice()->andReturnUsing(function () use ($submission) {
         $path = 'tmp/pdf-output/' . $submission->data['field'] . '.pdf';

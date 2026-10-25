@@ -49,3 +49,4 @@ Submission processing is not fully idempotent across DB/files/queue acknowledgem
 - Stripe state distinguishes the selected OAuth provider from the resolved connected account. Re-rendering the same payment preserves its card and intent; changing the provider clears them and ignores stale account responses.
 - Delayed workspace settings responses update the workspace that was saved, even if the user has selected another workspace in the meantime.
 - Form conditions treat zero and false as answered values. Matrix `contains` succeeds when any configured row matches, and empty AND/OR groups evaluate to false. Shared API/browser fixtures cover these contracts, including absent matrix rows and array-valued answers.
+- The Linux image CI uses the explicitly permitted `e2e` application environment for its isolated database seed and API. Production seed guards remain unchanged.

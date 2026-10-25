@@ -57,7 +57,9 @@ class IntegrationLogicRule implements DataAwareRule, ValidationRule
             $this->conditionErrors[] = 'unknown condition type or operator';
             return;
         }
-        if (!isset($mapping[$typeField]['comparators'][$operator]['expected_type'])) return;
+        if (!isset($mapping[$typeField]['comparators'][$operator]['expected_type'])) {
+            return;
+        }
         if (!array_key_exists('value', $condition['value'])) {
             $this->isConditionCorrect = false;
             $this->conditionErrors[] = 'missing condition value';

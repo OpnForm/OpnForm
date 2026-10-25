@@ -10,6 +10,12 @@ Sur le résultat final : **2 488 tests serveur / 19 662 assertions**, **1 095 te
 
 Composer ne remonte aucune advisory. Les politiques npm passent avec deux advisories racines déjà exemptées, node-forge high et Quill low, jusqu'au **6 novembre 2026**. Ce résultat ne constitue pas un audit sans vulnérabilité. Les migrations, le déploiement coordonné API/client, les parcours fournisseurs réels et la configuration infrastructure restent à valider avant production. Voir aussi `docs/security-remediation-2026-10.md`. Les branches restent locales, sans push ni déploiement.
 
+## Revue de la PR #1346 — 25 octobre 2026
+
+La branche a ensuite été poussée et la PR ouverte. Une nouvelle revue indépendante du diff complet ne trouve pas de finding fonctionnel ou de sécurité supplémentaire. Les 2 488 tests serveur passent à nouveau après correction du style PHP dans les fichiers concernés ; le contrôle Pint complet passe également.
+
+Le job d'image Linux utilisait un environnement refusé par le seeder sécurisé. Il utilise maintenant `e2e` dans son environnement isolé, sans modifier la protection de production ; un test protège ce contrat. L'image Linux ARM64 a été construite et les migrations, le seed PostgreSQL, SSR, l'authentification, MCP, le formulaire public, les icônes et les CSS ont été vérifiés. La contre-revue du correctif CI ne trouve plus de finding. La CI GitHub AMD64 doit confirmer le résultat sur le nouveau commit. Aucun merge ni déploiement de production n'a été effectué.
+
 ## Périmètre et méthode
 
 Évaluation au 3 octobre 2026 des signalements de sécurité retrouvés dans Crisp, complétée par les issues publiques OpnForm. La source des « rapports » n'était pas précisée dans la demande : ce périmètre a été annoncé pendant le travail. Les mails hors Crisp, documents privés non transmis et vulnérabilités seulement annoncées restent hors de la preuve disponible.

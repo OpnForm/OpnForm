@@ -5,9 +5,14 @@ use App\Services\Tax\StripeExportDatasetStore;
 beforeEach(function () {
     $this->datasetDirectory = sys_get_temp_dir() . '/psec-dataset-' . bin2hex(random_bytes(8));
     mkdir($this->datasetDirectory);
-    $this->datasetStore = new class($this->datasetDirectory) extends StripeExportDatasetStore {
-        public function __construct(private string $directory) {}
-        public function basePath(): string { return $this->directory; }
+    $this->datasetStore = new class ($this->datasetDirectory) extends StripeExportDatasetStore {
+        public function __construct(private string $directory)
+        {
+        }
+        public function basePath(): string
+        {
+            return $this->directory;
+        }
     };
 });
 afterEach(function () {

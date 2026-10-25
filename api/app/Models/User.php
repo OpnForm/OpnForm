@@ -399,10 +399,14 @@ class User extends Authenticatable implements JWTSubject, CachableAttributes, Tw
     {
         parent::boot();
         static::updating(function (User $user) {
-            if ($user->isDirty('password')) $user->auth_version = \Illuminate\Support\Str::random(64);
+            if ($user->isDirty('password')) {
+                $user->auth_version = \Illuminate\Support\Str::random(64);
+            }
         });
         static::updated(function (User $user) {
-            if (!$user->wasChanged('password')) return;
+            if (!$user->wasChanged('password')) {
+                return;
+            }
             $user->tokens()->delete();
             $accessTokens = \Illuminate\Support\Facades\DB::table('oauth_access_tokens')->where('user_id', $user->id);
             \Illuminate\Support\Facades\DB::table('oauth_refresh_tokens')
