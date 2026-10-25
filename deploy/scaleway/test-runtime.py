@@ -278,6 +278,9 @@ $job=Illuminate\\Queue\\CallQueuedClosure::create(function () {
                     'NUXT_PUBLIC_APP_URL': 'http://client.fixture.test',
                 })
                 wait_for(lambda: docker('exec', client, 'node', '-e', "fetch('http://127.0.0.1:3000/login').then(r=>process.exit(r.status===200?0:1)).catch(()=>process.exit(1))", check=False).returncode == 0, 'frontend SSR')
+                release_check = "fetch('http://127.0.0.1:3000/release.json').then(async r=>{if(r.status!==200||(await r.json()).revision!==process.argv[1])process.exit(1)}).catch(()=>process.exit(1))"
+                docker('exec', client, 'node', '-e', release_check, source_proof['source_revision_marker'])
+                record('frontend serves its exact build revision through the public release endpoint')
                 targets = ['https://1.1.1.1', 'http://169.254.169.254', 'https://example.com', 'http://[2606:4700:4700::1111]']
                 if args.host_firewall_guard:
                     targets.append('http://' + str(subnet.network_address + 1) + ':22')
