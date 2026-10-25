@@ -96,7 +96,7 @@ class ServiceReleaseTests(unittest.TestCase):
 
     def test_main_workflow_cannot_call_legacy_deployments(self):
         workflow = (ROOT.parents[1] / '.github/workflows/ci-cd.yml').read_text()
-        for legacy in ['vapor deploy', 'AMPLIFY_DEPLOY_URL', 'VAPOR_API_TOKEN', 'production-deploy:']:
+        for legacy in ['vapor deploy', 'AMPLIFY_DEPLOY_URL', 'VAPOR_API_TOKEN', 'production-deploy:', 'build:amplify', 'name: amplify-output']:
             self.assertNotIn(legacy, workflow)
         self.assertIn('scaleway-runtime]', workflow)
         self.assertIn('No production restart or AWS deployment', workflow)

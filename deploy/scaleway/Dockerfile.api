@@ -28,12 +28,6 @@ RUN mkdir -p storage/framework/cache/data storage/framework/sessions storage/fra
  && COMPOSER_ALLOW_SUPERUSER=1 composer dump-autoload --no-dev --optimize \
  && composer check-platform-reqs --no-dev
 
-FROM build AS test
-COPY api/tests ./tests
-COPY api/phpunit.xml api/pint.json ./
-RUN --mount=type=cache,target=/root/.composer/cache COMPOSER_ALLOW_SUPERUSER=1 composer install --prefer-dist --no-interaction
-RUN touch .env && printf 'memory_limit=1G\n' > /usr/local/etc/php/conf.d/opnform-tests.ini
-
 FROM runtime AS production
 ARG SOURCE_COMMIT=local-unpublished
 LABEL org.opencontainers.image.source="https://github.com/OpnForm/OpnForm" org.opencontainers.image.revision=$SOURCE_COMMIT

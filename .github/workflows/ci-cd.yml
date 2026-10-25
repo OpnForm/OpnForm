@@ -161,20 +161,6 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
-      - name: Build and validate Amplify Node 24 compute
-        run: npm run build:amplify
-        env:
-          NODE_OPTIONS: --max-old-space-size=4096
-
-      - name: Upload standalone Amplify artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: amplify-output
-          path: client/.amplify-hosting
-          include-hidden-files: true
-          if-no-files-found: error
-          retention-days: 1
-
   sync_check:
     runs-on: ubuntu-latest
     name: Verify shared files are in sync
@@ -584,20 +570,6 @@ jobs:
           docker cp client/scripts/check-built-css.mjs opnform-client-qa:/tmp/check-built-css.mjs
           docker exec opnform-client-qa node /tmp/check-built-css.mjs /app/public
           node scripts/check-linux-client-health.mjs
-      - uses: actions/download-artifact@v8
-        with:
-          name: amplify-output
-          path: ${{ runner.temp }}/opnform-amplify-qa
-      - name: Smoke standalone Amplify compute on Linux Node 24
-        run: node scripts/check-amplify-runtime.mjs "${{ runner.temp }}/opnform-amplify-qa"
-      - uses: actions/upload-artifact@v7
-        if: always()
-        with:
-          name: amplify-runtime-evidence
-          path: |
-            amplify-runtime*.json
-            amplify-runtime.log
-          retention-days: 7
       - name: Capture image and API logs
         if: always()
         run: docker logs opnform-client-qa > client-image.log 2>&1 || true

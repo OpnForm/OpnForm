@@ -28,8 +28,9 @@ tag is used for hosted deployment. Package visibility is checked before and afte
 publication. The job has no Coolify credentials, SSH keys or AWS credentials.
 
 **A merge does not restart production.** The former Vapor and Amplify deployment
-steps are removed. Their compatibility build tests do not deploy to AWS. Existing
-AWS origins and recovery data are retained until a separate retirement decision.
+steps and the unused Amplify artifact build/smoke stages are removed. Existing
+AWS configuration, origins and recovery data are retained until a separate retirement
+decision. Regular delivery builds and tests the current Scaleway images.
 
 ## Private promotion
 
