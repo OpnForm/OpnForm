@@ -1,0 +1,26 @@
+{
+  "CORSRules": [
+    {
+      "ID": "synthetic-browser-contract",
+      "AllowedOrigins": [
+        "https://app.fixture.invalid"
+      ],
+      "AllowedMethods": [
+        "PUT",
+        "GET",
+        "HEAD"
+      ],
+      "AllowedHeaders": [
+        "content-type",
+        "x-amz-acl",
+        "expires",
+        "cache-control"
+      ],
+      "ExposeHeaders": [
+        "ETag",
+        "x-amz-version-id"
+      ],
+      "MaxAgeSeconds": 300
+    }
+  ]
+}

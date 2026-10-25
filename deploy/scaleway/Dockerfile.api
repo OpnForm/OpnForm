@@ -1,0 +1,55 @@
+# syntax=docker/dockerfile:1
+FROM php:8.3.36-fpm-bookworm@sha256:6b4641a875dd3e0f7551b2751e1f5909084856d18166af7fbb522ac230feb702 AS extensions
+RUN apt-get update && apt-get install -y --no-install-recommends libzip-dev libpng-dev libjpeg62-turbo-dev libwebp-dev libpq-dev libicu-dev \
+ && docker-php-ext-configure gd --with-jpeg --with-webp \
+ && docker-php-ext-install -j4 pdo_pgsql gd exif bcmath zip pcntl posix intl opcache \
+ && pecl install redis-6.3.0 && docker-php-ext-enable redis
+
+FROM php:8.3.36-fpm-bookworm@sha256:6b4641a875dd3e0f7551b2751e1f5909084856d18166af7fbb522ac230feb702 AS runtime
+RUN apt-get update && apt-get install -y --no-install-recommends nginx supervisor tini curl ca-certificates libzip4 libpng16-16 libjpeg62-turbo libwebp7 libpq5 libicu72 unzip procps \
+ && rm -rf /var/lib/apt/lists/*
+COPY --from=extensions /usr/local/lib/php/extensions/ /usr/local/lib/php/extensions/
+COPY --from=extensions /usr/local/etc/php/conf.d/ /usr/local/etc/php/conf.d/
+WORKDIR /app
+
+FROM runtime AS build
+COPY --from=composer:2@sha256:af98f42dfff7c68ba8d53c2164fd9fde1087b7d449514baa38c418b1f6bc4bac /usr/bin/composer /usr/local/bin/composer
+COPY api/composer.json api/composer.lock ./
+RUN --mount=type=cache,target=/root/.composer/cache COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --no-scripts --no-autoloader --prefer-dist --no-interaction
+COPY api/app ./app
+COPY api/bootstrap ./bootstrap
+COPY api/config ./config
+COPY api/database ./database
+COPY api/public ./public
+COPY api/resources ./resources
+COPY api/routes ./routes
+COPY api/artisan ./artisan
+RUN mkdir -p storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs storage/app/public bootstrap/cache \
+ && COMPOSER_ALLOW_SUPERUSER=1 composer dump-autoload --no-dev --optimize \
+ && composer check-platform-reqs --no-dev
+
+FROM build AS test
+COPY api/tests ./tests
+COPY api/phpunit.xml api/pint.json ./
+RUN --mount=type=cache,target=/root/.composer/cache COMPOSER_ALLOW_SUPERUSER=1 composer install --prefer-dist --no-interaction
+RUN touch .env && printf 'memory_limit=1G\n' > /usr/local/etc/php/conf.d/opnform-tests.ini
+
+FROM runtime AS production
+ARG SOURCE_COMMIT=local-unpublished
+LABEL org.opencontainers.image.source="https://github.com/OpnForm/OpnForm" org.opencontainers.image.revision=$SOURCE_COMMIT
+ENV APP_ROLE=api SELF_HOSTED=false WORKER_COUNT=4 WORKER_TRIES=3
+RUN printf '%s' "$SOURCE_COMMIT" > /app-revision
+COPY --from=build --chown=www-data:www-data /app /app
+COPY deploy/scaleway/nginx.conf /etc/nginx/nginx.conf
+COPY deploy/scaleway/supervisor-*.conf /etc/opnform/
+COPY deploy/scaleway/health.php deploy/scaleway/preflight.php deploy/scaleway/scheduler.php /opt/opnform/
+COPY --chmod=755 deploy/scaleway/entrypoint.sh deploy/scaleway/role-health.sh /usr/local/bin/
+RUN printf 'access.log = /dev/null\n' >> /usr/local/etc/php-fpm.d/zz-docker.conf \
+ && printf 'upload_max_filesize=100M\npost_max_size=110M\nmemory_limit=512M\nexpose_php=Off\n' > /usr/local/etc/php/conf.d/opnform-hosted.ini
+# PHP advisory of 23 Oct: disable upload progress before request parsing.
+RUN printf 'session.upload_progress.enabled=0\n' > /usr/local/etc/php/conf.d/zz-session-upload-progress.ini
+USER www-data
+EXPOSE 8080
+STOPSIGNAL SIGTERM
+HEALTHCHECK --interval=10s --timeout=8s --start-period=90s --retries=3 CMD ["role-health.sh"]
+ENTRYPOINT ["/usr/bin/tini", "--", "entrypoint.sh"]

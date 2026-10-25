@@ -19,15 +19,18 @@ class FormSubmitted
 
     public array $meta;
 
+    public ?int $operationId = null;
+
     /**
      * Create a new event instance.
      *
      * @return void
      */
-    public function __construct(Form $form, array $data, array $meta = [])
+    public function __construct(Form $form, array $data, array $meta = [], ?int $operationId = null)
     {
         $this->form = $form;
         $this->data = $data;
         $this->meta = $meta;
+        $this->operationId = $operationId;
     }
 }

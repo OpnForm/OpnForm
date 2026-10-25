@@ -1,0 +1,17 @@
+{
+  "product": "opnform",
+  "service_uuid": "REPLACE_WITH_APPROVED_UUID",
+  "server_id": 0,
+  "project_id": 0,
+  "team_id": 0,
+  "controller_alias": "coolify",
+  "native_alias": "opnform-production",
+  "native_address": "100.64.0.1",
+  "ssh_config": "/absolute/private/opnform-ssh-config",
+  "api_url": "https://api.opnform.com",
+  "frontend_url": "https://opnform.com",
+  "expected_current_images": {
+    "backend": "sha256:REPLACE_WITH_RUNNING_IMAGE_ID",
+    "frontend": "sha256:REPLACE_WITH_RUNNING_IMAGE_ID"
+  }
+}

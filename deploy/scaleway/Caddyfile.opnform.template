@@ -1,0 +1,37 @@
+{
+	admin {$CADDY_ADMIN}
+	default_bind {$CADDY_BIND_IP}
+	auto_https disable_redirects
+	storage file_system {
+		root "{$CADDY_STORAGE_ROOT}"
+	}
+	on_demand_tls {
+		ask {$CADDY_ASK_URL}
+	}
+}
+:80 {
+	bind {$CADDY_BIND_IP}
+	@not_health not path /health
+	redir @not_health https://{host}{uri} 308
+	respond /health "opnform: ready"
+}
+:443 {
+	bind {$CADDY_BIND_IP}
+	tls julien@opnform.com {
+		on_demand
+	}
+	reverse_proxy https://{$OPNFORM_ORIGIN_IP} {
+		transport http {
+			tls_server_name opnform.com
+		}
+		header_up Host opnform.com
+		header_up User-Custom-Domain {host}
+		header_up X-Forwarded-For {remote_host}
+		header_up X-Real-IP {remote_host}
+		header_up True-Client-IP {remote_host}
+		header_up CloudFront-Viewer-Address {remote}
+		header_up -CloudFront-Viewer-Country
+		header_up X-Forwarded-Port {server_port}
+		health_timeout 5s
+	}
+}

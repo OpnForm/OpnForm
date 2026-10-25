@@ -1,0 +1,17 @@
+http:
+  routers:
+    opnform-www-canonical:
+      entryPoints:
+        - https
+      rule: Host(`www.opnform.com`)
+      priority: 2000
+      service: noop@internal
+      middlewares:
+        - opnform-www-canonical
+      tls: {}
+  middlewares:
+    opnform-www-canonical:
+      redirectRegex:
+        regex: ^https?://www\.opnform\.com(?::[0-9]+)?/(.*)
+        replacement: https://opnform.com/${1}
+        permanent: true

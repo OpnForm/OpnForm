@@ -1,0 +1,104 @@
+{
+  "fixture": true,
+  "vectors": {
+    "private_put": {
+      "uuid": "0149bbc1-7eb0-4cef-8e1a-4a6e68ec76a6",
+      "bucket": "fixture-documents",
+      "key": "tmp/0149bbc1-7eb0-4cef-8e1a-4a6e68ec76a6",
+      "url": "https://s3.fr-par.scw.cloud/fixture-documents/tmp/0149bbc1-7eb0-4cef-8e1a-4a6e68ec76a6?x-amz-acl=private&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=fictional-storage-key%2F20261017%2Ffr-par%2Fs3%2Faws4_request&X-Amz-Date=20261017T174850Z&X-Amz-SignedHeaders=host%3Bx-amz-acl&X-Amz-Expires=300&X-Amz-Signature=6e9f8025e5ef894ce1f9a5d6044527b9ffe258ae2d80568c999891a0b09319ff",
+      "headers": {
+        "Host": [
+          "s3.fr-par.scw.cloud"
+        ],
+        "x-amz-acl": [
+          "private"
+        ],
+        "Content-Type": "image/png"
+      }
+    },
+    "public_put": {
+      "uuid": "9d22663f-77b7-45f5-8fb8-830d1034273f",
+      "bucket": "fixture-documents",
+      "key": "tmp/9d22663f-77b7-45f5-8fb8-830d1034273f",
+      "url": "https://s3.fr-par.scw.cloud/fixture-documents/tmp/9d22663f-77b7-45f5-8fb8-830d1034273f?x-amz-acl=public-read&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=fictional-storage-key%2F20261017%2Ffr-par%2Fs3%2Faws4_request&X-Amz-Date=20261017T174850Z&X-Amz-SignedHeaders=host%3Bx-amz-acl&X-Amz-Expires=300&X-Amz-Signature=a4a389a0f80794a253fbdbeb41cdc4945b3452ddc27b8fd0ec36da71732264eb",
+      "headers": {
+        "Host": [
+          "s3.fr-par.scw.cloud"
+        ],
+        "x-amz-acl": [
+          "public-read"
+        ],
+        "Content-Type": "image/svg+xml"
+      }
+    },
+    "metadata_put": {
+      "uuid": "c1bc184b-d6bb-4ae2-8ae5-79515bd06add",
+      "bucket": "fixture-documents",
+      "key": "tmp/c1bc184b-d6bb-4ae2-8ae5-79515bd06add",
+      "url": "https://s3.fr-par.scw.cloud/fixture-documents/tmp/c1bc184b-d6bb-4ae2-8ae5-79515bd06add?x-amz-acl=private&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=fictional-storage-key%2F20261017%2Ffr-par%2Fs3%2Faws4_request&X-Amz-Date=20261017T174850Z&X-Amz-SignedHeaders=host%3Bx-amz-acl%3Bexpires&X-Amz-Expires=300&X-Amz-Signature=3c8dea3c14a9476e38b5275a5b8a2b0c234ceb72ff0bd1ea9ec3162c2fafe3cf",
+      "headers": {
+        "Host": [
+          "s3.fr-par.scw.cloud"
+        ],
+        "x-amz-acl": [
+          "private"
+        ],
+        "Expires": [
+          "Tue, 01 Jan 2030 00:00:00 GMT"
+        ],
+        "Content-Type": "application/pdf"
+      }
+    },
+    "override_bucket_put": {
+      "uuid": "e770a269-dbb9-4ba9-81ae-9ece237ea33a",
+      "bucket": "fixture-other-bucket",
+      "key": "tmp/e770a269-dbb9-4ba9-81ae-9ece237ea33a",
+      "url": "https://s3.fr-par.scw.cloud/fixture-other-bucket/tmp/e770a269-dbb9-4ba9-81ae-9ece237ea33a?x-amz-acl=private&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=fictional-storage-key%2F20261017%2Ffr-par%2Fs3%2Faws4_request&X-Amz-Date=20261017T174850Z&X-Amz-SignedHeaders=host%3Bx-amz-acl&X-Amz-Expires=300&X-Amz-Signature=cfb63aff6ec022e1080ba96b6b82c91577443773267ba4068fad4a33a59a035b",
+      "headers": {
+        "Host": [
+          "s3.fr-par.scw.cloud"
+        ],
+        "x-amz-acl": [
+          "private"
+        ],
+        "Content-Type": "application/octet-stream"
+      }
+    },
+    "private_get": {
+      "url": "https://s3.fr-par.scw.cloud/fixture-documents/forms/42/submissions/r%C3%A9ponse%20%C3%A9.pdf?response-content-disposition=attachment%3B%20filename%3D%22fixture.pdf%22&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=fictional-storage-key%2F20261017%2Ffr-par%2Fs3%2Faws4_request&X-Amz-Date=20261017T174850Z&X-Amz-SignedHeaders=host&X-Amz-Expires=420&X-Amz-Signature=4e33f9dad82e6dbcb2796a3476b1a266e61fae8e204ff6a9ce5473919ac0b956",
+      "headers": []
+    },
+    "public_asset_url": "https://assets.fixture.invalid/assets/logo.png",
+    "session_put": {
+      "uuid": "cfbb41f0-9986-4b42-8bfd-ef45008d9b3b",
+      "bucket": "fixture-documents",
+      "key": "tmp/cfbb41f0-9986-4b42-8bfd-ef45008d9b3b",
+      "url": "https://s3.fr-par.scw.cloud/fixture-documents/tmp/cfbb41f0-9986-4b42-8bfd-ef45008d9b3b?x-amz-acl=private&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Security-Token=fictional-storage-session&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=fictional-storage-key%2F20261017%2Ffr-par%2Fs3%2Faws4_request&X-Amz-Date=20261017T174850Z&X-Amz-SignedHeaders=host%3Bx-amz-acl&X-Amz-Expires=300&X-Amz-Signature=810e9df15025543de577802ff66c235a3808230987c023590c71b7b2ec77b678",
+      "headers": {
+        "Host": [
+          "s3.fr-par.scw.cloud"
+        ],
+        "x-amz-acl": [
+          "private"
+        ],
+        "Content-Type": "application/octet-stream"
+      }
+    },
+    "legacy_put": {
+      "uuid": "3ae14ac0-26ab-46dc-9e6d-b03df3bc5896",
+      "bucket": "fixture-documents",
+      "key": "tmp/3ae14ac0-26ab-46dc-9e6d-b03df3bc5896",
+      "url": "https://s3.eu-west-3.amazonaws.com/fixture-documents/tmp/3ae14ac0-26ab-46dc-9e6d-b03df3bc5896?x-amz-acl=private&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=fictional-storage-key%2F20261017%2Feu-west-3%2Fs3%2Faws4_request&X-Amz-Date=20261017T174850Z&X-Amz-SignedHeaders=host%3Bx-amz-acl&X-Amz-Expires=300&X-Amz-Signature=7d95df77ffdafa199307f8058d2380fec54f856e0d3d767733a75a947f74b6ab",
+      "headers": {
+        "Host": [
+          "s3.eu-west-3.amazonaws.com"
+        ],
+        "x-amz-acl": [
+          "private"
+        ],
+        "Content-Type": "application/octet-stream"
+      }
+    },
+    "missing_bucket_refused": true
+  }
+}

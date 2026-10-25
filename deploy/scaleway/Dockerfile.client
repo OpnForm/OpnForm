@@ -1,0 +1,31 @@
+# syntax=docker/dockerfile:1
+FROM --platform=$BUILDPLATFORM node:24.22.1-bookworm-slim AS build
+WORKDIR /app
+COPY client/package.json client/package-lock.json ./
+RUN --mount=type=cache,target=/root/.npm npm ci --no-audit --no-fund
+COPY client/ ./
+ARG NUXT_PUBLIC_ENV=production
+ARG NUXT_PUBLIC_API_BASE=https://api.opnform.com
+ARG NUXT_PUBLIC_APP_URL=https://opnform.com
+ENV NUXT_PUBLIC_ENV=$NUXT_PUBLIC_ENV NUXT_PUBLIC_API_BASE=$NUXT_PUBLIC_API_BASE NUXT_PUBLIC_APP_URL=$NUXT_PUBLIC_APP_URL
+ENV NUXT_TELEMETRY_DISABLED=1 NODE_ENV=production NODE_OPTIONS=--max-old-space-size=4096
+# Builds must not fetch live forms, CMS contents or telemetry.
+ENV SCW_OFFLINE_CMS_SNAPSHOT=true
+RUN --network=none npm run build
+# The host-native JS build may only emit architecture-independent runtime files.
+RUN test -z "$(find /app/.output -type f -name '*.node' -print -quit)"
+
+FROM node:24.22.1-bookworm-slim AS production
+ARG SOURCE_COMMIT=local-unpublished
+LABEL org.opencontainers.image.source="https://github.com/OpnForm/OpnForm" org.opencontainers.image.revision=$SOURCE_COMMIT
+ENV NODE_ENV=production NITRO_HOST=0.0.0.0 NITRO_PORT=3000
+WORKDIR /app
+COPY --from=build --chown=node:node /app/.output/ ./
+RUN printf '%s' "$SOURCE_COMMIT" > /app-revision \
+ && printf '{"revision":"%s"}\n' "$SOURCE_COMMIT" > /app/public/release.json
+USER node
+EXPOSE 3000
+STOPSIGNAL SIGTERM
+HEALTHCHECK --interval=10s --timeout=8s --start-period=90s --retries=3 CMD node -e "const q=require('node:http').get({hostname:'127.0.0.1',port:3000,path:'/login',headers:{Host:new URL(process.env.NUXT_PUBLIC_APP_URL||'https://opnform.com').host,'X-Forwarded-Proto':'https'}},r=>{r.resume();process.exit(r.statusCode===200?0:1)});q.setTimeout(6000,()=>{q.destroy();process.exit(1)});q.on('error',()=>process.exit(1))"
+ENTRYPOINT ["/usr/local/bin/node"]
+CMD ["/app/server/index.mjs"]

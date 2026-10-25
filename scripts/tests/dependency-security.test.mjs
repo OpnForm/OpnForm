@@ -62,10 +62,21 @@ test('docs-only PRs execute the stable required check without path filters', () 
   assert.equal(pipeline.jobs['release-readiness'].name, 'Release readiness')
   assert.equal(pipeline.jobs['release-readiness'].if, 'always()')
 })
-test('both delivery jobs depend on the security and QA aggregate', () => {
-  for (const name of ['production-deploy', 'publish-docker-images']) assert.deepEqual(pipeline.jobs[name].needs, ['release-readiness'])
+test('hosted and self-hosted publications depend on the security and QA aggregate', () => {
+  for (const name of ['publish-scaleway-images', 'publish-docker-images']) assert.deepEqual(pipeline.jobs[name].needs, ['release-readiness'])
   assert.ok(pipeline.jobs['release-readiness'].needs.includes('dependency-security'))
+  assert.ok(pipeline.jobs['release-readiness'].needs.includes('scaleway-runtime'))
   assert.equal(pipeline.jobs['dependency-security'].uses, './.github/workflows/dependency-security.yml')
+  assert.equal(pipeline.jobs['production-deploy'], undefined)
+  assert.equal(pipeline.jobs['scaleway-runtime'].uses, './.github/workflows/scaleway-validation.yml')
+  const publication = pipeline.jobs['publish-scaleway-images']
+  assert.match(publication.if, /github\.ref == 'refs\/heads\/main'/)
+  assert.match(publication.if, /github\.event_name == 'push'/)
+  assert.equal(publication.permissions.packages, 'write')
+  const raw = JSON.stringify(publication)
+  for (const forbidden of ['VAPOR_API_TOKEN', 'AMPLIFY_DEPLOY_URL', 'COOLIFY_TOKEN', 'vapor deploy']) {
+    assert.equal(raw.includes(forbidden), false)
+  }
 })
 test('general PHP suite is honestly SQLite and real database checks gate releases', () => {
   assert.match(pipeline.jobs.tests.name, /SQLite/)
@@ -85,8 +96,11 @@ test('release readiness fails for failed, skipped, cancelled or missing prerequi
     assert.notEqual(run({ ...needs, 'dependency-security': { result } }).status, 0)
   }
   assert.notEqual(run({ ...needs, future_check: { result: 'failure' } }).status, 0)
-  delete needs.tests
-  assert.notEqual(run(needs).status, 0)
+  for (const name of ['tests', 'scaleway-runtime']) {
+    const incomplete = { ...needs }
+    delete incomplete[name]
+    assert.notEqual(run(incomplete).status, 0)
+  }
 })
 
 test('resolves the actual Nuxt/Nitro/builders and site-config cycles to reviewed roots', () => {

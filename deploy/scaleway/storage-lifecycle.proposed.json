@@ -1,0 +1,14 @@
+{
+  "Rules": [
+    {
+      "ID": "proposed-abort-incomplete-uploads-only",
+      "Status": "Disabled",
+      "Filter": {
+        "Prefix": ""
+      },
+      "AbortIncompleteMultipartUpload": {
+        "DaysAfterInitiation": 7
+      }
+    }
+  ]
+}

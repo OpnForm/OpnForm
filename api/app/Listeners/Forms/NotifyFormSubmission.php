@@ -5,6 +5,8 @@ namespace App\Listeners\Forms;
 use App\Events\Forms\FormSubmitted;
 use App\Models\Integration\FormIntegration;
 use App\Integrations\Handlers\AbstractIntegrationHandler;
+use App\Models\Forms\SubmissionOperation;
+use App\Service\Forms\SubmissionOperationService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
 
@@ -20,8 +22,24 @@ class NotifyFormSubmission implements ShouldQueue
      */
     public function handle(FormSubmitted $event)
     {
+        $operationId = $event->operationId ?? null;
+        if ($operationId !== null && ! SubmissionOperation::whereKey($operationId)
+            ->where('form_id', $event->form->id)->where('submission_id', $event->data['submission_id'] ?? null)
+            ->whereNotNull('completed_at')->exists()) {
+            return; // Deleted or mismatched operation: never send its stale effects.
+        }
         $formIntegrations = $event->form->integrations()->where('status', FormIntegration::STATUS_ACTIVE)->get();
         foreach ($formIntegrations as $formIntegration) {
+            if ($operationId !== null) {
+                app(SubmissionOperationService::class)->invokeEffect(
+                    $operationId,
+                    $formIntegration->id,
+                    fn () => $this->getIntegrationHandler($event, $formIntegration)->run()
+                );
+                continue;
+            }
+            // Previously queued events have no operation ID; preserve their
+            // original contract. Drain/reconcile them before migration.
             $this->getIntegrationHandler(
                 $event,
                 $formIntegration

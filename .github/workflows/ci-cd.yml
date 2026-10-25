@@ -10,6 +10,7 @@ on:
       - "api/**"
       - "client/**"
       - "docker/**"
+      - "deploy/scaleway/**"
       - "docker-compose*.yml"
       - "scripts/*security*.mjs"
       - "scripts/audit-npm.mjs"
@@ -616,10 +617,16 @@ jobs:
     permissions:
       contents: read
 
+  scaleway-runtime:
+    name: Scaleway runtime
+    uses: ./.github/workflows/scaleway-validation.yml
+    permissions:
+      contents: read
+
   release-readiness:
     name: Release readiness
     if: always()
-    needs: [code_lint, client_checks, sync_check, tests, database_compatibility, e2e, linux_client_image, dependency-security]
+    needs: [code_lint, client_checks, sync_check, tests, database_compatibility, e2e, linux_client_image, dependency-security, scaleway-runtime]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -631,63 +638,39 @@ jobs:
         env:
           NEEDS_JSON: ${{ toJSON(needs) }}
 
-  production-deploy:
+  publish-scaleway-images:
+    name: Publish validated Scaleway images
     needs: [release-readiness]
     if: success() && github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
-    name: Triggers Deployment (Vapor & Amplify)
-
+    permissions:
+      contents: read
+      packages: write
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v7
-
-      - name: Get Composer cache directory
-        id: composer-cache
-        run: |
-          echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
-
-      - uses: actions/cache@v6
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
         with:
-          path: ${{ steps.composer-cache.outputs.dir }}
-          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-composer-
-
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
+          name: scaleway-runtime-images
+          path: ${{ runner.temp }}/scaleway-images
+      - name: Load the exact images exercised by the runtime gate
+        run: docker load -i "${{ runner.temp }}/scaleway-images/images.tar"
+      - uses: docker/login-action@v3
         with:
-          php-version: 8.3
-          extensions: dom, curl, mbstring, pdo, sqlite, pdo_sqlite, pdo_pgsql, pdo_mysql, bcmath, gd, zip, pcntl, intl
-          tools: composer:v2
-          coverage: none
-
-      - name: Prepare the environment
-        working-directory: ./api
-        run: cp .env.example .env
-
-      - name: Install composer dependencies
-        working-directory: ./api
-        run: composer install --prefer-dist --no-dev --no-interaction --no-progress --optimize-autoloader
-
-      - name: Directory permissions
-        working-directory: ./api
-        run: chmod -R 777 storage bootstrap/cache
-
-      - name: Trigger front-end deployment
-        run: |
-          URL="${{ secrets.AMPLIFY_DEPLOY_URL }}"
-          curl -X POST -d {} "$URL" -H "Content-Type: application/json"
-
-      - name: Created encrypted .env file before deployment
-        working-directory: ./api
-        run: |
-          echo "${{ secrets.ENCRYPTED_ENV_FILE }}" >> .env.production.encrypted
-
-      - name: Deploy back-end to production
-        working-directory: ./api
-        run: php vendor/bin/vapor deploy api-production --commit="${GITHUB_SHA}" --message="${GITHUB_REF}"
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publish immutable private images and the Coolify promotion descriptor
         env:
-          VAPOR_API_TOKEN: ${{ secrets.VAPOR_API_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python3 deploy/scaleway/publish-release.py --output release.json
+      - uses: actions/upload-artifact@v7
+        with:
+          name: opnform-coolify-release
+          path: release.json
+          retention-days: 30
+      - name: Record the deployment boundary
+        run: |
+          echo 'Images published for explicit private Coolify promotion. No production restart or AWS deployment was requested.' >> "$GITHUB_STEP_SUMMARY"
 
   publish-docker-images:
     name: Push Docker images to Docker Hub

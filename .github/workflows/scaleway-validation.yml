@@ -1,0 +1,108 @@
+name: Scaleway runtime validation
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  tooling:
+    name: Deployment contracts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - run: python3 -m unittest discover -s deploy/scaleway -p 'test_*.py'
+      - run: python3 -m unittest discover -s deploy/scaleway/tests -p 'test_*.py'
+  state:
+    name: Isolated Redis state contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: redis, sodium, pdo_sqlite, bcmath, gd, zip, pcntl, intl
+          tools: composer:v2
+          ini-values: memory_limit=1G
+          coverage: none
+      - name: Install locked development dependencies
+        working-directory: api
+        run: composer install --prefer-dist --no-interaction --no-progress
+      - name: Prepare fictional state and signing identity on this disposable runner
+        run: |
+          sudo install -d -m 0777 /fixture-state /fixture-identity
+          openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out /fixture-identity/private.pem
+          openssl pkey -in /fixture-identity/private.pem -pubout -out /fixture-identity/public.pem
+          printf '%040d' 0 | sudo tee /app-revision > /dev/null
+          docker run -d --name opnform-state-ci --network none --mount type=bind,src=/fixture-state,dst=/fixture-state redis:7.4-bookworm redis-server --port 0 --unixsocket /fixture-state/state.sock --unixsocketperm 777 --appendonly yes --appendfsync always --maxmemory 32mb --maxmemory-policy noeviction
+          for attempt in $(seq 1 30); do
+            if docker exec opnform-state-ci redis-cli -s /fixture-state/state.sock ping; then break; fi
+            sleep 1
+          done
+          docker exec opnform-state-ci redis-cli -s /fixture-state/state.sock ping
+      - name: Exercise state, TTL, revocations, OOM and interrupted imports serially
+        working-directory: api
+        env:
+          OPNFORM_HOSTED_STATE_FIXTURES: 'true'
+        run: php -d memory_limit=1G vendor/bin/pest tests/Unit/Deployment --no-coverage
+      - name: Remove only this job's fixture
+        if: always()
+        run: docker rm -f -v opnform-state-ci || true
+  runtime:
+    name: Native AMD64 application images
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v7
+      - uses: docker/setup-buildx-action@v4
+      - name: Build backend image without secrets or publication
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: deploy/scaleway/Dockerfile.api
+          target: production
+          platforms: linux/amd64
+          load: true
+          tags: opnform-scaleway-api:local
+          build-args: SOURCE_COMMIT=${{ github.sha }}
+          cache-from: type=gha,scope=opnform-scaleway-api
+          cache-to: type=gha,mode=max,scope=opnform-scaleway-api
+      - name: Build frontend image without secrets or publication
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: deploy/scaleway/Dockerfile.client
+          platforms: linux/amd64
+          load: true
+          tags: opnform-scaleway-client:local
+          build-args: SOURCE_COMMIT=${{ github.sha }}
+          cache-from: type=gha,scope=opnform-scaleway-client
+          cache-to: type=gha,mode=max,scope=opnform-scaleway-client
+      - name: Record source hashes used by the embedded-image check
+        run: python3 deploy/scaleway/ci-source-proof.py --output-dir "$RUNNER_TEMP/scaleway-proof"
+      - name: Pull fictional fixture dependencies
+        run: |
+          docker pull postgres:16-bookworm
+          docker pull redis:7.4-bookworm
+      - name: Exercise the exact pair without source or vendor overlays
+        run: sudo --preserve-env=HOME,RUNNER_TEMP,GITHUB_SHA python3 deploy/scaleway/test-runtime.py --output-dir "$RUNNER_TEMP/scaleway-proof" --host-firewall-guard
+      - name: Preserve the exact tested pair for the publishing job
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: docker save -o "$RUNNER_TEMP/scaleway-proof/images.tar" opnform-scaleway-api:local opnform-scaleway-client:local
+      - uses: actions/upload-artifact@v7
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        with:
+          name: scaleway-runtime-images
+          path: ${{ runner.temp }}/scaleway-proof/images.tar
+          retention-days: 1
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: scaleway-runtime-evidence
+          path: |
+            ${{ runner.temp }}/scaleway-proof/*.json
+            ${{ runner.temp }}/scaleway-proof/*.log
+          retention-days: 7
