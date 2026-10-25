@@ -53,6 +53,6 @@ Recipient customization can support different audiences when available on your p
 
 ### Can I use my own sender domain?
 
-OpnForm offers [custom SMTP](/features/custom-smtp) for sending through your own mail setup. Check the feature's requirements before configuring it.
+OpnForm offers custom SMTP for sending through your own mail setup. Check your plan's requirements before configuring it.
 
 For shared spreadsheets instead of inbox alerts, explore [Google Sheets](/integrations/google-sheets).

@@ -56,14 +56,6 @@
             Integrations
           </NuxtLink>
           <NuxtLink
-            v-if="$route.name !== 'features'"
-            :to="{ name: 'features' }"
-            :class="navLinkClasses"
-            class="hidden lg:block"
-          >
-            Features
-          </NuxtLink>
-          <NuxtLink
             v-if="
               $route.name !== 'ai-form-builder' &&
               user === null &&

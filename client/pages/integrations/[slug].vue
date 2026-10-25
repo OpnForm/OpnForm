@@ -16,7 +16,7 @@
             </UButton>
 
             <div class="text-center">
-              <div class="relative mx-auto mb-8 inline-flex animate-feature-float">
+              <div class="relative mx-auto mb-8 inline-flex animate-integration-float">
                 <div
                   class="relative flex h-20 w-20 items-center justify-center rounded-[28px] shadow-lg ring-4 sm:h-24 sm:w-24"
                   :class="[colorClasses.iconBg, colorClasses.iconText, colorClasses.ring]"
@@ -76,7 +76,7 @@
           <article class="min-w-0 animate-fade-in-up animation-delay-200">
             <ContentRenderer
               :value="integration"
-              class="feature-content"
+              class="integration-content"
             />
           </article>
         </div>

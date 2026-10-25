@@ -184,18 +184,6 @@ useOpnSeoMeta({
     "Build beautiful online forms with OpnForm. Create forms, surveys, and workflows for free, collect unlimited responses, and keep control of your data.",
 })
 
-useJsonLd("homepage-schema", buildSchemaGraph([
-  buildOrganizationSchema(),
-  buildWebsiteSchema(),
-  buildSoftwareApplicationSchema(),
-  buildWebPageSchema({
-    name: "Free Online Form Builder with Unlimited Responses",
-    description:
-      "Build beautiful online forms with OpnForm. Create forms, surveys, and workflows for free, collect unlimited responses, and keep control of your data.",
-    path: "/",
-  }),
-]))
-
 const { isAuthenticated: authenticated } = useIsAuthenticated()
 </script>
 

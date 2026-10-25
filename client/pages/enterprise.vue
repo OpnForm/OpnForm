@@ -822,19 +822,28 @@ const enterpriseFaqs = [
   },
 ]
 
-useJsonLd("enterprise-schema", buildSchemaGraph([
-  buildWebPageSchema({
-    name: "Secure Form Builder for Teams and Enterprises",
-    description:
-      "Build secure forms, surveys, and workflows with OpnForm Enterprise. Manage access, automate data collection, and choose cloud, France hosting, or self-hosted deployment.",
-    path: "/enterprise",
-  }),
-  buildBreadcrumbSchema([
-    { name: "Home", path: "/" },
-    { name: "Enterprise", path: "/enterprise" },
-  ]),
-  buildFaqSchema(enterpriseFaqs),
-]))
+const enterpriseFaqSchema = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: enterpriseFaqs.map((faq) => ({
+    "@type": "Question",
+    name: faq.question,
+    acceptedAnswer: {
+      "@type": "Answer",
+      text: faq.answer,
+    },
+  })),
+}
+
+useHead({
+  script: [
+    {
+      key: "enterprise-faq-schema",
+      type: "application/ld+json",
+      textContent: JSON.stringify(enterpriseFaqSchema),
+    },
+  ],
+})
 
 const finalCtaProofs = ["SSO/SAML", "France hosting", "Self-hosting support"]
 

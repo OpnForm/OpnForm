@@ -87,7 +87,7 @@
         }
     }
 
-    @keyframes feature-float {
+    @keyframes integration-float {
         0%,
         100% {
             transform: translateY(0);
@@ -97,21 +97,8 @@
         }
     }
 
-    @keyframes feature-glow {
-        0%,
-        100% {
-            opacity: 0.45;
-            transform: scale(1);
-        }
-        50% {
-            opacity: 0.75;
-            transform: scale(1.08);
-        }
-    }
-
     --animate-fade-in-up: fade-in-up 0.7s ease-out both;
-    --animate-feature-float: feature-float 5s ease-in-out infinite;
-    --animate-feature-glow: feature-glow 4s ease-in-out infinite;
+    --animate-integration-float: integration-float 5s ease-in-out infinite;
 
     /* Custom sizes */
     --font-size-xxs: 0.5rem;
@@ -151,26 +138,11 @@
     .animate-fade-in-up {
         animation: var(--animate-fade-in-up);
     }
-    .animate-feature-float {
-        animation: var(--animate-feature-float);
-    }
-    .animate-feature-glow {
-        animation: var(--animate-feature-glow);
-    }
-    .animation-delay-100 {
-        animation-delay: 100ms;
+    .animate-integration-float {
+        animation: var(--animate-integration-float);
     }
     .animation-delay-200 {
         animation-delay: 200ms;
-    }
-    .animation-delay-300 {
-        animation-delay: 300ms;
-    }
-    .animation-delay-400 {
-        animation-delay: 400ms;
-    }
-    .animation-delay-500 {
-        animation-delay: 500ms;
     }
 
     /* Custom shadow */
