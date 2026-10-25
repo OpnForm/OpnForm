@@ -173,7 +173,7 @@ onMounted(() => {
 })
 
 watch(
-  () => workspace,
+  () => workspace.value,
   () => {
     initEmailSettings()
   },
@@ -185,6 +185,7 @@ const clearEmailSettings = () => {
 }
 
 const saveChanges = () => {
+  if (!workspace.value?.id) return
   if (isSelfHosted.value) {
     if (!canAccessSmtp.value) {
       openUpgradeModal()
@@ -214,7 +215,8 @@ const saveChanges = () => {
 }
 
 const initEmailSettings = () => {
-  if (!workspace || !workspace.value.settings.email_settings) return
+  emailSettingsForm.reset()
+  if (!workspace.value?.settings?.email_settings) return
   const emailSettings = workspace.value?.settings?.email_settings
   emailSettingsForm.host = emailSettings?.host
   emailSettingsForm.port = emailSettings?.port

@@ -8,6 +8,7 @@ use App\Models\LicenseKey;
 use App\Notifications\Subscription\LicenseKeyNotification;
 use App\Service\BillingHelper;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use Stripe\BillingPortal\Session as StripeBillingPortalSession;
@@ -216,15 +217,13 @@ class LicenseKeyService
      */
     public function handleSubscriptionUpdated(string $stripeSubscriptionId, string $status, ?\DateTimeInterface $expiresAt = null): void
     {
-        $licenseKey = LicenseKey::where('stripe_subscription_id', $stripeSubscriptionId)->first();
-        if (!$licenseKey) {
-            return;
-        }
-
-        $licenseKey->update([
-            'status' => $status,
-            'expires_at' => $expiresAt,
-        ]);
+        // A deleted subscription ID is terminal; resubscriptions use a new ID.
+        LicenseKey::where('stripe_subscription_id', $stripeSubscriptionId)
+            ->where('status', '!=', LicenseKey::STATUS_CANCELLED)
+            ->update([
+                'status' => $status,
+                'expires_at' => $expiresAt,
+            ]);
     }
 
     /**
@@ -302,6 +301,7 @@ class LicenseKeyService
 
     private function verifyStripeSubscription(LicenseKey $licenseKey): bool
     {
+        $verifiedKey = 'license:stripe:verified:' . $licenseKey->id;
         try {
             Stripe::setApiKey(config('cashier.secret'));
             $subscription = \Stripe\Subscription::retrieve($licenseKey->stripe_subscription_id);
@@ -312,9 +312,11 @@ class LicenseKeyService
                     $licenseKey->update(['expires_at' => \Carbon\Carbon::createFromTimestamp($periodEnd)]);
                 }
 
+                Cache::put($verifiedKey, now()->timestamp, now()->addDay());
                 return true;
             }
 
+            Cache::forget($verifiedKey);
             $licenseKey->update(['status' => LicenseKey::STATUS_EXPIRED]);
 
             return false;
@@ -324,7 +326,14 @@ class LicenseKeyService
                 'error' => $e->getMessage(),
             ]);
 
-            return $licenseKey->isActive();
+            if ($e instanceof \Stripe\Exception\InvalidRequestException && $e->getStripeCode() === 'resource_missing') {
+                Cache::forget($verifiedKey);
+                $licenseKey->update(['status' => LicenseKey::STATUS_EXPIRED]);
+                return false;
+            }
+            $lastVerified = Cache::get($verifiedKey);
+            return $licenseKey->isActive() && is_int($lastVerified)
+                && now()->timestamp >= $lastVerified && now()->timestamp - $lastVerified < 86400;
         }
     }
 }

@@ -105,6 +105,7 @@ describe('TelemetryService', function () {
             'license_key' => 'lic_telemetrypaid12345',
             'status' => 'active',
         ]);
+        \Illuminate\Support\Facades\Cache::put('self_hosted_license_check', new \App\Service\License\LicenseCheckResult(status: 'active', lastChecked: now()), 3600);
 
         expect($this->service->getInstanceProperties(['forms_count' => 10]))->toBe([
             'forms_count' => 10,

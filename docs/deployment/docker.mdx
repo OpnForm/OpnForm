@@ -245,6 +245,17 @@ docker compose ps
 
 ## Troubleshooting
 
+### Missing icons in the admin area
+
+Runtime icons are served by the Nuxt client at `/_nuxt_icon/`. If you use a
+custom reverse proxy, forward this path to the client on port 3000, alongside
+other frontend requests. Keep `/api/` routed to Laravel. The bundled ingress
+already handles this routing.
+
+If icon requests still use `/api/_nuxt_icon/`, update your client image to a
+release containing the endpoint fix and reload the page. If you build your own
+image, rebuild the client after updating `client/nuxt.config.ts`.
+
 ### Container Issues
 
 If containers aren't starting:

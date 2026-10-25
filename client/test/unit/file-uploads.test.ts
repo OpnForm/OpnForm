@@ -12,7 +12,7 @@ vi.mock('~/api', () => ({
 describe('storeFile', () => {
   beforeEach(() => {
     globalThis.useFeatureFlag = vi.fn(() => false)
-    globalThis.useFetch = vi.fn(() => Promise.resolve())
+    globalThis.useFetch = vi.fn(() => Promise.resolve({ error: { value: null } }))
   })
 
   afterEach(() => {
@@ -55,5 +55,11 @@ describe('storeFile', () => {
     const uploadOptions = globalThis.useFetch.mock.calls[0][1]
     expect(uploadOptions.headers).not.toHaveProperty('Host')
     expect(uploadOptions.headers).not.toHaveProperty('host')
+  })
+  it('rejects a failed signed PUT instead of returning file metadata', async () => {
+    const error = new Error('Storage rejected the upload')
+    uploadsApi.getSignedStorageUrl.mockResolvedValue({ uuid: 'failed', url: 'https://storage.example.test/tmp/file', headers: {} })
+    globalThis.useFetch.mockResolvedValue({ error: { value: error } })
+    await expect(storeFile({ name: 'file.txt', type: 'text/plain' })).rejects.toBe(error)
   })
 })

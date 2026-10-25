@@ -192,7 +192,7 @@ it('hides guest draft capabilities but keeps validation and OAuth tools on self-
             'name' => 'create_form_draft',
             'arguments' => ['definition' => managedFormDefinition()],
         ],
-    ], $headers)->assertOk()
+    ], $headers)->assertBadRequest()
         ->assertJsonPath('error.code', -32602)
         ->assertJsonPath('error.message', 'Tool [create_form_draft] not found.');
 });

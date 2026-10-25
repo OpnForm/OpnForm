@@ -1,3 +1,10 @@
+if (process.env.NODE_ENV === 'production' && (
+  process.env.NUXT_PUBLIC_CODEX_AUTO_LOGIN === 'true' ||
+  process.env.NUXT_PUBLIC_CODEX_AUTO_LOGIN_EMAIL || process.env.NUXT_PUBLIC_CODEX_AUTO_LOGIN_PASSWORD
+)) {
+  throw new Error('Development auto-login credentials must be removed before a production build.')
+}
+
 function parseNumber(value, defaultValue = 0) {
   const parsedValue = parseFloat(value)
   return isNaN(parsedValue) ? defaultValue : parsedValue
@@ -13,9 +20,9 @@ export default {
     apiBase: process.env.NUXT_PUBLIC_API_BASE || '',
     appUrl: process.env.NUXT_PUBLIC_APP_URL || '',
     env: process.env.NUXT_PUBLIC_ENV || 'local',
-    codexAutoLogin: process.env.NUXT_PUBLIC_CODEX_AUTO_LOGIN === 'true',
-    codexAutoLoginEmail: process.env.NUXT_PUBLIC_CODEX_AUTO_LOGIN_EMAIL || null,
-    codexAutoLoginPassword: process.env.NUXT_PUBLIC_CODEX_AUTO_LOGIN_PASSWORD || null,
+    codexAutoLogin: process.env.NODE_ENV !== 'production' && process.env.NUXT_PUBLIC_CODEX_AUTO_LOGIN === 'true',
+    codexAutoLoginEmail: process.env.NODE_ENV !== 'production' ? (process.env.NUXT_PUBLIC_CODEX_AUTO_LOGIN_EMAIL || null) : null,
+    codexAutoLoginPassword: process.env.NODE_ENV !== 'production' ? (process.env.NUXT_PUBLIC_CODEX_AUTO_LOGIN_PASSWORD || null) : null,
     hCaptchaSiteKey: process.env.NUXT_PUBLIC_H_CAPTCHA_SITE_KEY || null,
     reCaptchaSiteKey: process.env.NUXT_PUBLIC_RE_CAPTCHA_SITE_KEY || null,
     amplitudeCode: process.env.NUXT_PUBLIC_AMPLITUDE_CODE || null,

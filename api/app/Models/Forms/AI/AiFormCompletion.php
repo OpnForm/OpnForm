@@ -26,6 +26,7 @@ class AiFormCompletion extends Model
     protected $table = 'ai_form_completions';
 
     protected $fillable = [
+        'access_token_hash',
         'form_prompt',
         'user_id',
         'status',
@@ -37,6 +38,8 @@ class AiFormCompletion extends Model
         'generation_params',
     ];
 
+    protected $hidden = ['access_token_hash'];
+
     protected $attributes = [
         'status' => self::STATUS_PENDING,
         'type' => self::TYPE_FORM,
@@ -45,6 +48,7 @@ class AiFormCompletion extends Model
     protected function casts()
     {
         return [
+            'result' => 'array',
             'context' => 'array',
             'generation_params' => 'array',
         ];

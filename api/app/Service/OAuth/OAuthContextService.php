@@ -73,8 +73,28 @@ class OAuthContextService
             return null;
         }
 
+        $active = request()->attributes->get('consumed_oauth_context');
+        if (($active['state'] ?? null) === $stateToken) {
+            return $active['context'];
+        }
         $key = self::REDIRECT_CONTEXT_PREFIX . $stateToken;
         return Cache::get($key);
+    }
+
+    /** Atomically remove the state before any provider exchange or account mutation. */
+    public function consumeContext(string $stateToken): ?array
+    {
+        $context = Cache::lock('oauth-consume:' . $stateToken, 10)->get(function () use ($stateToken) {
+            $key = self::REDIRECT_CONTEXT_PREFIX . $stateToken;
+            $context = Cache::get($key);
+            Cache::forget($key);
+            return $context;
+        });
+        if (is_array($context)) {
+            request()->attributes->set('consumed_oauth_context', ['state' => $stateToken, 'context' => $context]);
+            return $context;
+        }
+        return null;
     }
 
     /**
@@ -96,6 +116,7 @@ class OAuthContextService
         if ($stateToken) {
             $key = self::REDIRECT_CONTEXT_PREFIX . $stateToken;
             Cache::forget($key);
+            request()->attributes->remove('consumed_oauth_context');
         }
     }
 

@@ -43,7 +43,7 @@ class RemoveWorkspaceGuests implements ShouldQueue
         }
 
         // User is not subscribed anymore - remove guests
-        $this->user->workspaces->each(function (Workspace $workspace) {
+        $this->user->workspaces()->wherePivot('role', User::ROLE_ADMIN)->get()->each(function (Workspace $workspace) {
             // Flush workspace cache to be sure we have the latest data
             $workspace->flush();
             if ($workspace->hasFeature('workspaces.multiple')) {
@@ -52,7 +52,7 @@ class RemoveWorkspaceGuests implements ShouldQueue
             }
 
             // Detach all users from the workspace (except the owner)
-            foreach ($workspace->users()->where('users.id', '!=', $this->user->id)->get() as $user) {
+            foreach ($workspace->users()->wherePivot('role', '!=', User::ROLE_ADMIN)->get() as $user) {
                 Log::info('Detaching user from workspace', [
                     'workspace_id' => $workspace->id,
                     'workspace_name' => $workspace->name,

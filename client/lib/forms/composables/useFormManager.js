@@ -1,3 +1,4 @@
+import { parentSubmissionPayload } from '../embedSubmissionEvent'
 import { reactive, computed, ref, toValue, onBeforeUnmount, shallowRef, watch } from 'vue'
 import { useForm } from '~/composables/useForm.js' // Assuming useForm handles vForm setup
 import { FormMode, createFormModeStrategy } from '../FormModeStrategy'
@@ -99,6 +100,19 @@ export function useFormManager(initialFormConfig, initialMode = FormMode.LIVE, o
     } catch { /* no-op */ }
   }
 
+  function restorePendingSubmission() {
+    if (!initialization.restorePendingSubmission()) return false
+    replaceStructure()
+    return true
+  }
+
+  function startBackgroundSync() {
+    pendingSubmissionService.resumeAutosave()
+    if (import.meta.client && config.value.enable_partial_submissions && strategy.value.submission.enablePartialSubmissions) {
+      partialSubmissionService.startSync()
+    }
+  }
+
   const validation = useFormValidation(config, form, state)
   const payment = useFormPayment(config, form)
   const submission = useFormSubmission(config, form, submissionAttribution.attribution)
@@ -131,35 +145,29 @@ export function useFormManager(initialFormConfig, initialMode = FormMode.LIVE, o
     state.isProcessing = true
     state.isSubmitted = false
     state.currentPage = 0
-    submissionAttribution.captureIframeAttribution(options.urlParams)
-   
-    const initializationPromise = initialization.initialize({
-      ...options
-    })
 
-    if (options.eagerStructure) {
+    try {
+      submissionAttribution.captureIframeAttribution(options.urlParams)
+      const initializationPromise = initialization.initialize({ ...options })
+
+      if (options.eagerStructure) {
+        replaceStructure()
+        timer.reset()
+        timer.start()
+      }
+
+      await initializationPromise
+      if (!options.eagerStructure) {
+        timer.reset()
+        timer.start()
+      }
       replaceStructure()
-      timer.reset()
-      timer.start()
+
+      // Resume draft saving and partial sync only once the answers are ready.
+      if (!options.deferBackgroundSync) startBackgroundSync()
+    } finally {
       state.isProcessing = false
     }
-
-    await initializationPromise
-
-    if (!options.eagerStructure) {
-      timer.reset()
-      timer.start()
-    }
-
-    // Ensure structure is built after initialization
-    replaceStructure()
-    
-    // Start partial submission sync if enabled in both config and strategy
-    if (import.meta.client && config.value.enable_partial_submissions && strategy.value.submission.enablePartialSubmissions) {
-      partialSubmissionService.startSync()
-    }
-    
-    state.isProcessing = false
   }
 
   // React to presentation_style changes
@@ -297,6 +305,9 @@ export function useFormManager(initialFormConfig, initialMode = FormMode.LIVE, o
         }
       }
 
+      const { default: cloneDeep } = await import('clone-deep')
+      const eventSubmissionData = cloneDeep(form.data())
+
       // 3. Perform Submission (using submission composable)
       const submissionResult = await submission.submit({
         formModeStrategy: strategy.value,
@@ -315,6 +326,7 @@ export function useFormManager(initialFormConfig, initialMode = FormMode.LIVE, o
       }
       
       // 7. Clear pending submission data on successful submit
+      pendingSubmissionService?.pauseAutosave()
       pendingSubmissionService?.clear()
       
       // 8. Clear partial submission hash to prevent stale data
@@ -333,7 +345,6 @@ export function useFormManager(initialFormConfig, initialMode = FormMode.LIVE, o
       if (import.meta.client) {
         const isIframe = useIsIframe()
         const formConfig = toValue(config)
-        const { default: cloneDeep } = await import('clone-deep')
         const payload = cloneDeep({
           type: 'form-submitted',
           form: {
@@ -343,7 +354,7 @@ export function useFormManager(initialFormConfig, initialMode = FormMode.LIVE, o
                               ? submissionResult.redirect_url 
                               : null
           },
-          submission_data: form.data(),
+          submission_data: eventSubmissionData,
           completion_time: completionTime,
           ...(Object.keys(submissionAttribution.attribution.value).length > 0
             ? { meta: { attribution: submissionAttribution.attribution.value } }
@@ -352,10 +363,10 @@ export function useFormManager(initialFormConfig, initialMode = FormMode.LIVE, o
         
         // Send message to parent if in iframe
         if (isIframe) {
-          window.parent.postMessage(payload, '*')
+          window.parent.postMessage(parentSubmissionPayload(payload, formConfig.share_submission_data_with_parent), '*')
         }
         // Also send to current window for potential internal listeners
-        window.postMessage(payload, '*')
+        window.postMessage(payload, window.location.origin)
       }
       
       // 11. Handle redirect if server response includes redirect info
@@ -438,6 +449,8 @@ export function useFormManager(initialFormConfig, initialMode = FormMode.LIVE, o
 
     // Core Methods
     initialize,
+    restorePendingSubmission,
+    startBackgroundSync,
     updateConfig,   // New method to update form config
     nextPage,
     previousPage,

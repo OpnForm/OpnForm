@@ -6,6 +6,8 @@ use App\Service\Forms\AgentFormAuthoringGuide;
 
 uses(Tests\TestCase::class);
 
+beforeEach(fn () => config(['services.openai.api_key' => 'offline-unused-test-token']));
+
 it('provides one shared authoring baseline to MCP resources and native prompts', function () {
     $reference = AgentFormAuthoringGuide::reference();
     $completePrompt = AgentFormAuthoringGuide::completeFormPrompt();

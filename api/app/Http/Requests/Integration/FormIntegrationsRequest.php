@@ -31,7 +31,7 @@ class FormIntegrationsRequest extends FormRequest
                 return;
             }
         }
-        throw new \Exception('Unknown Integration.');
+
     }
 
     /**
@@ -74,7 +74,7 @@ class FormIntegrationsRequest extends FormRequest
      */
     public function attributes()
     {
-        $attributes = $this->integrationClassName::getValidationAttributes();
+        $attributes = $this->integrationClassName ? $this->integrationClassName::getValidationAttributes() : [];
 
         $fields = [];
         foreach ($this->rules() as $key => $value) {
@@ -89,7 +89,7 @@ class FormIntegrationsRequest extends FormRequest
 
     protected function isOAuthRequired(): bool
     {
-        return $this->integrationClassName::isOAuthRequired();
+        return $this->integrationClassName ? $this->integrationClassName::isOAuthRequired() : false;
     }
 
     private function loadIntegrationRules()

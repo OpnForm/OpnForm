@@ -72,11 +72,11 @@ export default {
   computed: {
     scaleList() {
       const list = []
-      if (this.stepScale == 0) {
+      if (!Number.isFinite(Number(this.stepScale)) || Number(this.stepScale) <= 0) {
         list.push(this.minScale)
         return list
       }
-      for (let i = this.minScale; i <= this.maxScale; i += this.stepScale) {
+      for (let i = this.minScale; i <= this.maxScale; i += Number(this.stepScale)) {
         list.push(i)
       }
       return list
@@ -101,8 +101,8 @@ export default {
   },
 
   mounted() {
-    if (this.compVal && typeof this.compVal === "string") {
-      this.compVal = parseInt(this.compVal)
+    if (typeof this.compVal === "string" && this.compVal.trim() !== "" && Number.isFinite(Number(this.compVal))) {
+      this.compVal = Number(this.compVal)
     }
   },
 

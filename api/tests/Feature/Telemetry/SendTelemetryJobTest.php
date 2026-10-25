@@ -110,6 +110,7 @@ describe('SendTelemetryJob', function () {
             'license_key' => 'lic_telemetryjobpaid12345',
             'status' => 'active',
         ]);
+        \Illuminate\Support\Facades\Cache::put('self_hosted_license_check', new \App\Service\License\LicenseCheckResult(status: 'active', lastChecked: now()), 3600);
 
         Http::fake([
             'test-endpoint.com/track' => Http::response([], 200),

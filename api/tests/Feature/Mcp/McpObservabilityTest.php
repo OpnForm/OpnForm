@@ -22,7 +22,7 @@ it('records metadata-only MCP usage without request arguments', function () {
         'Accept' => 'application/json, text/event-stream',
     ]);
 
-    $response->assertOk();
+    $response->assertBadRequest()->assertJsonPath('error.code', -32602);
 
     Queue::assertPushed(SendTelemetryJob::class, function (SendTelemetryJob $job) use ($secret): bool {
         return $job->eventName === TelemetryEvent::MCP_REQUEST->value()

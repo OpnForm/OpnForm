@@ -10,8 +10,8 @@ Instructions for AI coding agents working in this repository.
 ## Repository Overview
 
 - Monorepo with:
-- `api/`: Laravel 11+ / PHP 8.3 backend.
-- `client/`: Nuxt 3 / Vue frontend (JavaScript, not TypeScript by default).
+- `api/`: Laravel 12+ / PHP 8.3 backend.
+- `client/`: Nuxt 4 / Vue frontend (JavaScript, not TypeScript by default).
 - `docs/`: Mintlify documentation.
 
 ## Working Style
@@ -51,7 +51,7 @@ Instructions for AI coding agents working in this repository.
 ## Project Conventions
 
 - Frontend:
-- Use Nuxt UI v3 + Tailwind patterns already used in the codebase.
+- Use Nuxt UI v4 + Tailwind patterns already used in the codebase.
 - Prefer Composition API and existing composables.
 - Use Promise chaining style (`.then().catch().finally()`) where this project already enforces it.
 - Backend:
@@ -84,7 +84,7 @@ Instructions for AI coding agents working in this repository.
 
 ### Project overview
 
-OpnForm is a no-code form builder with two main services: a **Laravel 11 API** (`api/`) and a **Nuxt 3 client** (`client/`). Development uses Docker Compose (`docker-compose.dev.yml`) which runs PostgreSQL, the API (PHP-FPM), the client (Nuxt dev server), and an Nginx ingress.
+OpnForm is a no-code form builder with two main services: a **Laravel 12 API** (`api/`) and a **Nuxt 4 client** (`client/`). Development uses Docker Compose (`docker-compose.dev.yml`) which runs PostgreSQL, the API (PHP-FPM), the client (Nuxt dev server), and an Nginx ingress.
 
 ### Starting the dev environment
 

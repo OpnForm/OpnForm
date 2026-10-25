@@ -15,8 +15,10 @@ class SignedStorageUrlController extends Controller
      */
     public function store(Request $request)
     {
+        $bucket = $_ENV['AWS_BUCKET'] ?? null;
+        abort_unless(is_string($bucket) && $bucket !== '', 503, 'Upload storage is not configured.');
         $this->ensureEnvironmentVariablesAreAvailable($request);
-        $bucket = $request->input('bucket') ?: $_ENV['AWS_BUCKET'];
+        $request->validate(['bucket' => ['nullable', 'string', \Illuminate\Validation\Rule::in([$bucket])]]);
 
         $client = $this->storageClient();
 

@@ -1,4 +1,7 @@
 import { expect, test, type APIRequestContext, type Page } from "@playwright/test"
+import { createServer } from "node:http"
+import { waitForAnonymousApiBudget, waitForAuthenticatedApiBudget } from "./api-budget"
+import { hash } from "../../lib/utils.js"
 
 test.setTimeout(240_000)
 
@@ -184,6 +187,13 @@ async function gotoPageWithRetry(page: Page, path: string, readyCheck: () => Pro
       const response = await page.goto(path, { waitUntil: "commit", timeout: 10_000 })
       expect(response?.status(), `unexpected status for ${path} on attempt ${attempt}`).toBeLessThan(500)
       await readyCheck()
+      // SSR inputs are actionable before Vue attaches their event handlers.
+      await page.waitForFunction(() => {
+        const root = document.querySelector('#__nuxt') as Element & {
+          __vue_app__?: { $nuxt?: { isHydrating: boolean } }
+        }
+        return root?.__vue_app__?.$nuxt?.isHydrating === false
+      })
       if (process.env.PLAYWRIGHT_DEV_SERVER === "1") {
         await page.waitForTimeout(5000)
       }
@@ -238,7 +248,22 @@ async function registerUi(page: Page, email: string) {
   await page.locator('input[name="password_confirmation"]').fill("Abcd@1234")
   await page.locator('input[name="agree_terms"]').check({ force: true })
 
-  await page.getByRole("button", { name: "Create account", exact: true }).click()
+  // The preceding public SSR cases can exhaust the shared anonymous API bucket.
+  // Honor the real server limit rather than disabling it for browser tests.
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const [response] = await Promise.all([
+      page.waitForResponse(response => response.url() === `${API_BASE_URL}/register` && response.request().method() === 'POST'),
+      page.getByRole("button", { name: "Create account", exact: true }).click(),
+    ])
+    if (response.status() !== 429 || attempt === 1) {
+      expect(response.ok()).toBeTruthy()
+      break
+    }
+    const retryAfter = Number(response.headers()['retry-after'])
+    expect(retryAfter).toBeGreaterThan(0)
+    expect(retryAfter).toBeLessThanOrEqual(60)
+    await new Promise(resolve => setTimeout(resolve, retryAfter * 1000 + 250))
+  }
   await expect(page).toHaveURL(/\/forms\/create$/, { timeout: 30_000 })
 }
 
@@ -391,6 +416,7 @@ async function openPublicForm(page: Page, slug: string) {
   await gotoPageWithRetry(page, `/forms/${slug}`, async () => {
     await expect(page.getByTestId("public-form-page")).toBeVisible()
   })
+  await page.waitForLoadState("networkidle")
 }
 
 async function expectSubmissionSuccess(page: Page) {
@@ -440,7 +466,12 @@ async function selectFlatOption(page: Page, fieldId: string, optionName: string,
   await getOpenFormField(page, fieldId).getByRole(role, { name: optionName, exact: true }).click()
 }
 
-test.beforeEach(async ({ page }, testInfo) => {
+let apiBudgetToken: string | undefined
+
+test.beforeEach(async ({ page, request }, testInfo) => {
+  await waitForAnonymousApiBudget(request, testInfo)
+  apiBudgetToken ??= await apiLogin(request)
+  await waitForAuthenticatedApiBudget(request, testInfo, { Authorization: `Bearer ${apiBudgetToken}` })
   const browserLogs: string[] = []
   browserLogsByTest.set(testInfo.testId, browserLogs)
 
@@ -558,40 +589,117 @@ test("editing an existing form title persists after save", async ({ page, reques
   await expect(page.getByRole("heading", { name: updatedTitle, exact: true })).toBeVisible()
 })
 
-test("font picker opens from Design and applies a font", async ({ page, request }) => {
-  const form = await apiCreateForm(request, { title: uniqueTitle("Font Picker") })
-  await page.route("**/fonts", route => route.fulfill({ json: ["Roboto", "Open Sans"] }))
-
-  const token = await apiLogin(request)
-  const baseURL = test.info().project.use.baseURL
-  if (!baseURL) throw new Error("Playwright baseURL is required")
-  await page.context().addCookies([{ name: "opnform_token", value: token, url: baseURL }])
+test("editor undo and redo preserve a renamed form through save", async ({ page, request }) => {
+  const form = await apiCreateForm(request, { title: uniqueTitle("History Original") })
+  const updatedTitle = uniqueTitle("History Edited")
+  await loginUi(page)
   await page.goto(`/forms/${form.slug}/edit`)
   await expect(page.locator("#form-editor")).toBeVisible()
-
-  // Exercise the enabled UI without requiring a Google Fonts API key in CI.
-  await page.evaluate(() => {
-    const payload = (window as typeof window & {
-      __NUXT__: { state: Record<string, { services: { google: { fonts: boolean } } }> }
-    }).__NUXT__
-    payload.state["$sfeatureFlags"].services.google.fonts = true
-  })
-
-  const pageErrors: string[] = []
-  page.on("pageerror", error => pageErrors.push(error.message))
-
-  await page.getByText("Design", { exact: true }).click()
-  const fontFamily = page.getByText("Font Family", { exact: true }).locator("..")
-  await fontFamily.getByRole("button").click()
-  await expect(page.getByText("The quick brown fox jumped over the lazy dog").first()).toBeVisible()
-  await page.getByText("Roboto", { exact: true }).last().click()
-  await page.getByRole("button", { name: "Apply", exact: true }).click()
-
-  await expect(fontFamily.getByRole("button")).toContainText("Roboto")
-  await fontFamily.getByRole("button").click()
-  await expect(page.getByText("The quick brown fox jumped over the lazy dog").first()).toBeVisible()
-  expect(pageErrors).toEqual([])
+  // UndoRedo clears the initial mounted state after 500 ms.
+  await page.waitForTimeout(650)
+  const undo = page.locator("#form-editor button").filter({ has: page.locator('[class*="undo"]') }).first()
+  const redo = page.locator("#form-editor button").filter({ has: page.locator('[class*="redo"]') }).first()
+  await expect(undo).toBeDisabled()
+  await renameEditorTitle(page, updatedTitle)
+  await expect(undo).toBeEnabled()
+  await undo.click()
+  await expect(page.locator("#form-editor-title")).toHaveText(form.title)
+  await expect(redo).toBeEnabled()
+  await redo.click()
+  await expect(page.locator("#form-editor-title")).toHaveText(updatedTitle)
+  await page.getByTestId("save-form-button").click()
+  await expect(page).toHaveURL(new RegExp(`/forms/${form.slug}/show/share$`), { timeout: 30_000 })
+  await expect(page.getByRole("heading", { name: updatedTitle, exact: true })).toBeVisible()
 })
+
+test("calendar selection and clear preserve the submitted day", async ({ page, request }) => {
+  const form = await apiCreateForm(request, {
+    title: uniqueTitle("Calendar Compatibility"),
+    payloadOverrides: { properties: [{ id: "appointment", name: "Appointment", type: "date", required: true, date_format: "yyyy-MM-dd" }] },
+  })
+  await openPublicForm(page, form.slug)
+  await page.getByRole("button", { name: "Select date", exact: true }).click()
+  const day = page.locator(".vc-day:not(.is-not-in-month)").filter({ has: page.locator(".vc-day-content").filter({ hasText: /^15$/ }) }).first()
+  const selectedDay = (await day.getAttribute("class"))?.match(/(?:^|\s)id-(\d{4}-\d{2}-\d{2})(?:\s|$)/)?.[1]
+  expect(selectedDay).toBeTruthy()
+  await day.getByRole("button").click()
+  await expect(page.getByRole("button", { name: `Selected date: ${selectedDay}`, exact: true })).toBeVisible()
+  await page.getByRole("button", { name: "Clear date", exact: true }).click()
+  const trigger = page.getByRole("button", { name: "Select date", exact: true })
+  await expect(trigger).toHaveAttribute("aria-expanded", "false")
+  await expect(page.locator(".vc-container")).toBeHidden()
+  await trigger.click()
+  await expect(trigger).toHaveAttribute("aria-expanded", "true")
+  await day.getByRole("button").click()
+  for (const key of ["Enter", "Space"]) {
+    await page.getByRole("button", { name: "Clear date", exact: true }).press(key)
+    await expect(trigger).toHaveAttribute("aria-expanded", "false")
+    await expect(page.locator(".vc-container")).toBeHidden()
+    await trigger.click()
+    await expect(trigger).toHaveAttribute("aria-expanded", "true")
+    await day.getByRole("button").click()
+  }
+  await page.getByRole("button", { name: /submit/i }).click()
+  await expectSubmissionSuccess(page)
+  const token = await apiLogin(request)
+  const submissions = await apiListSubmissions(request, token, form.slug)
+  expect(submissions.data[0].data.appointment.slice(0, 10)).toBe(selectedDay)
+})
+
+for (const deferredFonts of [false, true]) {
+  test(`font picker opens from Design and applies a font${deferredFonts ? " after a delayed response" : ""}`, async ({ page, request }) => {
+    const form = await apiCreateForm(request, { title: uniqueTitle("Font Picker") })
+    let releaseFonts = () => {}
+    let fontsRequested = false
+    const pendingFonts = new Promise<void>(resolve => { releaseFonts = resolve })
+    await page.route("**/fonts", async route => {
+      fontsRequested = true
+      if (deferredFonts) await pendingFonts
+      return route.fulfill({ json: ["Roboto", "Open Sans"] })
+    })
+    // The test covers the picker and applied font style without requiring a CDN connection.
+    await page.route("https://fonts.googleapis.com/**", route => route.fulfill({ contentType: 'text/css', body: '' }))
+
+    const token = await apiLogin(request)
+    const baseURL = test.info().project.use.baseURL
+    if (!baseURL) throw new Error("Playwright baseURL is required")
+    await page.context().addCookies([{ name: "opnform_token", value: token, url: baseURL }])
+    await page.goto(`/forms/${form.slug}/edit`)
+    await expect(page.locator("#form-editor")).toBeVisible()
+
+    // Exercise the enabled UI without requiring a Google Fonts API key in CI.
+    await page.evaluate(() => {
+      // Nuxt 4 keeps the hydrated payload on the app rather than window.__NUXT__.
+      const root = document.querySelector('#__nuxt') as Element & {
+        __vue_app__: { $nuxt: { payload: { state: Record<string, { services: { google: { fonts: boolean } } }> } } }
+      }
+      root.__vue_app__.$nuxt.payload.state["$sfeatureFlags"].services.google.fonts = true
+    })
+
+    const pageErrors: string[] = []
+    page.on("pageerror", error => pageErrors.push(error.message))
+    page.on("console", message => { if (message.type() === 'error') pageErrors.push(message.text()) })
+
+    await page.getByText("Design", { exact: true }).click()
+    const fontFamily = page.getByText("Font Family", { exact: true }).locator("..")
+    await fontFamily.getByRole("button").click()
+    if (deferredFonts) {
+      await expect.poll(() => fontsRequested).toBe(true)
+      await expect(page.getByText("The quick brown fox jumped over the lazy dog")).toHaveCount(0)
+      releaseFonts()
+    }
+    await expect(page.getByText("The quick brown fox jumped over the lazy dog").first()).toBeVisible()
+    await page.getByText("Roboto", { exact: true }).last().click()
+    await page.getByRole("button", { name: "Apply", exact: true }).click()
+
+    await expect(fontFamily.getByRole("button")).toContainText("Roboto")
+    await expect(fontFamily.getByRole("button").getByText("Roboto", { exact: true })).toHaveCSS('font-family', 'Roboto')
+    await expect(page.locator(".form-editor-preview .open-complete-form")).toHaveCSS("--font-family", "Roboto")
+    await fontFamily.getByRole("button").click()
+    await expect(page.getByText("The quick brown fox jumped over the lazy dog").first()).toBeVisible()
+    expect(pageErrors).toEqual([])
+  })
+}
 
 test("form save errors open the invalid field section and computed variable", async ({ page, request }) => {
   const form = await apiCreateForm(request, {
@@ -936,6 +1044,227 @@ test("public form surfaces required and invalid email validation errors", async 
   await expectFieldError(page, "required_email", /valid email address/i)
 })
 
+for (const toggle of [false, true]) {
+  for (const prefill of ["", "true", "false"]) {
+    const checked = prefill === "true"
+    test(`public form initial visibility with ${toggle ? "toggle" : "checkbox"} and ${prefill || "empty"} prefill`, async ({ page, request, browser }) => {
+      const form = await apiCreateForm(request, {
+        title: uniqueTitle("Initial Visibility"),
+        payloadOverrides: {
+          auto_save: false,
+          properties: [
+            buildCheckboxField("include_files", "Include files", { use_toggle_switch: toggle }),
+            {
+              id: "attachments",
+              name: "Attach files (optional)",
+              type: "files",
+              hidden: false,
+              required: false,
+              logic: {
+                conditions: {
+                  identifier: "include_files",
+                  value: {
+                    operator: "is_not_checked",
+                    property_meta: { id: "include_files", type: "checkbox" },
+                  },
+                },
+                actions: ["hide-block"],
+              },
+            },
+            buildTextField("internal", "Internal field", { hidden: true }),
+          ],
+        },
+      })
+      const path = `/forms/${form.slug}${prefill ? `?include_files=${prefill}` : ""}`
+      const response = await request.get(path)
+      expect(response.ok()).toBeTruthy()
+      const html = await response.text()
+      expect(html.includes('data-testid="open-form-field-attachments"')).toBe(checked)
+      expect(html).not.toContain('data-testid="open-form-field-internal"')
+
+      // Inspect the actual first paint without allowing hydration to hide a wrong SSR field.
+      const context = await browser.newContext({ javaScriptEnabled: false })
+      try {
+        const firstRender = await context.newPage()
+        await firstRender.goto(new URL(path, response.url()).href)
+        await expect(firstRender.getByLabel("Include files", { exact: true })).toBeVisible()
+        await expect(getOpenFormField(firstRender, "attachments")).toHaveCount(checked ? 1 : 0)
+        await expect(getOpenFormField(firstRender, "internal")).toHaveCount(0)
+      } finally {
+        await context.close()
+      }
+
+      await openPublicForm(page, `${form.slug}${prefill ? `?include_files=${prefill}` : ""}`)
+      await page.waitForLoadState("networkidle")
+      const control = page.getByRole(toggle ? "switch" : "checkbox", { name: "Include files", exact: true })
+      await expect(control).toBeChecked({ checked })
+      await expect(getOpenFormField(page, "attachments")).toHaveCount(checked ? 1 : 0)
+      await control.click()
+      await expect(getOpenFormField(page, "attachments")).toHaveCount(checked ? 0 : 1)
+      await control.click()
+      await expect(getOpenFormField(page, "attachments")).toHaveCount(checked ? 1 : 0)
+      await expect(getOpenFormField(page, "internal")).toHaveCount(0)
+    })
+  }
+}
+
+for (const toggle of [false, true]) {
+  test(`initialized ${toggle ? "toggle" : "checkbox"} preserves required validation and submitted answers`, async ({ page, request }) => {
+    const form = await apiCreateForm(request, {
+      payloadOverrides: {
+        auto_save: false,
+        properties: [
+          buildCheckboxField("consent", "Consent", { required: true, use_toggle_switch: toggle }),
+          buildCheckboxField("optional", "Optional checkbox"),
+          buildCheckboxField("internal", "Internal checkbox", { hidden: true, required: true }),
+          buildTextField("details", "Details", {
+            required: true,
+            logic: {
+              conditions: { identifier: "consent", value: {
+                operator: "is_not_checked", property_meta: { id: "consent", type: "checkbox" },
+              } },
+              actions: ["hide-block"],
+            },
+          }),
+        ],
+      },
+    })
+    await openPublicForm(page, form.slug)
+    await page.waitForLoadState("networkidle")
+    await expect(getOpenFormField(page, "details")).toHaveCount(0)
+    await page.getByRole("button", { name: /submit/i }).click()
+    await expectFieldError(page, "consent", /Consent.*accepted/)
+
+    const control = page.getByRole(toggle ? "switch" : "checkbox", { name: "Consent", exact: true })
+    await control.focus()
+    await control.press("Space")
+    await expect(control).toBeChecked()
+    await expect(getOpenFormField(page, "details")).toBeVisible()
+    await page.getByRole("button", { name: /submit/i }).click()
+    await expectFieldError(page, "details", /Details.*required/)
+    await fillFieldInput(page, "details", "Preserved answer")
+    await page.getByRole("button", { name: /submit/i }).click()
+    await expectSubmissionSuccess(page)
+
+    const submissions = await apiListSubmissions(request, await apiLogin(request), form.slug)
+    expect(submissions.data).toHaveLength(1)
+    expect(submissions.data[0].data).toMatchObject({ consent: true, optional: false, details: "Preserved answer" })
+  })
+}
+
+for (const checked of [false, true]) {
+  test(`checkbox initialization preserves ${checked ? "a checked" : "an unchecked"} draft, autosave and other answers`, async ({ page, request }, testInfo) => {
+    const form = await apiCreateForm(request, {
+      payloadOverrides: {
+        auto_save: true,
+        properties: [
+          buildCheckboxField("include_files", "Include files", { prefill: !checked }),
+          buildTextField("feedback", "Feedback", { prefill: "Configured answer" }),
+          buildTextField("details", "Details", {
+            logic: { conditions: { identifier: "include_files", value: {
+              operator: "is_not_checked", property_meta: { id: "include_files", type: "checkbox" },
+            } }, actions: ["hide-block"] },
+          }),
+        ],
+      },
+    })
+    const definition = await request.get(`${API_BASE_URL}/forms/${form.slug}`)
+    const publicForm = await definition.json()
+    const url = new URL(`/forms/${form.slug}`, testInfo.project.use.baseURL as string).href
+    const key = `${publicForm.form_pending_submission_key}-${hash(url)}`
+    await page.addInitScript(({ key, checked }) => {
+      if (localStorage.getItem(key) === null) {
+        localStorage.setItem(key, JSON.stringify({ include_files: checked, feedback: "Saved answer" }))
+      }
+    }, { key, checked })
+    await openPublicForm(page, form.slug)
+    await page.waitForLoadState("networkidle")
+    const control = page.getByRole("checkbox", { name: "Include files", exact: true })
+    await expect(control).toBeChecked({ checked })
+    await expect(page.getByLabel("Feedback", { exact: true })).toHaveValue("Saved answer")
+    await expect(getOpenFormField(page, "details")).toHaveCount(checked ? 1 : 0)
+    await fillFieldInput(page, "feedback", "Updated answer")
+    await control.click()
+    await expect.poll(async () => page.evaluate((key) => JSON.parse(localStorage.getItem(key) || "{}"), key))
+      .toMatchObject({ include_files: !checked, feedback: "Updated answer" })
+    await page.reload()
+    await page.waitForLoadState("networkidle")
+    await expect(control).toBeChecked({ checked: !checked })
+    await expect(page.getByLabel("Feedback", { exact: true })).toHaveValue("Updated answer")
+    await expect(getOpenFormField(page, "details")).toHaveCount(checked ? 0 : 1)
+    await page.getByRole("button", { name: /submit/i }).click()
+    await expectSubmissionSuccess(page)
+    const submissions = await apiListSubmissions(request, await apiLogin(request), form.slug)
+    expect(submissions.data[0].data).toMatchObject({ include_files: !checked, feedback: "Updated answer" })
+    await expect.poll(async () => page.evaluate((key) => localStorage.getItem(key), key)).toBeNull()
+  })
+}
+
+for (const required of [false, true]) {
+  test(`focused ${required ? "required Yes" : "optional No"} checkbox stays unanswered and submits the selected value`, async ({ page, request }) => {
+    const form = await apiCreateForm(request, {
+      presentationStyle: "focused",
+      payloadOverrides: {
+        auto_save: false,
+        settings: { navigation_arrows: true, auto_next: false },
+        properties: [buildCheckboxField("choice", "Your choice", { required })],
+      },
+    })
+    await openPublicForm(page, form.slug)
+    await page.waitForLoadState("networkidle")
+    const yes = page.getByRole("option", { name: /Yes/i })
+    const no = page.getByRole("option", { name: /No/i })
+    await expect(yes).toHaveAttribute("aria-selected", "false")
+    await expect(no).toHaveAttribute("aria-selected", "false")
+    if (required) {
+      const validation = page.waitForResponse((response) => response.url().endsWith(`/forms/${form.slug}/answer`))
+      await page.getByRole("button", { name: /submit/i }).click()
+      expect((await validation).status()).toBe(422)
+      await expect(yes).toHaveAttribute("aria-selected", "false")
+      await expect(no).toHaveAttribute("aria-selected", "false")
+    }
+    await (required ? yes : no).click()
+    await expect(required ? yes : no).toHaveAttribute("aria-selected", "true")
+    await page.getByRole("button", { name: /submit/i }).click()
+    await expectSubmissionSuccess(page)
+    const submissions = await apiListSubmissions(request, await apiLogin(request), form.slug)
+    expect(submissions.data[0].data.choice).toBe(required)
+  })
+}
+
+test("checkbox initialization preserves answers when editing a stored submission", async ({ page, request }) => {
+  const form = await apiCreateForm(request, {
+    payloadOverrides: {
+      auto_save: false,
+      editable_submissions: true,
+      properties: [
+        buildCheckboxField("choice", "Your choice"),
+        buildTextField("feedback", "Feedback", { required: true }),
+      ],
+    },
+  })
+  await openPublicForm(page, form.slug)
+  await page.waitForLoadState("networkidle")
+  await fillFieldInput(page, "feedback", "Original answer")
+  const submitted = page.waitForResponse((response) => response.url().endsWith(`/forms/${form.slug}/answer`))
+  await page.getByRole("button", { name: /submit/i }).click()
+  await expectSubmissionSuccess(page)
+  const { submission_id: submissionId } = await (await submitted).json()
+  expect(submissionId).toBeTruthy()
+
+  await openPublicForm(page, `${form.slug}?submission_id=${submissionId}`)
+  await page.waitForLoadState("networkidle")
+  await expect(page.getByRole("checkbox", { name: "Your choice", exact: true })).not.toBeChecked()
+  await expect(page.getByLabel("Feedback", { exact: true })).toHaveValue("Original answer")
+  await page.getByRole("checkbox", { name: "Your choice", exact: true }).check()
+  await fillFieldInput(page, "feedback", "Edited answer")
+  await page.getByRole("button", { name: /submit/i }).click()
+  await expectSubmissionSuccess(page)
+  const submissions = await apiListSubmissions(request, await apiLogin(request), form.slug)
+  expect(submissions.data).toHaveLength(1)
+  expect(submissions.data[0].data).toMatchObject({ choice: true, feedback: "Edited answer" })
+})
+
 test("public form logic reveals and requires follow-up details conditionally", async ({ page, request }) => {
   const form = await apiCreateForm(request, {
     title: uniqueTitle("Conditional Logic"),
@@ -1030,10 +1359,51 @@ test("focused public form accepts a complete stepped response flow", async ({ pa
 
   await openPublicForm(page, form.slug)
   await fillLabeledInput(page, "Your name", "Focused User")
-  await page.getByRole("button", { name: /next/i }).click()
+  const next = page.getByRole("button", { name: /next/i })
+  // The outgoing step stays in the DOM until its slide animation completes.
+  await expect(next).toHaveCount(1)
+  await next.click()
   await fillLabeledInput(page, "Your email", uniqueEmail("focused"))
-  await page.getByRole("button", { name: /next/i }).click()
+  await expect(next).toHaveCount(1)
+  await next.click()
   await page.getByRole("option", { name: /Lead generation/i }).click()
 
   await expectSubmissionSuccess(page)
 })
+
+for (const shared of [false, true]) {
+  test('iframe answer sharing is opt in: ' + shared, async ({ page, request }) => {
+    const form = await apiCreateForm(request, { payloadOverrides: { share_submission_data_with_parent: shared } })
+    const base = process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:3100'
+    const html = '<script>window.received=[];addEventListener("message",e=>{if(e.data?.type==="form-submitted")window.received.push(e.data)})</script><iframe src="' + base + '/forms/' + form.slug + '"></iframe>'
+    const host = createServer((_req, res) => { res.setHeader('Content-Type', 'text/html'); res.end(html) })
+    await new Promise(resolve => host.listen(0, '127.0.0.1', resolve))
+    try {
+      const address = host.address()
+      if (!address || typeof address === 'string') throw new Error('Missing iframe host address')
+      await page.goto('http://127.0.0.1:' + address.port)
+      const frame = page.frameLocator('iframe')
+      await expect(frame.getByTestId('public-form-page')).toBeVisible()
+      await page.waitForLoadState('networkidle')
+      for (const [field, value] of [['default_name', 'Private QA answer'], ['default_email', 'visitor@example.test']]) {
+        const input = frame.getByTestId('open-form-field-' + field).locator('input').first()
+        await input.click()
+        await input.fill('')
+        await input.pressSequentially(value)
+        await input.blur()
+      }
+      const response = page.waitForResponse(response => response.request().method() === 'POST' && response.url().includes('/' + form.slug + '/answer'))
+      await frame.getByRole('button', { name: /submit/i }).click()
+      expect((await response).ok()).toBeTruthy()
+      await expect.poll(() => page.evaluate<number>('window.received.length')).toBe(1)
+      const payload = await page.evaluate<{ submission_data?: unknown }>('window.received[0]')
+      if (shared) expect(JSON.stringify(payload.submission_data)).toContain('Private QA answer')
+      else {
+        expect(payload).not.toHaveProperty('submission_data')
+        expect(payload).not.toHaveProperty('meta')
+      }
+    } finally {
+      await new Promise(resolve => host.close(resolve))
+    }
+  })
+}

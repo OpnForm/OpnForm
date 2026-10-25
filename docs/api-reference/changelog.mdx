@@ -3,6 +3,18 @@ title: "Changelog"
 description: "Notable updates to the OpnForm API."
 ---
 
+## 2026-10-07 – Export status polling with API tokens
+
+Personal Access Tokens with `forms-read` can now poll asynchronous exports at
+`GET /open/forms/{id}/submissions/export/status/{job_id}`. The previously documented
+`/export/{job_id}/status` path was incorrect.
+
+The job must belong to the requested form, and you must have access to that form.
+A job from another form returns `404`.
+
+The response documentation now includes the initial `queued` status and matches
+the ten fields returned by the API, including `null` values for fields that do not apply.
+
 ## 2026-10-01 – Removed unused public form users endpoint
 
 `GET /forms/{form}/users` has been removed and now returns `404`. The application does not use this endpoint.

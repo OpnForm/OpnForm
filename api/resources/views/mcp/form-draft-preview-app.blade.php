@@ -13,6 +13,7 @@
             .eyebrow::before { width: 6px; height: 6px; border-radius: 999px; background: #3b82f6; content: ''; }
             h1 { overflow: hidden; margin: 0; font-size: 16px; line-height: 1.25; text-overflow: ellipsis; white-space: nowrap; }
             .meta { flex: none; margin: 0; color: var(--color-text-secondary, #6b7280); font-size: 11px; line-height: 1.25; }
+            .version-hint { margin: 7px 0 0; color: var(--color-text-secondary, #6b7280); font-size: 11px; }
             .zoom-controls { display: flex; align-items: center; overflow: hidden; border: 1px solid var(--color-border-primary, #d1d5db); border-radius: 7px; background: var(--color-background-primary, #fff); }
             .zoom-button { display: grid; width: 28px; height: 28px; place-items: center; border: 0; border-radius: 0; padding: 0; background: transparent; color: var(--color-text-primary, #111827); font-size: 15px; font-weight: 500; cursor: pointer; }
             .zoom-button:hover:not(:disabled), .zoom-value:hover { background: var(--color-background-secondary, #f3f4f6); }
@@ -54,6 +55,7 @@
                 let presentationStyle = 'classic';
                 let resizeScriptPromise;
                 let draftHandle = null;
+                let draftVersion = null;
                 let currentPreviewUrl = null;
                 let rendered = false;
                 const initialOpenButtonText = openButton.textContent;
@@ -124,9 +126,11 @@
                     ?? {};
 
                 const applyToolInput = (input) => {
+                    if (rendered) return;
+
                     const args = input?.arguments ?? input ?? {};
                     draftHandle = args.draft_handle ?? draftHandle;
-                    openButton.disabled = !draftHandle;
+                    openButton.disabled = true;
                 };
 
                 const renderToolResult = (result) => {
@@ -135,17 +139,28 @@
                     const draft = payload.draft ?? {};
                     const definition = draft.definition ?? {};
                     const previewUrlValue = resultMeta.preview_url;
+                    const nextDraftHandle = payload.draft_handle ?? draftHandle;
 
-                    if (!previewUrlValue && !draft.version && !definition.title) {
+                    if (!Number.isInteger(draft.version) || draft.version < 1 || !nextDraftHandle) {
+                        return false;
+                    }
+
+                    // A conversation preview represents one revision, even if the host
+                    // later delivers another tool result to the same component.
+                    if (rendered && (draft.version !== draftVersion
+                        || (payload.draft_handle && payload.draft_handle !== draftHandle))) {
                         return false;
                     }
 
                     rendered = true;
                     window.clearTimeout(loadingFallback);
-                    draftHandle = payload.draft_handle ?? draftHandle;
+                    draftHandle = nextDraftHandle;
+                    draftVersion = draft.version ?? null;
+                    document.getElementById('version-hint').textContent = `Fixed preview · Ask ChatGPT to return to v${draftVersion ?? '?'} to continue from this version.`;
                     presentationStyle = definition.presentation_style ?? 'classic';
                     title.textContent = definition.title ?? 'Untitled form';
                     meta.textContent = `Draft v${draft.version ?? '?'} · ${presentationStyle} layout`;
+                    meta.title = `This preview stays on v${draft.version ?? '?'}. Ask ChatGPT to restore this version to continue from it.`;
                     applyPreviewLayout();
                     if (previewUrlValue) {
                         const previewUrl = new URL(previewUrlValue);
@@ -200,7 +215,7 @@
                 app.onToolResult(renderToolResult);
 
                 openButton.onclick = async () => {
-                    if (!draftHandle) return;
+                    if (!rendered || !draftHandle || !Number.isInteger(draftVersion) || draftVersion < 1) return;
 
                     const actionStatus = document.getElementById('action-status');
                     openButton.disabled = true;
@@ -210,6 +225,7 @@
                     try {
                         const result = await app.callServerTool('open_form_draft_in_editor', {
                             draft_handle: draftHandle,
+                            expected_version: draftVersion,
                         });
                         const resultMeta = toolMeta(result);
                         const editorUrl = resultMeta.editor_url;
@@ -220,7 +236,7 @@
 
                         await app.openLink({ url: editorUrl });
                     } catch (error) {
-                        actionStatus.textContent = 'Could not open the OpnForm editor. Please try again.';
+                        actionStatus.textContent = `Could not open this version. If the draft has changed, ask ChatGPT to restore v${draftVersion ?? '?'} first, or open its latest preview.`;
                         actionStatus.hidden = false;
                     } finally {
                         openButton.textContent = initialOpenButtonText;
@@ -252,6 +268,7 @@
                     <button id="open-editor" class="open-button" type="button" aria-label="Continue editing this draft in OpnForm" disabled>Edit in OpnForm</button>
                 </div>
             </header>
+            <p id="version-hint" class="version-hint"></p>
             <p id="action-status" class="action-status" role="status" aria-live="polite" hidden></p>
             <div id="preview-viewport" class="preview-viewport" hidden>
                 <div id="preview-canvas" class="preview-canvas">

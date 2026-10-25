@@ -65,10 +65,10 @@ export function useWorkspaces() {
     return useMutation({
       mutationFn: (data) => workspaceApi.update(toValue(workspaceId), data),
       onSuccess: (response) => {
-        const id = toValue(workspaceId)
         const updatedWorkspace = response.workspace
+        const id = updatedWorkspace.id
         // Update individual item cache
-        queryClient.setQueryData(['workspaces', id], response)
+        queryClient.setQueryData(['workspaces', id], updatedWorkspace)
         
         // Update in list cache
         queryClient.setQueryData(['workspaces', 'list'], (old) => {
@@ -165,4 +165,4 @@ export function useWorkspaces() {
     invalidateAll,
     getWorkspaceById,
   }
-} 
+}

@@ -205,8 +205,10 @@ class FormLogicConditionChecker
         // Check if value is boolean
         if (is_bool($value)) {
             return match ($operator) {
-                'equals', 'is_checked' => $value === true,
-                'does_not_equal', 'is_not_checked' => $value === false,
+                'equals' => $value === ($propertyCondition['value'] ?? null),
+                'does_not_equal' => $value !== ($propertyCondition['value'] ?? null),
+                'is_checked' => $value === true,
+                'is_not_checked' => $value === false,
                 default => false
             };
         }
@@ -728,7 +730,7 @@ class FormLogicConditionChecker
                 }
                 $matches = FormRegex::matches($propertyCondition['value'], $value);
 
-                return $matches === null ? true : ! $matches;
+                return $matches === null ? false : ! $matches;
             case 'exists_in_submissions':
                 return $this->checkExistsInSubmissions($propertyCondition, $value);
             case 'does_not_exist_in_submissions':

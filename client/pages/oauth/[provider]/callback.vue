@@ -37,6 +37,7 @@
 <script setup>
 import { WindowMessageTypes } from "~/composables/useWindowMessage"
 import { authApi } from "~/api"
+import { consumeOAuthState } from "~/lib/oauthState"
 
 const router = useRouter()
 const route = useRoute()
@@ -51,6 +52,9 @@ const handleCallback = async () => {
   const provider = route.params.provider
   
   try {
+    if (!consumeOAuthState(provider, route.query.state)) {
+      throw new Error("OAuth was not initiated in this browser or has expired")
+    }
     let payloadData = {
       code: route.query.code
     }
@@ -60,13 +64,6 @@ const handleCallback = async () => {
       payloadData.state = route.query.state
     }
     
-    // Get invite token from localStorage if it was stored during OAuth initiation
-    const inviteToken = localStorage.getItem('oauth_invite_token')
-    if (inviteToken) {
-      payloadData.invite_token = inviteToken
-      localStorage.removeItem('oauth_invite_token')
-    }
-
     // Call the OAuth callback endpoint directly to get the raw response
     let response
     try {

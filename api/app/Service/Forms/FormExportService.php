@@ -5,15 +5,17 @@ namespace App\Service\Forms;
 use App\Models\Forms\Form;
 use App\Models\Forms\FormSubmission;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Vinkla\Hashids\Facades\Hashids;
 
 class FormExportService
 {
     public const SYNC_EXPORT_THRESHOLD = 1000;
+
     public const CACHE_KEY_PREFIX = 'form_export_job';
+
     public const EXPORT_FILE_PATH = 'exports/temp/';
 
     public function __construct(private ExternalSubmissionFileLinkPolicy $externalFileLinkPolicy)
@@ -58,10 +60,18 @@ class FormExportService
             if ($value === true) {
                 if ($parameter = SubmissionAttribution::parameterFromColumnId($column)) {
                     $filteredData[$parameter] = $submission->meta['attribution'][$parameter] ?? '';
+
                     continue;
                 }
 
-                $key = collect($formattedData)->keys()->first(fn ($key) => str_contains($key, $column));
+                if ($column === 'ip_address') {
+                    if ($form->enable_ip_tracking && $form->workspace->hasFeature('enable_ip_tracking')) {
+                        $filteredData['ip_address'] = $submission->meta['ip_address'] ?? '';
+                    }
+                    // A form field can also use this ID; preserve its answer below.
+                }
+
+                $key = collect($formattedData)->keys()->first(fn ($key) => str_ends_with($key, ' ('.$column.')'));
                 if ($key) {
                     $filteredData[$key] = $formattedData[$key];
                 }
@@ -93,14 +103,18 @@ class FormExportService
         $csvContent = $this->generateCsvContent($rows);
 
         // Upload to configured storage disk
-        $filePath = self::EXPORT_FILE_PATH . $fileName;
+        $filePath = self::EXPORT_FILE_PATH.$fileName;
         $disk = Storage::disk(config('filesystems.default'));
 
-        $disk->put($filePath, $csvContent, [
+        $stored = $disk->put($filePath, $csvContent, [
             'visibility' => 'private',
             'Content-Type' => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="' . $fileName . '"'
+            'Content-Disposition' => 'attachment; filename="'.$fileName.'"',
         ]);
+
+        if (!$stored) {
+            throw new \RuntimeException('Unable to store CSV export');
+        }
 
         // Generate temporary URL for download (works for all storage types)
         return $disk->temporaryUrl($filePath, $expiresAt);
@@ -122,11 +136,11 @@ class FormExportService
 
         // Write header row (clean column names)
         $headers = $this->cleanColumnNames(array_keys($rows[0]));
-        fputcsv($output, $headers);
+        fputcsv($output, array_map([$this, 'safeSpreadsheetCell'], $headers));
 
         // Write data rows
         foreach ($rows as $row) {
-            fputcsv($output, array_values($row));
+            fputcsv($output, array_map([$this, 'safeSpreadsheetCell'], array_values($row)));
         }
 
         rewind($output);
@@ -134,6 +148,15 @@ class FormExportService
         fclose($output);
 
         return $csvContent;
+    }
+
+    private function safeSpreadsheetCell(mixed $value): mixed
+    {
+        // Preserve real numbers (including negatives); neutralize only text formulas.
+        if (is_string($value) && preg_match('/^[\s\x00-\x1f]*[=+\-@]/u', $value)) {
+            return "'" . $value;
+        }
+        return $value;
     }
 
     /**
@@ -177,6 +200,6 @@ class FormExportService
      */
     public function getCacheKey(string $jobId): string
     {
-        return self::CACHE_KEY_PREFIX . ':' . $jobId;
+        return self::CACHE_KEY_PREFIX.':'.$jobId;
     }
 }

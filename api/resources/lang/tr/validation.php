@@ -137,4 +137,11 @@ return [
     'complete_captcha' => 'Lütfen CAPTCHA\'yı tamamlayın.',
     'yes' => 'Evet',
     'no' => 'Hayır',
+
+    'from_date_required' => 'Başlangıç tarihi gereklidir',
+    'to_date_required' => 'Bitiş tarihi gereklidir',
+    'from_date_before_or_equal' => 'Başlangıç tarihi bitiş tarihinden önce veya onunla aynı olmalıdır',
+    'rating_min' => 'Bir puan seçilmelidir',
+    'select_min' => 'Lütfen en az :min seçenek seçin',
+    'select_max' => 'Lütfen en fazla :max seçenek seçin',
 ];

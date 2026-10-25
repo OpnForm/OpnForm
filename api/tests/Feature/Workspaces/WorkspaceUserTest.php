@@ -103,14 +103,17 @@ it('returns 404 when removing a user outside the workspace', function () {
     expect($this->workspace->users()->whereKey($outsideUser->id)->exists())->toBeFalse();
 });
 
-it('can leave a workspace', function () {
+it('can leave a workspace when another administrator remains', function () {
+    $remainingAdmin = User::factory()->create();
+    $this->workspace->users()->attach($remainingAdmin, ['role' => User::ROLE_ADMIN]);
     $this->postJson(route('open.workspaces.leave', ['workspace' => $this->workspace]))
         ->assertSuccessful()
         ->assertJson([
             'message' => 'You have left the workspace successfully.'
         ]);
 
-    expect($this->workspace->users()->count())->toBe(0);
+    expect($this->workspace->users()->count())->toBe(1);
+    expect($this->workspace->users()->whereKey($remainingAdmin->id)->exists())->toBeTrue();
 });
 
 it('enforces appsumo license member limits when inviting users', function () {

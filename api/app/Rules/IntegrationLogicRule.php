@@ -51,33 +51,19 @@ class IntegrationLogicRule implements DataAwareRule, ValidationRule
         $typeField = $condition['value']['property_meta']['type'];
         $operator = $condition['value']['operator'];
 
-        // If operator has no format and no expected_type, it means it doesn't need input
-        if (!isset(LogicPropertyValidator::getConditionMapping()[$typeField]['comparators'][$operator]['expected_type'])) {
+        $mapping = LogicPropertyValidator::getConditionMapping();
+        if (!isset($mapping[$typeField]['comparators'][$operator])) {
+            $this->isConditionCorrect = false;
+            $this->conditionErrors[] = 'unknown condition type or operator';
             return;
         }
-
-        if (!isset($condition['value']['value'])) {
+        if (!isset($mapping[$typeField]['comparators'][$operator]['expected_type'])) return;
+        if (!array_key_exists('value', $condition['value'])) {
             $this->isConditionCorrect = false;
             $this->conditionErrors[] = 'missing condition value';
-
             return;
         }
-
         $value = $condition['value']['value'];
-
-        if (!isset(LogicPropertyValidator::getConditionMapping()[$typeField])) {
-            $this->isConditionCorrect = false;
-            $this->conditionErrors[] = 'configuration not found for condition type';
-
-            return;
-        }
-
-        if (!isset(LogicPropertyValidator::getConditionMapping()[$typeField]['comparators'][$operator])) {
-            $this->isConditionCorrect = false;
-            $this->conditionErrors[] = 'configuration not found for condition operator';
-
-            return;
-        }
 
         $type = LogicPropertyValidator::getConditionMapping()[$typeField]['comparators'][$operator]['expected_type'];
 
@@ -119,6 +105,11 @@ class IntegrationLogicRule implements DataAwareRule, ValidationRule
 
     private function checkConditions($conditions)
     {
+        if (!is_array($conditions) || $conditions === []) {
+            $this->isConditionCorrect = false;
+            $this->conditionErrors[] = 'invalid condition node';
+            return;
+        }
         if (array_key_exists('operatorIdentifier', $conditions)) {
             if (($conditions['operatorIdentifier'] !== 'and') && ($conditions['operatorIdentifier'] !== 'or')) {
                 $this->conditionErrors[] = 'missing operator';
@@ -127,14 +118,14 @@ class IntegrationLogicRule implements DataAwareRule, ValidationRule
                 return;
             }
 
-            if (isset($conditions['operatorIdentifier']['children'])) {
+            if (!array_key_exists('children', $conditions)) {
                 $this->conditionErrors[] = 'extra condition';
                 $this->isConditionCorrect = false;
 
                 return;
             }
 
-            if (!is_array($conditions['children'])) {
+            if (!is_array($conditions['children']) || $conditions['children'] === []) {
                 $this->conditionErrors[] = 'wrong sub-condition type';
                 $this->isConditionCorrect = false;
 
@@ -146,6 +137,9 @@ class IntegrationLogicRule implements DataAwareRule, ValidationRule
             }
         } elseif (isset($conditions['identifier'])) {
             $this->checkBaseCondition($conditions);
+        } else {
+            $this->isConditionCorrect = false;
+            $this->conditionErrors[] = 'missing condition identifier';
         }
     }
 
@@ -158,6 +152,8 @@ class IntegrationLogicRule implements DataAwareRule, ValidationRule
      */
     public function passes($attribute, $value)
     {
+        $this->isConditionCorrect = true;
+        $this->conditionErrors = [];
         if (isset($value)) {
             $this->checkConditions($value);
         }

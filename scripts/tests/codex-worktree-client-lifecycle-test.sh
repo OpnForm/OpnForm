@@ -51,7 +51,7 @@ printf '%s\n' \
 
 chmod +x "$fake_node" "$fake_npm"
 
-FAKE_NODE_VERSION=24.10.0
+FAKE_NODE_VERSION=24.22.1
 FAKE_NPM_COUNT_FILE="$install_count_file"
 FAKE_CLIENT_DIR="$ROOT_DIR/client"
 CODEX_NODE_BIN="$fake_node"
@@ -78,7 +78,7 @@ ensure_node_dependencies
 [ ! -e "$CODEX_CLIENT_NUXT_DIR/restart-sentinel" ]
 [ ! -e "$CODEX_CLIENT_VITE_CACHE_DIR/restart-sentinel" ]
 
-FAKE_NODE_VERSION=22.14.0
+FAKE_NODE_VERSION=22.22.3
 export FAKE_NODE_VERSION
 ensure_node_dependencies
 [ "$(cat "$install_count_file")" = "3" ]

@@ -97,16 +97,14 @@ class ImpersonationMiddleware
                 'route' => $routeName,
                 'impersonator' => Auth::guard('api')->payload()->get('impersonator_id'),
                 'impersonated_account' => Auth::id(),
-                'url' => $request->fullUrl(),
-                'payload' => $request->all(),
+                'url' => $request->url(),
             ], 403);
         } elseif (in_array($routeName, self::LOG_ROUTES)) {
             Log::warning(self::ADMIN_LOG_PREFIX . 'Impersonator action', [
                 'route' => $routeName,
-                'url' => $request->fullUrl(),
+                'url' => $request->url(),
                 'impersonated_account' => Auth::id(),
                 'impersonator' => Auth::guard('api')->payload()->get('impersonator_id'),
-                'payload' => $request->all(),
             ]);
         }
 

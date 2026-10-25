@@ -120,4 +120,11 @@ return [
     'complete_captcha' => 'Si us plau, completa el CAPTCHA.',
     'yes' => 'Sí',
     'no' => 'No',
+
+    'from_date_required' => 'La data inicial és obligatòria',
+    'to_date_required' => 'La data final és obligatòria',
+    'from_date_before_or_equal' => 'La data inicial ha de ser anterior o igual a la data final',
+    'rating_min' => 'Cal seleccionar una valoració',
+    'select_min' => 'Seleccioneu almenys :min opcions',
+    'select_max' => 'Seleccioneu com a màxim :max opcions',
 ];

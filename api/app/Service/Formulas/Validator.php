@@ -209,14 +209,13 @@ class Validator
 
     public static function extractFieldReferences(string $formula): array
     {
-        $references = [];
-        preg_match_all('/\{([^}]+)\}/', $formula, $matches);
-
-        foreach ($matches[1] as $match) {
-            $references[] = trim($match);
+        try {
+            return array_values(array_map(fn (Token $token) => trim($token->value), array_filter(
+                (new Lexer($formula))->tokenize(), fn (Token $token) => $token->type === Token::FIELD_REF
+            )));
+        } catch (FormulaException $exception) {
+            return [];
         }
-
-        return $references;
     }
 }
 

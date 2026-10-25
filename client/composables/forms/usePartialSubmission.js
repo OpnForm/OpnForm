@@ -147,7 +147,7 @@ export function usePartialSubmission(formConfig, formDataRef, pendingSubmissionS
    * @param {boolean} options.skipFinalSync - If true, skip the final sync (use when about to do a complete submission)
    */
   const stopSync = (options = {}) => {
-    if (import.meta.server) return
+    if (import.meta.server || !dataWatcher) return
     
     const { skipFinalSync = false } = options
     

@@ -1,10 +1,10 @@
 import { computed, reactive, readonly } from 'vue'
-import { useI18n } from '#imports'
+import { useI18n } from 'vue-i18n'
 import { formsApi } from '~/api'
 
 /**
  * Creates a Stripe elements instance with state management
- * @param {String} initialAccountId - Optional account ID to initialize with
+ * @param {String} initialAccountId - Optional OAuth provider ID to initialize with
  * @returns {Object} Stripe elements API with state and methods
  */
 export const createStripeElements = (initialAccountId = null) => {
@@ -16,6 +16,8 @@ export const createStripeElements = (initialAccountId = null) => {
 
   // Initialize i18n at the top level
   const { t } = useI18n()
+  let selectedProviderId = initialAccountId ? String(initialAccountId) : null
+  let accountRequestVersion = 0
 
   // Use reactive for the state to ensure changes propagate
   const state = reactive({
@@ -35,7 +37,7 @@ export const createStripeElements = (initialAccountId = null) => {
     cardHolderEmail: '',
     
     // Account & payment state
-    stripeAccountId: initialAccountId, // Initialize with provided account ID
+    stripeAccountId: null, // Resolved Stripe connected account, separate from the OAuth provider ID
     intentId: null,
     showPreviewMessage: false,
     error: null
@@ -64,6 +66,7 @@ export const createStripeElements = (initialAccountId = null) => {
    * Resets the Stripe state to its initial values
    */
   const resetStripeState = () => {
+    accountRequestVersion++
     state.isLoadingAccount = false
     state.hasAccountLoadingError = false
     state.isStripeInstanceReady = false
@@ -86,14 +89,17 @@ export const createStripeElements = (initialAccountId = null) => {
    */
   const prepareStripeState = async (formSlug, providerId, isEditorPreview = false) => {
     if (!formSlug || !providerId) {
+      selectedProviderId = providerId ? String(providerId) : null
       resetStripeState()
       return { success: false, message: 'Missing form slug or OAuth provider ID' }
     }
     
     // Always ensure provider ID is a string
     const providerIdStr = String(providerId)
+    selectedProviderId = providerIdStr
     
     resetStripeState()
+    const requestVersion = accountRequestVersion
     state.isLoadingAccount = true
     
     try {
@@ -106,6 +112,7 @@ export const createStripeElements = (initialAccountId = null) => {
       }
       
       const response = await formsApi.stripe.getAccount(formSlug, fetchOptions)
+      if (requestVersion !== accountRequestVersion) return { success: false, stale: true }
       console.debug('[useStripeElements] Got account response:', response)
 
       if (response?.type === 'success' && response?.stripeAccount) {
@@ -135,6 +142,7 @@ export const createStripeElements = (initialAccountId = null) => {
         }
       }
     } catch (error) {
+      if (requestVersion !== accountRequestVersion) return { success: false, stale: true }
       console.error('[useStripeElements] Error preparing state:', error)
       state.hasAccountLoadingError = true
       state.isLoadingAccount = false
@@ -336,20 +344,14 @@ export const createStripeElements = (initialAccountId = null) => {
   }
 
   /**
-   * Sets the Stripe Account ID in the state
-   * @param {String|Number} accountId - The Stripe account ID
+   * Selects the OAuth provider without overwriting its resolved Stripe account
+   * @param {String|Number} accountId - The OAuth provider ID
    */
   const setAccountId = (accountId) => {
-    if (accountId) {
-      // Always convert to string - Stripe.js requires a string account ID
-      const accountIdStr = String(accountId)
-      console.debug('[useStripeElements] Setting Stripe account ID:', accountIdStr)
-      state.stripeAccountId = accountIdStr
-      
-      // If we have all required components, ensure card element is ready
-      if (state.card && state.stripe) {
-        state.isCardElementReady = true
-      }
+    const accountIdStr = accountId ? String(accountId) : null
+    if (selectedProviderId !== accountIdStr) {
+      resetStripeState()
+      selectedProviderId = accountIdStr
     }
   }
 

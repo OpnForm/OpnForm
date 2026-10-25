@@ -18,11 +18,19 @@ it('keeps domain reservations global when a request comes from a custom domain',
     $proof = $this->ownership->challenge($this->workspace->id, 'forms.example.com');
     $this->ownership->shouldReceive('txtRecords')->andReturn([['txt' => $proof['value']]]);
 
+    $scopeWasApplied = false;
+    $this->app->make(\Illuminate\Contracts\Http\Kernel::class)->pushMiddleware(function ($request, $next) use ($otherWorkspace, &$scopeWasApplied) {
+        $scopeWasApplied = ! $otherWorkspace->newQuery()->whereKey($otherWorkspace->id)->exists();
+
+        return $next($request);
+    });
+
     $this->withHeader('x-custom-domain', 'alpha.example.com')
         ->putJson(route('open.workspaces.save-custom-domains', $this->workspace), ['custom_domains' => ['forms.example.com']])
         ->assertStatus(422)->assertJsonValidationErrors('custom_domains');
 
-    expect($otherWorkspace->newQuery()->whereKey($otherWorkspace->id)->exists())->toBeFalse();
+    expect($scopeWasApplied)->toBeTrue();
+    expect($otherWorkspace->newQuery()->whereKey($otherWorkspace->id)->exists())->toBeTrue();
     expect($this->workspace->newQueryWithoutScopes()->findOrFail($this->workspace->id)->custom_domains)->toBe(['alpha.example.com']);
     expect($otherWorkspace->newQueryWithoutScopes()->findOrFail($otherWorkspace->id)->custom_domains)->toBe(['forms.example.com']);
 });

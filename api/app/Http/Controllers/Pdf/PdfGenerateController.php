@@ -172,17 +172,7 @@ class PdfGenerateController extends Controller
         PdfTemplate $template,
         FormSubmission $submission
     ): string {
-        $submissionId = SubmissionUrlService::getSubmissionIdentifier($submission);
-
-        return URL::temporaryPublicSignedRoute(
-            'open.forms.pdf-templates.download-submission',
-            now()->addHours(24),
-            [
-                'form' => $form->id,
-                'pdfTemplate' => $template->id,
-                'submission_id' => $submissionId,
-            ]
-        );
+        return SubmissionUrlService::buildPdfDownloadUrl($form, $template, $submission);
     }
 
 }

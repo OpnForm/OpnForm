@@ -1,6 +1,7 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
+import { mockNuxtImport } from '@nuxt/test-utils/runtime'
 
 const mocks = vi.hoisted(() => ({
   fetch: vi.fn(),
@@ -10,10 +11,13 @@ const mocks = vi.hoisted(() => ({
   isSelfHosted: true,
 }))
 
-vi.mock('#imports', async () => {
+mockNuxtImport('$fetch', () => mocks.fetch)
+
+vi.mock('#imports', async (importOriginal) => {
   const vue = await import('vue')
 
   return {
+    ...(await importOriginal<typeof import('#imports')>()),
     ref: vue.ref,
     watch: vue.watch,
     useFeatureFlag: (key: string) => key === 'self_hosted' && mocks.isSelfHosted,

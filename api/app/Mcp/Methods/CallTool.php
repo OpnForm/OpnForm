@@ -2,35 +2,27 @@
 
 namespace App\Mcp\Methods;
 
-use Illuminate\Auth\AuthenticationException;
-use Laravel\Mcp\Response;
-use Laravel\Mcp\ResponseFactory;
+use App\Mcp\ToolInvoker;
+use Generator;
+use Laravel\Mcp\Exceptions\JsonRpcException;
+use Laravel\Mcp\Server\ServerContext;
 use Laravel\Mcp\Transport\JsonRpcRequest;
-use Throwable;
+use Laravel\Mcp\Transport\JsonRpcResponse;
 
 class CallTool extends \Laravel\Mcp\Server\Methods\CallTool
 {
-    protected function callHandler(callable $handler, JsonRpcRequest $request): mixed
+    public function handle(JsonRpcRequest $request, ServerContext $context): Generator|JsonRpcResponse
     {
-        try {
-            return $handler();
-        } catch (AuthenticationException $exception) {
-            return $this->authenticationRequired($exception);
-        } catch (Throwable $throwable) {
-            return $this->toErrorResponse($throwable);
+        if (is_null($request->get('name'))) {
+            throw new JsonRpcException('Missing [name] parameter.', -32602, $request->id);
         }
-    }
 
-    protected function authenticationRequired(AuthenticationException $exception): ResponseFactory
-    {
-        $resourceMetadata = route('mcp.oauth.protected-resource.nested', ['path' => 'mcp']);
-        $challenge = sprintf(
-            'Bearer resource_metadata="%s", scope="mcp:use", error="insufficient_scope", error_description="%s"',
-            $resourceMetadata,
-            'Connect your OpnForm account to continue',
+        $tool = $context->tools()->first(
+            fn ($tool): bool => $tool->name() === $request->params['name'],
+            fn () => throw new JsonRpcException("Tool [{$request->params['name']}] not found.", -32602, $request->id),
         );
 
-        return Response::make(Response::error($exception->getMessage()))
-            ->withMeta('mcp/www_authenticate', [$challenge]);
+        // MCP 1.x invokes tools in ToolInvoker, outside CallTool's response handling.
+        return (new ToolInvoker())->invoke($tool, $request);
     }
 }

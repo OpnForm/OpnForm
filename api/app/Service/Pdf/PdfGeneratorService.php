@@ -45,7 +45,9 @@ class PdfGeneratorService
 
         // Store in consistent temp folder for lifecycle cleanup
         $tempPath = self::TEMP_FOLDER . '/' . Str::uuid() . '.pdf';
-        Storage::put($tempPath, $pdfContent);
+        if (!Storage::put($tempPath, $pdfContent)) {
+            throw new \RuntimeException('File storage failed.');
+        }
 
         return $tempPath;
     }
@@ -71,6 +73,8 @@ class PdfGeneratorService
         try {
             // Create FPDI instance
             $pdf = new Fpdi();
+            // The manifest and fixed-position zones define pagination, including near the page edge.
+            $pdf->SetAutoPageBreak(false);
             $sourcePageCount = $pdf->setSourceFile($tempFile);
         } catch (Throwable $e) {
             @unlink($tempFile);

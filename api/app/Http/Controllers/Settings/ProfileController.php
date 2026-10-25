@@ -22,6 +22,9 @@ class ProfileController extends Controller
     public function update(Request $request)
     {
         $user = $request->user();
+        if (is_string($request->input('email'))) {
+            $request->merge(['email' => strtolower($request->input('email'))]);
+        }
         $requestedEmail = $request->input('email');
         $emailChanged = is_string($requestedEmail)
             && strtolower($requestedEmail) !== strtolower($user->email);
