@@ -28,6 +28,9 @@ jobs:
           tools: composer:v2
           ini-values: memory_limit=1G
           coverage: none
+      - name: Prepare an isolated test environment
+        working-directory: api
+        run: cp .env.example .env
       - name: Install locked development dependencies
         working-directory: api
         run: composer install --prefer-dist --no-interaction --no-progress
@@ -36,6 +39,7 @@ jobs:
           sudo install -d -m 0777 /fixture-state /fixture-identity
           openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out /fixture-identity/private.pem
           openssl pkey -in /fixture-identity/private.pem -pubout -out /fixture-identity/public.pem
+          chmod 0444 /fixture-identity/public.pem
           printf '%040d' 0 | sudo tee /app-revision > /dev/null
           docker run -d --name opnform-state-ci --network none --mount type=bind,src=/fixture-state,dst=/fixture-state redis:7.4-bookworm redis-server --port 0 --unixsocket /fixture-state/state.sock --unixsocketperm 777 --appendonly yes --appendfsync always --maxmemory 32mb --maxmemory-policy noeviction
           for attempt in $(seq 1 30); do
@@ -47,7 +51,7 @@ jobs:
         working-directory: api
         env:
           OPNFORM_HOSTED_STATE_FIXTURES: 'true'
-        run: php -d memory_limit=1G vendor/bin/pest tests/Unit/Deployment --no-coverage
+        run: php -d memory_limit=1G vendor/bin/pest tests/Unit/Deployment --no-coverage --fail-on-risky --fail-on-warning
       - name: Remove only this job's fixture
         if: always()
         run: docker rm -f -v opnform-state-ci || true

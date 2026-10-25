@@ -29,6 +29,7 @@ afterEach(function () {
         unlink($file);
     }
     $this->application->flush();
+    \Illuminate\Foundation\Bootstrap\HandleExceptions::flushState($this);
 });
 
 function withStateConfigEnvironment(array $values, callable $callback): mixed

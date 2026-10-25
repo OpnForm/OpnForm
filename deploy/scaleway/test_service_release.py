@@ -61,6 +61,8 @@ class ServiceReleaseTests(unittest.TestCase):
                 'RootFS': {'Type': 'layers', 'Layers': ['sha256:' + 'a' * 64]}, 'Id': 'engine-dependent'}
         original = self.release.image_fingerprint(meta)
         meta['Id'] = 'another-engine-identity'
+        meta['Config']['AttachStdin'] = False
+        meta['Config']['Cmd'] = None
         self.assertEqual(self.release.image_fingerprint(meta), original)
         meta['RootFS']['Layers'].append('sha256:' + 'b' * 64)
         self.assertNotEqual(self.release.image_fingerprint(meta), original)

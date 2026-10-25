@@ -9,6 +9,7 @@ import base64
 import fcntl
 import hashlib
 import ipaddress
+import inspect
 import json
 import os
 from pathlib import Path
@@ -30,7 +31,12 @@ def native_image_name(image):
 def image_fingerprint(meta):
     # Image IDs can denote a config or an OCI index depending on the engine.
     # Bind the actual layers and runtime configuration instead of comparing types.
-    record = {name: meta[name] for name in ('Architecture', 'Os', 'Config', 'RootFS')}
+    record = {name: meta[name] for name in ('Architecture', 'Os', 'RootFS')}
+    # Classic Docker adds legacy container-creation fields that containerd omits.
+    # Missing and null OCI defaults have the same runtime meaning.
+    record['Config'] = {name: meta['Config'].get(name) for name in (
+        'Env', 'Entrypoint', 'Cmd', 'User', 'WorkingDir', 'Labels', 'ExposedPorts',
+        'Volumes', 'StopSignal', 'Healthcheck', 'Shell')}
     return hashlib.sha256(json.dumps(record, sort_keys=True).encode()).hexdigest()
 
 
@@ -184,11 +190,9 @@ def stage_images(target, release):
             if source.poll() is None:
                 source.terminate()
         expected = image_fingerprint(meta)
-        observed = native(target, """import subprocess,json,hashlib
-x=json.loads(subprocess.check_output(['docker','image','inspect',__IMAGE__]))[0]
-record={k:x[k]for k in ['Architecture','Os','Config','RootFS']}
-print(json.dumps({'fingerprint':hashlib.sha256(json.dumps(record,sort_keys=True).encode()).hexdigest()}))
-""".replace('__IMAGE__', repr(selected)))
+        observed = native(target, 'import subprocess,json,hashlib\n' + inspect.getsource(image_fingerprint)
+            + "\nx=json.loads(subprocess.check_output(['docker','image','inspect'," + repr(selected)
+            + "]))[0]\nprint(json.dumps({'fingerprint':image_fingerprint(x)}))\n")
         if observed['fingerprint'] != expected:
             raise ValueError('Staged image layers/configuration differ from the registry image')
 

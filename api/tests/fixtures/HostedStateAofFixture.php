@@ -1,7 +1,7 @@
 <?php
 
 // Fictional local-only daemon restart fixture; never used by deployment entrypoints.
-require '/app/vendor/autoload.php';
+require dirname(__DIR__, 2).'/vendor/autoload.php';
 require __DIR__.'/HostedStateBootstrap.php';
 bootHostedStateFixture(false);
 $state = app('redis')->connection('state');

@@ -1,6 +1,6 @@
 <?php
 
-require '/app/vendor/autoload.php';
+require dirname(__DIR__, 2).'/vendor/autoload.php';
 require __DIR__.'/HostedStateBootstrap.php';
 bootHostedStateFixture(false);
 $snapshot = json_decode(file_get_contents($argv[1]), true, flags: JSON_THROW_ON_ERROR);

@@ -30,6 +30,7 @@ afterEach(function () {
         unlink($path);
     }
     $this->application->flush();
+    \Illuminate\Foundation\Bootstrap\HandleExceptions::flushState($this);
 });
 function stateImportSnapshot(array $rows = []): array
 {
