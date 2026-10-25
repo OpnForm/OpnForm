@@ -24,6 +24,10 @@ Les domaines existants, leurs longueurs historiques, les limites du plan et les 
 
 Onze nouveaux scénarios exécutent les vrais composants de paiement avec HTTP et SDK Stripe simulés : facturation préremplie sans ressaisie, changement de compte, erreurs et retry, démontage, langue, réponses tardives et remontage d'un paiement déjà réussi. Les corrections empêchent l'ancien contexte de paiement de contaminer le suivant. Elles ne prouvent pas l'acceptation d'une carte réelle ou l'idempotence financière complète. La contre-revue indépendante des correctifs ne trouve plus de finding actionnable. Les résultats CI de la PR font foi pour son commit courant ; les sections précédentes conservent l'historique des campagnes.
 
+La base `main` a ensuite avancé à `ef8fa23f` pendant la CI. Elle a été intégrée localement et ses interactions ont été contre-relues. La base seule mesure 419,3 KiB gzip pour le formulaire classique, le cumul des correctifs 421,7 KiB. Le plafond de performance passe de 420 à 425 KiB (+1,19 %) avec deux tests proches de la borne ; les imports interdits restent refusés. C'est un compromis de poids accepté, sans gain de performance revendiqué. Les expériences de découpage du paiement et de remplacement du bouton ont été abandonnées. La suite frontend comprend désormais 1 116 tests réussis, dont les six nouveaux tests provenant de main.
+
+Deux parcours navigateur supplémentaires exercent un formulaire fermé et un quota atteint : alerte visible, nouvelles réponses refusées par l'API et nombres de réponses conservés. Ils ont révélé une rejection JavaScript préexistante du compteur de vues sur formulaire fermé ; seule cette requête statistique optionnelle gère désormais son échec. Son 404 et les protections de soumission restent inchangés.
+
 ## Périmètre et méthode
 
 Évaluation au 3 octobre 2026 des signalements de sécurité retrouvés dans Crisp, complétée par les issues publiques OpnForm. La source des « rapports » n'était pas précisée dans la demande : ce périmètre a été annoncé pendant le travail. Les mails hors Crisp, documents privés non transmis et vulnérabilités seulement annoncées restent hors de la preuve disponible.

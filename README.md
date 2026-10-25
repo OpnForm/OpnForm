@@ -51,6 +51,8 @@ For self-hosted installations, please refer to our [Deployment Guides](https://d
 
 The client `npm run build` also checks the public form bundle size and eager dependencies. This check reads `.nuxt/dist/client/_nuxt`, independently of Nitro's deployment output directory (including AWS Amplify's `.amplify-hosting`). Run its regression tests from `client/` with `node --test scripts/check-public-form-bundle.test.mjs`.
 
+The public form budget is **425 KiB gzip**. On 25 October 2026, the integrations-content update brought the unchanged `main` build to 419.3 KiB, still within the old 420 KiB limit. The combined security fixes measured 421.7 KiB: an additional 2.4 KiB (about 0.6%). The previous baseline used 416.4 KiB of a 420 KiB budget. The new limit accepts this measured increase and restores comparable headroom without changing the forbidden eager-dependency checks. Regression fixtures verify that a route around 424 KiB passes and one around 426 KiB fails.
+
 ## Form list performance
 
 The dashboard fetches lightweight summaries in batches of 50. The API keeps its default page size of 10 and its maximum of 100 for other callers. It paginates forms before loading view and completed-submission counts for the returned IDs. Historical views use an index on `form_statistics.form_id`, and the aggregate is explicitly aliased as `total_views_count` so the model uses the preloaded value.

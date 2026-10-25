@@ -6,7 +6,7 @@ import { join } from 'node:path'
 import { spawnSync } from 'node:child_process'
 import { randomBytes } from 'node:crypto'
 
-function runCheck(t, { preset = 'amplify', missingAsset = false, forbidden = false, oversized = false, moduleManifest = false, buildDir = '.nuxt' } = {}) {
+function runCheck(t, { preset = 'amplify', missingAsset = false, forbidden = false, oversized = false, routePayloadBytes = null, moduleManifest = false, buildDir = '.nuxt' } = {}) {
   const root = mkdtempSync(join(tmpdir(), 'opnform-bundle-'))
   t.after(() => rmSync(root, { recursive: true, force: true }))
   const assets = join(root, buildDir, 'dist/client/_nuxt')
@@ -25,7 +25,9 @@ function runCheck(t, { preset = 'amplify', missingAsset = false, forbidden = fal
   )
   for (const entry of Object.values(manifest)) {
     if (missingAsset && entry.file === 'route.js') continue
-    const contents = oversized ? randomBytes(450 * 1024) : 'export default {}'
+    const contents = oversized ? randomBytes(450 * 1024)
+      : routePayloadBytes !== null && entry.file === 'route.js' ? randomBytes(routePayloadBytes)
+        : 'export default {}'
     writeFileSync(join(assets, entry.file), contents)
     writeFileSync(join(output, entry.file), contents)
     writeFileSync(join(assets, `${entry.file}.map`), JSON.stringify({
@@ -59,7 +61,18 @@ test('still rejects forbidden eager dependencies', (t) => {
 test('still enforces the gzip budget', (t) => {
   const result = runCheck(t, { oversized: true })
   assert.notEqual(result.status, 0)
-  assert.match(result.stderr, /exceeds the 420 KiB gzip budget/)
+  assert.match(result.stderr, /exceeds the 425 KiB gzip budget/)
+})
+
+test('accepts a public route just below the 425 KiB gzip budget', t => {
+  const result = runCheck(t, { routePayloadBytes: 424 * 1024 })
+  assert.equal(result.status, 0, result.stderr)
+})
+
+test('rejects a public route just above the 425 KiB gzip budget', t => {
+  const result = runCheck(t, { routePayloadBytes: 426 * 1024 })
+  assert.notEqual(result.status, 0)
+  assert.match(result.stderr, /exceeds the 425 KiB gzip budget/)
 })
 
 test('reads the Nuxt 4 ES module manifest and still checks eager dependencies', (t) => {
@@ -75,5 +88,5 @@ test('measures the configured worktree build directory instead of stale default 
   assert.equal(result.status, 0, result.stderr)
   const invalid = runCheck(t, { buildDir: 'isolated/nuxt', moduleManifest: true, oversized: true })
   assert.notEqual(invalid.status, 0)
-  assert.match(invalid.stderr, /exceeds the 420 KiB gzip budget/)
+  assert.match(invalid.stderr, /exceeds the 425 KiB gzip budget/)
 })
