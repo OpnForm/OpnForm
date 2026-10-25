@@ -13,9 +13,9 @@ import { usePartialSubmission } from '~/composables/forms/usePartialSubmission.j
 import { useIsIframe } from '~/composables/useIsIframe'
 import { useAmplitude } from '~/composables/useAmplitude'
 import { useConfetti } from '~/composables/useConfetti'
-import { cloneDeep } from 'lodash'
 import { useFieldState } from './useFieldState'
 import { useComputedVariables } from '~/composables/forms/useComputedVariables'
+import { useSubmissionAttribution } from './useSubmissionAttribution'
 
 /**
  * @fileoverview Main orchestrator composable for form operations.
@@ -49,6 +49,7 @@ export function useFormManager(initialFormConfig, initialMode = FormMode.LIVE, o
   // Create a reactive reference to the form data for dependent composables to watch
   const formDataRef = computed(() => form.data())
   const computedVariables = useComputedVariables(computed(() => config.value), formDataRef)
+  const submissionAttribution = useSubmissionAttribution()
 
   // Centralized field state (single instance per manager)
   const fieldState = useFieldState(
@@ -62,7 +63,12 @@ export function useFormManager(initialFormConfig, initialMode = FormMode.LIVE, o
   const pendingSubmissionService = usePendingSubmission(config, formDataRef)
   
   // Instantiate partial submission service (handles server auto-sync)
-  const partialSubmissionService = usePartialSubmission(config, formDataRef, pendingSubmissionService)
+  const partialSubmissionService = usePartialSubmission(
+    config,
+    formDataRef,
+    pendingSubmissionService,
+    submissionAttribution.attribution,
+  )
 
   // --- Instantiate Other Composables (Services) ---
   const timer = useFormTimer(pendingSubmissionService)
@@ -93,9 +99,22 @@ export function useFormManager(initialFormConfig, initialMode = FormMode.LIVE, o
     } catch { /* no-op */ }
   }
 
+  function restorePendingSubmission() {
+    if (!initialization.restorePendingSubmission()) return false
+    replaceStructure()
+    return true
+  }
+
+  function startBackgroundSync() {
+    pendingSubmissionService.resumeAutosave()
+    if (import.meta.client && config.value.enable_partial_submissions && strategy.value.submission.enablePartialSubmissions) {
+      partialSubmissionService.startSync()
+    }
+  }
+
   const validation = useFormValidation(config, form, state)
   const payment = useFormPayment(config, form)
-  const submission = useFormSubmission(config, form)
+  const submission = useFormSubmission(config, form, submissionAttribution.attribution)
 
   /**
    * Updates the form configuration when the entire form reference changes.
@@ -125,6 +144,7 @@ export function useFormManager(initialFormConfig, initialMode = FormMode.LIVE, o
     state.isProcessing = true
     state.isSubmitted = false
     state.currentPage = 0
+    submissionAttribution.captureIframeAttribution(options.urlParams)
    
     const initializationPromise = initialization.initialize({
       ...options
@@ -147,10 +167,8 @@ export function useFormManager(initialFormConfig, initialMode = FormMode.LIVE, o
     // Ensure structure is built after initialization
     replaceStructure()
     
-    // Start partial submission sync if enabled in both config and strategy
-    if (import.meta.client && config.value.enable_partial_submissions && strategy.value.submission.enablePartialSubmissions) {
-      partialSubmissionService.startSync()
-    }
+    // Resume draft saving and partial sync only once the answers are ready.
+    if (!options.deferBackgroundSync) startBackgroundSync()
     
     state.isProcessing = false
   }
@@ -308,6 +326,7 @@ export function useFormManager(initialFormConfig, initialMode = FormMode.LIVE, o
       }
       
       // 7. Clear pending submission data on successful submit
+      pendingSubmissionService?.pauseAutosave()
       pendingSubmissionService?.clear()
       
       // 8. Clear partial submission hash to prevent stale data
@@ -326,6 +345,7 @@ export function useFormManager(initialFormConfig, initialMode = FormMode.LIVE, o
       if (import.meta.client) {
         const isIframe = useIsIframe()
         const formConfig = toValue(config)
+        const { default: cloneDeep } = await import('clone-deep')
         const payload = cloneDeep({
           type: 'form-submitted',
           form: {
@@ -336,7 +356,10 @@ export function useFormManager(initialFormConfig, initialMode = FormMode.LIVE, o
                               : null
           },
           submission_data: form.data(),
-          completion_time: completionTime
+          completion_time: completionTime,
+          ...(Object.keys(submissionAttribution.attribution.value).length > 0
+            ? { meta: { attribution: submissionAttribution.attribution.value } }
+            : {}),
         })
         
         // Send message to parent if in iframe
@@ -410,6 +433,8 @@ export function useFormManager(initialFormConfig, initialMode = FormMode.LIVE, o
     strategy,       // Current mode strategy (computed)
     pendingSubmission: pendingSubmissionService, // Expose pendingSubmission service
     partialSubmission: partialSubmissionService, // Expose partialSubmission service with debounced sync
+    attribution: submissionAttribution.attribution,
+    mergeParentAttribution: submissionAttribution.mergeParentAttribution,
 
     // UI-related properties
     darkMode,       // Dark mode setting
@@ -425,6 +450,8 @@ export function useFormManager(initialFormConfig, initialMode = FormMode.LIVE, o
 
     // Core Methods
     initialize,
+    restorePendingSubmission,
+    startBackgroundSync,
     updateConfig,   // New method to update form config
     nextPage,
     previousPage,

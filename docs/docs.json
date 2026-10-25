@@ -69,6 +69,12 @@
               "embedding/javascript-sdk",
               "embedding/editor-embed"
             ]
+          },
+          {
+            "group": "Integrations",
+            "pages": [
+              "integrations/mcp"
+            ]
           }
         ]
       },
@@ -121,6 +127,7 @@
               "api-reference/integrations/update-webhook-integration",
               "api-reference/integrations/delete-webhook-integration",
               "api-reference/integrations/list-webhook-events",
+              "api-reference/integrations/retry-integration-event",
               "api-reference/integrations/webhook-security"
             ]
           },
@@ -156,6 +163,7 @@
             "group": "Contributing",
             "pages": [
               "contributing/getting-started",
+              "contributing/authentication-architecture",
               "contributing/new-form-block",
               "contributing/new-integration"
             ]

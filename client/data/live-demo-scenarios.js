@@ -94,6 +94,9 @@ function baseForm(key, overrides = {}) {
     computed_variables: [],
     presentation_style: "focused",
     language: "en",
+    translations: {
+      focused_next_button_text: "Next",
+    },
     font_family: null,
     theme: "default",
     width: "centered",

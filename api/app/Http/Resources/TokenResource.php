@@ -14,6 +14,7 @@ class TokenResource extends JsonResource
         return [
             'id' => $this->resource->id,
             'name' => $this->resource->name,
+            'expires_at' => $this->resource->expires_at?->toIso8601String(),
             'abilities' => $this->resource->abilities,
         ];
     }

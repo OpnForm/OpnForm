@@ -4,7 +4,7 @@ use App\Service\Telemetry\TelemetryEvent;
 
 describe('TelemetryEvent', function () {
     it('has all required event cases', function () {
-        expect(TelemetryEvent::cases())->toHaveCount(8);
+        expect(TelemetryEvent::cases())->toHaveCount(9);
     });
 
     it('has INSTANCE_CREATED case with correct value', function () {
@@ -37,6 +37,10 @@ describe('TelemetryEvent', function () {
 
     it('has SSO_CREATED case with correct value', function () {
         expect(TelemetryEvent::SSO_CREATED->value)->toBe('sso.created');
+    });
+
+    it('has MCP_REQUEST case with correct value', function () {
+        expect(TelemetryEvent::MCP_REQUEST->value)->toBe('mcp.request');
     });
 
     it('value method returns the enum value', function () {

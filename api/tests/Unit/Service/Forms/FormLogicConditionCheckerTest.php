@@ -329,6 +329,10 @@ describe('FormLogicConditionChecker', function () {
             $formData = ['text_field' => 'invalid'];
             expect(FormLogicConditionChecker::conditionsMet($condition, $formData))->toBeFalse();
 
+            $condition['value']['value'] = '^docs/example$';
+            $formData = ['text_field' => 'docs/example'];
+            expect(FormLogicConditionChecker::conditionsMet($condition, $formData))->toBeTrue();
+
             // Test invalid regex pattern
             $condition['value']['value'] = '['; // Invalid regex
             expect(FormLogicConditionChecker::conditionsMet($condition, $formData))->toBeFalse();

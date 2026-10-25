@@ -26,7 +26,7 @@ return [
     'date_format' => ':attribute हा :format फॉरमॅटशी जुळत नाही.',
     'declined' => ':attribute नाकारणे आवश्यक आहे.',
     'declined_if' => ':other :value असताना :attribute नाकारणे आवश्यक आहे.',
-    'different' => ':attribute आणि :other वेगळे अ���ावे.',
+    'different' => ':attribute आणि :other वेगळे असावे.',
     'digits' => ':attribute, :digits अंक असावा.',
     'digits_between' => ':attribute, :min आणि :max अंक दरम्यान असावा.',
     'dimensions' => ':attribute चे अवैध प्रतिमा परिमाण आहेत.',
@@ -58,7 +58,7 @@ return [
     'ipv6' => ':attribute एक वैध IPv6 पत्ता असावा.',
     'json' => ':attribute एक वैध JSON स्ट्रिंग असावी.',
     'lt' => [
-        'array' => ':attribute मध्ये :value पेक्षा ��मी आयटम असावेत.',
+        'array' => ':attribute मध्ये :value पेक्षा कमी आयटम असावेत.',
         'file' => ':attribute, :value किलोबाइटपेक्षा लहान असावा.',
         'numeric' => ':attribute, :value पेक्षा लहान असावा.',
         'string' => ':attribute, :value वर्णांपेक्षा लहान असावा.',
@@ -104,7 +104,7 @@ return [
     'required' => ':attribute फील्ड आवश्यक आहे.',
     'required_array_keys' => ':attribute फील्डमध्ये खालील नोंदी असणे आवश्यक आहे: :values.',
     'required_if' => ':other :value असताना :attribute फील्ड आवश्यक आहे.',
-    'required_unless' => ':other :values मध्य�� नसेल तर :attribute फील्ड आवश्यक आहे.',
+    'required_unless' => ':other :values मध्ये नसेल तर :attribute फील्ड आवश्यक आहे.',
     'required_with' => ':values उपस्थित असताना :attribute फील्ड आवश्यक आहे.',
     'required_with_all' => ':values उपस्थित असताना :attribute फील्ड आवश्यक आहे.',
     'required_without' => ':values उपस्थित नसताना :attribute फील्ड आवश्यक आहे.',
@@ -137,4 +137,11 @@ return [
     'complete_captcha' => 'कृपया कैप्चा भरा.',
     'yes' => 'है',
     'no' => 'नहीं',
+
+    'from_date_required' => 'सुरुवातीची तारीख आवश्यक आहे',
+    'to_date_required' => 'शेवटची तारीख आवश्यक आहे',
+    'from_date_before_or_equal' => 'सुरुवातीची तारीख शेवटच्या तारखेपूर्वी किंवा त्याच दिवशी असणे आवश्यक आहे',
+    'rating_min' => 'रेटिंग निवडणे आवश्यक आहे',
+    'select_min' => 'कृपया किमान :min पर्याय निवडा',
+    'select_max' => 'कृपया जास्तीत जास्त :max पर्याय निवडा',
 ];

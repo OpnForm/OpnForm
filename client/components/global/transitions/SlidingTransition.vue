@@ -1,7 +1,10 @@
 <template>
   <div class="sliding-wrapper" :style="{ '--transition-speed': transitionSpeed }">
     <transition :name="transitionName">
-      <slot />
+      <!-- A stable element keeps slot fragment markers identical during SSR hydration. -->
+      <div :key="step" class="sliding-step w-full min-h-0 grow flex">
+        <slot />
+      </div>
     </transition>
   </div>
 </template>

@@ -285,8 +285,12 @@ test('poll for the latest submission', function () {
 
     // Create a submission for the form
     $formData = $this->generateFormSubmissionData($form);
+    $attribution = ['utm_source' => 'zapier-poll'];
 
-    $this->postJson(route('forms.answer', $form->slug), $formData)
+    $this->postJson(route('forms.answer', $form->slug), [
+        ...$formData,
+        'tracking_parameters' => $attribution,
+    ])
         ->assertSuccessful()
         ->assertJson([
             'type' => 'success',
@@ -315,6 +319,7 @@ test('poll for the latest submission', function () {
     $receivedData = collect($responseData['data'])->values()->pluck('value')->toArray();
 
     $this->assertEmpty(array_diff(array_values($formData), $receivedData));
+    $this->assertSame($attribution, $responseData['meta']['attribution']);
 });
 
 test('make up a submission when polling without any submission', function () {

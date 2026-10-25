@@ -10,7 +10,7 @@
       >
         <template #content-top>
           <div
-            v-if="formFields.length"
+            v-if="formFields.length || computedVariables.length"
             class="p-2 border-b border-neutral-100 dark:border-neutral-700"
           >
             <UInput
@@ -18,7 +18,7 @@
               v-model="formFieldsSearch"
               variant="outline"
               class="w-full"
-              placeholder="Search form fields..."
+              placeholder="Search fields & variables..."
               icon="i-heroicons-magnifying-glass-solid"
               :ui="{ trailing: 'pe-1' }"
               @click.stop
@@ -204,6 +204,7 @@ const {
   selectedZone,
   formFields,
   specialFields,
+  computedVariables,
   fieldOptions,
 } = storeToRefs(pdfStore)
 
@@ -221,8 +222,15 @@ const filteredFormFields = computed(() => {
   return formFields.value.filter((f) => f.name.toLowerCase().includes(q))
 })
 
+const filteredComputedVariables = computed(() => {
+  const q = formFieldsSearch.value.trim().toLowerCase()
+  if (!q) return computedVariables.value
+  return computedVariables.value.filter((v) => v.name.toLowerCase().includes(q))
+})
+
 const addZoneMenuItems = computed(() => {
   const items = []
+  const hasSearchableItems = formFields.value.length || computedVariables.value.length
 
   if (formFields.value.length) {
     const formFieldItems = [
@@ -234,7 +242,7 @@ const addZoneMenuItems = computed(() => {
     ]
     if (filteredFormFields.value.length) {
       items.push(formFieldItems)
-    } else {
+    } else if (formFieldsSearch.value.trim()) {
       items.push([
         { type: 'label', label: 'Form Fields' },
         { type: 'label', label: `No fields match "${formFieldsSearch.value}"` },
@@ -242,23 +250,43 @@ const addZoneMenuItems = computed(() => {
     }
   }
 
-  items.push([
-    { type: 'label', label: 'Special Fields' },
-    ...specialFields.value.map((field) => ({
-      label: field.name,
-      onSelect: () => addZoneWithField(field),
-    })),
-  ])
+  if (computedVariables.value.length) {
+    if (filteredComputedVariables.value.length) {
+      items.push([
+        { type: 'label', label: 'Computed Variables' },
+        ...filteredComputedVariables.value.map((variable) => ({
+          label: variable.name,
+          icon: 'i-heroicons-variable',
+          onSelect: () => addZoneWithField(variable),
+        })),
+      ])
+    } else if (formFieldsSearch.value.trim()) {
+      items.push([
+        { type: 'label', label: 'Computed Variables' },
+        { type: 'label', label: `No variables match "${formFieldsSearch.value}"` },
+      ])
+    }
+  }
 
-  items.push([{
-    label: 'Static Text',
-    icon: 'i-heroicons-pencil',
-    onSelect: () => addZoneWithField(null, 'static_text'),
-  }, {
-    label: 'Image',
-    icon: 'i-heroicons-photo',
-    onSelect: () => addZoneWithField(null, 'static_image'),
-  }])
+  if (!hasSearchableItems || !formFieldsSearch.value.trim()) {
+    items.push([
+      { type: 'label', label: 'Special Fields' },
+      ...specialFields.value.map((field) => ({
+        label: field.name,
+        onSelect: () => addZoneWithField(field),
+      })),
+    ])
+
+    items.push([{
+      label: 'Static Text',
+      icon: 'i-heroicons-pencil',
+      onSelect: () => addZoneWithField(null, 'static_text'),
+    }, {
+      label: 'Image',
+      icon: 'i-heroicons-photo',
+      onSelect: () => addZoneWithField(null, 'static_image'),
+    }])
+  }
 
   return items
 })
@@ -303,6 +331,9 @@ const getZoneListLabel = (zone) => {
 const getZoneIcon = (zone) => {
   if (zone.static_text !== undefined) return 'i-heroicons-document-text'
   if (zone.static_image !== undefined) return 'i-heroicons-photo'
+  if (zone.field_id && computedVariables.value.some((v) => v.id === zone.field_id)) {
+    return 'i-heroicons-variable'
+  }
   return 'i-heroicons-at-symbol'
 }
 

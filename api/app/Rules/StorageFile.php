@@ -15,6 +15,10 @@ class StorageFile implements ValidationRule
 
     public function __construct(public int $maxSize, public array $fileTypes = [], public ?Form $form = null)
     {
+        $this->fileTypes = array_values(array_filter(array_map(
+            fn ($type) => strtolower(ltrim(trim($type), '.')),
+            $fileTypes
+        )));
     }
 
     /**

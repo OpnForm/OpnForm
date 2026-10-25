@@ -713,7 +713,7 @@
 <script setup>
 import LiveDemo from "~/components/pages/welcome/LiveDemo.vue"
 import Testimonials from "~/components/pages/welcome/Testimonials.vue"
-import { useIsAuthenticated } from "~/composables/useAuthFlow"
+import { useIsAuthenticated } from "~/composables/useIsAuthenticated.js"
 
 const props = defineProps({
   competitorName: {

@@ -2,12 +2,21 @@
 
 namespace App\Rules\PropertyValidators;
 
+use App\Service\Forms\FormRegex;
+
 /**
- * Validates logic configuration for form properties.
- * Checks that conditions and actions are properly configured.
+ * Validates display logic configuration for form properties.
+ *
+ * Besides validating the condition shape, this validator verifies that every
+ * referenced field or computed variable still exists and has the expected
+ * type. This keeps the browser editor, API and MCP draft validation aligned.
  */
 class LogicPropertyValidator implements PropertyValidatorInterface
 {
+    public const MAX_CONDITION_DEPTH = 10;
+
+    public const MAX_CONDITION_COUNT = 100;
+
     public const ACTIONS_VALUES = [
         'show-block',
         'hide-block',
@@ -18,12 +27,6 @@ class LogicPropertyValidator implements PropertyValidatorInterface
     ];
 
     private static ?array $conditionMappingData = null;
-
-    private bool $isConditionCorrect = true;
-    private bool $isActionCorrect = true;
-    private array $conditionErrors = [];
-    private array $field = [];
-    private string $operator = '';
 
     public static function getConditionMapping(): array
     {
@@ -36,227 +39,321 @@ class LogicPropertyValidator implements PropertyValidatorInterface
 
     public function validate(array $property, int $index, array $context): array
     {
+        if (! array_key_exists('logic', $property) || $property['logic'] === null || $property['logic'] === []) {
+            return [];
+        }
+
+        if (! is_array($property['logic'])) {
+            return ['logic' => 'The logic configuration must be an object.'];
+        }
+
+        $logic = $property['logic'];
+        $conditions = $logic['conditions'] ?? null;
+        $actions = $logic['actions'] ?? [];
+
+        if ($conditions === null && $actions === []) {
+            return [];
+        }
+
         $errors = [];
+        $conditionCount = 0;
+        $references = $this->buildReferenceMap($context);
 
-        // Reset state for this validation
-        $this->isConditionCorrect = true;
-        $this->isActionCorrect = true;
-        $this->conditionErrors = [];
-        $this->field = $property;
-
-        $logic = $property['logic'] ?? null;
-
-        // Early bail for empty/null logic
-        if (empty($logic) || !is_array($logic)) {
-            return $errors;
+        if ($conditions === null) {
+            $errors['logic.conditions'] = 'Add at least one condition or remove this logic rule.';
+        } else {
+            $this->validateCondition(
+                $conditions,
+                'logic.conditions',
+                1,
+                $conditionCount,
+                $property,
+                $references,
+                $errors,
+            );
         }
 
-        // If no conditions, logic is valid (empty logic)
-        if (!isset($logic['conditions'])) {
-            return $errors;
-        }
-
-        // Check conditions
-        $this->checkConditions($logic['conditions']);
-
-        // Check actions
-        $this->checkActions($logic['actions'] ?? null);
-
-        // Build error message if validation failed
-        if (!$this->isConditionCorrect || !$this->isActionCorrect) {
-            $errors['logic'] = $this->buildErrorMessage($property['name'] ?? 'Unknown');
-        }
+        $this->validateActions($actions, $property, $errors);
 
         return $errors;
     }
 
-    private function checkBaseCondition(array $condition): void
-    {
-        if (!isset($condition['value'])) {
-            $this->isConditionCorrect = false;
-            $this->conditionErrors[] = 'missing condition body';
+    /**
+     * @param  array<string, array{type: string, name: string, kind: string}>  $references
+     * @param  array<string, string>  $errors
+     */
+    private function validateCondition(
+        mixed $condition,
+        string $path,
+        int $depth,
+        int &$conditionCount,
+        array $targetProperty,
+        array $references,
+        array &$errors,
+    ): void {
+        if (! is_array($condition)) {
+            $errors[$path] = 'The condition must be an object.';
+
             return;
         }
 
-        if (!isset($condition['value']['property_meta'])) {
-            $this->isConditionCorrect = false;
-            $this->conditionErrors[] = 'missing condition property';
+        $conditionCount++;
+
+        if ($conditionCount > self::MAX_CONDITION_COUNT) {
+            $errors[$path] = 'A logic rule cannot contain more than '.self::MAX_CONDITION_COUNT.' conditions.';
+
             return;
         }
 
-        if (!isset($condition['value']['property_meta']['type'])) {
-            $this->isConditionCorrect = false;
-            $this->conditionErrors[] = 'missing condition property type';
+        if ($depth > self::MAX_CONDITION_DEPTH) {
+            $errors[$path] = 'Condition groups cannot be nested more than '.self::MAX_CONDITION_DEPTH.' levels.';
+
             return;
         }
 
-        if (!isset($condition['value']['operator'])) {
-            $this->isConditionCorrect = false;
-            $this->conditionErrors[] = 'missing condition operator';
-            return;
-        }
-
-        $typeField = $condition['value']['property_meta']['type'];
-        $operator = $condition['value']['operator'];
-        $this->operator = $operator;
-
-        // Get mapping once for this check
-        $mapping = self::getConditionMapping();
-
-        if (!isset($mapping[$typeField])) {
-            $this->isConditionCorrect = false;
-            $this->conditionErrors[] = 'configuration not found for condition type';
-            return;
-        }
-
-        if (!isset($mapping[$typeField]['comparators'][$operator])) {
-            $this->isConditionCorrect = false;
-            $this->conditionErrors[] = 'configuration not found for condition operator';
-            return;
-        }
-
-        $comparatorDef = $mapping[$typeField]['comparators'][$operator];
-        $needsValue = !empty((array)$comparatorDef);
-
-        if ($needsValue && !isset($condition['value']['value'])) {
-            $this->isConditionCorrect = false;
-            $this->conditionErrors[] = 'missing condition value';
-            return;
-        }
-
-        if ($needsValue) {
-            $type = $comparatorDef['expected_type'] ?? null;
-            $value = $condition['value']['value'];
-
-            if (is_array($type)) {
-                $foundCorrectType = false;
-                foreach ($type as $subtype) {
-                    if ($this->valueHasCorrectType($subtype, $value)) {
-                        $foundCorrectType = true;
-                    }
-                }
-                if (!$foundCorrectType) {
-                    $this->isConditionCorrect = false;
-                    $this->conditionErrors[] = 'wrong type of condition value';
-                }
-            } else {
-                if (!$this->valueHasCorrectType($type, $value)) {
-                    $this->isConditionCorrect = false;
-                    $this->conditionErrors[] = 'wrong type of condition value';
-                }
+        if (array_key_exists('operatorIdentifier', $condition)) {
+            $operator = $condition['operatorIdentifier'];
+            if (! in_array($operator, ['and', 'or'], true)) {
+                $errors[$path.'.operatorIdentifier'] = 'The condition group operator must be "and" or "or".';
             }
+
+            $children = $condition['children'] ?? null;
+            if (! is_array($children) || $children === []) {
+                $errors[$path.'.children'] = 'The condition group must contain at least one condition.';
+
+                return;
+            }
+
+            foreach ($children as $childIndex => $child) {
+                $this->validateCondition(
+                    $child,
+                    $path.'.children.'.$childIndex,
+                    $depth + 1,
+                    $conditionCount,
+                    $targetProperty,
+                    $references,
+                    $errors,
+                );
+            }
+
+            return;
+        }
+
+        if (! array_key_exists('identifier', $condition)) {
+            $errors[$path] = 'The condition must be a condition group or a field condition.';
+
+            return;
+        }
+
+        $this->validateLeafCondition($condition, $path, $targetProperty, $references, $errors);
+    }
+
+    /**
+     * @param  array<string, array{type: string, name: string, kind: string}>  $references
+     * @param  array<string, string>  $errors
+     */
+    private function validateLeafCondition(
+        array $condition,
+        string $path,
+        array $targetProperty,
+        array $references,
+        array &$errors,
+    ): void {
+        $value = $condition['value'] ?? null;
+        if (! is_array($value)) {
+            $errors[$path.'.value'] = 'The condition body is missing.';
+
+            return;
+        }
+
+        $propertyMeta = $value['property_meta'] ?? null;
+        if (! is_array($propertyMeta)) {
+            $errors[$path.'.value.property_meta'] = 'Choose a field or computed variable for this condition.';
+
+            return;
+        }
+
+        $referenceId = $propertyMeta['id'] ?? null;
+        if (! is_string($referenceId) || $referenceId === '') {
+            $errors[$path.'.value.property_meta.id'] = 'The referenced field or computed variable ID is required.';
+        } elseif ($references !== [] && ($targetProperty['id'] ?? null) === $referenceId) {
+            $errors[$path.'.value.property_meta.id'] = 'A field logic rule cannot reference the same field.';
+        } elseif ($references !== [] && ! isset($references[$referenceId])) {
+            $errors[$path.'.value.property_meta.id'] = "The referenced field or computed variable [{$referenceId}] no longer exists.";
+        }
+
+        $identifier = $condition['identifier'] ?? null;
+        if (! is_string($identifier) || $identifier === '') {
+            $errors[$path.'.identifier'] = 'The condition identifier is required.';
+        } elseif (is_string($referenceId) && $referenceId !== '' && $identifier !== $referenceId) {
+            $errors[$path.'.identifier'] = "The condition identifier must match the referenced item [{$referenceId}].";
+        }
+
+        $referenceType = $propertyMeta['type'] ?? null;
+        if (! is_string($referenceType) || $referenceType === '') {
+            $errors[$path.'.value.property_meta.type'] = 'The referenced field or computed variable type is required.';
+
+            return;
+        }
+
+        if (is_string($referenceId) && isset($references[$referenceId]) && $references[$referenceId]['type'] !== $referenceType) {
+            $actualType = $references[$referenceId]['type'];
+            $errors[$path.'.value.property_meta.type'] = "The reference type must be [{$actualType}] for [{$referenceId}], not [{$referenceType}].";
+        }
+
+        $mapping = self::getConditionMapping();
+        if (! isset($mapping[$referenceType])) {
+            $errors[$path.'.value.property_meta.type'] = "Logic conditions do not support the reference type [{$referenceType}].";
+
+            return;
+        }
+
+        $operator = $value['operator'] ?? null;
+        if (! is_string($operator) || $operator === '') {
+            $errors[$path.'.value.operator'] = 'Choose an operator for this condition.';
+
+            return;
+        }
+
+        $comparator = $mapping[$referenceType]['comparators'][$operator] ?? null;
+        if ($comparator === null) {
+            $errors[$path.'.value.operator'] = "The operator [{$operator}] is not available for [{$referenceType}] conditions.";
+
+            return;
+        }
+
+        if (($comparator['custom_validation_only'] ?? false) === true) {
+            $errors[$path.'.value.operator'] = "The operator [{$operator}] is only available for custom validation rules.";
+
+            return;
+        }
+
+        $needsValue = $comparator !== [];
+        if ($needsValue && ! array_key_exists('value', $value)) {
+            $errors[$path.'.value.value'] = "The operator [{$operator}] requires a comparison value.";
+
+            return;
+        }
+
+        if ($needsValue && ! $this->valueHasCorrectType($comparator, $value['value'])) {
+            $expectedType = $comparator['expected_type'] ?? 'the expected';
+            $expectedType = is_array($expectedType) ? implode(' or ', $expectedType) : $expectedType;
+            $errors[$path.'.value.value'] = "The comparison value for [{$operator}] must be {$expectedType}.";
         }
     }
 
-    private function valueHasCorrectType(?string $type, mixed $value): bool
+    private function valueHasCorrectType(array $comparator, mixed $value): bool
     {
         if (is_string($value) && str_contains($value, 'mention-field-id')) {
             return true;
         }
 
-        if ($type === 'string') {
-            $mapping = self::getConditionMapping();
-            $fieldType = $this->field['type'] ?? null;
-            $format = $mapping[$fieldType]['comparators'][$this->operator]['format'] ?? null;
-            if ($format && ($format['type'] ?? null) === 'regex') {
-                try {
-                    preg_match('/' . $value . '/', '');
-                    return true;
-                } catch (\Exception $e) {
-                    $this->conditionErrors[] = 'invalid regex pattern';
-                    return false;
-                }
-            }
+        $expectedTypes = (array) ($comparator['expected_type'] ?? []);
+        if ($expectedTypes === []) {
+            return true;
         }
 
-        if (
-            ($type === 'string' && gettype($value) !== 'string') ||
-            ($type === 'boolean' && !is_bool($value)) ||
-            ($type === 'number' && !is_numeric($value)) ||
-            ($type === 'object' && !is_array($value))
-        ) {
-            return false;
-        }
+        foreach ($expectedTypes as $expectedType) {
+            $matches = match ($expectedType) {
+                'string' => is_string($value),
+                'boolean' => is_bool($value),
+                'number' => is_int($value) || is_float($value) || (is_string($value) && is_numeric($value)),
+                'object' => is_array($value),
+                default => true,
+            };
 
-        return true;
-    }
-
-    private function checkConditions(mixed $conditions): void
-    {
-        if (!is_array($conditions)) {
-            $this->isConditionCorrect = false;
-            $this->conditionErrors[] = 'conditions must be an array';
-            return;
-        }
-
-        if (array_key_exists('operatorIdentifier', $conditions)) {
-            if (($conditions['operatorIdentifier'] !== 'and') && ($conditions['operatorIdentifier'] !== 'or')) {
-                $this->conditionErrors[] = 'missing operator';
-                $this->isConditionCorrect = false;
-                return;
+            if (! $matches) {
+                continue;
             }
 
-            if (isset($conditions['operatorIdentifier']['children'])) {
-                $this->conditionErrors[] = 'extra condition';
-                $this->isConditionCorrect = false;
-                return;
-            }
-
-            if (!isset($conditions['children']) || !is_array($conditions['children'])) {
-                $this->conditionErrors[] = 'wrong sub-condition type';
-                $this->isConditionCorrect = false;
-                return;
-            }
-
-            foreach ($conditions['children'] as $child) {
-                $this->checkConditions($child);
-            }
-        } elseif (isset($conditions['identifier'])) {
-            $this->checkBaseCondition($conditions);
-        }
-    }
-
-    private function checkActions(mixed $actions): void
-    {
-        if (!is_array($actions) || count($actions) === 0) {
-            $this->isActionCorrect = false;
-            return;
-        }
-
-        $layoutBlocks = ['nf-text', 'nf-code', 'nf-page-break', 'nf-divider', 'nf-image', 'nf-video', 'nf-audio'];
-        $fieldType = $this->field['type'] ?? null;
-        $isHidden = $this->field['hidden'] ?? false;
-        $isRequired = $this->field['required'] ?? false;
-        $isDisabled = $this->field['disabled'] ?? false;
-
-        foreach ($actions as $action) {
             if (
-                !in_array($action, self::ACTIONS_VALUES) ||
-                (in_array($fieldType, $layoutBlocks) && !in_array($action, ['hide-block', 'show-block'])) ||
-                ($isHidden && !in_array($action, ['show-block', 'require-answer'])) ||
-                ($isRequired && !in_array($action, ['make-it-optional', 'hide-block', 'disable-block'])) ||
-                ($isDisabled && !in_array($action, ['enable-block', 'require-answer', 'make-it-optional']))
+                $expectedType === 'string'
+                && ($comparator['format']['type'] ?? null) === 'regex'
+                && ! FormRegex::isValid($value)
             ) {
-                $this->isActionCorrect = false;
-                break;
+                continue;
+            }
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /** @param array<string, string> $errors */
+    private function validateActions(mixed $actions, array $property, array &$errors): void
+    {
+        if (! is_array($actions) || $actions === []) {
+            $errors['logic.actions'] = 'Choose at least one action for this logic rule.';
+
+            return;
+        }
+
+        $allowedActions = self::allowedActionsFor($property);
+
+        foreach ($actions as $actionIndex => $action) {
+            $isValid = is_string($action)
+                && in_array($action, self::ACTIONS_VALUES, true)
+                && in_array($action, $allowedActions, true);
+
+            if (! $isValid) {
+                $actionLabel = is_scalar($action) ? (string) $action : 'invalid action';
+                $errors['logic.actions.'.$actionIndex] = "The action [{$actionLabel}] is not valid for this field.";
             }
         }
     }
 
-    private function buildErrorMessage(string $fieldName): string
+    /** @return array<int, string> */
+    public static function allowedActionsFor(array $property): array
     {
-        $message = '';
+        $layoutBlocks = ['nf-text', 'nf-code', 'nf-page-break', 'nf-divider', 'nf-image', 'nf-video', 'nf-audio'];
+        $fieldType = $property['type'] ?? null;
+        $isHidden = $property['hidden'] ?? false;
+        $isRequired = $property['required'] ?? false;
+        $isDisabled = $property['disabled'] ?? false;
 
-        if (!$this->isConditionCorrect) {
-            $message = "The logic conditions for {$fieldName} are not complete.";
-        } elseif (!$this->isActionCorrect) {
-            $message = "The logic actions for {$fieldName} are not valid.";
+        return match (true) {
+            in_array($fieldType, $layoutBlocks, true) && $isHidden => ['show-block'],
+            in_array($fieldType, $layoutBlocks, true) => ['hide-block'],
+            $isHidden => ['show-block', 'require-answer'],
+            $isDisabled && $isRequired => ['enable-block', 'make-it-optional'],
+            $isDisabled => ['enable-block', 'require-answer'],
+            $isRequired => ['hide-block', 'disable-block', 'make-it-optional'],
+            default => ['hide-block', 'disable-block', 'require-answer'],
+        };
+    }
+
+    /**
+     * @return array<string, array{type: string, name: string, kind: string}>
+     */
+    private function buildReferenceMap(array $context): array
+    {
+        $references = [];
+
+        foreach ($context['properties'] ?? [] as $property) {
+            if (! is_array($property) || ! is_string($property['id'] ?? null) || ! is_string($property['type'] ?? null)) {
+                continue;
+            }
+
+            $references[$property['id']] = [
+                'type' => $property['type'],
+                'name' => is_string($property['name'] ?? null) ? $property['name'] : $property['id'],
+                'kind' => 'field',
+            ];
         }
 
-        if (count($this->conditionErrors) > 0) {
-            $message .= ' Error detail(s): ' . implode(', ', $this->conditionErrors);
+        foreach ($context['computed_variables'] ?? [] as $variable) {
+            if (! is_array($variable) || ! is_string($variable['id'] ?? null)) {
+                continue;
+            }
+
+            $references[$variable['id']] = [
+                'type' => 'computed',
+                'name' => is_string($variable['name'] ?? null) ? $variable['name'] : $variable['id'],
+                'kind' => 'computed_variable',
+            ];
         }
 
-        return $message;
+        return $references;
     }
 }

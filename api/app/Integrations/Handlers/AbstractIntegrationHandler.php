@@ -19,6 +19,7 @@ abstract class AbstractIntegrationHandler
 {
     protected $form = null;
     protected $submissionData = null;
+    protected array $submissionMeta = [];
     protected $integrationData = null;
     protected $provider = null;
     protected ?array $computedValues = null;
@@ -30,6 +31,7 @@ abstract class AbstractIntegrationHandler
     ) {
         $this->form = $event->form;
         $this->submissionData = $event->data;
+        $this->submissionMeta = $event->meta;
         $this->integrationData = $formIntegration->data;
         $this->provider = $formIntegration->provider;
     }
@@ -80,26 +82,74 @@ abstract class AbstractIntegrationHandler
      */
     protected function getWebhookData(): array
     {
-        return self::formatWebhookData($this->form, $this->submissionData);
+        return self::formatWebhookData($this->form, $this->submissionData, $this->submissionMeta);
     }
 
-    final public function run(): void
+    public function run(?FormIntegrationsEvent $attempt = null): FormIntegrationsEvent
     {
+        $eventMetadata = $this->getEventMetadata();
+
         try {
-            $this->handle();
-            $this->formIntegration->events()->create([
-                'status' => FormIntegrationsEvent::STATUS_SUCCESS,
-            ]);
+            if (!$this->shouldRun()) {
+                $attributes = [
+                    'status' => 'skipped',
+                    'data' => array_merge($eventMetadata, ['message' => 'Integration conditions were not met. No request was sent.']),
+                ];
+            } else {
+                $this->handle();
+                $attributes = [
+                    'status' => FormIntegrationsEvent::STATUS_SUCCESS,
+                    'data' => $eventMetadata,
+                ];
+            }
         } catch (\Exception $e) {
-            $this->formIntegration->events()->create([
+            $attributes = [
                 'status' => FormIntegrationsEvent::STATUS_ERROR,
-                'data' => $this->extractEventDataFromException($e),
-            ]);
+                'data' => array_merge($eventMetadata, $this->extractEventDataFromException($e)),
+            ];
             Log::error('Integration failed', array_merge([
                 'form_id' => $this->form->id,
                 'integration_id' => $this->formIntegration->id,
             ], $this->extractEventDataFromException($e)));
         }
+
+        try {
+            return $this->recordEvent($attributes, $attempt);
+        } catch (\Exception $exception) {
+            if ($attempt) {
+                // Keep the durable retry reservation and never classify storage errors as delivery failures.
+                throw $exception;
+            }
+
+            Log::error('Could not record integration outcome', [
+                'form_id' => $this->form->id,
+                'integration_id' => $this->formIntegration->id,
+                'exception_type' => get_class($exception),
+            ]);
+
+            // A recoverable history write failure must not prevent the other integrations from running.
+            return $this->recordEvent([
+                'status' => 'unknown',
+                'data' => array_merge($attributes['data'] ?? [], [
+                    'message' => 'The integration outcome could not be recorded. Check the destination before sending again.',
+                ]),
+            ]);
+        }
+    }
+
+    protected function recordEvent(array $attributes, ?FormIntegrationsEvent $attempt = null): FormIntegrationsEvent
+    {
+        if (!$attempt) {
+            return $this->formIntegration->events()->create($attributes);
+        }
+
+        $attributes['data'] = array_merge((array) $attempt->data, $attributes['data'] ?? []);
+        $attempt->update($attributes);
+        if ($attempt->status === FormIntegrationsEvent::STATUS_ERROR) {
+            \App\Events\Models\FormIntegrationsEventCreated::dispatch($attempt);
+        }
+
+        return $attempt;
     }
 
     public function created(): void
@@ -135,7 +185,7 @@ abstract class AbstractIntegrationHandler
         return [];
     }
 
-    public static function formatWebhookData(Form $form, array $submissionData): array
+    public static function formatWebhookData(Form $form, array $submissionData, array $submissionMeta = []): array
     {
         $formatter = (new FormSubmissionFormatter($form, $submissionData))
             ->useSignedUrlForFiles()
@@ -171,7 +221,23 @@ abstract class AbstractIntegrationHandler
             $data['edit_link'] = SubmissionUrlService::buildEditUrl($form, $submissionData['submission_id']);
         }
 
+        $attribution = $submissionMeta['attribution'] ?? null;
+        if (is_array($attribution) && !empty($attribution)) {
+            $data['meta'] = ['attribution' => $attribution];
+        }
+
         return $data;
+    }
+
+    protected function getEventMetadata(): array
+    {
+        if (!isset($this->submissionData['submission_id'])) {
+            return [];
+        }
+
+        return [
+            'submission_id' => $this->submissionData['submission_id'],
+        ];
     }
 
     public function extractEventDataFromException(\Exception $e): array

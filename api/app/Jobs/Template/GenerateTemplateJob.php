@@ -20,13 +20,16 @@ class GenerateTemplateJob implements ShouldQueue
     use Queueable;
     use SerializesModels;
 
+    public int $tries = 1;
+    public int $timeout = 60;
+    public bool $failOnTimeout = true;
     public ?Template $generatedTemplate = null;
     public const MAX_RELATED_TEMPLATES = 8;
 
     /**
      * Create a new job instance.
      */
-    public function __construct(public string $prompt)
+    public function __construct(public string $prompt, public ?string $adminReceiptId = null)
     {
     }
 
@@ -35,6 +38,24 @@ class GenerateTemplateJob implements ShouldQueue
      */
     public function handle(): void
     {
+        $receipt = null;
+        if ($this->adminReceiptId) {
+            $receipt = \App\Models\AdminApiAction::findOrFail($this->adminReceiptId);
+            if ($receipt->status !== 'running') {
+                return;
+            }
+            $token = \Laravel\Sanctum\PersonalAccessToken::find($receipt->token_id);
+            $actor = $token?->tokenable;
+            if (config('app.self_hosted') || !$actor?->moderator || $actor->is_blocked || !$token->expires_at?->isFuture()
+                || !in_array('admin:templates:create', $token->abilities, true)
+                || (config('sanctum.expiration') && $token->created_at->addMinutes(config('sanctum.expiration'))->isPast())) {
+                $receipt->update(['status' => 'uncertain']);
+                return;
+            }
+            if (!\App\Models\AdminApiAction::whereKey($receipt->id)->where('status', 'running')->update(['status' => 'processing'])) {
+                return;
+            }
+        }
         // Get form structure using the form prompt class
         $formData = GenerateFormPrompt::run($this->prompt);
 
@@ -70,6 +91,14 @@ class GenerateTemplateJob implements ShouldQueue
 
         // Set reverse related Templates
         $this->setReverseRelatedTemplates($template);
+        $receipt?->update(['status' => 'completed', 'result' => ['template_slug' => $template->slug]]);
+    }
+
+    public function failed(?\Throwable $exception): void
+    {
+        if ($this->adminReceiptId) {
+            \App\Models\AdminApiAction::whereKey($this->adminReceiptId)->where('status', '!=', 'completed')->update(['status' => 'uncertain']);
+        }
     }
 
     /**
