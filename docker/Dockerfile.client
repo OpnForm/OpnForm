@@ -1,4 +1,4 @@
-FROM node:24-alpine AS javascript-builder
+FROM node:24.22.1-alpine AS javascript-builder
 WORKDIR /app
 
 # It's best to add as few files as possible before running the build commands
@@ -24,22 +24,17 @@ RUN npm cache clean --force
 
 ADD ./client/ /app/
 
-ENV NODE_OPTIONS="--max-old-space-size=6144"
-# Set production mode to reduce memory usage
+# Respect this bound through npm's build script; the former nested 8/10 GiB
+# overrides exceeded the memory available to shared Docker Desktop builders.
+ARG NODE_BUILD_HEAP_MB=4096
+ENV NODE_OPTIONS="--max-old-space-size=${NODE_BUILD_HEAP_MB}"
 ENV NODE_ENV=production
-# Disable source maps to reduce memory usage
 ENV GENERATE_SOURCEMAP=false
-# Additional memory optimizations
 ENV NUXT_TELEMETRY_DISABLED=1
-# Optimize Vite build for memory
-ENV VITE_NODE_OPTIONS="--max-old-space-size=10240"
-# Run the build with additional memory optimizations and limited concurrency
 RUN --mount=type=tmpfs,target=/tmp \
-    NODE_OPTIONS="--max-old-space-size=10240" \
-    NUXT_BUILD_CONCURRENCY=1 \
-    npm run build
+    NUXT_BUILD_CONCURRENCY=1 npm run build
 
-FROM node:24-alpine
+FROM node:24.22.1-alpine
 WORKDIR /app
 COPY --from=javascript-builder /app/.output/ /app/
 RUN ls /app/

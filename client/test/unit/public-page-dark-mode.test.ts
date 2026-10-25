@@ -36,6 +36,7 @@ describe('darkModeEnabled', () => {
     expect(wrapper.text()).toBe('false')
 
     wrapper.element.classList.add('dark')
+    await vi.waitFor(() => expect(wrapper.text()).toBe('true'))
     await nextTick()
 
     expect(wrapper.text()).toBe('true')

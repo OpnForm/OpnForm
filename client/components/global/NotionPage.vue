@@ -69,6 +69,8 @@ export default {
 </script>
 
 <style lang='scss'>
+@reference '../../css/app.css';
+
 @import "vue-notion/src/styles.css";
 
 .notion-blue {

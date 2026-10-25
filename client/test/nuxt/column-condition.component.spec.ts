@@ -68,6 +68,8 @@ function mountColumnCondition({
           props: ['modelValue', 'items'],
         },
         MentionInput: mentionInputStub,
+        TextInput: { name: 'TextInput', inheritAttrs: false, props: ['modelValue'], emits: ['update:modelValue'], template: '<input />' },
+        PhoneInput: true,
       },
     },
   })
@@ -97,5 +99,35 @@ describe('ColumnCondition computed mentions', () => {
 
     const mentionValue = '<span mention="true" mention-field-id="budget" mention-field-name="Budget" mention-fallback="">@Budget</span>'
     expect(wrapper.vm.castContent({ value: mentionValue }).value).toBe(mentionValue)
+  })
+})
+
+
+describe('ColumnCondition phone regex patterns', () => {
+  it.each(['matches_regex', 'does_not_match_regex'])('accepts a plain text pattern for %s', async (operator) => {
+    const wrapper = mountColumnCondition({
+      property: { id: 'phone', name: 'Phone', type: 'phone_number' } as any,
+      modelValue: { operator, value: '^\\+?[0-9]{10,15}$' },
+    })
+    await flushPromises()
+
+    expect(wrapper.vm.inputComponentData.component).toBe('TextInput')
+    const input = wrapper.findComponent({ name: 'TextInput' })
+    expect(input.exists()).toBe(true)
+    input.vm.$emit('update:modelValue', '^0[1-9][0-9]{8}$')
+    await flushPromises()
+    expect(wrapper.emitted('update:modelValue')?.at(-1)?.[0]).toMatchObject({
+      operator, value: '^0[1-9][0-9]{8}$',
+    })
+    wrapper.unmount()
+  })
+
+  it('keeps the phone input for a phone equality condition', () => {
+    const wrapper = mountColumnCondition({
+      property: { id: 'phone', name: 'Phone', type: 'phone_number' } as any,
+      modelValue: { operator: 'equals', value: '+33123456789' },
+    })
+    expect(wrapper.vm.inputComponentData.component).toBe('PhoneInput')
+    wrapper.unmount()
   })
 })

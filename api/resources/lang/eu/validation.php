@@ -120,4 +120,11 @@ return [
     'complete_captcha' => 'Mesedez, bete CAPTCHA.',
     'yes' => 'Bai',
     'no' => 'Ez',
+
+    'from_date_required' => 'Hasiera-data beharrezkoa da',
+    'to_date_required' => 'Amaiera-data beharrezkoa da',
+    'from_date_before_or_equal' => 'Hasiera-data amaiera-data baino lehenagokoa edo berdina izan behar da',
+    'rating_min' => 'Balorazio bat hautatu behar da',
+    'select_min' => 'Hautatu gutxienez :min aukera',
+    'select_max' => 'Hautatu gehienez :max aukera',
 ];

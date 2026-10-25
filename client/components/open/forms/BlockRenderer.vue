@@ -1,6 +1,6 @@
 <template>
   <ClientOnlyWrapper v-if="block && hasComponent" :client-only="clientOnlyVal" :key="'dyn-' + (block?.id || 'dyn')">
-    <Suspense>
+    <Suspense suspensible>
       <component
         :is="componentVal"
         v-bind="boundProps"

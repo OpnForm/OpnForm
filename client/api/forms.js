@@ -20,7 +20,7 @@ export const formsApi = {
   duplicate: (id) => apiService.post(`/open/forms/${id}/duplicate`),
 
   // Form utilities
-  regenerateLink: (id, option) => apiService.put(`/open/forms/${id}/regenerate-link/${option}`),
+  regenerateLink: (id, option, data = null) => apiService.put(`/open/forms/${id}/regenerate-link/${option}`, data),
   mobileEditorEmail: (id) => apiService.get(`/open/forms/${id}/mobile-editor-email`),
   updateWorkspace: (id, workspaceId, data) => apiService.post(`/open/forms/${id}/workspace/${workspaceId}`, data),
 

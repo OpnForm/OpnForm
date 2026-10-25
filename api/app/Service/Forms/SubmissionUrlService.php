@@ -4,6 +4,8 @@ namespace App\Service\Forms;
 
 use App\Models\Forms\Form;
 use App\Models\Forms\FormSubmission;
+use App\Models\PdfTemplate;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 
 class SubmissionUrlService
@@ -63,6 +65,24 @@ class SubmissionUrlService
         return $form->submissions()
             ->where('public_id', $identifier)
             ->first();
+    }
+
+    /**
+     * Issue a bounded download capability for one submission and template.
+     */
+    public static function buildPdfDownloadUrl(Form $form, PdfTemplate $template, FormSubmission $submission): string
+    {
+        abort_unless($template->form_id === $form->id && $submission->form_id === $form->id, 404);
+
+        return URL::temporaryPublicSignedRoute(
+            'open.forms.pdf-templates.download-submission',
+            now()->addHours(24),
+            [
+                'form' => $form->id,
+                'pdfTemplate' => $template->id,
+                'submission_id' => self::getSubmissionIdentifier($submission),
+            ]
+        );
     }
 
     /**

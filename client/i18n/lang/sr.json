@@ -7,7 +7,8 @@
             "submit": "Pošalji",
             "next": "Dalje",
             "previous": "Nazad",
-            "re_fill": "Pošalji još jedan odgovor"
+            "re_fill": "Pošalji još jedan odgovor",
+            "download_pdf": "Preuzmi PDF"
         },
         "powered_by": "Pokreće",
         "password_protected": "Ovaj formular je zaštićen lozinkom.",
@@ -27,6 +28,7 @@
             "create": "Kreiraj"
         },
         "fileInput": {
+            "invalidFileType": "Погрешан тип датотеке. Дозвољени су само: {types}",
             "chooseFiles": "Kliknite da izaberete fajl(ove) ili prevucite ovde | Kliknite da izaberete fajl ili prevucite ovde",
             "sizeLimit": "Ograničenje veličine: {count}MB po fajlu",
             "uploadingFile": "Otpremanje vašeg fajla..."
@@ -69,6 +71,7 @@
         },
         "validation_error": "Greška pri validaciji",
         "validation_error_with_count": "Greška pri validaciji ({count} polja)",
+        "submission_error": "Došlo je do greške prilikom slanja obrasca. Pokušajte ponovo.",
         "toggle": {
             "yes": "Da",
             "no": "Ne"

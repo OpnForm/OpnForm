@@ -102,7 +102,7 @@
                 @click.stop="handleAddBlock"
               />
             </UTooltip>
-            <UButtonGroup size="sm">
+            <UFieldGroup size="sm">
               <UTooltip text="Edit question">
                 <UButton
                   icon="i-heroicons-cog-6-tooth"
@@ -120,7 +120,7 @@
                   @click.stop
                 />
               </UDropdownMenu>
-            </UButtonGroup>
+            </UFieldGroup>
           </div>
         </VTransition>
       </div>
@@ -390,7 +390,7 @@ function handleDeleteCurrent() {
 </style>
 
 <style>
-@reference '~/css/app.css';
+@reference '../../../../../css/app.css';
 
 .form-editor-preview .powered-by-button {
   @apply bottom-10 right-10 z-50;

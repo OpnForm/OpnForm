@@ -132,7 +132,7 @@ export function useForms() {
 
   const regenerateLink = (options = {}) => {
     return useMutation({
-      mutationFn: ({ id, option }) => formsApi.regenerateLink(id, option),
+      mutationFn: ({ id, option, data }) => formsApi.regenerateLink(id, option, data),
       onSuccess: (updatedForm, { id }) => {
       queryClient.setQueryData(['forms', id], (old) => {
         return old ? { ...old, ...updatedForm } : updatedForm

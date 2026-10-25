@@ -35,7 +35,7 @@ return [
     'gt' => [
         'numeric' => ':attribute :value ਤੋਂ ਵੱਡਾ ਹੋਣਾ ਚਾਹੀਦਾ ਹੈ।',
         'file' => ':attribute :value ਕਿਲੋਬਾਈਟਸ ਤੋਂ ਵੱਡਾ ਹੋਣਾ ਚਾਹੀਦਾ ਹੈ।',
-        'string' => ':attribute :value ਅੱਖਰਾ��� ਤੋਂ ਵੱਡਾ ਹੋਣਾ ਚਾਹੀਦਾ ਹੈ।',
+        'string' => ':attribute :value ਅੱਖਰਾਂ ਤੋਂ ਵੱਡਾ ਹੋਣਾ ਚਾਹੀਦਾ ਹੈ।',
         'array' => ':attribute ਵਿੱਚ :value ਤੋਂ ਵੱਧ ਆਈਟਮਾਂ ਹੋਣੀਆਂ ਚਾਹੀਦੀਆਂ ਹਨ।',
     ],
     'gte' => [
@@ -62,7 +62,7 @@ return [
         'numeric' => ':attribute :value ਤੋਂ ਛੋਟਾ ਜਾਂ ਬਰਾਬਰ ਹੋਣਾ ਚਾਹੀਦਾ ਹੈ।',
         'file' => ':attribute :value ਕਿਲੋਬਾਈਟਸ ਤੋਂ ਛੋਟਾ ਜਾਂ ਬਰਾਬਰ ਹੋਣਾ ਚਾਹੀਦਾ ਹੈ।',
         'string' => ':attribute :value ਅੱਖਰਾਂ ਤੋਂ ਛੋਟਾ ਜਾਂ ਬਰਾਬਰ ਹੋਣਾ ਚਾਹੀਦਾ ਹੈ।',
-        'array' => ':attribute ਵਿੱਚ :value ਤੋਂ ਵੱਧ ਆਈਟਮਾਂ ਨਹੀ�� ਹੋਣੀਆਂ ਚਾਹੀਦੀਆਂ।',
+        'array' => ':attribute ਵਿੱਚ :value ਤੋਂ ਵੱਧ ਆਈਟਮਾਂ ਨਹੀਂ ਹੋਣੀਆਂ ਚਾਹੀਦੀਆਂ।',
     ],
     'max' => [
         'numeric' => ':attribute :max ਤੋਂ ਵੱਡਾ ਨਹੀਂ ਹੋ ਸਕਦਾ।',
@@ -91,7 +91,7 @@ return [
     'required_with' => ':attribute ਫੀਲਡ ਲੋੜੀਂਦਾ ਹੈ ਜਦੋਂ :values ਮੌਜੂਦ ਹੈ।',
     'required_with_all' => ':attribute ਫੀਲਡ ਲੋੜੀਂਦਾ ਹੈ ਜਦੋਂ :values ਮੌਜੂਦ ਹਨ।',
     'required_without' => ':attribute ਫੀਲਡ ਲੋੜੀਂਦਾ ਹੈ ਜਦੋਂ :values ਮੌਜੂਦ ਨਹੀਂ ਹੈ।',
-    'required_without_all' => ':attribute ਫੀਲਡ ਲੋੜੀ��ਦਾ ਹੈ ਜਦੋਂ :values ਵਿੱਚੋਂ ਕੋਈ ਵੀ ਮੌਜੂਦ ਨਹੀਂ ਹੈ।',
+    'required_without_all' => ':attribute ਫੀਲਡ ਲੋੜੀਂਦਾ ਹੈ ਜਦੋਂ :values ਵਿੱਚੋਂ ਕੋਈ ਵੀ ਮੌਜੂਦ ਨਹੀਂ ਹੈ।',
     'same' => ':attribute ਅਤੇ :other ਮੇਲ ਖਾਣੇ ਚਾਹੀਦੇ ਹਨ।',
     'size' => [
         'numeric' => ':attribute :size ਹੋਣਾ ਚਾਹੀਦਾ ਹੈ।',
@@ -120,4 +120,11 @@ return [
     'complete_captcha' => 'ਕਿਰਪਾ ਕਰੋ ਕੈਪਚਾ ਭਰੋ।',
     'yes' => 'ਹੈ',
     'no' => 'ਨਹੀਂ',
+
+    'from_date_required' => 'ਸ਼ੁਰੂਆਤੀ ਮਿਤੀ ਲੋੜੀਂਦੀ ਹੈ',
+    'to_date_required' => 'ਅੰਤਿਮ ਮਿਤੀ ਲੋੜੀਂਦੀ ਹੈ',
+    'from_date_before_or_equal' => 'ਸ਼ੁਰੂਆਤੀ ਮਿਤੀ ਅੰਤਿਮ ਮਿਤੀ ਤੋਂ ਪਹਿਲਾਂ ਜਾਂ ਉਸ ਦੇ ਬਰਾਬਰ ਹੋਣੀ ਚਾਹੀਦੀ ਹੈ',
+    'rating_min' => 'ਇੱਕ ਰੇਟਿੰਗ ਚੁਣਨੀ ਲੋੜੀਂਦੀ ਹੈ',
+    'select_min' => 'ਕਿਰਪਾ ਕਰਕੇ ਘੱਟੋ-ਘੱਟ :min ਵਿਕਲਪ ਚੁਣੋ',
+    'select_max' => 'ਕਿਰਪਾ ਕਰਕੇ ਵੱਧ ਤੋਂ ਵੱਧ :max ਵਿਕਲਪ ਚੁਣੋ',
 ];

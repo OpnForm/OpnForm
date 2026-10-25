@@ -25,6 +25,7 @@ use App\Mcp\Tools\ExportSubmissionsTool;
 use App\Mcp\Tools\GetSubmissionExportTool;
 use App\Mcp\Tools\PatchFormDraftTool;
 use App\Mcp\Tools\PreviewFormDraftTool;
+use App\Mcp\Tools\RestoreFormDraftVersionTool;
 use App\Mcp\Tools\OpenFormDraftInEditorTool;
 use App\Mcp\Tools\ValidateFormDefinitionTool;
 use Laravel\Mcp\Server;
@@ -46,6 +47,7 @@ class OpnFormServer extends Server
         CreateFormDraftTool::class,
         GetFormDraftTool::class,
         PatchFormDraftTool::class,
+        RestoreFormDraftVersionTool::class,
         PreviewFormDraftTool::class,
         OpenFormDraftInEditorTool::class,
         GetAccountContextTool::class,

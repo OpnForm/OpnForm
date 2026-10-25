@@ -11,7 +11,7 @@ class ActionRequest extends FormRequest
         $rules = [
             'action_id' => 'required|uuid',
         ];
-        $operation = $this->route()->defaults['operation'];
+        $operation = $this->route()?->defaults['operation'] ?? null;
         if (!in_array($operation, ['create-template'], true)) {
             $rules['user_id'] = 'required|integer';
         }

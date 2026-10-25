@@ -76,7 +76,7 @@ const ui = computed(() => {
 </script>
 
 <style>
-@reference '~/css/app.css';
+@reference '../../../css/app.css';
 
 .text-block h1 {
   @apply mb-2;
