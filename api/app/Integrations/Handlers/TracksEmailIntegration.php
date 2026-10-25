@@ -3,6 +3,7 @@
 namespace App\Integrations\Handlers;
 
 use App\Service\Integrations\EmailDeliveryTracker;
+use App\Models\Integration\FormIntegrationsEvent;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
 use App\Notifications\Forms\FormEmailNotification;
@@ -12,10 +13,10 @@ trait TracksEmailIntegration
     private ?string $emailTrackingId = null;
     private bool $emailSendAttempted = false;
 
-    public function run(): void
+    public function run(?FormIntegrationsEvent $attempt = null): FormIntegrationsEvent
     {
         $this->emailTrackingId = (string) Str::uuid();
-        $this->formIntegration->events()->createQuietly([
+        $attributes = [
             'tracking_id' => $this->emailTrackingId,
             'status' => 'processing',
             'data' => [
@@ -23,7 +24,14 @@ trait TracksEmailIntegration
                 'notion_page_id' => $this->submissionData['notion_page_id'] ?? null,
                 'email' => ['version' => 1, 'recipients' => []],
             ],
-        ]);
+        ];
+        if ($attempt) {
+            $attributes['data'] = array_merge((array) $attempt->data, $attributes['data']);
+            $attempt->fill($attributes)->saveQuietly();
+            $integrationEvent = $attempt;
+        } else {
+            $integrationEvent = $this->formIntegration->events()->createQuietly($attributes);
+        }
         try {
             $this->handle();
         } catch (\Throwable $e) {
@@ -44,6 +52,21 @@ trait TracksEmailIntegration
             \Illuminate\Support\Facades\Log::error('Email integration processing failed', [
                 'tracking_id' => $this->emailTrackingId, 'exception_type' => get_class($e),
             ]);
+        }
+        try {
+            return $integrationEvent->refresh();
+        } catch (\Throwable $exception) {
+            if ($attempt) {
+                throw $exception;
+            }
+
+            // Reading delivery history must not replay an ordinary notification or stop other integrations.
+            \Illuminate\Support\Facades\Log::error('Could not read final email outcome', [
+                'tracking_id' => $this->emailTrackingId,
+                'exception_type' => get_class($exception),
+            ]);
+
+            return $integrationEvent;
         }
     }
 
