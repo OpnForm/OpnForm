@@ -202,7 +202,7 @@
           <div
             class="text-sm leading-5 tracking-[0.6%] font-medium text-neutral-600 sm:text-right lg:mt-8 lg:text-left"
           >
-            {{ currYear }} OpnForm — All rights reserved
+            {{ currYear }} OpnForm. All rights reserved.
             <span v-if="version" class="block mt-1">
               Version {{ version }}
             </span>
@@ -321,8 +321,9 @@ const linkGroups = computed(() => [
     title: "Developers",
     links: [
       { label: "MCP for AI agents", to: { name: "mcp" } },
-      { label: "Open-source", href: opnformConfig.links.github_url },
-      { label: "Self-hosting", href: opnformConfig.links.self_hosting },
+      { label: "Open-source", to: { name: "open-source-form-builder" } },
+      { label: "Self-hosted", to: { name: "self-hosted-form-builder" } },
+      { label: "Self-hosting docs", href: opnformConfig.links.self_hosting },
       { label: "Documentation", href: opnformConfig.links.tech_docs },
       { label: "GitHub", href: opnformConfig.links.github_url },
     ],

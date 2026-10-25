@@ -1,101 +1,77 @@
 <template>
-  <section class="py-12 sm:py-20 px-8 lg:px-12 bg-white">
-    <div class="mx-auto max-w-266">
-      <div class="text-center">
-        <p
-          class="text-base leading-7 tracking-[-1.1%] font-semibold text-blue-600"
-        >
+  <section class="border-y border-neutral-200 bg-neutral-50 py-16 sm:py-20 lg:py-24">
+    <div
+      class="mx-auto px-5 sm:px-8 lg:px-12"
+      :class="variant === 'split' ? 'grid max-w-5xl gap-10 lg:grid-cols-[0.8fr_1.2fr]' : 'max-w-266'"
+    >
+      <div :class="variant === 'split' ? '' : 'mx-auto max-w-2xl text-center'">
+        <p class="text-sm font-semibold uppercase tracking-[0.14em] text-blue-600">
           {{ eyebrow }}
         </p>
-        <h2
-          class="my-4 text-4xl sm:text-5xl sm:leading-14 tracking-[-1%] font-semibold text-gray-950"
-        >
+        <h2 class="mt-4 text-3xl font-semibold tracking-tight text-neutral-950 sm:text-4xl">
           <template v-for="(line, index) in normalizedTitleLines" :key="line">
             {{ line }}
-            <br
-              v-if="index < normalizedTitleLines.length - 1"
-              class="hidden sm:block"
-            />
-            <template v-if="index < normalizedTitleLines.length - 1">
-              {{ " " }}
-            </template>
+            <br v-if="index < normalizedTitleLines.length - 1" class="hidden sm:block" />
+            <template v-if="index < normalizedTitleLines.length - 1">{{ " " }}</template>
           </template>
         </h2>
-        <p
-          class="text-base leading-7 font-normal tracking-[-1.1%] text-gray-600"
-        >
+        <p v-if="description" class="mt-5 text-base leading-7 text-neutral-600">
           {{ description }}
         </p>
       </div>
 
-      <div class="mt-8 sm:mt-12">
-        <div class="space-y-3 sm:space-y-4">
-          <div
-            v-for="(q, i) in faqs"
-            :key="q.question"
-            class="bg-gray-50 rounded-2xl"
+      <div :class="variant === 'split' ? 'divide-y divide-neutral-200 border-y border-neutral-200' : 'mt-8 space-y-3 sm:mt-12 sm:space-y-4'">
+        <div
+          v-for="(faq, index) in faqs"
+          :key="faq.question"
+          :class="variant === 'split' ? 'py-1' : 'rounded-2xl bg-white'"
+        >
+          <button
+            type="button"
+            class="w-full cursor-pointer text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            :class="variant === 'split' ? 'py-5' : 'rounded-2xl p-4 sm:p-5'"
+            :aria-expanded="openFaqIndex === index"
+            :aria-controls="`${idPrefix}-${index}`"
+            @click="toggleFaq(index)"
           >
-            <button
-              type="button"
-              class="w-full p-4 sm:p-5 text-left rounded-2xl cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-              :aria-expanded="openFaqIndex === i"
-              :aria-controls="`${idPrefix}-${i}`"
-              @click="toggleFaq(i)"
-            >
-              <div class="flex items-center gap-3 sm:gap-8">
-                <span
-                  class="w-6 shrink-0 text-sm sm:text-base leading-7 tracking-[-0.6%] font-medium text-gray-400"
-                >
-                  {{ String(i + 1).padStart(2, "0") }}
-                </span>
-                <div
-                  class="flex items-center justify-between flex-1 gap-4 sm:gap-8"
-                >
-                  <p
-                    class="text-base sm:text-lg leading-7 tracking-[-0.6%] font-medium text-gray-600"
-                  >
-                    {{ q.question }}
-                  </p>
-                  <span
-                    class="inline-flex items-center justify-center w-5 h-5 shrink-0 rounded-full text-gray-400 transition-transform duration-200"
-                    :class="{ 'rotate-45': openFaqIndex === i }"
-                  >
-                    <Icon
-                      class="w-5 h-5"
-                      name="heroicons:plus-20-solid"
-                    />
-                  </span>
-                </div>
-              </div>
-            </button>
+            <div class="flex items-center gap-4">
+              <span v-if="variant !== 'split'" class="w-6 shrink-0 text-sm font-medium text-neutral-400">
+                {{ String(index + 1).padStart(2, "0") }}
+              </span>
+              <span class="flex flex-1 items-center justify-between gap-5 font-semibold text-neutral-950">
+                {{ faq.question }}
+                <UIcon
+                  name="i-heroicons-plus-20-solid"
+                  class="h-5 w-5 shrink-0 text-neutral-500 transition-transform duration-200"
+                  :class="openFaqIndex === index ? 'rotate-45' : ''"
+                />
+              </span>
+            </div>
+          </button>
 
-            <div
-              :id="`${idPrefix}-${i}`"
-              class="faq-answer px-4 sm:px-5"
-              :class="
-                openFaqIndex === i ? 'faq-answer-open' : 'faq-answer-closed'
-              "
-              :aria-hidden="openFaqIndex !== i"
-            >
-              <div class="overflow-hidden">
-                <p
-                  class="pl-9 sm:pl-14 pr-4 text-sm font-medium leading-6 text-gray-600"
-                >
-                  {{ q.answer }}
-                </p>
-              </div>
+          <div
+            :id="`${idPrefix}-${index}`"
+            class="faq-answer"
+            :class="openFaqIndex === index ? 'faq-answer-open' : 'faq-answer-closed'"
+            :aria-hidden="openFaqIndex !== index"
+          >
+            <div class="overflow-hidden">
+              <p
+                class="pb-5 leading-7 text-neutral-600"
+                :class="variant === 'split' ? 'pr-8' : 'px-4 pl-14 text-sm sm:px-5 sm:pl-15'"
+              >
+                {{ faq.answer }}
+              </p>
             </div>
           </div>
         </div>
 
-        <div v-if="showContact" class="mt-8 text-center sm:mt-12">
-          <p
-            class="text-base leading-7 tracking-[-1.1%] font-medium text-gray-600"
-          >
+        <div v-if="showContact" class="pt-6 text-center">
+          <p class="text-base text-neutral-600">
             {{ contactText }}
             <button
               type="button"
-              class="cursor-pointer text-blue-600 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+              class="cursor-pointer text-blue-600 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
               @click="$emit('contact')"
             >
               {{ contactLabel }}
@@ -109,57 +85,23 @@
 
 <script setup>
 const props = defineProps({
-  eyebrow: {
-    type: String,
-    default: "Frequently Asked Questions",
-  },
-  title: {
-    type: String,
-    default: "",
-  },
-  titleLines: {
-    type: Array,
-    default: () => [],
-  },
-  description: {
-    type: String,
-    required: true,
-  },
-  faqs: {
-    type: Array,
-    required: true,
-  },
-  defaultOpenIndex: {
-    type: Number,
-    default: 0,
-  },
-  idPrefix: {
-    type: String,
-    default: "faq-answer",
-  },
-  showContact: {
-    type: Boolean,
-    default: true,
-  },
-  contactText: {
-    type: String,
-    default: "Didn't find the answer?",
-  },
-  contactLabel: {
-    type: String,
-    default: "Contact Us",
-  },
+  eyebrow: { type: String, default: "Frequently asked questions" },
+  title: { type: String, default: "" },
+  titleLines: { type: Array, default: () => [] },
+  description: { type: String, default: "" },
+  faqs: { type: Array, required: true },
+  defaultOpenIndex: { type: Number, default: 0 },
+  idPrefix: { type: String, default: "faq-answer" },
+  showContact: { type: Boolean, default: true },
+  contactText: { type: String, default: "Didn't find the answer?" },
+  contactLabel: { type: String, default: "Contact us" },
+  variant: { type: String, default: "stacked" },
 })
 
 defineEmits(["contact"])
 
 const openFaqIndex = ref(props.defaultOpenIndex)
-
-const normalizedTitleLines = computed(() => {
-  if (props.titleLines.length > 0) return props.titleLines
-  return [props.title]
-})
-
+const normalizedTitleLines = computed(() => props.titleLines.length ? props.titleLines : [props.title])
 const toggleFaq = (index) => {
   openFaqIndex.value = openFaqIndex.value === index ? null : index
 }
@@ -170,16 +112,17 @@ const toggleFaq = (index) => {
   display: grid;
   grid-template-rows: 0fr;
   opacity: 0;
-  padding-bottom: 0;
-  transition:
-    grid-template-rows 180ms ease,
-    opacity 180ms ease,
-    padding-bottom 180ms ease;
+  transition: grid-template-rows 180ms ease, opacity 180ms ease;
 }
 
 .faq-answer-open {
   grid-template-rows: 1fr;
   opacity: 1;
-  padding-bottom: 1rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .faq-answer {
+    transition: none;
+  }
 }
 </style>
