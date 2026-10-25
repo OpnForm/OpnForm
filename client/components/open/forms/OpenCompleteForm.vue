@@ -48,7 +48,7 @@
           #alerts
           v-if="isPublicFormPage && (form.is_closed || form.visibility=='closed' || form.max_number_of_submissions_reached)"
         >
-          <UAlert
+          <LazyUAlert
             v-if="form.is_closed || form.visibility=='closed'"
             icon="i-heroicons-lock-closed-20-solid"
             color="warning"
@@ -58,8 +58,8 @@
             <template #description>
               <div class="break-words whitespace-break-spaces" v-html="form.closed_text" />
             </template>
-          </UAlert>
-          <UAlert
+          </LazyUAlert>
+          <LazyUAlert
             v-else
             icon="i-heroicons-lock-closed-20-solid"
             color="warning"
@@ -69,7 +69,7 @@
             <template #description>
               <div class="break-words whitespace-break-spaces" v-html="form.max_submissions_reached_text" />
             </template>
-          </UAlert>
+          </LazyUAlert>
         </template>
 
         <template #cleanings>
