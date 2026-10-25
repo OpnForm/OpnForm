@@ -1,6 +1,6 @@
 # OpnForm — évaluation des rapports de sécurité
 
-La branche **`codex/report-triage-verified`** reprend le commit local `34683ad1` de `codex/report-triage-fixes`, traite quatre familles de corrections partagées avec NoteForms et améliore l'accès au signalement d'abus. Les failles historiques réellement dangereuses sur les réponses prévisibles et les fichiers actifs sont déjà corrigées dans la base actuelle ; elles ont été vérifiées par leurs tests, sans réimplémentation.
+La branche **`codex/report-triage-fixes`** reprend le commit initial `34683ad1`, son compte rendu de validation et les corrections de revue du 25 octobre ; elle traite quatre familles de corrections partagées avec NoteForms et améliore l'accès au signalement d'abus. Les failles historiques réellement dangereuses sur les réponses prévisibles et les fichiers actifs sont déjà corrigées dans la base actuelle ; elles ont été vérifiées par leurs tests, sans réimplémentation.
 
 ## Périmètre et méthode
 
@@ -58,6 +58,18 @@ La reprise de ce travail dans le checkout `ab6c/OpnForm` a confirmé la présenc
 Les modifications restent sur une branche locale : aucun push, déploiement, changement DNS, réponse aux chercheurs ou traitement d'un compte client. Aucune migration de données n'est nécessaire. La clé d'application existante doit rester configurée et stable ; sa rotation change les preuves TXT en attente. Les anciennes soumissions ou fichiers déjà en stockage externe ne sont pas audités par cette branche.
 
 La relecture a porté sur les droits, la séparation des espaces, les transactions d'identité, les formats Unicode, les domaines existants et les erreurs visibles. Les points corrigés pendant cette relecture incluent la longueur totale du nom DNS de vérification, les anciennes réservations de domaine avec casse différente dans NoteForms, et la capture de l'espace cible pour les requêtes OpnForm en cours. Aucun défaut bloquant identifié ne reste dans le diff ; la validation production et l'inventaire infrastructure restent distincts.
+
+## Revue en sous-agents — 25 octobre 2026
+
+Le skill `jhumanj-skills:code-review` a été exécuté par un sous-agent dédié à chaque produit. La revue porte sur les changements de ce chat et leurs correctifs, sur leur base du 3 octobre ; elle ne couvre pas la branche d’audit PDF PSEC séparée. Trois passages OpnForm ont abouti à **zéro finding actionnable restant**.
+
+- **Impersonation support corrigée** : la nouvelle route de preuve DNS est autorisée au même titre que la sauvegarde existante. Le test utilise un JWT d’impersonation et conserve le refus pour un utilisateur extérieur au workspace.
+- **Réservation de domaine rendue explicitement globale** : la recherche d’un domaine déjà associé ignore le scope installé par `x-custom-domain`. Cette faiblesse était antérieure au patch initial OpnForm ; le nouveau parcours est maintenant protégé également dans ce contexte.
+- **Test de scope corrigé après la deuxième revue** : le middleware des domaines est explicitement activé dans le test, qui vérifie aussi que l’autre workspace est invisible à une requête ordinaire. Les régressions rejouées avant les correctifs donnent **2 échecs sur 3 cas** ; après correction, **3 réussites, 15 assertions**.
+
+Validation finale : **110 tests API réussis, 490 assertions** (suite locale précédente plus `CustomDomainRegressionTest`) ; **873 tests frontend réussis dans 75 fichiers** ; `npm run lint`, Pint du nouveau fichier de tests et `git diff --check` passent. Pest utilise PHP 8.4 et SQLite en mémoire ; le frontend utilise Node 20. Les succès DNS utilisent des réponses contrôlées, sans publication de TXT externe.
+
+Cette boucle ne rébase pas les branches sur le `main` récent et ne fusionne pas les changements PSEC. Leur réconciliation et la validation sur la base intégrée restent nécessaires avant fusion. Les modifications restent locales, sans push ni déploiement.
 
 ## Annexe — sollicitations sans rapport exploitable
 

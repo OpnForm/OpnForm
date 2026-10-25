@@ -55,6 +55,7 @@ class ImpersonationMiddleware
         'open.workspaces.create',
         'open.workspaces.delete',
         'open.workspaces.save-custom-domains',
+        'open.workspaces.custom-domain-verification',
         'open.workspaces.databases.search',
         'open.workspaces.databases.show',
         'open.workspaces.form.stats',

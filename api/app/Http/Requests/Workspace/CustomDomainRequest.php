@@ -46,7 +46,7 @@ class CustomDomainRequest extends FormRequest
 
                     // Check if domains are already used by other workspaces
                     foreach ($domains as $domain) {
-                        $exists = Workspace::where('id', '!=', $this->workspace->id)
+                        $exists = Workspace::withoutGlobalScopes()->where('id', '!=', $this->workspace->id)
                             ->whereJsonContains('custom_domains', $domain)
                             ->exists();
 
