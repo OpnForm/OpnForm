@@ -88,6 +88,16 @@ test('general PHP suite is honestly SQLite and real database checks gate release
   assert.equal(check.env.APP_ENV, 'database-compatibility')
   assert.match(check.run, /check-database-compatibility\.php/)
 })
+test('production deployment observation follows only successful main push CI without administrator credentials', () => {
+  const workflow = parse(readFileSync(new URL('../../.github/workflows/scaleway-deployment.yml', import.meta.url), 'utf8'))
+  assert.deepEqual(workflow.on.workflow_run.workflows, ['CI/CD Pipeline'])
+  assert.deepEqual(workflow.on.workflow_run.types, ['completed'])
+  assert.deepEqual(workflow.on.workflow_run.branches, ['main'])
+  const job = workflow.jobs['verify-live-release']
+  for (const condition of ["conclusion == 'success'", "event == 'push'", "head_branch == 'main'", "head_repository.full_name == 'OpnForm/OpnForm'"]) assert.ok(job.if.includes(condition))
+  const raw = JSON.stringify(workflow)
+  for (const secret of ['COOLIFY_TOKEN', 'SSH_PRIVATE_KEY', 'VAPOR_API_TOKEN', 'AMPLIFY_DEPLOY_URL']) assert.equal(raw.includes(secret), false)
+})
 test('release readiness fails for failed, skipped, cancelled or missing prerequisites', () => {
   const needs = Object.fromEntries(pipeline.jobs['release-readiness'].needs.map(name => [name, { result: 'success' }]))
   const run = value => spawnSync(process.execPath, [new URL('../check-ci-readiness.mjs', import.meta.url).pathname], { env: { ...process.env, NEEDS_JSON: JSON.stringify(value) }, encoding: 'utf8' })

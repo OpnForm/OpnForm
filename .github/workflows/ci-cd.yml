@@ -644,7 +644,7 @@ jobs:
           retention-days: 30
       - name: Record the deployment boundary
         run: |
-          echo 'Images published for explicit private Coolify promotion. No production restart or AWS deployment was requested.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Validated main release published. The private OpnForm controller deploys after this CI run completes successfully. No AWS deployment.' >> "$GITHUB_STEP_SUMMARY"
 
   publish-docker-images:
     name: Push Docker images to Docker Hub

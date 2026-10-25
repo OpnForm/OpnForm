@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 import re
 import subprocess
+import tempfile
 
 
 def command(*args):
@@ -58,9 +59,27 @@ def main():
         'schema': 'opnform-coolify-service-release/v1', 'repository': 'OpnForm/OpnForm',
         'sha': sha, 'ref': 'refs/heads/main', 'run_id': int(os.environ['GITHUB_RUN_ID']),
         'run_attempt': int(os.environ['GITHUB_RUN_ATTEMPT']), 'images': images,
-        'automatic_deployment': False,
+        'automatic_deployment': True,
     }, indent=2) + '\n')
-    print('Private immutable image pair published. Production was not restarted.')
+    # The controller reads this tiny image without starting it. Its credentials
+    # remain private on the controller; CI never receives Coolify/SSH access.
+    package_is_private('hosted-release', allow_missing=True)
+    with tempfile.TemporaryDirectory(prefix='opnform-release-') as directory:
+        context = Path(directory)
+        (context / 'release.json').write_bytes(args.output.read_bytes())
+        (context / 'Dockerfile').write_text('FROM scratch\n'
+            'LABEL org.opencontainers.image.source="https://github.com/OpnForm/OpnForm" '
+            'org.opencontainers.image.revision="' + sha + '"\n'
+            'COPY release.json /release.json\n')
+        immutable = 'ghcr.io/opnform/hosted-release:' + sha + '-' + os.environ['GITHUB_RUN_ID'] + '-' + os.environ['GITHUB_RUN_ATTEMPT']
+        command('docker', 'build', '-t', immutable, str(context))
+        command('docker', 'push', immutable)
+        package_is_private('hosted-release')
+        if json.loads(command('gh', 'api', '/repos/OpnForm/OpnForm/commits/main'))['sha'] != sha:
+            raise RuntimeError('A newer main exists; do not publish a stale deployment channel')
+        command('docker', 'tag', immutable, 'ghcr.io/opnform/hosted-release:production')
+        command('docker', 'push', 'ghcr.io/opnform/hosted-release:production')
+    print('Validated private release published; the controller deploys after this main CI succeeds.')
 
 
 if __name__ == '__main__':

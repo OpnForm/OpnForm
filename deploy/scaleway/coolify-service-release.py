@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Explicit private promotion for the five-role Coolify Compose service.
+"""Private promotion for the five-role Coolify Compose service.
 
-The default is a read-only plan. Publication/merge never invokes this program.
-Existing containers are recreated only with --apply --allow-service-restart.
+The default is a read-only plan. The installed main-release controller applies
+successful main releases with --apply --allow-service-restart.
 """
 import argparse
 import base64
@@ -52,8 +52,8 @@ def validate_release(release):
             or release.get('repository') != 'OpnForm/OpnForm'
             or release.get('ref') != 'refs/heads/main'
             or not re.fullmatch('[0-9a-f]{40}', release.get('sha', ''))
-            or release.get('automatic_deployment') is not False):
-        raise ValueError('A committed, explicit OpnForm main release is required')
+            or type(release.get('automatic_deployment')) is not bool):
+        raise ValueError('A validated OpnForm main release is required')
     for name in ('run_id', 'run_attempt'):
         if type(release.get(name)) is not int or release[name] <= 0:
             raise ValueError('Missing CI run identity')
@@ -106,15 +106,26 @@ def ssh(target, alias):
 
 
 def verify_ci(release):
-    run = json.loads(execute(['gh', 'api', '/repos/OpnForm/OpnForm/actions/runs/' + str(release['run_id'])], text=True))
+    run = github('/repos/OpnForm/OpnForm/actions/runs/' + str(release['run_id']))
     if (run.get('name') != 'CI/CD Pipeline' or run.get('head_sha') != release['sha']
             or run.get('head_branch') != 'main' or run.get('event') != 'push'
             or run.get('status') != 'completed' or run.get('conclusion') != 'success'
             or run.get('run_attempt') != release['run_attempt']):
         raise ValueError('The exact main revision needs a fully successful CI run')
-    current = json.loads(execute(['gh', 'api', '/repos/OpnForm/OpnForm/commits/main'], text=True))
+    current = github('/repos/OpnForm/OpnForm/commits/main')
     if current['sha'] != release['sha']:
         raise ValueError('A newer main revision exists; do not silently deploy stale code')
+
+
+def github(path):
+    token = os.environ.get('GH_TOKEN')
+    if not token:
+        return json.loads(execute(['gh', 'api', path], text=True))
+    request = urllib.request.Request('https://api.github.com' + path, headers={
+        'Authorization': 'Bearer ' + token, 'Accept': 'application/vnd.github+json',
+        'User-Agent': 'opnform-production-release'})
+    with urllib.request.urlopen(request, timeout=30) as response:
+        return json.load(response)
 
 
 def controller(target, release, apply=False, finish=False):
@@ -150,7 +161,9 @@ if($x['apply']){
 }
 echo json_encode(['service_uuid'=>$s->uuid,'server_id'=>$s->server_id,'images_selected'=>$x['apply'],'containers_restarted'=>false]);
 '''.replace('__PAYLOAD__', payload)
-    return json.loads(execute(ssh(target, target['controller_alias']) + ['docker exec -i coolify php'], input=program, text=True))
+    command = (['docker', 'exec', '-i', 'coolify', 'php'] if target.get('controller_local') is True
+               else ssh(target, target['controller_alias']) + ['docker exec -i coolify php'])
+    return json.loads(execute(command, input=program, text=True))
 
 
 def native(target, program):
@@ -195,6 +208,26 @@ def stage_images(target, release):
             + "]))[0]\nprint(json.dumps({'fingerprint':image_fingerprint(x)}))\n")
         if observed['fingerprint'] != expected:
             raise ValueError('Staged image layers/configuration differ from the registry image')
+
+
+def remember_current_images(target, release, path):
+    """Advance the private image pins only after every role and public gate passed."""
+    references = {role: native_image_name(image) for role, image in release['images'].items()}
+    payload = repr(json.dumps({'uuid': target['service_uuid'], 'images': references}))
+    images = native(target, """import json,subprocess
+x=json.loads(__PAYLOAD__)
+expected={role:json.loads(subprocess.check_output(['docker','image','inspect',image]))[0]['Id']for role,image in x['images'].items()}
+for role in ['api','frontend','jobs','scheduler']:
+ row=json.loads(subprocess.check_output(['docker','inspect',role+'-'+x['uuid']]))[0]
+ assert row['State']['Running']and row['State'].get('Health',{}).get('Status')=='healthy'
+ assert row['Image']==expected['frontend'if role=='frontend'else'backend']
+print(json.dumps(expected))
+""".replace('__PAYLOAD__', payload))
+    updated = {**target, 'expected_current_images': images}
+    temporary = path.with_suffix('.next')
+    temporary.write_text(json.dumps(updated, indent=2) + '\n')
+    temporary.chmod(0o600)
+    temporary.replace(path)
 
 
 def promote(target, release, journal):
@@ -271,11 +304,18 @@ def main():
                 with urllib.request.urlopen(base + route, timeout=20) as response:
                     if json.load(response).get('revision') != release['sha']:
                         raise RuntimeError('Public revision does not match the selected release')
+            remember_current_images(target, release, args.target)
             controller(target, release, finish=True)
             journal['status'] = 'success'; journal['finished_at'] = time.time(); save()
         except Exception:
             journal['status'] = 'needs-inspection'; save()
             raise
+        if target.get('controller_local') is True:
+            # Only this controller's just-staged references; never native images
+            # or a shared Docker prune. Images still in use cannot be removed.
+            for image in release['images'].values():
+                for reference in (native_image_name(image), image):
+                    subprocess.run(['docker', 'image', 'rm', reference], capture_output=True, timeout=60)
         print('Selected release is healthy. AWS, DNS, databases and other services were not reconfigured.')
 
 
