@@ -23,7 +23,6 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        $schedule->command('forms:dispatch-submission-outbox')->everyMinute()->withoutOverlapping();
         $schedule->command('forms:database-cleanup')->hourly()->withoutOverlapping();
         $schedule->command('forms:purge-expired-submissions')->hourly()->withoutOverlapping();
         $schedule->command('forms:retry-pending-submission-file-deletions')->everyFifteenMinutes()->withoutOverlapping();

@@ -2,6 +2,7 @@
 
 namespace App\Jobs\Form;
 
+use App\Events\Forms\FormSubmitted;
 use App\Http\Controllers\Forms\FormController;
 use App\Http\Requests\AnswerFormRequest;
 use App\Service\Storage\FileUploadPathService;
@@ -11,7 +12,6 @@ use App\Service\Billing\Feature;
 use App\Service\Forms\FormAutoIncrementSequence;
 use App\Service\Forms\FormLogicPropertyResolver;
 use App\Service\Forms\SubmissionAttribution;
-use App\Service\Forms\SubmissionOperationService;
 use App\Service\Storage\FilenameUrlEncoder;
 use App\Service\Storage\StorageFileNameParser;
 use Illuminate\Bus\Queueable;
@@ -22,8 +22,6 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Ramsey\Uuid\Uuid;
-use RuntimeException;
 use Stevebauman\Purify\Facades\Purify;
 
 /**
@@ -57,11 +55,6 @@ class StoreFormSubmissionJob implements ShouldQueue
 
     public ?int $submissionId = null;
 
-    // Default is needed when unserializing queue payloads created by old code.
-    public ?string $operationKey = null;
-
-    private array $temporaryPaths = [];
-
     /**
      * When true, allows updating a completed submission (admin edit path only).
      */
@@ -84,7 +77,6 @@ class StoreFormSubmissionJob implements ShouldQueue
      */
     public function __construct(public Form $form, public array $submissionData)
     {
-        $this->operationKey = (string) Str::uuid();
     }
 
     /**
@@ -94,49 +86,20 @@ class StoreFormSubmissionJob implements ShouldQueue
      */
     public function handle()
     {
-        if ($this->operationKey === null) {
-            $uuid = $this->job?->uuid();
-            if (! is_string($uuid) || ! Str::isUuid($uuid)) {
-                throw new RuntimeException('Legacy submission payload has no stable queue UUID; reconcile before replay');
-            }
-            $this->operationKey = 'queue:'.$uuid;
+        $this->extractMetadata();
+        $this->formData = $this->getFormData();
+        $this->addHiddenPrefills($this->formData);
+        $this->storeSubmission($this->formData);
+        $this->formData['submission_id'] = $this->submissionId;
+        if (!$this->isPartial) {
+            FormSubmitted::dispatch($this->form, $this->formData, $this->storedMeta);
         }
-        $uuid = str_starts_with($this->operationKey, 'queue:') ? substr($this->operationKey, 6) : $this->operationKey;
-        if (! Str::isUuid($uuid)) {
-            throw new RuntimeException('Invalid submission operation identity');
-        }
-        $service = app(SubmissionOperationService::class);
-        $hash = $service->fingerprint(['data' => $this->submissionData, 'admin_edit' => $this->allowCompletedUpdate]);
-        $operation = $service->execute($this->form->id, $this->operationKey, $hash, function () {
-            $this->extractMetadata();
-            if ($recordToUpdate = $this->resolveRecordToUpdate($this->submissionData)) {
-                $this->submissionId = $recordToUpdate;
-            }
-            $existing = $this->submissionId
-                ? $this->form->submissions()->lockForUpdate()->findOrFail($this->submissionId) : null;
-            if ($this->isPartial && ! $this->allowCompletedUpdate && $existing?->status === FormSubmission::STATUS_COMPLETED) {
-                // Ignore a late partial before any file/signature side effect.
-                $this->formData = $existing->data ?? [];
-                $this->storedMeta = $existing->meta ?? [];
-            } else {
-                $this->formData = $this->getFormData();
-                $this->addHiddenPrefills($this->formData);
-                $this->storeSubmission($this->formData);
-            }
-            $this->formData['submission_id'] = $this->submissionId;
-
-            return ['submission_id' => $this->submissionId, 'data' => $this->formData,
-                'meta' => $this->storedMeta, 'partial' => $this->isPartial, 'temporary_paths' => $this->temporaryPaths];
-        });
-        $this->submissionId = $operation->submission_id;
-        $this->formData = $operation->processed_data;
-        $this->storedMeta = $operation->submission_meta ?? [];
     }
 
     /**
      * Extract metadata from submission data
      *
-     * Read metadata without mutating the original payload/fingerprint:
+     * This method extracts and removes metadata fields from the submission data:
      * - submission_id
      * - completion_time
      * - is_partial
@@ -147,21 +110,26 @@ class StoreFormSubmissionJob implements ShouldQueue
         $this->attribution = app(SubmissionAttribution::class)->sanitize(
             $this->submissionData['tracking_parameters'] ?? null
         );
+        unset($this->submissionData['tracking_parameters']);
 
         if (isset($this->submissionData['completion_time'])) {
             $this->completionTime = $this->submissionData['completion_time'];
+            unset($this->submissionData['completion_time']);
         }
         if (isset($this->submissionData['submission_id']) && $this->submissionData['submission_id']) {
             if (is_numeric($this->submissionData['submission_id'])) {
                 $this->submissionId = (int)$this->submissionData['submission_id'];
                 $this->isClientProvidedSubmissionId = true;
             }
+            unset($this->submissionData['submission_id']);
         }
         if (isset($this->submissionData['is_partial'])) {
             $this->isPartial = (bool)$this->submissionData['is_partial'];
+            unset($this->submissionData['is_partial']);
         }
         if (isset($this->submissionData['submitter_ip'])) {
             $this->submitterIp = $this->submissionData['submitter_ip'];
+            unset($this->submissionData['submitter_ip']);
         }
     }
 
@@ -224,6 +192,11 @@ class StoreFormSubmissionJob implements ShouldQueue
     private function storeSubmission(array &$formData)
     {
         DB::transaction(function () use (&$formData) {
+            // Handle record update
+            if ($recordToUpdate = $this->resolveRecordToUpdate($this->submissionData)) {
+                $this->submissionId = $recordToUpdate;
+            }
+
             if ($this->submissionId) {
                 $submission = $this->form->submissions()->lockForUpdate()->findOrFail($this->submissionId);
 
@@ -384,7 +357,7 @@ class StoreFormSubmissionJob implements ShouldQueue
             }
             // Special field types
             if ($field['type'] == 'signature') {
-                $finalData[$field['id']] = $this->storeSignature($answerValue, $field['id']);
+                $finalData[$field['id']] = $this->storeSignature($answerValue);
             }
             if ($field['type'] == 'phone_number' && $answerValue && ctype_alpha(substr($answerValue, 0, 2)) && (!isset($field['use_simple_text_input']) || !$field['use_simple_text_input'])) {
                 $finalData[$field['id']] = substr($answerValue, 2);
@@ -419,10 +392,6 @@ class StoreFormSubmissionJob implements ShouldQueue
     {
         if (is_null($value) || empty($value)) {
             return null;
-        }
-        $parser = StorageFileNameParser::parse($value);
-        if ($parser->uuid) {
-            $this->temporaryPaths[] = FileUploadPathService::getTmpFileUploadPath($parser->uuid);
         }
         // Handle pre-existing full URLs (e.g., from prefill)
         if (filter_var($value, FILTER_VALIDATE_URL) !== false && str_contains($value, parse_url(config('app.url'))['host'])) {
@@ -469,15 +438,11 @@ class StoreFormSubmissionJob implements ShouldQueue
             return null; // Canonical name generation failed
         }
         $completeNewFilename = FileUploadPathService::getFileUploadPath($this->form->id, $movedFileName);
-        // Retain the source until SQL commits. A rollback/retry can recover the
-        // same canonical destination; durable cleanup also runs from the outbox sweep.
-        if (! Storage::copy($fileNameInTmp, $completeNewFilename)) {
-            throw new RuntimeException('Submission upload could not be copied; source retained for retry');
-        }
+        Storage::move($fileNameInTmp, $completeNewFilename);
         return $movedFileName;
     }
 
-    private function storeSignature(?string $value, string $fieldId)
+    private function storeSignature(?string $value)
     {
         // If $value looks like a filename (already processed, e.g. during skip or previous handling)
         if ($value && preg_match('/^[\/\w\-. ]+$/', $value)) {
@@ -487,11 +452,9 @@ class StoreFormSubmissionJob implements ShouldQueue
         if ($value == null || !isset(explode(',', $value)[1])) {
             return null;
         }
-        $fileName = 'sign_'.Uuid::uuid5(Uuid::NAMESPACE_URL, $this->form->id.'/'.$this->operationKey.'/'.$fieldId).'.png';
+        $fileName = 'sign_' . (string) Str::uuid() . '.png';
         $completeNewFilename = FileUploadPathService::getFileUploadPath($this->form->id, $fileName);
-        if (! Storage::put($completeNewFilename, base64_decode(explode(',', $value)[1]))) {
-            throw new RuntimeException('Submission signature could not be stored; operation not committed');
-        }
+        Storage::put($completeNewFilename, base64_decode(explode(',', $value)[1]));
         return $fileName;
     }
 
