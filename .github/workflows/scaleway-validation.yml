@@ -40,7 +40,7 @@ jobs:
           openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out /fixture-identity/private.pem
           openssl pkey -in /fixture-identity/private.pem -pubout -out /fixture-identity/public.pem
           chmod 0444 /fixture-identity/public.pem
-          printf '%040d' 0 | sudo tee /app-revision > /dev/null
+          printf '%s' "$GITHUB_SHA" | sudo tee /app-revision > /dev/null
           docker run -d --name opnform-state-ci --network none --mount type=bind,src=/fixture-state,dst=/fixture-state redis:7.4-bookworm redis-server --port 0 --unixsocket /fixture-state/state.sock --unixsocketperm 777 --appendonly yes --appendfsync always --maxmemory 32mb --maxmemory-policy noeviction
           for attempt in $(seq 1 30); do
             if docker exec opnform-state-ci redis-cli -s /fixture-state/state.sock ping; then break; fi
@@ -100,12 +100,14 @@ jobs:
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         with:
           name: scaleway-runtime-images
+          overwrite: true
           path: ${{ runner.temp }}/scaleway-proof/images.tar
           retention-days: 1
       - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: scaleway-runtime-evidence
+          overwrite: true
           path: |
             ${{ runner.temp }}/scaleway-proof/*.json
             ${{ runner.temp }}/scaleway-proof/*.log

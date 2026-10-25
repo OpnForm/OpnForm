@@ -666,6 +666,7 @@ jobs:
       - uses: actions/upload-artifact@v7
         with:
           name: opnform-coolify-release
+          overwrite: true
           path: release.json
           retention-days: 30
       - name: Record the deployment boundary
