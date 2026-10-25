@@ -19,6 +19,9 @@ export default defineNuxtConfig({
   ...(viteCacheDir ? {vite: {cacheDir: viteCacheDir}} : {}),
   css: ['~/css/app.css'],
   nitro: { awsAmplify: { runtime: 'nodejs24.x' } },
+  content: {
+    experimental: { sqliteConnector: 'native' },
+  },
   // Process component styles as well as Nuxt UI's global Tailwind entry.
   postcss: { plugins: { '@tailwindcss/postcss': {} } },
 
@@ -39,6 +42,7 @@ export default defineNuxtConfig({
       '@pinia/nuxt', 
       '@vueuse/nuxt', 
       '@nuxtjs/sitemap',
+      '@nuxt/content',
       '@nuxt/ui', 
       'nuxt-utm', 
       '@nuxtjs/i18n',
