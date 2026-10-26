@@ -154,6 +154,8 @@ const PiniaHistory = (context) => {
   }
 
   store.clearHistory = () => {
+    debouncedStoreUpdate.clear()
+    $history.current = JSON.stringify(filterState(store.$state, ignoreKeys))
     $history.done = []
     $history.undone = []
     if (persistent) {

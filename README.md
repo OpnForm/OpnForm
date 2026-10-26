@@ -94,6 +94,10 @@ The executable npm audit policy is in [scripts/npm-exceptions.json](scripts/npm-
 
 Clearing a date with a click, Enter, or Space keeps the calendar closed. Reopen it to choose another date.
 
+## Editor history
+
+Clearing editor history uses the currently loaded form as the undo baseline and discards pending history updates. A subsequent edit can be undone back to that form without restoring an earlier loading state.
+
 ## Spreadsheet exports
 
 Spreadsheet exports preserve numeric zero values, account identifiers with leading zeroes, and Unicode. Null and empty fields remain blank.

@@ -81,4 +81,40 @@ describe('Pinia editor history with the installed debounce package', () => {
     expect(store.title).toBe('Initial')
     expect(store.cursor).toBe(9)
   })
+
+  it('does not recreate undo history from initialization pending at the time of clearing', async () => {
+    const store = createStore()
+    store.title = 'Loaded form'
+    await nextTick()
+    store.clearHistory()
+    await settleHistory()
+
+    expect(store.title).toBe('Loaded form')
+    expect(store.canUndo).toBe(false)
+    expect(store.canRedo).toBe(false)
+  })
+
+  it('undoes a new edit to the current form after clearing pending changes and redo history', async () => {
+    const store = createStore()
+    store.title = 'Previous edit'
+    await settleHistory()
+    store.undo()
+    await nextTick()
+    expect(store.canRedo).toBe(true)
+
+    store.title = 'Loaded form'
+    await nextTick()
+    store.clearHistory()
+    expect(store.canUndo).toBe(false)
+    expect(store.canRedo).toBe(false)
+
+    store.title = 'New edit'
+    await settleHistory()
+    store.undo()
+    await nextTick()
+    expect(store.title).toBe('Loaded form')
+    store.redo()
+    await nextTick()
+    expect(store.title).toBe('New edit')
+  })
 })
