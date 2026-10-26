@@ -5,9 +5,11 @@ namespace App\Http\Controllers\Pdf;
 use App\Exceptions\PdfNotSupportedException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Pdf\CreatePdfTemplateRequest;
+use App\Http\Requests\Pdf\DuplicatePdfTemplateRequest;
 use App\Http\Requests\Pdf\UpdatePdfTemplateRequest;
 use App\Models\Forms\Form;
 use App\Models\PdfTemplate;
+use App\Service\Pdf\DuplicatePdfTemplate;
 use App\Service\Pdf\PdfFormFieldRenderer;
 use App\Service\Pdf\PdfTemplateRebuildService;
 use Illuminate\Support\Facades\Storage;
@@ -89,6 +91,21 @@ class PdfTemplateController extends Controller
         return response()->json([
             'message' => $message,
             'data' => $template,
+        ], 201);
+    }
+
+    public function duplicate(DuplicatePdfTemplateRequest $request, Form $form, PdfTemplate $pdfTemplate, DuplicatePdfTemplate $duplicator)
+    {
+        $this->authorize('update', $form);
+        abort_unless($pdfTemplate->form_id === $form->id, 404);
+
+        $target = Form::where('workspace_id', $form->workspace_id)
+            ->findOrFail($request->validated('target_form_id'));
+        $this->authorize('update', $target);
+
+        return response()->json([
+            'message' => 'PDF template duplicated successfully.',
+            'data' => $duplicator->duplicate($pdfTemplate, $target, $request->validated()),
         ], 201);
     }
 

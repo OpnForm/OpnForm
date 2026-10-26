@@ -230,7 +230,8 @@ export const useWorkingPdfStore = defineStore("working_pdf", {
         page: this.currentPage,
         page_id: currentEntry.id,
         x: 10,
-        y: 10 + (this.currentPageZones.length * 8),
+        // Start another stack before a new zone would extend past the page.
+        y: 10 + ((this.currentPageZones.length % 11) * 8),
         width: 30,
         height: 5,
         font_size: 12,

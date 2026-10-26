@@ -20,6 +20,19 @@ describe('working_pdf store - page_manifest model', () => {
     setActivePinia(createPinia())
   })
 
+  it('keeps new zones inside a populated page across repeated additions', () => {
+    const store = useWorkingPdfStore()
+    store.set(createTemplateFixture())
+    for (let i = 0; i < 40; i++) {
+      store.addZoneWithField({ id: 'submission_id', name: 'Submission ID' })
+      const zone = store.selectedZone!
+      expect(zone.y).toBeGreaterThanOrEqual(0)
+      expect(zone.y + zone.height).toBeLessThanOrEqual(100)
+      expect(zone.x + zone.width).toBeLessThanOrEqual(100)
+    }
+    expect(store.getSaveData()!.zone_mappings).toHaveLength(40)
+  })
+
   it('creates default source page manifest when missing', () => {
     const store = useWorkingPdfStore()
     store.set(createTemplateFixture({ page_count: 3 }))

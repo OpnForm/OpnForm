@@ -71,12 +71,21 @@ export function usePdfTemplates() {
     })
   }
 
+  const duplicate = (formId, templateId) => useMutation({
+    mutationFn: (data) => formsApi.pdfTemplates.duplicate(toValue(formId), toValue(templateId), data),
+    onSuccess: (response) => {
+      queryClient.setQueryData(detailKey(response.data.form_id, response.data.id), response)
+      invalidate(response.data.form_id)
+    },
+  })
+
   return {
     list,
     detail,
     upload,
     update,
     remove,
+    duplicate,
     invalidate,
   }
 }

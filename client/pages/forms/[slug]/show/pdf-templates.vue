@@ -1,5 +1,12 @@
 <template>
   <PageContainer spacing="md">
+    <DuplicatePdfTemplateModal
+      v-if="duplicateModalOpen && templateToDuplicate"
+      v-model:open="duplicateModalOpen"
+      :form="form"
+      :template="templateToDuplicate"
+      @duplicated="onDuplicated"
+    />
     <PageSection
       title="PDF Templates"
       description="Create PDF documents from your form submissions."
@@ -133,6 +140,7 @@ import DashboardLoadingBlock from '~/components/dashboard/states/DashboardLoadin
 import DashboardEmptyState from '~/components/dashboard/states/DashboardEmptyState.vue'
 import { formsApi } from '~/api/forms'
 import { usePdfTemplates } from '~/composables/query/forms/usePdfTemplates'
+import DuplicatePdfTemplateModal from '~/components/open/pdf-editor/DuplicatePdfTemplateModal.vue'
 
 const props = defineProps({
   form: { type: Object, required: true },
@@ -157,6 +165,8 @@ const fileInput = ref(null)
 const uploading = ref(false)
 const creatingFromScratch = ref(false)
 const deletingId = ref(null)
+const templateToDuplicate = ref(null)
+const duplicateModalOpen = ref(false)
 
 // Fetch templates
 const { list, upload, remove } = usePdfTemplates()
@@ -256,6 +266,14 @@ const getTemplateMenuItems = (template) => {
         onClick: () => previewTemplate(template)
       },
       {
+        label: 'Duplicate template',
+        icon: 'i-heroicons-document-duplicate',
+        onClick: () => {
+          templateToDuplicate.value = template
+          duplicateModalOpen.value = true
+        }
+      },
+      {
         label: 'Edit',
         icon: 'i-heroicons-pencil-square-20-solid',
         onClick: () => editTemplate(template)
@@ -271,6 +289,14 @@ const getTemplateMenuItems = (template) => {
       }
     ]
   ]
+}
+
+const onDuplicated = ({ template, form }) => {
+  alert.success('PDF template duplicated successfully.')
+  router.push({
+    name: 'forms-slug-pdf-editor-templateId',
+    params: { slug: form.slug, templateId: template.id }
+  })
 }
 
 // Edit template

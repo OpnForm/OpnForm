@@ -23,7 +23,8 @@
           {
             "group": "Features",
             "pages": [
-              "features/computed-variables"
+              "features/computed-variables",
+              "features/pdf-templates"
             ]
           },
           {
