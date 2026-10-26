@@ -6,7 +6,8 @@ Run the database migrations before deploying the API and client together. Older 
 
 - AI generation returns `ai_form_completion_id` and `ai_form_completion_token`. Poll with `X-AI-Completion-Token`; the client keeps the token in session storage. A shared IP address is no longer authorization. Old completions without a token cannot be read publicly.
 - `forms.share_submission_data_with_parent` defaults to false for existing and new forms. The parent iframe receives the submission notification without answers or attribution. Enable **Share answers with the embedding page** in Security & Access only when the host page should receive those values. Existing scripts reading `submission_data` must opt in; arbitrary embedding pages can receive answers when this option is enabled.
-- S3 presigning only accepts the configured bucket. Anonymous respondent uploads remain supported. Configure bucket/IAM/quota policy separately.
+- S3 presigning only accepts the configured `filesystems.disks.s3.bucket`, including Scaleway `S3_*` configuration and legacy AWS fallbacks. Anonymous respondent uploads remain supported. Configure bucket/IAM/quota policy separately.
+- New OAuth links without a refresh token use an empty storage value, including on migrated schemas requiring a non-null token. Later logins without a new refresh token preserve the existing token.
 - Configure all SMTP fields together, including a valid sender address and port between 1 and 65535.
 - The `generate` command validates TLS. Production client sourcemaps are disabled without a Sentry upload token. With a token, maps are hidden and deleted from client output after upload. Purge old publicly deployed maps during release.
 

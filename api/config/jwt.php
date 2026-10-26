@@ -231,6 +231,9 @@ return [
 
     'blacklist_enabled' => env('JWT_BLACKLIST_ENABLED', true),
 
+    // Null retains the package default; hosted Redis keeps its existing auth store.
+    'blacklist_store' => env('OPNFORM_STATE_MODE') === 'redis-fresh' ? 'auth' : null,
+
     /*
     | -------------------------------------------------------------------------
     | Blacklist Grace Period

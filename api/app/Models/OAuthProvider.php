@@ -24,6 +24,10 @@ class OAuthProvider extends Model
      */
     protected $guarded = ['id'];
 
+    // Providers such as One Tap do not issue refresh tokens. Existing links
+    // retain their loaded token; only new models receive this storage default.
+    protected $attributes = ['refresh_token' => ''];
+
     /**
      * The attributes that should be hidden for arrays.
      *
