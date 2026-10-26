@@ -15,13 +15,13 @@
           :disabled="isPending"
         />
         <UAlert v-if="formsError" color="error" title="Could not load destination forms." />
-        <template v-if="isOtherForm && sourceFields.length">
-          <p class="text-sm text-neutral-600">
+        <template v-if="isOtherForm">
+          <p v-if="sourceFields.length" class="text-sm text-neutral-600">
             Choose which destination field each PDF field should use. Text, images and page layouts are copied as they are.
           </p>
           <p v-if="targetLoading" class="text-sm text-neutral-500">Loading destination fields…</p>
           <UAlert v-else-if="targetError" color="error" title="Could not load destination fields." />
-          <template v-else-if="destinationForm">
+          <template v-else-if="destinationForm && sourceFields.length">
             <SelectInput
               v-for="field in sourceFields"
               :key="field.id"

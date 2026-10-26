@@ -42,18 +42,20 @@ let model = props.modelValue
 
 // Safely paste HTML content with handling for empty content
 const pasteHTML = (instance) => {
-  if (!props.modelValue) {
-    instance.setContents([], 'silent')
-    return
-  }
-  
   try {
-    // Without an insertion index, Quill replaces the previous document.
-    instance.clipboard.dangerouslyPasteHTML(props.modelValue, 'silent')
+    if (!props.modelValue) {
+      instance.setContents([], 'silent')
+    } else {
+      // Without an insertion index, Quill replaces the previous document.
+      instance.clipboard.dangerouslyPasteHTML(props.modelValue, 'silent')
+    }
   } catch (error) {
     console.error('Error pasting HTML:', error)
     // Fallback to setting empty content
     instance.setContents([], 'silent')
+  } finally {
+    // An external document must not inherit undo/redo entries from another zone.
+    instance.history?.clear()
   }
 }
 
