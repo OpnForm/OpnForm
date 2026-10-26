@@ -38,21 +38,22 @@ const emit = defineEmits([
 
 let quillInstance = null
 const container = ref(null)
-const model = ref(props.modelValue)
+let model = props.modelValue
 
 // Safely paste HTML content with handling for empty content
 const pasteHTML = (instance) => {
   if (!props.modelValue) {
-    instance.setContents([])
+    instance.setContents([], 'silent')
     return
   }
   
   try {
-    instance.clipboard.dangerouslyPasteHTML(0, props.modelValue, 'silent')
+    // Without an insertion index, Quill replaces the previous document.
+    instance.clipboard.dangerouslyPasteHTML(props.modelValue, 'silent')
   } catch (error) {
     console.error('Error pasting HTML:', error)
     // Fallback to setting empty content
-    instance.setContents([])
+    instance.setContents([], 'silent')
   }
 }
 
@@ -86,7 +87,8 @@ const initializeQuill = () => {
 
     quillInstance.on('text-change', (delta, oldContents, source) => {
       // Update local model only on user input
-      model.value = quillInstance.getSemanticHTML()
+      model = quillInstance.getSemanticHTML()
+      emit('update:modelValue', model)
       emit('text-change', { delta, oldContents, source })
     })
 
@@ -96,7 +98,7 @@ const initializeQuill = () => {
 
     if (props.modelValue) {
       pasteHTML(quillInstance)
-      model.value = quillInstance.getSemanticHTML()
+      model = quillInstance.getSemanticHTML()
     }
 
     // Apply initial disabled state
@@ -117,25 +119,12 @@ watch(
   () => props.modelValue,
   (newValue) => {
     if (!quillInstance) return
-    if (newValue && newValue !== model.value) {
+    if (newValue !== model) {
       pasteHTML(quillInstance)
-      model.value = quillInstance.getSemanticHTML()
-    } else if (!newValue) {
-      quillInstance.setContents([])
-      model.value = ''
+      model = quillInstance.getSemanticHTML()
     }
   }
 )
-
-// Watch model and update modelValue if has changes
-watch(model, (newValue, oldValue) => {
-  if (!quillInstance) return
-  if (newValue && newValue !== oldValue) {
-    emit('update:modelValue', newValue)
-  } else if (!newValue) {
-    quillInstance.setContents([])
-  }
-})
 
 watch(() => props.disabled, (newValue) => {
   if (!quillInstance) return

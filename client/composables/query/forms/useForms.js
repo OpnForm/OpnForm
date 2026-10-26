@@ -48,9 +48,9 @@ export function useForms() {
       queryKey: detailByIdKey(scope, id),
       queryFn: () => {
         if (usePrivate) {
-          return formsApi.getById(id, queryOptions)
+          return formsApi.getById(toValue(id), queryOptions)
         }
-        return formsApi.publicGetById(id, queryOptions)
+        return formsApi.publicGetById(toValue(id), queryOptions)
       },
       enabled: isQueryEnabled(id, enabled, usePrivate),
       onSuccess: (form) => {
