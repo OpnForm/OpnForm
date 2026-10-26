@@ -176,10 +176,21 @@ add rule inet {firewall_table} forward_guard iifname "{bridge}" oifname != "{bri
             migration = app('migration', 'migrate')
             wait_for(lambda: docker('exec', migration, 'test', '-f', '/tmp/opnform-migration-ok', check=False).returncode == 0, 'migration gate')
             record('explicit Migration role validates OAuth keys and schema')
-            docker('exec', api, 'php', 'artisan', 'db:seed', '--class=E2ETestSeeder', '--force', '--no-interaction')
+            production_config = docker('exec', api, 'sha256sum', '/app/bootstrap/cache/config.php').stdout
+            # Only the fixture-seeding process uses the E2E profile. Ignore the
+            # production config cache without modifying the running API's cache.
+            docker('exec', '--env', 'APP_ENV=e2e',
+                   '--env', 'APP_CONFIG_CACHE=/tmp/opnform-e2e-seed-config.php',
+                   api, 'php', 'artisan', 'db:seed', '--class=E2ETestSeeder', '--force', '--no-interaction')
+            assert docker('exec', api, 'sha256sum', '/app/bootstrap/cache/config.php').stdout == production_config
+            rejected_seed = docker('exec', api, 'php', 'artisan', 'db:seed', '--class=E2ETestSeeder',
+                                   '--force', '--no-interaction', check=False)
+            assert rejected_seed.returncode != 0
+            assert 'E2E seed is restricted to isolated test environments.' in rejected_seed.stdout + rejected_seed.stderr
             record('synthetic E2E forms and submissions seeded')
-            settings = "require 'vendor/autoload.php';$a=require 'bootstrap/app.php';$a->make(Illuminate\\Contracts\\Console\\Kernel::class)->bootstrap();echo json_encode([config('database.redis.default.host'),config('database.redis.cache.host'),config('queue.connections.redis.retry_after')]);"
-            assert json.loads(docker('exec', api, 'php', '-r', settings).stdout) == [queue, cache, 3700]
+            record('fixture seeding leaves production config intact and production seeding remains blocked')
+            settings = "require 'vendor/autoload.php';$a=require 'bootstrap/app.php';$a->make(Illuminate\\Contracts\\Console\\Kernel::class)->bootstrap();echo json_encode([config('database.redis.default.host'),config('database.redis.cache.host'),config('queue.connections.redis.retry_after'),$a->environment(),$a->configurationIsCached()]);"
+            assert json.loads(docker('exec', api, 'php', '-r', settings).stdout) == [queue, cache, 3700, 'production', True]
             record('queue/cache/auth/state share one endpoint with separate logical DBs and 3700s reservation')
             smoke = "require 'vendor/autoload.php';$a=require 'bootstrap/app.php';$a->make(Illuminate\\Contracts\\Console\\Kernel::class)->bootstrap();$f=App\\Models\\Forms\\Form::where('title','Product feedback')->firstOrFail();if(App\\Models\\Forms\\FormSubmission::count()!==6)exit(1);$t=auth('api')->attempt(['email'=>'e2e@example.test','password'=>'Abcd@1234']);if(!$t)exit(2);echo $f->slug;"
             slug = docker('exec', api, 'php', '-r', smoke).stdout.strip()
