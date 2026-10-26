@@ -18,7 +18,7 @@ return [
     |
     */
 
-    'default' => env('CACHE_DRIVER', 'file'),
+    'default' => env('CACHE_DRIVER', env('OPNFORM_STATE_MODE') === 'redis-fresh' ? 'redis' : 'file'),
 
     /*
     |--------------------------------------------------------------------------
@@ -74,7 +74,21 @@ return [
 
         'redis' => [
             'driver' => 'redis',
+            'connection' => env('OPNFORM_STATE_MODE') === 'redis-fresh' ? 'state' : 'cache',
+            'prefix' => env('OPNFORM_STATE_MODE') === 'redis-fresh'
+                ? env('REDIS_STATE_KEY_PREFIX', 'opnform:state:') : null,
+        ],
+
+        'auth' => [
+            'driver' => 'redis',
+            'connection' => 'auth',
+            'prefix' => env('REDIS_AUTH_KEY_PREFIX', 'opnform:auth:'),
+        ],
+
+        'volatile' => [
+            'driver' => 'redis',
             'connection' => 'cache',
+            'prefix' => env('REDIS_CACHE_KEY_PREFIX', 'opnform:cache:'),
         ],
 
         'dynamodb' => [

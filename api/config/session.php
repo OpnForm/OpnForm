@@ -1,5 +1,7 @@
 <?php
 
+$redisState = env('OPNFORM_STATE_MODE') === 'redis-fresh';
+
 return [
 
     /*
@@ -16,7 +18,7 @@ return [
     |
     */
 
-    'driver' => env('SESSION_DRIVER', 'file'),
+    'driver' => env('SESSION_DRIVER', $redisState ? 'redis' : 'file'),
 
     /*
     |--------------------------------------------------------------------------
@@ -70,7 +72,7 @@ return [
     |
     */
 
-    'connection' => env('SESSION_CONNECTION', null),
+    'connection' => env('SESSION_CONNECTION', $redisState ? 'auth' : null),
 
     /*
     |--------------------------------------------------------------------------
@@ -98,7 +100,7 @@ return [
     |
     */
 
-    'store' => env('SESSION_STORE', null),
+    'store' => env('SESSION_STORE', $redisState ? 'auth' : null),
 
     /*
     |--------------------------------------------------------------------------

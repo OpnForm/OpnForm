@@ -149,11 +149,28 @@ return [
             'database' => env('REDIS_DB', '0'),
         ],
 
+        // One durable Redis process, distinct logical DBs for protected state and auth.
+        'state' => [
+            'url' => env('REDIS_STATE_URL'),
+            'host' => env('REDIS_STATE_HOST', env('REDIS_HOST', '127.0.0.1')),
+            'password' => env('REDIS_STATE_PASSWORD', env('REDIS_PASSWORD')),
+            'port' => env('REDIS_STATE_PORT', env('REDIS_PORT', '6379')),
+            'database' => env('REDIS_STATE_DB', '3'),
+        ],
+
+        'auth' => [
+            'url' => env('REDIS_AUTH_URL'),
+            'host' => env('REDIS_AUTH_HOST', env('REDIS_HOST', '127.0.0.1')),
+            'password' => env('REDIS_AUTH_PASSWORD', env('REDIS_PASSWORD')),
+            'port' => env('REDIS_AUTH_PORT', env('REDIS_PORT', '6379')),
+            'database' => env('REDIS_AUTH_DB', '2'),
+        ],
+
         'cache' => [
-            'url' => env('REDIS_URL'),
-            'host' => env('REDIS_HOST', '127.0.0.1'),
-            'password' => env('REDIS_PASSWORD', null),
-            'port' => env('REDIS_PORT', '6379'),
+            'url' => env('REDIS_CACHE_URL', env('REDIS_CACHE_HOST') ? null : env('REDIS_URL')),
+            'host' => env('REDIS_CACHE_HOST', env('REDIS_HOST', '127.0.0.1')),
+            'password' => env('REDIS_CACHE_PASSWORD', env('REDIS_PASSWORD', null)),
+            'port' => env('REDIS_CACHE_PORT', env('REDIS_PORT', '6379')),
             'database' => env('REDIS_CACHE_DB', '1'),
         ],
 

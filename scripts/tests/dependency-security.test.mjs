@@ -62,10 +62,21 @@ test('docs-only PRs execute the stable required check without path filters', () 
   assert.equal(pipeline.jobs['release-readiness'].name, 'Release readiness')
   assert.equal(pipeline.jobs['release-readiness'].if, 'always()')
 })
-test('both delivery jobs depend on the security and QA aggregate', () => {
-  for (const name of ['production-deploy', 'publish-docker-images']) assert.deepEqual(pipeline.jobs[name].needs, ['release-readiness'])
+test('hosted and self-hosted publications depend on the security and QA aggregate', () => {
+  for (const name of ['publish-scaleway-images', 'publish-docker-images']) assert.deepEqual(pipeline.jobs[name].needs, ['release-readiness'])
   assert.ok(pipeline.jobs['release-readiness'].needs.includes('dependency-security'))
+  assert.ok(pipeline.jobs['release-readiness'].needs.includes('scaleway-runtime'))
   assert.equal(pipeline.jobs['dependency-security'].uses, './.github/workflows/dependency-security.yml')
+  assert.equal(pipeline.jobs['production-deploy'], undefined)
+  assert.equal(pipeline.jobs['scaleway-runtime'].uses, './.github/workflows/scaleway-validation.yml')
+  const publication = pipeline.jobs['publish-scaleway-images']
+  assert.match(publication.if, /github\.ref == 'refs\/heads\/main'/)
+  assert.match(publication.if, /github\.event_name == 'push'/)
+  assert.equal(publication.permissions.packages, 'write')
+  const raw = JSON.stringify(publication)
+  for (const forbidden of ['VAPOR_API_TOKEN', 'AMPLIFY_DEPLOY_URL', 'COOLIFY_TOKEN', 'vapor deploy']) {
+    assert.equal(raw.includes(forbidden), false)
+  }
 })
 test('general PHP suite is honestly SQLite and real database checks gate releases', () => {
   assert.match(pipeline.jobs.tests.name, /SQLite/)
@@ -77,6 +88,16 @@ test('general PHP suite is honestly SQLite and real database checks gate release
   assert.equal(check.env.APP_ENV, 'database-compatibility')
   assert.match(check.run, /check-database-compatibility\.php/)
 })
+test('production deployment observation follows only successful main push CI without administrator credentials', () => {
+  const workflow = parse(readFileSync(new URL('../../.github/workflows/scaleway-deployment.yml', import.meta.url), 'utf8'))
+  assert.deepEqual(workflow.on.workflow_run.workflows, ['CI/CD Pipeline'])
+  assert.deepEqual(workflow.on.workflow_run.types, ['completed'])
+  assert.deepEqual(workflow.on.workflow_run.branches, ['main'])
+  const job = workflow.jobs['verify-live-release']
+  for (const condition of ["conclusion == 'success'", "event == 'push'", "head_branch == 'main'", "head_repository.full_name == 'OpnForm/OpnForm'"]) assert.ok(job.if.includes(condition))
+  const raw = JSON.stringify(workflow)
+  for (const secret of ['COOLIFY_TOKEN', 'SSH_PRIVATE_KEY', 'VAPOR_API_TOKEN', 'AMPLIFY_DEPLOY_URL']) assert.equal(raw.includes(secret), false)
+})
 test('release readiness fails for failed, skipped, cancelled or missing prerequisites', () => {
   const needs = Object.fromEntries(pipeline.jobs['release-readiness'].needs.map(name => [name, { result: 'success' }]))
   const run = value => spawnSync(process.execPath, [new URL('../check-ci-readiness.mjs', import.meta.url).pathname], { env: { ...process.env, NEEDS_JSON: JSON.stringify(value) }, encoding: 'utf8' })
@@ -85,8 +106,11 @@ test('release readiness fails for failed, skipped, cancelled or missing prerequi
     assert.notEqual(run({ ...needs, 'dependency-security': { result } }).status, 0)
   }
   assert.notEqual(run({ ...needs, future_check: { result: 'failure' } }).status, 0)
-  delete needs.tests
-  assert.notEqual(run(needs).status, 0)
+  for (const name of ['tests', 'scaleway-runtime']) {
+    const incomplete = { ...needs }
+    delete incomplete[name]
+    assert.notEqual(run(incomplete).status, 0)
+  }
 })
 
 test('resolves the actual Nuxt/Nitro/builders and site-config cycles to reviewed roots', () => {
@@ -130,7 +154,7 @@ test('CLI retains the raw nonzero scan, rejects a new upstream release and rejec
   assert.notEqual(run().status, 0)
 })
 
-test('Amplify explicitly emits Node 24 compute and validates the target output', () => {
+test('legacy Amplify recovery configuration remains valid but regular CI does not build it', () => {
   const config = readFileSync(new URL('../../client/nuxt.config.ts', import.meta.url), 'utf8')
   assert.match(config, /awsAmplify: \{ runtime: 'nodejs24\.x' \}/)
   const amplify = parse(readFileSync(new URL('../../amplify.yml', import.meta.url), 'utf8'))
@@ -139,8 +163,9 @@ test('Amplify explicitly emits Node 24 compute and validates the target output',
   assert.match(pkg.scripts['build:amplify'], /NITRO_PRESET=aws-amplify npm run build/)
   assert.match(pkg.scripts['build:amplify'], /check-amplify-output\.mjs/)
   const smoke = pipeline.jobs.linux_client_image.steps.find(step => step.name === 'Smoke standalone Amplify compute on Linux Node 24')
-  assert.match(smoke.run, /check-amplify-runtime\.mjs/)
-  assert.match(smoke.run, /runner\.temp/)
+  assert.equal(smoke, undefined)
+  assert.equal(pipeline.jobs.client_checks.steps.some(step => step.run?.includes('npm run build:amplify')), false)
+  assert.equal(pipeline.jobs.linux_client_image.steps.some(step => step.with?.name === 'amplify-output'), false)
   assert.ok(pipeline.jobs['release-readiness'].needs.includes('linux_client_image'))
 })
 

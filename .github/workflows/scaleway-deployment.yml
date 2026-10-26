@@ -1,0 +1,58 @@
+name: Scaleway production deployment
+
+on:
+  workflow_run:
+    workflows: [CI/CD Pipeline]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: opnform-production-observation
+  cancel-in-progress: false
+
+jobs:
+  verify-live-release:
+    name: Verify automatic Coolify deployment
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.head_repository.full_name == 'OpnForm/OpnForm'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - name: Await the private controller and verify the deployed pair
+        env:
+          EXPECTED_SHA: ${{ github.event.workflow_run.head_sha }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 - <<'PY'
+          import json, os, time, urllib.request
+          expected = os.environ['EXPECTED_SHA']
+          def read(url, authenticated=False):
+              headers = {'Accept': 'application/json', 'Cache-Control': 'no-cache', 'User-Agent': 'opnform-deployment-observer'}
+              if authenticated:
+                  headers['Authorization'] = 'Bearer ' + os.environ['GH_TOKEN']
+              with urllib.request.urlopen(urllib.request.Request(url, headers=headers), timeout=20) as response:
+                  return json.load(response)
+          end = time.monotonic() + 10500
+          while time.monotonic() < end:
+              try:
+                  current = read('https://api.github.com/repos/OpnForm/OpnForm/commits/main', True)
+                  if current['sha'] != expected:
+                      print('Superseded by a newer main release; the controller selects current main only.')
+                      break
+                  api = read('https://api.opnform.com/healthz')
+                  frontend = read('https://opnform.com/release.json')
+                  if api.get('status') == 'ok' and api.get('revision') == expected and frontend.get('revision') == expected:
+                      print('The validated main backend/frontend pair is live on Coolify: ' + expected)
+                      break
+              except Exception:
+                  pass
+              time.sleep(15)
+          else:
+              raise SystemExit('Deployment was not confirmed; inspect the private controller journal.')
+          PY
