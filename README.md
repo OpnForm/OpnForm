@@ -98,6 +98,8 @@ Clearing a date with a click, Enter, or Space keeps the calendar closed. Reopen 
 
 ## Editor history
 
+The form editor shows whether changes are saved. For an existing form, **Save Changes** saves both its design and settings; changes to a published form take effect immediately. In **Settings**, use **Save and close** to save directly, or **Close** to return to the editor with your changes still pending. While saving, Settings cannot be edited or dismissed. Failed saves preserve the pending edits for retry, and validation errors lead to the relevant field editor. For a new form, **Done** applies settings without creating or publishing it. Leaving the editor with unsaved changes asks for confirmation.
+
 Clearing editor history uses the currently loaded form as the undo baseline and discards pending history updates. A subsequent edit can be undone back to that form without restoring an earlier loading state.
 
 ## Spreadsheet exports

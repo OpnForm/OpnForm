@@ -41,6 +41,8 @@
         :back-button="backButton"
         :update-form-loading="form.busy"
         :save-button-class="saveButtonClass"
+        :is-edit="isEdit"
+        :has-unsaved-changes="hasUnsavedChanges"
         @go-back="goBack"
         @save-form="saveForm"
       >
@@ -118,6 +120,7 @@
         :show="showFormErrorModal"
         :error-summary="saveErrorSummary"
         @close="handleFormErrorModalClose"
+        @after:leave="finishValidationRecovery"
         @edit-field="editInvalidField"
         @edit-computed-variable="editInvalidComputedVariable"
       />
@@ -151,6 +154,10 @@ import { normalizeFormSaveErrors } from '~/lib/forms/form-save-errors'
 
 // Define props
 const props = defineProps({
+  hasUnsavedChanges: {
+    type: Boolean,
+    default: null,
+  },
   isEdit: {
     required: false,
     type: Boolean,
@@ -188,6 +195,7 @@ const emit = defineEmits(['mounted', 'on-save', 'openRegister', 'go-back', 'save
 
 // Reactive data
 const showFormErrorModal = ref(false)
+const validationRecovery = ref(null)
 const validationErrorResponse = ref(null)
 const hasBackgroundValidationErrors = ref(false)
 const backgroundValidatedFormId = ref(null)
@@ -304,6 +312,7 @@ const displayFormModificationAlert = (responseData) => {
 }
 
 const showValidationErrors = () => {
+  formEditorNavbar.value?.closeSettings()
   showFormErrorModal.value = true
 }
 
@@ -355,10 +364,15 @@ watch(
 
 const handleFormErrorModalClose = () => {
   showFormErrorModal.value = false
-
-  nextTick(() => {
+  validationRecovery.value = () => {
     document.querySelector('[data-testid="save-form-button"]')?.focus()
-  })
+  }
+}
+
+function finishValidationRecovery() {
+  const recover = validationRecovery.value
+  validationRecovery.value = null
+  recover?.()
 }
 
 const editInvalidField = ({ fieldId, fieldIndex, targetTab }) => {
@@ -376,16 +390,18 @@ const editInvalidField = ({ fieldId, fieldIndex, targetTab }) => {
   }
 
   showFormErrorModal.value = false
-  workingFormStore.activeTab = 'build'
-  workingFormStore.openSettingsForField(targetIndex, true, targetTab)
+  validationRecovery.value = () => {
+    workingFormStore.activeTab = 'build'
+    workingFormStore.openSettingsForField(targetIndex, true, targetTab)
 
-  nextTick(() => {
-    document.getElementById('form-field-settings')?.focus()
-    document.getElementById(`block-${properties[targetIndex].id}`)?.scrollIntoView({
-      block: 'center',
-      behavior: 'auto',
+    nextTick(() => {
+      document.getElementById('form-field-settings')?.focus()
+      document.getElementById(`block-${properties[targetIndex].id}`)?.scrollIntoView({
+        block: 'center',
+        behavior: 'auto',
+      })
     })
-  })
+  }
 }
 
 const editInvalidComputedVariable = ({ variableId, variableIndex }) => {
@@ -399,13 +415,12 @@ const editInvalidComputedVariable = ({ variableId, variableIndex }) => {
   }
 
   showFormErrorModal.value = false
-
-  nextTick(() => {
+  validationRecovery.value = () => {
     formEditorNavbar.value?.openComputedVariable({
       variableId: targetVariable.id,
       variableIndex: computedVariables.indexOf(targetVariable),
     })
-  })
+  }
 }
 
 const saveForm = () => {

@@ -3,6 +3,8 @@
     v-model:open="isOpen"
     :ui="{ content: 'sm:max-w-xl' }"
     :title="modalTitle"
+    :content="{ onCloseAutoFocus: (event) => event.preventDefault() }"
+    @after:leave="emit('after:leave')"
   >
     <template #body>
       <div
@@ -195,7 +197,7 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits(['close', 'edit-field', 'edit-computed-variable'])
+const emit = defineEmits(['close', 'edit-field', 'edit-computed-variable', 'after:leave'])
 
 const fieldGroups = computed(() => props.errorSummary?.fieldGroups || [])
 const computedVariableGroups = computed(() => props.errorSummary?.computedVariableGroups || [])
