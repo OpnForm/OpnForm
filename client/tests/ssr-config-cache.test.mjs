@@ -87,6 +87,41 @@ test('SSR configuration uses the real Nitro cache across requests', { timeout: 6
       for (const { path, data } of endpoints) upstream.set(path, { status: 200, data })
     })
 
+    await t.test('feature-flags: setup completion is visible on the next SSR request without restarting', async () => {
+      const path = '/content/feature-flags'
+      const pending = { self_hosted: true, setup_required: true }
+      const complete = { ...pending, setup_required: false }
+      const render = async () => {
+        states.clear()
+        await plugins.get('feature-flags.server')({ provide() {} })
+        return states.get('featureFlags').value
+      }
+
+      upstream.set(path, { status: 200, data: pending })
+      assert.deepEqual(await render(), pending)
+      assert.deepEqual(await render(), pending)
+      assert.equal(calls.length, 2, 'setup-required responses must not enter the shared cache')
+
+      // Registration clears the Laravel cache; the next page load must see it.
+      upstream.set(path, { status: 200, data: complete })
+      assert.deepEqual(await render(), complete)
+      assert.equal(calls.length, 3)
+      for (let i = 0; i < 5; i++) assert.deepEqual(await render(), complete)
+      assert.equal(calls.length, 3, 'completed installations still reuse the shared cache')
+    })
+
+    await t.test('feature-flags: HTTP clients cannot cache the setup redirect flag', async () => {
+      for (const setupRequired of [true, false]) {
+        upstream.set('/content/feature-flags', {
+          status: 200, data: { self_hosted: true, setup_required: setupRequired }
+        })
+        const response = await fetch(`${origin}/api/feature-flags`)
+        assert.equal(response.status, 200)
+        assert.equal(response.headers.get('cache-control'), 'no-store')
+        assert.equal((await response.json()).setup_required, setupRequired)
+      }
+    })
+
     for (const endpoint of endpoints) {
       const { name, path, data, state, refresh } = endpoint
       await t.test(`${name}: concurrent requests and changing query/visitor headers share one fetch`, async () => {

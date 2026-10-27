@@ -111,6 +111,11 @@ changing it.
 
 After deployment, OpnForm will automatically redirect you to a setup page where you can create your admin account. Simply visit `http://localhost` and you'll be guided through the setup process.
 
+After you create the admin account, setup is complete. Reloading the dashboard
+should keep you in the application without restarting any containers. While
+setup is pending, the frontend checks the API's setup status on each page load;
+after completion, normal server-side feature-flag caching resumes.
+
 <Note>
     Public registration is disabled in the self-hosted version after setup is
     complete. Use the admin account to invite additional users. Free
