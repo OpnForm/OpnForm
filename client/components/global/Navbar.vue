@@ -7,10 +7,10 @@
             :to="{ name: user ? 'home' : 'index' }"
             class="shrink-0 font-semibold hover:no-underline flex items-center"
           >
-            <img src="/img/logo.svg" alt="notion tools logo" class="w-6 h-6" />
+            <img :src="isSelfHosted ? instanceLogoUrl : '/img/logo.svg'" :alt="isSelfHosted ? instanceName : 'OpnForm'" class="w-6 h-6 object-contain" />
             <span
-              class="ml-2 text-md hidden sm:inline text-gray-950 dark:text-white"
-              >OpnForm</span
+              class="ml-2 max-w-48 truncate text-md hidden sm:inline text-gray-950 dark:text-white"
+              >{{ isSelfHosted ? instanceName : 'OpnForm' }}</span
             >
           </NuxtLink>
           <WorkspaceDropdown class="ml-6">
@@ -30,7 +30,10 @@
             </template>
           </WorkspaceDropdown>
         </div>
-        <div class="hidden md:flex items-center gap-x-1 lg:gap-x-2 ml-auto">
+        <NuxtLink v-if="isSelfHosted" :to="{ name: 'templates' }" :class="navLinkClasses" class="ml-auto !w-auto">
+          Templates
+        </NuxtLink>
+        <div class="hidden md:flex items-center gap-x-1 lg:gap-x-2" :class="{ 'ml-auto': !isSelfHosted }">
           <NuxtLink
             v-if="user"
             :to="{ name: 'home' }"
@@ -40,7 +43,7 @@
             My Forms
           </NuxtLink>
           <NuxtLink
-            v-if="$route.name !== 'enterprise'"
+            v-if="!isSelfHosted && $route.name !== 'enterprise'"
             :to="{ name: 'enterprise' }"
             :class="navLinkClasses"
             class="hidden lg:block"
@@ -48,7 +51,7 @@
             Enterprise
           </NuxtLink>
           <NuxtLink
-            v-if="$route.name !== 'integrations'"
+            v-if="!isSelfHosted && $route.name !== 'integrations'"
             :to="{ name: 'integrations' }"
             :class="navLinkClasses"
             class="hidden md:block"
@@ -188,6 +191,7 @@ const { current: workspace } = useCurrentWorkspace()
 const { data: user } = useAuth().user()
 const isIframe = useIsIframe()
 const isSelfHosted = computed(() => useFeatureFlag("self_hosted"))
+const { name: instanceName, logoUrl: instanceLogoUrl } = useSelfHostedPresentation()
 const { workspaceIsPaid } = useBillingUpsell()
 const route = useRoute()
 
@@ -209,6 +213,7 @@ const navLinkClasses =
 
 const hasNavbar = computed(() => {
   if (isIframe.value) return false
+  if (isSelfHosted.value && route.name === 'index') return false
 
   if (route.name && route.name === "forms-slug") {
     if (form.value || import.meta.server) {

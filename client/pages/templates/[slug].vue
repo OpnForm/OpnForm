@@ -138,7 +138,7 @@
               </TrackClick>
             </div>
             <div class="flex items-center justify-center">
-              <div class="text-left mx-auto text-neutral-500 text-xs mt-4">
+              <div v-if="!useFeatureFlag('self_hosted')" class="text-left mx-auto text-neutral-500 text-xs mt-4">
                 ✓ Core features 100% free<br>
                 ✓ No credit card required<br>
                 ✓ No submissions limit on Free plan
@@ -344,7 +344,7 @@ const canEditTemplate = computed(
 )
 
 const createFormWithTemplateUrl = computed(() => {
-  if (!user.value) {
+  if (!user.value && !useFeatureFlag('self_hosted')) {
     return {
       name: "register",
       query: {

@@ -1,5 +1,6 @@
 <template>
-  <div>
+  <SelfHostedWelcome v-if="isSelfHosted" />
+  <div v-else>
     <section>
       <div class="pt-8 sm:pt-16 px-8 lg:px-12 max-w-7xl mx-auto relative">
         <div class="max-w-3xl mx-auto text-center">
@@ -178,13 +179,18 @@ definePageMeta({
   middleware: ["root-redirect"],
 })
 
-useOpnSeoMeta({
-  title: "Free Online Form Builder with Unlimited Responses",
-  description:
-    "Build beautiful online forms with OpnForm. Create forms, surveys, and workflows for free, collect unlimited responses, and keep control of your data.",
-})
-
 const { isAuthenticated: authenticated } = useIsAuthenticated()
+const featureFlags = useState('featureFlags', () => ({}))
+const isSelfHosted = computed(() => !!featureFlags.value.self_hosted)
+const { name: instanceName } = useSelfHostedPresentation()
+
+useOpnSeoMeta({
+  title: () => isSelfHosted.value ? `${instanceName} workspace` : "Free Online Form Builder with Unlimited Responses",
+  description: () => isSelfHosted.value
+    ? 'Sign in to your self-hosted form workspace.'
+    : "Build beautiful online forms with OpnForm. Create forms, surveys, and workflows for free, collect unlimited responses, and keep control of your data.",
+  robots: () => isSelfHosted.value ? 'noindex, nofollow' : null,
+})
 </script>
 
 <style lang="scss" scoped>

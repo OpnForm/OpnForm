@@ -206,7 +206,11 @@ MCP is disabled by default on self-hosted instances. Enable it from **Settings â
 | `NUXT_PUBLIC_H_CAPTCHA_SITE_KEY`  | Site key for hCaptcha integration on the front-end.                                                                                                                                                                                                                                                                                              |
 | `NUXT_PUBLIC_RE_CAPTCHA_SITE_KEY` | Site key for reCAPTCHA integration on the front-end.                                                                                                                                                                                                                                                                                             |
 | `NUXT_API_SECRET`                 | Shared secret key between Nuxt and Laravel backend.                                                                                                                                                                                                                                                                                              |
-| `NUXT_PUBLIC_ROOT_REDIRECT_URL`   | Permanently redirects users visiting the root path (/), /integrations, or any non-existent (404) page to the specified URL. This effectively "hides" OpnForm's public pages while keeping forms and admin functionality accessible. See [Subdomain Redirect Configuration](../configuration/subdomain-redirect) for detailed setup and examples. |
+| `NUXT_PUBLIC_ROOT_REDIRECT_URL`   | Redirects the self-hosted welcome page and unknown pages (HTTP 301), plus marketing pages (HTTP 302), to your website. Forms and application pages remain accessible. See [Subdomain Redirect Configuration](../configuration/subdomain-redirect). |
+| `NUXT_PUBLIC_SELF_HOSTED_NAME` | Name displayed on the self-hosted welcome page and navigation; defaults to `OpnForm`. |
+| `NUXT_PUBLIC_SELF_HOSTED_LOGO_URL` | Absolute HTTP(S) URL for the self-hosted instance logo. |
+| `NUXT_PUBLIC_SELF_HOSTED_PRIVACY_POLICY_URL` | Organization privacy policy URL for self-hosted visitors. |
+| `NUXT_PUBLIC_SELF_HOSTED_TERMS_URL` | Organization terms URL for self-hosted visitors. |
 
 import CloudVersion from "/snippets/cloud-version.mdx";
 
