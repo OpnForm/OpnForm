@@ -116,9 +116,26 @@ test('release readiness fails for failed, skipped, cancelled or missing prerequi
 test('resolves the actual Nuxt/Nitro/builders and site-config cycles to reviewed roots', () => {
   const report = JSON.parse(readFileSync(new URL('./fixtures/npm-audit-reviewed-cycles.json', import.meta.url)))
   const actualLock = { packages: Object.fromEntries(policy.exceptions.flatMap(entry => entry.nodes.map(node => [node, { version: entry.version }]))) }
-  assert.equal(evaluateNpmAudit(report, actualLock, policy, '2026-10-23').acceptedAdvisories.length, 3)
+  assert.equal(evaluateNpmAudit(report, actualLock, policy, '2026-10-23').acceptedAdvisories.length, 2)
   report.vulnerabilities.nuxt.via.push({ name: 'nuxt', url: 'https://github.com/advisories/NEW', severity: 'critical' })
   assert.throws(() => evaluateNpmAudit(report, actualLock, policy, '2026-10-23'), /Unreviewed advisory/)
+})
+
+test('rejects the retired node-forge advisory instead of accepting its former exception', () => {
+  const report = {
+    auditReportVersion: 2,
+    metadata: { vulnerabilities: { total: 2 } },
+    vulnerabilities: {
+      'node-forge': {
+        severity: 'high',
+        nodes: ['node_modules/node-forge'],
+        via: [{ name: 'node-forge', severity: 'high', url: 'https://github.com/advisories/GHSA-86w9-cpqp-85rv' }],
+      },
+      nuxt: { severity: 'high', nodes: ['node_modules/nuxt'], via: ['node-forge'] },
+    },
+  }
+  const vulnerableLock = { packages: { 'node_modules/node-forge': { version: '1.4.0' } } }
+  assert.throws(() => evaluateNpmAudit(report, vulnerableLock, policy, '2026-10-27'), /Unreviewed affected package: node-forge/)
 })
 
 test('Amplify also audits both scopes before building, including direct cloud builds', () => {
