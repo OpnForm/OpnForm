@@ -1,4 +1,6 @@
 <template>
+  <SelfHostedFooter v-if="isSelfHosted" />
+  <template v-else>
   <section v-if="showCta" class="relative px-8 lg:px-12">
     <div class="max-w-336 mx-auto">
       <div
@@ -256,6 +258,7 @@
       </div>
     </div>
   </footer>
+  </template>
 </template>
 
 <script setup>
@@ -269,6 +272,7 @@ defineProps({
 })
 
 const { isAuthenticated: authenticated } = useIsAuthenticated()
+const isSelfHosted = computed(() => !!useFeatureFlag('self_hosted'))
 const { data: user } = useAuth().user()
 const currYear = ref(new Date().getFullYear())
 

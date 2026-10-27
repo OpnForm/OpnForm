@@ -2,10 +2,10 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import templateIndustries from './data/forms/templates/industries.json'
 import templateTypes from './data/forms/templates/types.json'
+import { selfHostedMarketingPaths } from './lib/self-hosted-public.js'
 
 const isSelfHostedBuild = process.env.SELF_HOSTED === 'true'
   || process.env.NUXT_PUBLIC_SELF_HOSTED === 'true'
-  || process.env.NUXT_PUBLIC_API_BASE === '/api'
 
 export default {
   exclude: [
@@ -13,7 +13,7 @@ export default {
     '/templates/my-templates',
     '/setup',
     '/self-hosted/checkout/**',
-    ...(isSelfHostedBuild ? ['/self-hosted/license'] : []),
+    ...(isSelfHostedBuild ? ['/', ...selfHostedMarketingPaths, '/integrations/**', /^\/opnform-vs-/, '/privacy-policy', '/terms-conditions', '/report-abuse'] : []),
   ],
   sources: [`${(process.env.NUXT_PUBLIC_API_BASE || '').replace(/\/+$/, '')}/sitemap-urls`],
   cacheMaxAgeSeconds: 60 * 60 * 2, // 2 hours
@@ -97,6 +97,7 @@ function getTemplateIndustriesUrls () {
 }
 
 function getIntegrationsPages () {
+  if (isSelfHostedBuild) return []
   const integrationsDir = join(process.cwd(), 'content/integrations')
 
   if (!existsSync(integrationsDir)) return []

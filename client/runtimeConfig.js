@@ -28,6 +28,12 @@ export default {
     amplitudeCode: process.env.NUXT_PUBLIC_AMPLITUDE_CODE || null,
     crispWebsiteId: process.env.NUXT_PUBLIC_CRISP_WEBSITE_ID || null,
     rootRedirectUrl: process.env.NUXT_PUBLIC_ROOT_REDIRECT_URL || null,
+    selfHosted: {
+      name: process.env.NUXT_PUBLIC_SELF_HOSTED_NAME || '',
+      logoUrl: process.env.NUXT_PUBLIC_SELF_HOSTED_LOGO_URL || '',
+      privacyPolicyUrl: process.env.NUXT_PUBLIC_SELF_HOSTED_PRIVACY_POLICY_URL || '',
+      termsUrl: process.env.NUXT_PUBLIC_SELF_HOSTED_TERMS_URL || '',
+    },
     
     featureBaseOrganization: process.env.NUXT_PUBLIC_FEATURE_BASE_ORGANISATION || null,
 

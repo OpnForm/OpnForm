@@ -16,10 +16,10 @@ This feature is particularly useful when you're running OpnForm on a subdomain (
 
 ## How It Works
 
-When `NUXT_PUBLIC_ROOT_REDIRECT_URL` is set, OpnForm will permanently redirect (301) users visiting these routes:
+When `NUXT_PUBLIC_ROOT_REDIRECT_URL` is set, OpnForm redirects users visiting these routes:
 
 -   **Root path** (`/`) - The landing page
--   **Integrations page** (`/integrations`) - The integrations showcase
+-   **Marketing pages** — Integrations, pricing, Enterprise, industry, comparisons, and cloud product pages (HTTP 302)
 -   **Any non-existent pages** (404 errors) - Undefined routes
 
 ### What Still Works
@@ -82,8 +82,8 @@ NUXT_PUBLIC_ROOT_REDIRECT_URL=https://docs.mycompany.com
 
 ## Implementation Notes
 
--   The redirect is a **permanent redirect** (HTTP 301)
--   The redirect happens on the client-side (Nuxt)
+-   Root and unknown-page redirects use **HTTP 301**; marketing-page redirects use **HTTP 302**
+-   The redirect happens during server rendering and client-side navigation (Nuxt)
 -   You must recreate your Docker containers after changing this environment variable
 -   The URL should include the protocol (`https://` or `http://`)
 
@@ -100,3 +100,54 @@ docker compose up -d ui
     A simple `docker compose restart` will not reload the new environment
     variable. You must use `down` and `up` to recreate the container.
 </Warning>{" "}
+
+## Default self-hosted welcome page
+
+Without `NUXT_PUBLIC_ROOT_REDIRECT_URL`, self-hosted instances show a dedicated
+split-screen welcome page with a sign-in button, a local template catalog link,
+and a link to discover OpnForm. Signed-in users visiting `/` go to their dashboard.
+The welcome page asks search engines not to index it.
+
+Marketing routes (pricing, Enterprise, industry, integrations, comparisons,
+AI form builder, MCP overview, and cloud license checkout pages) redirect to the
+matching page on `https://opnform.com` with a temporary HTTP 302 redirect.
+These links include campaign attribution, but never copy the original query
+parameters. If you configure `NUXT_PUBLIC_ROOT_REDIRECT_URL`, these marketing
+routes use your configured destination instead. The root and unknown-page
+redirects keep their existing HTTP 301 behavior.
+
+Templates, public forms, login, password recovery, invitations, application
+pages, OAuth callbacks, and MCP authorization remain on your instance.
+
+### Customize the instance
+
+Set these optional variables in the client environment:
+
+| Variable | Purpose |
+| --- | --- |
+| `NUXT_PUBLIC_SELF_HOSTED_NAME` | Organization or instance name; defaults to `OpnForm` |
+| `NUXT_PUBLIC_SELF_HOSTED_LOGO_URL` | Absolute HTTP(S) URL for the instance logo |
+| `NUXT_PUBLIC_SELF_HOSTED_PRIVACY_POLICY_URL` | Your organization's privacy policy URL |
+| `NUXT_PUBLIC_SELF_HOSTED_TERMS_URL` | Your organization's terms URL |
+
+Legal links appear in the self-hosted footer only when configured. Direct visits
+to `/privacy-policy` or `/terms-conditions` redirect to your configured URL, or
+to the instance welcome page when no URL is set. OpnForm Cloud legal pages are
+not shown as your instance's policies. Recreate your client container after
+changing these environment variables.
+
+### Preview in a Codex worktree
+
+Run `CODEX_SELF_HOSTED=true CODEX_AUTO_LOGIN=false ./scripts/codex-worktree-up.sh`
+to launch the isolated seeded app in self-hosted mode and view the public welcome
+page. Sign in with the seeded account to test the dashboard. These options default
+to cloud mode with automatic login when omitted.
+
+The welcome illustration uses separate, static responsive image layers. On smaller
+screens the instance sign-in appears before the illustration.
+
+Marketing redirects are applied during both server rendering and client-side
+navigation. Sitemap filtering also reads the installation mode at runtime, so
+published Docker images omit redirected marketing pages without requiring a
+custom frontend build. An API base path such as `/api` does not determine whether
+your deployment is self-hosted.
