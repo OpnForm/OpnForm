@@ -36,7 +36,7 @@
 <script setup>
 
 import FormEditor from "~/components/open/forms/components/FormEditor.vue"
-import { applyEditorFieldDefaults, setFormDefaults } from "~/composables/forms/initForm.js"
+import { applyEditorFieldDefaults, applyEditorSettingsDefaults, setFormDefaults } from "~/composables/forms/initForm.js"
 import { hash } from "~/lib/utils.js"
 
 // Composables
@@ -86,7 +86,7 @@ function initUpdatedForm() {
     return
   }
 
-  const formData = setFormDefaults(form.value)
+  const formData = applyEditorSettingsDefaults(setFormDefaults(form.value))
   formData.properties = applyEditorFieldDefaults(formData.properties)
   updatedForm.value = useForm(formData)
   if (!updatedForm.value) {

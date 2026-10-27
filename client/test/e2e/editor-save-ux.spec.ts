@@ -161,3 +161,80 @@ test('new form settings apply with Done without creating a form', async ({ page 
   await expect(page).toHaveURL('/forms/create')
   expect(creates).toBe(0)
 })
+
+test('settings cannot change or close while a successful save is pending', async ({ page, request }) => {
+  await page.goto(`/forms/${form.slug}/edit`)
+  await expect(page.getByTestId('form-save-status')).toHaveText('All changes saved', { timeout: 15_000 })
+  await page.getByRole('button', { name: 'Settings', exact: true }).click()
+  const settings = page.getByRole('dialog', { name: 'Form settings', exact: true })
+  const title = settings.locator('input#title')
+  await title.fill('Submitted title')
+  let release: () => void = () => {}
+  const pending = new Promise<void>(resolve => { release = resolve })
+  await page.route(`${api}/open/forms/${form.id}`, async route => {
+    if (route.request().method() === 'PUT') await pending
+    await route.continue()
+  })
+  try {
+    await settings.getByRole('button', { name: 'Save and close', exact: true }).click()
+    await expect(page.getByTestId('form-save-status')).toHaveText('Saving changes…')
+    await expect(settings.getByRole('button', { name: 'Close', exact: true })).toBeDisabled()
+    // Inert content ignores both pointer focus and subsequent keyboard input.
+    await title.click({ force: true })
+    await page.keyboard.type(' should not be lost')
+    await expect(title).toHaveValue('Submitted title')
+    await expect(title).not.toBeFocused()
+    await page.keyboard.press('Escape')
+    await expect(settings).toBeVisible()
+  } finally {
+    release()
+  }
+  await expect(page).toHaveURL(`/forms/${form.slug}/show/share`)
+  const stored = await request.get(`${api}/open/forms/${form.id}`, { headers })
+  expect(stored.ok()).toBeTruthy()
+  expect((await stored.json()).title).toBe('Submitted title')
+})
+
+test('validation errors from Settings lead to an accessible field editor', async ({ page }) => {
+  await page.goto(`/forms/${form.slug}/edit`)
+  await expect(page.getByTestId('form-save-status')).toHaveText('All changes saved', { timeout: 15_000 })
+  await page.getByRole('button', { name: 'Settings', exact: true }).click()
+  const settings = page.getByRole('dialog', { name: 'Form settings', exact: true })
+  await settings.getByRole('textbox', { name: 'Form Name', exact: true }).fill('Keep pending title')
+  await page.route(`${api}/open/forms/${form.id}`, async route => {
+    if (route.request().method() !== 'PUT') return route.continue()
+    await route.fulfill({ status: 422, contentType: 'application/json', body: JSON.stringify({
+      message: 'The name is invalid.', errors: { 'properties.0.name': ['The name is invalid.'] },
+    }) })
+  })
+  await settings.getByRole('button', { name: 'Save and close', exact: true }).click()
+  await expect(page.getByTestId('form-save-error-modal')).toBeVisible()
+  await page.getByTestId('edit-form-field-answer').click()
+  await expect(settings).not.toBeVisible()
+  await expect(page.getByTestId('form-save-error-modal')).not.toBeVisible()
+  const fieldSettings = page.getByTestId('form-field-settings')
+  await expect(fieldSettings).toBeVisible()
+  await expect(fieldSettings).toBeFocused()
+  await expect(page.getByTestId('form-save-status')).toHaveText('Unsaved changes')
+  await expect(page.locator('#form-editor-title')).toHaveText('Keep pending title')
+})
+
+test('visiting every Settings tab without edits keeps the form clean', async ({ page }) => {
+  await page.goto(`/forms/${form.slug}/edit`)
+  const status = page.getByTestId('form-save-status')
+  await expect(status).toHaveText('All changes saved', { timeout: 15_000 })
+  await page.getByRole('button', { name: 'Settings', exact: true }).click()
+  const settings = page.getByRole('dialog', { name: 'Form settings', exact: true })
+  for (const tab of ['General', 'Submission Settings', 'Security & Access', 'SEO & Social Sharing', 'Analytics', 'Custom Code', 'Variables']) {
+    await settings.getByRole('button', { name: tab, exact: true }).click()
+    await expect(settings.getByRole('heading', { name: new RegExp(`^${tab}`) }).first()).toBeVisible()
+    await expect(status).toHaveText('All changes saved')
+  }
+  await settings.getByRole('button', { name: 'Close', exact: true }).click()
+  await expect(status).toHaveText('All changes saved')
+  let confirmations = 0
+  page.on('dialog', async dialog => { confirmations++; await dialog.dismiss() })
+  await page.locator('#form-editor a[href="#"]').first().click()
+  await expect(page).toHaveURL(`/forms/${form.slug}/show/submissions`)
+  expect(confirmations).toBe(0)
+})

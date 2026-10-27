@@ -215,7 +215,11 @@ function openComputedVariableCreator() {
   settingsModal.value = true
 }
 
-defineExpose({ openComputedVariable, openComputedVariableCreator })
+function closeSettings() {
+  settingsModal.value = false
+}
+
+defineExpose({ openComputedVariable, openComputedVariableCreator, closeSettings })
 
 const isSelfHosted = computed(() => useFeatureFlag('self_hosted'))
 </script>

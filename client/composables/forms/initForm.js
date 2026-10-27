@@ -14,6 +14,20 @@ export function applyEditorFieldDefaults(properties) {
   })
 }
 
+// Settings panels add these values on mount. Include them in the clean baseline.
+export function applyEditorSettingsDefaults(formData) {
+  const defaults = {
+    seo_meta: { page_title: null, page_description: null, page_thumbnail: null, page_favicon: null },
+    analytics: { provider: null, tracking_id: null },
+    translations: {},
+  }
+  for (const [key, values] of Object.entries(defaults)) {
+    const current = formData[key]
+    formData[key] = { ...values, ...(current && typeof current === 'object' && !Array.isArray(current) ? current : {}) }
+  }
+  return formData
+}
+
 export const initForm = (defaultValue = {}, withDefaultProperties = false) => {
   return useForm({
     title: "Contact Form",

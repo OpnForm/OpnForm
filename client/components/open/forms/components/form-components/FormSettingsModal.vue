@@ -3,6 +3,7 @@
     v-model="isOpen"
     v-model:activeTab="activeTab"
     title="Form settings"
+    :busy="saving"
     @close="closeModal"
   >
     <SettingsModalPage
@@ -63,7 +64,7 @@
 
     <template #footer>
       <div class="flex items-center justify-end gap-3">
-        <UButton label="Close" color="neutral" variant="outline" @click="closeModal" />
+        <UButton label="Close" color="neutral" variant="outline" :disabled="saving" @click="closeModal" />
         <UButton
           :label="saveLabel"
           :loading="saving"
@@ -127,6 +128,7 @@ const activeTab = computed({
 
 // Methods
 const closeModal = () => {
+  if (props.saving) return
   isOpen.value = false
 }
 

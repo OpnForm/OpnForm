@@ -5,6 +5,7 @@
       content: 'max-w-5xl h-[80vh] overflow-hidden',
     }"
     :title="title"
+    :dismissible="!busy"
     :content="{
       onPointerDownOutside: (event) => { if (event.target?.closest('.crisp-client')) {return event.preventDefault()}}
     }"
@@ -12,7 +13,7 @@
     <template #content>
       <div class="flex h-full flex-col sm:flex-row">
         <!-- Left Sidebar -->
-        <aside class="flex flex-col border-b border-neutral-200 bg-neutral-50 sm:w-56 sm:shrink-0 sm:border-r sm:border-b-0">
+        <aside :inert="busy" class="flex flex-col border-b border-neutral-200 bg-neutral-50 sm:w-56 sm:shrink-0 sm:border-r sm:border-b-0">
           <!-- Navigation Menu -->
           <nav class="relative p-2 pt-2 sm:flex-1 sm:overflow-y-auto sm:pt-4">
             <slot name="nav-top" />
@@ -58,7 +59,7 @@
         <!-- Main Content -->
         <main class="relative flex flex-1 flex-col overflow-hidden">
           <!-- Content Body -->
-          <div class="flex-1 overflow-y-auto">
+          <div :inert="busy" class="flex-1 overflow-y-auto">
             <div class="p-6">
               <!-- Modal pages will register themselves and render here -->
               <slot />
@@ -99,6 +100,10 @@ const emit = defineEmits(['close', 'item-changed', 'update:activeTab'])
 const registeredPages = ref([])
 
 const props = defineProps({
+  busy: {
+    type: Boolean,
+    default: false
+  },
   title: {
     type: String,
     default: 'Settings'
