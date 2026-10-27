@@ -23,7 +23,7 @@ for (const [name, minimum] of Object.entries({
   const version = php.packages.find((pkg) => pkg.name === name)?.version
   assert.ok(version && atLeast(version, minimum), `${name} must be >= ${minimum}, received ${version}`)
 }
-for (const [name, minimum] of Object.entries({ nuxt: '4.6.2', '@nuxt/devtools': '3.4.4', vitest: '5.0.5', 'happy-dom': '21.0.4', katex: '0.18.2' })) {
+for (const [name, minimum] of Object.entries({ nuxt: '4.6.2', '@nuxt/devtools': '3.4.4', vitest: '5.0.5', 'happy-dom': '21.0.4', katex: '0.18.2', 'node-forge': '1.4.1' })) {
   const entries = Object.entries(npm.packages).filter(([path]) => path.endsWith(`node_modules/${name}`))
   assert.ok(entries.length, `Missing ${name}`)
   for (const [path, pkg] of entries) {

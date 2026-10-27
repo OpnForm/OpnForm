@@ -5,9 +5,9 @@
       "info": 0,
       "low": 1,
       "moderate": 0,
-      "high": 14,
+      "high": 12,
       "critical": 0,
-      "total": 15
+      "total": 13
     },
     "dependencies": {
       "prod": 952,
@@ -90,15 +90,6 @@
         "node_modules/globby"
       ]
     },
-    "listhen": {
-      "severity": "high",
-      "via": [
-        "node-forge"
-      ],
-      "nodes": [
-        "node_modules/listhen"
-      ]
-    },
     "micromatch": {
       "severity": "high",
       "via": [
@@ -111,24 +102,10 @@
     "nitropack": {
       "severity": "high",
       "via": [
-        "globby",
-        "listhen"
+        "globby"
       ],
       "nodes": [
         "node_modules/nitropack"
-      ]
-    },
-    "node-forge": {
-      "severity": "high",
-      "via": [
-        {
-          "name": "node-forge",
-          "url": "https://github.com/advisories/GHSA-86w9-cpqp-85rv",
-          "severity": "high"
-        }
-      ],
-      "nodes": [
-        "node_modules/node-forge"
       ]
     },
     "nuxt": {

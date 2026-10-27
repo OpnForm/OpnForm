@@ -90,6 +90,8 @@ Nuxt Content uses the native `node:sqlite` connector, including on Amplify's Nod
 
 The executable npm audit policy is in [scripts/npm-exceptions.json](scripts/npm-exceptions.json). Dependabot checks Composer, client npm packages, and GitHub Actions weekly, with up to three open version-update PRs per ecosystem. Compatible application updates are grouped; major application dependency updates remain separate except for the coordinated VueUse packages. GitHub Actions updates are grouped together. Security update handling is unchanged.
 
+The lock requires node-forge 1.4.1 or newer. Its former RSA-verification exception has been removed; dated exceptions for other packages remain enforced.
+
 ## Date fields
 
 Clearing a date with a click, Enter, or Space keeps the calendar closed. Reopen it to choose another date.

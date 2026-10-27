@@ -10,7 +10,6 @@
     "listhen",
     "micromatch",
     "nitropack",
-    "node-forge",
     "nuxt",
     "nuxt-site-config",
     "nuxtseo-shared",
@@ -29,19 +28,6 @@
       "expires": "2026-11-06",
       "reason": "Untrusted brace patterns are not forwarded to Nitro glob tooling by application routes. No patched upstream release; review again before expiry.",
       "upstreamLatest": "3.0.3"
-    },
-    {
-      "package": "node-forge",
-      "advisory": "https://github.com/advisories/GHSA-86w9-cpqp-85rv",
-      "version": "1.4.0",
-      "severity": "high",
-      "nodes": [
-        "node_modules/node-forge"
-      ],
-      "reviewed": "2026-10-23",
-      "expires": "2026-11-06",
-      "reason": "Transitive listhen certificate tooling; no application RSA verification path found. Runtime infrastructure must be validated separately.",
-      "upstreamLatest": "1.4.0"
     },
     {
       "package": "quill",
