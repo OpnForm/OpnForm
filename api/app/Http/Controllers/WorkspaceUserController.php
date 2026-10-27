@@ -6,6 +6,7 @@ use App\Jobs\Billing\WorkspaceUsersUpdated;
 use App\Models\UserInvite;
 use App\Traits\EnsureUserHasWorkspace;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use App\Models\Workspace;
 use App\Models\User;
 use App\Service\License\SelfHostedSeatLimitService;
@@ -100,11 +101,13 @@ class WorkspaceUserController extends Controller
             'role' => 'required|in:' . implode(',', User::ROLES),
         ]);
 
-        $workspace->users()->sync([
-            $user->id => [
-                'role' => $request->role,
-            ],
-        ], false);
+        $this->mutateMembership($workspace, $user, $request->role, function () use ($workspace, $user, $request) {
+            $workspace->users()->sync([
+                $user->id => [
+                    'role' => $request->role,
+                ],
+            ], false);
+        });
         $workspace->flushWithOwners();
         $user->flush();
 
@@ -120,7 +123,7 @@ class WorkspaceUserController extends Controller
             abort(404);
         }
 
-        $workspace->users()->detach($user->id);
+        $this->mutateMembership($workspace, $user, null, fn () => $workspace->users()->detach($user->id));
         $workspace->flushWithOwners();
         $user->flush();
         $this->ensureUserHasWorkspace($user);
@@ -136,7 +139,7 @@ class WorkspaceUserController extends Controller
         $this->authorize('view', $workspace);
 
         $user = $request->user();
-        $workspace->users()->detach($user->id);
+        $this->mutateMembership($workspace, $user, null, fn () => $workspace->users()->detach($user->id));
         $workspace->flushWithOwners();
         $user->flush();
         $this->ensureUserHasWorkspace($user);
@@ -145,4 +148,20 @@ class WorkspaceUserController extends Controller
             'message' => 'You have left the workspace successfully.'
         ]);
     }
+    private function mutateMembership(Workspace $workspace, User $user, ?string $role, callable $mutation): void
+    {
+        DB::transaction(function () use ($workspace, $user, $role, $mutation) {
+            Workspace::whereKey($workspace->id)->lockForUpdate()->firstOrFail();
+            $isAdmin = $workspace->users()->whereKey($user->id)->wherePivot('role', User::ROLE_ADMIN)->exists();
+            if ($isAdmin && $role !== User::ROLE_ADMIN) {
+                abort_if(
+                    $workspace->users()->wherePivot('role', User::ROLE_ADMIN)->count() <= 1,
+                    422,
+                    'Assign another workspace administrator before removing the last administrator.'
+                );
+            }
+            $mutation();
+        });
+    }
+
 }

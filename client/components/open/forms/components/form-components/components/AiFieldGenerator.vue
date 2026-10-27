@@ -122,7 +122,7 @@ const fetchGeneratedForm = (generationId) => {
       if (data.ai_form_completion.status === 'completed') {
         // Only proceed if we haven't cancelled
         if (aiRequestId.value) {
-          workingFormStore.addGeneratedFields(JSON.parse(data.ai_form_completion.result))
+          workingFormStore.addGeneratedFields((typeof data.ai_form_completion.result === 'string' ? JSON.parse(data.ai_form_completion.result) : data.ai_form_completion.result))
         }
         loading.value = false
         isPopoverOpen.value = false

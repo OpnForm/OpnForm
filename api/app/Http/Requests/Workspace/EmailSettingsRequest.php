@@ -34,6 +34,7 @@ class EmailSettingsRequest extends FormRequest
                 $allFieldsPresent ? 'required' : 'nullable',
                 'required_with:host,username,password,sender_address',
                 'integer',
+                'between:1,65535',
             ],
             'encryption' => [
                 'nullable',
@@ -51,6 +52,7 @@ class EmailSettingsRequest extends FormRequest
             ],
             'sender_address' => [
                 'nullable',
+                'required_with:host,port,username,password',
                 'email',
             ],
         ];

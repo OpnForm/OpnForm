@@ -22,7 +22,7 @@ class CustomDomainRestriction
             return $next($request);
         }
 
-        $customDomain = $request->header(self::CUSTOM_DOMAIN_HEADER);
+        $customDomain = strtolower((string) $request->header(self::CUSTOM_DOMAIN_HEADER));
         if (! preg_match(CustomDomainRequest::CUSTOM_DOMAINS_REGEX, $customDomain)) {
             return response()->json([
                 'success' => false,
@@ -38,7 +38,8 @@ class CustomDomainRestriction
         }
 
         // Check if domain is known
-        if (! $workspaces = Workspace::whereJsonContains('custom_domains', $customDomain)->get()) {
+        $workspaces = Workspace::whereJsonContains('custom_domains', $customDomain)->get();
+        if ($workspaces->isEmpty()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Unknown domain',
@@ -47,6 +48,8 @@ class CustomDomainRestriction
         }
 
         $workspacesIds = $workspaces->pluck('id')->toArray();
+        new Form(); // Boot built-in scopes before taking the snapshot.
+        $originalScopes = Workspace::getAllGlobalScopes();
         Workspace::addGlobalScope('domain-restricted', function (Builder $builder) use ($workspacesIds) {
             $builder->whereIn('id', $workspacesIds);
         });
@@ -54,6 +57,18 @@ class CustomDomainRestriction
             $builder->whereIn('workspace_id', $workspacesIds);
         });
 
-        return $next($request);
+        try {
+            return $next($request);
+        } finally {
+            $scopes = Workspace::getAllGlobalScopes();
+            foreach ([Workspace::class, Form::class] as $model) {
+                if (isset($originalScopes[$model])) {
+                    $scopes[$model] = $originalScopes[$model];
+                } else {
+                    unset($scopes[$model]);
+                }
+            }
+            Workspace::setAllGlobalScopes($scopes);
+        }
     }
 }

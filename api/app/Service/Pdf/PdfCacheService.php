@@ -70,7 +70,11 @@ class PdfCacheService
         PdfTemplate $template
     ): string {
         $templateVersion = $template->updated_at->timestamp;
-        $computedVariablesVersion = hash('sha256', serialize($form->computed_variables ?? []));
+        $computedVariablesVersion = hash('sha256', serialize([
+            $form->getAttributes(),
+            $submission->getAttributes(),
+            $template->getAttributes(),
+        ]));
 
         return sprintf(
             'pdf:%d:%d:%d:%d:%s',

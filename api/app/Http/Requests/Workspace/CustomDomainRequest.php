@@ -3,12 +3,13 @@
 namespace App\Http\Requests\Workspace;
 
 use App\Models\Workspace;
+use App\Service\CustomDomainOwnershipService;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Request;
 
 class CustomDomainRequest extends FormRequest
 {
-    public const CUSTOM_DOMAINS_REGEX = '/^[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,20}$/';
+    public const CUSTOM_DOMAINS_REGEX = CustomDomainOwnershipService::DOMAIN_REGEX;
 
     public Workspace $workspace;
 
@@ -28,25 +29,24 @@ class CustomDomainRequest extends FormRequest
     {
         return [
             'custom_domains' => [
+                'bail',
                 'present',
                 'array',
                 function ($attribute, $value, $fail) {
-                    $errors = [];
-                    $domains = collect($value)->filter(function ($domain) {
-                        return ! empty(trim($domain));
-                    })->each(function ($domain) use (&$errors) {
-                        if (! preg_match(self::CUSTOM_DOMAINS_REGEX, $domain)) {
-                            $errors[] = 'Invalid domain: ' . $domain;
-                        }
-                    });
+                    $domains = collect($value)->map(function ($domain) {
+                        return is_string($domain) ? strtolower(trim($domain)) : $domain;
+                    })->filter(fn ($domain) => $domain !== '' && $domain !== null)->unique()->values();
 
-                    if (count($errors)) {
-                        $fail(implode(' ', $errors));
+                    foreach ($domains as $domain) {
+                        if (! is_string($domain) || strlen($domain) > 253 || ! preg_match(self::CUSTOM_DOMAINS_REGEX, $domain)) {
+                            $fail('Invalid domain: '.(is_string($domain) ? $domain : 'expected a domain name'));
+                            return;
+                        }
                     }
 
                     // Check if domains are already used by other workspaces
                     foreach ($domains as $domain) {
-                        $exists = Workspace::where('id', '!=', $this->workspace->id)
+                        $exists = Workspace::withoutGlobalScopes()->where('id', '!=', $this->workspace->id)
                             ->whereJsonContains('custom_domains', $domain)
                             ->exists();
 

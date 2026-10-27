@@ -1,4 +1,5 @@
-import { NodeType, FormulaError, ValidationResult } from './types.js'
+import { Lexer } from './lexer.js'
+import { NodeType, TokenType, FormulaError, ValidationResult } from './types.js'
 import { Parser } from './parser.js'
 import { hasFunction, getFunctionNames } from './functions/index.js'
 
@@ -322,15 +323,11 @@ export class Validator {
    * Extract all field references from a formula
    */
   static extractFieldReferences(formula) {
-    const references = []
-    const regex = /\{([^}]+)\}/g
-    let match
-
-    while ((match = regex.exec(formula)) !== null) {
-      references.push(match[1].trim())
+    try {
+      return new Lexer(formula).tokenize().filter(token => token.type === TokenType.FIELD_REF).map(token => token.value.trim())
+    } catch {
+      return []
     }
-
-    return references
   }
 }
 

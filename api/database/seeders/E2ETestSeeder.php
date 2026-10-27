@@ -17,6 +17,13 @@ class E2ETestSeeder extends Seeder
 {
     public function run(): void
     {
+        if (!app()->environment(['testing', 'e2e', 'codex'])) {
+            throw new \RuntimeException('E2E seed is restricted to isolated test environments.');
+        }
+        if (app()->environment('codex') && !preg_match('/^opnform_codex_[0-9]+$/', (string) DB::connection()->getDatabaseName())) {
+            throw new \RuntimeException('Codex seed requires an isolated worktree database.');
+        }
+
         FormSubmission::query()->delete();
         Form::withTrashed()->forceDelete();
         DB::table('user_workspace')->truncate();

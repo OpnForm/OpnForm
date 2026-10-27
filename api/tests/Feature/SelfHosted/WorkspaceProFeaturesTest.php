@@ -192,6 +192,8 @@ describe('custom code and CSS settings', function () {
 */
 describe('custom domain on self-hosted', function () {
     it('allows saving custom domain without license (is_pro always true)', function () {
+        $this->mock(\App\Service\CustomDomainOwnershipService::class)
+            ->shouldReceive('verify')->with($this->workspace->id, 'forms.example.com')->once()->andReturnTrue();
         $response = $this->putJson(
             route('open.workspaces.save-custom-domains', ['workspace' => $this->workspace]),
             ['custom_domains' => ['forms.example.com']],

@@ -70,6 +70,8 @@ class OAuthFlowOrchestrator
 
         // Store context and get state token
         $stateToken = $this->contextService->storeContext([
+            'provider' => $provider,
+            'user_id' => Auth::id(),
             'intent' => $intent,
             'utm_data' => $params['utm_data'] ?? null,
             'invited_email' => $invitedEmail,
@@ -111,25 +113,32 @@ class OAuthFlowOrchestrator
             return response()->json(['error' => "Invalid OAuth provider: {$provider}"], 400);
         }
 
-        // Get user data from OAuth provider
-        $userData = $this->userDataService->extractFromRedirect($providerService);
-
         // Get context using state token from OAuth callback
         $stateToken = $params['state'] ?? null;
         $context = $this->contextService->getContext($stateToken);
 
+        if (!$context || ($context['provider'] ?? null) !== $provider
+            || ($context['user_id'] ?? null) !== Auth::id()) {
+            return response()->json(['error' => 'OAuth context expired or invalid state'], 419);
+        }
+
+        $context = $this->contextService->consumeContext($stateToken);
         if (!$context) {
             return response()->json(['error' => 'OAuth context expired or invalid state'], 419);
         }
 
-        $intent = $context['intent'];
-        $invitedEmail = $context['invited_email'] ?? null;
-        $inviteToken = $params['invite_token'] ?? $context['invite_token'] ?? null;
-
-        $result = $this->handleIntent($intent, $providerService, $userData, $inviteToken, $invitedEmail);
-        $this->contextService->clearContext($stateToken);
-
-        return $result;
+        try {
+            $userData = $this->userDataService->extractFromRedirect($providerService);
+            return $this->handleIntent(
+                $context['intent'],
+                $providerService,
+                $userData,
+                $context['invite_token'] ?? null,
+                $context['invited_email'] ?? null
+            );
+        } finally {
+            $this->contextService->clearContext($stateToken);
+        }
     }
 
     /**

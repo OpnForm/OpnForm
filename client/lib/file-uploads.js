@@ -36,11 +36,12 @@ export const storeFile = async (file, options = {}) => {
   })
 
   // Upload to S3
-  await useFetch(response.url, {
+  const upload = await useFetch(response.url, {
     method: "PUT",
     body: file,
     headers: normalizeSignedStorageHeaders(response.headers),
   })
+  if (upload.error?.value) throw upload.error.value
 
   response.extension = file.name.split(".").pop()
 

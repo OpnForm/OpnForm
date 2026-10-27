@@ -297,6 +297,7 @@
 </template>
 
 <script setup>
+import { rememberAiCompletion } from "~/lib/aiCompletionToken"
 import SlidingTransition from '~/components/global/transitions/SlidingTransition.vue'
 import AIFormLoadingMessages from "~/components/open/forms/components/AIFormLoadingMessages.vue"
 import FormImportModal from "~/components/forms/import/FormImportModal.vue"
@@ -486,9 +487,10 @@ const fetchGeneratedForm = (generationId) => {
   setTimeout(() => {
     formsApi.ai.get(generationId)
       .then((data) => {
+      rememberAiCompletion(data)
         if (data.ai_form_completion.status === "completed") {
           useAlert().success(data.message)
-          const generated = JSON.parse(data.ai_form_completion.result)
+          const generated = (typeof data.ai_form_completion.result === 'string' ? JSON.parse(data.ai_form_completion.result) : data.ai_form_completion.result)
           // Apply seeding based on user's style choice in the modal
           if (selectedStyle.value === 'focused') {
             seedFocusedFirstBlockImage(generated)

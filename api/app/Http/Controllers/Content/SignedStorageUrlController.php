@@ -7,7 +7,7 @@ use Aws\S3\S3Client;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
-use InvalidArgumentException;
+use Illuminate\Validation\Rule;
 use Laravel\Vapor\Http\Controllers\SignedStorageUrlController as Controller;
 use Psr\Http\Message\RequestInterface;
 
@@ -20,10 +20,9 @@ class SignedStorageUrlController extends Controller
      */
     public function store(Request $request)
     {
-        $bucket = $request->input('bucket') ?: config('filesystems.disks.s3.bucket');
-        if (! is_string($bucket) || $bucket === '') {
-            throw new InvalidArgumentException('An S3 bucket must be configured to issue signed uploads.');
-        }
+        $bucket = config('filesystems.disks.s3.bucket');
+        abort_unless(is_string($bucket) && $bucket !== '', 503, 'Upload storage is not configured.');
+        $request->validate(['bucket' => ['nullable', 'string', Rule::in([$bucket])]]);
 
         $client = $this->storageClient();
 

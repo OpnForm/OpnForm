@@ -51,6 +51,8 @@ For self-hosted installations, please refer to our [Deployment Guides](https://d
 
 The client `npm run build` also checks the public form bundle size and eager dependencies. This check reads `.nuxt/dist/client/_nuxt`, independently of Nitro's deployment output directory (including AWS Amplify's `.amplify-hosting`). Run its regression tests from `client/` with `node --test scripts/check-public-form-bundle.test.mjs`.
 
+The public form budget is **425 KiB gzip**. On 25 October 2026, the integrations-content update brought the unchanged `main` build to 419.3 KiB, still within the old 420 KiB limit. The combined security fixes measured 421.7 KiB: an additional 2.4 KiB (about 0.6%). The previous baseline used 416.4 KiB of a 420 KiB budget. The new limit accepts this measured increase and restores comparable headroom without changing the forbidden eager-dependency checks. Regression fixtures verify that a route around 424 KiB passes and one around 426 KiB fails.
+
 ## Form list performance
 
 The dashboard fetches lightweight summaries in batches of 50. The API keeps its default page size of 10 and its maximum of 100 for other callers. It paginates forms before loading view and completed-submission counts for the returned IDs. Historical views use an index on `form_statistics.form_id`, and the aggregate is explicitly aliased as `total_views_count` so the model uses the preloaded value.
@@ -92,6 +94,10 @@ The executable npm audit policy is in [scripts/npm-exceptions.json](scripts/npm-
 
 Clearing a date with a click, Enter, or Space keeps the calendar closed. Reopen it to choose another date.
 
+## Editor history
+
+Clearing editor history uses the currently loaded form as the undo baseline and discards pending history updates. A subsequent edit can be undone back to that form without restoring an earlier loading state.
+
 ## Spreadsheet exports
 
 Spreadsheet exports preserve numeric zero values, account identifiers with leading zeroes, and Unicode. Null and empty fields remain blank.
@@ -121,6 +127,10 @@ OpnForm uses a dual-license model to make the project sustainable:
 -   **Enterprise Edition** (Proprietary): Advanced features under `api/app/Enterprise/` are available under our [Enterprise License](https://github.com/OpnForm/OpnForm/blob/main/api/app/Enterprise/LICENSE) and [Enterprise Terms](https://opnform.com/terms-conditions). These features help fund ongoing development and keep OpnForm sustainable.
 
 By offering Enterprise features alongside our open-source core, we can continue to invest in making OpnForm better for everyone while keeping the project financially sustainable.
+
+## Security remediation rollout
+
+See [October 2026 deployment and compatibility notes](docs/security-remediation-2026-10.md) before deploying the API/client changes.
 
 ### Form validation translations
 

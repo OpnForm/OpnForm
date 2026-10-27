@@ -25,6 +25,7 @@ class TwoFactorAuthService
 
         Cache::put("2fa_pending:{$token}", [
             'user_id' => $user->id,
+            'auth_version' => $user->auth_version,
             'method' => $context['method'] ?? 'password',
             'remember' => $context['remember'] ?? false,
             'created_at' => now()->toIso8601String(),

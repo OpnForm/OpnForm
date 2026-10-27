@@ -85,7 +85,6 @@ class ExportFormSubmissionsJob implements ShouldQueue
         Log::info("Export job {$this->jobId} completed successfully", [
             'form_id' => $this->form->id,
             'total_submissions' => $totalSubmissions,
-            'file_url' => $fileUrl
         ]);
     }
 

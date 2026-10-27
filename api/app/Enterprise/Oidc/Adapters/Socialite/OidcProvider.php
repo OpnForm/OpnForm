@@ -3,6 +3,7 @@
 namespace App\Enterprise\Oidc\Adapters\Socialite;
 
 use Exception;
+use App\Service\Security\PublicWebhookUrl;
 use GuzzleHttp\RequestOptions;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Cache;
@@ -73,6 +74,8 @@ class OidcProvider extends AbstractProvider
             $wellKnownUrl = rtrim($this->issuer, '/') . '/.well-known/openid-configuration';
 
             $response = $this->getHttpClient()->get($wellKnownUrl, [
+                ...PublicWebhookUrl::requestOptionsPublicOnly($wellKnownUrl),
+                RequestOptions::TIMEOUT => 10,
                 RequestOptions::HEADERS => ['Accept' => 'application/json'],
             ]);
 
@@ -109,8 +112,10 @@ class OidcProvider extends AbstractProvider
 
     protected function getAuthUrl($state): string
     {
+        $authorizationUrl = $this->getOpenIdConfig()['authorization_endpoint'];
+        PublicWebhookUrl::assertPublicOnly($authorizationUrl);
         return $this->buildAuthUrlFromBase(
-            $this->getOpenIdConfig()['authorization_endpoint'],
+            $authorizationUrl,
             $state
         );
     }
@@ -161,6 +166,8 @@ class OidcProvider extends AbstractProvider
             $response = $this->getHttpClient()->get(
                 $userInfoUrl,
                 [
+                    ...PublicWebhookUrl::requestOptionsPublicOnly($userInfoUrl),
+                    RequestOptions::TIMEOUT => 10,
                     RequestOptions::HEADERS => [
                         'Accept' => 'application/json',
                         'Authorization' => 'Bearer ' . $token,
@@ -176,7 +183,10 @@ class OidcProvider extends AbstractProvider
 
     public function getAccessTokenResponse($code)
     {
-        $response = $this->getHttpClient()->post($this->getTokenUrl(), [
+        $tokenUrl = $this->getTokenUrl();
+        $response = $this->getHttpClient()->post($tokenUrl, [
+            ...PublicWebhookUrl::requestOptionsPublicOnly($tokenUrl),
+            RequestOptions::TIMEOUT => 10,
             RequestOptions::HEADERS => ['Accept' => 'application/json'],
             RequestOptions::FORM_PARAMS => array_merge(
                 $this->getTokenFields($code),
@@ -196,6 +206,10 @@ class OidcProvider extends AbstractProvider
         try {
             [$header, $payload, $signature] = explode('.', $idToken);
             $decoded = json_decode($this->base64UrlDecode($payload), true);
+
+            if ($this->usesNonce && empty($decoded['nonce'])) {
+                throw new Exception('Missing nonce in ID token');
+            }
 
             if ($this->usesNonce && isset($decoded['nonce'])) {
                 $storedNonce = null;

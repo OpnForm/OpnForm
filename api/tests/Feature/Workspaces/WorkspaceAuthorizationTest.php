@@ -1,5 +1,6 @@
 <?php
 
+use App\Service\CustomDomainOwnershipService;
 
 describe('Workspace admin-only endpoints', function () {
     it('forbids non-admin users from updating custom domains', function () {
@@ -19,6 +20,8 @@ describe('Workspace admin-only endpoints', function () {
     it('allows admins to update custom domains', function () {
         $owner = $this->actingAsProUser();
         $workspace = $this->createUserWorkspace($owner);
+        $this->mock(CustomDomainOwnershipService::class)
+            ->shouldReceive('verify')->with($workspace->id, 'example.com')->once()->andReturnTrue();
 
         $this->putJson(route('open.workspaces.save-custom-domains', $workspace), [
             'custom_domains' => ['example.com']
@@ -35,6 +38,7 @@ describe('Workspace admin-only endpoints', function () {
 
         $this->putJson(route('open.workspaces.save-email-settings', $workspace), [
             'host' => 'smtp.example.com',
+            'sender_address' => 'sender@example.test',
             'port' => '587',
             'username' => 'user',
             'password' => 'secret',
@@ -47,6 +51,7 @@ describe('Workspace admin-only endpoints', function () {
 
         $this->putJson(route('open.workspaces.save-email-settings', $workspace), [
             'host' => 'smtp.example.com',
+            'sender_address' => 'sender@example.test',
             'port' => '587',
             'username' => 'user',
             'password' => 'secret',

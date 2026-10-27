@@ -19,7 +19,7 @@ class ValidUrl implements ValidationRule
         // Define the regular expression to match the desired URL patterns
         $pattern = '/^(https?:\/\/)?(www\.)?[\w.-]+\.\w+(:\d+)?(\/[^\s]*)?$/';
 
-        return preg_match($pattern, $value);
+        return is_string($value) && preg_match($pattern, $value);
     }
 
     public function validate(string $attribute, mixed $value, Closure $fail): void

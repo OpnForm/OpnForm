@@ -1,4 +1,5 @@
 import { expect, test, type APIRequestContext, type Page } from "@playwright/test"
+import { createServer } from "node:http"
 import { waitForAnonymousApiBudget, waitForAuthenticatedApiBudget } from "./api-budget"
 import { hash } from "../../lib/utils.js"
 
@@ -1369,6 +1370,43 @@ test("focused public form accepts a complete stepped response flow", async ({ pa
 
   await expectSubmissionSuccess(page)
 })
+
+for (const shared of [false, true]) {
+  test('iframe answer sharing is opt in: ' + shared, async ({ page, request }) => {
+    const form = await apiCreateForm(request, { payloadOverrides: { share_submission_data_with_parent: shared } })
+    const base = process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:3100'
+    const html = '<script>window.received=[];addEventListener("message",e=>{if(e.data?.type==="form-submitted")window.received.push(e.data)})</script><iframe src="' + base + '/forms/' + form.slug + '"></iframe>'
+    const host = createServer((_req, res) => { res.setHeader('Content-Type', 'text/html'); res.end(html) })
+    await new Promise(resolve => host.listen(0, '127.0.0.1', resolve))
+    try {
+      const address = host.address()
+      if (!address || typeof address === 'string') throw new Error('Missing iframe host address')
+      await page.goto('http://127.0.0.1:' + address.port)
+      const frame = page.frameLocator('iframe')
+      await expect(frame.getByTestId('public-form-page')).toBeVisible()
+      await page.waitForLoadState('networkidle')
+      for (const [field, value] of [['default_name', 'Private QA answer'], ['default_email', 'visitor@example.test']]) {
+        const input = frame.getByTestId('open-form-field-' + field).locator('input').first()
+        await input.click()
+        await input.fill('')
+        await input.pressSequentially(value)
+        await input.blur()
+      }
+      const response = page.waitForResponse(response => response.request().method() === 'POST' && response.url().includes('/' + form.slug + '/answer'))
+      await frame.getByRole('button', { name: /submit/i }).click()
+      expect((await response).ok()).toBeTruthy()
+      await expect.poll(() => page.evaluate<number>('window.received.length')).toBe(1)
+      const payload = await page.evaluate<{ submission_data?: unknown }>('window.received[0]')
+      if (shared) expect(JSON.stringify(payload.submission_data)).toContain('Private QA answer')
+      else {
+        expect(payload).not.toHaveProperty('submission_data')
+        expect(payload).not.toHaveProperty('meta')
+      }
+    } finally {
+      await new Promise(resolve => host.close(resolve))
+    }
+  })
+}
 
 for (const viewport of [{ name: "desktop", width: 1280 }, { name: "mobile", width: 390 }]) {
   test(`integration retry confirms its submission and refreshes the outcome on ${viewport.name}`, async ({ page, request }) => {

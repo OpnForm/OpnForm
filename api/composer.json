@@ -22,6 +22,7 @@
         "giggsey/libphonenumber-for-php": "*",
         "google/apiclient": "^2.16",
         "guzzlehttp/guzzle": "*",
+        "jeremykendall/php-domain-parser": "^6.4",
         "jolicode/slack-php-api": "^4.8",
         "laragear/two-factor": "^4.0",
         "laravel/cashier": "^16.2",

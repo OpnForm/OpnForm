@@ -98,11 +98,13 @@ const code = ref([])
 const recoveryCode = ref('')
 const showRecoveryCode = ref(false)
 const verifying = ref(false)
+let verificationVersion = 0
 const error = ref(null)
 const hasAttemptedVerification = ref(false) // Track if we've actually tried to verify
 
 // Clear error and reset state when modal opens
 watch(() => props.show, (isShowing) => {
+  verificationVersion++
   if (isShowing) {
     error.value = null
     code.value = []
@@ -132,9 +134,9 @@ const handleComplete = async (value) => {
   }
 }
 
-const verifyCode = async (codeValue) => {
+const verifyCode = async (codeValue, isRecovery = false) => {
   // Validate code format before making API call
-  if (!codeValue || codeValue.length !== 6 || !/^\d{6}$/.test(codeValue)) {
+  if (verifying.value || !codeValue || (isRecovery ? !/^[a-zA-Z0-9]{8}$/.test(codeValue) : !/^\d{6}$/.test(codeValue))) {
     return
   }
 
@@ -148,14 +150,16 @@ const verifyCode = async (codeValue) => {
   error.value = null
   hasAttemptedVerification.value = true
 
+  const attemptVersion = verificationVersion
   try {
     const response = await authApi.twoFactor.verify({
       pending_auth_token: props.pendingAuthToken,
       code: codeValue,
     })
 
-    emit('verified', response)
+    if (attemptVersion === verificationVersion && isOpen.value) emit('verified', response)
   } catch (err) {
+    if (attemptVersion !== verificationVersion) return
     // TanStack Query errors have different structure - check for response or data
     if (err.response) {
       error.value = err.response?._data?.message || err.response?._data?.errors?.code?.[0] || 'Invalid code. Please try again.'
@@ -168,16 +172,18 @@ const verifyCode = async (codeValue) => {
     }
     code.value = []
   } finally {
-    verifying.value = false
+    if (attemptVersion === verificationVersion) verifying.value = false
   }
 }
 
 const verifyRecoveryCode = async () => {
   if (!recoveryCode.value) return
-  await verifyCode(recoveryCode.value)
+  await verifyCode(recoveryCode.value.trim(), true)
 }
 
 const handleCancel = () => {
+  verificationVersion++
+  verifying.value = false
   code.value = []
   recoveryCode.value = ''
   showRecoveryCode.value = false

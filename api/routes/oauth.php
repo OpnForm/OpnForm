@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\RequireOAuthS256;
 use App\Http\Middleware\SecureOAuthConsent;
+use App\Http\Middleware\EnsureCurrentMcpOAuthSession;
 use Illuminate\Support\Facades\Route;
 use Laravel\Passport\Http\Controllers\AccessTokenController;
 use Laravel\Passport\Http\Controllers\ApproveAuthorizationController;
@@ -16,10 +17,10 @@ Route::prefix(config('passport.path', 'oauth'))
             ->name('token');
 
         Route::get('/authorize', [AuthorizationController::class, 'authorize'])
-            ->middleware(['web', RequireOAuthS256::class, SecureOAuthConsent::class])
+            ->middleware(['web', EnsureCurrentMcpOAuthSession::class, RequireOAuthS256::class, SecureOAuthConsent::class])
             ->name('authorizations.authorize');
 
-        Route::middleware(['web', 'auth:web', SecureOAuthConsent::class])->group(function () {
+        Route::middleware(['web', EnsureCurrentMcpOAuthSession::class, 'auth:web', SecureOAuthConsent::class])->group(function () {
             Route::post('/authorize', [ApproveAuthorizationController::class, 'approve'])
                 ->name('authorizations.approve');
             Route::delete('/authorize', [DenyAuthorizationController::class, 'deny'])

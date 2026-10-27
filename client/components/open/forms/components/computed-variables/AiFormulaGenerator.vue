@@ -163,7 +163,7 @@ const fetchGeneratedFormula = (generationId) => {
     formsApi.ai.getFormula(generationId).then(data => {
       if (data.ai_form_completion.status === 'completed') {
         if (aiRequestId.value) {
-          const result = JSON.parse(data.ai_form_completion.result)
+          const result = (typeof data.ai_form_completion.result === 'string' ? JSON.parse(data.ai_form_completion.result) : data.ai_form_completion.result)
           const storageFormula = formulaToStorage(
             result.formula,
             availableFields.value,

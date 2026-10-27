@@ -3,6 +3,7 @@
 namespace App\Enterprise\Oidc;
 
 use App\Models\User;
+use Pdp\Rules;
 
 class DomainValidator
 {
@@ -39,15 +40,16 @@ class DomainValidator
     public function extractRootDomain(string $domain): string
     {
         $domain = strtolower(trim($domain));
-        $parts = explode('.', $domain);
-
-        // If domain has 2 or fewer parts, it's already a root domain
-        if (count($parts) <= 2) {
+        static $rules = null;
+        $rules ??= Rules::fromPath(resource_path('data/public_suffix_list.dat'));
+        try {
+            $resolved = $rules->resolve($domain);
+            $registrable = $resolved->registrableDomain()->toString();
+            // An unknown suffix or a suffix by itself must never join unrelated domains.
+            return $resolved->suffix()->isKnown() && $registrable !== '' ? $registrable : $domain;
+        } catch (\Pdp\CannotProcessHost $exception) {
             return $domain;
         }
-
-        // Return last two parts (e.g., company.com from mail.company.com)
-        return implode('.', array_slice($parts, -2));
     }
 
     /**

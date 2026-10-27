@@ -246,7 +246,8 @@ const trackFormView = () => {
   if (import.meta.client && !form.value?.is_password_protected && !hasViewedForm) {
     hasViewedForm = true
     nextTick(() => {
-      formsApi.view(form.value.slug)
+      // Optional view statistics must not surface an unhandled form-page error.
+      formsApi.view(form.value.slug).catch(() => {})
     })
   }
 }

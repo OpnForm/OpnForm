@@ -256,7 +256,8 @@ class PublicFormController extends Controller
         if ($form->visibility !== 'public') {
             abort(404);
         }
-        if ($form->workspace == null || !$form->editable_submissions) {
+        if ($form->workspace == null || !$form->editable_submissions
+            || !$form->workspace->hasFeature(\App\Service\Billing\Feature::EDITABLE_SUBMISSIONS)) {
             abort(403);
         }
 

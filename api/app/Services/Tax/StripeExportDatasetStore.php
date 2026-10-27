@@ -11,6 +11,7 @@ class StripeExportDatasetStore
 
     public function datasetPath(string $datasetId): string
     {
+        $this->validateIdentifier($datasetId);
         return $this->basePath() . '/' . $datasetId;
     }
 
@@ -31,6 +32,7 @@ class StripeExportDatasetStore
 
     public function chunkPath(string $datasetId, string $chunkKey): string
     {
+        $this->validateIdentifier($chunkKey);
         return $this->chunksPath($datasetId) . '/' . $chunkKey . '.json';
     }
 
@@ -119,9 +121,29 @@ class StripeExportDatasetStore
         $this->writeJson($this->metadataPath($datasetId), array_merge($metadata, $attributes));
     }
 
+    private function validateIdentifier(string $identifier): void
+    {
+        if (!preg_match('/\A[A-Za-z0-9][A-Za-z0-9._-]{0,127}\z/', $identifier)) {
+            throw new \InvalidArgumentException('Invalid dataset or chunk identifier');
+        }
+    }
+
     private function writeJson(string $path, array $payload): void
     {
-        file_put_contents($path, json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+        $json = json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+        $temporaryPath = tempnam(dirname($path), '.dataset-');
+        if ($temporaryPath === false) {
+            throw new \RuntimeException('Unable to create dataset file');
+        }
+        try {
+            if (file_put_contents($temporaryPath, $json) !== strlen($json) || !rename($temporaryPath, $path)) {
+                throw new \RuntimeException('Unable to write dataset file');
+            }
+        } finally {
+            if (file_exists($temporaryPath)) {
+                unlink($temporaryPath);
+            }
+        }
     }
 
     private function readJson(string $path): array

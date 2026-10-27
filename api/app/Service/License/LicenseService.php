@@ -176,17 +176,7 @@ class LicenseService
 
     public function hasPaidLicense(): bool
     {
-        $cached = Cache::get(self::CACHE_KEY);
-        if ($cached instanceof LicenseCheckResult) {
-            return $cached->isActive();
-        }
-
-        $stored = $this->getStoredLicense();
-        if (!$stored || !$this->getLicenseKey()) {
-            return false;
-        }
-
-        return in_array($stored['status'] ?? null, ['active', 'grace'], true);
+        return $this->checkLicense()->isActive();
     }
 
     private function validateCandidateLicense(string $licenseKey): LicenseCheckResult
@@ -256,7 +246,7 @@ class LicenseService
         Log::warning('License validation API failed', ['reason' => $reason]);
 
         $stored = $this->getStoredLicense();
-        if (!$stored) {
+        if (!$stored || !in_array($stored['status'] ?? null, ['active', 'grace'], true)) {
             return LicenseCheckResult::invalid();
         }
 
@@ -265,8 +255,8 @@ class LicenseService
             return LicenseCheckResult::invalid();
         }
 
-        $elapsed = time() - $lastChecked->getTimestamp();
-        if ($elapsed < self::GRACE_PERIOD_SECONDS) {
+        $elapsed = now()->timestamp - $lastChecked->getTimestamp();
+        if ($elapsed >= 0 && $elapsed < self::GRACE_PERIOD_SECONDS) {
             $result = new LicenseCheckResult(
                 status: 'grace',
                 features: $stored['features'] ?? null,
@@ -297,7 +287,11 @@ class LicenseService
 
     private function cacheResult(LicenseCheckResult $result): void
     {
-        Cache::put(self::CACHE_KEY, $result, self::CACHE_TTL_SECONDS);
+        $ttl = self::CACHE_TTL_SECONDS;
+        if ($result->status === 'grace' && $result->lastChecked) {
+            $ttl = max(1, min($ttl, $result->lastChecked->getTimestamp() + self::GRACE_PERIOD_SECONDS - now()->timestamp));
+        }
+        Cache::put(self::CACHE_KEY, $result, $ttl);
     }
 
     private function updateStoredLicenseState(LicenseCheckResult $result): void

@@ -167,6 +167,12 @@ export class Evaluator {
         throw new FormulaError(`Unknown function: ${funcName}`)
       }
 
+      if (funcName === 'IF') {
+        if (node.args.length < 2 || node.args.length > 3) return null
+        const branch = this.toBoolean(this.evaluate(node.args[0])) ? node.args[1] : node.args[2]
+        return branch ? this.evaluate(branch) : ''
+      }
+
       // Evaluate all arguments
       const args = node.args.map(arg => this.evaluate(arg))
 
@@ -186,7 +192,7 @@ export class Evaluator {
    * Convert value to number
    */
   toNumber(value) {
-    if (value === null || value === undefined || value === '') {
+    if (value === null || value === undefined || value === '' || (Array.isArray(value) && value.length === 0)) {
       return null
     }
     if (typeof value === 'number') {
@@ -195,6 +201,7 @@ export class Evaluator {
     if (typeof value === 'boolean') {
       return value ? 1 : 0
     }
+    if (typeof value === 'string' && value.trim() === '') return null
     const num = Number(value)
     return isNaN(num) ? null : num
   }
@@ -203,7 +210,7 @@ export class Evaluator {
    * Convert value to boolean
    */
   toBoolean(value) {
-    if (value === null || value === undefined || value === '') {
+    if (value === null || value === undefined || value === '' || (Array.isArray(value) && value.length === 0)) {
       return false
     }
     if (typeof value === 'boolean') {

@@ -49,7 +49,8 @@
           @keydown.enter.prevent="addDomain"
         />
         <UButton
-          :disabled="!canAccessDomains || !newDomain.trim()"
+          :disabled="!canAccessDomains || !newDomain.trim() || isLoading"
+          :loading="verificationMutation.isPending.value"
           icon="i-heroicons-plus"
           @click="addDomain"
         >
@@ -79,12 +80,20 @@
           No custom domains added yet.
         </p>
       </div>
+      <div v-for="(record, domain) in verificationRecords" :key="domain" class="max-w-xl rounded-md border border-neutral-200 p-4 text-sm">
+        <p class="font-medium">Verify ownership of {{ domain }}</p>
+        <p class="mt-1 text-neutral-600">Add this TXT record in your DNS provider, wait for propagation, then save your domains. Keep your existing CNAME pointing to OpnForm.</p>
+        <dl class="mt-3 space-y-2">
+          <div><dt class="font-medium">TXT name / host</dt><dd class="break-all font-mono select-all">{{ record.host }}</dd></div>
+          <div><dt class="font-medium">TXT value</dt><dd class="break-all font-mono select-all">{{ record.value }}</dd></div>
+        </dl>
+      </div>
     </div>
     
     <UButton
       type="submit"
       :loading="isLoading"
-      :disabled="!canAccessDomains || !isChanged"
+      :disabled="!canAccessDomains || !isChanged || verificationMutation.isPending.value"
       @click="saveChanges"
     >
       Save Domain(s)
@@ -94,86 +103,71 @@
 </template>
 
 <script setup>
-const { updateCustomDomains } = useWorkspaces()
+const { updateCustomDomains, customDomainVerification } = useWorkspaces()
 const alert = useAlert()
 const crisp = useCrisp()
 const { current: workspace } = useCurrentWorkspace()
-
+const workspaceId = computed(() => workspace.value?.id)
 const { openSubscriptionModal } = useAppModals()
 const { hasFeature } = usePlanFeatures()
 const canAccessDomains = computed(() => hasFeature('custom_domain'))
 
 const newDomain = ref('')
 const domains = ref([])
+const verificationRecords = ref({})
 const isLoading = ref(false)
 const isChanged = ref(false)
+const verificationMutation = customDomainVerification()
+const updateMutation = updateCustomDomains(workspaceId)
 
-onMounted(() => {
-  initCustomDomains()
-})
+const initCustomDomains = () => {
+  domains.value = [...(workspace.value?.custom_domains ?? [])]
+  verificationRecords.value = {}
+  newDomain.value = ''
+  isChanged.value = false
+}
 
-watch(
-  () => workspace.value,
-  () => {
-    initCustomDomains()
-  },
-  { deep: true },
-)
+watch(() => [workspace.value?.id, workspace.value?.custom_domains], initCustomDomains, { immediate: true })
+
+const showError = (error) => {
+  const data = error.response?._data ?? error.data
+  alert.error(data?.errors?.custom_domains?.[0] ?? data?.message ?? 'Failed to update custom domains')
+}
 
 const addDomain = () => {
-  const domainToAdd = newDomain.value.trim()
-  if (domainToAdd) {
-    // Remove protocol and path to get the clean domain
-    const cleanedDomain = domainToAdd
-      .replace(/^https?:\/\//i, '')
-      .split('/')[0]
-
-    // Domain validation - matches backend regex: /^[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,20}$/
-    // Supports: example.com, test.co.uk, subdomain.example.co.uk, etc.
-    const domainRegex = /^[a-z0-9]+([-.][a-z0-9]+)*\.[a-z]{2,20}$/i
-    if (!domainRegex.test(cleanedDomain)) {
-      return alert.error('Invalid domain format. Please use a format like "domain.com" or "subdomain.example.co.uk".')
-    }
-
-    if (domains.value.includes(cleanedDomain)) {
-      return alert.info('Domain already in the list.')
-    }
-
-    domains.value.push(cleanedDomain)
+  const domain = newDomain.value.trim().toLowerCase().replace(/^https?:\/\//i, '').split('/')[0]
+  if (!domain || !workspaceId.value || verificationMutation.isPending.value || isLoading.value) return
+  if (domains.value.includes(domain)) return alert.info('Domain already in the list.')
+  const requestedWorkspaceId = workspaceId.value
+  // Previously saved domains can be restored without changing their verification status.
+  if (workspace.value.custom_domains?.includes(domain)) {
+    domains.value.push(domain)
     newDomain.value = ''
     isChanged.value = true
+    return
   }
+  verificationMutation.mutateAsync({ workspaceId: requestedWorkspaceId, domain }).then((record) => {
+    if (workspaceId.value !== requestedWorkspaceId) return
+    domains.value.push(domain)
+    verificationRecords.value[domain] = record
+    newDomain.value = ''
+    isChanged.value = true
+  }).catch(showError)
 }
 
 const removeDomain = (index) => {
+  delete verificationRecords.value[domains.value[index]]
   domains.value.splice(index, 1)
   isChanged.value = true
 }
 
-const updateMutation = updateCustomDomains(workspace.value?.id)
-
 const saveChanges = () => {
-  if (!workspace.value?.id) return
-  
+  if (!workspaceId.value || isLoading.value) return
   isLoading.value = true
-  updateMutation.mutateAsync({
-    custom_domains: domains.value,
-  }).then(() => {
-      alert.success('Custom domains saved.')
-      isChanged.value = false
-      isLoading.value = false
-  }).catch((error) => {
-      alert.error(error.response?._data?.message ?? 'Failed to update custom domains')
-      isLoading.value = false
-    })
+  updateMutation.mutateAsync({ workspaceId: workspaceId.value, custom_domains: [...domains.value] }).then(() => {
+    alert.success('Custom domains saved.')
+  }).catch(showError).finally(() => {
+    isLoading.value = false
+  })
 }
-
-const initCustomDomains = () => {
-  if (workspace.value?.custom_domains) {
-    domains.value = [...workspace.value.custom_domains]
-  } else {
-    domains.value = []
-  }
-  isChanged.value = false
-}
-</script> 
+</script>

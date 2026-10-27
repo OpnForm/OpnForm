@@ -132,7 +132,7 @@ class ProvisioningService
     protected function validateIdToken(IdentityConnection $connection, array $claims): void
     {
         // Validate issuer
-        if (isset($claims['iss']) && $claims['iss'] !== $connection->issuer) {
+        if (!isset($claims['iss']) || $claims['iss'] !== $connection->issuer) {
             throw new \Exception('Invalid issuer in ID token');
         }
 
@@ -143,12 +143,16 @@ class ProvisioningService
         }
 
         $audArray = is_array($aud) ? $aud : [$aud];
-        if (!in_array($connection->client_id, $audArray)) {
+        if (!in_array($connection->client_id, $audArray, true)) {
             throw new \Exception('Invalid audience in ID token');
         }
 
+        if ((count($audArray) > 1 || isset($claims['azp'])) && ($claims['azp'] ?? null) !== $connection->client_id) {
+            throw new \Exception('Invalid authorized party in ID token');
+        }
+
         // Validate expiration
-        if (isset($claims['exp']) && $claims['exp'] < time()) {
+        if (!isset($claims['exp']) || !is_numeric($claims['exp']) || $claims['exp'] <= time()) {
             throw new \Exception('ID token has expired');
         }
 

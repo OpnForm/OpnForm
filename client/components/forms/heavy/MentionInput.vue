@@ -13,6 +13,7 @@
         :class="ui.input({ class: props.ui?.slots?.input })"
         :placeholder="placeholder"
         @input="onInput"
+        @paste="onPaste"
       />
       <MentionDropdown
         v-if="!disabled"
@@ -60,6 +61,7 @@
 
 <script setup>
 import { ref, onMounted, watch, reactive } from 'vue'
+import DOMPurify from 'dompurify'
 import { inputProps, useFormInput } from '../useFormInput.js'
 import MentionDropdown from './components/MentionDropdown.vue'
 import { mentionInputTheme } from '~/lib/forms/themes/mention-input.theme.js'
@@ -176,7 +178,9 @@ const getPlainText = (html) => {
 }
 
 function getHtmlValue(value) {
-  return value === null || value === undefined ? '' : String(value)
+  return DOMPurify.sanitize(value === null || value === undefined ? '' : String(value), {
+    ADD_ATTR: ['mention', 'mention-field-id', 'mention-field-name', 'mention-fallback'],
+  })
 }
 
 const updateCompVal = () => {
@@ -185,6 +189,19 @@ const updateCompVal = () => {
   
   // If plain text is empty, store empty string; otherwise store HTML
   compVal.value = plainText ? html : ''
+}
+
+const onPaste = (event) => {
+  event.preventDefault()
+  const clipboard = event.clipboardData
+  if (!clipboard) return
+  const html = clipboard.getData('text/html')
+  if (html) {
+    document.execCommand('insertHTML', false, getHtmlValue(html))
+  } else {
+    document.execCommand('insertText', false, clipboard.getData('text/plain'))
+  }
+  updateCompVal()
 }
 
 const onInput = () => {

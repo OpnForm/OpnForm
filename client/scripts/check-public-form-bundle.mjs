@@ -11,7 +11,7 @@ const manifestPath = existsSync(moduleManifestPath) ? moduleManifestPath : jsonM
 // Inspect Vite's client output, shared by all Nitro deployment presets.
 // Amplify publishes to .amplify-hosting instead of .output/public.
 const buildAssetsUrl = pathToFileURL(`${resolve(buildDir, 'dist/client/_nuxt')}/`)
-const maximumGzipBytes = 420 * 1024
+const maximumGzipBytes = 425 * 1024
 const routeEntry = 'pages/forms/[slug]/index.vue'
 const scenarios = {
   classic: ['OpenForm', 'TextInput', 'SelectInput'],

@@ -4,6 +4,7 @@ namespace App\Service\OAuth;
 
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
@@ -16,6 +17,8 @@ class McpOAuthSessionService
     private const AUTHORIZATION_REQUEST_PREFIX = 'mcp:oauth:authorization-request:';
 
     private const LOGIN_TICKET_PREFIX = 'mcp:oauth:login-ticket:';
+
+    private const WEB_SESSION_CREDENTIALS = 'mcp:oauth:credentials';
 
     public function beginAuthorization(Request $request): string
     {
@@ -51,6 +54,7 @@ class McpOAuthSessionService
             self::LOGIN_TICKET_PREFIX.hash('sha256', $ticket),
             [
                 'user_id' => $user->getAuthIdentifier(),
+                'auth_version' => $user->auth_version,
                 'request_uri' => $this->removeQueryParameter($requestUri, 'mcp_login_ticket'),
             ],
             now()->addMinutes(5)
@@ -74,8 +78,51 @@ class McpOAuthSessionService
             throw new AccessDeniedHttpException('This MCP login ticket is invalid or has expired.');
         }
 
-        Auth::guard('web')->loginUsingId($userId);
+        $user = User::find($userId);
+        if (! $user || ! array_key_exists('auth_version', $ticketData)
+            || $ticketData['auth_version'] !== $user->auth_version) {
+            throw new AccessDeniedHttpException('This MCP login ticket is invalid or has expired.');
+        }
+
+        Auth::guard('web')->login($user);
+        $this->rememberWebCredentials($request, $user);
         $request->session()->regenerate();
+    }
+
+    public function ensureCurrentWebSession(Request $request): void
+    {
+        $guard = Auth::guard('web');
+        if (! $request->hasSession() || ! $guard->check()) {
+            return;
+        }
+
+        // Query the current version even if the guard already has a cached user.
+        $user = User::find($guard->id());
+        $credentials = $request->session()->get(self::WEB_SESSION_CREDENTIALS);
+
+        // Existing sessions are compatible only until the first credential rotation.
+        if ($credentials === null && $user && $user->auth_version === null) {
+            $this->rememberWebCredentials($request, $user);
+            return;
+        }
+
+        if (! $user || ! is_array($credentials)
+            || ($credentials['user_id'] ?? null) !== $user->getAuthIdentifier()
+            || ! array_key_exists('auth_version', $credentials)
+            || $credentials['auth_version'] !== $user->auth_version) {
+            $guard->logoutCurrentDevice();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+            throw new AuthenticationException('Authentication expired. Please sign in again.', ['web']);
+        }
+    }
+
+    private function rememberWebCredentials(Request $request, User $user): void
+    {
+        $request->session()->put(self::WEB_SESSION_CREDENTIALS, [
+            'user_id' => $user->getAuthIdentifier(),
+            'auth_version' => $user->auth_version,
+        ]);
     }
 
     public function withoutLoginTicket(Request $request): string

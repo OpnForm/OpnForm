@@ -112,8 +112,12 @@ export default defineNuxtConfig({
 
   sentry: {
       authToken: process.env.SENTRY_AUTH_TOKEN,
-      org: "opnform",
-      project: "opnform-vue",
+      org: 'opnform',
+      project: 'opnform-vue',
+      sourcemaps: {
+          disable: !process.env.SENTRY_AUTH_TOKEN,
+          filesToDeleteAfterUpload: ['./.output/public/**/*.map', './.nuxt/dist/client/**/*.map'],
+      },
       bundleSizeOptimizations: {
           excludeDebugStatements: true,
           excludeTracing: true,
@@ -123,7 +127,7 @@ export default defineNuxtConfig({
       },
   },
 
-  sourcemap: { client: 'hidden' },
+  sourcemap: { client: process.env.SENTRY_AUTH_TOKEN ? 'hidden' : false },
 
   gtag: {
       id: process.env.NUXT_PUBLIC_GOOGLE_ANALYTICS_CODE,

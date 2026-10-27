@@ -55,14 +55,13 @@ export function useFormInitialization(formConfig, form, pendingSubmission) {
       applyUrlParameters(options.urlParams)
     }
     
-    // 5. Apply special field handling
-    updateSpecialFields()
-    
-    // 6. Apply default data from config or options
+    // Explicit defaults must be applied before field-level prefills.
+    // URL parameters and already loaded answers keep priority.
     const defaultValuesToApply = options.defaultData || config?.default_data
     if (defaultValuesToApply) {
       applyDefaultValues(defaultValuesToApply, config?.properties)
     }
+    updateSpecialFields()
     
     // 7. Normalize field values before resolving visibility or rendering inputs.
     resetAndFill(form.data())
@@ -172,10 +171,12 @@ export function useFormInitialization(formConfig, form, pendingSubmission) {
   const applyUrlParameters = (params) => {
     if (!params) return
     
+    const fieldKeys = new Set((toValue(formConfig)?.properties ?? []).map(field => field.nf_id ?? field.id))
+
     // First, handle regular parameters
     params.forEach((value, key) => {
       // Skip array parameters for now
-      if (key.endsWith('[]')) return
+      if (key.endsWith('[]') || !fieldKeys.has(key)) return
       
       try {
         // Try to parse JSON if the value starts with '{'
@@ -197,6 +198,7 @@ export function useFormInitialization(formConfig, form, pendingSubmission) {
         const arrayValues = params.getAll(key)
         if (arrayValues.length > 0) {
           const baseKey = key.slice(0, -2)
+          if (!fieldKeys.has(baseKey)) return
           form[baseKey] = arrayValues
         }
       }
@@ -210,7 +212,8 @@ export function useFormInitialization(formConfig, form, pendingSubmission) {
   const applyDefaultValues = (defaultData) => {
     if (!defaultData || Object.keys(defaultData).length === 0) return
 
-    form.resetAndFill(defaultData)
+    const existing = Object.fromEntries(Object.entries(form.data()).filter(([, value]) => value !== null && value !== undefined))
+    form.resetAndFill({ ...defaultData, ...existing })
   }
 
   /**
@@ -228,7 +231,7 @@ export function useFormInitialization(formConfig, form, pendingSubmission) {
         form[field.id] = {...field.prefill}
       } 
       // Handle other fields with prefill data, only if no value is set
-      else if (field.id && form[field.id] == null && field.prefill) {
+      else if (field.id && form[field.id] == null && field.prefill !== undefined && field.prefill !== null) {
         form[field.id] = field.prefill
       }
     })

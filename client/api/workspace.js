@@ -28,6 +28,7 @@ export const workspaceApi = {
 
   // Custom domains
   customDomains: {
+    verification: (workspaceId, domain) => apiService.get(`${BASE_PATH}/${workspaceId}/custom-domains/verification`, { query: { domain } }),
     update: (workspaceId, data) => apiService.put(`${BASE_PATH}/${workspaceId}/custom-domains`, data)
   }
 }

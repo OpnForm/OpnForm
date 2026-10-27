@@ -65,10 +65,10 @@ export function useWorkspaces() {
     return useMutation({
       mutationFn: (data) => workspaceApi.update(toValue(workspaceId), data),
       onSuccess: (response) => {
-        const id = toValue(workspaceId)
         const updatedWorkspace = response.workspace
+        const id = updatedWorkspace.id
         // Update individual item cache
-        queryClient.setQueryData(['workspaces', id], response)
+        queryClient.setQueryData(['workspaces', id], updatedWorkspace)
         
         // Update in list cache
         queryClient.setQueryData(['workspaces', 'list'], (old) => {
@@ -112,17 +112,25 @@ export function useWorkspaces() {
   // Custom domains mutation
   const updateCustomDomains = (workspaceId, options = {}) => {
     return useMutation({
-      mutationFn: (data) => workspaceApi.customDomains.update(workspaceId, data),
+      mutationFn: ({ workspaceId: requestedId, ...data }) => workspaceApi.customDomains.update(requestedId ?? toValue(workspaceId), data),
       onSuccess: (updatedWorkspace) => {
         // Update individual workspace cache with custom domain info
-        queryClient.setQueryData(['workspaces', workspaceId], (old) => {
+        queryClient.setQueryData(['workspaces', updatedWorkspace.id], (old) => {
           if (!old) return updatedWorkspace
           return { ...old, ...updatedWorkspace }
+        })
+        queryClient.setQueryData(['workspaces', 'list'], (old) => {
+          if (!Array.isArray(old)) return old
+          return old.map(workspace => workspace.id === updatedWorkspace.id ? { ...workspace, ...updatedWorkspace } : workspace)
         })
       },
       ...options
     })
   }
+
+  const customDomainVerification = () => useMutation({
+    mutationFn: ({ workspaceId, domain }) => workspaceApi.customDomains.verification(workspaceId, domain),
+  })
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ['workspaces'] })
@@ -150,10 +158,11 @@ export function useWorkspaces() {
     remove,
     leave,
     updateCustomDomains,
+    customDomainVerification,
     
     // Utilities
     invalidate,
     invalidateAll,
     getWorkspaceById,
   }
-} 
+}

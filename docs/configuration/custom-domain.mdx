@@ -54,6 +54,24 @@ does not load new environment values. See [Updating Environment Variables](./env
     until you save a new one.
 </Note>
 
+## Workspace custom domains
+
+Adding a new domain in **Workspace Settings → Domains** requires proof that
+you control its DNS. A CNAME pointing to OpnForm alone does not establish
+ownership.
+
+1. Enter the domain and click **Add**.
+2. Copy the displayed **TXT name / host** and **TXT value** into your DNS
+   provider. The name starts with `_opnform-verification.`.
+3. Keep the CNAME required by your hosting setup. The TXT record is additional.
+4. Wait for DNS propagation, then click **Save Domain(s)**. If verification
+   fails, the domain list is not saved; check the record and retry.
+
+The verification value belongs to that domain and workspace. A value from
+another workspace or domain cannot be reused. You can remove a domain without
+a DNS check. Domains already saved before this requirement remain active;
+they are not retroactively certified as verified.
+
 import CloudVersion from "/snippets/cloud-version.mdx";
 
 <CloudVersion/>

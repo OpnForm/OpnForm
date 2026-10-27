@@ -46,9 +46,22 @@ it('preserves legacy AWS S3 signing when no custom endpoint is configured', func
 it('fails before signing when no bucket is configured', function () {
     config()->set('filesystems.disks.s3.bucket', null);
 
-    expect(fn () => app(SignedStorageUrlController::class)->store(new Request()))
-        ->toThrow(InvalidArgumentException::class);
+    $this->postJson('/vapor/signed-storage-url')->assertStatus(503);
 });
+
+it('rejects a different or malformed bucket before signing an anonymous upload', function ($bucket) {
+    $this->postJson('/vapor/signed-storage-url', ['bucket' => $bucket])
+        ->assertUnprocessable()->assertJsonValidationErrors('bucket');
+})->with([
+    'different bucket' => ['other-fixture'],
+    'array' => [['bucket' => 'fixture-documents']],
+    'number' => [123],
+]);
+
+it('accepts the configured bucket and blank legacy bucket values', function ($bucket) {
+    $this->postJson('/vapor/signed-storage-url', ['bucket' => $bucket])
+        ->assertCreated()->assertJsonPath('bucket', 'fixture-documents');
+})->with(['fixture-documents', '', null]);
 
 it('returns cache metadata with canonically ordered signed headers and independent upload expiry', function () {
     $data = app(SignedStorageUrlController::class)->store(new Request([

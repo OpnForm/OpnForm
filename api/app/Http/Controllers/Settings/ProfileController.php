@@ -3,8 +3,11 @@
 namespace App\Http\Controllers\Settings;
 
 use App\Http\Controllers\Controller;
+use App\Rules\SafeAccountName;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Validation\ValidationException;
@@ -19,17 +22,20 @@ class ProfileController extends Controller
     public function update(Request $request)
     {
         $user = $request->user();
+        if (is_string($request->input('email'))) {
+            $request->merge(['email' => strtolower($request->input('email'))]);
+        }
         $requestedEmail = $request->input('email');
         $emailChanged = is_string($requestedEmail)
             && strtolower($requestedEmail) !== strtolower($user->email);
 
         $rules = [
-            'name' => 'required',
+            'name' => ['bail', 'required', 'string', 'max:255', new SafeAccountName()],
             'email' => 'required|email|unique:users,email,' . $user->id,
         ];
 
         if ($emailChanged && $user->canChangeEmail()) {
-            $rules['current_password'] = ['required', 'string'];
+            $rules['current_password'] = ['required', 'string', 'max:1024'];
         }
 
         $this->validate($request, $rules);
@@ -67,9 +73,15 @@ class ProfileController extends Controller
             RateLimiter::hit($key, 3600); // 1 hour
         }
 
-        return tap($user)->update([
-            'name' => $request->name,
-            'email' => strtolower($request->email),
-        ]);
+        return DB::transaction(function () use ($request, $user, $emailChanged) {
+            if ($emailChanged) {
+                Password::broker()->deleteToken($user);
+            }
+
+            return tap($user)->update([
+                'name' => $request->name,
+                'email' => strtolower($request->email),
+            ]);
+        });
     }
 }

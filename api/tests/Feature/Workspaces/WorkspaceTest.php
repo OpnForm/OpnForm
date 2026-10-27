@@ -91,6 +91,9 @@ it('can update workspace', function () {
 });
 
 it('can save custom domain for workspace', function () {
+    $this->mock(\App\Service\CustomDomainOwnershipService::class, function ($mock) {
+        $mock->shouldReceive('verify')->andReturnTrue();
+    });
     $user = $this->actingAsProUser();
     $workspace = $this->createUserWorkspace($user);
 
@@ -106,7 +109,7 @@ it('can save custom domain for workspace', function () {
 it('can set custom domain to null', function () {
     $user = $this->actingAsProUser();
     $workspace = $this->createUserWorkspace($user);
-    $workspace->update(['custom_domains' => ['example.com']]);
+    $workspace->forceFill(['custom_domains' => ['example.com']])->save();
 
     $this->putJson(route('open.workspaces.save-custom-domains', $workspace), [
         'custom_domains' => []
@@ -139,6 +142,9 @@ it('validates custom domain format', function () {
 });
 
 it('prevents duplicate custom domains across workspaces', function () {
+    $this->mock(\App\Service\CustomDomainOwnershipService::class, function ($mock) {
+        $mock->shouldReceive('verify')->andReturnTrue();
+    });
     $user = $this->actingAsProUser();
     $workspace1 = $this->createUserWorkspace($user);
     $workspace2 = $this->createUserWorkspace($user);
@@ -162,7 +168,7 @@ it('prevents duplicate custom domains across workspaces', function () {
 it('allows same workspace to update its own custom domain', function () {
     $user = $this->actingAsProUser();
     $workspace = $this->createUserWorkspace($user);
-    $workspace->update(['custom_domains' => ['example.com']]);
+    $workspace->forceFill(['custom_domains' => ['example.com']])->save();
 
     // Same workspace should be able to "update" to the same domain
     $this->putJson(route('open.workspaces.save-custom-domains', $workspace), [
@@ -175,6 +181,9 @@ it('allows same workspace to update its own custom domain', function () {
 });
 
 it('accepts multi-part TLD domains like .co.uk', function () {
+    $this->mock(\App\Service\CustomDomainOwnershipService::class, function ($mock) {
+        $mock->shouldReceive('verify')->andReturnTrue();
+    });
     $user = $this->actingAsProUser();
     $workspace = $this->createUserWorkspace($user);
 
