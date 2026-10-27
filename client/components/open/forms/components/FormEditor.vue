@@ -41,6 +41,8 @@
         :back-button="backButton"
         :update-form-loading="form.busy"
         :save-button-class="saveButtonClass"
+        :is-edit="isEdit"
+        :has-unsaved-changes="hasUnsavedChanges"
         @go-back="goBack"
         @save-form="saveForm"
       >
@@ -151,6 +153,10 @@ import { normalizeFormSaveErrors } from '~/lib/forms/form-save-errors'
 
 // Define props
 const props = defineProps({
+  hasUnsavedChanges: {
+    type: Boolean,
+    default: null,
+  },
   isEdit: {
     required: false,
     type: Boolean,

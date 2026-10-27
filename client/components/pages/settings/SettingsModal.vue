@@ -4,7 +4,7 @@
     :ui="{
       content: 'max-w-5xl h-[80vh] overflow-hidden',
     }"
-    title=""
+    :title="title"
     :content="{
       onPointerDownOutside: (event) => { if (event.target?.closest('.crisp-client')) {return event.preventDefault()}}
     }"
@@ -78,6 +78,9 @@
               </div>
             </div>
           </div>
+          <div v-if="$slots.footer" class="shrink-0 border-t border-neutral-200 p-4">
+            <slot name="footer" />
+          </div>
         </main>
       </div>
     </template>
@@ -96,6 +99,10 @@ const emit = defineEmits(['close', 'item-changed', 'update:activeTab'])
 const registeredPages = ref([])
 
 const props = defineProps({
+  title: {
+    type: String,
+    default: 'Settings'
+  },
   modelValue: {
     type: Boolean,
     default: false
@@ -299,4 +306,4 @@ provide('unregisterModalPage', unregisterModalPage)
 ul::-webkit-scrollbar {
   display: none;
 }
-</style> 
+</style>

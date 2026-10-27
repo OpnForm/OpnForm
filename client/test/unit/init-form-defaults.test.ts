@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { setFormDefaults } from '../../composables/forms/initForm.js'
+import { applyEditorFieldDefaults, setFormDefaults } from '../../composables/forms/initForm.js'
 
 describe('setFormDefaults', () => {
   it('does not invent respondent-facing field labels', () => {
@@ -28,5 +28,20 @@ describe('setFormDefaults', () => {
       { id: 'kept', name: 'Kept', type: 'text' },
     ])
     expect(setFormDefaults({ properties: 'malformed' }).properties).toEqual([])
+  })
+})
+
+describe('editor field initialization', () => {
+  it('does not change a clean snapshot when fields mount', () => {
+    const fields = applyEditorFieldDefaults([{ id: 'answer', name: 'Answer', type: 'text' }])
+    const snapshot = JSON.stringify(fields)
+
+    expect(fields[0]).toMatchObject({ placeholder: null, prefill: null, help: null, help_position: 'below_input' })
+    expect(JSON.stringify(applyEditorFieldDefaults(fields))).toBe(snapshot)
+  })
+
+  it('preserves configured field options', () => {
+    const fields = [{ id: 'answer', placeholder: 'Type here', prefill: 'Example', help: 'Required details', help_position: 'above_input' }]
+    expect(applyEditorFieldDefaults(structuredClone(fields))).toEqual(fields)
   })
 })

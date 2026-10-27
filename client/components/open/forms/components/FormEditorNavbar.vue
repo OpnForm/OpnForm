@@ -35,6 +35,9 @@
       v-model="settingsModal"
       v-model:active-tab="settingsModalActiveTab"
       :computed-variable-edit-request="computedVariableEditRequest"
+      :saving="updateFormLoading"
+      :save-label="isEdit ? 'Save and close' : 'Done'"
+      @save="saveSettings"
       @close="settingsModal = false"
     />
 
@@ -90,32 +93,43 @@
         </UTooltip>
       </TrackClick>
       <slot name="before-save" />
-      <UTooltip arrow :content="{side: 'bottom'}">
-        <template #content>
-          <UKbd
-            value="meta"
-            size="xs"
-          />
-          <UKbd
-            value="s"
-            size="xs"
-          />
-        </template>
-        <TrackClick
-          name="save_form_click"
+      <div class="flex shrink-0 flex-col items-end">
+        <UTooltip arrow :content="{side: 'bottom'}">
+          <template #content>
+            <UKbd
+              value="meta"
+              size="xs"
+            />
+            <UKbd
+              value="s"
+              size="xs"
+            />
+          </template>
+          <TrackClick
+            name="save_form_click"
+          >
+            <UButton
+              color="primary"
+              class="px-8 md:px-4 py-2"
+              :loading="updateFormLoading"
+              :class="saveButtonClass"
+              data-testid="save-form-button"
+              icon="i-ic-outline-save"
+              @click="emit('save-form')"
+              :label="isEdit || form.visibility !== 'public' ? 'Save Changes' : 'Publish Form'"
+            />
+          </TrackClick>
+        </UTooltip>
+        <span
+          v-if="hasUnsavedChanges !== null"
+          role="status"
+          class="mt-1 text-xs whitespace-nowrap"
+          :class="hasUnsavedChanges ? 'text-amber-700' : 'text-neutral-500'"
+          data-testid="form-save-status"
         >
-          <UButton
-            color="primary"
-            class="px-8 md:px-4 py-2"
-            :loading="updateFormLoading"
-            :class="saveButtonClass"
-            data-testid="save-form-button"
-            icon="i-ic-outline-save"
-            @click="emit('save-form')"
-            :label="form.visibility === 'public' ? 'Publish Form' : 'Save Changes'"
-          />
-        </TrackClick>
-      </UTooltip>
+          {{ updateFormLoading ? 'Saving changes…' : hasUnsavedChanges ? 'Unsaved changes' : 'All changes saved' }}
+        </span>
+      </div>
     </div>
   </div>
 </template>
@@ -130,7 +144,15 @@ import { useFeatureFlag } from '~/composables/useFeatureFlag'
 
 const FormSettingsModal = defineAsyncComponent(() => import('~/components/open/forms/components/form-components/FormSettingsModal.vue'))
 
-defineProps({
+const props = defineProps({
+  isEdit: {
+    type: Boolean,
+    default: false
+  },
+  hasUnsavedChanges: {
+    type: Boolean,
+    default: null
+  },
   backButton: {
     type: Boolean,
     default: true
@@ -160,6 +182,14 @@ const form = computed(() => workingFormStore.content)
 const { activeTab } = storeToRefs(workingFormStore)
 
 const settingsModal = ref(false)
+function saveSettings() {
+  if (props.isEdit) {
+    emit('save-form')
+  } else {
+    settingsModal.value = false
+  }
+}
+
 const settingsModalActiveTab = ref('general')
 const computedVariableEditRequest = ref(null)
 let computedVariableEditRequestId = 0

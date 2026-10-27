@@ -5,6 +5,7 @@
       v-if="!error"
       ref="editor"
       :is-edit="true"
+      :has-unsaved-changes="hasUnsavedChanges"
       @on-save="formInitialHash = null"
       :loading="formsLoading"
     />
@@ -35,7 +36,7 @@
 <script setup>
 
 import FormEditor from "~/components/open/forms/components/FormEditor.vue"
-import { setFormDefaults } from "~/composables/forms/initForm.js"
+import { applyEditorFieldDefaults, setFormDefaults } from "~/composables/forms/initForm.js"
 import { hash } from "~/lib/utils.js"
 
 // Composables
@@ -65,6 +66,7 @@ const errorMessage = computed(() => {
 
 const updatedForm = storeToRefs(workingFormStore).content
 const formInitialHash = ref(null)
+const hasUnsavedChanges = computed(() => Boolean(isDirty()))
 
 function isDirty() {
   try {
@@ -84,7 +86,9 @@ function initUpdatedForm() {
     return
   }
 
-  updatedForm.value = useForm(setFormDefaults(form.value))
+  const formData = setFormDefaults(form.value)
+  formData.properties = applyEditorFieldDefaults(formData.properties)
+  updatedForm.value = useForm(formData)
   if (!updatedForm.value) {
     return
   }
@@ -108,25 +112,24 @@ watch(
 )
 
 onBeforeRouteLeave((to, from, next) => {
-  if (isDirty()) {
-    if (window.confirm('Changes you made may not be saved. Are you sure want to leave?')) {
-      window.onbeforeunload = null
-      next()
-    } else {
-      next(false)
-    }
+  if (hasUnsavedChanges.value && !window.confirm('You have unsaved changes. Leave without saving?')) {
+    return next(false)
   }
   next()
 })
 
-onBeforeMount(() => {
-  if (import.meta.client) {
-    window.onbeforeunload = () => {
-      if (isDirty()) {
-        return false
-      }
-    }
+function warnBeforeUnload(event) {
+  if (hasUnsavedChanges.value) {
+    event.preventDefault()
+    event.returnValue = ''
   }
+}
+
+onMounted(() => {
+  window.addEventListener('beforeunload', warnBeforeUnload)
+})
+onBeforeUnmount(() => {
+  window.removeEventListener('beforeunload', warnBeforeUnload)
 })
 
 useOpnSeoMeta({

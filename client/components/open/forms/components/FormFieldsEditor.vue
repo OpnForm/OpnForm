@@ -127,6 +127,7 @@
 </template>
 
 <script>
+import { applyEditorFieldDefaults } from '~/composables/forms/initForm.js'
 import { VueDraggable } from 'vue-draggable-plus'
 import EditableTag from '~/components/app/EditableTag.vue'
 import BlockTypeIcon from './BlockTypeIcon.vue'
@@ -172,15 +173,7 @@ export default {
       if (!this.form.properties) {
         return
       }
-      this.form.properties = this.form.properties.map((field) => {
-        // Add more field properties
-        field.placeholder = field.placeholder || null
-        field.prefill = field.prefill || null
-        field.help = field.help || null
-        field.help_position = field.help_position || "below_input"
-
-        return field
-      })
+      this.form.properties = applyEditorFieldDefaults(this.form.properties)
     },
     openAddFieldSidebar () {
       this.workingFormStore.openAddFieldSidebar(null)

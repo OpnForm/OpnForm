@@ -3,6 +3,17 @@ import { isReadonly } from 'vue'
 import { generateUUID } from "../../lib/utils.js"
 export const DEFAULT_COLOR = '#3B82F6'
 
+// Apply these before taking an editor's clean snapshot as well as on mount.
+export function applyEditorFieldDefaults(properties) {
+  return properties.map((field) => {
+    field.placeholder = field.placeholder || null
+    field.prefill = field.prefill || null
+    field.help = field.help || null
+    field.help_position = field.help_position || 'below_input'
+    return field
+  })
+}
+
 export const initForm = (defaultValue = {}, withDefaultProperties = false) => {
   return useForm({
     title: "Contact Form",

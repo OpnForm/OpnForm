@@ -2,6 +2,7 @@
   <SettingsModal
     v-model="isOpen"
     v-model:activeTab="activeTab"
+    title="Form settings"
     @close="closeModal"
   >
     <SettingsModalPage
@@ -60,6 +61,18 @@
       <ComputedVariablesTab :edit-request="computedVariableEditRequest" />
     </SettingsModalPage>
 
+    <template #footer>
+      <div class="flex items-center justify-end gap-3">
+        <UButton label="Close" color="neutral" variant="outline" @click="closeModal" />
+        <UButton
+          :label="saveLabel"
+          :loading="saving"
+          icon="i-ic-outline-save"
+          data-testid="save-form-settings-button"
+          @click="emit('save')"
+        />
+      </div>
+    </template>
   </SettingsModal>
 </template>
 
@@ -75,9 +88,17 @@ const FormCustomCode = defineAsyncComponent(() => import('~/components/open/form
 const ComputedVariablesTab = defineAsyncComponent(() => import('~/components/open/forms/components/computed-variables/ComputedVariablesTab.vue'))
 const FormAnalyticsSettings = defineAsyncComponent(() => import('~/components/open/forms/components/form-components/FormAnalyticsSettings.vue'))
 
-const emit = defineEmits(['close', 'update:activeTab'])
+const emit = defineEmits(['close', 'update:activeTab', 'save'])
 
 const props = defineProps({
+  saving: {
+    type: Boolean,
+    default: false
+  },
+  saveLabel: {
+    type: String,
+    default: 'Done'
+  },
   modelValue: {
     type: Boolean,
     default: false
