@@ -1,5 +1,5 @@
 // Global installation configuration: never forward cookies, tokens or custom domains.
-export default defineCachedEventHandler(() => {
+const getFeatureFlags = defineCachedFunction(() => {
   const config = useRuntimeConfig()
 
   return $fetch('/content/feature-flags', {
@@ -20,5 +20,14 @@ export default defineCachedEventHandler(() => {
   name: 'feature-flags',
   // Arbitrary public query parameters must not create a new upstream fetch.
   getKey: () => 'global',
+  // Registration clears Laravel's cache, but cannot invalidate this Nitro cache.
+  // Keep checking the API until setup finishes, then cache normally.
+  validate: (entry) => entry.value !== undefined && entry.value.setup_required !== true,
   swr: true
+})
+
+export default defineEventHandler((event) => {
+  // Browsers and reverse proxies must not retain the pre-registration flag.
+  setHeader(event, 'cache-control', 'no-store')
+  return getFeatureFlags()
 })
