@@ -39,7 +39,7 @@ describe('self-hosted public middleware', () => {
   function prepare({ selfHosted = true, setupRequired = false } = {}) {
     vi.stubGlobal('defineNuxtRouteMiddleware', (handler: unknown) => handler)
     vi.stubGlobal('useFeatureFlag', (key: string) => key === 'self_hosted' ? selfHosted : setupRequired)
-    vi.stubGlobal('useRuntimeConfig', () => ({ public: { selfHosted: {} } }))
+    vi.stubGlobal('useRuntimeConfig', () => ({ public: {} }))
     const navigate = vi.fn()
     vi.stubGlobal('navigateTo', navigate)
     return navigate

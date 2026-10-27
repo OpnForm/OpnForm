@@ -1,12 +1,12 @@
 import { httpUrl } from '~/lib/self-hosted-public.js'
 
 export function useSelfHostedPresentation() {
-  const config = useRuntimeConfig().public.selfHosted
+  const config = useRuntimeConfig().public
 
   return {
-    name: config?.name || 'OpnForm',
-    logoUrl: httpUrl(config?.logoUrl) || '/img/logo.svg',
-    privacyPolicyUrl: httpUrl(config?.privacyPolicyUrl),
-    termsUrl: httpUrl(config?.termsUrl),
+    name: config.selfHostedName || 'OpnForm',
+    logoUrl: httpUrl(config.selfHostedLogoUrl) || '/img/logo.svg',
+    privacyPolicyUrl: httpUrl(config.selfHostedPrivacyPolicyUrl),
+    termsUrl: httpUrl(config.selfHostedTermsUrl),
   }
 }

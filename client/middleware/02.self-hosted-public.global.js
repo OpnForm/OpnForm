@@ -5,7 +5,8 @@ export default defineNuxtRouteMiddleware((to) => {
 
   const config = useRuntimeConfig().public
   const redirect = getSelfHostedPublicRedirect(to.path, {
-    ...config.selfHosted,
+    privacyPolicyUrl: config.selfHostedPrivacyPolicyUrl,
+    termsUrl: config.selfHostedTermsUrl,
     rootRedirectUrl: config.rootRedirectUrl,
   })
 
