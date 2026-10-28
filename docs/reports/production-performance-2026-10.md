@@ -18,6 +18,8 @@ Marketing pages defer private user/workspace reads until hydration finishes. Pro
 
 The live demo activates when at least 35% of its reserved frame is visible and keeps its minimum height reserved. Only the selected classic or focused renderer is imported. Login and registration dialogs load when opened. Featurebase loads its SDK on the first feedback or changelog interaction, including an intent queued before the vendor component mounts; Clarity is imported only when its existing session and iframe conditions allow it. Images below the fold load lazily, the large footer texture is resized and compressed, and Euclid uses WOFF2 with all original characters retained.
 
+Product illustrations (`feature-1`, `feature-2`, `feature-3` and `product-cover-half`) now use lossless WebP at their original dimensions, with exact preservation of every decoded RGBA pixel and any embedded ICC profile. Their combined full-size weight is 204,346 bytes instead of 385,738 bytes for the source PNGs (47.0% smaller). The 480/640-pixel responsive variants of `feature-3` are also encoded losslessly after Lanczos resizing; resizing remains an intentional spatial reduction, while the original-size variant remains available for higher-density displays. The decorative footer texture retains its earlier lossy encoding and 1000 × 1000 dimensions.
+
 Hashed Nuxt assets have a one-year immutable cache. Mutable images and fonts use one hour; `/_nuxt/builds/latest.json` is not retained. Error documents and authentication pages are not given public caching. Old hashed assets must remain available during release transitions.
 
 ## Reproducing measurements
@@ -82,3 +84,13 @@ The JhumanJ Code Review skill was run in a read-only subagent. Round one found t
 The quota regressions instantiate the production HTTP Kernel and call the real public routes, checking bounded renderer reads, forged credentials, the shared ordinary 100/minute bucket and the independent external 60/minute limiter. Existing signed-download and export regressions also exercise the new middleware name. Authentication tests suspend the module import while the session changes. Mounted navigation/vendor tests exercise changelog-first intent, delayed vendor mount/user data and download retries.
 
 These review fixes follow the benchmark source snapshot identified above. Full frontend/backend suites, lint and bundle guards were rerun for the updated application; the earlier measured timings remain a snapshot of their explicitly identified revision.
+
+## Lossless product-image refinement
+
+This refinement changes only the six product-image WebP files and this report. Decoded full-size RGBA buffers were compared byte-for-byte to the original PNGs. Responsive variants were compared byte-for-byte to their resized source references; dimensions, alpha and any embedded color profile were preserved. The footer file was verified unchanged by SHA-256.
+
+Chromium decoded all six rebuilt assets successfully. Canvas comparison found identical opaque content and at most one 8-bit level of difference at semi-transparent edges when composited on white; this is separate from the exact RGBA equality of the encoded source images. Lint, production build, unchanged JavaScript budgets and the independent image review passed.
+
+The earlier benchmark table identifies its own application revision and predates this quality refinement. Its Lighthouse timings remain tied to that earlier revision; the fresh network check below validates the lossless assets separately. The four full-size files add 115,928 bytes compared with the earlier lossy WebPs; actual transfer depends on the responsive variant selected and which lazy images are loaded.
+
+A fresh HTTP/2 mobile network check with the rebuilt lossless assets measured **511,423 bytes / 56 initial script responses** anonymously and **537,182 bytes / 68 initial script responses** with the synthetic session. After viewing the demo, script counts were 64 and 75, respectively. Both browser scenarios completed without JavaScript exceptions. Initial transfer still rounds to 0.51 MB and 0.54 MB; larger image payloads are deferred. No new Lighthouse score is claimed for this asset-only refinement. Reproduce with `PERF_HTTP2=1 node client/scripts/measure-landing-performance.mjs after-lossless client/.output`.
