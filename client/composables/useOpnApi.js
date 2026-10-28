@@ -78,6 +78,7 @@ export function getOpnRequestsOptions(request, opts) {
           // A deferred read from an earlier session must not expire a newer login.
           if (requestAuthStore.token !== requestToken) return
           const authFlow = await import('~/composables/useAuthFlow')
+          if (requestAuthStore.token !== requestToken) return
           const { handleTokenExpiry } = nuxtApp.runWithContext(() => authFlow.useAuthFlow())
           await handleTokenExpiry()
         }

@@ -8,7 +8,7 @@ The hosted release controller sets the frontend allocation to 2 GiB and the V8 o
 
 Every SSR request owns its QueryClient. Server queries use an infinite garbage-collection interval so that timer closures do not retain completed requests. Rendering dehydrates the response state and clears the request's query cache; error handling clears it too. Browser caches retain their existing ten-minute lifetime. No shared HTML cache is introduced.
 
-Public API reads authenticated by `FRONT_API_SECRET` have a separate bounded quota (`SSR_READS_PER_MINUTE`, default 6000 per renderer IP). Only GET requests to public form details, feature flags and plans qualify. This does not grant permissions or change validation, password protection, private resources, submissions, uploads or ordinary browser quotas. No forwarded client-IP header is trusted for this exception.
+Public API reads authenticated by `FRONT_API_SECRET` have a separate bounded quota (`SSR_READS_PER_MINUTE`, default 6000 per renderer IP). Only GET requests to public form details, feature flags and plans qualify. This does not grant permissions or change validation, password protection, private resources, submissions, uploads or ordinary browser quotas. The production `api` middleware group uses `throttle:internal-api`, preserving its shared ordinary 100/minute quota; the separate external API limiter remains 60/minute. Export, signed-download and other dedicated-limiter exemptions are preserved. No forwarded client-IP header is trusted for this exception.
 
 Hosted backend roles compile configuration, routes, events and Blade views after their runtime environment is injected. A failed cache command stops startup. Runtime secrets are stored privately, and no shared Redis flush is performed.
 
@@ -16,7 +16,7 @@ Hosted backend roles compile configuration, routes, events and Blade views after
 
 Marketing pages defer private user/workspace reads until hydration finishes. Protected app routes retain their authentication bootstrap. Public respondent pages continue to skip it.
 
-The live demo activates when at least 35% of its reserved frame is visible and keeps its minimum height reserved. Only the selected classic or focused renderer is imported. Login and registration dialogs load when opened. Feedback loads its SDK on first feedback interaction; Clarity is imported only when its existing session and iframe conditions allow it. Images below the fold load lazily, the large footer texture is resized and compressed, and Euclid uses WOFF2 with all original characters retained.
+The live demo activates when at least 35% of its reserved frame is visible and keeps its minimum height reserved. Only the selected classic or focused renderer is imported. Login and registration dialogs load when opened. Featurebase loads its SDK on the first feedback or changelog interaction, including an intent queued before the vendor component mounts; Clarity is imported only when its existing session and iframe conditions allow it. Images below the fold load lazily, the large footer texture is resized and compressed, and Euclid uses WOFF2 with all original characters retained.
 
 Hashed Nuxt assets have a one-year immutable cache. Mutable images and fonts use one hour; `/_nuxt/builds/latest.json` is not retained. Error documents and authentication pages are not given public caching. Old hashed assets must remain available during release transitions.
 
@@ -66,11 +66,19 @@ The static landing import graph is 357.1 KiB gzip across 47 files. It differs fr
 
 ## Validation and review
 
-- Frontend: 110 files / 1,210 tests passed; full ESLint and production build passed. Built-server checks verify Brotli, immutable hashed assets, mutable-asset revalidation, uncached errors and private login responses.
-- Backend: 2,563 tests / 20,018 assertions passed, with two skips and two existing deprecation notices. Full Pint passed. The changed provider passes scoped PHPStan.
+- Frontend: 111 files / 1,214 tests passed; full ESLint and production build passed. Built-server checks verify Brotli, immutable hashed assets, mutable-asset revalidation, uncached errors and private login responses.
+- Backend: 2,567 tests / 20,343 assertions passed, with two skips and two existing deprecation notices. Full Pint passed. The changed provider passes scoped PHPStan.
 - Full PHPStan reports three existing relation diagnostics in `WorkspaceController`, `FormListStatsLoader` and `McpFormManagementService`. The unmodified baseline was analyzed separately and reports the same three diagnostics; this PR introduces none.
 - Deployment: 15 controller contract tests and 21 disposable runtime scenarios passed against the actual PHP 8.3 application image. These cover runtime cache generation and permissions, PostgreSQL, Redis, real synthetic HTTP login/submission/upload, workers, expiry and shutdown. Disposable containers and networks were removed.
 - Production-build browser tests against the isolated seeded stack passed login, logout/protected redirects, classic/focused creation, public field rendering and a mixed-field submission. All 25 SSR initialization/draft/conditional-visibility browser tests also passed (31 browser cases total), including classic/focused hydration, numeric controls, computed values, restored drafts, delayed synchronization, URL prefills and auto-submission.
 - Review covered query dehydration and cleanup, private-route bootstrap, stale authentication responses, first-use/remount/error handling for feedback, lazy dialogs and demo, image dimensions/font character coverage, cache headers and runtime allocation. Concrete findings were corrected and the diff was reviewed again.
 
 No production deployment, DNS change, production data mutation or merge was performed. Runtime headroom and higher SSR quota take effect only through a future authorized release. Real production traffic, external vendors and API latency still require verification after that release; the local score must not be represented as a production score.
+
+## Independent review loop
+
+The JhumanJ Code Review skill was run in a read-only subagent. Round one found three issues: the renderer quota was registered on the external rather than internal middleware path, a new login could still be expired during an authentication-module import, and a first changelog click did not load the vendor SDK. All three were corrected with regression tests. Round two found no remaining concrete findings.
+
+The quota regressions instantiate the production HTTP Kernel and call the real public routes, checking bounded renderer reads, forged credentials, the shared ordinary 100/minute bucket and the independent external 60/minute limiter. Existing signed-download and export regressions also exercise the new middleware name. Authentication tests suspend the module import while the session changes. Mounted navigation/vendor tests exercise changelog-first intent, delayed vendor mount/user data and download retries.
+
+These review fixes follow the benchmark source snapshot identified above. Full frontend/backend suites, lint and bundle guards were rerun for the updated application; the earlier measured timings remain a snapshot of their explicitly identified revision.

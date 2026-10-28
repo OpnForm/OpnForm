@@ -17,6 +17,8 @@ const scriptLoaded = ref(import.meta.client && document.getElementById('featureb
 let disposed = false
 let setupQueued = false
 const widgetReady = ref(false)
+const changelogReady = ref(false)
+const changelogRequested = useState('featurebase-changelog-requested', () => false)
 const feedbackButton = ref(null)
 let feedbackRequested = false
 let setupQueue = []
@@ -44,6 +46,7 @@ const resetFailedSetup = (event) => {
   feedbackRequested = false
   setupQueue = []
   setupQueued = false
+  changelogRequested.value = false
 }
 
 const loadScript = () => {
@@ -95,6 +98,10 @@ const setupForUser = () => {
     alwaysShow: true,
     fullscreenPopup: true,
     usersName: user.value?.name,
+  }, (error, event) => {
+    if (disposed || error || event?.action !== 'unreadChangelogsCountChanged') return
+    changelogReady.value = true
+    openRequestedChangelog()
   })
 
   window.Featurebase("initialize_feedback_widget", {
@@ -130,9 +137,7 @@ const scheduleSetup = () => {
 }
 
 // The first feedback interaction loads the SDK; closed widgets cost no JS.
-function openFeedback() {
-  if (!user.value || isImpersonating.value || widgetReady.value) return
-  feedbackRequested = true
+function ensureSdk() {
   if (typeof window.Featurebase !== 'function') {
     window.Featurebase = function () {
       ;(window.Featurebase.q = window.Featurebase.q || []).push(arguments)
@@ -141,9 +146,28 @@ function openFeedback() {
   scheduleSetup()
 }
 
+function openFeedback() {
+  if (!user.value || isImpersonating.value || widgetReady.value) return
+  feedbackRequested = true
+  ensureSdk()
+}
+
+function openRequestedChangelog() {
+  if (!changelogRequested.value || !user.value || isImpersonating.value) return
+  if (!changelogReady.value) {
+    ensureSdk()
+    return
+  }
+  changelogRequested.value = false
+  window.Featurebase('manually_open_changelog_popup')
+}
+
+watch(changelogRequested, openRequestedChangelog, { immediate: true, flush: 'sync' })
+
 onBeforeUnmount(() => {
   disposed = true
   setupQueue = []
+  changelogRequested.value = false
   if (!scriptLoaded.value || typeof window.Featurebase !== 'function') return
   window.Featurebase('destroy_feedback_widget')
   window.Featurebase('destroy_changelog_widget')
@@ -152,7 +176,9 @@ onBeforeUnmount(() => {
 watch(
   user,
   (val) => {
-    if (val && scriptLoaded.value) {
+    if (val && changelogRequested.value) {
+      openRequestedChangelog()
+    } else if (val && scriptLoaded.value) {
       scheduleSetup()
     }
   },

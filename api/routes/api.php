@@ -58,23 +58,23 @@ if (config('app.self_hosted')) {
 Route::middleware('mcp.enabled')->group(function () {
     Route::prefix('agent-drafts')->name('agent-drafts.')->middleware('mcp.guest-drafts')->group(function () {
         Route::get('/preview/{draft}', [AgentFormDraftController::class, 'preview'])
-            ->withoutMiddleware('throttle:100,1')
+            ->withoutMiddleware('throttle:internal-api')
             ->middleware(['signed', 'throttle:agent-draft-preview'])
             ->name('preview');
         Route::post('/handoff/consume', [AgentFormDraftController::class, 'consume'])
-            ->withoutMiddleware('throttle:100,1')
+            ->withoutMiddleware('throttle:internal-api')
             ->middleware('throttle:agent-draft-handoff')
             ->name('handoff.consume');
         Route::get('/editor/current', [AgentFormDraftController::class, 'current'])
-            ->withoutMiddleware('throttle:100,1')
+            ->withoutMiddleware('throttle:internal-api')
             ->middleware('throttle:agent-draft-editor')
             ->name('editor.current');
         Route::put('/editor/current', [AgentFormDraftController::class, 'replace'])
-            ->withoutMiddleware('throttle:100,1')
+            ->withoutMiddleware('throttle:internal-api')
             ->middleware('throttle:agent-draft-editor')
             ->name('editor.replace');
         Route::post('/editor/claim', [AgentFormDraftController::class, 'claim'])
-            ->withoutMiddleware('throttle:100,1')
+            ->withoutMiddleware('throttle:internal-api')
             ->middleware(['auth.multi', 'throttle:30,1'])
             ->name('editor.claim');
     });
@@ -259,16 +259,16 @@ Route::group(['middleware' => 'auth.multi'], function () {
                 Route::get('/{submission_id}', [FormSubmissionController::class, 'fetch'])->name('fetch');
                 Route::put('/{submission_id}', [FormSubmissionController::class, 'update'])->name('update');
                 Route::post('/export', [FormSubmissionController::class, 'export'])
-                    ->withoutMiddleware(['throttle:100,1'])
+                    ->withoutMiddleware(['throttle:internal-api'])
                     ->middleware('throttle:export')
                     ->name('export');
                 Route::get('/export/status/{jobId}', [FormSubmissionController::class, 'exportStatus'])
-                    ->withoutMiddleware(['throttle:100,1'])
+                    ->withoutMiddleware(['throttle:internal-api'])
                     ->middleware('throttle:export-status')
                     ->name('export.status');
                 Route::get('/file/{filename}', [FormSubmissionController::class, 'submissionFile'])
                     ->middleware(['signed:relative', 'throttle:submission-files'])
-                    ->withoutMiddleware(['auth.multi', 'throttle:100,1'])
+                    ->withoutMiddleware(['auth.multi', 'throttle:internal-api'])
                     ->name('file');
                 Route::delete('/{submission_id}', [FormSubmissionController::class, 'destroy'])->name('destroy');
                 Route::post('/multi', [FormSubmissionController::class, 'destroyMulti'])->name('destroy-multi');
@@ -579,4 +579,4 @@ Route::get('caddy/ask-certificate/{secret?}', [\App\Http\Controllers\CaddyContro
     ->name('caddy.ask')->middleware(\App\Http\Middleware\CaddyRequestMiddleware::class);
 
 Route::post('/aws/sns/ses/integration-events', \App\Http\Controllers\Integrations\SesIntegrationFeedbackController::class)
-    ->withoutMiddleware(['throttle:100,1', 'throttle:150,1', 'throttle:api']);
+    ->withoutMiddleware(['throttle:internal-api', 'throttle:150,1', 'throttle:api']);
