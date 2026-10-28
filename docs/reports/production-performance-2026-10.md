@@ -43,7 +43,7 @@ The read-only production investigation found a frontend close to its 1 GiB conta
 
 ## Before and after
 
-Baseline: `3a0178856c3bb12d214de86a452b84f979ca7a98`. Both builds use the same installed dependencies, production Nitro, HTTP/2 and compression. Browser runs and Lighthouse runs are sequential, without concurrent builds or test suites. Values below are the final local runs, with decimal MB. Lighthouse is a single simulated mobile run per revision; its timings and score vary between runs.
+Baseline: `3a0178856c3bb12d214de86a452b84f979ca7a98`. Measured application source: `cef9a64cd9aa3e3950f7d4849390695145084820` (later report-only commits do not change the build). Both builds use the same installed dependencies, production Nitro, HTTP/2 and compression. Browser runs and Lighthouse runs are sequential, without concurrent builds or test suites. Values below are the final local runs, with decimal MB. Lighthouse is a single simulated mobile run per revision; its timings and score vary between runs.
 
 | Metric | Before | After |
 | --- | ---: | ---: |
@@ -51,14 +51,14 @@ Baseline: `3a0178856c3bb12d214de86a452b84f979ca7a98`. Both builds use the same i
 | Anonymous JS responses after viewing demo | 209 | 64 |
 | Anonymous initial first-party resource transfer | 8.27 MB | 0.51 MB |
 | Synthetic signed-in initial JS responses | 215 | 68 |
-| Synthetic signed-in JS responses after viewing demo | 215 | 75 |
+| Synthetic signed-in JS responses after viewing demo | 215 | 83 |
 | Synthetic signed-in initial first-party resource transfer | 7.92 MB | 0.54 MB |
 | Lighthouse performance score | 66 | 88 |
-| Lighthouse LCP | 6.27 s | 3.26 s |
-| Lighthouse TBT | 353.00 ms | 74.00 ms |
+| Lighthouse LCP | 6.27 s | 3.25 s |
+| Lighthouse TBT | 353.00 ms | 72.50 ms |
 | Lighthouse CLS | 0.040 | 0.040 |
 | V8 live heap before workload | 72.9 MB | 63.7 MB |
-| V8 live heap after 1,000 SSR form renders | 707.3 MB | 69.1 MB |
+| V8 live heap after 1,000 SSR form renders | 707.3 MB | 69.9 MB |
 
 Initial transfer includes scripts, styles, fonts and images loaded before scrolling, excluding the HTML document and blocked external vendors. It does not count every image eventually loaded down the page. Both browser scenarios rendered successfully without JavaScript exceptions; the demo and its cover were checked after scrolling. The synthetic signed-in scenario exercises deferred loading with fictional API data; real authentication is covered separately by browser tests against the isolated Laravel stack.
 
