@@ -3,6 +3,8 @@
 <script setup>
 let clarity = null
 let clarityPromise = null
+let disposed = false
+onBeforeUnmount(() => { disposed = true })
 import { useIsAuthenticated } from '~/composables/useIsAuthenticated.js'
 
 const authStore = useAuthStore()
@@ -25,7 +27,7 @@ function loadClarity() {
     throw error
   })
   return clarityPromise.then((sdk) => {
-    if (!isAuthenticated.value || isIframe || loaded.value) return
+    if (disposed || !isAuthenticated.value || isIframe || loaded.value) return
     sdk.init(projectId)
     if (user.value?.id) sdk.identify(String(user.value.id), null, null, String(user.value.id))
     loaded.value = true

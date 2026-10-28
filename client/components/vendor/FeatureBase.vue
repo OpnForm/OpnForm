@@ -39,6 +39,13 @@ const runSetupQueue = () => {
   }
 }
 
+const resetFailedSetup = (event) => {
+  event.currentTarget?.remove()
+  feedbackRequested = false
+  setupQueue = []
+  setupQueued = false
+}
+
 const loadScript = () => {
   if (scriptLoaded.value || !user.value || !featureBaseOrganization) return
   const existing = document.getElementById('featurebase-sdk')
@@ -47,6 +54,7 @@ const loadScript = () => {
       scriptLoaded.value = true
       if (!disposed) runSetupQueue()
     }, { once: true })
+    existing.addEventListener('error', resetFailedSetup, { once: true })
     return
   }
 
@@ -59,12 +67,7 @@ const loadScript = () => {
     scriptLoaded.value = true
     if (!disposed) runSetupQueue()
   }
-  script.onerror = () => {
-    script.remove()
-    feedbackRequested = false
-    setupQueue = []
-    setupQueued = false
-  }
+  script.onerror = resetFailedSetup
 }
 
 const setupForUser = () => {

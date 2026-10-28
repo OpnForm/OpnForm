@@ -66,11 +66,11 @@ The static landing import graph is 357.1 KiB gzip across 47 files. It differs fr
 
 ## Validation and review
 
-- Frontend: 109 files / 1,208 tests passed; full ESLint and production build passed. Built-server checks verify Brotli, immutable hashed assets, mutable-asset revalidation, uncached errors and private login responses.
+- Frontend: 110 files / 1,210 tests passed; full ESLint and production build passed. Built-server checks verify Brotli, immutable hashed assets, mutable-asset revalidation, uncached errors and private login responses.
 - Backend: 2,563 tests / 20,018 assertions passed, with two skips and two existing deprecation notices. Full Pint passed. The changed provider passes scoped PHPStan.
 - Full PHPStan reports three existing relation diagnostics in `WorkspaceController`, `FormListStatsLoader` and `McpFormManagementService`. The unmodified baseline was analyzed separately and reports the same three diagnostics; this PR introduces none.
 - Deployment: 15 controller contract tests and 21 disposable runtime scenarios passed against the actual PHP 8.3 application image. These cover runtime cache generation and permissions, PostgreSQL, Redis, real synthetic HTTP login/submission/upload, workers, expiry and shutdown. Disposable containers and networks were removed.
-- Production-build browser tests against the isolated seeded stack passed login, logout/protected redirects, classic/focused creation, public field rendering and a mixed-field submission.
+- Production-build browser tests against the isolated seeded stack passed login, logout/protected redirects, classic/focused creation, public field rendering and a mixed-field submission. All 25 SSR initialization/draft/conditional-visibility browser tests also passed (31 browser cases total), including classic/focused hydration, numeric controls, computed values, restored drafts, delayed synchronization, URL prefills and auto-submission.
 - Review covered query dehydration and cleanup, private-route bootstrap, stale authentication responses, first-use/remount/error handling for feedback, lazy dialogs and demo, image dimensions/font character coverage, cache headers and runtime allocation. Concrete findings were corrected and the diff was reviewed again.
 
 No production deployment, DNS change, production data mutation or merge was performed. Runtime headroom and higher SSR quota take effect only through a future authorized release. Real production traffic, external vendors and API latency still require verification after that release; the local score must not be represented as a production score.
