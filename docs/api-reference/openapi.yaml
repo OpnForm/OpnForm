@@ -1438,6 +1438,7 @@ components:
                 seo_meta:
                     type: object
                     nullable: true
+                    description: Custom page title (page_title), description (page_description), link preview image (page_thumbnail), and favicon (page_favicon). Published on cloud Pro and higher plans, on both OpnForm URLs and custom domains.
 
                 # Advanced features
                 custom_code:

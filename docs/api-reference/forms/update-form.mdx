@@ -69,6 +69,23 @@ This ensures you retain all existing form fields and don't accidentally overwrit
 **Best Practice Example:** If you only want to change form visibility, fetch the form first, update only the `visibility` field locally, then send the complete form back with all its properties intact.
 </Tip>
 
+### Custom SEO and link previews
+
+On OpnForm Cloud, Pro and higher plans can publish a custom page title, description, link preview image, and favicon on both OpnForm URLs and custom domains. Supply these settings in `seo_meta`:
+
+```json
+{
+    "seo_meta": {
+        "page_title": "Contact our team",
+        "page_description": "Send us your questions and we will get back to you.",
+        "page_thumbnail": "https://example.com/form-preview.png",
+        "page_favicon": "https://example.com/favicon.png"
+    }
+}
+```
+
+Include the required form fields described above alongside `seo_meta`. Free workspaces can save these settings for preview, but they are omitted from the public form until the workspace upgrades.
+
 ### Automatically delete old submissions
 
 Set `submission_retention_value` and `submission_retention_unit` together to permanently delete submissions after a retention period. The period is measured from each submission's last update, and the cleanup runs hourly.

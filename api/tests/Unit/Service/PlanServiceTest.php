@@ -473,12 +473,13 @@ describe('Form Feature Checks', function () {
         expect($this->planService->tierHasFeature('free', 'no_branding'))->toBeFalse();
         expect($this->planService->tierHasFeature('pro', 'no_branding'))->toBeTrue();
         expect($this->planService->tierHasFeature('free', 'seo_meta'))->toBeFalse();
+        expect($this->planService->tierHasFeature('pro', 'seo_meta'))->toBeTrue();
         expect($this->planService->tierHasFeature('business', 'seo_meta'))->toBeTrue();
     });
 
     it('getRequiredTier looks up both features and form_features', function () {
         expect($this->planService->getRequiredTier('custom_smtp'))->toBe('pro');
-        expect($this->planService->getRequiredTier('seo_meta'))->toBe('business');
+        expect($this->planService->getRequiredTier('seo_meta'))->toBe('pro');
         expect($this->planService->getRequiredTier('no_branding'))->toBe('pro');
         expect($this->planService->getRequiredTier('nonexistent'))->toBeNull();
     });

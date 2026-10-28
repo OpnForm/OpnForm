@@ -243,6 +243,13 @@
                     class="w-4 h-5 text-emerald-600"
                     name="heroicons:check-20-solid"
                   />
+                  Custom SEO, link previews &amp; favicon
+                </li>
+                <li class="flex items-center gap-2.5">
+                  <Icon
+                    class="w-4 h-5 text-emerald-600"
+                    name="heroicons:check-20-solid"
+                  />
                   Custom SMTP
                 </li>
                 <li class="flex items-center gap-2.5">
@@ -379,7 +386,7 @@
                     class="w-4 h-5 text-emerald-600"
                     name="heroicons:check-20-solid"
                   />
-                  Advanced branding (CSS, fonts, favicons)
+                  Advanced branding (CSS, fonts)
                 </li>
                 <li class="flex items-center gap-2.5">
                   <Icon
@@ -866,6 +873,11 @@ const faqs = [
     question: "Can I hide the OpnForm branding?",
     answer:
       "Yes. You can remove the “Made with OpnForm” footer and add your own branding on the Pro plan or higher.",
+  },
+  {
+    question: "Can I customize my form's SEO and link preview?",
+    answer:
+      "Yes. Pro and higher plans include a custom page title, description, link preview image, and favicon. These settings work on both OpnForm URLs and custom domains.",
   },
   {
     question: "Is there a difference between monthly and yearly billing?",
