@@ -57,7 +57,7 @@ return [
 
 
         // Business
-        'branding.advanced' => 'business',  // CSS, fonts, favicons
+        'branding.advanced' => 'business',  // CSS, fonts
         'custom_code' => 'business',
         'custom_domain.wildcard' => 'business',
         'multi_user.roles' => 'business',
@@ -115,10 +115,10 @@ return [
         'redirect_url' => 'pro',
         'secret_input' => 'pro',
         'analytics' => 'pro',
+        'seo_meta' => 'pro',
 
         // Business tier features
         'custom_css' => 'business',
-        'seo_meta' => 'business',
         'enable_partial_submissions' => 'business',
         'editable_submissions' => 'pro',
         'database_fields_update' => 'business',

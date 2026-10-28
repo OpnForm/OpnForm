@@ -258,16 +258,17 @@ const PLAN_VISUALS = {
 
 const PLAN_DETAILS = {
   pro: {
-    subtitle: 'Branding control, custom domains, analytics, notifications, and core premium form tools.',
+    subtitle: 'Branding control, custom domains, SEO, analytics, notifications, and core premium form tools.',
     highlights: [
       'Remove OpnForm branding',
       'Use one custom domain',
+      'Customize SEO, link previews, and favicon',
       'Unlock analytics, summaries, and premium integrations',
     ],
     summaryLine: 'Best when you need premium publishing and conversion features.',
     features: [
       { icon: 'mdi:star-outline', title: 'Remove OpnForm branding', description: 'Publish forms without the OpnForm watermark and make the experience feel truly yours.' },
-      { icon: 'heroicons:globe-alt', title: '1 custom domain', description: 'Put forms on your own domain for a polished, trustworthy handoff.' },
+      { icon: 'heroicons:globe-alt', title: 'Custom domain & SEO', description: 'Publish on one custom domain with your own page title, description, link preview image, and favicon.' },
       { icon: 'heroicons:bell', title: 'Pro integrations', description: 'Send alerts to Slack, Discord, Telegram, and unlock the rest of the Pro workflow tools.' },
     ],
   },

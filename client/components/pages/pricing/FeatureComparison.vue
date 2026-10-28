@@ -222,6 +222,10 @@ const sections = [
         values: [false, true, true, true],
       },
       {
+        label: "Custom SEO, link previews & favicon",
+        values: [false, true, true, true],
+      },
+      {
         label: "Advanced branding (CSS/fonts)",
         values: [false, false, true, true],
       },

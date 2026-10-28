@@ -28,7 +28,10 @@ Authorization: Bearer <token>
 | visibility     | string  | Yes      | One of `public`, `draft`, or `closed`.                  |
 | language       | string  | Yes      | Two-letter ISO language code (e.g. `en`).               |
 | properties     | array   | Yes      | Array of form blocks (see `FormProperty` schema).       |
+| seo_meta       | object  | No       | Custom page title, description, link preview image, and favicon. Requires Pro or higher on OpnForm Cloud. |
 | …other fields  | mixed   | No       | See the `Form` schema for the full list of attributes.  |
+
+The `seo_meta` object accepts `page_title`, `page_description`, `page_thumbnail`, and `page_favicon`. On OpnForm Cloud, these settings are published on Pro and higher plans, on both OpnForm URLs and custom domains. Free workspaces can save them for preview, but they are omitted from the public form until the workspace upgrades.
 
 Example request:
 

@@ -7,12 +7,12 @@
             SEO & Social Sharing - Meta <PlanTag
             class="ml-2"
             feature="seo_meta"
-            upgrade-modal-title="Upgrade to Enhance Your Form's SEO"
-            upgrade-modal-description="Explore advanced SEO features in the editor on our Free plan. Upgrade to fully implement custom meta tags, Open Graph data, and improved search visibility. Boost your form's online presence and attract more respondents with our premium SEO toolkit."
+            upgrade-modal-title="Customize SEO and Link Previews with Pro"
+            upgrade-modal-description="Upgrade to Pro to publish your own page title, description, link preview image, and favicon. These settings are available on Pro and higher plans."
           />
           </h3>
           <p class="mt-1 text-sm text-neutral-500">
-            Customize the image and text that appear when you share your form on other sites (Open Graph).
+            On Pro and higher plans, customize your page title, description, link preview image, and favicon.
           </p>
         </div>
       <UButton
