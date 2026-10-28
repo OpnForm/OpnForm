@@ -334,6 +334,7 @@ try {
         await page.screenshot({ path: '.e2e/performance/debug.png' })
         throw error
       })
+    await page.waitForLoadState('networkidle')
     results.scenarios.at(-1).afterDemoJsRequests = responses.filter(
       (r) => r.type === 'script',
     ).length

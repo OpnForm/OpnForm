@@ -34,3 +34,43 @@ With `PERF_HTTP2=1`, both revisions use the same temporary loopback HTTP/2 TLS p
 The script starts a temporary loopback API with fictional data and a production Nitro server, uses clean Chrome contexts with disabled HTTP cache, a 412 × 823 viewport and CPU slowdown ×4, and compares anonymous and cookie-bearing visits. External requests are blocked; vendor network costs and real customer/API latency are outside this comparison. `PERF_CHROME_BIN` selects Chrome; otherwise it uses local Google Chrome on macOS or Playwright Chromium.
 
 Results and screenshots stay in the ignored `.e2e/performance` directory. Memory samples use a loopback-only Node inspector and explicit garbage collection before and after the workload. RSS includes process allocator high-water marks and is not a leak measurement on its own. These local results are not production Lighthouse scores.
+
+## Investigation and transferred patterns
+
+The read-only production investigation found a frontend close to its 1 GiB container limit, seven restarts and a V8 heap-out-of-memory failure. Its 1024 MiB old-space setting left no allowance for the rest of the process. Completed SSR query caches were retained for ten minutes, and public SSR reads shared the ordinary anonymous API quota, producing HTTP 429 responses. These findings explain concrete failure modes; they do not establish that every slow request has the same cause.
+
+[Raydocs #308](https://github.com/JhumanJ/raydocs/pull/308) supplied applicable patterns: mount optional tools on visibility or intent, defer private identity reads on public routes, and ignore stale authentication failures after a new login. Those patterns are adapted to OpnForm's existing query and authentication contracts.
+
+## Before and after
+
+Baseline: `3a0178856c3bb12d214de86a452b84f979ca7a98`. Both builds use the same installed dependencies, production Nitro, HTTP/2 and compression. Browser runs and Lighthouse runs are sequential, without concurrent builds or test suites. Values below are the final local runs, with decimal MB. Lighthouse is a single simulated mobile run per revision; its timings and score vary between runs.
+
+| Metric | Before | After |
+| --- | ---: | ---: |
+| Anonymous initial JS responses | 209 | 56 |
+| Anonymous JS responses after viewing demo | 209 | 64 |
+| Anonymous initial first-party resource transfer | 8.27 MB | 0.51 MB |
+| Synthetic signed-in initial JS responses | 215 | 68 |
+| Synthetic signed-in JS responses after viewing demo | 215 | 75 |
+| Synthetic signed-in initial first-party resource transfer | 7.92 MB | 0.54 MB |
+| Lighthouse performance score | 66 | 88 |
+| Lighthouse LCP | 6.27 s | 3.26 s |
+| Lighthouse TBT | 353.00 ms | 74.00 ms |
+| Lighthouse CLS | 0.040 | 0.040 |
+| V8 live heap before workload | 72.9 MB | 63.7 MB |
+| V8 live heap after 1,000 SSR form renders | 707.3 MB | 69.1 MB |
+
+Initial transfer includes scripts, styles, fonts and images loaded before scrolling, excluding the HTML document and blocked external vendors. It does not count every image eventually loaded down the page. Both browser scenarios rendered successfully without JavaScript exceptions; the demo and its cover were checked after scrolling. The synthetic signed-in scenario exercises deferred loading with fictional API data; real authentication is covered separately by browser tests against the isolated Laravel stack.
+
+The static landing import graph is 357.1 KiB gzip across 47 files. It differs from the browser's 56 script responses because runtime imports also load. CI now rejects a landing graph above 375 KiB gzip or 50 static files. Existing public-form budgets remain unchanged: classic 418.4 KiB and focused 409.0 KiB, below 425 KiB each.
+
+## Validation and review
+
+- Frontend: 109 files / 1,208 tests passed; full ESLint and production build passed. Built-server checks verify Brotli, immutable hashed assets, mutable-asset revalidation, uncached errors and private login responses.
+- Backend: 2,563 tests / 20,018 assertions passed, with two skips and two existing deprecation notices. Full Pint passed. The changed provider passes scoped PHPStan.
+- Full PHPStan reports three existing relation diagnostics in `WorkspaceController`, `FormListStatsLoader` and `McpFormManagementService`. The unmodified baseline was analyzed separately and reports the same three diagnostics; this PR introduces none.
+- Deployment: 15 controller contract tests and 21 disposable runtime scenarios passed against the actual PHP 8.3 application image. These cover runtime cache generation and permissions, PostgreSQL, Redis, real synthetic HTTP login/submission/upload, workers, expiry and shutdown. Disposable containers and networks were removed.
+- Production-build browser tests against the isolated seeded stack passed login, logout/protected redirects, classic/focused creation, public field rendering and a mixed-field submission.
+- Review covered query dehydration and cleanup, private-route bootstrap, stale authentication responses, first-use/remount/error handling for feedback, lazy dialogs and demo, image dimensions/font character coverage, cache headers and runtime allocation. Concrete findings were corrected and the diff was reviewed again.
+
+No production deployment, DNS change, production data mutation or merge was performed. Runtime headroom and higher SSR quota take effect only through a future authorized release. Real production traffic, external vendors and API latency still require verification after that release; the local score must not be represented as a production score.

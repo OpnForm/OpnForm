@@ -136,7 +136,7 @@
       <div class="relative pt-12 pb-12 sm:pb-24 px-8 lg:px-12">
         <div class="pointer-events-none absolute inset-0">
           <div
-            class="pointer-events-none absolute inset-0 bg-[url('/img/pages/ai_form_builder/background-pattern.svg')] bg-cover bg-top opacity-20"
+            class="pointer-events-none absolute inset-0 z-1 bg-[url('/img/pages/ai_form_builder/background-pattern.svg')] bg-cover bg-top opacity-20"
             aria-hidden="true"
           />
           <div
