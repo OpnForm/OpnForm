@@ -138,6 +138,39 @@ test('rejects the retired node-forge advisory instead of accepting its former ex
   assert.throws(() => evaluateNpmAudit(report, vulnerableLock, policy, '2026-10-27'), /Unreviewed affected package: node-forge/)
 })
 
+test('scopes the deepmerge review to its exact advisory, installed version, path and expiry', () => {
+  const exception = policy.exceptions.find(entry => entry.package === 'deepmerge')
+  const report = {
+    auditReportVersion: 2,
+    metadata: { vulnerabilities: { total: 6 } },
+    vulnerabilities: {
+      deepmerge: {
+        severity: 'low',
+        nodes: ['node_modules/deepmerge'],
+        via: [{ name: 'deepmerge', severity: 'low', url: exception.advisory }],
+      },
+      '@janniks/vue3-katex': { severity: 'low', nodes: ['node_modules/@janniks/vue3-katex'], via: ['deepmerge'] },
+      'vue-notion': { severity: 'low', nodes: ['node_modules/vue-notion'], via: ['@janniks/vue3-katex'] },
+      '@rollup/plugin-node-resolve': { severity: 'low', nodes: ['node_modules/@rollup/plugin-node-resolve'], via: ['deepmerge'] },
+      nitropack: { severity: 'low', nodes: ['node_modules/nitropack'], via: ['@rollup/plugin-node-resolve'] },
+      nuxt: { severity: 'low', nodes: ['node_modules/nuxt'], via: ['nitropack'] },
+    },
+  }
+  const reviewedLock = { packages: { 'node_modules/deepmerge': { version: '4.3.1' } } }
+  const result = evaluateNpmAudit(report, reviewedLock, policy, '2026-10-28')
+  assert.deepEqual(result.acceptedAdvisories, [exception.advisory])
+  assert.equal(result.affectedPackages, 6)
+  assert.throws(() => evaluateNpmAudit(report, reviewedLock, policy, '2026-11-07'), /Expired security exception: deepmerge/)
+  const changedLock = { packages: { 'node_modules/deepmerge': { version: '4.3.2' } } }
+  assert.throws(() => evaluateNpmAudit(report, changedLock, policy, '2026-10-28'), /Unreviewed vulnerable version/)
+  const changedPath = structuredClone(report)
+  changedPath.vulnerabilities.deepmerge.nodes = ['node_modules/other/node_modules/deepmerge']
+  assert.throws(() => evaluateNpmAudit(changedPath, reviewedLock, policy, '2026-10-28'), /Unreviewed advisory path/)
+  const changedAdvisory = structuredClone(report)
+  changedAdvisory.vulnerabilities.deepmerge.via[0].url = 'https://github.com/advisories/NEW'
+  assert.throws(() => evaluateNpmAudit(changedAdvisory, reviewedLock, policy, '2026-10-28'), /Unreviewed advisory/)
+})
+
 test('Amplify also audits both scopes before building, including direct cloud builds', () => {
   const amplify = parse(readFileSync(new URL('../../amplify.yml', import.meta.url), 'utf8'))
   const preBuild = amplify.frontend.phases.preBuild.commands

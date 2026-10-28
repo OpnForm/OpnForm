@@ -1,10 +1,13 @@
 {
   "affectedPackages": [
+    "@janniks/vue3-katex",
     "@nuxt/nitro-server",
     "@nuxt/vite-builder",
     "@nuxt/vite-server",
     "@nuxtjs/sitemap",
+    "@rollup/plugin-node-resolve",
     "braces",
+    "deepmerge",
     "fast-glob",
     "globby",
     "listhen",
@@ -13,9 +16,23 @@
     "nuxt",
     "nuxt-site-config",
     "nuxtseo-shared",
-    "quill"
+    "quill",
+    "vue-notion"
   ],
   "exceptions": [
+    {
+      "package": "deepmerge",
+      "advisory": "https://github.com/advisories/GHSA-gcqx-w48m-w2h4",
+      "version": "4.3.1",
+      "severity": "low",
+      "nodes": [
+        "node_modules/deepmerge"
+      ],
+      "reviewed": "2026-10-28",
+      "expires": "2026-11-06",
+      "reason": "Rollup's node-resolve merges only package-owned defaults. vue-notion is used for first-party legal pages with KaTeX disabled and no user-supplied merge options. No patched upstream release; review again before expiry.",
+      "upstreamLatest": "4.3.1"
+    },
     {
       "package": "braces",
       "advisory": "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm",
