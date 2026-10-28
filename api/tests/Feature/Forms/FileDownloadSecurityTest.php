@@ -93,7 +93,7 @@ it('keeps signed attachment requests separate from the general API quota', funct
     $this->withMiddleware(\Illuminate\Routing\Middleware\ThrottleRequests::class);
     $router = app('router');
     $middleware = $router->getMiddlewareGroups()['api'];
-    array_unshift($middleware, 'throttle:100,1');
+    array_unshift($middleware, 'throttle:internal-api');
     $router->middlewareGroup('api', $middleware);
 
     $user = $this->actingAsProUser();

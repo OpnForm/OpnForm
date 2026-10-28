@@ -4,6 +4,7 @@
 namespace App\Models {
     class Service
     {
+        public static $frontend = null;
         public $server_id = 5;
         public $uuid = 'ssssssssssssssssssssssss';
         public $server;
@@ -17,6 +18,11 @@ namespace App\Models {
             $this->docker_compose_raw = json_encode(['services' => array_fill_keys(
                 ['api', 'frontend', 'jobs', 'scheduler', 'migrate'], ['image' => 'previous-image']
             )]);
+            if (self::$frontend !== null) {
+                $raw = json_decode($this->docker_compose_raw, true);
+                $raw['services']['frontend'] = self::$frontend;
+                $this->docker_compose_raw = json_encode($raw);
+            }
         }
 
         public static function where(...$arguments) { return new self; }

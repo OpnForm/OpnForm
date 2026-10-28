@@ -2,7 +2,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { createServer } from 'node:http'
 import { spawn } from 'node:child_process'
-import { access } from 'node:fs/promises'
+import { access, readdir } from 'node:fs/promises'
 
 const client = new URL('../', import.meta.url)
 const listen = (server) => new Promise((resolve) => server.listen(0, '127.0.0.1', () => resolve(server.address().port)))
@@ -65,6 +65,24 @@ test('built Nuxt exits setup immediately, then reuses configuration across SSR p
     }
     assert.equal(calls.get('/content/feature-flags'), 3)
     assert.equal(calls.get('/content/plans'), 1)
+    const hashedFile = (await readdir(new URL('.output/public/_nuxt/', client))).find(name => name.endsWith('.js'))
+    assert.ok(hashedFile)
+    const script = await fetch(`${origin}/_nuxt/${hashedFile}`, { headers: { 'accept-encoding': 'br' } })
+    assert.equal(script.status, 200)
+    assert.equal(script.headers.get('cache-control'), 'public, max-age=31536000, immutable')
+    assert.equal(script.headers.get('content-encoding'), 'br')
+    assert.ok((await script.text()).length > 0)
+    const regular = await fetch(`${origin}/img/logo.svg`)
+    assert.equal(regular.status, 200)
+    assert.equal(regular.headers.get('cache-control'), 'public, max-age=3600')
+    const conditional = await fetch(`${origin}/img/logo.svg`, { headers: { 'if-none-match': regular.headers.get('etag') } })
+    assert.equal(conditional.status, 304)
+    const missing = await fetch(`${origin}/img/does-not-exist.png`)
+    assert.equal(missing.status, 404)
+    assert.ok(!/immutable|max-age=[1-9]/.test(missing.headers.get('cache-control') || ''))
+    const login = await fetch(`${origin}/login`)
+    assert.equal(login.headers.get('cache-control'), 'private, no-store')
+
   } finally {
     if (child && child.exitCode === null) {
       const exited = new Promise((resolve) => child.once('exit', resolve))

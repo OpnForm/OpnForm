@@ -19,6 +19,7 @@
         <div class="w-fit">
           <img
             src="/img/pages/welcome/vanguard-1.png"
+            width="94" height="20" loading="lazy" decoding="async"
             alt="Trusted Teams"
             class="w-full"
           />
@@ -26,6 +27,7 @@
         <div class="w-fit">
           <img
             src="/img/pages/welcome/logo-berkeley-2.png"
+            width="100" height="19" loading="lazy" decoding="async"
             alt="Trusted Teams"
             class="w-full"
           />
@@ -33,6 +35,7 @@
         <div class="w-fit">
           <img
             src="/img/pages/welcome/UN_emblem_blue-2.png"
+            width="47" height="40" loading="lazy" decoding="async"
             alt="Trusted Teams"
             class="w-full"
           />
@@ -40,6 +43,7 @@
         <div class="w-fit">
           <img
             src="/img/pages/welcome/Frame-47.png"
+            width="90" height="21" loading="lazy" decoding="async"
             alt="Trusted Teams"
             class="w-full"
           />
@@ -47,6 +51,7 @@
         <div class="w-fit">
           <img
             src="/img/pages/welcome/Zomato_Logo-2.png"
+            width="94" height="20" loading="lazy" decoding="async"
             alt="Trusted Teams"
             class="w-full"
           />

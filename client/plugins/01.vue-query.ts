@@ -1,3 +1,4 @@
+import { registerSsrQueryCleanup } from '~/lib/ssr-query-cache.js'
 import type {
   DehydratedState,
   VueQueryPluginOptions,
@@ -21,7 +22,7 @@ export default defineNuxtPlugin((nuxt) => {
     defaultOptions: { 
       queries: { 
         staleTime: 5 * 60 * 1000, // 5 minutes
-        gcTime: 10 * 60 * 1000, // 10 minutes (replaces cacheTime)
+        gcTime: import.meta.server ? Infinity : 10 * 60 * 1000,
         retry: (failureCount, error: any) => {
           // Don't retry on 4xx errors except 408, 429
           if (error?.status >= 400 && error?.status < 500 && ![408, 429].includes(error?.status)) {
@@ -52,9 +53,7 @@ export default defineNuxtPlugin((nuxt) => {
   nuxt.vueApp.use(VueQueryPlugin, options)
 
   if (import.meta.server) {
-    nuxt.hooks.hook('app:rendered', () => {
-      vueQueryState.value = dehydrate(queryClient)
-    })
+    registerSsrQueryCleanup(nuxt, queryClient, vueQueryState, dehydrate)
   }
 
   if (import.meta.client) {

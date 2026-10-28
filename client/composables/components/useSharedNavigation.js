@@ -3,6 +3,7 @@ import opnformConfig from "~/opnform.config.js"
 export const useSharedNavigation = () => {
   const appStore = useAppStore()
   const crisp = useCrisp()
+  const changelogRequested = useState('featurebase-changelog-requested', () => false)
   
   const isSelfHosted = computed(() => useFeatureFlag('self_hosted'))
   const featurebaseLoaded = computed(() => {
@@ -17,8 +18,8 @@ export const useSharedNavigation = () => {
 
   // Open changelog modal
   function openChangelog() {
-    if (import.meta.server || !window.Featurebase) return
-    window.Featurebase("manually_open_changelog_popup")
+    if (import.meta.server) return
+    changelogRequested.value = true
   }
 
   // Default button configuration
@@ -142,4 +143,4 @@ export const useSharedNavigation = () => {
     createNavItem,
     defaultButtonProps
   }
-} 
+}

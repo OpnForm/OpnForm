@@ -61,8 +61,8 @@
 import { tailwindcssPaletteGenerator } from "~/lib/colors.js"
 import { useFormManager } from "~/lib/forms/composables/useFormManager"
 import { FormMode } from "~/lib/forms/FormModeStrategy.js"
-import OpenForm from "~/components/open/forms/OpenForm.vue"
-import OpenFormFocused from "~/components/open/forms/OpenFormFocused.vue"
+const OpenForm = defineAsyncComponent(() => import("~/components/open/forms/OpenForm.vue"))
+const OpenFormFocused = defineAsyncComponent(() => import("~/components/open/forms/OpenFormFocused.vue"))
 
 const props = defineProps({
   scenario: {

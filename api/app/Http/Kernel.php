@@ -158,7 +158,7 @@ class Kernel extends HttpKernel
         $appEnv = (string) ($_ENV['APP_ENV'] ?? $_SERVER['APP_ENV'] ?? 'production');
 
         if (!in_array($appEnv, ['testing', 'e2e'], true)) {
-            array_unshift($this->middlewareGroups['api'], 'throttle:100,1');
+            $this->prependMiddlewareToGroup('api', 'throttle:internal-api');
         }
     }
 }

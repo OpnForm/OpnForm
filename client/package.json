@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "npm run build:sdk && NODE_OPTIONS=\"${NODE_OPTIONS:---max-old-space-size=8192}\" nuxt build && npm run check:public-form-bundle && npm run check:built-css",
+    "build": "npm run build:sdk && NODE_OPTIONS=\"${NODE_OPTIONS:---max-old-space-size=8192}\" nuxt build && npm run check:public-form-bundle && npm run check:landing-bundle && npm run check:built-css",
     "build:e2e": "npm run build:sdk && E2E=1 NODE_OPTIONS=\"${NODE_OPTIONS:---max-old-space-size=8192}\" nuxt build",
     "build:sdk": "esbuild public/widgets/opnform-sdk.js --minify --legal-comments=inline --banner:js='/* eslint-disable */' --outfile=public/widgets/opnform-sdk.min.js",
     "dev": "node --import ./scripts/node-localstorage-polyfill.mjs ./node_modules/nuxt/bin/nuxt.mjs dev",
@@ -22,6 +22,7 @@
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:dev": "PLAYWRIGHT_BASE_URL=${PLAYWRIGHT_BASE_URL:-http://127.0.0.1:3100} playwright test",
     "check:public-form-bundle": "node scripts/check-public-form-bundle.mjs",
+    "check:landing-bundle": "node scripts/check-landing-bundle.mjs",
     "check:built-css": "node scripts/check-built-css.mjs",
     "build:amplify": "NODE_OPTIONS=\"${NODE_OPTIONS:---max-old-space-size=4096}\" NITRO_PRESET=aws-amplify npm run build && node scripts/check-amplify-output.mjs"
   },

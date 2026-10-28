@@ -7,8 +7,9 @@
         class="relative rounded-4xl overflow-hidden bg-linear-to-br from-blue-600 via-blue-700 to-blue-800 pt-8 sm:pt-10 lg:pt-14 xl:pt-24 pl-8 md:pl-10 lg:pl-14 xl:pl-35"
       >
         <img
-          src="/img/pages/welcome/powerForm-bg.png"
-          class="absolute min-h-full inset-0 opacity-30"
+          src="/img/pages/welcome/powerForm-bg.webp"
+          loading="lazy" decoding="async" width="1000" height="1000" alt="" aria-hidden="true"
+          class="absolute w-full h-full inset-0 object-cover opacity-30"
         />
         <div class="grid lg:grid-cols-2 relative z-10">
           <div
@@ -111,7 +112,8 @@
               class="relative w-full overflow-hidden flex justify-end items-end"
             >
               <img
-                src="/img/pages/welcome/product-cover-half.png"
+                src="/img/pages/welcome/product-cover-half.webp"
+                loading="lazy" decoding="async" width="748" height="844"
                 alt="Product screenshot"
                 class="w-full max-w-128.25 h-auto"
               />

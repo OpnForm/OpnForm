@@ -72,6 +72,9 @@
           <div class="flex justify-center lg:justify-end">
             <img
               :src="panel.imageSrc"
+              :srcset="panelSrcset(panel)"
+              sizes="(min-width: 1024px) 480px, (min-width: 640px) 400px, calc(100vw - 130px)"
+              :width="panel.imageWidth" :height="panel.imageWidth" decoding="async"
               :alt="panel.eyebrow"
               class="w-full max-w-100 lg:max-w-120 mx-auto h-auto rounded-2xl"
               loading="lazy"
@@ -164,6 +167,8 @@
             <img
               :key="activeDesktopImage.eyebrow"
               :src="activeDesktopImage.imageSrc"
+              :srcset="panelSrcset(activeDesktopImage)"
+              sizes="480px" :width="activeDesktopImage.imageWidth" :height="activeDesktopImage.imageWidth" decoding="async"
               :alt="activeDesktopImage.eyebrow"
               class="w-full max-w-120 h-auto rounded-[28px]"
               loading="lazy"
@@ -329,6 +334,12 @@ const desktopPanelRefs = ref([])
 const activeDesktopPanel = ref(0)
 let desktopPanelObserver = null
 
+function panelSrcset(panel) {
+  const src = panel.imageSrc
+  if (panel.imageWidth <= 640) return `${src} ${panel.imageWidth}w`
+  return `${src.replace('.webp', '-480.webp')} 480w, ${src.replace('.webp', '-640.webp')} 640w, ${src} 968w`
+}
+
 const panels = [
   {
     eyebrow: "Modern Form Builder",
@@ -374,12 +385,13 @@ const panels = [
         iconClass: "text-blue-600",
       },
     ],
-    imageSrc: "/img/pages/welcome/feature-1.png",
+    imageSrc: "/img/pages/welcome/feature-1.webp",
+    imageWidth: 484,
     link: null,
   },
   {
     eyebrow: "Unlimited Submissions",
-    eyebrowClass: "text-emerald-600",
+    eyebrowClass: "text-emerald-700",
     title: "Collect as many responses as you need, even on the free plan.",
     description:
       "No per-response charges. No hidden quotas. No unexpected overages. OpnForm grows with your team.",
@@ -388,27 +400,28 @@ const panels = [
         title: "Unlimited submissions",
         icon: "i-ph-infinity-bold",
         iconWrapClass: "bg-emerald-50 ring-emerald-100",
-        iconClass: "text-emerald-600",
+        iconClass: "text-emerald-700",
       },
       {
         title: "Generous free tier",
         icon: "i-heroicons-gift",
         iconWrapClass: "bg-emerald-50 ring-emerald-100",
-        iconClass: "text-emerald-600",
+        iconClass: "text-emerald-700",
       },
       {
         title: "Fair, transparent pricing",
         icon: "i-heroicons-banknotes",
         iconWrapClass: "bg-emerald-50 ring-emerald-100",
-        iconClass: "text-emerald-600",
+        iconClass: "text-emerald-700",
       },
     ],
-    imageSrc: "/img/pages/welcome/feature-2.png",
+    imageSrc: "/img/pages/welcome/feature-2.webp",
+    imageWidth: 484,
     link: null,
   },
   {
     eyebrow: "Integrations & Automation",
-    eyebrowClass: "text-violet-600",
+    eyebrowClass: "text-violet-700",
     title: "Connect OpnForm to the tools you already use.",
     description:
       "Automate your workflows with native integrations or connect anything with webhooks and our public API.",
@@ -417,38 +430,39 @@ const panels = [
         title: "Slack, Discord, Telegram",
         icon: "i-heroicons-chat-bubble-left-right",
         iconWrapClass: "bg-violet-50 ring-violet-100",
-        iconClass: "text-violet-600",
+        iconClass: "text-violet-700",
       },
       {
         title: "Google Sheets & Zapier",
         icon: "i-heroicons-table-cells",
         iconWrapClass: "bg-violet-50 ring-violet-100",
-        iconClass: "text-violet-600",
+        iconClass: "text-violet-700",
       },
       {
         title: "Stripe payments",
         icon: "i-heroicons-credit-card",
         iconWrapClass: "bg-violet-50 ring-violet-100",
-        iconClass: "text-violet-600",
+        iconClass: "text-violet-700",
       },
       {
         title: "Webhooks + REST API",
         icon: "i-heroicons-link",
         iconWrapClass: "bg-violet-50 ring-violet-100",
-        iconClass: "text-violet-600",
+        iconClass: "text-violet-700",
       },
       {
         title: "Auto-notifications & routing",
         icon: "i-heroicons-arrow-path-rounded-square",
         iconWrapClass: "bg-violet-50 ring-violet-100",
-        iconClass: "text-violet-600",
+        iconClass: "text-violet-700",
       },
     ],
-    imageSrc: "/img/pages/welcome/feature-3.png",
+    imageSrc: "/img/pages/welcome/feature-3.webp",
+    imageWidth: 968,
     link: {
       to: { name: "pricing" },
       label: "Explore All Features",
-      class: "text-violet-600 hover:text-violet-700 hover:no-underline",
+      class: "text-violet-700 hover:text-violet-700 hover:no-underline",
     },
   },
 ]

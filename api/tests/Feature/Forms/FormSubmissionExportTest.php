@@ -510,7 +510,7 @@ it('allows export status polling when the general api rate limit is exhausted', 
 
     $router = app('router');
     $apiMiddleware = $router->getMiddlewareGroups()['api'];
-    array_unshift($apiMiddleware, 'throttle:100,1');
+    array_unshift($apiMiddleware, 'throttle:internal-api');
     $router->middlewareGroup('api', $apiMiddleware);
 
     $user = $this->actingAsProUser();

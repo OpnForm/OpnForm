@@ -52,6 +52,21 @@ class RouteServiceProvider extends ServiceProvider
             return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
         });
 
+        RateLimiter::for('internal-api', function (Request $request) {
+            // Public SSR reads share the renderer's IP. Give authenticated
+            // renderers a separate, bounded bucket without trusting client IP headers.
+            $secret = (string) config('app.front_api_secret');
+            if ($request->isMethod('GET') && $secret !== ''
+                && hash_equals($secret, (string) $request->header('x-api-secret', ''))
+                && $request->route()?->named('forms.show', 'content.feature-flags', 'content.plans')) {
+                return Limit::perMinute(max(1, (int) config('app.ssr_reads_per_minute', 6000)))
+                    ->by('ssr-read:'.$request->ip());
+            }
+
+            return Limit::perMinute(100)->by($request->user()?->getAuthIdentifier()
+                ?: $request->route()->getDomain().'|'.$request->ip());
+        });
+
         RateLimiter::for('integration-retries', function (Request $request) {
             return Limit::perMinute(10)->by($request->user()?->id ?: $request->ip());
         });

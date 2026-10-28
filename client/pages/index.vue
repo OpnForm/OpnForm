@@ -1,6 +1,6 @@
 <template>
   <SelfHostedWelcome v-if="isSelfHosted" />
-  <div v-else>
+  <main v-else class="marketing-landing">
     <section>
       <div class="pt-8 sm:pt-16 px-8 lg:px-12 max-w-7xl mx-auto relative">
         <div class="max-w-3xl mx-auto text-center">
@@ -94,6 +94,7 @@
 
               <NuxtLink
                 to="https://www.trustpilot.com/review/opnform.com"
+                aria-label="Read OpnForm reviews on Trustpilot"
                 target="_blank"
                 class="flex items-center gap-2"
               >
@@ -134,10 +135,9 @@
       </div>
       <div class="relative pt-12 pb-12 sm:pb-24 px-8 lg:px-12">
         <div class="pointer-events-none absolute inset-0">
-          <img
-            class="pointer-events-none w-full h-full object-cover object-top opacity-[0.20] relative z-1"
-            src="/img/pages/ai_form_builder/background-pattern.svg"
-            alt="Page abstract background"
+          <div
+            class="pointer-events-none absolute inset-0 z-1 bg-[url('/img/pages/ai_form_builder/background-pattern.svg')] bg-cover bg-top opacity-20"
+            aria-hidden="true"
           />
           <div
             class="w-full h-full bg-linear-to-b from-white from-35% via-blue-100 via-60% to-white to-85% absolute inset-0"
@@ -165,7 +165,7 @@
     <!-- <AiFeature class="pb-8" /> -->
 
     <div class="pt-12 sm:pt-16"><OpenFormFooter /></div>
-  </div>
+  </main>
 </template>
 
 <script setup>
@@ -178,6 +178,8 @@ definePageMeta({
   layout: "default",
   middleware: ["root-redirect"],
 })
+
+useHead({ link: [{ rel: 'preload', href: '/img/pages/ai_form_builder/background-pattern.svg', as: 'image', fetchpriority: 'high' }] })
 
 const { isAuthenticated: authenticated } = useIsAuthenticated()
 const featureFlags = useState('featureFlags', () => ({}))
@@ -194,6 +196,13 @@ useOpnSeoMeta({
 </script>
 
 <style lang="scss" scoped>
+.marketing-landing :deep(.bg-primary) {
+  background-color: #2563eb;
+}
+.marketing-landing :deep(.hover\:bg-primary\/75:hover) {
+  background-color: #1d4ed8;
+}
+
 .customer-logo-container {
   max-width: 130px;
   width: 100%;

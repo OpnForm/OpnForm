@@ -12,6 +12,7 @@
       <!-- Third-party services and modals - only load when not on public form pages -->
       <ClientOnly v-if="!isPublicFormPage">
         <div
+          v-if="authStore.isImpersonating"
           class="fixed z-[9999] left-0 bottom-0 p-4" id="admin-actions"
         >
           <UFieldGroup size="sm">
@@ -19,17 +20,24 @@
           </UFieldGroup>
         </div>
 
-        <LazyVendorClarity />
-        <LazyVendorFeatureBase />
-        <LazyQuickRegister />
+        <LazyVendorClarity v-if="vendorsReady && authStore.token && config.public.clarityProjectId" />
+        <LazyVendorFeatureBase v-if="vendorsReady && authStore.token && config.public.featureBaseOrganization" />
+        <LazyQuickRegister v-if="appStore.quickLoginModal || appStore.quickRegisterModal || appStore.isUnauthorizedError" />
       </ClientOnly>
     </div>
   </AppProvider>
 </template>
 
 <script setup>
+const vendorsReady = ref(false)
+let vendorTimer
+onMounted(() => { vendorTimer = setTimeout(() => { vendorsReady.value = true }, 1500) })
+onBeforeUnmount(() => clearTimeout(vendorTimer))
+const appStore = useAppStore()
+const authStore = useAuthStore()
 const config = useRuntimeConfig()
 const route = useRoute()
+const { locale } = useI18n()
 
 // Check if current page is a public form page (for performance optimization)
 const isPublicFormPage = computed(() => route.name === 'forms-slug')
@@ -67,7 +75,8 @@ useHead({
     }
   ],
   htmlAttrs: () => ({
-    dir: 'ltr'
+    dir: 'ltr',
+    lang: locale.value
   })
 })
 </script>

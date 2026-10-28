@@ -1,7 +1,10 @@
 <template />
 
 <script setup>
-import Clarity from '@microsoft/clarity'
+let clarity = null
+let clarityPromise = null
+let disposed = false
+onBeforeUnmount(() => { disposed = true })
 import { useIsAuthenticated } from '~/composables/useIsAuthenticated.js'
 
 const authStore = useAuthStore()
@@ -12,19 +15,23 @@ const runtimeConfig = useRuntimeConfig()
 const clarityProjectId = computed(() => runtimeConfig.public.clarityProjectId || null)
 const { isAuthenticated } = useIsAuthenticated()
 
-async function loadClarity() {
+function loadClarity() {
   const projectId = clarityProjectId.value
   if (!projectId || !isAuthenticated.value || isIframe || loaded.value) return
 
-  try {
-    Clarity.init(projectId)
-    if (user.value?.id) {
-      Clarity.identify(String(user.value.id), null, null, String(user.value.id))
-    }
+  clarityPromise ||= import('@microsoft/clarity').then(({ default: sdk }) => {
+    clarity = sdk
+    return sdk
+  }).catch((error) => {
+    clarityPromise = null
+    throw error
+  })
+  return clarityPromise.then((sdk) => {
+    if (disposed || !isAuthenticated.value || isIframe || loaded.value) return
+    sdk.init(projectId)
+    if (user.value?.id) sdk.identify(String(user.value.id), null, null, String(user.value.id))
     loaded.value = true
-  } catch (error) {
-    console.error('[Clarity] Failed to init', error)
-  }
+  }).catch((error) => console.error('[Clarity] Failed to init', error))
 }
 
 watch(isAuthenticated, (val) => {
@@ -36,7 +43,7 @@ watch(user, (val) => {
   if (!loaded.value || !isAuthenticated.value || isIframe) return
   if (val?.id) {
     try {
-      Clarity.identify(String(val.id), null, null, String(val.id))
+      clarity.identify(String(val.id), null, null, String(val.id))
     } catch (error) {
       console.error('[Clarity] Failed to identify user', error)
     }

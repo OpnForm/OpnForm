@@ -78,6 +78,7 @@ return [
 
     'front_url' => env('FRONT_URL', null),
     'front_api_secret' => env('FRONT_API_SECRET', null),
+    'ssr_reads_per_minute' => env('SSR_READS_PER_MINUTE', 6000),
 
     /*
     |--------------------------------------------------------------------------

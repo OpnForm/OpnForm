@@ -101,6 +101,7 @@
         >
           <img
             src="/img/pages/welcome/Graphic.svg"
+            loading="lazy" decoding="async" alt="" aria-hidden="true"
             class="pointer-events-none absolute top-[45%] left-0 right-0 min-w-full object-cover min-h-[55%]"
           />
           <div
@@ -368,7 +369,7 @@ const securityPills = [
     label: "SSO & SAML support",
     icon: "i-heroicons-lock-closed",
     iconWrapClass: "bg-violet-50",
-    iconClass: "text-violet-600",
+    iconClass: "text-violet-700",
   },
   {
     label: "Form & submission audit logs",
@@ -392,7 +393,7 @@ const securityPills = [
     label: "End-to-end data encryption",
     icon: "i-heroicons-lock-closed",
     iconWrapClass: "bg-emerald-50",
-    iconClass: "text-emerald-600",
+    iconClass: "text-emerald-700",
   },
 ]
 
