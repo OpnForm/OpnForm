@@ -1,43 +1,8 @@
-/* @font-face {
-    font-family: "Inter-Variable";
-    src: url("/fonts/inter/Inter-VariableFont_opsz,wght.ttf") format("truetype");
-    font-weight: 100 900;
-    font-display: swap;
-    font-style: normal;
-}
-
-@font-face {
-    font-family: "Inter-Variable";
-    src: url("/fonts/inter/Inter-Italic-VariableFont_opsz,wght.ttf")
-        format("truetype");
-    font-weight: 100 900;
-    font-display: swap;
-    font-style: italic;
-} */
-
-/* Add Inter alias */
-/* @font-face {
-    font-family: "Inter";
-    src: url("/fonts/inter/Inter-VariableFont_opsz,wght.ttf") format("truetype");
-    font-weight: 100 900;
-    font-display: swap;
-    font-style: normal;
-}
-
-@font-face {
-    font-family: "Inter";
-    src: url("/fonts/inter/Inter-Italic-VariableFont_opsz,wght.ttf")
-        format("truetype");
-    font-weight: 100 900;
-    font-display: swap;
-    font-style: italic;
-} */
-
 @font-face {
     font-family: "euclid-circular-b";
     src:
-        url("/fonts/euclid-circular-b/Euclid-Circular-B-Regular.ttf"),
-        format("truetype");
+        url("/fonts/euclid-circular-b/Euclid-Circular-B-Regular.woff2")
+        format("woff2");
     font-weight: 400; /* Font weight = 400 */
     font-display: swap;
     font-style: normal;
@@ -45,8 +10,8 @@
 
 @font-face {
     font-family: "euclid-circular-b";
-    src: url("/fonts/euclid-circular-b/Euclid-Circular-B-Medium.ttf")
-        format("truetype") format("truetype");
+    src: url("/fonts/euclid-circular-b/Euclid-Circular-B-Medium.woff2")
+        format("woff2");
     font-weight: 500; /* Font weight = 500 */
     font-display: swap;
     font-style: normal;
@@ -54,8 +19,8 @@
 
 @font-face {
     font-family: "euclid-circular-b";
-    src: url("/fonts/euclid-circular-b/Euclid-Circular-B-SemiBold.ttf")
-        format("truetype");
+    src: url("/fonts/euclid-circular-b/Euclid-Circular-B-SemiBold.woff2")
+        format("woff2");
     font-weight: 600; /* Font weight = 600 */
     font-display: swap;
     font-style: normal;
@@ -63,8 +28,8 @@
 
 @font-face {
     font-family: "euclid-circular-b";
-    src: url("/fonts/euclid-circular-b/Euclid-Circular-B-Italic.ttf")
-        format("truetype");
+    src: url("/fonts/euclid-circular-b/Euclid-Circular-B-Italic.woff2")
+        format("woff2");
     font-weight: 100 900;
     font-display: swap;
     font-style: italic; /* Font style = italic */

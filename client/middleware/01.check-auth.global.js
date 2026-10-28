@@ -1,3 +1,4 @@
+import { isMarketingRoute } from '~/lib/marketing-route.js'
 import { useQueryClient } from '@tanstack/vue-query'
 
 const AUTH_COOKIE_NAME = 'opnform_token'
@@ -35,38 +36,54 @@ export default defineNuxtRouteMiddleware(async (to, _from) => {
     return
   }
 
-  // Check for already cached user data (from SSR or previous fetch)
-  let userData = queryClient.getQueryData(['user'])
+  const bootstrap = async () => {
+    const bootstrapToken = authStore.token
+    // Check for already cached user data (from SSR or previous fetch)
+    let userData = queryClient.getQueryData(['user'])
 
-  // Fetch user & workspaces only if not cached yet
-  if (!userData) {
-    try {
-      const userQuery = useAuth().user()
-      const workspacesQuery = useWorkspaces().list()
-      await Promise.all([userQuery.suspense(), workspacesQuery.suspense()])
+    // Fetch user & workspaces only if not cached yet
+    if (!userData) {
+      try {
+        const userQuery = useAuth().user()
+        const workspacesQuery = useWorkspaces().list()
+        await Promise.all([userQuery.suspense(), workspacesQuery.suspense()])
 
-      userData = queryClient.getQueryData(['user'])
-    } catch (error) {
-      // A server-side bootstrap request can 401 even when the browser still has a
-      // valid token (for example if SSR auth validation differs from the browser
-      // request context). Do not destroy auth state during SSR; let the client
-      // retry before treating it as a real logout.
-      if (error?.status === 401) {
-        if (import.meta.client) {
-          authStore.clearToken()
-          authStore.updateUser(null)
-          queryClient.clear()
+        userData = queryClient.getQueryData(['user'])
+      } catch (error) {
+        // A server-side bootstrap request can 401 even when the browser still has a
+        // valid token (for example if SSR auth validation differs from the browser
+        // request context). Do not destroy auth state during SSR; let the client
+        // retry before treating it as a real logout.
+        if (error?.status === 401 && authStore.token === bootstrapToken) {
+          if (import.meta.client) {
+            authStore.clearToken()
+            authStore.updateUser(null)
+            queryClient.clear()
+          }
         }
+        return
       }
-      return
+    }
+
+    // Initialize service clients on client side (no-op on server)
+    if (userData && authStore.token === bootstrapToken) {
+      authStore.updateUser(userData)
+      await import('~/composables/useServiceClients.js').then((serviceClients) => {
+        if (authStore.token === bootstrapToken) {
+          nuxtApp.runWithContext(() => serviceClients.initServiceClients(userData))
+        }
+      })
     }
   }
 
-  // Initialize service clients on client side (no-op on server)
-  if (userData) {
-    authStore.updateUser(userData)
-    await import('~/composables/useServiceClients.js').then((serviceClients) => {
-      nuxtApp.runWithContext(() => serviceClients.initServiceClients(userData))
-    })
+  if (isMarketingRoute(to)) {
+    if (import.meta.server) return
+    if (nuxtApp.isHydrating) {
+      nuxtApp.hook('app:mounted', () => nuxtApp.runWithContext(bootstrap))
+    } else {
+      void nuxtApp.runWithContext(bootstrap)
+    }
+    return
   }
+  return bootstrap()
 })

@@ -48,13 +48,20 @@
           </div>
         </div>
 
-        <div class="relative min-h-[460px] bg-white sm:min-h-[620px]">
-          <LiveDemoForm
+        <div ref="demoContainer" class="relative min-h-[460px] bg-white sm:min-h-[620px]">
+          <LazyLiveDemoForm
+            v-if="hasBeenVisible"
             :key="scenario.key"
             :scenario="scenario"
             :primary-cta-to="primaryCtaTo"
             :secondary-cta-to="secondaryCtaTo"
           />
+          <div v-else class="min-h-[460px] sm:min-h-[620px] flex flex-col justify-center gap-5 p-8 sm:p-12" aria-busy="true" aria-label="Loading live demo">
+            <div class="h-6 w-32 rounded bg-neutral-100" aria-hidden="true" />
+            <div class="h-12 w-3/4 rounded bg-neutral-100" aria-hidden="true" />
+            <div class="h-4 w-full rounded bg-neutral-50" aria-hidden="true" />
+            <div class="h-4 w-2/3 rounded bg-neutral-50" aria-hidden="true" />
+          </div>
         </div>
       </div>
     </div>
@@ -62,21 +69,27 @@
 </template>
 
 <script setup>
-import LiveDemoForm from "~/components/pages/welcome/LiveDemoForm.vue"
 import { useIsAuthenticated } from "~/composables/useIsAuthenticated.js"
 import {
-  getLiveDemoMediaPreloads,
   getLiveDemoScenario,
 } from "~/data/live-demo-scenarios.js"
 
-useHead({
-  link: getLiveDemoMediaPreloads().map((href) => ({
-    rel: "preload",
-    href,
-    as: "image",
-    type: "image/webp",
-  })),
+const demoContainer = ref(null)
+const hasBeenVisible = ref(false)
+let observer
+onMounted(() => {
+  if (!window.IntersectionObserver) {
+    hasBeenVisible.value = true
+    return
+  }
+  observer = new IntersectionObserver((entries) => {
+    if (!entries.some(entry => entry.isIntersecting && entry.intersectionRatio >= 0.35)) return
+    hasBeenVisible.value = true
+    observer.disconnect()
+  }, { threshold: 0.35 })
+  observer.observe(demoContainer.value)
 })
+onBeforeUnmount(() => observer?.disconnect())
 
 const props = defineProps({
   variant: {

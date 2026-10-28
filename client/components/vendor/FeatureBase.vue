@@ -1,7 +1,9 @@
 <template>
   <button
     v-if="user && featureBaseOrganization"
-    v-show="scriptLoaded && appStore.featureBaseButtonVisible"
+    v-show="appStore.featureBaseButtonVisible"
+    @click="openFeedback"
+    ref="feedbackButton"
     data-featurebase-feedback
     class="fixed -right-9 top-1/2 -translate-y-1/2 z-20 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-3 rounded-t-lg shadow-lg transition-all duration-200 hover:shadow-xl transform hover:scale-105 flex items-center space-x-1 -rotate-90 origin-center"
   >
@@ -10,10 +12,13 @@
   </button>
 </template>
 <script setup>
-import { onMounted } from "vue"
-import { default as _has } from "lodash/has"
 
-const scriptLoaded = ref(false)
+const scriptLoaded = ref(import.meta.client && document.getElementById('featurebase-sdk')?.dataset.loaded === 'true')
+let disposed = false
+let setupQueued = false
+const widgetReady = ref(false)
+const feedbackButton = ref(null)
+let feedbackRequested = false
 let setupQueue = []
 
 const authStore = useAuthStore()
@@ -36,15 +41,29 @@ const runSetupQueue = () => {
 
 const loadScript = () => {
   if (scriptLoaded.value || !user.value || !featureBaseOrganization) return
-  if (document.getElementById("featurebase-sdk")) return
+  const existing = document.getElementById('featurebase-sdk')
+  if (existing) {
+    existing.addEventListener('load', () => {
+      scriptLoaded.value = true
+      if (!disposed) runSetupQueue()
+    }, { once: true })
+    return
+  }
 
   const script = document.createElement("script")
   script.src = "https://do.featurebase.app/js/sdk.js"
   script.id = "featurebase-sdk"
   document.head.appendChild(script)
   script.onload = () => {
+    script.dataset.loaded = 'true'
     scriptLoaded.value = true
-    runSetupQueue()
+    if (!disposed) runSetupQueue()
+  }
+  script.onerror = () => {
+    script.remove()
+    feedbackRequested = false
+    setupQueue = []
+    setupQueued = false
   }
 }
 
@@ -80,13 +99,25 @@ const setupForUser = () => {
     theme: "light",
     email: user.value?.email,
     usersName: user.value?.name,
+  }, (error, event) => {
+    if (error || event?.action !== 'widgetReady') return
+    widgetReady.value = true
+    if (feedbackRequested) {
+      feedbackRequested = false
+      feedbackButton.value?.click()
+    }
   })
 }
 
 const scheduleSetup = () => {
   if (import.meta.server) return
 
-  setupQueue.push(setupForUser)
+  if (setupQueued) return
+  setupQueued = true
+  setupQueue.push(() => {
+    setupQueued = false
+    setupForUser()
+  })
 
   if (scriptLoaded.value) {
     runSetupQueue()
@@ -95,28 +126,30 @@ const scheduleSetup = () => {
   }
 }
 
-onMounted(() => {
-  if (import.meta.server || !user.value) return
-
-  // Setup base
-  if (
-    !_has(window, "Featurebase") ||
-    typeof window.Featurebase !== "function"
-  ) {
+// The first feedback interaction loads the SDK; closed widgets cost no JS.
+function openFeedback() {
+  if (!user.value || isImpersonating.value || widgetReady.value) return
+  feedbackRequested = true
+  if (typeof window.Featurebase !== 'function') {
     window.Featurebase = function () {
       ;(window.Featurebase.q = window.Featurebase.q || []).push(arguments)
     }
   }
+  scheduleSetup()
+}
 
-  if (user.value) {
-    scheduleSetup()
-  }
+onBeforeUnmount(() => {
+  disposed = true
+  setupQueue = []
+  if (!scriptLoaded.value || typeof window.Featurebase !== 'function') return
+  window.Featurebase('destroy_feedback_widget')
+  window.Featurebase('destroy_changelog_widget')
 })
 
 watch(
   user,
   (val) => {
-    if (val) {
+    if (val && scriptLoaded.value) {
       scheduleSetup()
     }
   },

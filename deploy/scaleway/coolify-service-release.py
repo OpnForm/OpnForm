@@ -158,6 +158,22 @@ if($x['apply']){
  if(file_exists($file))throw new RuntimeException('Prior promotion needs inspection');
  if(file_put_contents($file,$s->docker_compose_raw,LOCK_EX)===false)throw new RuntimeException('Cannot save previous configuration');chmod($file,0600);
  foreach($roles as$r)$raw['services'][$r]['image']=$x['native_images'][$r==='frontend'?'frontend':'backend'];
+ $frontend=&$raw['services']['frontend'];
+ $frontend['mem_limit']='2g';
+ if(isset($frontend['deploy']['resources']['limits']['memory']))$frontend['deploy']['resources']['limits']['memory']='2g';
+ $env=$frontend['environment']??[];
+ $nodeOptions='';
+ if(array_is_list($env)){
+  foreach($env as$v)if(str_starts_with($v,'NODE_OPTIONS='))$nodeOptions=substr($v,13);
+  $env=array_values(array_filter($env,fn($v)=>!str_starts_with($v,'NODE_OPTIONS=')));
+ }else{$nodeOptions=$env['NODE_OPTIONS']??'';}
+ $nodeOptions=trim(preg_replace('/(?:^|\\s)--max-old-space-size(?:=|\\s+)\\d+(?=\\s|$)/','',$nodeOptions)).' --max-old-space-size=1536';
+ if(array_is_list($env)){
+  $env[]='NODE_OPTIONS='.trim($nodeOptions);
+ }else{$env['NODE_OPTIONS']=trim($nodeOptions);}
+ $frontend['environment']=$env;
+ unset($frontend);
+
  $s->docker_compose_raw=json_encode($raw,JSON_THROW_ON_ERROR);$s->save();$s->parse();$s->saveComposeConfigs();
 }
 echo json_encode(['service_uuid'=>$s->uuid,'server_id'=>$s->server_id,'images_selected'=>$x['apply'],'containers_restarted'=>false]);

@@ -42,6 +42,8 @@ function addCustomDomainHeader(request, options) {
 export function getOpnRequestsOptions(request, opts) {
   const nuxtApp = useNuxtApp()
   const config = useRuntimeConfig()
+  const requestAuthStore = useAuthStore()
+  const requestToken = requestAuthStore.token
 
   if (opts.body && opts.body instanceof FormData) {
     opts.headers = {
@@ -73,6 +75,8 @@ export function getOpnRequestsOptions(request, opts) {
         // Do not run token-expiry UX during SSR. Server-side bootstrap requests can
         // fail for context-specific reasons and should be retried client-side first.
         if (import.meta.client) {
+          // A deferred read from an earlier session must not expire a newer login.
+          if (requestAuthStore.token !== requestToken) return
           const authFlow = await import('~/composables/useAuthFlow')
           const { handleTokenExpiry } = nuxtApp.runWithContext(() => authFlow.useAuthFlow())
           await handleTokenExpiry()

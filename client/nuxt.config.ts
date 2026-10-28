@@ -18,7 +18,13 @@ export default defineNuxtConfig({
   buildDir: buildDir || '.nuxt',
   ...(viteCacheDir ? {vite: {cacheDir: viteCacheDir}} : {}),
   css: ['~/css/app.css'],
-  nitro: { awsAmplify: { runtime: 'nodejs24.x' } },
+  nitro: { awsAmplify: { runtime: 'nodejs24.x' }, compressPublicAssets: { gzip: true, brotli: true } },
+  routeRules: {
+      '/_nuxt/**': { headers: { 'cache-control': 'public, max-age=31536000, immutable' } },
+      '/_nuxt/builds/latest.json': { headers: { 'cache-control': 'no-store' } },
+      '/fonts/**': { headers: { 'cache-control': 'public, max-age=3600' } },
+      '/img/**': { headers: { 'cache-control': 'public, max-age=3600' } },
+  },
   content: {
     experimental: { sqliteConnector: 'native' },
   },
@@ -26,6 +32,23 @@ export default defineNuxtConfig({
   postcss: { plugins: { '@tailwindcss/postcss': {} } },
 
   hooks: {
+      'vite:extendConfig': (config, { isClient }) => {
+          if (!isClient) return
+          config.build ||= {}
+          config.build.rolldownOptions ||= {}
+          config.build.rolldownOptions.output = {
+              ...config.build.rolldownOptions.output,
+              codeSplitting: {
+                  groups: [{
+                      name: 'shared-runtime',
+                      // Consolidate common library code without pulling in optional app modules.
+                      test: /node_modules\/(?:@vue\/|vue\/|vue-router\/|pinia\/|@vueuse\/|@unhead\/|unhead\/|@tanstack\/|reka-ui\/|defu\/|destr\/|ufo\/|ofetch\/|h3\/|unctx\/|hookable\/|klona\/|tailwind-variants\/|tailwind-merge\/)/,
+                      minShareCount: 20,
+                      includeDependenciesRecursively: false,
+                  }],
+              },
+          }
+      },
       'build:manifest': (manifest) => {
           // Nuxt follows every dynamicImports edge while generating resource hints,
           // including all route middleware, locales and optional form/editor code.
@@ -107,6 +130,7 @@ export default defineNuxtConfig({
 
   experimental: {
       inlineRouteRules: true,
+      defaults: { nuxtLink: { prefetchOn: { visibility: false, interaction: true } } },
       emitRouteChunkError: 'manual'
   },
 

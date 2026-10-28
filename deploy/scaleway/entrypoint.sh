@@ -5,7 +5,13 @@ case "${APP_ROLE:-api}" in api|jobs|scheduler|migrate) ;; *) echo 'Unknown APP_R
 rm -f bootstrap/cache/config.php
 php /opt/opnform/preflight.php
 # Compile only local runtime configuration. Never flush the shared cache here.
-php artisan config:cache --no-interaction
+(
+ umask 077
+ php artisan config:cache --no-interaction
+ php artisan route:cache --no-interaction
+ php artisan event:cache --no-interaction
+ php artisan view:cache --no-interaction
+)
 case "${APP_ROLE:-api}" in
  api) exec supervisord -c /etc/opnform/supervisor-api.conf ;;
  jobs) exec supervisord -c /etc/opnform/supervisor-jobs.conf ;;

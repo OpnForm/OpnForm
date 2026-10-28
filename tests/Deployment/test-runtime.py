@@ -192,6 +192,13 @@ add rule inet {firewall_table} forward_guard iifname "{bridge}" oifname != "{bri
             settings = "require 'vendor/autoload.php';$a=require 'bootstrap/app.php';$a->make(Illuminate\\Contracts\\Console\\Kernel::class)->bootstrap();echo json_encode([config('database.redis.default.host'),config('database.redis.cache.host'),config('queue.connections.redis.retry_after'),$a->environment(),$a->configurationIsCached()]);"
             assert json.loads(docker('exec', api, 'php', '-r', settings).stdout) == [queue, cache, 3700, 'production', True]
             record('queue/cache/auth/state share one endpoint with separate logical DBs and 3700s reservation')
+            for role in (api, migration):
+                cached = json.loads(docker('exec', role, 'php', '-r',
+                    "require 'vendor/autoload.php';$a=require 'bootstrap/app.php';$a->make(Illuminate\\Contracts\\Console\\Kernel::class)->bootstrap();echo json_encode([$a->configurationIsCached(),$a->routesAreCached(),$a->eventsAreCached()]);").stdout)
+                assert cached == [True, True, True], cached
+            assert docker('exec', api, 'stat', '-c', '%a', '/app/bootstrap/cache/config.php').stdout.strip() == '600'
+            record('runtime configuration routes events and views are compiled; cached secrets remain private')
+
             smoke = "require 'vendor/autoload.php';$a=require 'bootstrap/app.php';$a->make(Illuminate\\Contracts\\Console\\Kernel::class)->bootstrap();$f=App\\Models\\Forms\\Form::where('title','Product feedback')->firstOrFail();if(App\\Models\\Forms\\FormSubmission::count()!==6)exit(1);$t=auth('api')->attempt(['email'=>'e2e@example.test','password'=>'Abcd@1234']);if(!$t)exit(2);echo $f->slug;"
             slug = docker('exec', api, 'php', '-r', smoke).stdout.strip()
             assert slug

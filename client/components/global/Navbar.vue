@@ -13,7 +13,7 @@
               >{{ isSelfHosted ? instanceName : 'OpnForm' }}</span
             >
           </NuxtLink>
-          <WorkspaceDropdown class="ml-6">
+          <WorkspaceDropdown v-if="user" class="ml-6">
             <template #default="{ workspace }">
               <button
                 v-if="workspace"
@@ -136,7 +136,7 @@
                       class="flex items-center"
                       dusk="nav-dropdown-button"
                     >
-                      <img :src="user.photo_url" class="rounded-full w-6 h-6" />
+                      <img :src="user.photo_url" class="rounded-full w-6 h-6" alt="Your profile" width="24" height="24" />
                       <p class="ml-2 hidden sm:inline max-w-20 truncate">
                         {{ user.name }}
                       </p>
@@ -177,9 +177,9 @@
 import { computed } from "vue"
 import { useRoute } from "#imports"
 
-import WorkspaceDropdown from "../dashboard/WorkspaceDropdown.vue"
+const WorkspaceDropdown = defineAsyncComponent(() => import("../dashboard/WorkspaceDropdown.vue"))
 import WorkspaceIcon from "~/components/workspaces/WorkspaceIcon.vue"
-import UserDropdown from "../dashboard/UserDropdown.vue"
+const UserDropdown = defineAsyncComponent(() => import("../dashboard/UserDropdown.vue"))
 
 import opnformConfig from "~/opnform.config.js"
 import { useFeatureFlag } from "~/composables/useFeatureFlag"

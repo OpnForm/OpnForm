@@ -1,3 +1,4 @@
+import base64
 import copy
 import importlib.util
 import json
@@ -97,7 +98,7 @@ class ServiceReleaseTests(unittest.TestCase):
         self.assertEqual(execute.call_args.args[0], ['docker', 'exec', '-i', 'coolify', 'php'])
         ssh.assert_not_called()
 
-    def run_controller_fixture(self, directory, candidate, **options):
+    def run_controller_fixture(self, directory, candidate, frontend=None, **options):
         target = {'controller_local': True, 'service_uuid': 's' * 24,
                   'server_id': 5, 'project_id': 4, 'team_id': 0, 'native_address': '100.65.151.96'}
         with patch.object(self.release, 'execute', return_value='{}') as execute:
@@ -107,8 +108,29 @@ class ServiceReleaseTests(unittest.TestCase):
         program = '$x=json_decode' + execute.call_args.kwargs['input'].split('$x=json_decode', 1)[1]
         program = program.replace('/var/www/html/storage/app/opnform-release-history', directory)
         fixture = Path(__file__).with_name('coolify-model-fixture.php').read_text()
+        saved = str(Path(directory) / 'saved-compose.json')
+        fixture = fixture.replace('public function save() {}', 'public function save() { file_put_contents(' + json.dumps(saved) + ', $this->docker_compose_raw); }')
+        if frontend is not None:
+            encoded = base64.b64encode(json.dumps(frontend).encode()).decode()
+            program = "App\\Models\\Service::$frontend=json_decode(base64_decode('" + encoded + "'),true);\n" + program
         return subprocess.run(['php'], input=fixture + '\nnamespace {\n' + program + '\n}\n',
                               capture_output=True, text=True, timeout=10)
+
+    def test_frontend_heap_has_headroom_and_preserves_other_runtime_flags(self):
+        for environment in ({'KEEP': 'yes', 'NODE_OPTIONS': '--enable-source-maps --max-old-space-size=1024'},
+                            ['KEEP=yes', 'NODE_OPTIONS=--enable-source-maps --max-old-space-size=1024']):
+            with self.subTest(environment=environment), tempfile.TemporaryDirectory() as directory:
+                frontend = {'image': 'old', 'mem_limit': '1g', 'environment': environment,
+                            'deploy': {'resources': {'limits': {'memory': '1g'}}}}
+                applied = self.run_controller_fixture(directory, self.candidate, frontend=frontend, apply=True)
+                self.assertEqual(applied.returncode, 0, applied.stderr)
+                saved = json.loads((Path(directory) / 'saved-compose.json').read_text())['services']['frontend']
+                self.assertEqual(saved['mem_limit'], '2g')
+                self.assertEqual(saved['deploy']['resources']['limits']['memory'], '2g')
+                env = saved['environment']
+                if isinstance(env, list): env = dict(v.split('=', 1) for v in env)
+                self.assertEqual(env['KEEP'], 'yes')
+                self.assertEqual(env['NODE_OPTIONS'], '--enable-source-maps --max-old-space-size=1536')
 
     @unittest.skipUnless(shutil.which('php'), 'PHP is required for the generated controller fixture')
     def test_successful_same_sha_reruns_have_independent_history_and_release_their_lease(self):

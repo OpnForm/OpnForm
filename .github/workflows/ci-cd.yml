@@ -141,7 +141,7 @@ jobs:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
 
       - name: Check public form bundle
-        run: npm run check:public-form-bundle && npm run check:built-css
+        run: npm run check:public-form-bundle && npm run check:landing-bundle && npm run check:built-css
 
       - name: Preserve client manifest for browser chunk tests
         run: |

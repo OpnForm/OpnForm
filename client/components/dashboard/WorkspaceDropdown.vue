@@ -85,12 +85,14 @@
 
   <!-- Create Workspace Modal -->
   <CreateWorkspaceModal
+    v-if="showCreateModal"
     v-model="showCreateModal"
     @created="onWorkspaceCreated"
     @close="showCreateModal = false"
   />
 
   <WorkspacesSettingsInviteUser
+    v-if="showInviteUserModal"
     v-model="showInviteUserModal"
     @user-added="onUserAdded"
   />
@@ -99,8 +101,8 @@
 <script setup>
 import { computed, ref } from "vue"
 import WorkspaceIcon from "~/components/workspaces/WorkspaceIcon.vue"
-import CreateWorkspaceModal from "~/components/workspaces/CreateWorkspaceModal.vue"
-import WorkspacesSettingsInviteUser from '~/components/workspaces/settings/InviteUser.vue'
+const CreateWorkspaceModal = defineAsyncComponent(() => import("~/components/workspaces/CreateWorkspaceModal.vue"))
+const WorkspacesSettingsInviteUser = defineAsyncComponent(() => import('~/components/workspaces/settings/InviteUser.vue'))
 import ScrollableContainer from '~/components/dashboard/ScrollableContainer.vue'
 
 
