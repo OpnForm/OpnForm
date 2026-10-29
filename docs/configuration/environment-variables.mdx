@@ -76,6 +76,7 @@ There are dedicated configuration pages available for more detailed setup instru
 | `OAUTH_ENABLED`                  | Enables the delegated OAuth 2.1 infrastructure. Defaults to `true`; set it to `false` only when you need to disable OAuth routes independently of the MCP setting. |
 | `OAUTH_ACCESS_TOKEN_TTL`         | Passport access token lifetime in minutes. Defaults to `10080` (7 days) and does not change the first-party JWT lifetime. |
 | `OAUTH_REFRESH_TOKEN_TTL_DAYS`   | Passport refresh token lifetime in days. Defaults to `30`. |
+| `PUBLIC_UPLOADS_MAX_FILE_SIZE` | Maximum temporary file size in bytes for local uploads through `/upload-file`. Defaults to `50000000` (50 MB). Workspace and field limits still apply when submitting a response. |
 | `PUBLIC_UPLOADS_RATE_LIMIT_PER_MINUTE` | Maximum public upload requests allowed per client IP or authenticated user per route each minute. Defaults to `30`.                                                                 |
 | `PUBLIC_UPLOADS_RATE_LIMIT_PER_HOUR`   | Maximum public upload requests allowed per client IP or authenticated user per route each hour. Defaults to `300`.                                                                  |
 | `OIDC_FORCE_LOGIN`               | When set to `true`, password-based authentication is disabled and users must authenticate via OIDC SSO. See [Force Login Mode](../configuration/oidc-sso#7-force-login-mode) for details. |
@@ -133,6 +134,8 @@ OAuth integrations enable user authentication and third-party service connection
 | `PHP_POST_MAX_SIZE`       | Maximum size of POST data that PHP will accept.     |
 
 These PHP configuration variables are particularly important when handling file uploads and processing large amounts of data. If any of these variables are not set, PHP will use its default values from the php.ini configuration. When using Docker, these values are set in the docker-compose.yml file. For non-Docker installations, you'll need to configure these values in your PHP configuration (php.ini) file.
+
+For local file storage, `/upload-file` accepts temporary uploads up to `PUBLIC_UPLOADS_MAX_FILE_SIZE` (50 MB by default). If your workspace allows larger attachments, increase this value and ensure PHP and your reverse proxy accept the larger request, including multipart overhead. This setting does not change direct S3 uploads. Form assets, such as logos and cover images, retain their separate 5 MB limit.
 
 ### Database Configuration Environment Variables
 

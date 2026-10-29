@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Content;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\UploadAssetRequest;
 use App\Service\Storage\FileUploadPathService;
 use App\Service\Storage\UploadSecurityService;
 use Illuminate\Http\Request;
@@ -21,7 +20,8 @@ class FileUploadController extends Controller
     public function upload(Request $request, UploadSecurityService $uploadSecurityService)
     {
         $request->validate([
-            'file' => 'required|file|max:' . (int) ceil(UploadAssetRequest::FORM_ASSET_MAX_SIZE / 1024),
+            // Temporary uploads include respondent attachments, not only form assets.
+            'file' => 'required|file|max:' . (config('opnform.public_uploads.max_file_size') / 1024),
         ]);
 
         try {
