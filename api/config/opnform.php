@@ -11,6 +11,7 @@ return [
         'enable_self_hosted' => env('CUSTOM_CODE_ENABLE_SELF_HOSTED', false),
     ],
     'public_uploads' => [
+        'max_file_size' => (int) env('PUBLIC_UPLOADS_MAX_FILE_SIZE', 50000000),
         'rate_limit' => [
             'per_minute' => (int) env('PUBLIC_UPLOADS_RATE_LIMIT_PER_MINUTE', 30),
             'per_hour' => (int) env('PUBLIC_UPLOADS_RATE_LIMIT_PER_HOUR', 300),
