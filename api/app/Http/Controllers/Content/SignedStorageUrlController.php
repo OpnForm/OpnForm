@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
-use Laravel\Vapor\Http\Controllers\SignedStorageUrlController as Controller;
+use App\Http\Controllers\Controller;
 use Psr\Http\Message\RequestInterface;
 
 class SignedStorageUrlController extends Controller
@@ -28,7 +28,7 @@ class SignedStorageUrlController extends Controller
 
         $uuid = (string) Str::uuid();
 
-        $expiresAfter = config('vapor.signed_storage_url_expires_after', 5);
+        $expiresAfter = config('filesystems.signed_storage_url_expires_after', 5);
 
         $signedRequest = $client->createPresignedRequest(
             $this->createCommand($request, $client, $bucket, $key = ('tmp/'.$uuid)),
@@ -55,7 +55,14 @@ class SignedStorageUrlController extends Controller
 
     protected function createCommand(Request $request, S3Client $client, $bucket, $key)
     {
-        $command = parent::createCommand($request, $client, $bucket, $key);
+        $command = $client->getCommand('putObject', array_filter([
+            'Bucket' => $bucket,
+            'Key' => $key,
+            'ACL' => $request->input('visibility') ?: 'private',
+            'ContentType' => $request->input('content_type') ?: 'application/octet-stream',
+            'CacheControl' => $request->input('cache_control') ?: null,
+            'Expires' => $request->input('expires') ?: null,
+        ]));
 
         // The locked SDK builds SignedHeaders in request order but sorts the
         // canonical request. Sort this command only, before it is presigned.
@@ -79,7 +86,9 @@ class SignedStorageUrlController extends Controller
 
     protected function headers(Request $request, $signedRequest)
     {
-        $headers = parent::headers($request, $signedRequest);
+        $headers = array_merge($signedRequest->getHeaders(), [
+            'Content-Type' => $request->input('content_type') ?: 'application/octet-stream',
+        ]);
 
         // Cache-Control is deliberately not signed by the SDK and is stripped
         // from its request. The browser must still send the requested metadata.

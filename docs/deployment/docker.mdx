@@ -359,3 +359,15 @@ ingress port mapping from `80:80` to another host port, such as `8800:80`.
 See [GitHub issue #1005](https://github.com/OpnForm/OpnForm/issues/1005) for a
 working Synology Container Manager configuration and its troubleshooting
 history.
+
+## Direct object-storage uploads
+
+S3-compatible uploads use the application's AWS SDK without `laravel/vapor-core`.
+The compatibility endpoint `POST /vapor/signed-storage-url` is unchanged, including
+temporary keys, ACLs, upload metadata and response headers. Signatures expire
+after five minutes by default; adjust
+`filesystems.signed_storage_url_expires_after` in `api/config/filesystems.php`
+if needed. Local-disk uploads continue to use `/upload-file`.
+
+The old `api/vapor.yml` configurations require restoring the Vapor runtime
+dependency before they can be used for deployments.

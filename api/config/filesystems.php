@@ -28,6 +28,8 @@ return [
 
     'cloud' => env('FILESYSTEM_CLOUD', 's3'),
 
+    'signed_storage_url_expires_after' => 5,
+
     /*
     |--------------------------------------------------------------------------
     | Filesystem Disks
