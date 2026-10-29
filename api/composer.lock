@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "c081c20bda708c7fa901599595493f48",
+    "content-hash": "404e440959ad25212e192dd8fce51a63",
     "packages": [
         {
             "name": "aws/aws-crt-php",
@@ -2505,56 +2505,6 @@
             "time": "2023-02-23T15:00:54+00:00"
         },
         {
-            "name": "hollodotme/fast-cgi-client",
-            "version": "v3.1.7",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/hollodotme/fast-cgi-client.git",
-                "reference": "062182d4eda73c161cc2839783acc83096ec0f37"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/hollodotme/fast-cgi-client/zipball/062182d4eda73c161cc2839783acc83096ec0f37",
-                "reference": "062182d4eda73c161cc2839783acc83096ec0f37",
-                "shasum": ""
-            },
-            "require": {
-                "ext-json": "*",
-                "php": ">=7.1"
-            },
-            "require-dev": {
-                "ext-xdebug": ">=2.6.0"
-            },
-            "type": "library",
-            "autoload": {
-                "psr-4": {
-                    "hollodotme\\FastCGI\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Holger Woltersdorf",
-                    "email": "hw@hollo.me"
-                }
-            ],
-            "description": "A PHP fast CGI client to send requests (a)synchronously to PHP-FPM.",
-            "keywords": [
-                "Socket",
-                "async",
-                "fastcgi",
-                "php-fpm"
-            ],
-            "support": {
-                "issues": "https://github.com/hollodotme/fast-cgi-client/issues",
-                "source": "https://github.com/hollodotme/fast-cgi-client/tree/v3.1.7"
-            },
-            "time": "2021-12-07T10:10:20+00:00"
-        },
-        {
             "name": "jane-php/json-schema-runtime",
             "version": "v7.10.4",
             "source": {
@@ -4163,86 +4113,6 @@
                 "source": "https://github.com/laravel/vapor-cli/tree/v1.70.5"
             },
             "time": "2026-09-03T14:11:01+00:00"
-        },
-        {
-            "name": "laravel/vapor-core",
-            "version": "v2.47.0",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/laravel/vapor-core.git",
-                "reference": "09a267e54650ea2c4cc8e0fa18357c207934db7c"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/laravel/vapor-core/zipball/09a267e54650ea2c4cc8e0fa18357c207934db7c",
-                "reference": "09a267e54650ea2c4cc8e0fa18357c207934db7c",
-                "shasum": ""
-            },
-            "require": {
-                "aws/aws-sdk-php": "^3.80",
-                "guzzlehttp/guzzle": "^6.3|^7.0|^8.0",
-                "guzzlehttp/promises": "^1.4|^2.0",
-                "hollodotme/fast-cgi-client": "^3.0",
-                "illuminate/container": "^6.0|^7.0|^8.0|^9.0|^10.0|^11.0|^12.0|^13.0",
-                "illuminate/http": "^6.0|^7.0|^8.0|^9.0|^10.0|^11.0|^12.0|^13.0",
-                "illuminate/queue": "^6.0|^7.0|^8.0|^9.0|^10.0|^11.0|^12.0|^13.0",
-                "illuminate/support": "^6.0|^7.0|^8.0|^9.0|^10.0|^11.0|^12.0|^13.0",
-                "monolog/monolog": "^1.12|^2.0|^3.2",
-                "nyholm/psr7": "^1.0",
-                "php": "^7.2|^8.0",
-                "riverline/multipart-parser": "^2.0.9",
-                "symfony/process": "^4.3|^5.0|^6.0|^7.0|^8.0",
-                "symfony/psr-http-message-bridge": "^1.0|^2.0|^6.4|^7.0|^8.0"
-            },
-            "require-dev": {
-                "laravel/octane": "*",
-                "mockery/mockery": "^1.2",
-                "orchestra/testbench": "^4.0|^5.0|^6.0|^7.0|^8.0|^9.0|^10.0|^11.0",
-                "phpstan/phpstan": "^1.10|^2.1",
-                "phpunit/phpunit": "^8.0|^9.0|^10.4|^11.5.3|^12.5.12"
-            },
-            "type": "library",
-            "extra": {
-                "laravel": {
-                    "aliases": {
-                        "Vapor": "Laravel\\Vapor\\Vapor"
-                    },
-                    "providers": [
-                        "Laravel\\Vapor\\VaporServiceProvider"
-                    ]
-                },
-                "branch-alias": {
-                    "dev-master": "2.0-dev"
-                }
-            },
-            "autoload": {
-                "files": [
-                    "src/debug.php"
-                ],
-                "psr-4": {
-                    "Laravel\\Vapor\\": "src"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Taylor Otwell",
-                    "email": "taylor@laravel.com"
-                }
-            ],
-            "description": "The kernel and invocation handlers for Laravel Vapor",
-            "homepage": "https://github.com/laravel/vapor-core",
-            "keywords": [
-                "laravel",
-                "vapor"
-            ],
-            "support": {
-                "source": "https://github.com/laravel/vapor-core/tree/v2.47.0"
-            },
-            "time": "2026-08-26T13:30:07+00:00"
         },
         {
             "name": "lcobucci/clock",
@@ -8397,62 +8267,6 @@
                 "source": "https://github.com/ramsey/uuid/tree/4.9.2"
             },
             "time": "2025-12-14T04:43:48+00:00"
-        },
-        {
-            "name": "riverline/multipart-parser",
-            "version": "2.2.2",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/Riverline/multipart-parser.git",
-                "reference": "fadbb1c1f8e66f96eaa36ab8ed13cbc451c6ded7"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/Riverline/multipart-parser/zipball/fadbb1c1f8e66f96eaa36ab8ed13cbc451c6ded7",
-                "reference": "fadbb1c1f8e66f96eaa36ab8ed13cbc451c6ded7",
-                "shasum": ""
-            },
-            "require": {
-                "ext-mbstring": "*",
-                "php": ">=7.0"
-            },
-            "require-dev": {
-                "laminas/laminas-diactoros": "*",
-                "phpunit/phpunit": "*",
-                "psr/http-message": "*",
-                "symfony/psr-http-message-bridge": "*"
-            },
-            "type": "library",
-            "autoload": {
-                "psr-4": {
-                    "Riverline\\MultiPartParser\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Romain Cambien",
-                    "email": "romain@cambien.net"
-                },
-                {
-                    "name": "Riverline",
-                    "homepage": "http://www.riverline.fr"
-                }
-            ],
-            "description": "One class library to parse multipart content with encoding and charset support.",
-            "keywords": [
-                "http",
-                "multipart",
-                "parser"
-            ],
-            "support": {
-                "issues": "https://github.com/Riverline/multipart-parser/issues",
-                "source": "https://github.com/Riverline/multipart-parser/tree/2.2.2"
-            },
-            "time": "2026-01-15T11:08:16+00:00"
         },
         {
             "name": "sabberworm/php-css-parser",

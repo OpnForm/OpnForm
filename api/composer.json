@@ -35,7 +35,6 @@
         "laravel/tinker": "^2.9",
         "laravel/ui": "*",
         "laravel/vapor-cli": "*",
-        "laravel/vapor-core": "*",
         "league/flysystem-aws-s3-v3": "*",
         "maatwebsite/excel": "^4.0.5",
         "mpociot/versionable": "^4.4",

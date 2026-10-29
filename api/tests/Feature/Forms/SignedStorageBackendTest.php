@@ -92,3 +92,14 @@ it('preserves explicit public assets and default private upload headers', functi
         ->and($private['headers'])->not->toHaveKey('Cache-Control')
         ->and($private['headers'])->not->toHaveKey('Expires');
 });
+
+it('uses the application signing expiry independently of object expiration', function () {
+    config(['filesystems.signed_storage_url_expires_after' => 2]);
+    $data = app(SignedStorageUrlController::class)->store(new Request([
+        'expires' => '2030-01-01T00:00:00Z',
+    ]))->getData(true);
+    parse_str(parse_url($data['url'], PHP_URL_QUERY), $query);
+
+    expect($query['X-Amz-Expires'])->toBe('120')
+        ->and($data['headers']['Expires'])->toBe(['Tue, 01 Jan 2030 00:00:00 GMT']);
+});
