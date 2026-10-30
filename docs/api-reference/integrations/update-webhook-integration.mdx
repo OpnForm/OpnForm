@@ -33,7 +33,7 @@ Configuration object containing webhook details. All fields are optional.
 
 <Expandable title="data properties">
 <ParamField body="webhook_url" type="string">
-The updated URL where form submissions will be sent. Must be a valid HTTPS URL that resolves only to public IP addresses. Private, loopback, link-local, and cloud metadata addresses are rejected.
+The updated URL where form submissions will be sent. Must be a valid HTTPS URL that resolves only to public IP addresses. Private, loopback, link-local, shared (CGNAT), protocol-assignment, benchmark, and cloud metadata addresses are rejected. IPv4-mapped IPv6, NAT64 (`64:ff9b::/96` and `64:ff9b:1::/48`), and 6to4 destinations are also rejected, including when they embed a public IPv4 address.
 </ParamField>
 
 <ParamField body="webhook_secret" type="string">
