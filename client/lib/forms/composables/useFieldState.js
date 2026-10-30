@@ -16,7 +16,7 @@ export function useFieldState(formDataRef, formRef, strategyRef, computedValuesR
         ...(toValue(formDataRef) || {}),
         ...(toValue(computedValuesRef) || {})
       }
-      const resolver = new FormLogicPropertyResolver(field, currentData)
+      const resolver = new FormLogicPropertyResolver(field, currentData, toValue(formRef)?.properties || [])
       return {
         hidden: !!resolver.isHidden(),
         required: !!resolver.isRequired(),

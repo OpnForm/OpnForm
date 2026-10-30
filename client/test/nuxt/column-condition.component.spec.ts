@@ -70,6 +70,7 @@ function mountColumnCondition({
         MentionInput: mentionInputStub,
         TextInput: { name: 'TextInput', inheritAttrs: false, props: ['modelValue'], emits: ['update:modelValue'], template: '<input />' },
         PhoneInput: true,
+        DateInput: true,
       },
     },
   })
@@ -128,6 +129,73 @@ describe('ColumnCondition phone regex patterns', () => {
       modelValue: { operator: 'equals', value: '+33123456789' },
     })
     expect(wrapper.vm.inputComponentData.component).toBe('PhoneInput')
+    wrapper.unmount()
+  })
+})
+
+describe('ColumnCondition date references', () => {
+  const start = { id: 'start', name: 'Start date', type: 'date' }
+  const end = { id: 'end', name: 'End date', type: 'date' }
+  function mountDate(value: any = '2026-10-30') {
+    return mountColumnCondition({
+      property: end as any,
+      formProperties: [start, end, { id: 'range', name: 'Range', type: 'date', date_range: true }, emailField] as any,
+      formComputedVariables: [totalVariable, { id: 'cv_date', name: 'Computed date', result_type: 'text' }],
+      modelValue: { operator: 'on_or_after', value },
+    })
+  }
+
+  it('switches from a fixed date to a reference and restores saved references', async () => {
+    const wrapper = mountDate()
+    expect(wrapper.vm.dateValueMode).toBe('fixed')
+    wrapper.vm.changeDateValueMode('reference')
+    wrapper.vm.selectDateReference('start')
+    await flushPromises()
+    const saved = wrapper.emitted('update:modelValue')?.at(-1)?.[0] as any
+    expect(saved.value).toContain('mention-field-id="start"')
+    const restored = mountDate(saved.value)
+    expect(restored.vm.dateValueMode).toBe('reference')
+    expect(restored.vm.dateReferenceId).toBe('start')
+    wrapper.vm.changeDateValueMode('fixed')
+    expect(wrapper.vm.content.value).toBeNull()
+    wrapper.unmount()
+    restored.unmount()
+  })
+
+  it('offers other single date fields and non-numeric variables', () => {
+    const wrapper = mountDate()
+    expect(wrapper.vm.dateReferenceOptions.map((option: any) => option.value)).toEqual(['start', 'cv_date'])
+    wrapper.unmount()
+  })
+
+  it('clears a date reference when switching to a relative day count', async () => {
+    const wrapper = mountDate()
+    wrapper.vm.changeDateValueMode('reference')
+    wrapper.vm.selectDateReference('start')
+    wrapper.vm.content.operator = 'within_next_x_days'
+    await flushPromises()
+    expect(wrapper.vm.supportsDateReference).toBe(false)
+    expect(wrapper.vm.content.value).toBeNull()
+    expect(wrapper.vm.inputComponentData.component).toBe('TextInput')
+    wrapper.unmount()
+  })
+})
+
+describe('date condition time settings', () => {
+  it('offers matching date-time references and enables time in the fixed date picker', () => {
+    const wrapper = mountColumnCondition({
+      property: { id: 'end', name: 'End', type: 'date', with_time: true } as any,
+      formProperties: [
+        { id: 'start', name: 'Start', type: 'date', with_time: true },
+        { id: 'day', name: 'Day', type: 'date' },
+      ] as any,
+      formComputedVariables: [],
+      modelValue: { operator: 'on_or_after', value: null },
+    })
+    expect(wrapper.vm.dateReferenceOptions.map((option: any) => option.value)).toEqual(['start'])
+    expect(wrapper.vm.inputComponentData.withTime).toBe(true)
+    wrapper.vm.selectDateReference('start')
+    expect(wrapper.emitted('update:modelValue')?.at(-1)?.[0]).toMatchObject({ property_meta: { with_time: true } })
     wrapper.unmount()
   })
 })

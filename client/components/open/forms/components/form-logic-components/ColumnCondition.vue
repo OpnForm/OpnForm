@@ -6,7 +6,7 @@
     <!-- Operator Selection -->
     <USelectMenu
       v-model="content.operator"
-      class="w-[100px]"
+      class="min-w-[100px] shrink-0"
       :items="operators"
       value-key="value"
       placeholder="Operator"
@@ -21,7 +21,31 @@
 
     <!-- Value Input (if needed) -->
     <template v-if="needsInput">
+      <USelectMenu
+        v-if="supportsDateReference"
+        :model-value="dateValueMode"
+        :items="[{ label: 'Fixed date', value: 'fixed' }, { label: 'Field or variable', value: 'reference' }]"
+        value-key="value"
+        aria-label="Date comparison value type"
+        size="sm"
+        class="w-[135px] shrink-0"
+        :search-input="false"
+        @update:model-value="changeDateValueMode"
+      />
+      <USelectMenu
+        v-if="supportsDateReference && dateValueMode === 'reference'"
+        :model-value="dateReferenceId"
+        :items="dateReferenceOptions"
+        value-key="value"
+        aria-label="Date comparison field or variable"
+        placeholder="Choose a field or variable"
+        size="sm"
+        class="flex-1 min-w-[140px]"
+        :search-input="{ placeholder: 'Search fields and variables...' }"
+        @update:model-value="selectDateReference"
+      />
       <component
+        v-else
         v-bind="inputComponentData"
         :is="inputComponentData.component"
         v-model="content.value"
@@ -38,6 +62,7 @@
 
 <script>
 import { defineAsyncComponent } from 'vue'
+import { escapeHtml } from '~/lib/utils'
 import OpenFilters from "../../../../../data/open_filters.json"
 import {
   getConditionInputComponent,
@@ -64,6 +89,7 @@ export default {
       content: this.modelValue ? { ...this.modelValue } : {},
       available_filters: OpenFilters,
       hasInput: false,
+      dateValueMode: typeof this.modelValue?.value === 'string' && this.modelValue.value.includes('mention-field-id') ? 'reference' : 'fixed',
     }
   },
 
@@ -79,6 +105,25 @@ export default {
     },
     mentionComputedVariables() {
       return getMentionComputedVariables(this.formComputedVariables, this.property)
+    },
+    supportsDateReference() {
+      return this.property.type === 'date' && !this.property.date_range &&
+        this.selectedOperator()?.format?.type === 'date'
+    },
+    dateReferenceId() {
+      return typeof this.content.value === 'string'
+        ? this.content.value.match(/mention-field-id="([^"]+)"/)?.[1]
+        : undefined
+    },
+    dateReferenceOptions() {
+      return [
+        ...this.mentionFields
+          .filter(field => field.type === 'date' && !field.date_range && !!field.with_time === !!this.property.with_time)
+          .map(field => ({ label: field.name, value: field.id, icon: 'i-heroicons-calendar-days' })),
+        ...this.mentionComputedVariables
+          .filter(variable => !['number', 'boolean'].includes(variable.result_type))
+          .map(variable => ({ label: variable.name, value: variable.id, icon: 'i-heroicons-variable' })),
+      ]
     },
     inputComponentData() {
       const componentData = {
@@ -112,7 +157,15 @@ export default {
         if (["at_least_x_days_ago", "at_least_x_days_from_now", "within_past_x_days", "within_next_x_days"].includes(this.content.operator)) {
           componentData.component = "TextInput"
         }
-        // componentData.withTime = true
+        if (componentData.component === 'DateInput') {
+          componentData.withTime = this.property.with_time === true
+          componentData.ui = {
+            slots: {
+              input: 'h-7 rounded-md',
+              inner: 'py-1 text-sm/4',
+            },
+          }
+        }
       } else if (this.property.type === "checkbox") {
         componentData.label = this.property.name
       }
@@ -190,6 +243,17 @@ export default {
   },
 
   methods: {
+    changeDateValueMode(mode) {
+      this.dateValueMode = mode
+      this.content.value = null
+      this.emitInput()
+    },
+    selectDateReference(id) {
+      const reference = this.dateReferenceOptions.find(option => option.value === id)
+      if (!reference) return
+      this.content.value = `<span mention="true" mention-field-id="${escapeHtml(id)}" mention-field-name="${escapeHtml(reference.label)}" mention-fallback="">${escapeHtml(reference.label)}</span>`
+      this.emitInput()
+    },
     castContent(content) {
       if (typeof content.value === 'string' && content.value.includes('mention-field-id')) {
         return content
@@ -218,6 +282,12 @@ export default {
 
       const operator = this.selectedOperator()
       const operatorFormat = operator.format
+
+      // Relative date operators expect a number of days, never a date reference.
+      if (this.property.type === 'date' && !this.supportsDateReference && this.dateReferenceId) {
+        this.content.value = null
+        this.dateValueMode = 'fixed'
+      }
 
       if (
         operator.expected_type === "boolean" &&
@@ -271,12 +341,17 @@ export default {
         }
       }
 
+      // Keep an empty reference selector open while editing; infer mode for saved values.
+      if (modelValue.value) {
+        this.dateValueMode = typeof modelValue.value === 'string' && modelValue.value.includes('mention-field-id') ? 'reference' : 'fixed'
+      }
       this.content = {
         operator: this.operators[0]?.value,
         ...modelValue,
         property_meta: {
           id: this.property.id,
           type: this.property.type,
+          ...(this.property.type === 'date' ? { with_time: this.property.with_time === true } : {}),
         },
       }
     },

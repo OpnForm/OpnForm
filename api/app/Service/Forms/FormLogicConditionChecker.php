@@ -11,6 +11,8 @@ class FormLogicConditionChecker
 {
     private ?array $computedValues = null;
 
+    private array $dateFields = [];
+
     public function __construct(private ?array $conditions, private ?array $formData)
     {
     }
@@ -25,7 +27,16 @@ class FormLogicConditionChecker
      */
     public static function conditionsMetWithForm(?array $conditions, array $formData, ?Form $form): bool
     {
+        // Submission input must never override a declared computed variable.
+        foreach ($form?->computed_variables ?? [] as $variable) {
+            unset($formData[$variable['id']]);
+        }
         $checker = new self($conditions, $formData);
+        foreach ($form?->properties ?? [] as $property) {
+            if (($property['type'] ?? null) === 'date') {
+                $checker->dateFields[$property['id']] = $property;
+            }
+        }
 
         // If form has computed variables, evaluate them
         if ($form && !empty($form->computed_variables)) {
@@ -49,14 +60,12 @@ class FormLogicConditionChecker
      */
     private function getValue(string $fieldId)
     {
-        // First check form data
-        if (isset($this->formData[$fieldId])) {
-            return $this->formData[$fieldId];
+        if ($this->computedValues !== null && array_key_exists($fieldId, $this->computedValues)) {
+            return $this->computedValues[$fieldId];
         }
 
-        // Then check computed variables
-        if ($this->computedValues !== null && isset($this->computedValues[$fieldId])) {
-            return $this->computedValues[$fieldId];
+        if (isset($this->formData[$fieldId])) {
+            return $this->formData[$fieldId];
         }
 
         return null;
@@ -391,26 +400,6 @@ class FormLogicConditionChecker
             return false;
         }
         return (float) $fieldValue <= (float) $condition['value'];
-    }
-
-    private function checkBefore($condition, $fieldValue): bool
-    {
-        return $condition['value'] && $fieldValue && $fieldValue < $condition['value'];
-    }
-
-    private function checkAfter($condition, $fieldValue): bool
-    {
-        return $condition['value'] && $fieldValue && $fieldValue > $condition['value'];
-    }
-
-    private function checkOnOrBefore($condition, $fieldValue): bool
-    {
-        return $condition['value'] && $fieldValue && $fieldValue <= $condition['value'];
-    }
-
-    private function checkOnOrAfter($condition, $fieldValue): bool
-    {
-        return $condition['value'] && $fieldValue && $fieldValue >= $condition['value'];
     }
 
     private function checkPastWeek($condition, $fieldValue): bool
@@ -829,17 +818,24 @@ class FormLogicConditionChecker
 
     private function dateConditionMet(array $propertyCondition, $value): bool
     {
+        if (in_array($propertyCondition['operator'], ['equals', 'before', 'after', 'on_or_before', 'on_or_after'], true)) {
+            $field = $this->dateFields[$propertyCondition['property_meta']['id'] ?? ''] ?? null;
+            $withTime = $field !== null ? (bool) ($field['with_time'] ?? false) : (bool) ($propertyCondition['property_meta']['with_time'] ?? true);
+            $left = FormDateValue::comparisonValue($value, $withTime);
+            $right = FormDateValue::comparisonValue($propertyCondition['value'] ?? null, $withTime);
+            if ($left === null || $right === null) {
+                return false;
+            }
+
+            return match ($propertyCondition['operator']) {
+                'equals' => $left === $right,
+                'before' => $left < $right,
+                'after' => $left > $right,
+                'on_or_before' => $left <= $right,
+                'on_or_after' => $left >= $right,
+            };
+        }
         switch ($propertyCondition['operator']) {
-            case 'equals':
-                return $this->checkEquals($propertyCondition, $value);
-            case 'before':
-                return $this->checkBefore($propertyCondition, $value);
-            case 'after':
-                return $this->checkAfter($propertyCondition, $value);
-            case 'on_or_before':
-                return $this->checkOnOrBefore($propertyCondition, $value);
-            case 'on_or_after':
-                return $this->checkOnOrAfter($propertyCondition, $value);
             case 'at_least_x_days_ago':
                 return $this->checkAtLeastXDaysAgo($propertyCondition, $value);
             case 'at_least_x_days_from_now':

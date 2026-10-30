@@ -5,7 +5,8 @@ class FormLogicPropertyResolver {
   formData = null
   logic = false
 
-  constructor(property, formData) {
+  constructor(property, formData, properties = []) {
+    this.properties = properties
     this.property = property
     this.formData = formData
     this.logic = property.logic !== undefined ? property.logic : false
@@ -19,6 +20,7 @@ class FormLogicPropertyResolver {
     const conditionsMet = this.conditionsMet(
       this.logic.conditions,
       this.formData,
+      this.properties,
     )
     if (
       conditionsMet &&
@@ -47,6 +49,7 @@ class FormLogicPropertyResolver {
     const conditionsMet = this.conditionsMet(
       this.logic.conditions,
       this.formData,
+      this.properties,
     )
     if (
       conditionsMet &&
@@ -75,6 +78,7 @@ class FormLogicPropertyResolver {
     const conditionsMet = this.conditionsMet(
       this.logic.conditions,
       this.formData,
+      this.properties,
     )
     if (
       conditionsMet &&

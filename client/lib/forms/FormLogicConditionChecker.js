@@ -1,3 +1,4 @@
+import { compareDates } from './dateComparison.js'
 import { default as _isEqual } from "lodash/isEqual"
 
 const mentionSpanRegex = /<span\b(?=[^>]*\bmention\b)[^>]*>.*?<\/span>/gis
@@ -52,7 +53,7 @@ function resolveConditionValue(value, formData) {
   return stripHtml(resolvedValue)
 }
 
-export function conditionsMet(conditions, formData) {
+export function conditionsMet(conditions, formData, properties = []) {
   if (conditions === undefined || conditions === null) {
     return false
   }
@@ -62,7 +63,11 @@ export function conditionsMet(conditions, formData) {
     const condition = conditions.value
     if (!condition) return false
 
-    const resolvedCondition = { ...condition }
+    const field = properties.find(property => property.id === condition.property_meta?.id)
+    const resolvedCondition = { ...condition, property_meta: {
+      ...condition.property_meta,
+      ...(field?.type === 'date' ? { with_time: field.with_time === true } : {}),
+    } }
     if (resolvedCondition.value !== undefined && resolvedCondition.value !== null) {
       resolvedCondition.value = resolveConditionValue(resolvedCondition.value, formData)
     }
@@ -77,7 +82,7 @@ export function conditionsMet(conditions, formData) {
     let isvalid = true
     if (!Array.isArray(conditions.children) || conditions.children.length === 0) return false
     conditions.children.forEach((childrenCondition) => {
-      if (!conditionsMet(childrenCondition, formData)) {
+      if (!conditionsMet(childrenCondition, formData, properties)) {
         isvalid = false
       }
     })
@@ -86,7 +91,7 @@ export function conditionsMet(conditions, formData) {
     let isvalid = false
     if (!Array.isArray(conditions.children) || conditions.children.length === 0) return false
     conditions.children.forEach((childrenCondition) => {
-      if (conditionsMet(childrenCondition, formData)) {
+      if (conditionsMet(childrenCondition, formData, properties)) {
         isvalid = true
       }
     })
@@ -247,22 +252,6 @@ function checkLessThan(condition, fieldValue) {
 function checkLessThanEqual(condition, fieldValue) {
   if (!areValidNumbers(condition, fieldValue)) return false
   return parseFloat(fieldValue) <= parseFloat(condition.value)
-}
-
-function checkBefore(condition, fieldValue) {
-  return condition.value && fieldValue && fieldValue < condition.value
-}
-
-function checkAfter(condition, fieldValue) {
-  return condition.value && fieldValue && fieldValue > condition.value
-}
-
-function checkOnOrBefore(condition, fieldValue) {
-  return condition.value && fieldValue && fieldValue <= condition.value
-}
-
-function checkOnOrAfter(condition, fieldValue) {
-  return condition.value && fieldValue && fieldValue >= condition.value
 }
 
 function checkPastWeek(condition, fieldValue) {
@@ -518,17 +507,10 @@ function selectConditionMet(propertyCondition, value) {
 }
 
 function dateConditionMet(propertyCondition, value) {
+  if (['equals', 'before', 'after', 'on_or_before', 'on_or_after'].includes(propertyCondition.operator)) {
+    return compareDates(propertyCondition.operator, value, propertyCondition.value, propertyCondition.property_meta?.with_time ?? true)
+  }
   switch (propertyCondition.operator) {
-    case "equals":
-      return checkEquals(propertyCondition, value)
-    case "before":
-      return checkBefore(propertyCondition, value)
-    case "after":
-      return checkAfter(propertyCondition, value)
-    case "on_or_before":
-      return checkOnOrBefore(propertyCondition, value)
-    case "on_or_after":
-      return checkOnOrAfter(propertyCondition, value)
     case 'at_least_x_days_ago':
       return checkAtLeastXDaysAgo(propertyCondition, value)
     case 'at_least_x_days_from_now':
