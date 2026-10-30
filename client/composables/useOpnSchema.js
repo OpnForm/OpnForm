@@ -1,4 +1,5 @@
 const DEFAULT_SITE_URL = "https://opnform.com"
+const ORGANIZATION_ID = "/#organization"
 const WEBSITE_ID = "/#website"
 const SOFTWARE_ID = "/#software"
 
@@ -43,6 +44,57 @@ export function buildSchemaGraph(nodes) {
   }
 }
 
+export function buildOrganizationSchema() {
+  return {
+    "@type": "Organization",
+    "@id": schemaId(ORGANIZATION_ID),
+    name: "OpnForm",
+    url: resolveSchemaUrl("/"),
+    logo: resolveSchemaUrl("/img/logo.svg"),
+    sameAs: [
+      "https://github.com/OpnForm/OpnForm",
+      "https://twitter.com/OpnForm",
+    ],
+  }
+}
+
+export function buildWebsiteSchema() {
+  return {
+    "@type": "WebSite",
+    "@id": schemaId(WEBSITE_ID),
+    name: "OpnForm",
+    url: resolveSchemaUrl("/"),
+    publisher: {
+      "@id": schemaId(ORGANIZATION_ID),
+    },
+  }
+}
+
+export function buildSoftwareApplicationSchema(overrides = {}) {
+  return {
+    "@type": "SoftwareApplication",
+    "@id": schemaId(SOFTWARE_ID),
+    name: "OpnForm",
+    url: resolveSchemaUrl("/"),
+    description:
+      "OpnForm is an open-source form builder for creating online forms, collecting unlimited submissions, and automating data collection workflows.",
+    applicationCategory: "BusinessApplication",
+    operatingSystem: "Web",
+    provider: {
+      "@id": schemaId(ORGANIZATION_ID),
+    },
+    offers: {
+      "@type": "Offer",
+      name: "Free plan",
+      price: "0",
+      priceCurrency: "USD",
+      availability: "https://schema.org/InStock",
+      url: resolveSchemaUrl("/pricing"),
+    },
+    ...overrides,
+  }
+}
+
 export function buildWebPageSchema({ name, description, path = "/", url } = {}) {
   const pageUrl = url || resolveSchemaUrl(path)
 
@@ -76,6 +128,46 @@ export function buildCollectionPageSchema({ name, description, path = "/", url }
     about: {
       "@id": schemaId(SOFTWARE_ID),
     },
+  }
+}
+
+export function buildCreativeWorkSchema({ name, description, path = "/", url, image } = {}) {
+  const pageUrl = url || resolveSchemaUrl(path)
+  const schema = {
+    "@type": "CreativeWork",
+    "@id": `${pageUrl}#creative-work`,
+    url: pageUrl,
+    name: stripSchemaText(name),
+    description: stripSchemaText(description),
+    publisher: {
+      "@id": schemaId(ORGANIZATION_ID),
+    },
+  }
+
+  if (image) {
+    schema.image = resolveSchemaUrl(image)
+  }
+
+  return schema
+}
+
+export function buildFaqSchema(faqs = []) {
+  const mainEntity = faqs
+    .map((faq) => ({
+      "@type": "Question",
+      name: stripSchemaText(faq.question),
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: stripSchemaText(faq.answer),
+      },
+    }))
+    .filter((faq) => faq.name && faq.acceptedAnswer.text)
+
+  if (mainEntity.length === 0) return null
+
+  return {
+    "@type": "FAQPage",
+    mainEntity,
   }
 }
 
@@ -127,6 +219,48 @@ export function buildItemListSchema(items = [], { path = "/", name = "Items" } =
     "@type": "ItemList",
     "@id": `${resolveSchemaUrl(path)}#item-list`,
     name,
+    itemListElement,
+  }
+}
+
+export function buildHowToSchema({ name, description, steps = [], path = "/", url } = {}) {
+  const cleanedSteps = steps.map(stripSchemaText).filter(Boolean)
+
+  if (cleanedSteps.length < 2) return null
+
+  return {
+    "@type": "HowTo",
+    "@id": `${url || resolveSchemaUrl(path)}#how-to`,
+    name: stripSchemaText(name),
+    description: stripSchemaText(description),
+    step: cleanedSteps.map((step, index) => ({
+      "@type": "HowToStep",
+      position: index + 1,
+      text: step,
+    })),
+  }
+}
+
+export function buildOfferCatalogSchema(offers = []) {
+  const itemListElement = offers
+    .map((offer) => {
+      if (!offer.name || offer.price === null || offer.price === undefined) return null
+
+      return {
+        "@type": "Offer",
+        name: offer.name,
+        price: String(offer.price),
+        priceCurrency: offer.priceCurrency || "USD",
+        url: resolveSchemaUrl(offer.url || "/pricing"),
+      }
+    })
+    .filter(Boolean)
+
+  if (itemListElement.length === 0) return null
+
+  return {
+    "@type": "OfferCatalog",
+    name: "OpnForm plans",
     itemListElement,
   }
 }
