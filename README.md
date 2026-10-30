@@ -102,6 +102,10 @@ The form editor shows whether changes are saved. For an existing form, **Save Ch
 
 Clearing editor history uses the currently loaded form as the undo baseline and discards pending history updates. A subsequent edit can be undone back to that form without restoring an earlier loading state.
 
+## Submission file references
+
+File fields accept temporary upload references. To retain an existing upload through a URL, send its valid, unexpired signed download URL for the same form and application origin. Refresh submission data to obtain a new URL if it has expired. Shared form assets and arbitrary external URLs cannot be used as submission uploads. Submission processing only moves files from temporary upload storage; it never moves shared form images.
+
 ## Spreadsheet exports
 
 Spreadsheet exports preserve numeric zero values, account identifiers with leading zeroes, and Unicode. Null and empty fields remain blank.

@@ -31,9 +31,14 @@ class StorageFile implements ValidationRule
      */
     public function passes($attribute, $value): bool
     {
-        // If full path then no need to validate
+        if (!is_string($value)) {
+            return false;
+        }
+
+        // A URL may only retain an existing, signed upload from this form.
         if (filter_var($value, FILTER_VALIDATE_URL) !== false) {
-            return true;
+            return $this->form !== null
+                && FileUploadPathService::resolveSubmissionFileUrl($value, $this->form->id) !== null;
         }
         $fileNameParser = StorageFileNameParser::parse($value);
 

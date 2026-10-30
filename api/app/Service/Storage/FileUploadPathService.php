@@ -3,6 +3,9 @@
 namespace App\Service\Storage;
 
 use Illuminate\Support\Str;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\URL;
 
 /**
  * Service for managing file upload paths in the application
@@ -21,6 +24,40 @@ class FileUploadPathService
      * Base path for temporary file uploads
      */
     private const TMP_FILE_UPLOAD_PATH = 'tmp/';
+
+    /** Resolve only signed download URLs for an existing upload in this form. */
+    public static function resolveSubmissionFileUrl(string $value, int|string $formId): ?string
+    {
+        if (filter_var($value, FILTER_VALIDATE_URL) === false) {
+            return null;
+        }
+
+        $parts = parse_url($value);
+        $origin = parse_url(config('app.url') ?? '');
+        if (!is_array($parts) || !is_array($origin)
+            || isset($parts['user']) || isset($parts['pass']) || isset($parts['fragment'])
+            || !in_array(strtolower($parts['scheme'] ?? ''), ['http', 'https'], true)
+            || strtolower($parts['scheme'] ?? '') !== strtolower($origin['scheme'] ?? '')
+            || strtolower($parts['host'] ?? '') !== strtolower($origin['host'] ?? '')
+            || ($parts['port'] ?? null) !== ($origin['port'] ?? null)) {
+            return null;
+        }
+
+        $path = $parts['path'] ?? '';
+        $segment = rawurldecode(basename($path));
+        $expectedPath = route('open.forms.submissions.file', [$formId, $segment], false);
+        if ($path !== $expectedPath || !URL::hasValidSignature(Request::create($value), absolute: false)) {
+            return null;
+        }
+
+        $fileName = FilenameUrlEncoder::isEncoded($segment) ? FilenameUrlEncoder::decode($segment) : $segment;
+        if ($fileName === '' || in_array($fileName, ['.', '..'], true)
+            || str_contains($fileName, '/') || str_contains($fileName, '\\') || str_contains($fileName, "\0")) {
+            return null;
+        }
+
+        return Storage::exists(self::getFileUploadPath($formId, $fileName)) ? $fileName : null;
+    }
 
     /**
      * Generate the file upload path for a specific form
