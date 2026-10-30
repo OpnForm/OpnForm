@@ -247,7 +247,7 @@ class AnswerFormRequest extends FormRequest
                 if (!empty($property['allowed_file_types'])) {
                     $allowedFileTypes = explode(',', $property['allowed_file_types']);
                 }
-                $this->requestRules[$property['id'] . '.*'] = [new StorageFile($this->getFieldMaxFileSize($property), $allowedFileTypes, $this->form)];
+                $this->requestRules[$property['id'] . '.*'] = [new StorageFile($this->getFieldMaxFileSize($property), $allowedFileTypes, $this->form, $property)];
 
                 return ['array'];
             case 'email':

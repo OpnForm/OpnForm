@@ -13,7 +13,7 @@ class StorageFile implements ValidationRule
 {
     public string $error = 'Invalid file.';
 
-    public function __construct(public int $maxSize, public array $fileTypes = [], public ?Form $form = null)
+    public function __construct(public int $maxSize, public array $fileTypes = [], public ?Form $form = null, public ?array $field = null)
     {
         $this->fileTypes = array_values(array_filter(array_map(
             fn ($type) => strtolower(ltrim(trim($type), '.')),
@@ -31,9 +31,15 @@ class StorageFile implements ValidationRule
      */
     public function passes($attribute, $value): bool
     {
-        // If full path then no need to validate
+        if (!is_string($value)) {
+            return false;
+        }
+
+        // URLs may retain signed uploads or copy the field's configured prefill.
         if (filter_var($value, FILTER_VALIDATE_URL) !== false) {
-            return true;
+            return $this->form !== null
+                && (FileUploadPathService::resolveSubmissionFileUrl($value, $this->form->id) !== null
+                    || FileUploadPathService::resolvePrefilledAssetUrl($value, $this->field) !== null);
         }
         $fileNameParser = StorageFileNameParser::parse($value);
 
