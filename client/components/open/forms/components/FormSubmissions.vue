@@ -72,6 +72,31 @@ const {
   refetch
 } = paginatedList(computed(() => props.form?.id))
 
+// Renew expired file links once for all thumbnails entering the viewport together.
+let fileLinksRefresh = null
+let refreshedFileLinks = new Set()
+let fileLinksRefreshedAt = -Infinity
+const refreshSubmissionFiles = () => {
+  if (!fileLinksRefresh) {
+    fileLinksRefresh = refetch({ cancelRefetch: false, throwOnError: true })
+      .then((result) => {
+        refreshedFileLinks = new Set((result.data?.data || [])
+          .flatMap(record => Object.values(record.data || {}).flat())
+          .map(value => value?.file_url)
+          .filter(Boolean))
+        fileLinksRefreshedAt = performance.now()
+      })
+      .finally(() => { fileLinksRefresh = null })
+  }
+  return fileLinksRefresh
+}
+provide('submissionFileLinks', {
+  refresh: refreshSubmissionFiles,
+  // Trust newly issued links for less than their ten-minute server validity,
+  // even if the browser's wall clock is ahead of the server's clock.
+  isFresh: src => performance.now() - fileLinksRefreshedAt < 9 * 60 * 1000 && refreshedFileLinks.has(src),
+})
+
 // Replace existing event handlers:
 const handleSearch = (searchTerm) => {
   setSearch(searchTerm)

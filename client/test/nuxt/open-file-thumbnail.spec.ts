@@ -40,6 +40,7 @@ describe('submission table image loading', () => {
     observer.intersect(true)
     await flushPromises()
     expect(wrapper.attributes('src')).toBe('/test-image.jpg')
+    await wrapper.trigger('load')
     expect(observer.disconnect).toHaveBeenCalled()
 
     // A queued exit notification must not remove an already loaded source.
