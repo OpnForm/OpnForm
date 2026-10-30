@@ -16,12 +16,12 @@
         :aria-label="`Preview ${file.displayed_file_name}`"
         @click="openFilePreview(file)"
       >
-        <img
+        <OpenFileThumbnail
           class="h-full w-full object-cover"
           :src="file.file_url"
           :alt="file.file_name"
           @error="failedImages.push(file.file_url)"
-        >
+        />
       </button>
       <button
         v-else-if="file.is_pdf"
@@ -138,6 +138,8 @@
 </template>
 
 <script setup>
+import OpenFileThumbnail from './OpenFileThumbnail.vue'
+
 const props = defineProps({
   value: {
     type: Array,
