@@ -3,6 +3,7 @@
 namespace App\Service\Security;
 
 use InvalidArgumentException;
+use Symfony\Component\HttpFoundation\IpUtils;
 
 class PublicWebhookUrl
 {
@@ -184,7 +185,17 @@ class PublicWebhookUrl
             $ip,
             FILTER_VALIDATE_IP,
             FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE
-        ) !== false;
+        ) !== false && !IpUtils::checkIp($ip, [
+            // PHP's private/reserved flags do not cover all special-use ranges.
+            '100.64.0.0/10',
+            '192.0.0.0/24',
+            '198.18.0.0/15',
+            // Reject translation/tunnel ranges rather than trusting an embedded IPv4.
+            '::ffff:0:0/96',
+            '64:ff9b::/96',
+            '64:ff9b:1::/48',
+            '2002::/16',
+        ]);
     }
 
     private static function formatCurlResolveIp(string $ip): string
