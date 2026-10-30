@@ -121,3 +121,21 @@ describe('FormLogicConditionChecker mention values', () => {
     })).toBe(true)
   })
 })
+
+describe('date field comparison references', () => {
+  it.each([
+    ['2026-10-31', '2026-10-30', true],
+    ['2026-10-30', '2026-10-30', true],
+    ['2026-10-29', '2026-10-30', false],
+    ['2027-01-01', '2026-12-31', true],
+    ['', '2026-10-30', false],
+    ['2026-10-30', '', false],
+  ])('checks end %s against start %s', (end, start, expected) => {
+    const condition = { value: {
+      property_meta: { id: 'end', type: 'date' },
+      operator: 'on_or_after',
+      value: '<span mention="true" mention-field-id="start" mention-field-name="Start" mention-fallback="">Start</span>',
+    } }
+    expect(Boolean(conditionsMet(condition, { start, end }))).toBe(expected)
+  })
+})

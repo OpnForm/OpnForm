@@ -4,6 +4,7 @@ namespace App\Rules;
 
 use App\Models\Workspace;
 use App\Rules\PropertyValidators\CorePropertyValidator;
+use App\Rules\PropertyValidators\DateComparisonPropertyValidator;
 use App\Rules\PropertyValidators\LogicPropertyValidator;
 use App\Rules\PropertyValidators\PaymentPropertyValidator;
 use App\Rules\PropertyValidators\PropertyValidatorInterface;
@@ -46,6 +47,7 @@ class FormPropertiesRule implements ValidationRule, ValidatorAwareRule, DataAwar
             new TypePropertyValidator(),
             new PaymentPropertyValidator($workspace),
             new LogicPropertyValidator(),
+            new DateComparisonPropertyValidator(),
             new SelectOptionsPropertyValidator(),
         ];
     }

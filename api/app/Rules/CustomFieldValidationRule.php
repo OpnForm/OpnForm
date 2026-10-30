@@ -37,7 +37,7 @@ class CustomFieldValidationRule implements ValidationRule
     public function passes($attribute, $value)
     {
         $logicConditions = $this->validation['error_conditions']['conditions'] ?? null;
-        if (empty($logicConditions) || empty($logicConditions['children'] ?? [])) {
+        if (empty($logicConditions) || (is_array($logicConditions) && array_key_exists('children', $logicConditions) && $logicConditions['children'] === [])) {
             return true;
         }
 
@@ -58,7 +58,7 @@ class CustomFieldValidationRule implements ValidationRule
                 $formDataWithContext,
                 $this->form
             );
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             $this->errorOccurred = true;
             return false;
         }

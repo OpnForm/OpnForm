@@ -145,3 +145,23 @@ Run `vendor/bin/pest --filter=FormValidationTranslationsTest` from `api/` to che
 ## Production performance
 
 See [runtime limits, caching and reproducible local measurements](docs/reports/production-performance-2026-10.md).
+
+### Compare date fields in conditions
+
+For a single date field's **Equals**, **Before**, **After**, **On or before**, or
+**On or after** condition, choose **Fixed date** to use the calendar or
+**Field or variable** to compare against another single date field or a computed
+variable returning an ISO date. This works in
+conditional logic and custom validation. Date ranges are excluded from reference
+selection. Relative conditions such as **Within next X days** still take a number
+of days. A comparison against an empty date does not pass.
+
+Date operands are validated on the server when saving the form. References must
+point to another existing single date field or a variable returning a date.
+At evaluation, both runtimes reject nulls, empty strings, non-string values,
+impossible dates, and non-ISO date text. Fields without time compare calendar dates, ignoring the time and offset carried
+by the input. Fields with time compare instants with timezone offsets applied;
+timezone-free values use UTC. Field references must have matching time settings.
+Fractional seconds use millisecond precision in both runtimes. For fields with time, equality compares the instant, so timestamps with different
+offsets can be equal. Optional empty
+fields need an explicit **Is empty OR date comparison** rule if blanks should pass.
