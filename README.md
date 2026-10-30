@@ -104,7 +104,7 @@ Clearing editor history uses the currently loaded form as the undo baseline and 
 
 ## Submission file references
 
-File fields accept temporary upload references. To retain an existing upload through a URL, send its valid, unexpired signed download URL for the same form and application origin. Refresh submission data to obtain a new URL if it has expired. Shared form assets and arbitrary external URLs cannot be used as submission uploads. Submission processing only moves files from temporary upload storage; it never moves shared form images.
+File fields accept temporary upload references. To retain an existing upload through a URL, send its valid, unexpired signed download URL for the same form and application origin. Refresh submission data to obtain a new URL if it has expired. A prefilled file configured in the editor is copied into submission storage under a fresh name for each submission; its shared source remains available. Other shared form assets and arbitrary external URLs cannot be used as submission uploads. Submission processing only moves files from temporary upload storage; it never moves shared form images.
 
 ## Spreadsheet exports
 

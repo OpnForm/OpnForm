@@ -65,6 +65,7 @@ class StoreFormSubmissionJob implements ShouldQueue
     private ?string $submitterIp = null;
     private array $attribution = [];
     private array $storedMeta = [];
+    private array $prefilledFileCopies = [];
 
     /**
      * Create a new job instance.
@@ -187,7 +188,6 @@ class StoreFormSubmissionJob implements ShouldQueue
         $record = $query->first();
 
         if ($record) {
-            $this->isClientProvidedSubmissionId = true;
             return $record->id;
         }
         return null;
@@ -201,9 +201,9 @@ class StoreFormSubmissionJob implements ShouldQueue
     private function storeSubmission(array &$formData)
     {
         DB::transaction(function () use (&$formData) {
-            // Handle record update
             if ($recordToUpdate = $this->resolveRecordToUpdate($this->submissionData)) {
                 $this->submissionId = $recordToUpdate;
+                $this->isClientProvidedSubmissionId = true;
             }
 
             if ($this->submissionId) {
@@ -268,6 +268,11 @@ class StoreFormSubmissionJob implements ShouldQueue
             $existingMeta = $submission->meta ?? [];
             $metaChanged = false;
 
+            if ($this->prefilledFileCopies !== []) {
+                $existingMeta['prefilled_files'] = array_replace($existingMeta['prefilled_files'] ?? [], $this->prefilledFileCopies);
+                $metaChanged = true;
+            }
+
             if ($isNewSubmission && !empty($this->attribution)) {
                 $existingMeta['attribution'] = $this->attribution;
                 $metaChanged = true;
@@ -331,7 +336,7 @@ class StoreFormSubmissionJob implements ShouldQueue
                     $processedFiles = [];
                     foreach ($answerValue as $fileItem) {
                         if (is_string($fileItem) && !empty($fileItem)) {
-                            $singleStoredFile = $this->storeFile($fileItem);
+                            $singleStoredFile = $this->storeFile($fileItem, $field);
                             if ($singleStoredFile) {
                                 $processedFiles[] = $singleStoredFile;
                             }
@@ -340,10 +345,10 @@ class StoreFormSubmissionJob implements ShouldQueue
                     $finalData[$field['id']] = $processedFiles;
                 } else {
                     if (is_string($answerValue) && !empty($answerValue)) {
-                        $singleFileResult = $this->storeFile($answerValue);
+                        $singleFileResult = $this->storeFile($answerValue, $field);
                         $finalData[$field['id']] = $singleFileResult;
                     } else {
-                        $finalData[$field['id']] = $this->storeFile($answerValue); // Handles null/empty $answerValue by returning null
+                        $finalData[$field['id']] = $this->storeFile($answerValue, $field); // Handles null/empty $answerValue by returning null
                     }
                 }
             } else {
@@ -397,7 +402,7 @@ class StoreFormSubmissionJob implements ShouldQueue
      * - file_name-{uuid}.{ext}
      * - {uuid}
      */
-    private function storeFile($value, ?bool $isPublic = null)
+    private function storeFile($value, ?array $field = null)
     {
         if (is_null($value) || empty($value)) {
             return null;
@@ -405,6 +410,28 @@ class StoreFormSubmissionJob implements ShouldQueue
         // Re-check URLs here because partial submissions may skip request validation.
         // Submission processing must never move shared form assets.
         if (filter_var($value, FILTER_VALIDATE_URL) !== false) {
+            if ($assetName = FileUploadPathService::resolvePrefilledAssetUrl($value, $field)) {
+                if ($this->prefilledFileCopies === []) {
+                    $existingSubmissionId = $this->submissionId ?? $this->resolveRecordToUpdate($this->submissionData);
+                    if ($existingSubmissionId) {
+                        $existingSubmission = $this->form->submissions()->findOrFail($existingSubmissionId);
+                        $this->prefilledFileCopies = $existingSubmission->meta['prefilled_files'] ?? [];
+                    }
+                }
+                $copyKey = hash('sha256', json_encode([$field['id'], $assetName]));
+                $existingCopy = $this->prefilledFileCopies[$copyKey] ?? null;
+                if ($existingCopy && Storage::exists(FileUploadPathService::getFileUploadPath($this->form->id, $existingCopy))) {
+                    return $existingCopy;
+                }
+                $parser = StorageFileNameParser::parse($assetName);
+                $parser->uuid = (string) Str::uuid();
+                $newFileName = $parser->getMovedFileName();
+                if (!Storage::copy('assets/forms/' . $assetName, FileUploadPathService::getFileUploadPath($this->form->id, $newFileName))) {
+                    throw new \RuntimeException('File storage failed.');
+                }
+                $this->prefilledFileCopies[$copyKey] = $newFileName;
+                return $newFileName;
+            }
             return FileUploadPathService::resolveSubmissionFileUrl($value, $this->form->id);
         }
 
