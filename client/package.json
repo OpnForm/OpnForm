@@ -74,7 +74,7 @@
     "@sentry/nuxt": "^11.8.0",
     "@sentry/vite-plugin": "^11.8.0",
     "@sentry/vue": "^11.8.0",
-    "@stripe/stripe-js": "^5.5.0",
+    "@stripe/stripe-js": "^10.2.0",
     "@tailwindcss/postcss": "^4.1.10",
     "@tanstack/vue-query": "^5.104.5",
     "@tanstack/vue-virtual": "^3.13.12",
