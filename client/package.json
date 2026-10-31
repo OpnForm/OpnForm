@@ -94,7 +94,7 @@
     "embedkit": "^0.1.7",
     "esbuild": "^0.28.2",
     "fuse.js": "^7.0.0",
-    "js-sha256": "^0.10.1",
+    "js-sha256": "^1.0.0",
     "libphonenumber-js": "^1.13.15",
     "object-to-formdata": "^4.5.1",
     "overlayscrollbars": "^2.17.0",
