@@ -38,7 +38,7 @@
         "league/flysystem-aws-s3-v3": "*",
         "maatwebsite/excel": "^4.0.5",
         "mpociot/versionable": "^4.4",
-        "openai-php/client": "^0.19.1",
+        "openai-php/client": "^0.21.0",
         "propaganistas/laravel-disposable-email": "*",
         "sabberworm/php-css-parser": "^9.1",
         "sentry/sentry-laravel": "*",
