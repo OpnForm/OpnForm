@@ -32,7 +32,7 @@
         "laravel/passport": "^12.4",
         "laravel/sanctum": "^4.0",
         "laravel/socialite": "*",
-        "laravel/tinker": "^2.9",
+        "laravel/tinker": "^3.0",
         "laravel/ui": "*",
         "laravel/vapor-cli": "*",
         "league/flysystem-aws-s3-v3": "*",
