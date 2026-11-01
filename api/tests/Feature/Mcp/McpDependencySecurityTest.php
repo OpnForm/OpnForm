@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Http;
 use Laravel\Mcp\Client;
 use Laravel\Mcp\Client\Exceptions\OAuthException;
+use Laravel\Mcp\Client\OAuth\AuthServerDiscovery;
 
 it('rejects unadvertised OAuth discovery before disclosing client credentials (GHSA-m25c-38v7-94p8)', function () {
     Http::preventStrayRequests();
@@ -12,14 +13,20 @@ it('rejects unadvertised OAuth discovery before disclosing client credentials (G
         ]),
     ]);
 
-    expect(fn () => Client::web('https://mcp.example.test/mcp')
+    AuthServerDiscovery::resolveHostsUsing(fn () => ['93.184.216.34']);
+
+    try {
+        expect(fn () => Client::web('https://mcp.example.test/mcp')
         ->withOAuth(clientId: 'test-client', clientSecret: 'test-secret', redirectUri: 'https://opnform.test/callback')
         ->oAuthClient('https://attacker.example.test/resource')
         ->redirect())
         ->toThrow(OAuthException::class, 'was not advertised by the resource');
 
-    Http::assertSentCount(1);
-    Http::assertNotSent(fn ($request) => str_starts_with($request->url(), 'https://attacker.example.test'));
+        Http::assertSentCount(1);
+        Http::assertNotSent(fn ($request) => str_starts_with($request->url(), 'https://attacker.example.test'));
+    } finally {
+        AuthServerDiscovery::resolveHostsUsing(null);
+    }
 });
 
 it('rejects deceptive loopback redirects during registration (GHSA-mx2h-h55v-pm44)', function (string $redirect) {
