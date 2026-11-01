@@ -169,3 +169,12 @@ timezone-free values use UTC. Field references must have matching time settings.
 Fractional seconds use millisecond precision in both runtimes. For fields with time, equality compares the instant, so timestamps with different
 offsets can be equal. Optional empty
 fields need an explicit **Is empty OR date comparison** rule if blanks should pass.
+
+
+Dependency audit overrides pin compatible glob consumers (v9+) to 14.0.3 and
+minimatch consumers (v5+) to 11.0.3. Legacy ESLint consumers retain minimatch
+3.1.5 because its callable CommonJS API differs from v11. The exact advisory,
+version and paths are reviewed until 6 November 2026 in
+`scripts/npm-exceptions.json`: the reported optimizationLevel >= 2 vulnerability
+has no corresponding preprocessing phase in v3. Raw audit findings remain visible;
+new versions, severities, paths and advisories still fail the gate.
