@@ -393,9 +393,3 @@ The completion screen uses this URL directly when the respondent clicks **Downlo
 Keep the signed URL in the completion screen's memory and clear it when restarting the form. Treat it as a temporary credential: do not log it or place it in analytics events. Reopening a form with only a submission UUID does not grant a fresh download URL. Administrators can generate a new URL through the authenticated endpoint when needed.
 
 Deploy the API response addition and its completion-screen consumer together. An expired link, a failure to generate a PDF, and a missing email notification are separate issues; a successful signed download does not prove email delivery.
-
-## Submission Confetti
-
-When you enable **Display confetti**, public forms play confetti after a successful submission in both Classic and Focused layouts. The animation stops emitting particles after three seconds.
-
-`useConfetti` loads `vue-confetti` on demand. Its UMD package can expose the Vue plugin as either the default export or a nested default export, so resolve the plugin before installing it on the Nuxt Vue app. Reuse the installed `$confetti` instance for later animations.
