@@ -1462,3 +1462,40 @@ for (const viewport of [{ name: "desktop", width: 1280 }, { name: "mobile", widt
     expect(retryCount).toBe(1)
   })
 }
+
+for (const style of ["classic", "focused"] as const) {
+  for (const enabled of [true, false]) {
+    test(`${style} submission confetti enabled=${enabled}`, async ({ page, request }, testInfo) => {
+      const errors: string[] = []
+      page.on("pageerror", error => errors.push(error.message))
+      const form = await apiCreateForm(request, {
+        presentationStyle: style,
+        payloadOverrides: {
+          confetti_on_submission: enabled,
+          properties: [buildTextField("confetti_name", "Your name", { required: true })],
+        },
+      })
+      await openPublicForm(page, form.slug)
+      await expect(page.locator("#confetti-canvas")).toHaveCount(0)
+      await fillLabeledInput(page, "Your name", "Confetti Visitor")
+      await page.getByRole("button", { name: /submit/i }).click()
+      await expectSubmissionSuccess(page)
+
+      if (enabled) {
+        await expect(page.locator("#confetti-canvas")).toBeVisible()
+        // Check real painted particles, not just an empty canvas element.
+        await expect.poll(() => page.locator("#confetti-canvas").evaluate((canvas: HTMLCanvasElement) => {
+          const pixels = canvas.getContext("2d")!.getImageData(0, 0, canvas.width, canvas.height).data
+          return pixels.some((value, index) => index % 4 === 3 && value > 0)
+        })).toBe(true)
+        await testInfo.attach("confetti-after-submission", { body: await page.screenshot(), contentType: "image/png" })
+      } else {
+        await expect(page.locator("#confetti-canvas")).toHaveCount(0)
+      }
+      const token = await apiLogin(request)
+      const submissions = await apiListSubmissions(request, token, form.slug)
+      expect(JSON.stringify(submissions)).toContain("Confetti Visitor")
+      expect(errors).toEqual([])
+    })
+  }
+}

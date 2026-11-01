@@ -10,7 +10,9 @@ export const useConfetti = () => {
     if (existingConfetti) return Promise.resolve(existingConfetti)
     if (confettiPromise) return confettiPromise
 
-    confettiPromise = import('vue-confetti').then(({ default: VueConfetti }) => {
+    confettiPromise = import('vue-confetti').then(({ default: moduleDefault }) => {
+      // The UMD build can expose its plugin under a second default export.
+      const VueConfetti = moduleDefault.install ? moduleDefault : moduleDefault.default
       nuxtApp.vueApp.use(VueConfetti)
       return nuxtApp.vueApp.config.globalProperties.$confetti
     })
