@@ -80,10 +80,10 @@
         "node_modules/@eslint/eslintrc/node_modules/minimatch",
         "node_modules/eslint/node_modules/minimatch"
       ],
-      "reviewed": "2026-11-01",
+      "reviewed": "2026-11-02",
       "expires": "2026-11-06",
       "reason": "The advisory concerns optimizationLevel >= 2 and firstPhasePreProcess/globParts amplification. Locked minimatch 3.1.5 has neither that option nor that preprocessing function; its legacy CommonJS callable API is still required by these parents. A forced v11 override breaks those consumers. The package remains flagged by the scanner broad version range. Keep lint/build and CDK glob patterns repository-controlled. Do not expose legacy pattern evaluation to untrusted requests. Upgrade parents and remove this exact exception before expiry.",
-      "upstreamLatest": "11.0.3"
+      "upstreamLatest": "11.0.4"
     }
   ]
 }

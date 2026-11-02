@@ -75,6 +75,7 @@
 
 <script setup>
 import { computed, toValue } from "vue"
+import cloneDeep from "clone-deep"
 import { useComponentRegistry } from "~/composables/components/useComponentRegistry"
 import PlanTag from "~/components/app/PlanTag.vue"
 
@@ -162,13 +163,14 @@ const initIntegrationData = () => {
     status: props.formIntegrationId && formIntegration.value
       ? formIntegration.value.status
       : 'active',
-    data: props.formIntegrationId && formIntegration.value 
-      ? formIntegration.value.data ?? {} 
+    // Query results are readonly; edits must stay local until Save.
+    data: props.formIntegrationId && formIntegration.value
+      ? cloneDeep(toRaw(formIntegration.value.data) ?? {})
       : {},
     logic: props.formIntegrationId && formIntegration.value
       ? !Array.isArray(formIntegration.value.logic) &&
         formIntegration.value.logic
-        ? formIntegration.value.logic
+        ? cloneDeep(toRaw(formIntegration.value.logic))
         : null
       : null,
     oauth_id: formIntegration.value?.oauth_id ?? null,

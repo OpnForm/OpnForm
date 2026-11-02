@@ -73,7 +73,8 @@ Instructions for AI coding agents working in this repository.
 
 ## Documentation Changes
 
-- When behavior, configuration, or workflows change, update docs in `README.md`, `docs/`, or both.
+- Do not modify Markdown or documentation files as a routine part of a bug fix.
+- Update `README.md`, `docs/`, or other Markdown files only when the change creates a genuine documentation need (such as new usage, configuration, or workflow instructions), or when explicitly requested. Restoring intended behavior does not by itself require a documentation update.
 
 ## Safety
 
