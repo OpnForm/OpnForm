@@ -200,6 +200,7 @@ const validationErrorResponse = ref(null)
 const hasBackgroundValidationErrors = ref(false)
 const backgroundValidatedFormId = ref(null)
 const createdFormSlug = ref(null)
+const { queuePrompt: queueGithubStarPrompt } = useGithubStarPrompt()
 const formEditorNavbar = ref(null)
 const route = useRoute()
 const { emitFormSaved, emitNavigateBack } = useEditorEmbedBridge()
@@ -530,12 +531,12 @@ const saveFormCreate = () => {
       console.error("Analytics error", error)
     }
     displayFormModificationAlert(response)
+    queueGithubStarPrompt(response)
 
     useRouter().push({
       name: "forms-slug-show-share",
       params: {
         slug: createdFormSlug.value,
-        new_form: newForm.users_first_form ?? false,
       },
     })
   }).catch((error) => {

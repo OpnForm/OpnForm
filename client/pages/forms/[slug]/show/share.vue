@@ -106,10 +106,12 @@
         </div>
       </DashboardPanel>
     </PageSection>
+    <GithubStarPrompt :form-slug="form.slug" />
   </PageContainer>
 </template>
 
 <script setup>
+import GithubStarPrompt from "~/components/pages/forms/show/GithubStarPrompt.vue"
 import PageContainer from "~/components/dashboard/PageContainer.vue"
 import PageSection from "~/components/dashboard/PageSection.vue"
 import DashboardPanel from "~/components/dashboard/DashboardPanel.vue"
