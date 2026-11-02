@@ -14,6 +14,7 @@ it('can create a contact form', function () {
         ->assertJson([
             'type' => 'success',
             'message' => 'Form created.',
+            'users_first_form' => true,
         ]);
 
     expect($workspace->forms()->count())->toBe(1);
@@ -21,6 +22,26 @@ it('can create a contact form', function () {
         'id' => $response->json('form.id'),
     ]);
 });
+
+it('does not treat a subsequent form as the users first form', function (bool $deletePreviousForm) {
+    $user = $this->actingAsUser();
+    $workspace = $this->createUserWorkspace($user);
+    $previousForm = $this->createForm($user, $workspace);
+
+    if ($deletePreviousForm) {
+        $previousForm->delete();
+    }
+
+    $form = $this->makeForm($user, $workspace);
+    $formData = (new \App\Http\Resources\FormResource($form))->toArray(request());
+
+    $this->postJson(route('open.forms.store'), $formData)
+        ->assertSuccessful()
+        ->assertJsonPath('users_first_form', false);
+})->with([
+    'existing form' => [false],
+    'deleted form' => [true],
+]);
 
 it('can fetch forms', function () {
     $user = $this->actingAsUser();

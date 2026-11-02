@@ -156,7 +156,7 @@ class FormController extends Controller
         return $this->success([
             'message' => $message . ($form->visibility == 'draft' ? ' But other people won\'t be able to see the form since it\'s currently in draft mode' : ''),
             'form' => (new FormResource($form))->setCleanings($created['cleanings']),
-            'users_first_form' => $request->user()->forms()->count() == 1,
+            'users_first_form' => $request->user()->forms()->withTrashed()->count() == 1,
         ]);
     }
 
