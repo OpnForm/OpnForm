@@ -488,6 +488,64 @@ test('email notification renders plain submission values once in the submission 
     expect($html)->not->toContain("Café d'Art & <b>test</b>");
 });
 
+test('email notification preserves content around a large base64 image', function (string $alignment) {
+    $user = $this->actingAsUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace);
+    $imageUrl = 'data:image/jpeg;base64,' . str_repeat('A', 538000);
+    $class = $alignment === '' ? '' : ' class="retained-class ql-resize-style-' . $alignment . '"';
+
+    $notification = new FormEmailNotification(
+        new \App\Events\Forms\FormSubmitted($form, []),
+        (object) [
+            'sender_name' => 'Test Sender',
+            'subject' => 'Test Subject',
+            'email_content' => '<p>Before the large image</p><p><img src="' . $imageUrl . '"' . $class . ' style="max-width:100%;"></p><p>After the large image</p>',
+            'include_submission_data' => false,
+        ]
+    );
+
+    $html = (string) $notification->toMail(new AnonymousNotifiable())->render();
+
+    expect($html)->toContain('Before the large image', 'After the large image', $imageUrl);
+    if ($alignment !== '') {
+        $styles = ['left' => 'float: left', 'right' => 'float: right', 'center' => 'text-align: center', 'full' => 'width: 100%'];
+        expect($html)->toContain($styles[$alignment], 'retained-class', 'max-width: 100%');
+        expect($html)->not->toContain('ql-resize-style-' . $alignment);
+    }
+})->with(['unaligned' => '', 'left', 'right', 'center', 'full']);
+
+test('email image alignment preserves quoted attribute values and existing styles', function (bool $styleFirst) {
+    $user = $this->actingAsUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace);
+    $style = ' style="max-width:100%; font-family: \'Open Sans\';"';
+    $class = ' class="retained-class ql-resize-style-right"';
+    $notification = new FormEmailNotification(
+        new \App\Events\Forms\FormSubmitted($form, []),
+        (object) [
+            'sender_name' => 'Test Sender',
+            'subject' => 'Test Subject',
+            'email_content' => '<p><img alt="Example class=\'example\'" title="Example style=\'color:red;\'"'
+                . ($styleFirst ? $style . $class : $class . $style)
+                . ' src="data:image/jpeg;base64,AAAA"></p>',
+            'include_submission_data' => false,
+        ]
+    );
+
+    $html = (string) $notification->toMail(new AnonymousNotifiable())->render();
+    $document = new \DOMDocument();
+    @$document->loadHTML($html);
+    $image = $document->getElementsByTagName('img')->item(0);
+
+    expect($image)->not->toBeNull();
+    expect($image->getAttribute('alt'))->toBe("Example class='example'");
+    expect($image->getAttribute('title'))->toBe("Example style='color:red;'");
+    expect($image->getAttribute('class'))->toBe('retained-class');
+    expect($image->getAttribute('style'))->toContain('float: right', 'max-width: 100%', 'Open Sans');
+    expect($image->getAttribute('style'))->not->toContain('color: red');
+})->with([false, true]);
+
 test('email integration stores the inline uploaded images preference', function () {
     $user = $this->actingAsUser();
     $workspace = $this->createUserWorkspace($user);
