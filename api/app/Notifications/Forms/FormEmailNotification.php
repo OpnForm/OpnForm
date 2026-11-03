@@ -461,35 +461,62 @@ class FormEmailNotification extends Notification
             'ql-resize-style-full' => 'width:100% !important;',
         ];
 
-        foreach ($alignments as $class => $inlineStyle) {
-            $html = preg_replace_callback(
-                '/<([a-z]+)([^>]*\bclass\s*=\s*["\']([^"\']*' . preg_quote($class, '/') . '[^"\']*)["\'])([^>]*)>/i',
-                function ($m) use ($class, $inlineStyle) {
-                    $tagName = $m[1];
-                    $beforeClass = $m[2];
-                    $classes = $m[3];
-                    $after = $m[4];
+        // Match tags once, consuming large quoted attributes without backtracking.
+        return preg_replace_callback(
+            '/<([a-z]+)\b((?:[^>"\']++|"[^"]*+"|\'[^\']*+\')*+)>/i',
+            function ($match) use ($alignments) {
+                $attributes = $match[2];
+                preg_match_all(
+                    '/\s+([a-z_:][a-z0-9_.:-]*)\s*=\s*(?:"([^"]*+)"|\'([^\']*+)\'|([^\s>]+))/i',
+                    $attributes,
+                    $attributeMatches,
+                    PREG_SET_ORDER | PREG_OFFSET_CAPTURE | PREG_UNMATCHED_AS_NULL
+                );
+                $parsedAttributes = [];
+                foreach ($attributeMatches as $attribute) {
+                    $parsedAttributes[strtolower($attribute[1][0])] ??= [
+                        'value' => $attribute[2][0] ?? $attribute[3][0] ?? $attribute[4][0],
+                        'offset' => $attribute[0][1],
+                        'length' => strlen($attribute[0][0]),
+                    ];
+                }
+                $classAttribute = $parsedAttributes['class'] ?? null;
+                if (!$classAttribute) {
+                    return $match[0];
+                }
 
-                    $newClasses = preg_replace('/\s*' . preg_quote($class, '/') . '\s*/', ' ', $classes);
-                    $newClasses = trim(preg_replace('/\s+/', ' ', $newClasses));
-
-                    $style = $inlineStyle;
-                    if (preg_match('/style\s*=\s*["\']([^"\']*)["\']/', $beforeClass . $after, $sm)) {
-                        $style = $inlineStyle . $sm[1];
-                        $beforeClass = preg_replace('/\s*style\s*=\s*["\'][^"\']*["\']/', '', $beforeClass);
-                        $after = preg_replace('/\s*style\s*=\s*["\'][^"\']*["\']/', '', $after);
+                $classes = preg_split('/\s+/', trim($classAttribute['value']));
+                $style = '';
+                foreach ($alignments as $class => $inlineStyle) {
+                    if (in_array($class, $classes, true)) {
+                        $classes = array_values(array_diff($classes, [$class]));
+                        $style = $inlineStyle . $style;
                     }
+                }
 
-                    $beforeClass = preg_replace('/\s*class\s*=\s*["\'][^"\']*["\']/', '', $beforeClass);
-                    $classAttr = $newClasses !== '' ? ' class="' . $newClasses . '"' : '';
+                if ($style === '') {
+                    return $match[0];
+                }
 
-                    return '<' . $tagName . $beforeClass . $classAttr . ' style="' . $style . '"' . $after . '>';
-                },
-                $html
-            );
-        }
+                $replacements = [[
+                    'offset' => $classAttribute['offset'],
+                    'length' => $classAttribute['length'],
+                    'value' => $classes ? ' class="' . e(implode(' ', $classes), false) . '"' : '',
+                ]];
+                if ($styleAttribute = $parsedAttributes['style'] ?? null) {
+                    $style .= $styleAttribute['value'];
+                    $replacements[] = [...$styleAttribute, 'value' => ''];
+                }
 
-        return $html;
+                usort($replacements, fn ($left, $right) => $right['offset'] <=> $left['offset']);
+                foreach ($replacements as $replacement) {
+                    $attributes = substr_replace($attributes, $replacement['value'], $replacement['offset'], $replacement['length']);
+                }
+
+                return '<' . $match[1] . $attributes . ' style="' . e($style, false) . '">';
+            },
+            $html
+        ) ?? $html;
     }
 
     private function getEncodedSubmissionId(): ?string
