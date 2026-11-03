@@ -298,6 +298,17 @@ describe('PdfSafeImageFetcher', function () {
         Http::assertNothingSent();
     });
 
+    it('rejects Teredo image urls before making a request', function (bool $allowPrivateWebhooks) {
+        config(['opnform.webhooks.allow_private_urls' => $allowPrivateWebhooks]);
+        Http::fake();
+
+        $fetcher = new PdfSafeImageFetcher();
+        $content = $fetcher->fetch('https://[2001:0:4136:e378:8000:63bf:3f57:fefe]/image.png');
+
+        expect($content)->toBeNull();
+        Http::assertNothingSent();
+    })->with([false, true]);
+
     it('rejects responses whose content-length exceeds the download limit', function () {
         Http::fake([
             'https://images.unsplash.com/*' => Http::response(

@@ -17,6 +17,11 @@ dataset('non-public webhook destinations', [
     'NAT64 end' => ['64:ff9b::ffff:ffff'],
     'local NAT64 start' => ['64:ff9b:1::'],
     'local NAT64 end' => ['64:ff9b:1:ffff:ffff:ffff:ffff:ffff'],
+    'Teredo private 192.168.1.1' => ['2001:0:4136:e378:8000:63bf:3f57:fefe'],
+    'Teredo private 10.0.0.1' => ['2001:0:4136:e378:8000:63bf:f5ff:fffe'],
+    'Teredo public IPv4' => ['2001:0:4136:e378:8000:63bf:f7f7:f7f7'],
+    'Teredo start' => ['2001::'],
+    'Teredo end' => ['2001:0:ffff:ffff:ffff:ffff:ffff:ffff'],
     '6to4 metadata' => ['2002:a9fe:a9fe::1'],
     '6to4 start' => ['2002::'],
     '6to4 end' => ['2002:ffff:ffff:ffff:ffff:ffff:ffff:ffff'],
@@ -63,7 +68,7 @@ it('accepts public addresses outside the blocked ranges and pins them', function
     '100.63.255.255', '100.128.0.0',
     '191.255.255.255', '192.0.1.0',
     '198.17.255.255', '198.20.0.0',
-    '93.184.216.34', '2606:4700:4700::1111', '2003::1',
+    '93.184.216.34', '2606:4700:4700::1111', '2001:1::1', '2003::1',
 ]);
 
 it('pins the validated destination ip for webhook requests', function () {
