@@ -472,6 +472,7 @@ const generateForm = () => {
       }
     })
     .then((response) => {
+      rememberAiCompletion(response)
       useAlert().success(response.message)
       fetchGeneratedForm(response.ai_form_completion_id)
     })
@@ -487,7 +488,6 @@ const fetchGeneratedForm = (generationId) => {
   setTimeout(() => {
     formsApi.ai.get(generationId)
       .then((data) => {
-      rememberAiCompletion(data)
         if (data.ai_form_completion.status === "completed") {
           useAlert().success(data.message)
           const generated = (typeof data.ai_form_completion.result === 'string' ? JSON.parse(data.ai_form_completion.result) : data.ai_form_completion.result)
