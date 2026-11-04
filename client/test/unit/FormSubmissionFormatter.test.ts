@@ -340,6 +340,38 @@ describe('Date Formatting', () => {
     expect(result.date).toBe('15/01/2024 - 20/01/2024')
   })
 
+  it.each([
+    [], [null, null], [undefined, undefined], ['', ''], ['invalid', '2024-02-30'],
+  ])('formats an empty or invalid date range %j as empty text', (...dates) => {
+    const formatter = new FormSubmissionFormatter(createDateForm(), { date: dates })
+
+    expect(formatter.setOutputStringsOnly().getFormattedData().date).toBe('')
+  })
+
+  it.each([
+    [['2024-01-15', null], '15/01/2024'],
+    [[null, '2024-01-20'], '20/01/2024'],
+    [['2024-01-15', 'invalid'], '15/01/2024'],
+  ])('formats the valid endpoint of a partial date range %j', (date, expected) => {
+    const formatter = new FormSubmissionFormatter(createDateForm(), { date })
+
+    expect(formatter.getFormattedData().date).toBe(expected)
+  })
+
+  it.each(['invalid', '2024-02-30', {}, 123])('formats an invalid single date %j as empty text', date => {
+    const formatter = new FormSubmissionFormatter(createDateForm(), { date })
+
+    expect(formatter.getFormattedData().date).toBe('')
+  })
+
+  it('keeps other answers available when a date range is empty', () => {
+    const form = createDateForm()
+    form.properties.push({ id: 'name', name: 'Name', type: 'text' })
+    const formatter = new FormSubmissionFormatter(form, { date: [null, null], name: 'Alex' })
+
+    expect(formatter.getFormattedData()).toEqual({ date: '', name: 'Alex' })
+  })
+
   it('should return ISO format when useIsoFormat enabled', () => {
     const form = createDateForm()
     const formatter = new FormSubmissionFormatter(form, { date: '2024-01-15' })

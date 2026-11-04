@@ -39,6 +39,23 @@ async function createForm(request: APIRequestContext, properties: unknown[], ove
   return (await response.json()).form
 }
 
+test('field mentions render an empty prefilled date range without crashing the public form', async ({ page, request }) => {
+  const form = await createForm(request, [
+    { id: 'summary', name: 'Summary', type: 'nf-text',
+      content: '<p>Travel dates: <span mention="true" mention-field-id="dates" mention-field-name="Dates" mention-fallback="Not selected">Dates</span></p>' },
+    { id: 'name', name: 'Full name', type: 'text', required: true },
+    { id: 'dates', name: 'Dates', type: 'date', date_range: true, prefill: [null, null] },
+  ])
+
+  await page.goto(`/forms/${form.slug}`)
+
+  await expect(page.getByLabel('Full name', { exact: true })).toBeVisible()
+  await expect(page.getByText('Travel dates: Not selected', { exact: true })).toBeVisible()
+  await page.getByLabel('Full name', { exact: true }).fill('Alex')
+  await expect(page.getByLabel('Full name', { exact: true })).toHaveValue('Alex')
+  await expect(page.locator('body')).not.toContainText('Whoops, something went wrong')
+})
+
 function collectHydrationWarnings(page: Page) {
   const warnings: string[] = []
   page.on('console', message => {
