@@ -1,4 +1,4 @@
-import { format, parseISO } from 'date-fns'
+import { format, isValid, parseISO } from 'date-fns'
 
 // Singleton cache for formatter instances (keyed by form slug)
 const formatterCache = new Map()
@@ -118,13 +118,17 @@ export class FormSubmissionFormatter {
     const timeFormat = field.with_time ? (field.time_format === 24 ? 'HH:mm' : 'h:mm a') : ''
     const fullFormat = `${dateFormat}${timeFormat ? ' ' + timeFormat : ''}`
 
-    if (Array.isArray(value)) {
-      const start = format(parseISO(value[0]), fullFormat)
-      const end = value[1] ? format(parseISO(value[1]), fullFormat) : null
-      return end ? `${start} - ${end}` : start
+    const formatDate = (date) => {
+      if (typeof date !== 'string' || !date) return ''
+      const parsedDate = parseISO(date)
+      return isValid(parsedDate) ? format(parsedDate, fullFormat) : ''
     }
 
-    return format(parseISO(value), fullFormat)
+    if (Array.isArray(value)) {
+      return value.slice(0, 2).map(formatDate).filter(Boolean).join(' - ')
+    }
+
+    return formatDate(value)
   }
 
   formatPeopleValue(value) {
