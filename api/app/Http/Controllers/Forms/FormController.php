@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 namespace App\Http\Controllers\Forms;
 
@@ -314,7 +314,10 @@ class FormController extends Controller
         // reverse proxies (Docker / nginx) the request host can be empty or
         // malformed, producing host-less URLs such as "http:/forms/assets/..."
         // that the browser cannot resolve (see #1293).
-        $assetUrl = rtrim((string) config('app.url'), '/') . '/forms/assets/' . $fileNameParser->getMovedFileName();
+        // Keep the named route so the asset path stays in sync with api.php,
+        // and only pin the scheme/host to the configured APP_URL.
+        $relativeUrl = route('forms.assets.show', [$fileNameParser->getMovedFileName()], false);
+        $assetUrl = rtrim((string) config('app.url'), '/') . $relativeUrl;
 
         return $this->success([
             'message' => 'File uploaded.',
@@ -367,4 +370,3 @@ class FormController extends Controller
         ]);
     }
 }
-
