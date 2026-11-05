@@ -15,6 +15,7 @@ describe('SendTelemetryJob', function () {
         Config::set('telemetry.endpoint', 'https://test-endpoint.com/track');
         Config::set('telemetry.client_id', 'test-client-id');
         Config::set('telemetry.client_secret', 'test-client-secret');
+        Config::set('app.front_url', 'https://forms.example.com/private?token=secret');
         // Set production environment (telemetry requires both production AND self-hosted)
         app()->detectEnvironment(fn () => 'production');
     });
@@ -39,6 +40,7 @@ describe('SendTelemetryJob', function () {
         Http::assertSent(function ($request) {
             return $request->url() === 'https://test-endpoint.com/track'
                 && $request['type'] === 'track'
+                && $request['payload']['properties']['instance_hostname'] === 'forms.example.com'
                 && $request['payload']['name'] === TelemetryEvent::FORM_CREATED->value();
         });
     });

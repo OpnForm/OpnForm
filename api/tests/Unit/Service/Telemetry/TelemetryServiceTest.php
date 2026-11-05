@@ -12,6 +12,8 @@ uses(TestCase::class);
 describe('TelemetryService', function () {
     beforeEach(function () {
         Cache::flush();
+        Config::set('app.front_url', null);
+        Config::set('app.url', 'http://localhost');
         $this->service = new TelemetryService();
     });
 
@@ -96,6 +98,7 @@ describe('TelemetryService', function () {
 
         expect($this->service->getInstanceProperties())->toBe([
             'has_paid_license' => false,
+            'instance_hostname' => null,
         ]);
     });
 
@@ -110,6 +113,7 @@ describe('TelemetryService', function () {
         expect($this->service->getInstanceProperties(['forms_count' => 10]))->toBe([
             'forms_count' => 10,
             'has_paid_license' => true,
+            'instance_hostname' => null,
         ]);
     });
 
@@ -118,6 +122,36 @@ describe('TelemetryService', function () {
 
         expect($this->service->getInstanceProperties(['has_paid_license' => true]))->toBe([
             'has_paid_license' => false,
+            'instance_hostname' => null,
         ]);
     });
+
+    it('includes only the configured hostname in instance properties', function ($frontUrl, $appUrl, $expected) {
+        Config::set('app.self_hosted', false);
+        Config::set('app.front_url', $frontUrl);
+        Config::set('app.url', $appUrl);
+
+        $properties = $this->service->getInstanceProperties(['instance_hostname' => 'untrusted.example.com']);
+
+        expect($properties['instance_hostname'])->toBe($expected);
+    })->with([
+        'frontend preferred over API' => ['https://forms.example.com', 'https://api.example.com', 'forms.example.com'],
+        'credentials, port, path, query and fragment excluded' => ['https://user:password@FORMS.Example.com:8443/private?token=secret#section', null, 'forms.example.com'],
+        'trailing dot normalized' => ['https://forms.example.com./', null, 'forms.example.com'],
+        'missing frontend falls back to app' => [null, 'https://api.example.com', 'api.example.com'],
+        'relative frontend falls back to app' => ['/', 'https://forms.example.com', 'forms.example.com'],
+        'malformed frontend falls back to app' => ['https://forms.example.com:invalid', 'https://forms.example.com', 'forms.example.com'],
+        'non-HTTP scheme falls back to app' => ['ftp://files.example.com', 'https://forms.example.com', 'forms.example.com'],
+        'missing URLs' => [null, null, null],
+        'localhost' => ['http://localhost:3000', null, null],
+        'localhost subdomain' => ['http://forms.localhost', null, null],
+        'container hostname' => ['http://opnform-api', null, null],
+        'local domain' => ['http://forms.local', null, null],
+        'internal domain' => ['https://forms.internal', null, null],
+        'test domain' => ['https://forms.example.test', null, null],
+        'home network' => ['http://forms.home.arpa', null, null],
+        'private IPv4' => ['http://192.168.1.10', null, null],
+        'public IPv4' => ['https://8.8.8.8', null, null],
+        'IPv6' => ['http://[2001:db8::1]:8080', null, null],
+    ]);
 });
