@@ -1,0 +1,132 @@
+name: Docker client release
+
+on:
+  workflow_call:
+    inputs:
+      release_tag:
+        type: string
+        required: true
+      publish:
+        type: boolean
+        default: true
+      publish_latest:
+        type: boolean
+        default: false
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Existing stable release tag to build (e.g. v2.8.4)
+        type: string
+        required: true
+      publish:
+        description: Publish the multi-platform version tag
+        type: boolean
+        default: true
+      publish_latest:
+        description: Also update latest (only for the newest release)
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docker-client-${{ inputs.release_tag }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build release client (${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    permissions:
+      contents: read
+    steps:
+      - name: Validate release tag
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          if [[ ! "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Expected a stable release tag such as v2.8.4" >&2
+            exit 1
+          fi
+      - uses: actions/checkout@v7
+        with:
+          ref: refs/tags/${{ inputs.release_tag }}
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_ACCESS_TOKEN }}
+      # Build Nuxt on native runners: ARM64 bundling under QEMU can exceed six hours.
+      # Push by digest so release tags only move after both architectures finish.
+      - name: Build and push client by digest
+        id: build
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: docker/Dockerfile.client
+          platforms: linux/${{ matrix.arch }}
+          outputs: type=image,name=${{ secrets.DOCKER_UI_REPO }},push-by-digest=true,name-canonical=true,push=true
+          cache-from: type=registry,ref=${{ secrets.DOCKER_UI_REPO }}:dev
+          cache-to: type=inline
+      - name: Export client digest
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          mkdir -p "${{ runner.temp }}/client-digests"
+          touch "${{ runner.temp }}/client-digests/${DIGEST#sha256:}"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-client-digest-${{ matrix.arch }}
+          path: ${{ runner.temp }}/client-digests/*
+          if-no-files-found: error
+          retention-days: 3
+
+  publish:
+    name: Publish client manifest
+    needs: [build]
+    if: inputs.publish
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_ACCESS_TOKEN }}
+      - uses: actions/download-artifact@v8
+        with:
+          path: ${{ runner.temp }}/client-digests
+          pattern: release-client-digest-*
+          merge-multiple: true
+      - name: Publish multi-platform client manifest
+        working-directory: ${{ runner.temp }}/client-digests
+        env:
+          CLIENT_IMAGE: ${{ secrets.DOCKER_UI_REPO }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+          PUBLISH_LATEST: ${{ inputs.publish_latest }}
+        run: |
+          digests=(*)
+          if [ "${#digests[@]}" -ne 2 ]; then
+            echo "Expected client digests for both AMD64 and ARM64" >&2
+            exit 1
+          fi
+          sources=()
+          for digest in "${digests[@]}"; do
+            sources+=("${CLIENT_IMAGE}@sha256:${digest}")
+          done
+          tags=(--tag "${CLIENT_IMAGE}:${RELEASE_TAG#v}")
+          if [ "$PUBLISH_LATEST" = true ]; then
+            tags+=(--tag "${CLIENT_IMAGE}:latest")
+          fi
+          docker buildx imagetools create "${tags[@]}" "${sources[@]}"
+          docker buildx imagetools inspect "${CLIENT_IMAGE}:${RELEASE_TAG#v}"

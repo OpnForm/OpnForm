@@ -646,9 +646,21 @@ jobs:
         run: |
           echo 'Validated main release published. The private OpnForm controller deploys after this CI run completes successfully. No AWS deployment.' >> "$GITHUB_STEP_SUMMARY"
 
+  build-docker-client:
+    name: Build release client
+    needs: [release-readiness]
+    if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') }}
+    uses: ./.github/workflows/docker-client-release.yml
+    with:
+      release_tag: ${{ github.ref_name }}
+      publish: false
+    secrets: inherit
+    permissions:
+      contents: read
+
   publish-docker-images:
     name: Push Docker images to Docker Hub
-    needs: [release-readiness]
+    needs: [release-readiness, build-docker-client]
     if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') }}
     runs-on: ubuntu-latest
     permissions:
@@ -661,7 +673,6 @@ jobs:
             {
               echo "VERSION=${GITHUB_REF#refs/*/v}"
               echo "API_TAGS=${{secrets.DOCKER_API_REPO}}:latest,${{secrets.DOCKER_API_REPO}}:${GITHUB_REF#refs/*/v}"
-              echo "UI_TAGS=${{secrets.DOCKER_UI_REPO}}:latest,${{secrets.DOCKER_UI_REPO}}:${GITHUB_REF#refs/*/v}"
             } >> "$GITHUB_ENV"
           fi
 
@@ -695,15 +706,28 @@ jobs:
           cache-from: type=registry,ref=${{secrets.DOCKER_API_REPO}}:dev
           cache-to: type=inline
 
-      - name: Build and push Client image
-        uses: docker/build-push-action@v7
+      - name: Download native client digests
+        uses: actions/download-artifact@v8
         with:
-          context: .
-          file: docker/Dockerfile.client
-          platforms: linux/amd64,linux/arm64
-          push: true
-          build-args: |
-            APP_VERSION=${{ env.VERSION }}
-          tags: ${{ env.UI_TAGS }}
-          cache-from: type=registry,ref=${{secrets.DOCKER_UI_REPO}}:dev
-          cache-to: type=inline
+          path: ${{ runner.temp }}/client-digests
+          pattern: release-client-digest-*
+          merge-multiple: true
+      - name: Publish multi-platform client manifest
+        working-directory: ${{ runner.temp }}/client-digests
+        env:
+          CLIENT_IMAGE: ${{ secrets.DOCKER_UI_REPO }}
+        run: |
+          digests=(*)
+          if [ "${#digests[@]}" -ne 2 ]; then
+            echo "Expected client digests for both AMD64 and ARM64" >&2
+            exit 1
+          fi
+          sources=()
+          for digest in "${digests[@]}"; do
+            sources+=("${CLIENT_IMAGE}@sha256:${digest}")
+          done
+          docker buildx imagetools create \
+            --tag "${CLIENT_IMAGE}:${VERSION}" \
+            --tag "${CLIENT_IMAGE}:latest" \
+            "${sources[@]}"
+          docker buildx imagetools inspect "${CLIENT_IMAGE}:${VERSION}"
