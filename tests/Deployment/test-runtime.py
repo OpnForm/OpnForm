@@ -143,6 +143,7 @@ add rule inet {firewall_table} forward_guard iifname "{bridge}" oifname != "{bri
             manifest={('/app/'+f[4:]):h for f,h in source_proof['source_hashes'].items() if f.startswith('api/')}
             for filename,target in [('health.php','/opt/opnform/health.php'),('preflight.php','/opt/opnform/preflight.php'),('scheduler.php','/opt/opnform/scheduler.php'),('entrypoint.sh','/usr/local/bin/entrypoint.sh'),('role-health.sh','/usr/local/bin/role-health.sh')]:
                 manifest[target]=source_proof['source_hashes']['deploy/scaleway/'+filename]
+            manifest['/etc/nginx/nginx.conf'] = source_proof['source_hashes']['deploy/scaleway/nginx.conf']
             hash_script='$m=json_decode(stream_get_contents(STDIN),true);foreach($m as $f=>$h){if(!is_file($f)||hash_file("sha256",$f)!==$h){fwrite(STDERR,"Runtime hash mismatch: ".$f);exit(1);}}echo count($m);'
             matched=int(docker('exec','-i',probe,'php','-r',hash_script,input=json.dumps(manifest)).stdout)
             assert docker('exec',probe,'cat','/app-revision').stdout==source_proof['source_revision_marker']
@@ -205,6 +206,37 @@ add rule inet {firewall_table} forward_guard iifname "{bridge}" oifname != "{bri
             response = docker('exec', api, 'curl', '-fsS', f'http://127.0.0.1:8080/forms/{slug}').stdout
             assert 'Product feedback' in response
             record('real HTTP form read and synthetic JWT login work')
+
+            # Exercise discovery through the embedded Nginx, not Laravel alone:
+            # the blanket dotfile deny must not intercept these public routes.
+            origin = environment['APP_URL']
+            metadata = {}
+            for path in ('/.well-known/oauth-authorization-server',
+                         '/.well-known/oauth-protected-resource',
+                         '/.well-known/oauth-protected-resource/mcp'):
+                body = docker('exec', api, 'curl', '-fsS', '-H', 'Host: api.fixture.test',
+                              '-H', 'Accept: application/json',
+                              'http://127.0.0.1:8080' + path).stdout
+                metadata[path] = json.loads(body)
+            issuer = metadata['/.well-known/oauth-authorization-server']
+            assert issuer['issuer'] == origin
+            assert issuer['authorization_endpoint'] == origin + '/oauth/authorize'
+            assert issuer['token_endpoint'] == origin + '/oauth/token'
+            assert issuer['registration_endpoint'] == origin + '/oauth/register'
+            assert 'S256' in issuer['code_challenge_methods_supported']
+            for path, resource in (('/.well-known/oauth-protected-resource', origin),
+                                   ('/.well-known/oauth-protected-resource/mcp', origin + '/mcp')):
+                assert metadata[path]['resource'] == resource
+                assert metadata[path]['authorization_servers'] == [origin]
+                assert 'mcp:use' in metadata[path]['scopes_supported']
+            record('public MCP OAuth discovery reaches Laravel through the exact embedded Nginx configuration')
+            for path in ('/.env', '/.git/config', '/.well-known/private',
+                         '/.well-known/oauth-protected-resource/private'):
+                status = docker('exec', api, 'curl', '-sS', '-o', '/dev/null', '-w', '%{http_code}',
+                                'http://127.0.0.1:8080' + path).stdout
+                assert status == '403', (path, status)
+            record('dotfiles and non-discovery well-known paths remain denied')
+
             form_data = json.loads(response)
             form_data = form_data.get('data', form_data)
             values = {'Full name': 'Migration Fixture', 'Email address': 'migration@example.test',
