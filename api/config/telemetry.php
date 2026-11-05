@@ -3,21 +3,21 @@
 return [
     /*
     |--------------------------------------------------------------------------
-    | Anonymous Telemetry Enabled
+    | Instance Telemetry Enabled
     |--------------------------------------------------------------------------
     |
-    | OpnForm collects anonymous usage data to help improve the product. This
-    | telemetry is completely anonymous and contains no personally identifiable
-    | information (PII). None of your customer data, form content, submission
-    | data, or user emails are ever transmitted.
+    | OpnForm collects instance metadata and usage data to improve the product
+    | and investigate usage and potential Enterprise licensing issues.
+    | Form content, submission values, and user emails are not included.
     |
     | It can be explicitly disabled by setting
     | OPNFORM_ANONYMOUS_TELEMETRY_DISABLED to true.
     |
     | What is collected:
     | - Basic usage metrics (form creation, submissions, workspace creation, user additions)
-    | - Anonymous instance identifier (UUID)
-    | - No PII, form content, submission data, or user emails
+    | - Generated instance identifier (UUID), version, and license status
+    | - Configured instance hostname, without URL paths, parameters, or credentials
+    | - No form content, submission values, or user emails
     |
     | Note: The actual check for production/self-hosted is done in
     | TelemetryService::shouldSendTelemetry().

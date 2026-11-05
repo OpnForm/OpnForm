@@ -15,6 +15,7 @@ describe('SendTelemetryPing command', function () {
         Config::set('telemetry.endpoint', 'https://test-endpoint.com/track');
         Config::set('telemetry.client_id', 'test-client-id');
         Config::set('telemetry.client_secret', 'test-client-secret');
+        Config::set('app.front_url', 'https://forms.example.com');
         app()->detectEnvironment(fn () => 'production');
     });
 
@@ -45,6 +46,7 @@ describe('SendTelemetryPing command', function () {
         Http::assertSentCount(2);
         Http::assertSent(function ($request) {
             return $request['type'] === 'identify'
+                && $request['payload']['properties']['instance_hostname'] === 'forms.example.com'
                 && $request['payload']['properties']['has_paid_license'] === true
                 && $request['payload']['properties']['users_count'] === 0;
         });
@@ -52,7 +54,17 @@ describe('SendTelemetryPing command', function () {
         Http::assertSent(function ($request) {
             return $request['type'] === 'track'
                 && $request['payload']['name'] === TelemetryEvent::INSTANCE_PING->value()
+                && $request['payload']['properties']['instance_hostname'] === 'forms.example.com'
                 && $request['payload']['properties']['has_paid_license'] === true;
         });
+    });
+
+    it('does not identify the instance or send a ping when telemetry is disabled', function () {
+        Config::set('telemetry.enabled', false);
+        Http::fake();
+
+        Artisan::call('telemetry:ping');
+
+        Http::assertNothingSent();
     });
 });

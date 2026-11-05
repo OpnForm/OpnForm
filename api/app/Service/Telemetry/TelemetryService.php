@@ -96,7 +96,33 @@ class TelemetryService
     {
         return array_merge($properties, [
             'has_paid_license' => $this->hasPaidLicense(),
+            'instance_hostname' => $this->getInstanceHostname(),
         ]);
+    }
+
+    private function getInstanceHostname(): ?string
+    {
+        foreach ([config('app.front_url'), config('app.url')] as $url) {
+            if (!is_string($url) || !filter_var($url, FILTER_VALIDATE_URL)) {
+                continue;
+            }
+
+            if (!in_array(strtolower(parse_url($url, PHP_URL_SCHEME) ?? ''), ['http', 'https'], true)) {
+                continue;
+            }
+
+            $hostname = strtolower(rtrim(parse_url($url, PHP_URL_HOST) ?? '', '.'));
+            if (!str_contains($hostname, '.')
+                || !filter_var($hostname, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME)
+                || filter_var($hostname, FILTER_VALIDATE_IP)
+                || preg_match('/\.(localhost|local|internal|test|invalid|lan|home|home\.arpa)$/', $hostname)) {
+                continue;
+            }
+
+            return $hostname;
+        }
+
+        return null;
     }
 
     public function hasPaidLicense(): bool
