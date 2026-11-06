@@ -309,9 +309,19 @@ class FormController extends Controller
             }
         }
 
+        // Build the public URL from the configured app URL instead of relying on
+        // route(), which derives the host from the incoming request. Behind
+        // reverse proxies (Docker / nginx) the request host can be empty or
+        // malformed, producing host-less URLs such as "http:/forms/assets/..."
+        // that the browser cannot resolve (see #1293).
+        // Keep the named route so the asset path stays in sync with api.php,
+        // and only pin the scheme/host to the configured APP_URL.
+        $relativeUrl = route('forms.assets.show', [$fileNameParser->getMovedFileName()], false);
+        $assetUrl = rtrim((string) config('app.url'), '/') . $relativeUrl;
+
         return $this->success([
             'message' => 'File uploaded.',
-            'url' => route('forms.assets.show', [$fileNameParser->getMovedFileName()]),
+            'url' => $assetUrl,
         ]);
     }
 
