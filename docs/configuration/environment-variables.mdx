@@ -182,7 +182,14 @@ The hostname can identify your installation, so instance telemetry is not anonym
 
 **How to opt-out:**
 
-Set `OPNFORM_ANONYMOUS_TELEMETRY_DISABLED=true` in your environment variables to disable data collection.
+Set `OPNFORM_TELEMETRY_DISABLED=true` in your environment variables to disable data collection, then restart the application and workers. If you cache Laravel configuration, rebuild the configuration cache as well.
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `OPNFORM_TELEMETRY_DISABLED` | `false` | Disable instance telemetry when `true`. Takes precedence over the legacy variable when set. |
+| `OPNFORM_ANONYMOUS_TELEMETRY_DISABLED` | `false` | **Deprecated name, still supported.** Used only when `OPNFORM_TELEMETRY_DISABLED` is absent. |
+
+Existing installations using only the deprecated variable do not need to change their configuration. When migrating, replace the old variable with the new name and retain its value. If both are set, the new variable wins, including when it is explicitly `false`.
 
 ### MCP and AI agents
 
