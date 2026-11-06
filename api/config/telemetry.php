@@ -11,7 +11,8 @@ return [
     | Form content, submission values, and user emails are not included.
     |
     | It can be explicitly disabled by setting
-    | OPNFORM_ANONYMOUS_TELEMETRY_DISABLED to true.
+    | OPNFORM_TELEMETRY_DISABLED to true. The deprecated
+    | OPNFORM_ANONYMOUS_TELEMETRY_DISABLED is used when the new variable is absent.
     |
     | What is collected:
     | - Basic usage metrics (form creation, submissions, workspace creation, user additions)
@@ -24,7 +25,7 @@ return [
     |
     */
 
-    'enabled' => !env('OPNFORM_ANONYMOUS_TELEMETRY_DISABLED', false),
+    'enabled' => !env('OPNFORM_TELEMETRY_DISABLED', env('OPNFORM_ANONYMOUS_TELEMETRY_DISABLED', false)),
 
     /*
     |--------------------------------------------------------------------------

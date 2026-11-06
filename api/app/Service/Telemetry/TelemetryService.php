@@ -19,7 +19,7 @@ class TelemetryService
      * Check if telemetry should be sent.
      *
      * Telemetry only runs when BOTH production environment AND self-hosted mode
-     * are enabled. It can be explicitly disabled via OPNFORM_ANONYMOUS_TELEMETRY_DISABLED.
+     * are enabled. It can be explicitly disabled via OPNFORM_TELEMETRY_DISABLED.
      *
      * @return bool
      */
