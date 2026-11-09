@@ -34,7 +34,7 @@ const createUrlSyncedModal = ({ component, queryParam, defaultTab }) => {
     const newQuery = { ...route.query }
     if (queryParam in newQuery) {
       delete newQuery[queryParam]
-      return router.replace({ query: newQuery })
+      return router.replace({ query: newQuery, hash: route.hash })
     }
     return Promise.resolve()
   }
@@ -68,7 +68,7 @@ const createUrlSyncedModal = ({ component, queryParam, defaultTab }) => {
     const newQuery = { ...route.query }
     if (currentTab) {
       newQuery[queryParam] = currentTab
-      router.replace({ query: newQuery })
+      router.replace({ query: newQuery, hash: route.hash })
     }
   })
 
@@ -94,7 +94,7 @@ const createUrlSyncedModal = ({ component, queryParam, defaultTab }) => {
         tab.value = null
         const newQuery = { ...route.query }
         delete newQuery[queryParam]
-        router.replace({ query: newQuery })
+        router.replace({ query: newQuery, hash: route.hash })
       }
     })
   }
@@ -182,7 +182,7 @@ export const useAppModals = createSharedComposable(() => {
   const switchSettings = (fromParam, toParam, tab) => {
     const query = { ...route.query, [toParam]: tab }
     delete query[fromParam]
-    return router.replace({ query })
+    return router.replace({ query, hash: route.hash })
   }
 
   return {
