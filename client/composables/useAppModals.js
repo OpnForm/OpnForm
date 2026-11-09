@@ -158,21 +158,32 @@ const createSimpleModal = ({ component }) => {
 }
 
 export const useAppModals = createSharedComposable(() => {
+  const route = useRoute()
+  const router = useRouter()
+  const userSettingsParam = 'user-settings'
+  const workspaceSettingsParam = 'workspace-settings'
+
   const userSettings = createUrlSyncedModal({
     component: UsersSettingsModal,
-    queryParam: 'user-settings',
+    queryParam: userSettingsParam,
     defaultTab: 'profile'
   })
 
   const workspaceSettings = createUrlSyncedModal({
     component: WorkspacesSettingsModal,
-    queryParam: 'workspace-settings',
+    queryParam: workspaceSettingsParam,
     defaultTab: 'general'
   })
 
   const subscription = createSimpleModal({
     component: SubscriptionModal
   })
+
+  const switchSettings = (fromParam, toParam, tab) => {
+    const query = { ...route.query, [toParam]: tab }
+    delete query[fromParam]
+    return router.replace({ query })
+  }
 
   return {
     // State (read-only)
@@ -185,6 +196,8 @@ export const useAppModals = createSharedComposable(() => {
     // Actions
     openUserSettings: userSettings.open,
     openWorkspaceSettings: workspaceSettings.open,
+    switchToUserSettings: () => switchSettings(workspaceSettingsParam, userSettingsParam, 'account'),
+    switchToWorkspaceSettings: () => switchSettings(userSettingsParam, workspaceSettingsParam, 'information'),
     openSubscriptionModal: subscription.open,
     closeUserSettings: userSettings.close,
     closeWorkspaceSettings: workspaceSettings.close,

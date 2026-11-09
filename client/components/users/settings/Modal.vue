@@ -2,6 +2,7 @@
   <SettingsModal
     v-model="isOpen"
     v-model:active-tab="localActiveTab"
+    :nav-shortcut="workspace ? workspaceSettingsShortcut : null"
     @close="closeModal"
   >
     <!-- Settings Pages - Auto-register themselves -->
@@ -83,6 +84,12 @@ const props = defineProps({
 })
 
 const { current: workspace, workspaces } = useCurrentWorkspace()
+const { switchToWorkspaceSettings } = useAppModals()
+const workspaceSettingsShortcut = {
+  label: 'Workspace settings',
+  icon: 'i-heroicons-building-office-2',
+  onClick: switchToWorkspaceSettings
+}
 const { data: user } = useAuth().user()
 const isSelfHosted = computed(() => useFeatureFlag('self_hosted'))
 const canManageInstanceSettings = computed(() => isSelfHosted.value && !!workspaces.value?.some(candidate => candidate.is_admin))
