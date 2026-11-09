@@ -196,13 +196,8 @@ const sections = [
     title: "Collaboration",
     rows: [
       {
-        label: "Multi-user access",
-        values: [
-          "(all admins)",
-          "(all admins)",
-          "(roles & permissions)",
-          "(roles + SSO)",
-        ],
+        label: "Invite team members",
+        values: [false, true, true, true],
       },
       {
         label: "Workspaces",
