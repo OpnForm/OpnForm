@@ -124,13 +124,6 @@
                     class="w-4 h-5 text-emerald-600"
                     name="heroicons:check-20-solid"
                   />
-                  Multi-user access (all admins, no roles)
-                </li>
-                <li class="flex items-center gap-2.5">
-                  <Icon
-                    class="w-4 h-5 text-emerald-600"
-                    name="heroicons:check-20-solid"
-                  />
                   1 workspace only
                 </li>
                 <li class="flex items-center gap-2.5">
@@ -314,6 +307,13 @@
                     name="heroicons:check-20-solid"
                   />
                   Multiple workspaces
+                </li>
+                <li class="flex items-center gap-2.5">
+                  <Icon
+                    class="w-4 h-5 text-emerald-600"
+                    name="heroicons:check-20-solid"
+                  />
+                  Invite team members to your workspace
                 </li>
               </ul>
             </div>
@@ -927,7 +927,7 @@ const faqs = [
   {
     question: "Can I collaborate with my team?",
     answer:
-      "Yes — multi-user collaboration is supported. Higher tiers add roles and permissions for larger teams.",
+      "You can invite team members to a Pro, Business, or Enterprise workspace.",
   },
 ]
 
