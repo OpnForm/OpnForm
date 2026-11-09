@@ -39,8 +39,8 @@
       "nodes": [
         "node_modules/deepmerge"
       ],
-      "reviewed": "2026-10-28",
-      "expires": "2026-11-06",
+      "reviewed": "2026-11-09",
+      "expires": "2026-11-23",
       "reason": "Rollup's node-resolve merges only package-owned defaults. vue-notion is used for first-party legal pages with KaTeX disabled and no user-supplied merge options. No patched upstream release; review again before expiry.",
       "upstreamLatest": "4.3.1"
     },
@@ -65,8 +65,8 @@
       "nodes": [
         "node_modules/quill"
       ],
-      "reviewed": "2026-10-23",
-      "expires": "2026-11-06",
+      "reviewed": "2026-11-09",
+      "expires": "2026-11-23",
       "reason": "No upstream fixed release. Default formats exclude formula/video; HTML export is additionally sanitized with DOMPurify and real-Quill regression tests.",
       "upstreamLatest": "2.0.3"
     },
