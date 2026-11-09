@@ -2,6 +2,7 @@
   <SettingsModal
     v-model="isOpen"
     v-model:active-tab="localActiveTab"
+    :nav-shortcut="accountSettingsShortcut"
     @close="closeModal"
     v-if="workspace"
   >
@@ -84,6 +85,12 @@ const props = defineProps({
 })
 
 const { current: workspace } = useCurrentWorkspace()
+const { switchToUserSettings } = useAppModals()
+const accountSettingsShortcut = {
+  label: 'Account settings',
+  icon: 'i-heroicons-user',
+  onClick: switchToUserSettings
+}
 const showDomainsSettings = computed(() => {
   return !!workspace.value && workspace.value.is_admin && !useFeatureFlag('self_hosted')
 })

@@ -34,7 +34,7 @@ const createUrlSyncedModal = ({ component, queryParam, defaultTab }) => {
     const newQuery = { ...route.query }
     if (queryParam in newQuery) {
       delete newQuery[queryParam]
-      return router.replace({ query: newQuery })
+      return router.replace({ query: newQuery, hash: route.hash })
     }
     return Promise.resolve()
   }
@@ -68,7 +68,7 @@ const createUrlSyncedModal = ({ component, queryParam, defaultTab }) => {
     const newQuery = { ...route.query }
     if (currentTab) {
       newQuery[queryParam] = currentTab
-      router.replace({ query: newQuery })
+      router.replace({ query: newQuery, hash: route.hash })
     }
   })
 
@@ -94,7 +94,7 @@ const createUrlSyncedModal = ({ component, queryParam, defaultTab }) => {
         tab.value = null
         const newQuery = { ...route.query }
         delete newQuery[queryParam]
-        router.replace({ query: newQuery })
+        router.replace({ query: newQuery, hash: route.hash })
       }
     })
   }
@@ -158,21 +158,32 @@ const createSimpleModal = ({ component }) => {
 }
 
 export const useAppModals = createSharedComposable(() => {
+  const route = useRoute()
+  const router = useRouter()
+  const userSettingsParam = 'user-settings'
+  const workspaceSettingsParam = 'workspace-settings'
+
   const userSettings = createUrlSyncedModal({
     component: UsersSettingsModal,
-    queryParam: 'user-settings',
+    queryParam: userSettingsParam,
     defaultTab: 'profile'
   })
 
   const workspaceSettings = createUrlSyncedModal({
     component: WorkspacesSettingsModal,
-    queryParam: 'workspace-settings',
+    queryParam: workspaceSettingsParam,
     defaultTab: 'general'
   })
 
   const subscription = createSimpleModal({
     component: SubscriptionModal
   })
+
+  const switchSettings = (fromParam, toParam, tab) => {
+    const query = { ...route.query, [toParam]: tab }
+    delete query[fromParam]
+    return router.replace({ query, hash: route.hash })
+  }
 
   return {
     // State (read-only)
@@ -185,6 +196,8 @@ export const useAppModals = createSharedComposable(() => {
     // Actions
     openUserSettings: userSettings.open,
     openWorkspaceSettings: workspaceSettings.open,
+    switchToUserSettings: () => switchSettings(workspaceSettingsParam, userSettingsParam, 'account'),
+    switchToWorkspaceSettings: () => switchSettings(userSettingsParam, workspaceSettingsParam, 'information'),
     openSubscriptionModal: subscription.open,
     closeUserSettings: userSettings.close,
     closeWorkspaceSettings: workspaceSettings.close,

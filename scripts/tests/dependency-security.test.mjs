@@ -161,7 +161,10 @@ test('scopes the deepmerge review to its exact advisory, installed version, path
   const result = evaluateNpmAudit(report, reviewedLock, policy, '2026-10-28')
   assert.deepEqual(result.acceptedAdvisories, [exception.advisory])
   assert.equal(result.affectedPackages, 6)
-  assert.throws(() => evaluateNpmAudit(report, reviewedLock, policy, '2026-11-07'), /Expired security exception: deepmerge/)
+  assert.doesNotThrow(() => evaluateNpmAudit(report, reviewedLock, policy, exception.expires))
+  const dayAfterExpiry = new Date(exception.expires)
+  dayAfterExpiry.setUTCDate(dayAfterExpiry.getUTCDate() + 1)
+  assert.throws(() => evaluateNpmAudit(report, reviewedLock, policy, dayAfterExpiry.toISOString().slice(0, 10)), /Expired security exception: deepmerge/)
   const changedLock = { packages: { 'node_modules/deepmerge': { version: '4.3.2' } } }
   assert.throws(() => evaluateNpmAudit(report, changedLock, policy, '2026-10-28'), /Unreviewed vulnerable version/)
   const changedPath = structuredClone(report)
@@ -192,8 +195,8 @@ test('CLI retains the raw nonzero scan, rejects a new upstream release and rejec
     writeFileSync(join(dir, 'bin/npm'), '#!/usr/bin/env node\n' + `if (process.argv[2] === 'audit') { process.stdout.write(${JSON.stringify(JSON.stringify(report))}); process.exit(1) } else { process.stdout.write(JSON.stringify(${JSON.stringify(latest)}[process.argv[3]])); process.exit(${failure ? 1 : 0}) }`)
     chmodSync(join(dir, 'bin/npm'), 0o755)
   }
-  const reviewedAt = policy.exceptions.map(entry => entry.reviewed).sort().at(-1)
-  writeFileSync(join(dir, 'clock.cjs'), `const NativeDate = Date; globalThis.Date = class extends NativeDate { constructor(...args) { super(...(args.length ? args : [${JSON.stringify(reviewedAt + 'T12:00:00Z')}])); } };`)
+  // Replay the historical braces/Quill fixture while both exceptions were valid.
+  writeFileSync(join(dir, 'clock.cjs'), `const NativeDate = Date; globalThis.Date = class extends NativeDate { constructor(...args) { super(...(args.length ? args : ['2026-10-23T12:00:00Z'])); } };`)
   const run = () => spawnSync(process.execPath, ['--import', join(dir, 'clock.cjs'), new URL('../audit-npm.mjs', import.meta.url).pathname, 'all', 'raw.json'], { cwd: dir, env: { ...process.env, PATH: `${join(dir, 'bin')}:${process.env.PATH}` }, encoding: 'utf8' })
   installFakeNpm(versions)
   // Freeze only the child test process; the real CLI uses the current clock.

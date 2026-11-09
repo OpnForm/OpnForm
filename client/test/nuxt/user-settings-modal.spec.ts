@@ -47,6 +47,10 @@ vi.mock('~/composables/useFeatureFlag.js', () => ({
   useFeatureFlag: (key: string) => key === 'self_hosted' && mocks.isSelfHosted,
 }))
 
+vi.mock('~/composables/useAppModals.js', () => ({
+  useAppModals: () => ({ switchToWorkspaceSettings: vi.fn() }),
+}))
+
 import UserSettingsModal from '~/components/users/settings/Modal.vue'
 
 function mountModal() {
@@ -58,7 +62,7 @@ function mountModal() {
       stubs: {
         SettingsModal: {
           template: '<div><slot /></div>',
-          props: ['modelValue', 'activeTab'],
+          props: ['modelValue', 'activeTab', 'navShortcut'],
           emits: ['close', 'update:modelValue', 'update:activeTab'],
         },
         SettingsModalPage: {

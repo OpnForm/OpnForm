@@ -33,11 +33,11 @@
 
               <NavigationList
                 ref="navContainer"
-                :items="registeredPages.map(page => ({ ...createNavItem(page), id: page.id }))"
+                :items="navItems"
                 :tracking-enabled="false"
                 button-class="justify-start whitespace-nowrap !w-auto sm:!w-full"
                 list-class="flex flex-row space-x-1 overflow-x-auto sm:flex-col sm:space-y-1 sm:space-x-0"
-                @item-click="(item) => setActiveItem(item.id)"
+                @item-click="(item) => item.id && setActiveItem(item.id)"
               />
 
               <!-- Right Arrow -->
@@ -114,6 +114,10 @@ const props = defineProps({
   },
   activeTab: {
     type: String,
+    default: null
+  },
+  navShortcut: {
+    type: Object,
     default: null
   }
 })
@@ -197,7 +201,7 @@ const createNavItem = (item) => {
     ...defaultButtonProps,
     label: item.label,
     icon: item.icon,
-    active: activeTabRef.value === item.id
+    active: !!item.id && activeTabRef.value === item.id
   }
   
   // Add custom classes to darken ghost/soft variants for better visibility on neutral-50 background
@@ -221,6 +225,20 @@ const createNavItem = (item) => {
     class: customClasses.length > 0 ? customClasses.join(' ') : undefined
   }
 }
+
+const navItems = computed(() => {
+  const items = registeredPages.value.map(page => ({ ...createNavItem(page), id: page.id }))
+  if (props.navShortcut) {
+    const shortcut = createNavItem(props.navShortcut)
+    items.push({
+      ...shortcut,
+      trailingIcon: 'i-heroicons-arrow-up-right',
+      ui: { ...shortcut.ui, trailingIcon: 'ml-auto text-muted' },
+      onClick: props.navShortcut.onClick
+    })
+  }
+  return items
+})
 
 // Set active item
 const setActiveItem = (itemId) => {
