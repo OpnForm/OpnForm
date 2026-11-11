@@ -63,7 +63,11 @@ const route = useRoute()
 const { list } = useTemplates()
 const { types: typesMap } = useTemplateMeta()
 
-const { data: allTemplates, isLoading: loading } = list()
+const { data: allTemplates, isLoading: loading, suspense: templatesSuspense } = list()
+
+if (import.meta.server) {
+  await templatesSuspense().catch(() => null)
+}
 
 const type = computed(() => typesMap.get(route.params.slug))
 
@@ -114,6 +118,35 @@ useHead({
     return titleChunk ? titleChunk : "Form Templates - OpnForm"
   },
 })
+
+const templateTypeSchema = computed(() => {
+  if (!type.value) return null
+
+  return buildSchemaGraph([
+    buildCollectionPageSchema({
+      name: type.value.meta_title,
+      description: type.value.meta_description,
+      path: `/templates/types/${type.value.slug}`,
+    }),
+    buildBreadcrumbSchema([
+      { name: "Home", path: "/" },
+      { name: "Templates", path: "/templates" },
+      { name: type.value.name, path: `/templates/types/${type.value.slug}` },
+    ]),
+    buildItemListSchema(
+      templates.value.map((template) => ({
+        name: template.name,
+        path: `/templates/${template.slug}`,
+      })),
+      {
+        path: `/templates/types/${type.value.slug}`,
+        name: `${type.value.name} templates`,
+      },
+    ),
+  ])
+})
+
+useJsonLd("template-type-schema", templateTypeSchema)
 </script>
 
 <style lang="scss">

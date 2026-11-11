@@ -62,7 +62,11 @@ const route = useRoute()
 const { list } = useTemplates()
 const { industries: industriesMap } = useTemplateMeta()
 
-const { data: allTemplates, isLoading: loading } = list()
+const { data: allTemplates, isLoading: loading, suspense: templatesSuspense } = list()
+
+if (import.meta.server) {
+  await templatesSuspense().catch(() => null)
+}
 
 const industry = computed(() => industriesMap.get(route.params.slug))
 
@@ -113,6 +117,35 @@ useHead({
     return titleChunk ? titleChunk : "Form Templates - OpnForm"
   },
 })
+
+const templateIndustrySchema = computed(() => {
+  if (!industry.value) return null
+
+  return buildSchemaGraph([
+    buildCollectionPageSchema({
+      name: industry.value.meta_title,
+      description: industry.value.meta_description,
+      path: `/templates/industries/${industry.value.slug}`,
+    }),
+    buildBreadcrumbSchema([
+      { name: "Home", path: "/" },
+      { name: "Templates", path: "/templates" },
+      { name: industry.value.name, path: `/templates/industries/${industry.value.slug}` },
+    ]),
+    buildItemListSchema(
+      templates.value.map((template) => ({
+        name: template.name,
+        path: `/templates/${template.slug}`,
+      })),
+      {
+        path: `/templates/industries/${industry.value.slug}`,
+        name: `${industry.value.name} templates`,
+      },
+    ),
+  ])
+})
+
+useJsonLd("template-industry-schema", templateIndustrySchema)
 </script>
 
 <style lang="scss">

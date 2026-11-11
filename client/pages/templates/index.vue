@@ -31,10 +31,39 @@ defineRouteRules({
 })
 
 useOpnSeoMeta({
-  title: "Form Templates",
+  title: "Free Online Form Templates",
   description:
-    "Our collection of beautiful templates to create your own forms!",
+    "Browse free online form templates for contact forms, registrations, surveys, orders, feedback, applications, and more. Customize and publish with OpnForm.",
 })
 
-const { data: templates, isLoading: loading } = useTemplates().list()
+const { data: templates, isLoading: loading, suspense: templatesSuspense } = useTemplates().list()
+
+if (import.meta.server) {
+  await templatesSuspense().catch(() => null)
+}
+
+const templatesSchema = computed(() => buildSchemaGraph([
+  buildCollectionPageSchema({
+    name: "Free Online Form Templates",
+    description:
+      "Browse free online form templates for contact forms, registrations, surveys, orders, feedback, applications, and more. Customize and publish with OpnForm.",
+    path: "/templates",
+  }),
+  buildBreadcrumbSchema([
+    { name: "Home", path: "/" },
+    { name: "Templates", path: "/templates" },
+  ]),
+  buildItemListSchema(
+    (templates.value || []).map((template) => ({
+      name: template.name,
+      path: `/templates/${template.slug}`,
+    })),
+    {
+      path: "/templates",
+      name: "OpnForm form templates",
+    },
+  ),
+]))
+
+useJsonLd("templates-schema", templatesSchema)
 </script>
