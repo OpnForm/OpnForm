@@ -14,17 +14,36 @@ class RecordWebhookOutcome
     private const WINDOW_SECONDS = 900;
     private const CONFIGURATION_ERRORS = [401, 403, 404, 405, 410];
 
+    public function __construct(private RedisWebhookFailureStreak $redisFailureStreak)
+    {
+    }
+
     public function handle(
         FormIntegration $snapshot,
         array $attributes,
         ?FormIntegrationsEvent $attempt
     ): FormIntegrationsEvent {
-        $event = DB::transaction(function () use ($snapshot, $attributes, $attempt) {
-            $integration = FormIntegration::query()->lockForUpdate()->find($snapshot->id);
-            if ($integration?->status === FormIntegration::STATUS_ACTIVE
-                && ($integration->failure_streak['version'] ?? null) === ($snapshot->failure_streak['version'] ?? null)
-                && $attributes['status'] !== 'skipped') {
-                $this->updateFailureStreak($integration, $attributes);
+        $code = $attributes['data']['status'] ?? null;
+        $code = $attributes['status'] === FormIntegrationsEvent::STATUS_ERROR
+            && in_array($code, self::CONFIGURATION_ERRORS, true) ? $code : null;
+        $reachedLimit = $attributes['status'] === 'skipped' ? false : $this->redisFailureStreak->reachedLimit(
+            $snapshot,
+            $code,
+            self::WINDOW_SECONDS,
+            self::FAILURE_LIMIT,
+        );
+
+        $event = DB::transaction(function () use ($snapshot, $attributes, $attempt, $code, $reachedLimit) {
+            if ($reachedLimit !== false) {
+                $integration = FormIntegration::query()->lockForUpdate()->find($snapshot->id);
+                if ($integration?->status === FormIntegration::STATUS_ACTIVE
+                    && ($integration->failure_streak['version'] ?? null) === ($snapshot->failure_streak['version'] ?? null)) {
+                    if ($reachedLimit === null) {
+                        $this->updateFailureStreak($integration, $code, $attributes);
+                    } else {
+                        $this->deactivate($integration, $code, $attributes);
+                    }
+                }
             }
 
             if (!$attempt) {
@@ -56,13 +75,11 @@ class RecordWebhookOutcome
         return $event;
     }
 
-    private function updateFailureStreak(FormIntegration $integration, array &$attributes): void
+    private function updateFailureStreak(FormIntegration $integration, ?int $code, array &$attributes): void
     {
         $streak = $integration->failure_streak ?? [];
-        $code = $attributes['data']['status'] ?? null;
 
-        if ($attributes['status'] !== FormIntegrationsEvent::STATUS_ERROR
-            || !in_array($code, self::CONFIGURATION_ERRORS, true)) {
+        if ($code === null) {
             if (isset($streak['code'])) {
                 $integration->failure_streak = array_intersect_key($streak, ['version' => true, 'resume_after' => true]);
                 $integration->saveQuietly();
@@ -76,13 +93,23 @@ class RecordWebhookOutcome
             : [];
         $failures[] = $now;
 
+        $integration->failure_streak = array_merge($streak, ['code' => $code, 'failures' => $failures]);
         if (count($failures) >= self::FAILURE_LIMIT) {
-            $integration->status = FormIntegration::STATUS_INACTIVE;
-            $streak['auto_disabled'] = true;
-            $attributes['data']['automatic_deactivation'] = "Disabled automatically after three consecutive HTTP {$code} failures within 15 minutes. Check the integration settings before reactivating it.";
+            $this->deactivate($integration, $code, $attributes);
+
+            return;
         }
 
-        $integration->failure_streak = array_merge($streak, ['code' => $code, 'failures' => $failures]);
         $integration->saveQuietly();
+    }
+
+    private function deactivate(FormIntegration $integration, int $code, array &$attributes): void
+    {
+        $streak = array_intersect_key($integration->failure_streak ?? [], ['version' => true, 'resume_after' => true]);
+        $integration->status = FormIntegration::STATUS_INACTIVE;
+        $integration->failure_streak = $streak + ['auto_disabled' => true];
+        $integration->saveQuietly();
+
+        $attributes['data']['automatic_deactivation'] = "Disabled automatically after three consecutive HTTP {$code} failures within 15 minutes. Check the integration settings before reactivating it.";
     }
 }

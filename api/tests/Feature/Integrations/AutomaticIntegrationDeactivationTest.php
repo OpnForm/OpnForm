@@ -145,3 +145,39 @@ it('reactivates an existing Zapier hook through the integration update route', f
         ->assertJsonPath('form_integration.data.hook_url', $hook['hook_url']);
     expect($integration->fresh()->failure_streak['resume_after'])->toBeFloat();
 });
+
+it('persists the pause only after Redis reports that the threshold was reached', function () {
+    config(['cache.default' => 'redis']);
+    $localCache = new \Illuminate\Cache\Repository(new \Illuminate\Cache\ArrayStore());
+    \Illuminate\Support\Facades\Cache::shouldReceive('store')->with(null)->andReturn($localCache);
+    $store = Mockery::mock(\Illuminate\Cache\RedisStore::class);
+    $connection = Mockery::mock(\Illuminate\Redis\Connections\PhpRedisConnection::class);
+    \Illuminate\Support\Facades\Cache::shouldReceive('store')->with('volatile')->andReturn(
+        new \Illuminate\Cache\Repository($store)
+    );
+    $store->shouldReceive('getPrefix')->andReturn('test:');
+    $store->shouldReceive('connection')->andReturn($connection);
+
+    Http::fake(['https://example.com/*' => Http::response([], 405)]);
+    $integration = $this->form->integrations()->create([
+        'status' => FormIntegration::STATUS_ACTIVE,
+        'integration_id' => 'webhook',
+        'data' => ['webhook_url' => 'https://example.com/test'],
+    ]);
+    $connection->shouldReceive('command')->times(3)->withArgs(
+        fn ($command, $arguments) => $command === 'eval'
+            && $arguments[1][0] === "test:integration-failure-streak:{$integration->id}:initial"
+            && $arguments[1][1] === '405'
+    )->andReturn(1, 2, 3);
+
+    $listener = app(NotifyFormSubmission::class);
+    $event = new FormSubmitted($this->form, []);
+    $listener->handle($event);
+    $listener->handle($event);
+    expect($integration->fresh()->failure_streak)->toBeNull();
+
+    $listener->handle($event);
+    expect($integration->fresh()->status)->toBe(FormIntegration::STATUS_INACTIVE)
+        ->and($integration->fresh()->failure_streak)->toBe(['auto_disabled' => true])
+        ->and($integration->events()->latest('id')->first()->data->automatic_deactivation)->toContain('HTTP 405');
+});
