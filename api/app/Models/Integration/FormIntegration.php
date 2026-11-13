@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Str;
 
 class FormIntegration extends Model
 {
@@ -28,11 +29,14 @@ class FormIntegration extends Model
         'oauth_id'
     ];
 
+    protected $hidden = ['failure_streak'];
+
     protected function casts(): array
     {
         return [
             'data' => 'object',
-            'logic' => 'object'
+            'logic' => 'object',
+            'failure_streak' => 'array',
         ];
     }
 
@@ -40,6 +44,31 @@ class FormIntegration extends Model
         'created' => FormIntegrationCreated::class,
         'saved' => FormIntegrationSaved::class,
     ];
+
+    protected static function booted(): void
+    {
+        static::updating(function (self $integration) {
+            if ($integration->isDirty(['status', 'integration_id', 'data', 'logic'])
+                && ($integration->pausesOnRepeatedFailures() || $integration->failure_streak !== null)) {
+                $streak = $integration->getOriginal('failure_streak') ?? [];
+                $settings = array_intersect_key($streak, ['resume_after' => true]);
+                if ($integration->status === self::STATUS_ACTIVE
+                    && $integration->isDirty('status')
+                    && isset($streak['auto_disabled'])) {
+                    $settings['resume_after'] = (float) now()->format('U.u');
+                }
+                if ($integration->status === self::STATUS_INACTIVE && isset($streak['auto_disabled'])) {
+                    $settings['auto_disabled'] = true;
+                }
+                $integration->failure_streak = $settings + ['version' => (string) Str::uuid()];
+            }
+        });
+    }
+
+    public function pausesOnRepeatedFailures(): bool
+    {
+        return in_array($this->integration_id, ['webhook', 'zapier'], true);
+    }
 
     /**
      * Relationships

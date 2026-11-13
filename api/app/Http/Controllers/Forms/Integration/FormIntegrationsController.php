@@ -7,6 +7,7 @@ use App\Http\Requests\Integration\FormIntegrationsRequest;
 use App\Http\Resources\FormIntegrationResource;
 use App\Models\Forms\Form;
 use App\Models\Integration\FormIntegration;
+use Illuminate\Support\Facades\DB;
 
 class FormIntegrationsController extends Controller
 {
@@ -51,8 +52,20 @@ class FormIntegrationsController extends Controller
     {
         $this->authorize('manageIntegrations', $form);
 
-        $formIntegration = $form->integrations()->findOrFail((int) $integrationid);
-        $formIntegration->update($request->toIntegrationData());
+        $formIntegration = DB::transaction(function () use ($request, $form, $integrationid) {
+            $integration = $form->integrations()->lockForUpdate()->findOrFail((int) $integrationid);
+            $attributes = $request->toIntegrationData();
+
+            if ($attributes['status'] === FormIntegration::STATUS_ACTIVE
+                && isset($integration->failure_streak['auto_disabled'])
+                && !$request->boolean('reactivate')) {
+                $attributes['status'] = FormIntegration::STATUS_INACTIVE;
+            }
+
+            $integration->update($attributes);
+
+            return $integration;
+        });
         $formIntegration->load('provider.user');
 
         return $this->success([

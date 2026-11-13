@@ -62,6 +62,7 @@ class FormIntegrationsRequest extends FormRequest
             ],
             'status' => ['required', Rule::in([FormIntegration::STATUS_ACTIVE, FormIntegration::STATUS_INACTIVE])],
             'logic' => [new IntegrationLogicRule()],
+            'reactivate' => ['sometimes', 'boolean'],
         ], $this->integrationRules);
 
         return $rules;

@@ -36,6 +36,18 @@ class FormIntegrationsEvent extends Model
         'created' => FormIntegrationsEventCreated::class,
     ];
 
+    public function saveWithoutCreationNotification(): void
+    {
+        $creationEvent = $this->dispatchesEvents['created'];
+        unset($this->dispatchesEvents['created']);
+
+        try {
+            $this->save();
+        } finally {
+            $this->dispatchesEvents['created'] = $creationEvent;
+        }
+    }
+
     public function integration()
     {
         return $this->belongsTo(FormIntegration::class, 'integration_id');

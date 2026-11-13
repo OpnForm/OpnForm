@@ -71,7 +71,7 @@
     </div>
 
     <IntegrationModal
-      v-if="form && integration && integrationTypeInfo"
+      v-if="showIntegrationModal && form && integration && integrationTypeInfo"
       :form="form"
       :integration="integrationTypeInfo"
       :integration-key="integration.integration_id"
@@ -110,7 +110,7 @@ const props = defineProps({
 })
 
 const alert = useAlert()
-const { availableIntegrations, deleteIntegration } = useFormIntegrations()
+const { availableIntegrations, deleteIntegration, updateIntegration } = useFormIntegrations()
 const { getActionComponent } = useComponentRegistry()
 const integrations = availableIntegrations
 const integrationTypeInfo = computed(() =>
@@ -128,6 +128,12 @@ const actionsComponent = computed(() => {
 
   return null
 })
+
+const reactivateIntegration = updateIntegration(
+  () => props.form.id,
+  () => props.integration.id,
+)
+const isReactivating = reactivateIntegration.isPending
 
 const dropdownItems = computed(() => {
   const items = []
@@ -148,6 +154,27 @@ const dropdownItems = computed(() => {
       label: `Edit on ${integrationTypeInfo.value.name}`,
       icon: 'i-heroicons-pencil',
       to: integrationTypeInfo.value.url
+    })
+  }
+
+  if (props.integration.integration_id === 'zapier' && props.integration.status === 'inactive') {
+    items.push({
+      label: 'Reactivate',
+      icon: 'i-heroicons-play',
+      disabled: isReactivating.value,
+      onClick: () => {
+        const { integration_id, data, logic, oauth_id } = props.integration
+        reactivateIntegration.mutateAsync({
+          integration_id,
+          data,
+          logic: Array.isArray(logic) ? null : logic,
+          oauth_id,
+          status: 'active',
+          reactivate: true,
+        })
+          .then(() => alert.success('Integration reactivated.'))
+          .catch((error) => alert.error(error.data?.message || 'Could not reactivate the integration.'))
+      },
     })
   }
 
