@@ -54,15 +54,7 @@ class FormIntegrationsController extends Controller
 
         $formIntegration = DB::transaction(function () use ($request, $form, $integrationid) {
             $integration = $form->integrations()->lockForUpdate()->findOrFail((int) $integrationid);
-            $attributes = $request->toIntegrationData();
-
-            if ($attributes['status'] === FormIntegration::STATUS_ACTIVE
-                && isset($integration->failure_streak['auto_disabled'])
-                && !$request->boolean('reactivate')) {
-                $attributes['status'] = FormIntegration::STATUS_INACTIVE;
-            }
-
-            $integration->update($attributes);
+            $integration->updateSettings($request->toIntegrationData(), $request->boolean('reactivate'));
 
             return $integration;
         });

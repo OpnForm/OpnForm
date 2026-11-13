@@ -70,6 +70,17 @@ class FormIntegration extends Model
         return in_array($this->integration_id, ['webhook', 'zapier'], true);
     }
 
+    public function updateSettings(array $attributes, bool $reactivate): void
+    {
+        if (($attributes['status'] ?? null) === self::STATUS_ACTIVE
+            && isset($this->failure_streak['auto_disabled'])
+            && !$reactivate) {
+            $attributes['status'] = self::STATUS_INACTIVE;
+        }
+
+        $this->update($attributes);
+    }
+
     /**
      * Relationships
      */
