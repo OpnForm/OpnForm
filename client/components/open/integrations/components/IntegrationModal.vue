@@ -147,6 +147,7 @@ const component = computed(() => {
 })
 
 let integrationData = null
+let initialStatus = null
 
 watch(
   () => props.integrationKey,
@@ -156,6 +157,7 @@ watch(
 )
 
 const initIntegrationData = () => {
+  initialStatus = formIntegration.value?.status
   integrationData = useForm({
     integration_id: props.formIntegrationId && formIntegration.value
       ? formIntegration.value.integration_id
@@ -185,7 +187,11 @@ const save = () => {
   const mutation = isUpdating ? updateIntegrationMutation : createIntegrationMutation
 
   // Use Form's mutate which handles data extraction and error handling
-  integrationData.mutate(mutation)
+  integrationData.mutate(mutation, {
+    data: isUpdating && initialStatus === 'inactive' && integrationData.status === 'active'
+      ? { reactivate: true }
+      : {},
+  })
     .then((result) => {
       alert.success(result.message)
       emit('close')

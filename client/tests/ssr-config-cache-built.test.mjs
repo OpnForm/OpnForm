@@ -65,8 +65,9 @@ test('built Nuxt exits setup immediately, then reuses configuration across SSR p
     }
     assert.equal(calls.get('/content/feature-flags'), 3)
     assert.equal(calls.get('/content/plans'), 1)
-    const hashedFile = (await readdir(new URL('.output/public/_nuxt/', client))).find(name => name.endsWith('.js'))
-    assert.ok(hashedFile)
+    const assets = new Set(await readdir(new URL('.output/public/_nuxt/', client)))
+    const hashedFile = [...assets].find(name => name.endsWith('.js') && assets.has(`${name}.br`))
+    assert.ok(hashedFile, 'Nuxt emits at least one JavaScript asset with a Brotli variant')
     const script = await fetch(`${origin}/_nuxt/${hashedFile}`, { headers: { 'accept-encoding': 'br' } })
     assert.equal(script.status, 200)
     assert.equal(script.headers.get('cache-control'), 'public, max-age=31536000, immutable')

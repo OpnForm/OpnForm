@@ -10,6 +10,7 @@ use App\Service\Forms\FormSubmissionFormatter;
 use App\Service\Forms\FormLogicConditionChecker;
 use App\Service\Forms\SubmissionUrlService;
 use App\Service\Formulas\ComputedVariableEvaluator;
+use App\Service\Integrations\RecordWebhookOutcome;
 use App\Service\Security\PublicWebhookUrl;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
@@ -89,6 +90,18 @@ abstract class AbstractIntegrationHandler
     {
         $eventMetadata = $this->getEventMetadata();
 
+        if ($this->formIntegration->pausesOnRepeatedFailures()) {
+            $current = $this->formIntegration->fresh();
+            if ($current?->status !== FormIntegration::STATUS_ACTIVE
+                || ($current->failure_streak['version'] ?? null) !== ($this->formIntegration->failure_streak['version'] ?? null)
+                || (!$attempt && $this->predatesReactivation($current))) {
+                return $this->recordEvent([
+                    'status' => 'skipped',
+                    'data' => array_merge($eventMetadata, ['message' => 'The integration was disabled, changed, or reactivated before delivery.']),
+                ], $attempt);
+            }
+        }
+
         try {
             if (!$this->shouldRun()) {
                 $attributes = [
@@ -137,8 +150,23 @@ abstract class AbstractIntegrationHandler
         }
     }
 
+    private function predatesReactivation(FormIntegration $integration): bool
+    {
+        $resumeAfter = $integration->failure_streak['resume_after'] ?? null;
+        if ($resumeAfter === null) {
+            return false;
+        }
+
+        // Legacy queued events were created before automatic deactivation existed.
+        return $this->event->submittedAt === null || $this->event->submittedAt <= $resumeAfter;
+    }
+
     protected function recordEvent(array $attributes, ?FormIntegrationsEvent $attempt = null): FormIntegrationsEvent
     {
+        if ($this->formIntegration->pausesOnRepeatedFailures()) {
+            return app(RecordWebhookOutcome::class)->handle($this->formIntegration, $attributes, $attempt);
+        }
+
         if (!$attempt) {
             return $this->formIntegration->events()->create($attributes);
         }

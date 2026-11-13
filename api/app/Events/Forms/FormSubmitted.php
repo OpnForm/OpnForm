@@ -19,6 +19,8 @@ class FormSubmitted
 
     public array $meta;
 
+    public ?float $submittedAt = null;
+
     /**
      * Create a new event instance.
      *
@@ -29,5 +31,6 @@ class FormSubmitted
         $this->form = $form;
         $this->data = $data;
         $this->meta = $meta;
+        $this->submittedAt = (float) now()->format('U.u');
     }
 }

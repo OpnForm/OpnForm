@@ -58,6 +58,7 @@ class StoreFormSubmissionJob implements ShouldQueue
      */
     public bool $allowCompletedUpdate = false;
 
+    private ?float $submittedAt = null;
     private ?array $formData = null;
     private ?int $completionTime = null;
     private bool $isPartial = false;
@@ -76,6 +77,7 @@ class StoreFormSubmissionJob implements ShouldQueue
      */
     public function __construct(public Form $form, public array $submissionData)
     {
+        $this->submittedAt = (float) now()->format('U.u');
     }
 
     /**
@@ -91,7 +93,9 @@ class StoreFormSubmissionJob implements ShouldQueue
         $this->storeSubmission($this->formData);
         $this->formData['submission_id'] = $this->submissionId;
         if (!$this->isPartial) {
-            FormSubmitted::dispatch($this->form, $this->formData, $this->storedMeta);
+            $event = new FormSubmitted($this->form, $this->formData, $this->storedMeta);
+            $event->submittedAt = $this->submittedAt;
+            event($event);
         }
     }
 
