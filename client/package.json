@@ -83,7 +83,7 @@
     "@vueuse/nuxt": "^15.0.0",
     "@vueuse/router": "^15.0.0",
     "@zxing/library": "^0.23.0",
-    "better-sqlite3": "^12.11.1",
+    "better-sqlite3": "^13.0.3",
     "chart.js": "^4.6.1",
     "clone-deep": "^4.0.1",
     "codemirror": "^6.0.1",
