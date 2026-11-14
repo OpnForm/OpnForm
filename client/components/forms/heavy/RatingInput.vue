@@ -5,31 +5,50 @@
     </template>
 
     <div 
-      class="stars-outer"
+      :class="ui.root({ class: props.ui?.slots?.root })"
       role="slider"
       :aria-valuemin="0"
       :aria-valuemax="starsCount"
       :aria-valuenow="compVal"
-      :aria-label="`Rating: ${compVal} out of ${starsCount} stars`"
+      :aria-label="`Rating: ${compVal} out of ${starsCount}`"
     >
       <div
-        v-for="i in starsCount"
-        :key="i"
+        v-for="(display, index) in ratingDisplays"
+        :key="index + 1"
         :class="ui.star({
           disabled: disabled,
-          isActive: i <= compVal,
-          isHover: i > compVal && i <= hoverRating,
+          isActive: (index + 1) <= compVal,
+          isHover: (index + 1) > compVal && (index + 1) <= hoverRating,
           class: props.ui?.slots?.star
         })"
         role="button"
-        :tabindex="getStarTabIndex(i)"
-        :aria-label="`${i} star${i > 1 ? 's' : ''}`"
-        @click="setRating(i)"
-        @mouseenter="onMouseHover(i)"
+        :tabindex="getStarTabIndex(index + 1)"
+        :aria-label="`${index + 1}`"
+        @click="setRating(index + 1)"
+        @mouseenter="onMouseHover(index + 1)"
         @mouseleave="hoverRating = -1"
-        @keydown="handleKeydown($event, i)"
+        @keydown="handleKeydown($event, index + 1)"
       >
+        <img
+          v-if="display.mode === 'image'"
+          :src="display.value"
+          alt=""
+          :class="ui.image({
+            isActive: (index + 1) <= compVal,
+            isHover: (index + 1) > compVal && (index + 1) <= hoverRating,
+            class: props.ui?.slots?.image
+          })"
+        >
+        <span
+          v-else-if="display.mode === 'character'"
+          :class="ui.character({
+            isActive: (index + 1) <= compVal,
+            isHover: (index + 1) > compVal && (index + 1) <= hoverRating,
+            class: props.ui?.slots?.character
+          })"
+        >{{ display.value }}</span>
         <Icon
+          v-else
           name="heroicons:star-20-solid"
           :class="ui.icon({ class: props.ui?.slots?.icon })"
         />
@@ -56,6 +75,9 @@ export default {
   props: {
     ...inputProps,
     numberOfStars: { type: Number, default: 5 },
+    // string = same for all, array = per rating level (index 0 = rating 1)
+    ratingIcon: { type: [String, Array], default: null },
+    ratingImage: { type: [String, Array], default: null },
   },
 
   setup(props, context) {
@@ -80,6 +102,25 @@ export default {
         return 5
       }
       return this.numberOfStars
+    },
+    ratingDisplays() {
+      return Array.from({ length: this.starsCount }, (_, index) => {
+        if (Array.isArray(this.ratingImage)) {
+          const image = this.ratingImage[index]
+          if (image) return { mode: 'image', value: image }
+        } else if (this.ratingImage) {
+          return { mode: 'image', value: this.ratingImage }
+        }
+
+        if (Array.isArray(this.ratingIcon)) {
+          const icon = this.ratingIcon[index]
+          if (icon) return { mode: 'character', value: icon }
+        } else if (this.ratingIcon) {
+          return { mode: 'character', value: this.ratingIcon }
+        }
+
+        return { mode: 'star', value: null }
+      })
     },
   },
 
