@@ -77,6 +77,52 @@ it('sanitizes svg files when moving them to public assets', function () {
         ->toContain('<svg');
 });
 
+it('returns an absolute asset url built from the configured app url', function () {
+    Storage::fake();
+    config(['app.url' => 'https://forms.example.test']);
+
+    $uuid = (string) Str::uuid();
+    Storage::put('tmp/' . $uuid, 'safe file');
+
+    $response = $this->postJson('/open/forms/assets/upload', [
+        'url' => 'asset_' . $uuid . '.txt',
+        'type' => 'files',
+    ]);
+
+    $response->assertOk();
+
+    $expectedUrl = 'https://forms.example.test/forms/assets/asset_' . $uuid . '.txt';
+    expect($response->json('url'))
+        ->toBe($expectedUrl)
+        ->toStartWith('https://forms.example.test/')
+        ->not->toContain('http:/forms');
+});
+
+it('returns an app.url based asset url when the request host is unreliable behind a proxy', function () {
+    Storage::fake();
+    config(['app.url' => 'https://forms.example.test']);
+
+    $uuid = (string) Str::uuid();
+    Storage::put('tmp/' . $uuid, 'safe file');
+
+    // Reproduce the #1293 scenario: the incoming request reaches the app
+    // through a reverse proxy whose HTTP_HOST is empty or malformed, so
+    // route()-derived hosts are unreliable.
+    $response = $this->withServerVariables(['HTTP_HOST' => 'internal:8080'])->postJson('/open/forms/assets/upload', [
+        'url' => 'asset_' . $uuid . '.txt',
+        'type' => 'files',
+    ]);
+
+    $response->assertOk();
+
+    $expectedUrl = 'https://forms.example.test/forms/assets/asset_' . $uuid . '.txt';
+    expect($response->json('url'))
+        ->toBe($expectedUrl)
+        ->toStartWith('https://forms.example.test/')
+        ->not->toContain('internal:8080')
+        ->not->toContain('http:/forms');
+});
+
 it('throttles the unauthenticated upload endpoints without triple-counting a request', function () {
     Storage::fake();
     config([
