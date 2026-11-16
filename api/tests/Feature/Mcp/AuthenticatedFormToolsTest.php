@@ -17,6 +17,7 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Service\Forms\AgentFormDefinition;
 use Illuminate\Database\Events\QueryExecuted;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Laravel\Passport\Passport;
 
@@ -448,3 +449,31 @@ it('returns canonical definitions for legacy forms without mutating them', funct
         ->not->toHaveKey('creator_id')
         ->not->toHaveKey('workspace_id');
 });
+
+it('returns integer view counts and a usable revision when the cache contains numeric strings', function (string $cachedViews) {
+    $user = User::factory()->create();
+    $workspace = managedWorkspace($user);
+    $form = managedForm($user, $workspace);
+    // Redis can return cached numeric values as strings on a cache hit.
+    $cacheKey = (new ReflectionMethod($form, 'getCacheKey'))->invoke($form, 'views_count');
+    Cache::put($cacheKey, $cachedViews, 900);
+    Passport::actingAs($user, ['mcp:use'], 'oauth');
+
+    $response = $this->postJson('/mcp', [
+        'jsonrpc' => '2.0',
+        'id' => 1,
+        'method' => 'tools/call',
+        'params' => ['name' => 'get_form', 'arguments' => ['form_id' => $form->id]],
+    ], ['Accept' => 'application/json, text/event-stream', 'Authorization' => 'Bearer scoped-account-token'])
+        ->assertOk()
+        ->assertJsonPath('result.structuredContent.form.views_count', (int) $cachedViews);
+
+    $revision = $response->json('result.structuredContent.form.revision');
+    expect($revision)->toBeString()->toHaveLength(64);
+
+    OpnFormServer::actingAs($user, 'oauth')->tool(UpdateFormTool::class, [
+        'form_id' => $form->id,
+        'expected_revision' => $revision,
+        'definition' => managedFormDefinition(['title' => 'Updated after cached form read']),
+    ])->assertOk();
+})->with(['zero views' => '0', 'nonzero views' => '42']);
