@@ -308,11 +308,13 @@ See [Custom Domain](../configuration/custom-domain) and [Environment Variables](
 In production, all OIDC redirects require HTTPS. Ensure your application is served over HTTPS before configuring OIDC.
 
 If HTTPS terminates at a reverse proxy, it must forward `X-Forwarded-Proto: https`
-to OpnForm. When `TRUSTED_PROXIES` is omitted or `null`, OpnForm uses the legacy
-Vapor proxy trust defaults, restoring HTTPS detection for installations affected
-by the removal of Vapor in v2.8.1. Explicit values, including an empty value that
-disables proxy trust, are preserved. See [reverse proxy configuration](/deployment/docker#if-a-reverse-proxy-is-in-front-of-opnform)
-for restricting proxy trust and preventing direct access from spoofing headers.
+to OpnForm. When `TRUSTED_PROXIES` is omitted or `null` on a self-hosted instance,
+OpnForm trusts only that protocol header to restore HTTPS detection after the
+removal of Vapor in v2.8.1. Forwarded client IP, host, and port headers remain
+ignored. An explicit empty value disables this fallback. The protocol header
+alone cannot verify upstream TLS, so restrict direct access to your ingress.
+See [reverse proxy configuration](/deployment/docker#if-a-reverse-proxy-is-in-front-of-opnform)
+for explicit proxy addresses and client-IP forwarding.
 
 ### State Validation
 

@@ -197,8 +197,8 @@ describe('SsoController - Redirect', function () {
         URL::forceScheme('https');
     });
 
-    it('allows production OIDC behind a proxy using the compatibility defaults', function () {
-        config(['app.env' => 'production']);
+    it('allows production self-hosted OIDC behind a proxy using the protocol fallback', function () {
+        config(['app.env' => 'production', 'app.self_hosted' => true]);
         $proxyConfiguration = loadTrustedProxyConfiguration(null);
         config(['trustedproxy.proxies' => $proxyConfiguration['proxies']]);
 
@@ -229,6 +229,27 @@ describe('SsoController - Redirect', function () {
 });
 
 describe('SsoController - Rate limiting', function () {
+    it('keeps the client IP rate limit when self-hosted protocol fallback is active', function () {
+        $proxyConfiguration = loadTrustedProxyConfiguration(null);
+        config([
+            'app.self_hosted' => true,
+            'trustedproxy.proxies' => $proxyConfiguration['proxies'],
+            'oidc.rate_limit_per_minute' => 1,
+        ]);
+        $this->withMiddleware(ThrottleRequests::class);
+        $this->withServerVariables(['REMOTE_ADDR' => '192.0.2.30', 'HTTPS' => 'off']);
+
+        $this->postJson('http://localhost/auth/company-sso/redirect', [], [
+            'X-Forwarded-Proto' => 'https',
+            'X-Forwarded-For' => '198.51.100.30',
+        ])->assertNotFound();
+
+        $this->postJson('http://localhost/auth/company-sso/redirect', [], [
+            'X-Forwarded-Proto' => 'https',
+            'X-Forwarded-For' => '198.51.100.31',
+        ])->assertStatus(429);
+    });
+
     it('limits OIDC sign-in initiation per connection and returns the retry delay', function () {
         config(['oidc.rate_limit_per_minute' => 2]);
         $this->withMiddleware(ThrottleRequests::class);

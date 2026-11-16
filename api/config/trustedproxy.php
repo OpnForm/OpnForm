@@ -7,12 +7,11 @@ return [
     |--------------------------------------------------------------------------
     |
     | Comma-separated IP addresses or CIDR ranges for reverse proxies in front
-    | of OpnForm. Explicit values take precedence over the compatibility default
-    | previously supplied by Vapor, which trusts all IPv4 and global IPv6 proxies.
+    | of OpnForm. Explicit values enable the configured X-Forwarded-* headers.
     |
-    | Set an empty value to disable proxy trust for a direct deployment. When
-    | using the compatibility default, restrict ingress access to your proxy.
+    | When omitted on self-hosted instances, only X-Forwarded-Proto is trusted
+    | for HTTPS detection. Set an empty value to disable this fallback too.
     |
     */
-    'proxies' => env('TRUSTED_PROXIES') ?? ['0.0.0.0/0', '2000:0:0:0:0:0:0:0/3'],
+    'proxies' => env('TRUSTED_PROXIES'),
 ];
