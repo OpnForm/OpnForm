@@ -99,7 +99,7 @@
     "object-to-formdata": "^4.5.1",
     "overlayscrollbars": "^2.17.0",
     "pdfjs-dist": "^5.4.530",
-    "pinia": "^3.0.2",
+    "pinia": "^4.1.0",
     "prismjs": "^1.29.0",
     "qrcode": "^1.5.4",
     "quill": "^2.0.2",
