@@ -88,6 +88,8 @@ The API resolves dependencies for PHP 8.3.36; use a patched PHP 8.3 or 8.4 runti
 
 Nuxt Content uses the native `node:sqlite` connector, including on Amplify's Node 24 runtime. Its Zod dependency is pinned to the patched v4 line through a scoped npm override; keep that override until Nuxt Content updates its dependency range.
 
+Pinia 4 requires `@pinia/nuxt` 1.x. Installing client dependencies also compiles better-sqlite3 13, so local builds need Python 3, Make, and a C++ compiler. Both client Docker build stages include these tools; the production stages stay separate.
+
 The executable npm audit policy is in [scripts/npm-exceptions.json](scripts/npm-exceptions.json). Dependabot checks Composer, client npm packages, and GitHub Actions weekly, with up to three open version-update PRs per ecosystem. Compatible application updates are grouped; major application dependency updates remain separate except for the coordinated VueUse packages. GitHub Actions updates are grouped together. Security update handling is unchanged.
 
 The lock requires node-forge 1.4.1 or newer. Its former RSA-verification exception has been removed; dated exceptions for other packages remain enforced.

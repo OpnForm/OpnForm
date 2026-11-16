@@ -1,6 +1,9 @@
 # syntax=docker/dockerfile:1
 FROM --platform=$BUILDPLATFORM node:24.22.1-bookworm-slim AS build
 WORKDIR /app
+# better-sqlite3 13 builds its native addon during npm ci.
+RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ \
+ && rm -rf /var/lib/apt/lists/*
 COPY client/package.json client/package-lock.json ./
 RUN --mount=type=cache,target=/root/.npm npm ci --no-audit --no-fund
 COPY client/ ./

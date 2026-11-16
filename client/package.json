@@ -69,7 +69,7 @@
     "@microsoft/clarity": "^1.0.2",
     "@nuxt/content": "3.16.2",
     "@nuxt/ui": "^4.12.0",
-    "@pinia/nuxt": "^0.11.0",
+    "@pinia/nuxt": "^1.0.3",
     "@popperjs/core": "^2.11.8",
     "@sentry/nuxt": "^11.12.0",
     "@sentry/vite-plugin": "^11.12.0",

@@ -8,8 +8,8 @@ WORKDIR /app
 
 ADD ./client/package.json ./client/package-lock.json ./
 
-# Install git and other necessary build tools
-RUN apk add --no-cache git
+# better-sqlite3 13 builds its native addon during npm ci.
+RUN apk add --no-cache git python3 make g++
 
 # Clear npm cache, remove existing node_modules, and install dependencies
 RUN npm cache clean --force && \
