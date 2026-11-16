@@ -314,6 +314,12 @@ Set `MCP_OBSERVABILITY_ENABLED=false` to disable MCP usage events and their stru
 This switch appears only on self-hosted instances. Verify that `APP_URL` and `FRONT_URL` use public HTTPS origins and that the API container can read a persistent Passport key pair. Reload the settings page after correcting the configuration.
 </Accordion>
 
+<Accordion title="OAuth discovery returns 403 behind Nginx">
+Allow `/.well-known/oauth-authorization-server`, `/.well-known/oauth-protected-resource`, and `/.well-known/oauth-protected-resource/mcp` to reach the API. A generic Nginx rule blocking paths that start with a dot can reject these routes before they reach OpnForm. Keep the hidden-file protection and add an exception for these specific OAuth routes.
+
+Opening `/mcp` directly in a browser can return **405 Method Not Allowed** because MCP requests use HTTP POST. Configure the URL in your MCP client instead.
+</Accordion>
+
 <Accordion title="The client connects but account tools require authentication">
 Complete the OAuth flow from the MCP client. Guest drafts on OpnForm Cloud do not authenticate your account automatically.
 </Accordion>

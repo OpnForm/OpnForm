@@ -271,15 +271,15 @@ class Form extends Model implements CachableAttributes, VersionableNestedDiff
         });
     }
 
-    public function getViewsCountAttribute()
+    public function getViewsCountAttribute(): int
     {
         // If preloaded via scope, use the combined count
         if (isset($this->attributes['total_views_count'])) {
             return (int) $this->attributes['total_views_count'];
         }
 
-        // Fallback to cached calculation for individual access
-        return $this->remember('views_count', 15 * 60, fn () => $this->calculateTotalViews());
+        // Redis may return cached numeric values as strings on a cache hit.
+        return (int) $this->remember('views_count', 15 * 60, fn () => $this->calculateTotalViews());
     }
 
     /**

@@ -205,6 +205,23 @@ add rule inet {firewall_table} forward_guard iifname "{bridge}" oifname != "{bri
             response = docker('exec', api, 'curl', '-fsS', f'http://127.0.0.1:8080/forms/{slug}').stdout
             assert 'Product feedback' in response
             record('real HTTP form read and synthetic JWT login work')
+
+            for path, key in [
+                ('/.well-known/oauth-authorization-server', 'authorization_endpoint'),
+                ('/.well-known/oauth-protected-resource', 'resource'),
+                ('/.well-known/oauth-protected-resource/mcp', 'resource'),
+            ]:
+                metadata = json.loads(docker('exec', api, 'curl', '-fsS',
+                                            'http://127.0.0.1:8080' + path).stdout)
+                assert key in metadata, metadata
+                assert metadata['scopes_supported'] == ['mcp:use'], metadata
+            for path in ('/.env', '/.git/config', '/.well-known/.env',
+                         '/.well-known/oauth-protected-resource/.env'):
+                status = docker('exec', api, 'curl', '-sS', '-o', '/dev/null', '-w', '%{http_code}',
+                                'http://127.0.0.1:8080' + path).stdout
+                assert status == '403', (path, status)
+            record('OAuth discovery reaches Laravel through Nginx while hidden files remain forbidden')
+
             form_data = json.loads(response)
             form_data = form_data.get('data', form_data)
             values = {'Full name': 'Migration Fixture', 'Email address': 'migration@example.test',
