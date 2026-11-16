@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\URL;
 use Tests\TestHelpers;
 
 require_once __DIR__ . '/../../../TestHelpers/OidcTestHelpers.php';
+require_once __DIR__.'/../../../TestHelpers/TrustedProxyTestHelpers.php';
 
 uses(TestHelpers::class);
 uses()->group('oidc', 'feature');
@@ -194,6 +195,36 @@ describe('SsoController - Redirect', function () {
         // Restore original env and scheme
         config(['app.env' => $originalEnv]);
         URL::forceScheme('https');
+    });
+
+    it('allows production OIDC behind a proxy using the compatibility defaults', function () {
+        config(['app.env' => 'production']);
+        $proxyConfiguration = loadTrustedProxyConfiguration(null);
+        config(['trustedproxy.proxies' => $proxyConfiguration['proxies']]);
+
+        $connection = IdentityConnection::factory()->create([
+            'slug' => 'test-sso',
+            'enabled' => true,
+            'options' => ['require_state' => false],
+        ]);
+
+        $driver = Mockery::mock(\App\Enterprise\Oidc\Adapters\OAuthOidcDriver::class);
+        $driver->shouldReceive('getRedirectUrl')->once()->andReturn('https://idp.example.com/authorize');
+        $manager = Mockery::mock(\App\Enterprise\Oidc\ConnectionManager::class);
+        $manager->shouldReceive('getConnectionBySlug')->with('test-sso')->andReturn($connection);
+        $manager->shouldReceive('buildDriver')->once()->with($connection)->andReturn($driver);
+        $this->app->instance(\App\Enterprise\Oidc\ConnectionManager::class, $manager);
+
+        $this->withServerVariables(['REMOTE_ADDR' => '192.0.2.10', 'HTTPS' => 'off'])
+            ->postJson('http://localhost/auth/test-sso/redirect', [], ['X-Forwarded-Proto' => 'https'])
+            ->assertOk()
+            ->assertJson(['redirect_url' => 'https://idp.example.com/authorize']);
+
+        // The callback must recognize the same forwarded HTTPS before validating state.
+        $connection->options = ['require_state' => true];
+        $this->getJson('http://localhost/auth/test-sso/callback', ['X-Forwarded-Proto' => 'https'])
+            ->assertStatus(400)
+            ->assertJson(['message' => 'Missing or invalid state. Please try again.']);
     });
 });
 

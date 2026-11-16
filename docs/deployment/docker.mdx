@@ -94,18 +94,26 @@ before setting up SSO.
 
 When Caddy, Traefik, Cloudflare, or another reverse proxy forwards traffic to
 the Docker ingress, set `TRUSTED_PROXIES` in `api/.env` to the IP address or
-CIDR range from which that proxy connects to the ingress. This lets OpnForm use
-the real client IP for OIDC and other rate limits.
+CIDR range from which that proxy connects to the ingress. This lets OpnForm
+recognize HTTPS terminated by that proxy and use the real client IP for rate limits.
 
 ```bash
 # Example only: use the actual address or CIDR of your own reverse proxy.
 TRUSTED_PROXIES=192.0.2.10,2001:db8:1234::/48
 ```
 
-Leave it empty when users connect directly to the Docker ingress. Do not set
-it to `*`: doing so would make a direct client-provided forwarding header
-trustworthy and allow rate-limit bypasses. Recreate the API container after
-changing it.
+If `TRUSTED_PROXIES` is omitted or `null`, OpnForm restores the compatibility
+default previously supplied by Vapor: all IPv4 and global IPv6 addresses are
+trusted. Existing installations that relied on that default can recognize
+forwarded HTTPS again without adding a setting. Your proxy must forward
+`X-Forwarded-Proto: https` and overwrite client-supplied forwarding headers.
+
+Prefer explicit proxy addresses. With broad proxy trust, restrict ingress
+access to your reverse proxy: direct clients could otherwise spoof the protocol
+and client IP, including the IP used for rate limits. Set `TRUSTED_PROXIES=`
+explicitly when users connect directly to the Docker ingress; this disables
+proxy trust. Existing explicit values, including an empty value, are preserved.
+Recreate the API container after changing its environment.
 
 ### Initial Setup
 

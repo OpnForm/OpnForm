@@ -7,11 +7,12 @@ return [
     |--------------------------------------------------------------------------
     |
     | Comma-separated IP addresses or CIDR ranges for reverse proxies in front
-    | of OpnForm. Laravel only accepts X-Forwarded-* headers when the direct
-    | caller is in this list, so clients cannot spoof their IP address.
+    | of OpnForm. Explicit values take precedence over the compatibility default
+    | previously supplied by Vapor, which trusts all IPv4 and global IPv6 proxies.
     |
-    | Leave this empty when users connect directly to the Docker ingress.
+    | Set an empty value to disable proxy trust for a direct deployment. When
+    | using the compatibility default, restrict ingress access to your proxy.
     |
     */
-    'proxies' => env('TRUSTED_PROXIES'),
+    'proxies' => env('TRUSTED_PROXIES') ?? ['0.0.0.0/0', '2000:0:0:0:0:0:0:0/3'],
 ];
