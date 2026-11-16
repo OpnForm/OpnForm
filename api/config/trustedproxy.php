@@ -7,10 +7,10 @@ return [
     |--------------------------------------------------------------------------
     |
     | Comma-separated IP addresses or CIDR ranges for reverse proxies in front
-    | of OpnForm. Laravel only accepts X-Forwarded-* headers when the direct
-    | caller is in this list, so clients cannot spoof their IP address.
+    | of OpnForm. Explicit values enable the configured X-Forwarded-* headers.
     |
-    | Leave this empty when users connect directly to the Docker ingress.
+    | When omitted on self-hosted instances, only X-Forwarded-Proto is trusted
+    | for HTTPS detection. Set an empty value to disable this fallback too.
     |
     */
     'proxies' => env('TRUSTED_PROXIES'),

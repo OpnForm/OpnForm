@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\URL;
 use Tests\TestHelpers;
 
 require_once __DIR__ . '/../../../TestHelpers/OidcTestHelpers.php';
+require_once __DIR__.'/../../../TestHelpers/TrustedProxyTestHelpers.php';
 
 uses(TestHelpers::class);
 uses()->group('oidc', 'feature');
@@ -195,9 +196,60 @@ describe('SsoController - Redirect', function () {
         config(['app.env' => $originalEnv]);
         URL::forceScheme('https');
     });
+
+    it('allows production self-hosted OIDC behind a proxy using the protocol fallback', function () {
+        config(['app.env' => 'production', 'app.self_hosted' => true]);
+        $proxyConfiguration = loadTrustedProxyConfiguration(null);
+        config(['trustedproxy.proxies' => $proxyConfiguration['proxies']]);
+
+        $connection = IdentityConnection::factory()->create([
+            'slug' => 'test-sso',
+            'enabled' => true,
+            'options' => ['require_state' => false],
+        ]);
+
+        $driver = Mockery::mock(\App\Enterprise\Oidc\Adapters\OAuthOidcDriver::class);
+        $driver->shouldReceive('getRedirectUrl')->once()->andReturn('https://idp.example.com/authorize');
+        $manager = Mockery::mock(\App\Enterprise\Oidc\ConnectionManager::class);
+        $manager->shouldReceive('getConnectionBySlug')->with('test-sso')->andReturn($connection);
+        $manager->shouldReceive('buildDriver')->once()->with($connection)->andReturn($driver);
+        $this->app->instance(\App\Enterprise\Oidc\ConnectionManager::class, $manager);
+
+        $this->withServerVariables(['REMOTE_ADDR' => '192.0.2.10', 'HTTPS' => 'off'])
+            ->postJson('http://localhost/auth/test-sso/redirect', [], ['X-Forwarded-Proto' => 'https'])
+            ->assertOk()
+            ->assertJson(['redirect_url' => 'https://idp.example.com/authorize']);
+
+        // The callback must recognize the same forwarded HTTPS before validating state.
+        $connection->options = ['require_state' => true];
+        $this->getJson('http://localhost/auth/test-sso/callback', ['X-Forwarded-Proto' => 'https'])
+            ->assertStatus(400)
+            ->assertJson(['message' => 'Missing or invalid state. Please try again.']);
+    });
 });
 
 describe('SsoController - Rate limiting', function () {
+    it('keeps the client IP rate limit when self-hosted protocol fallback is active', function () {
+        $proxyConfiguration = loadTrustedProxyConfiguration(null);
+        config([
+            'app.self_hosted' => true,
+            'trustedproxy.proxies' => $proxyConfiguration['proxies'],
+            'oidc.rate_limit_per_minute' => 1,
+        ]);
+        $this->withMiddleware(ThrottleRequests::class);
+        $this->withServerVariables(['REMOTE_ADDR' => '192.0.2.30', 'HTTPS' => 'off']);
+
+        $this->postJson('http://localhost/auth/company-sso/redirect', [], [
+            'X-Forwarded-Proto' => 'https',
+            'X-Forwarded-For' => '198.51.100.30',
+        ])->assertNotFound();
+
+        $this->postJson('http://localhost/auth/company-sso/redirect', [], [
+            'X-Forwarded-Proto' => 'https',
+            'X-Forwarded-For' => '198.51.100.31',
+        ])->assertStatus(429);
+    });
+
     it('limits OIDC sign-in initiation per connection and returns the retry delay', function () {
         config(['oidc.rate_limit_per_minute' => 2]);
         $this->withMiddleware(ThrottleRequests::class);

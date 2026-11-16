@@ -307,6 +307,15 @@ See [Custom Domain](../configuration/custom-domain) and [Environment Variables](
 
 In production, all OIDC redirects require HTTPS. Ensure your application is served over HTTPS before configuring OIDC.
 
+If HTTPS terminates at a reverse proxy, it must forward `X-Forwarded-Proto: https`
+to OpnForm. When `TRUSTED_PROXIES` is omitted or `null` on a self-hosted instance,
+OpnForm trusts only that protocol header to restore HTTPS detection after the
+removal of Vapor in v2.8.1. Forwarded client IP, host, and port headers remain
+ignored. An explicit empty value disables this fallback. The protocol header
+alone cannot verify upstream TLS, so restrict direct access to your ingress.
+See [reverse proxy configuration](/deployment/docker#if-a-reverse-proxy-is-in-front-of-opnform)
+for explicit proxy addresses and client-IP forwarding.
+
 ### State Validation
 
 OpnForm generates and validates an OIDC `state` value by default for login redirects. Callback requests without a valid, unexpired state are rejected to prevent login CSRF.
