@@ -39,44 +39,39 @@
       ]"
     >
       <FormProgressbar :form-manager="formManager" />
-      <transition
-        name="fade"
-        mode="out-in"
-      >
-        <div v-if="$slots.password" key="password" class="w-full">
-          <slot name="password" />
-        </div>
+      <div v-if="$slots.password" key="password" class="w-full">
+        <slot name="password" />
+      </div>
 
-        <div v-else-if="$slots.alerts" key="alerts" class="w-full">
-          <slot name="alerts" />
-        </div>
+      <div v-else-if="$slots.alerts" key="alerts" class="w-full">
+        <slot name="alerts" />
+      </div>
 
-        <div v-else-if="isSubmitted" key="submitted" class="px-2 w-full">
-          <slot name="after-submit" :submittedData="submittedData" />
-        </div>
+      <div v-else-if="isSubmitted" key="submitted" class="px-2 w-full">
+        <slot name="after-submit" :submittedData="submittedData" />
+      </div>
 
-        <div v-else-if="shouldDisplayForm" :key="formPageIndex" class="form-group flex flex-wrap w-full">
-          <LazyOpenFormsComponentsFormFieldsDraggable
-            v-if="allowDragging"
-            :fields="currentFields"
-            :form-manager="formManager"
-          />
-          <div v-else class="grid grid-cols-12 relative transition-all w-full">
-            <div
-              v-for="element in currentFields"
-              :key="element.id"
-              :class="getFieldWidthClasses(element.width)"
-            >
-              <VTransition name="fadeHeight">
-                <open-form-field
-                  :field="element"
-                  :form-manager="formManager"
-                />
-              </VTransition>
-            </div>
+      <div v-else-if="shouldDisplayForm" :key="formPageIndex" class="form-group flex flex-wrap w-full">
+        <LazyOpenFormsComponentsFormFieldsDraggable
+          v-if="allowDragging"
+          :fields="currentFields"
+          :form-manager="formManager"
+        />
+        <div v-else class="grid grid-cols-12 relative w-full">
+          <div
+            v-for="element in currentFields"
+            :key="element.id"
+            :class="getFieldWidthClasses(element.width)"
+          >
+            <VTransition name="fadeHeight">
+              <open-form-field
+                :field="element"
+                :form-manager="formManager"
+              />
+            </VTransition>
           </div>
         </div>
-      </transition>
+      </div>
 
       <!-- Captcha -->
       <LazyCaptchaWrapper v-if="form.use_captcha && !isSubmitted" :form-manager="formManager" />
@@ -191,17 +186,24 @@ const previousFieldsPageBreak = computed(() => structure.value?.previousPageBrea
 
 const allowDragging = computed(() => strategy.value.admin.allowDragging)
 
+const scrollToPageTop = () => {
+  if (import.meta.client) {
+    // Wait for the new fields before resetting the scroll position.
+    nextTick(() => window.scrollTo({ top: 0, behavior: 'instant' }))
+  }
+}
+
 const handlePreviousClick = () => {
+  const previousIndex = formPageIndex.value
   props.formManager.previousPage()
-  if (import.meta.client) window.scrollTo({ top: 0, behavior: 'smooth' })
+  if (formPageIndex.value !== previousIndex) scrollToPageTop()
 }
 
 const handleNextClick = () => {
-  props.formManager.nextPage().then(() => {
-    if (import.meta.client) window.scrollTo({ top: 0, behavior: 'smooth' })
+  props.formManager.nextPage().then((moved) => {
+    if (moved) scrollToPageTop()
   })
 }
-
 
 const isProcessing = computed(() => props.formManager.state.isProcessing)
 
