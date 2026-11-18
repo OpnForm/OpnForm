@@ -24,8 +24,8 @@ export function evaluateNpmAudit(report, lock, policy, today = new Date().toISOS
       assert.equal(via.severity, exception.severity, `Changed advisory severity: ${via.name}`)
       assert.ok(finding.nodes.length > 0, `Missing installed paths: ${name}`)
       for (const node of finding.nodes) {
-        assert.ok(exception.nodes.includes(node), `Unreviewed advisory path: ${node}`)
-        assert.equal(lock.packages[node]?.version, exception.version, `Unreviewed vulnerable version: ${node}`)
+        assert.ok(Object.hasOwn(exception.nodes, node), `Unreviewed advisory path: ${node}`)
+        assert.equal(lock.packages[node]?.version, exception.nodes[node], `Unreviewed vulnerable version: ${node}`)
       }
       roots.get(name).add(exception.advisory)
     }
