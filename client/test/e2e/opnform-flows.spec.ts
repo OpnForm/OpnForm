@@ -1010,8 +1010,9 @@ test("classic multi-page public form navigates across pages and submits", async 
   await continueButton.scrollIntoViewIfNeeded()
   await expect(page.getByLabel("First name")).not.toBeInViewport()
   await continueButton.click()
-  await expectFieldError(page, "first_name", "The First name field is required.")
-  await expect(page.getByLabel("First name")).toBeInViewport()
+  await expect(
+    getOpenFormField(page, "first_name").getByText("This field is required.", { exact: true }),
+  ).toBeInViewport()
 
   await fillFieldInput(page, "first_name", "Grace")
   await continueButton.click()
