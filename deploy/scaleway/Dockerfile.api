@@ -6,7 +6,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends libzip-dev libp
  && pecl install redis-6.3.0 && docker-php-ext-enable redis
 
 FROM php:8.3.36-fpm-bookworm@sha256:6b4641a875dd3e0f7551b2751e1f5909084856d18166af7fbb522ac230feb702 AS runtime
-RUN apt-get update && apt-get install -y --no-install-recommends nginx supervisor tini curl ca-certificates libzip4 libpng16-16 libjpeg62-turbo libwebp7 libpq5 libicu72 unzip procps \
+RUN apt-get update && apt-get install -y --no-install-recommends supervisor tini curl ca-certificates libzip4 libpng16-16 libjpeg62-turbo libwebp7 libpq5 libicu72 unzip procps \
+ && curl -fsSLo /usr/share/keyrings/nginx-archive-keyring.asc https://nginx.org/keys/nginx_signing.key \
+ && echo '55385da31d198fa6a5012d40ae98ecb272a6c4e8fffffba94719ffd3e87de37a  /usr/share/keyrings/nginx-archive-keyring.asc' | sha256sum -c - \
+ && echo 'deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.asc] https://nginx.org/packages/debian/ bookworm nginx' > /etc/apt/sources.list.d/nginx.list \
+ && apt-get update \
+ && apt-get install -y --no-install-recommends 'nginx=1.30.7-1~bookworm' \
+ && nginx -v \
  && rm -rf /var/lib/apt/lists/*
 COPY --from=extensions /usr/local/lib/php/extensions/ /usr/local/lib/php/extensions/
 COPY --from=extensions /usr/local/etc/php/conf.d/ /usr/local/etc/php/conf.d/

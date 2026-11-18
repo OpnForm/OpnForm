@@ -107,7 +107,7 @@ services:
       - postgres-data:/var/lib/postgresql/data
 
   ingress:
-    image: nginx:1
+    image: nginx:1.30.7@sha256:8a7280c664b1a205092ffea6443299e6d307fe65b6f946b02028fa311c29fd01
     container_name: opnform-ingress
     volumes:
       - ./docker/nginx.conf:/etc/nginx/templates/default.conf.template
