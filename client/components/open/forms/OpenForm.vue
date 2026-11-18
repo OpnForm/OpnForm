@@ -188,7 +188,7 @@ const allowDragging = computed(() => strategy.value.admin.allowDragging)
 
 const scrollToPageTop = () => {
   if (import.meta.client) {
-    // Wait for the new fields before resetting the scroll position.
+    // Wait for the page and any validation errors before resetting scroll.
     nextTick(() => window.scrollTo({ top: 0, behavior: 'instant' }))
   }
 }
@@ -200,9 +200,7 @@ const handlePreviousClick = () => {
 }
 
 const handleNextClick = () => {
-  props.formManager.nextPage().then((moved) => {
-    if (moved) scrollToPageTop()
-  })
+  props.formManager.nextPage().then(scrollToPageTop)
 }
 
 const isProcessing = computed(() => props.formManager.state.isProcessing)
