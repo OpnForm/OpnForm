@@ -1,44 +1,98 @@
 {
   "affectedPackages": [
+    "@dxup/nuxt",
     "@eslint-community/eslint-utils",
     "@eslint/config-array",
     "@eslint/eslintrc",
+    "@intlify/unplugin-vue-i18n",
     "@janniks/vue3-katex",
+    "@miyaneee/rollup-plugin-json5",
+    "@nuxt/content",
+    "@nuxt/devtools",
+    "@nuxt/devtools-kit",
+    "@nuxt/fonts",
+    "@nuxt/icon",
+    "@nuxt/kit",
     "@nuxt/nitro-server",
     "@nuxt/test-utils",
+    "@nuxt/ui",
     "@nuxt/vite-builder",
     "@nuxt/vite-server",
+    "@nuxtjs/color-mode",
+    "@nuxtjs/i18n",
+    "@nuxtjs/mdc",
     "@nuxtjs/sitemap",
+    "@parcel/watcher",
+    "@parcel/watcher-wasm",
+    "@pinia/nuxt",
+    "@rollup/plugin-commonjs",
+    "@rollup/plugin-inject",
+    "@rollup/plugin-json",
     "@rollup/plugin-node-resolve",
+    "@rollup/plugin-replace",
+    "@rollup/plugin-yaml",
+    "@rollup/pluginutils",
     "@sentry/nuxt",
+    "@typescript-eslint/typescript-estree",
+    "@unhead/bundler",
+    "@unhead/vue",
+    "@vercel/nft",
+    "@vitest/ui",
+    "@vue-macros/common",
+    "@vue/language-core",
     "@vueuse/nuxt",
+    "anymatch",
     "braces",
     "deepmerge",
     "eslint",
     "eslint-plugin-vue",
     "fast-glob",
+    "fdir",
+    "fontaine",
+    "fontless",
     "globby",
+    "impound",
     "listhen",
     "micromatch",
     "minimatch",
     "nitropack",
     "nuxt",
+    "nuxt-component-meta",
     "nuxt-site-config",
+    "nuxt-site-config-kit",
+    "nuxt-utm",
     "nuxtseo-shared",
+    "picomatch",
     "quill",
+    "rollup-plugin-visualizer",
+    "tinyglobby",
+    "unctx",
+    "unhead",
+    "unimport",
+    "unplugin",
+    "unplugin-auto-import",
+    "unplugin-utils",
+    "unplugin-vue-components",
+    "unstorage",
+    "vite",
+    "vite-node",
     "vite-plugin-checker",
+    "vite-plugin-inspect",
+    "vitest",
+    "vitest-environment-nuxt",
+    "vue-component-meta",
     "vue-eslint-parser",
-    "vue-notion"
+    "vue-notion",
+    "vue-router"
   ],
   "exceptions": [
     {
       "package": "deepmerge",
       "advisory": "https://github.com/advisories/GHSA-gcqx-w48m-w2h4",
-      "version": "4.3.1",
       "severity": "low",
-      "nodes": [
-        "node_modules/deepmerge"
-      ],
+      "nodes": {
+        "node_modules/deepmerge": "4.3.1"
+      },
       "reviewed": "2026-11-09",
       "expires": "2026-11-23",
       "reason": "Rollup's node-resolve merges only package-owned defaults. vue-notion is used for first-party legal pages with KaTeX disabled and no user-supplied merge options. No patched upstream release; review again before expiry.",
@@ -47,11 +101,10 @@
     {
       "package": "braces",
       "advisory": "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm",
-      "version": "3.0.3",
       "severity": "high",
-      "nodes": [
-        "node_modules/braces"
-      ],
+      "nodes": {
+        "node_modules/braces": "3.0.3"
+      },
       "reviewed": "2026-10-23",
       "expires": "2026-11-06",
       "reason": "Untrusted brace patterns are not forwarded to Nitro glob tooling by application routes. No patched upstream release; review again before expiry.",
@@ -60,11 +113,10 @@
     {
       "package": "quill",
       "advisory": "https://github.com/advisories/GHSA-v3m3-f69x-jf25",
-      "version": "2.0.3",
       "severity": "low",
-      "nodes": [
-        "node_modules/quill"
-      ],
+      "nodes": {
+        "node_modules/quill": "2.0.3"
+      },
       "reviewed": "2026-11-09",
       "expires": "2026-11-23",
       "reason": "No upstream fixed release. Default formats exclude formula/video; HTML export is additionally sanitized with DOMPurify and real-Quill regression tests.",
@@ -73,17 +125,30 @@
     {
       "package": "minimatch",
       "advisory": "https://github.com/advisories/GHSA-g3hv-75wg-m249",
-      "version": "3.1.5",
       "severity": "moderate",
-      "nodes": [
-        "node_modules/@eslint/config-array/node_modules/minimatch",
-        "node_modules/@eslint/eslintrc/node_modules/minimatch",
-        "node_modules/eslint/node_modules/minimatch"
-      ],
+      "nodes": {
+        "node_modules/@eslint/config-array/node_modules/minimatch": "3.1.5",
+        "node_modules/@eslint/eslintrc/node_modules/minimatch": "3.1.5",
+        "node_modules/eslint/node_modules/minimatch": "3.1.5"
+      },
       "reviewed": "2026-11-02",
       "expires": "2026-11-06",
       "reason": "The advisory concerns optimizationLevel >= 2 and firstPhasePreProcess/globParts amplification. Locked minimatch 3.1.5 has neither that option nor that preprocessing function; its legacy CommonJS callable API is still required by these parents. A forced v11 override breaks those consumers. The package remains flagged by the scanner broad version range. Keep lint/build and CDK glob patterns repository-controlled. Do not expose legacy pattern evaluation to untrusted requests. Upgrade parents and remove this exact exception before expiry.",
       "upstreamLatest": "11.0.4"
+    },
+    {
+      "package": "picomatch",
+      "advisory": "https://github.com/advisories/GHSA-fc5q-39xc-vjpf",
+      "severity": "high",
+      "nodes": {
+        "node_modules/anymatch/node_modules/picomatch": "2.3.2",
+        "node_modules/micromatch/node_modules/picomatch": "2.3.2",
+        "node_modules/picomatch": "4.0.7"
+      },
+      "reviewed": "2026-11-18",
+      "expires": "2026-11-25",
+      "reason": "No patched upstream release. Reviewed OpnForm uses Nuxt glob patterns from repository configuration and tooling; no application request handler forwards user-supplied glob patterns to these packages. Recheck upstream before expiry.",
+      "upstreamLatest": "4.0.7"
     }
   ]
 }

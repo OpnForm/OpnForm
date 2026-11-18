@@ -10,15 +10,18 @@ const require = createRequire(new URL('../../client/package.json', import.meta.u
 const { parse } = require('yaml')
 const policy = JSON.parse(readFileSync(new URL('../npm-exceptions.json', import.meta.url)))
 const reviewed = policy.exceptions.find(entry => entry.package === 'braces')
+const lockFor = (...exceptions) => ({
+  packages: Object.fromEntries(exceptions.flatMap(entry => Object.entries(entry.nodes).map(([node, version]) => [node, { version }]))),
+})
 const audit = () => ({
   auditReportVersion: 2,
   metadata: { vulnerabilities: { total: 2 } },
   vulnerabilities: {
-    braces: { severity: 'high', nodes: reviewed.nodes, via: [{ name: 'braces', severity: 'high', url: reviewed.advisory }] },
+    braces: { severity: 'high', nodes: Object.keys(reviewed.nodes), via: [{ name: 'braces', severity: 'high', url: reviewed.advisory }] },
     nuxt: { severity: 'high', nodes: ['node_modules/nuxt'], via: ['braces'] },
   },
 })
-const lock = { packages: Object.fromEntries(reviewed.nodes.map(node => [node, { version: reviewed.version }])) }
+const lock = lockFor(reviewed)
 const check = report => evaluateNpmAudit(report, lock, policy, '2026-10-23')
 
 test('accepts only the reviewed advisory and its inherited parents without filtering raw findings', () => {
@@ -41,12 +44,31 @@ test('rejects new parents and changed paths, versions or severities', () => {
   path.vulnerabilities.braces.nodes = ['node_modules/new/node_modules/braces']
   assert.throws(() => check(path), /Unreviewed advisory path/)
   const version = structuredClone(lock)
-  version.packages[reviewed.nodes[0]].version = '3.0.4'
+  version.packages[Object.keys(reviewed.nodes)[0]].version = '3.0.4'
   assert.throws(() => evaluateNpmAudit(audit(), version, policy, '2026-10-23'), /Unreviewed vulnerable version/)
   const severity = audit()
   severity.vulnerabilities.nuxt.severity = 'critical'
   assert.throws(() => check(severity), /Changed inherited severity/)
 })
+test('an exception pins the version separately for each installed path', () => {
+  const exception = policy.exceptions.find(entry => entry.package === 'picomatch')
+  const report = {
+    auditReportVersion: 2,
+    metadata: { vulnerabilities: { total: 1 } },
+    vulnerabilities: {
+      picomatch: {
+        severity: 'high',
+        nodes: Object.keys(exception.nodes),
+        via: [{ name: 'picomatch', severity: 'high', url: exception.advisory }],
+      },
+    },
+  }
+  const installed = lockFor(exception)
+  assert.deepEqual(evaluateNpmAudit(report, installed, policy, exception.reviewed).acceptedAdvisories, [exception.advisory])
+  installed.packages['node_modules/picomatch'].version = '2.3.2'
+  assert.throws(() => evaluateNpmAudit(report, installed, policy, exception.reviewed), /Unreviewed vulnerable version/)
+})
+
 test('rejects expired exceptions, cycles and registry errors', () => {
   assert.throws(() => evaluateNpmAudit(audit(), lock, policy, '2026-11-07'), /Expired/)
   const cycle = audit()
@@ -116,7 +138,7 @@ test('release readiness fails for failed, skipped, cancelled or missing prerequi
 
 test('resolves the actual Nuxt/Nitro/builders and site-config cycles to reviewed roots', () => {
   const report = JSON.parse(readFileSync(new URL('./fixtures/npm-audit-reviewed-cycles.json', import.meta.url)))
-  const actualLock = { packages: Object.fromEntries(policy.exceptions.flatMap(entry => entry.nodes.map(node => [node, { version: entry.version }]))) }
+  const actualLock = lockFor(...policy.exceptions)
   assert.equal(evaluateNpmAudit(report, actualLock, policy, '2026-10-23').acceptedAdvisories.length, 2)
   report.vulnerabilities.nuxt.via.push({ name: 'nuxt', url: 'https://github.com/advisories/NEW', severity: 'critical' })
   assert.throws(() => evaluateNpmAudit(report, actualLock, policy, '2026-10-23'), /Unreviewed advisory/)
@@ -188,7 +210,7 @@ test('CLI retains the raw nonzero scan, rejects a new upstream release and rejec
   t.after(() => rmSync(dir, { recursive: true, force: true }))
   mkdirSync(join(dir, 'bin'))
   const report = JSON.parse(readFileSync(new URL('./fixtures/npm-audit-reviewed-cycles.json', import.meta.url)))
-  const actualLock = { packages: Object.fromEntries(policy.exceptions.flatMap(entry => entry.nodes.map(node => [node, { version: entry.version }]))) }
+  const actualLock = lockFor(...policy.exceptions)
   writeFileSync(join(dir, 'package-lock.json'), JSON.stringify(actualLock))
   const versions = Object.fromEntries(policy.exceptions.map(entry => [entry.package, entry.upstreamLatest]))
   const installFakeNpm = (latest, failure = false) => {

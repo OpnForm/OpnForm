@@ -995,6 +995,7 @@ test("classic multi-page public form navigates across pages and submits", async 
     payloadOverrides: {
       properties: [
         buildTextField("first_name", "First name", { required: true }),
+        ...Array.from({ length: 12 }, (_, index) => buildTextField(`optional_${index}`, `Optional field ${index + 1}`)),
         buildPageBreak("page_break_1", "Continue", "Back"),
         buildTextField("company_name", "Company name", { required: true }),
         buildPageBreak("page_break_2", "Next step", "Previous step"),
@@ -1005,8 +1006,16 @@ test("classic multi-page public form navigates across pages and submits", async 
 
   await openPublicForm(page, form.slug)
   await expect(page.getByLabel("First name")).toBeVisible()
+  const continueButton = page.getByRole("button", { name: "Continue", exact: true })
+  await continueButton.scrollIntoViewIfNeeded()
+  await expect(page.getByLabel("First name")).not.toBeInViewport()
+  await continueButton.click()
+  await expect(
+    getOpenFormField(page, "first_name").getByText("This field is required.", { exact: true }),
+  ).toBeInViewport()
+
   await fillFieldInput(page, "first_name", "Grace")
-  await page.getByRole("button", { name: "Continue", exact: true }).click()
+  await continueButton.click()
 
   await expect(page.getByLabel("Company name")).toBeVisible()
   await fillFieldInput(page, "company_name", "Analytical Engines Inc")
