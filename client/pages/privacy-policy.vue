@@ -48,8 +48,10 @@
             You can revoke access earlier.
           </p>
           <p>
-            You can revoke the plugin's access in your OpnForm account settings. To manage data already shared
-            with OpenAI, use the data controls of your ChatGPT or Codex account.
+            You can disconnect OpnForm from your connected client. The
+            <a href="https://docs.opnform.com/integrations/mcp" class="underline">OpnForm MCP documentation</a>
+            explains how to revoke the current OAuth session. To manage data already shared with OpenAI,
+            use the data controls of your ChatGPT or Codex account.
           </p>
         </section>
         <NotionPage
