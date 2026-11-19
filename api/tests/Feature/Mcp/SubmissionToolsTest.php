@@ -213,6 +213,18 @@ it('queues private CSV exports and scopes status polling to the requesting accou
         'job_id' => $jobId,
     ])->assertOk()->assertSee(['queued', 'progress']);
 
+    Cache::put('form_export_job:'.$jobId, array_replace($job, [
+        'status' => 'failed',
+        'error_message' => 'Internal storage exception',
+    ]));
+
+    OpnFormServer::actingAs($fixture['user'], 'oauth')->tool(GetSubmissionExportTool::class, [
+        'form_id' => $fixture['form']->id,
+        'job_id' => $jobId,
+    ])->assertOk()
+        ->assertSee('The submission export failed.')
+        ->assertDontSee('Internal storage exception');
+
     $otherMember = User::factory()->create();
     $fixture['workspace']->users()->attach($otherMember, ['role' => User::ROLE_USER]);
     OpnFormServer::actingAs($otherMember, 'oauth')->tool(GetSubmissionExportTool::class, [

@@ -207,7 +207,8 @@ it('lists only the connected account workspaces with form write capability', fun
     OpnFormServer::actingAs($user, 'oauth')
         ->tool(GetAccountContextTool::class)
         ->assertOk()
-        ->assertSee([$user->email, $writable->name, $readonly->name])
+        ->assertSee([$writable->name, $readonly->name])
+        ->assertDontSee($user->email)
         ->assertDontSee('Other account workspace');
 
     OpnFormServer::actingAs($user, 'oauth')

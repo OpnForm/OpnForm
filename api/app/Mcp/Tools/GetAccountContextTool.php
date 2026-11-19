@@ -15,7 +15,7 @@ use Laravel\Mcp\Server\Tools\Annotations\IsOpenWorld;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Name('get_account_context')]
-#[Description('Confirm the connected OpnForm account and summarize its accessible workspaces. Use this before account-scoped work when the current context is unclear.')]
+#[Description('List the workspaces accessible to the connected OpnForm account. Use this before account-scoped work when the current context is unclear.')]
 #[IsReadOnly]
 #[IsDestructive(false)]
 #[IsOpenWorld(false)]
@@ -27,11 +27,6 @@ class GetAccountContextTool extends AuthenticatedMcpTool
         $workspaces = $forms->listWorkspaces($user);
 
         return Response::structured([
-            'account' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-            ],
             'workspaces' => $workspaces,
             'workspace_selection_required' => count($workspaces) > 1,
         ]);
@@ -40,11 +35,6 @@ class GetAccountContextTool extends AuthenticatedMcpTool
     public function outputSchema(JsonSchema $schema): array
     {
         return [
-            'account' => $schema->object([
-                'id' => $schema->integer()->min(1)->required(),
-                'name' => $schema->string()->required(),
-                'email' => $schema->string()->format('email')->required(),
-            ])->withoutAdditionalProperties()->required(),
             'workspaces' => $schema->array()->items(McpOutputSchema::workspace($schema))->required(),
             'workspace_selection_required' => $schema->boolean()->required(),
         ];
