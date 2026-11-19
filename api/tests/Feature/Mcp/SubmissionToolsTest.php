@@ -90,16 +90,21 @@ it('searches response values and filters submission status without leaking other
     expect($other['form']->id)->not->toBe($fixture['form']->id);
 });
 
-it('lets readonly workspace members read submissions and rejects cross-form IDs', function () {
-    $fixture = submissionFixture();
+it('lets readonly workspace members read submissions without IP addresses and rejects cross-form IDs', function () {
+    $fixture = submissionFixture(['Alice', 'Bob'], $this->actingAsBusinessUser());
+    $fixture['form']->update(['enable_ip_tracking' => true]);
+    expect($fixture['form']->enable_ip_tracking)->toBeTrue()
+        ->and($fixture['workspace']->hasFeature('enable_ip_tracking'))->toBeTrue();
     $readonly = User::factory()->create();
     $fixture['workspace']->users()->attach($readonly, ['role' => User::ROLE_READONLY]);
     $submission = $fixture['submissions']->first();
+    $submission->update(['meta' => ['ip_address' => '192.0.2.1']]);
+    expect($submission->refresh()->meta['ip_address'])->toBe('192.0.2.1');
 
     OpnFormServer::actingAs($readonly, 'oauth')->tool(GetSubmissionTool::class, [
         'form_id' => $fixture['form']->id,
         'submission_id' => $submission->id,
-    ])->assertOk()->assertSee('Alice');
+    ])->assertOk()->assertSee('Alice')->assertDontSee(['ip_address', '192.0.2.1']);
 
     $other = submissionFixture(['Outside']);
     OpnFormServer::actingAs($readonly, 'oauth')->tool(GetSubmissionTool::class, [

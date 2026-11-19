@@ -21,23 +21,31 @@
             <li>
               After you connect your account, the plugin can use workspace names, icons, identifiers and permissions,
               along with form identifiers, definitions, status, timestamps, links and activity counts to find and manage your forms.
-              OpnForm uses OAuth to authorize access within your existing workspace permissions.
+              When you connect, OpnForm processes your account association, the requesting OAuth client, the requested permission
+              and authorization records to grant, refresh or revoke access within your existing workspace permissions.
             </li>
             <li>
               Reading submissions can return response identifiers, status, dates, completion times and answers,
-              including hidden or previously removed fields and temporary links to uploaded files.
+              including hidden or previously removed fields, signatures, uploaded filenames and temporary links to uploaded files.
               Answers depend on the form and can contain personal data entered by respondents.
               Statistics can include counts, aggregated results and per-field summaries containing answer values,
-              submission identifiers or temporary file links. An export returns its job identifier, status, progress
+              submission identifiers or temporary file links, as well as payment totals and counts.
+              An export returns its job identifier, status, progress
               and a temporary link to a CSV
               containing the exported submissions, with answers for the form's configured fields and submission dates.
             </li>
           </ul>
           <p>
             OpnForm records operational details such as the tool name, whether the request was authenticated,
-            its outcome and its duration to monitor reliability. Guest drafts expire after seven days.
-            Download links expire at the time indicated by the export tool. Account forms and submissions are
-            covered by the data retention and deletion provisions below.
+            its outcome and its duration to monitor reliability. The retention and deletion provisions below also apply
+            to these operational records, account forms and submissions.
+          </p>
+          <p>
+            Guest drafts expire after seven days and are removed by scheduled cleanup. Export job status is available
+            for up to two hours after its last update. Download links expire at the time indicated by the export tool.
+            Link expiry ends access through that link. The stored CSV may remain in OpnForm storage after the link expires.
+            By default, OAuth access tokens expire after seven days and refresh tokens after 30 days.
+            You can revoke access earlier.
           </p>
           <p>
             You can revoke the plugin's access in your OpnForm account settings. To manage data already shared

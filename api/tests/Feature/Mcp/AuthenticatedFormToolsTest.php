@@ -208,13 +208,14 @@ it('lists only the connected account workspaces with form write capability', fun
         ->tool(GetAccountContextTool::class)
         ->assertOk()
         ->assertSee([$writable->name, $readonly->name])
-        ->assertDontSee($user->email)
+        ->assertDontSee([$user->email, 'plan_tier'])
         ->assertDontSee('Other account workspace');
 
     OpnFormServer::actingAs($user, 'oauth')
         ->tool(ListWorkspacesTool::class)
         ->assertOk()
-        ->assertSee(['can_write_forms', User::ROLE_READONLY]);
+        ->assertSee(['can_write_forms', User::ROLE_READONLY])
+        ->assertDontSee('plan_tier');
 });
 
 it('creates an unpublished form automatically when the account has one workspace', function () {
