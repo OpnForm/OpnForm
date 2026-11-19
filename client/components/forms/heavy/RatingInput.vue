@@ -6,6 +6,7 @@
 
     <div 
       class="stars-outer"
+      :style="inputStyle"
       role="slider"
       :aria-valuemin="0"
       :aria-valuemax="starsCount"

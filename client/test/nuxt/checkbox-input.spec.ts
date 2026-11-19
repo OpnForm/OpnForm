@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { nextTick, reactive, ref } from 'vue'
 import CheckboxInput from '../../components/forms/core/CheckboxInput.vue'
 
 describe('CheckboxInput', () => {
@@ -46,5 +47,27 @@ describe('CheckboxInput', () => {
 
     expect(input.attributes('id')).toBe('terms')
     expect(visibleLabel?.attributes('for')).toBe('terms')
+  })
+
+  it('updates the checkbox focus color when validation fails and clears', async () => {
+    const invalid = ref(false)
+    const form = reactive({
+      terms: false,
+      errors: {
+        has: () => invalid.value,
+        clear: () => { invalid.value = false },
+      },
+    })
+    const wrapper = createWrapper({ form, color: '#7c3aed' })
+    const input = wrapper.get('input[type="checkbox"]')
+    expect(input.attributes('style')).toContain('--form-focus-color: #7c3aed')
+
+    invalid.value = true
+    await nextTick()
+    expect(input.attributes('style')).toContain('--form-focus-color: var(--color-red-500)')
+
+    await input.setValue(true)
+    expect(invalid.value).toBe(false)
+    expect(input.attributes('style')).toContain('--form-focus-color: #7c3aed')
   })
 })

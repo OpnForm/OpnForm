@@ -1,20 +1,24 @@
+import { formControlFocus, formControlTransition } from './focus-ring.theme.js'
+
 /**
  * FileInput tailwind-variants configuration (also used by Barcode and Camera)
  */
 export const fileInputTheme = {
   slots: {
     container: [
-      'flex flex-col w-full items-center justify-center transition-colors duration-40',
+      'flex flex-col w-full items-center justify-center',
+      formControlTransition,
       'border border-dashed',
       'shadow-none',
       'hover:bg-neutral-50 dark:hover:bg-notion-dark-light',
-      'focus:outline-hidden focus:ring-2'
+      'focus:outline-hidden',
+      formControlFocus
     ]
   },
   variants: {
     theme: {
       default: { container: 'border-neutral-300 dark:border-neutral-600' },
-      minimal: { container: 'border-2 border-transparent bg-neutral-100 dark:bg-notion-dark-light text-neutral-700 dark:text-neutral-300 focus:ring-2 focus:ring-form/60' },
+      minimal: { container: 'border-2 border-transparent bg-neutral-100 dark:bg-notion-dark-light text-neutral-700 dark:text-neutral-300' },
       notion: {
         container: 'border-notion-input-border dark:border-notion-input-borderDark bg-notion-input-background dark:bg-notion-dark-light text-neutral-900 dark:text-neutral-100'
       },
@@ -48,4 +52,3 @@ export const fileInputTheme = {
     disabled: false
   }
 }
-

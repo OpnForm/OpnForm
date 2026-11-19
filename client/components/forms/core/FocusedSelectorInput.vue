@@ -13,7 +13,7 @@
       ]"
       role="listbox"
       :aria-multiselectable="multiple ? 'true' : 'false'"
-      :tabindex="0"
+      :tabindex="disabled ? -1 : 0"
       @keydown.capture="onKeydown"
     >
       <div
@@ -148,6 +148,7 @@ const {
   resolvedTheme,
   resolvedSize,
   resolvedBorderRadius,
+  hasError,
   ui
 } = useFormInput(props, { emit }, {
   variants: focusedSelectorInputTheme
@@ -161,6 +162,8 @@ const animatingOption = ref(null) // Track which option is animating
 // Computed properties
 const optionStyle = computed(() => ({
   '--bg-form-color': props.color,
+  '--form-color': props.color,
+  '--form-focus-color': hasError.value ? 'var(--color-red-500)' : props.color,
   '--text-form-color': props.color
 }))
 
