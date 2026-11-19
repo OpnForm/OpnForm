@@ -59,7 +59,6 @@ class McpFormManagementService
             'icon' => $workspace->icon,
             'role' => $role,
             'can_write_forms' => $role !== User::ROLE_READONLY,
-            'plan_tier' => $workspace->plan_tier,
         ];
     }
 

@@ -196,7 +196,8 @@ it('uses a scoped MCP bearer token for account tool calls', function () {
         'Authorization' => 'Bearer scoped-account-token',
     ]))->assertOk()
         ->assertJsonPath('result.isError', false)
-        ->assertJsonPath('result.structuredContent.account.id', $user->id)
+        ->assertJsonPath('result.structuredContent.workspace_selection_required', false)
+        ->assertJsonMissingPath('result.structuredContent.account')
         ->assertJsonMissingPath('result._meta.mcp/www_authenticate');
 });
 

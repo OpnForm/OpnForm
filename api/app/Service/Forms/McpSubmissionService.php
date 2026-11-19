@@ -188,7 +188,7 @@ class McpSubmissionService
             'total_submissions' => $job['total_submissions'] ?? null,
             'file_url' => $job['file_url'] ?? null,
             'expires_at' => $job['expires_at'] ?? null,
-            'error_message' => $job['error_message'] ?? null,
+            'error_message' => $job['status'] === 'failed' ? 'The submission export failed.' : null,
         ];
     }
 
@@ -201,7 +201,7 @@ class McpSubmissionService
             ->useSignedUrlForFiles()
             ->getCleanKeyValue();
 
-        $result = [
+        return [
             'id' => $submission->id,
             'form_id' => $form->id,
             'status' => $submission->status,
@@ -210,14 +210,6 @@ class McpSubmissionService
             'completion_time_seconds' => $submission->completion_time,
             'responses' => $responses,
         ];
-
-        if ($form->enable_ip_tracking
-            && $form->workspace->hasFeature('enable_ip_tracking')
-            && ! empty($submission->meta['ip_address'] ?? null)) {
-            $result['ip_address'] = $submission->meta['ip_address'];
-        }
-
-        return $result;
     }
 
     private function submissionQuery(

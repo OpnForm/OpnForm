@@ -5,6 +5,55 @@
         <h1 class="sm:text-5xl">
           Privacy Policy
         </h1>
+        <section class="my-8 space-y-4" aria-labelledby="plugin-privacy">
+          <h2 id="plugin-privacy" class="text-2xl font-semibold">
+            OpnForm plugin for ChatGPT and Codex
+          </h2>
+          <p>
+            When you use the OpnForm plugin, OpnForm processes the tool inputs sent by ChatGPT or Codex
+            and returns the results to OpenAI to carry out your request. The data involved depends on the action you take.
+          </p>
+          <ul class="list-disc space-y-2 pl-6">
+            <li>
+              Drafting and editing can involve form titles, descriptions, field labels and settings, default values,
+              rules and formulas, draft versions, and temporary references and links for previews and editing.
+            </li>
+            <li>
+              After you connect your account, the plugin can use workspace names, icons, identifiers and permissions,
+              along with form identifiers, definitions, status, timestamps, links and activity counts to find and manage your forms.
+              When you connect, OpnForm processes your account association, the requesting OAuth client, the requested permission
+              and authorization records to grant, refresh or revoke access within your existing workspace permissions.
+            </li>
+            <li>
+              Reading submissions can return response identifiers, status, dates, completion times and answers,
+              including hidden or previously removed fields, signatures, uploaded filenames and temporary links to uploaded files.
+              Answers depend on the form and can contain personal data entered by respondents.
+              Statistics can include counts, aggregated results and per-field summaries containing answer values,
+              submission identifiers or temporary file links, as well as payment totals and counts.
+              An export returns its job identifier, status, progress
+              and a temporary link to a CSV
+              containing the exported submissions, with answers for the form's configured fields and submission dates.
+            </li>
+          </ul>
+          <p>
+            OpnForm records operational details such as the tool name, whether the request was authenticated,
+            its outcome and its duration to monitor reliability. The retention and deletion provisions below also apply
+            to these operational records, account forms and submissions.
+          </p>
+          <p>
+            Guest drafts expire after seven days and are removed by scheduled cleanup. Export job status is available
+            for up to two hours after its last update. Download links expire at the time indicated by the export tool.
+            Link expiry ends access through that link. The stored CSV may remain in OpnForm storage after the link expires.
+            By default, OAuth access tokens expire after seven days and refresh tokens after 30 days.
+            You can revoke access earlier.
+          </p>
+          <p>
+            You can disconnect OpnForm from your connected client. The
+            <a href="https://docs.opnform.com/integrations/mcp" class="underline">OpnForm MCP documentation</a>
+            explains how to revoke the current OAuth session. To manage data already shared with OpenAI,
+            use the data controls of your ChatGPT or Codex account.
+          </p>
+        </section>
         <NotionPage
           :block-map="page.blocks"
           :loading="loading"
