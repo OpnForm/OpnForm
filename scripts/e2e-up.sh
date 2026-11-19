@@ -6,7 +6,7 @@ ROOT_DIR=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)
 COMPOSE_FILES="-f $ROOT_DIR/docker-compose.e2e.yml"
 UI_LOG_FILE="$ROOT_DIR/.e2e-ui.log"
 
-docker compose $COMPOSE_FILES up -d db api ingress
+docker compose $COMPOSE_FILES up -d --build db api ingress
 
 if ! docker compose $COMPOSE_FILES exec -T api sh -lc 'command -v composer >/dev/null 2>&1'; then
   docker compose $COMPOSE_FILES exec -T api sh -lc "curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer"
