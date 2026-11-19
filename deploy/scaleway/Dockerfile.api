@@ -1,11 +1,11 @@
 # syntax=docker/dockerfile:1
-FROM php:8.3.36-fpm-bookworm@sha256:6b4641a875dd3e0f7551b2751e1f5909084856d18166af7fbb522ac230feb702 AS extensions
+FROM php:8.3.37-fpm-bookworm@sha256:ff3db7724750bf02a3c7d65be2790feb63f6173c2fb201328eb0a2295ca32041 AS extensions
 RUN apt-get update && apt-get install -y --no-install-recommends libzip-dev libpng-dev libjpeg62-turbo-dev libwebp-dev libpq-dev libicu-dev \
  && docker-php-ext-configure gd --with-jpeg --with-webp \
  && docker-php-ext-install -j4 pdo_pgsql gd exif bcmath zip pcntl posix intl opcache \
  && pecl install redis-6.3.0 && docker-php-ext-enable redis
 
-FROM php:8.3.36-fpm-bookworm@sha256:6b4641a875dd3e0f7551b2751e1f5909084856d18166af7fbb522ac230feb702 AS runtime
+FROM php:8.3.37-fpm-bookworm@sha256:ff3db7724750bf02a3c7d65be2790feb63f6173c2fb201328eb0a2295ca32041 AS runtime
 RUN apt-get update && apt-get install -y --no-install-recommends supervisor tini curl ca-certificates libzip4 libpng16-16 libjpeg62-turbo libwebp7 libpq5 libicu72 unzip procps \
  && curl -fsSLo /usr/share/keyrings/nginx-archive-keyring.asc https://nginx.org/keys/nginx_signing.key \
  && echo '55385da31d198fa6a5012d40ae98ecb272a6c4e8fffffba94719ffd3e87de37a  /usr/share/keyrings/nginx-archive-keyring.asc' | sha256sum -c - \

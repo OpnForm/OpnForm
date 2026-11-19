@@ -146,7 +146,7 @@ add rule inet {firewall_table} forward_guard iifname "{bridge}" oifname != "{bri
             hash_script='$m=json_decode(stream_get_contents(STDIN),true);foreach($m as $f=>$h){if(!is_file($f)||hash_file("sha256",$f)!==$h){fwrite(STDERR,"Runtime hash mismatch: ".$f);exit(1);}}echo count($m);'
             matched=int(docker('exec','-i',probe,'php','-r',hash_script,input=json.dumps(manifest)).stdout)
             assert docker('exec',probe,'cat','/app-revision').stdout==source_proof['source_revision_marker']
-            assert docker('exec',probe,'php','-r',"echo PHP_VERSION.'|'.ini_get('session.upload_progress.enabled');").stdout.strip()=='8.3.36|0'
+            assert docker('exec',probe,'php','-r',"echo PHP_VERSION.'|'.ini_get('session.upload_progress.enabled');").stdout.strip()=='8.3.37|0'
             assert 'session.upload_progress.enabled => Off' in docker('exec',probe,'php-fpm','-i').stdout
             record('actual backend image matches '+str(matched)+' frozen runtime source hashes and revision')
             image_checks.append({'runtime_source_hashes_matched':matched,'image':docker('inspect','-f','{{.Image}}',probe).stdout.strip()})

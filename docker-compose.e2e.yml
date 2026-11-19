@@ -14,7 +14,9 @@ services:
       - "55432:5432"
 
   api:
-    image: jhumanj/opnform-api:dev
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.api
     working_dir: /usr/share/nginx/html
     volumes:
       - ./api:/usr/share/nginx/html
