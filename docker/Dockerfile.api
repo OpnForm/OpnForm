@@ -1,5 +1,5 @@
 # Build stage - using PHP CLI image with extensions
-FROM php:8.3.36-cli AS builder
+FROM php:8.3.37-cli AS builder
 
 # Install composer and extensions needed for dependency installation
 RUN apt-get update && apt-get install -y \
@@ -23,7 +23,7 @@ COPY api/ .
 RUN composer install --optimize-autoloader --no-interaction
 
 # Final stage - smaller runtime image
-FROM php:8.3.36-fpm-alpine
+FROM php:8.3.37-fpm-alpine
 
 # Accept version build argument
 ARG APP_VERSION=unknown

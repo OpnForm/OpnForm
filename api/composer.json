@@ -12,7 +12,7 @@
     "license": "MIT",
     "type": "project",
     "require": {
-        "php": "^8.3",
+        "php": "~8.3.37 || ~8.4.28 || ^8.5.13",
         "ext-json": "*",
         "aws/aws-php-sns-message-validator": "^1.10",
         "aws/aws-sdk-php": "*",
@@ -69,7 +69,7 @@
         "preferred-install": "dist",
         "sort-packages": true,
         "platform": {
-          "php": "8.3.36",
+          "php": "8.3.37",
           "ext-pcntl": "8.0",
           "ext-posix": "8.0"
         },

@@ -61,7 +61,7 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: 8.3
+          php-version: '8.3.37'
           extensions: dom, curl, mbstring, pdo, sqlite, pdo_sqlite, pdo_pgsql, pdo_mysql, bcmath, gd, zip, pcntl, intl
           tools: composer:v2
           coverage: none
@@ -238,7 +238,7 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: 8.3
+          php-version: '8.3.37'
           extensions: dom, curl, mbstring, pdo, sqlite, pdo_sqlite, pdo_pgsql, pdo_mysql, bcmath, gd, zip, pcntl, intl
           tools: composer:v2
           coverage: none
@@ -308,7 +308,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: shivammathur/setup-php@v2
         with:
-          php-version: 8.3
+          php-version: '8.3.37'
           extensions: dom, curl, mbstring, pdo_pgsql, pdo_mysql, bcmath, gd, zip, intl
           tools: composer:v2
           coverage: none
@@ -355,7 +355,7 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: 8.3
+          php-version: '8.3.37'
           extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, pdo_pgsql, pdo_sqlite, bcmath, soap, intl, gd, exif, iconv, imagick, fileinfo
           coverage: none
 
@@ -540,7 +540,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: shivammathur/setup-php@v2
         with:
-          php-version: 8.3
+          php-version: '8.3.37'
           extensions: dom, curl, mbstring, pdo_pgsql, bcmath, gd, zip, intl
           tools: composer:v2
           coverage: none
