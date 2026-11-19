@@ -27,6 +27,7 @@ export default {
     return [
       ...getTemplateIndustriesUrls(),
       ...getTemplateTypesUrls(),
+      ...getFeaturePagesUrls(),
       ...getCloudMarketingUrls(),
       ...getIntegrationsPages(),
     ]
@@ -48,6 +49,29 @@ function getCloudMarketingUrls () {
       priority: 0.7
     }
   ]
+}
+
+function getFeaturePagesUrls () {
+  const featuresDir = join(process.cwd(), 'content/features')
+
+  if (!existsSync(featuresDir)) return []
+
+  return readdirSync(featuresDir)
+    .filter((fileName) => fileName.endsWith('.md'))
+    .map((fileName) => {
+      const frontmatter = getMarkdownFrontmatter(join(featuresDir, fileName))
+      if (frontmatter.published === false) return null
+
+      const fallbackSlug = fileName.replace(/\.md$/, '')
+      const slug = frontmatter.slug || fallbackSlug
+
+      return {
+        url: `/features/${slug}`,
+        changefreq: 'monthly',
+        priority: 0.75
+      }
+    })
+    .filter((page) => page)
 }
 
 function getMarkdownFrontmatter (filePath) {

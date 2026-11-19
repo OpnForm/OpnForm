@@ -181,6 +181,18 @@ definePageMeta({
 
 useHead({ link: [{ rel: 'preload', href: '/img/pages/ai_form_builder/background-pattern.svg', as: 'image', fetchpriority: 'high' }] })
 
+useJsonLd("homepage-schema", buildSchemaGraph([
+  buildOrganizationSchema(),
+  buildWebsiteSchema(),
+  buildSoftwareApplicationSchema(),
+  buildWebPageSchema({
+    name: "Free Online Form Builder with Unlimited Responses",
+    description:
+      "Build beautiful online forms with OpnForm. Create forms, surveys, and workflows for free, collect unlimited responses, and keep control of your data.",
+    path: "/",
+  }),
+]))
+
 const { isAuthenticated: authenticated } = useIsAuthenticated()
 const featureFlags = useState('featureFlags', () => ({}))
 const isSelfHosted = computed(() => !!featureFlags.value.self_hosted)
