@@ -114,7 +114,7 @@
     "vue-json-pretty": "^2.6.0",
     "vue-notion": "^3.0.0",
     "vue-signature-pad": "^3.0.2",
-    "vue-stripe-js": "^1.0.4",
+    "vue-stripe-js": "^2.0.2",
     "webcam-easy": "^1.1.1"
   },
   "eslintIgnore": [
