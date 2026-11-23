@@ -39,6 +39,7 @@
         "maatwebsite/excel": "^4.0.5",
         "mpociot/versionable": "^4.4",
         "openai-php/client": "^0.22.0",
+        "openspout/openspout": "^4.30",
         "propaganistas/laravel-disposable-email": "*",
         "sabberworm/php-css-parser": "^9.1",
         "sentry/sentry-laravel": "*",
