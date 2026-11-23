@@ -23,13 +23,17 @@ class ExportFormSubmissionsJob implements ShouldQueue
     public $timeout = 900; // 15 minutes
     public $tries = 1;
 
+    public string $format = 'csv';
+
     public function __construct(
         public Form $form,
         public array $columns,
         public array $submissionIds,
         public string $jobId,
-        public int $userId
+        public int $userId,
+        string $format = 'csv'
     ) {
+        $this->format = $format;
     }
 
     public function handle(FormExportService $exportService): void
@@ -37,10 +41,7 @@ class ExportFormSubmissionsJob implements ShouldQueue
         // Initialize job status in cache
         $this->updateJobStatus('processing', 0);
 
-        $submissionQuery = $this->form->submissions()->orderBy('created_at', 'desc');
-        if (!empty($this->submissionIds)) {
-            $submissionQuery->whereIn('id', $this->submissionIds);
-        }
+        $submissionQuery = $exportService->submissionQuery($this->form, $this->submissionIds);
 
         // Get total submission count
         $totalSubmissions = (clone $submissionQuery)->count();
@@ -50,41 +51,48 @@ class ExportFormSubmissionsJob implements ShouldQueue
             return;
         }
 
-        // Process submissions in chunks
         $chunkSize = 500;
         $processedCount = 0;
-        $allRows = [];
         $fileLinkExpiresAt = $exportService->fileLinkExpiresAt($this->form);
-
-        $submissionQuery->chunk($chunkSize, function ($submissions) use (&$processedCount, &$allRows, $totalSubmissions, $exportService, $fileLinkExpiresAt) {
-            foreach ($submissions as $submission) {
-                $formattedRow = $exportService->formatSubmissionForExport(
+        $numericColumns = $exportService->numericColumns($this->form, $this->format);
+        $rows = function () use ($submissionQuery, $chunkSize, $totalSubmissions, $exportService, $fileLinkExpiresAt, $numericColumns, &$processedCount) {
+            foreach ($exportService->iterateSubmissions($submissionQuery, $chunkSize) as $submission) {
+                yield $exportService->formatSubmissionForExport(
                     $this->form,
                     $submission,
                     $this->columns,
-                    $fileLinkExpiresAt
+                    $fileLinkExpiresAt,
+                    $numericColumns
                 );
-                $allRows[] = $formattedRow;
+
                 $processedCount++;
+                if ($processedCount % $chunkSize === 0) {
+                    $progress = min(90, ($processedCount / $totalSubmissions) * 90);
+                    $this->updateJobStatus('processing', $progress, null, $processedCount, $totalSubmissions);
+                }
             }
 
-            // Update progress
-            $progress = min(90, ($processedCount / $totalSubmissions) * 90); // Reserve 10% for file generation
-            $this->updateJobStatus('processing', $progress, null, $processedCount, $totalSubmissions);
-        });
+            if ($processedCount === 0) {
+                throw new \RuntimeException('No submissions to export');
+            }
 
-        // Generate and upload file to S3
-        $this->updateJobStatus('processing', 95, 'Generating export file...');
+            $this->updateJobStatus('processing', 95, 'Finalizing export file...', $processedCount, $processedCount);
+        };
 
-        $fileName = $this->form->slug . '-submissions-' . now()->format('Y-m-d-H-i-s') . '.csv';
-        $fileUrl = $exportService->generateAndUploadCsvFile($allRows, $fileName, $fileLinkExpiresAt);
+        $fileName = $this->form->slug . '-submissions-' . now()->format('Y-m-d-H-i-s') . '.' . $this->format;
+        $fileUrl = $exportService->generateAndUploadFile(
+            $rows(),
+            $this->jobId . '/' . $fileName,
+            $fileLinkExpiresAt,
+            $this->format
+        );
 
         // Mark as completed
-        $this->updateJobStatus('completed', 100, null, $totalSubmissions, $totalSubmissions, $fileUrl, $fileLinkExpiresAt);
+        $this->updateJobStatus('completed', 100, null, $processedCount, $processedCount, $fileUrl, $fileLinkExpiresAt);
 
         Log::info("Export job {$this->jobId} completed successfully", [
             'form_id' => $this->form->id,
-            'total_submissions' => $totalSubmissions,
+            'total_submissions' => $processedCount,
         ]);
     }
 

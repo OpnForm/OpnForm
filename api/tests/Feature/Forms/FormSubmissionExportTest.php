@@ -1,7 +1,9 @@
 <?php
 
+use App\Jobs\Form\ExportFormSubmissionsJob;
 use App\Models\Forms\FormSubmission;
 use App\Models\User;
+use App\Service\Forms\ExternalSubmissionFileLinkPolicy;
 use App\Service\Forms\FormExportService;
 use App\Service\Forms\SubmissionAttribution;
 use App\Service\Storage\FileUploadPathService;
@@ -10,6 +12,9 @@ use Illuminate\Routing\Middleware\ThrottleRequests;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
+use PhpOffice\PhpSpreadsheet\Cell\DataType;
+use PhpOffice\PhpSpreadsheet\Reader\Xlsx;
 
 function parseCsvRows(string $content): array
 {
@@ -72,6 +77,120 @@ it('can export form submissions with selected columns', function () {
     $response->assertSuccessful()
         ->assertHeader('content-disposition', 'attachment; filename='.$form->slug.'-submission-data.csv');
 });
+
+it('exports a valid Excel workbook with text preserved', function (bool $async) {
+    $user = $this->actingAsProUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace);
+    $textField = collect($form->properties)->firstWhere('type', 'text');
+    $answer = "=Example, café\nSecond line";
+
+    $this->postJson(route('forms.answer', $form->slug), $this->generateFormSubmissionData($form, [
+        $textField['id'] => $answer,
+    ]))->assertSuccessful();
+
+    if ($async) {
+        Storage::fake();
+        $exportService = Mockery::mock(FormExportService::class, [app(ExternalSubmissionFileLinkPolicy::class)])->makePartial();
+        $exportService->shouldReceive('shouldExportAsync')->once()->andReturnTrue();
+        $this->app->instance(FormExportService::class, $exportService);
+    }
+
+    $response = $this->postJson(route('open.forms.submissions.export', ['form' => $form]), [
+        'columns' => [$textField['id'] => true],
+        'format' => 'xlsx',
+    ])->assertSuccessful();
+
+    if ($async) {
+        $response->assertJsonPath('is_async', true);
+        $this->getJson(route('open.forms.submissions.export.status', [
+            'form' => $form,
+            'jobId' => $response->json('job_id'),
+        ]))->assertJsonPath('status', 'completed');
+        $files = Storage::allFiles(FormExportService::EXPORT_FILE_PATH);
+        expect($files)->toHaveCount(1);
+        $path = Storage::path($files[0]);
+    } else {
+        $response->assertHeader('content-disposition', 'attachment; filename='.$form->slug.'-submission-data.xlsx');
+        $path = $response->baseResponse->getFile()->getPathname();
+    }
+
+    expect($path)->toEndWith('.xlsx');
+    $sheet = (new Xlsx())->load($path)->getActiveSheet();
+    expect((string) $sheet->getCell('B1')->getValue())->toBe($textField['name'])
+        ->and((string) $sheet->getCell('B2')->getValue())->toBe($answer)
+        ->and($sheet->getCell('B2')->getDataType())->not->toBe(DataType::TYPE_FORMULA);
+})->with(['direct download' => false, 'background export' => true]);
+
+it('exports numeric form fields as Excel numbers without losing text identifiers or precision', function () {
+    $user = $this->actingAsProUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace, [
+        'properties' => [
+            ['id' => 'amount', 'name' => 'Amount', 'type' => 'number'],
+            ['id' => 'identifier', 'name' => 'Identifier', 'type' => 'text'],
+            ['id' => 'precise_number', 'name' => 'Precise number', 'type' => 'number'],
+        ],
+    ]);
+
+    $this->postJson(route('forms.answer', $form->slug), [
+        'amount' => '42.5',
+        'identifier' => '00123',
+        'precise_number' => '12345678901234567',
+    ])->assertSuccessful();
+
+    $response = $this->postJson(route('open.forms.submissions.export', ['form' => $form]), [
+        'columns' => ['amount' => true, 'identifier' => true, 'precise_number' => true],
+        'format' => 'xlsx',
+    ])->assertSuccessful();
+
+    $path = $response->baseResponse->getFile()->getPathname();
+    $sheet = (new Xlsx())->load($path)->getActiveSheet();
+    expect($sheet->getCell('B2')->getValue())->toBe(42.5)
+        ->and($sheet->getCell('B2')->getDataType())->toBe(DataType::TYPE_NUMERIC)
+        ->and((string) $sheet->getCell('C2')->getValue())->toBe('00123')
+        ->and((string) $sheet->getCell('D2')->getValue())->toBe('12345678901234567')
+        ->and($sheet->getCell('D2')->getDataType())->not->toBe(DataType::TYPE_NUMERIC);
+});
+
+it('offers CSV for text Excel cannot store and preserves the full CSV value', function (string $answer, string $message) {
+    $user = $this->actingAsProUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace);
+    $textField = collect($form->properties)->firstWhere('type', 'text');
+    $form->submissions()->create(['data' => [$textField['id'] => $answer]]);
+
+    $columns = [$textField['id'] => true];
+    $route = route('open.forms.submissions.export', ['form' => $form]);
+
+    $this->postJson($route, ['columns' => $columns, 'format' => 'xlsx'])
+        ->assertUnprocessable()
+        ->assertJsonPath('errors.format.0', $message);
+
+    $response = $this->postJson($route, ['columns' => $columns, 'format' => 'csv'])->assertSuccessful();
+    ob_start();
+    $response->sendContent();
+    expect(parseCsvRows(ob_get_clean())[1][1])->toBe($answer);
+
+    Storage::fake();
+    $exportService = app(FormExportService::class);
+    $jobId = $exportService->initializeAsyncExport($form, $user->id);
+    expect(fn () => ExportFormSubmissionsJob::dispatchSync($form, $columns, [], $jobId, $user->id, 'xlsx'))
+        ->toThrow(ValidationException::class, $message);
+    expect(Cache::get($exportService->getCacheKey($jobId)))
+        ->status->toBe('failed')
+        ->error_message->toBe($message);
+    expect(Storage::allFiles(FormExportService::EXPORT_FILE_PATH))->toBeEmpty();
+})->with([
+    'text exceeding the cell limit' => [
+        str_repeat('a', 32_768),
+        'A cell exceeds Excel’s 32,767 character limit. Choose CSV to export the full text.',
+    ],
+    'text incompatible with workbook XML' => [
+        "Text with \u{FFFE}",
+        'A cell contains a character that Excel cannot store. Choose CSV to preserve the original text.',
+    ],
+]);
 
 it('exports selected attribution columns and leaves unselected attribution out', function () {
     $user = $this->actingAsProUser();
@@ -476,7 +595,7 @@ it('uses the workspace policy for asynchronous CSV download links', function () 
     try {
         $exportService = app(FormExportService::class);
         $expiresAt = $exportService->fileLinkExpiresAt($form);
-        $fileUrl = $exportService->generateAndUploadCsvFile([
+        $fileUrl = $exportService->generateAndUploadFile([
             ['id' => 'submission-1'],
         ], 'weekend-submissions.csv', $expiresAt);
     } finally {
@@ -489,12 +608,76 @@ it('uses the workspace policy for asynchronous CSV download links', function () 
     Storage::assertExists(FormExportService::EXPORT_FILE_PATH.'weekend-submissions.csv');
 });
 
+it('reads export pages in date order while excluding new rows and avoiding gaps after deletions', function () {
+    $user = $this->actingAsProUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace);
+
+    $createSubmission = function (?string $createdAt) use ($form) {
+        $submission = $form->submissions()->create(['data' => []]);
+        $submission->forceFill(['created_at' => $createdAt])->save();
+
+        return $submission;
+    };
+
+    $older = $createSubmission('2026-11-19 23:00:00');
+    $nullDate = $createSubmission(null);
+    $tie = $createSubmission('2026-11-20 23:00:00');
+    $sameDate = $createSubmission('2026-11-20 23:00:00');
+
+    $exportService = app(FormExportService::class);
+    $query = $exportService->submissionQuery($form, []);
+    $ids = [];
+    foreach ($exportService->iterateSubmissions($query, 2) as $submission) {
+        $ids[] = $submission->id;
+        if (count($ids) === 2) {
+            $sameDate->delete();
+            $createSubmission('2026-11-18 23:00:00');
+        }
+    }
+
+    expect($ids)->toBe([$sameDate->id, $tie->id, $older->id, $nullDate->id]);
+});
+
+it('stores same-second exports for different selections as separate files', function (string $format) {
+    Storage::fake();
+    $this->freezeTime();
+
+    $user = $this->actingAsProUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace);
+    $textField = collect($form->properties)->firstWhere('type', 'text');
+    $columns = [$textField['id'] => true];
+    $exportService = app(FormExportService::class);
+    $paths = [];
+
+    foreach (['First selection', 'Second selection'] as $answer) {
+        $submission = $form->submissions()->create(['data' => [$textField['id'] => $answer]]);
+        $jobId = $exportService->initializeAsyncExport($form, $user->id);
+        ExportFormSubmissionsJob::dispatchSync($form, $columns, [$submission->id], $jobId, $user->id, $format);
+
+        $status = Cache::get($exportService->getCacheKey($jobId));
+        expect($status['status'])->toBe('completed');
+        $paths[$answer] = Storage::allFiles(FormExportService::EXPORT_FILE_PATH.$jobId)[0];
+    }
+
+    expect(basename($paths['First selection']))->toBe(basename($paths['Second selection']));
+
+    foreach ($paths as $answer => $path) {
+        $exportedAnswer = $format === 'xlsx'
+            ? (string) (new Xlsx())->load(Storage::path($path))->getActiveSheet()->getCell('B2')->getValue()
+            : parseCsvRows(Storage::get($path))[1][1];
+
+        expect($exportedAnswer)->toBe($answer);
+    }
+})->with(['csv', 'xlsx']);
+
 it('includes a UTF-8 BOM in asynchronous CSV exports', function () {
     Storage::fake();
     $exportService = app(FormExportService::class);
     $fileName = 'unicode-submissions.csv';
 
-    $exportService->generateAndUploadCsvFile([
+    $exportService->generateAndUploadFile([
         ['name' => 'பெயர்'],
     ], $fileName, now()->addHour());
 

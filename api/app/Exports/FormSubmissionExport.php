@@ -2,40 +2,69 @@
 
 namespace App\Exports;
 
-use Maatwebsite\Excel\Concerns\FromArray;
-use Maatwebsite\Excel\Concerns\WithHeadings;
-use Maatwebsite\Excel\Concerns\WithStrictNullComparison;
+use Maatwebsite\Excel\Files\LocalTemporaryFile;
+use Maatwebsite\Excel\Files\TemporaryFileFactory;
+use RuntimeException;
+use Throwable;
 
-class FormSubmissionExport implements FromArray, WithHeadings, WithStrictNullComparison
+class FormSubmissionExport
 {
-    protected array $submissionData;
-    protected array $headings;
+    public const CONTENT_TYPE = 'text/csv; charset=UTF-8';
 
-    public function __construct(array $submissionData)
+    public function write(iterable $rows): LocalTemporaryFile
     {
-        $this->headings = empty($submissionData)
-            ? []
-            : $this->cleanColumnNames(array_keys($submissionData[0]));
+        $file = app(TemporaryFileFactory::class)->makeLocal(fileExtension: 'csv');
 
-        $this->submissionData = array_map(function ($row) {
-            return array_values($row);
-        }, $submissionData);
+        try {
+            if (!chmod($file->getLocalPath(), 0600)) {
+                throw new RuntimeException('Unable to prepare private CSV export storage');
+            }
+
+            $stream = $file->readStream();
+
+            try {
+                if (fwrite($stream, "\xEF\xBB\xBF") !== 3) {
+                    throw new RuntimeException('Unable to write CSV export');
+                }
+
+                $columns = null;
+                foreach ($rows as $row) {
+                    if ($columns === null) {
+                        $columns = array_keys($row);
+                        $this->writeRow($stream, self::cleanColumnNames($columns));
+                    }
+
+                    $this->writeRow($stream, array_map(fn ($column) => $row[$column] ?? null, $columns));
+                }
+            } finally {
+                fclose($stream);
+            }
+        } catch (Throwable $exception) {
+            $file->delete();
+
+            throw $exception;
+        }
+
+        return $file;
     }
 
-    private function cleanColumnNames(array $columnNames): array
+    public static function cleanColumnNames(array $columnNames): array
     {
-        return collect($columnNames)->map(function ($columnName) {
-            return preg_replace('/\s\(.*\)/', '', $columnName);
-        })->toArray();
+        return array_map(fn ($name) => preg_replace('/\s\(.*\)/', '', $name), $columnNames);
     }
 
-    public function array(): array
+    private function writeRow($stream, array $values): void
     {
-        return $this->submissionData;
-    }
+        $safeValues = array_map(function ($value) {
+            if (is_string($value) && !is_numeric($value) && preg_match('/^[\s\x00-\x1f]*[=+\-@]/u', $value)) {
+                return "'" . $value;
+            }
 
-    public function headings(): array
-    {
-        return $this->headings;
+            return is_bool($value) ? (int) $value : $value;
+        }, $values);
+
+        if (fputcsv($stream, $safeValues, escape: '') === false) {
+            throw new RuntimeException('Unable to write CSV export');
+        }
     }
 }
