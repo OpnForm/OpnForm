@@ -352,6 +352,39 @@ it('sends a email if needed', function () {
     );
 });
 
+it('rejects a malformed recipient mention while notifying the configured fixed address', function () {
+    $user = $this->actingAsProUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace);
+    $field = collect($form->properties)->firstWhere('type', 'text');
+    $fixedAddress = 'team@example.test';
+    $invalidEntry = "contact@example.test\nContact details";
+
+    $this->createFormIntegration('email', $form->id, [
+        'send_to' => '<p>' . $fixedAddress . '</p>'
+            . '<p><span mention="true" mention-field-id="' . $field['id'] . '">Contact</span></p>',
+        'sender_name' => 'OpnForm',
+        'subject' => 'New form submission',
+        'email_content' => 'New form submission received.',
+    ]);
+
+    Notification::fake();
+
+    $this->postJson(route('forms.answer', $form->slug), [$field['id'] => $invalidEntry])
+        ->assertSuccessful();
+
+    Notification::assertSentOnDemandTimes(FormEmailNotification::class, 1);
+    Notification::assertSentOnDemand(
+        FormEmailNotification::class,
+        fn ($notification, $channels, $notifiable) => $notifiable->routes['mail'] === $fixedAddress,
+    );
+
+    $event = $form->integrations()->sole()->events()->sole();
+    $recipients = collect((array) $event->data->email->recipients)->keyBy('address');
+    expect($recipients)->toHaveCount(2)
+        ->and($recipients->get($invalidEntry)->status)->toBe('invalid');
+});
+
 it('does not send a email if not needed', function () {
     $user = $this->actingAsUser();
     $workspace = $this->createUserWorkspace($user);
