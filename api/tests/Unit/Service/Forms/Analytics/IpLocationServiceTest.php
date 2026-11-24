@@ -149,6 +149,43 @@ class IpLocationServiceTest extends TestCase
         $this->assertEquals(2, $stats['missing']);
     }
 
+    public function test_uses_internetdata_without_token_when_selected()
+    {
+        Config::set('services.ip_location.provider', 'internetdata');
+        Config::set('services.ipinfo.token', null);
+
+        Http::fake([
+            'api.internetdata.io/*' => Http::response([
+                'ip' => '8.8.8.8',
+                'location' => [
+                    'country' => 'US',
+                    'country_name' => 'United States',
+                    'timezone' => 'America/Los_Angeles',
+                ],
+            ], 200)
+        ]);
+
+        $result = $this->service->getLocationData('8.8.8.8');
+
+        $this->assertEquals('United States', $result['country']);
+        $this->assertEquals('America/Los_Angeles', $result['timezone']);
+        Http::assertSent(fn ($request) => $request->url() === 'https://api.internetdata.io/8.8.8.8');
+    }
+
+    public function test_handles_internetdata_failure_gracefully()
+    {
+        Config::set('services.ip_location.provider', 'internetdata');
+
+        Http::fake([
+            'api.internetdata.io/*' => Http::response('Server Error', 500)
+        ]);
+
+        $result = $this->service->getLocationData('8.8.8.8');
+
+        $this->assertEquals('Unknown', $result['country']);
+        $this->assertNull($result['timezone']);
+    }
+
     public function test_respects_custom_configuration()
     {
         Config::set('services.ipinfo.token', 'test-token');

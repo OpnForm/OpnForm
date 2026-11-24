@@ -92,6 +92,10 @@ return [
         'export_lookback_days' => env('STRIPE_EXPORT_LOOKBACK_DAYS', 45),
     ],
 
+    'ip_location' => [
+        'provider' => env('IP_LOCATION_PROVIDER', 'ipinfo'),
+    ],
+
     'ipinfo' => [
         'token' => env('IPINFO_TOKEN'),
         'cache_ttl_hours' => env('IPINFO_CACHE_TTL_HOURS', 24),

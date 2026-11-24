@@ -39,10 +39,14 @@ class IpLocationService
     }
 
     /**
-     * Fetch location data from IPINFO API
+     * Fetch location data from IPINFO API, or from InternetData when selected
      */
     private function fetchFromApi(string $ip): array
     {
+        if (config('services.ip_location.provider') === 'internetdata') {
+            return $this->fetchFromInternetData($ip);
+        }
+
         $token = config('services.ipinfo.token');
 
         if (!$token) {
@@ -66,6 +70,38 @@ class IpLocationService
             ]);
         } catch (\Exception $e) {
             Log::error('IPINFO API request exception', [
+                'ip' => $ip,
+                'error' => $e->getMessage()
+            ]);
+        }
+
+        return $this->getDefaultLocationData();
+    }
+
+    /**
+     * Fetch location data from InternetData API (no token needed)
+     */
+    private function fetchFromInternetData(string $ip): array
+    {
+        try {
+            $timeout = config('services.ipinfo.request_timeout', 5);
+            $response = Http::timeout($timeout)->get("https://api.internetdata.io/{$ip}");
+
+            if ($response->successful()) {
+                $location = $response->json('location') ?? [];
+                return $this->formatLocationData([
+                    'country' => $location['country_name'] ?? null,
+                    'timezone' => $location['timezone'] ?? null,
+                ]);
+            }
+
+            Log::warning('InternetData API request failed', [
+                'ip' => $ip,
+                'status' => $response->status(),
+                'response' => $response->body()
+            ]);
+        } catch (\Exception $e) {
+            Log::error('InternetData API request exception', [
                 'ip' => $ip,
                 'error' => $e->getMessage()
             ]);
