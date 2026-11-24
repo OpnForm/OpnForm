@@ -135,11 +135,8 @@ import {handleDarkMode, useDarkMode} from "~/lib/forms/public-page.js"
 import { useWorkingFormStore } from '~/stores/working_form'
 import { storeToRefs } from 'pinia'
 import { FormMode } from "~/lib/forms/FormModeStrategy.js"
-import { useCrisp } from '~/composables/useCrisp.js'
 import TrackClick from '~/components/global/TrackClick.vue'
 import { useFormEditorPreviewData } from '~/composables/useFormEditorPreviewData.js'
-
-const { hideChat, showChat } = useCrisp()
 
 const workingFormStore = useWorkingFormStore()
 const { setPreviewFormManager, clearData: clearPreviewData } = useFormEditorPreviewData()
@@ -149,14 +146,12 @@ const previewScrollInnerRef = ref(null)
 const formPreview = ref(null)
 const previewFormSubmitted = ref(false)
 const isExpanded = ref(false)
+const fullscreenPreview = useState('form-editor-fullscreen-preview', () => false)
 const previewReady = ref(false)
 let previewIdleHandle = null
 
 watch(isExpanded, (expanded) => {
-  if (expanded)
-    hideChat()
-  else
-    showChat()
+  fullscreenPreview.value = expanded
   nextTick(() => previewScrollInnerRef.value?.osInstance()?.update(true))
 })
 
@@ -207,6 +202,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  if (isExpanded.value) fullscreenPreview.value = false
   if (import.meta.client && previewIdleHandle !== null) {
     if (typeof window.cancelIdleCallback === 'function') {
       window.cancelIdleCallback(previewIdleHandle)

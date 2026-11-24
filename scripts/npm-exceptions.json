@@ -117,8 +117,8 @@
       "nodes": {
         "node_modules/quill": "2.0.3"
       },
-      "reviewed": "2026-11-09",
-      "expires": "2026-11-23",
+      "reviewed": "2026-11-24",
+      "expires": "2026-12-08",
       "reason": "No upstream fixed release. Default formats exclude formula/video; HTML export is additionally sanitized with DOMPurify and real-Quill regression tests.",
       "upstreamLatest": "2.0.3"
     },
