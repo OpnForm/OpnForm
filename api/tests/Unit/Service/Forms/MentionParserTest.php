@@ -3,6 +3,23 @@
 use App\Open\MentionParser;
 
 describe('MentionParser', function () {
+    it('resolves recipient mentions within the entries defined by the template', function () {
+        $template = '<p>team@example.test</p>'
+            . '<p><span mention mention-field-id="contact">Contact</span></p>'
+            . '<p><span mention mention-field-id="notes">Notes</span></p>';
+        $notes = "First line\nSecond line<br>Third line";
+        $parser = new MentionParser($template, [
+            ['id' => 'contact', 'value' => 'contact@example.test'],
+            ['id' => 'notes', 'value' => $notes],
+        ]);
+
+        expect($parser->parseRecipientEntries())->toBe([
+            'team@example.test',
+            'contact@example.test',
+            $notes,
+        ]);
+    });
+
     it('replaces mentions with their values in HTML', function () {
         $content = '<div>Hello <span mention mention-field-id="123" mention-fallback="">Name</span></div>';
         $data = [

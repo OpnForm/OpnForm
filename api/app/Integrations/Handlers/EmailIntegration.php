@@ -128,11 +128,11 @@ class EmailIntegration extends AbstractIntegrationHandler
                 $formatter->getFieldsWithValue(),
                 $this->getComputedValues()
             );
-            $sendTo = $parser->parseAsText();
+            $recipients = $parser->parseRecipientEntries();
         } else {
-            $sendTo = $this->integrationData?->send_to;
+            $recipients = preg_split("/\r\n|\n|\r/", $this->integrationData?->send_to);
         }
 
-        $this->sendTrackedEmails(preg_split("/\r\n|\n|\r/", $sendTo));
+        $this->sendTrackedEmails($recipients);
     }
 }
