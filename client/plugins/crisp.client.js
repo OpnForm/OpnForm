@@ -9,8 +9,7 @@ export default defineNuxtPlugin((nuxtApp) => {
   }
 
   const fullscreenPreview = useState('form-editor-fullscreen-preview', () => false)
-  const currentRoute = useRoute()
-  const isPublicFormPage = () => currentRoute.name === 'forms-slug'
+  const isPublicFormPage = () => router.currentRoute.value.name === 'forms-slug'
 
   // Initialize Crisp SDK and set up event listeners
   let crispPromise = null
@@ -30,12 +29,13 @@ export default defineNuxtPlugin((nuxtApp) => {
         appStore.crisp.chatOpened = false
       })
       watch(fullscreenPreview, (expanded) => {
-        if (expanded) {
+        const hidden = expanded || isPublicFormPage()
+        if (hidden) {
           Crisp.chat.hide()
         } else {
           Crisp.chat.show()
         }
-        appStore.crisp.hidden = expanded
+        appStore.crisp.hidden = hidden
       }, { immediate: true })
       return Crisp
     })
