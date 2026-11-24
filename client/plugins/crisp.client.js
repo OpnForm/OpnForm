@@ -8,6 +8,7 @@ export default defineNuxtPlugin((nuxtApp) => {
     return
   }
 
+  const fullscreenPreview = useState('form-editor-fullscreen-preview', () => false)
   const currentRoute = useRoute()
   const isPublicFormPage = () => currentRoute.name === 'forms-slug'
 
@@ -28,8 +29,14 @@ export default defineNuxtPlugin((nuxtApp) => {
       Crisp.chat.onChatClosed(() => {
         appStore.crisp.chatOpened = false
       })
-      Crisp.chat.show()
-      appStore.crisp.hidden = false
+      watch(fullscreenPreview, (expanded) => {
+        if (expanded) {
+          Crisp.chat.hide()
+        } else {
+          Crisp.chat.show()
+        }
+        appStore.crisp.hidden = expanded
+      }, { immediate: true })
       return Crisp
     })
 
