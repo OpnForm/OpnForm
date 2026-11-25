@@ -2,13 +2,18 @@
 
 namespace App\Service\Forms\Analytics;
 
+use App\Service\Forms\Analytics\IpLocation\IpLocation;
 use App\Service\Forms\Analytics\IpLocation\IpLocationProvider;
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 class IpLocationService
 {
     private const CACHE_PREFIX = 'ip_location:';
+
+    private const IPV4_MAPPED_PREFIX = "\0\0\0\0\0\0\0\0\0\0\xff\xff";
 
     /**
      * @param IpLocationProvider|null $provider null when external lookups are off
@@ -17,70 +22,87 @@ class IpLocationService
     {
     }
 
-    /**
-     * Get location data for an IP address with caching
-     */
-    public function getLocationData(string $ip): array
+    public function enabled(): bool
     {
-        // Don't process local/private IPs, or any IP when external lookups are off
-        if (!$this->provider || !filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
-            return $this->getDefaultLocationData();
+        return $this->provider !== null;
+    }
+
+    /**
+     * The address a provider may be sent, or null unless it's public unicast. An IPv4-mapped IPv6
+     * address is checked, and returned, as the IPv4 address it carries.
+     */
+    public static function lookupAddress(?string $ip): ?string
+    {
+        if ($ip === null || filter_var($ip, FILTER_VALIDATE_IP) === false) {
+            return null;
+        }
+
+        $packed = inet_pton($ip);
+        if (strlen($packed) === 16 && str_starts_with($packed, self::IPV4_MAPPED_PREFIX)) {
+            $packed = substr($packed, 12);
+        }
+        $ip = inet_ntop($packed);
+
+        // FILTER_FLAG_GLOBAL_RANGE lets multicast through: 224.0.0.0/4 and ff00::/8
+        $multicast = strlen($packed) === 4 ? (ord($packed[0]) & 0xF0) === 0xE0 : $packed[0] === "\xff";
+        if ($multicast || filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_GLOBAL_RANGE) === false) {
+            return null;
+        }
+
+        return $ip;
+    }
+
+    /**
+     * Country for a public IP, cached per provider. Null when lookups are off, the IP isn't public, or the
+     * provider failed or had no valid country, which is cached briefly so an outage doesn't last long.
+     */
+    public function lookup(string $ip): ?IpLocation
+    {
+        $ip = self::lookupAddress($ip);
+        if (!$this->provider || $ip === null) {
+            return null;
         }
 
         $cacheKey = $this->getCacheKey($ip);
-
-        // Try to get from cache first
-        $cachedData = Cache::get($cacheKey);
-        if ($cachedData !== null) {
-            return $cachedData;
+        $cached = Cache::get($cacheKey);
+        if (is_array($cached)) {
+            return IpLocation::fromArray($cached);
         }
+
+        $location = $this->fetch($ip);
+        $expiresAt = $location
+            ? now()->addHours((int) config('services.ip_location.cache_ttl_hours', 24))
+            : now()->addMinutes((int) config('services.ip_location.failure_cache_ttl_minutes', 5));
+        Cache::put($cacheKey, $location?->toArray() ?? [], $expiresAt);
+
+        return $location;
+    }
+
+    /**
+     * Logs carry the provider and a status or error category, never the IP or the exception message
+     */
+    private function fetch(string $ip): ?IpLocation
+    {
+        $context = ['provider' => $this->provider->name()];
 
         try {
-            $locationData = $this->formatLocationData($this->provider->lookup($ip));
-            $expiresAt = now()->addHours((int) config('services.ip_location.cache_ttl_hours', 24));
-        } catch (\Throwable $e) {
-            Log::warning('IP location lookup failed', [
-                'provider' => $this->provider->name(),
-                'ip' => $ip,
-                'error' => $e->getMessage()
-            ]);
+            $location = $this->provider->lookup($ip);
+            if (!$location) {
+                Log::warning('IP location lookup returned no country', $context);
+            }
 
-            // Cache failures briefly, so an outage doesn't leave visitors "Unknown" for long
-            $locationData = $this->getDefaultLocationData();
-            $expiresAt = now()->addMinutes((int) config('services.ip_location.failure_cache_ttl_minutes', 5));
+            return $location;
+        } catch (RequestException $e) {
+            $context['status'] = $e->response->status();
+        } catch (ConnectionException) {
+            $context['error'] = 'connection';
+        } catch (\Throwable $e) {
+            $context['error'] = class_basename($e);
         }
 
-        Cache::put($cacheKey, $locationData, $expiresAt);
+        Log::warning('IP location lookup failed', $context);
 
-        return $locationData;
-    }
-
-    /**
-     * Fill the fields a provider didn't answer
-     */
-    private function formatLocationData(array $data): array
-    {
-        return [
-            'country' => $data['country'] ?? 'Unknown',
-            'region' => $data['region'] ?? null,
-            'city' => $data['city'] ?? null,
-            'timezone' => $data['timezone'] ?? null,
-            'org' => $data['org'] ?? null,
-        ];
-    }
-
-    /**
-     * Get default location data when API is unavailable
-     */
-    private function getDefaultLocationData(): array
-    {
-        return [
-            'country' => 'Unknown',
-            'region' => null,
-            'city' => null,
-            'timezone' => null,
-            'org' => null,
-        ];
+        return null;
     }
 
     /**
@@ -88,7 +110,7 @@ class IpLocationService
      */
     private function getCacheKey(string $ip): string
     {
-        return self::CACHE_PREFIX . ($this->provider?->name() ?? 'none') . ':' . md5($ip);
+        return self::CACHE_PREFIX . ($this->provider?->name() ?? 'none') . ':' . md5(self::lookupAddress($ip) ?? $ip);
     }
 
     /**

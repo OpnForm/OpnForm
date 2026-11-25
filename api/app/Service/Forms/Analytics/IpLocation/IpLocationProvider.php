@@ -10,9 +10,9 @@ interface IpLocationProvider
     public function name(): string;
 
     /**
-     * Look up a public IP and map the answer to country, region, city, timezone and org
+     * Look up a public IP; null when the provider answered without a valid country
      *
-     * @throws \Throwable when the lookup fails
+     * @throws \Throwable when the request fails
      */
-    public function lookup(string $ip): array;
+    public function lookup(string $ip): ?IpLocation;
 }
