@@ -3,6 +3,10 @@
 namespace App\Providers;
 
 use App\Models\Billing\Subscription;
+use App\Service\Forms\Analytics\IpLocation\InternetDataProvider;
+use App\Service\Forms\Analytics\IpLocation\IpinfoProvider;
+use App\Service\Forms\Analytics\IpLocation\IpLocationProvider;
+use App\Service\Forms\Analytics\IpLocationService;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
@@ -132,6 +136,27 @@ class AppServiceProvider extends ServiceProvider
 
         // Plan Service (singleton for caching efficiency)
         $this->app->singleton(\App\Service\Plan\PlanService::class);
+
+        // Form analytics IP location, with the provider picked from config
+        $this->app->bind(IpLocationService::class, fn () => new IpLocationService($this->ipLocationProvider()));
+    }
+
+    /**
+     * IP_LOCATION_PROVIDER picks ipinfo, internetdata or none. Unset, Cloud keeps ipinfo, and a self-hosted
+     * instance uses ipinfo when IPINFO_TOKEN is set and InternetData otherwise. Null turns lookups off.
+     */
+    private function ipLocationProvider(): ?IpLocationProvider
+    {
+        $token = config('services.ipinfo.token');
+        $timeout = (int) config('services.ip_location.request_timeout', 5);
+        $provider = config('services.ip_location.provider')
+            ?: ($token || !config('app.self_hosted') ? 'ipinfo' : 'internetdata');
+
+        return match (strtolower($provider)) {
+            'ipinfo' => $token ? new IpinfoProvider($token, $timeout) : null,
+            'internetdata' => new InternetDataProvider($timeout),
+            default => null,
+        };
     }
 
     private function ensureSafeTestingDatabase(): void

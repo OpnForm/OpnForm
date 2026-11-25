@@ -2,8 +2,8 @@
 
 namespace App\Service\Forms\Analytics;
 
+use App\Service\Forms\Analytics\IpLocation\IpLocationProvider;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class IpLocationService
@@ -11,12 +11,19 @@ class IpLocationService
     private const CACHE_PREFIX = 'ip_location:';
 
     /**
+     * @param IpLocationProvider|null $provider null when external lookups are off
+     */
+    public function __construct(private readonly ?IpLocationProvider $provider = null)
+    {
+    }
+
+    /**
      * Get location data for an IP address with caching
      */
     public function getLocationData(string $ip): array
     {
-        // Don't process local/private IPs
-        if (!filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
+        // Don't process local/private IPs, or any IP when external lookups are off
+        if (!$this->provider || !filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
             return $this->getDefaultLocationData();
         }
 
@@ -28,54 +35,28 @@ class IpLocationService
             return $cachedData;
         }
 
-        // Fetch from API
-        $locationData = $this->fetchFromApi($ip);
+        try {
+            $locationData = $this->formatLocationData($this->provider->lookup($ip));
+            $expiresAt = now()->addHours((int) config('services.ip_location.cache_ttl_hours', 24));
+        } catch (\Throwable $e) {
+            Log::warning('IP location lookup failed', [
+                'provider' => $this->provider->name(),
+                'ip' => $ip,
+                'error' => $e->getMessage()
+            ]);
 
-        // Cache the result (even if empty to avoid repeated API calls)
-        $cacheTtl = config('services.ipinfo.cache_ttl_hours', 24);
-        Cache::put($cacheKey, $locationData, now()->addHours($cacheTtl));
+            // Cache failures briefly, so an outage doesn't leave visitors "Unknown" for long
+            $locationData = $this->getDefaultLocationData();
+            $expiresAt = now()->addMinutes((int) config('services.ip_location.failure_cache_ttl_minutes', 5));
+        }
+
+        Cache::put($cacheKey, $locationData, $expiresAt);
 
         return $locationData;
     }
 
     /**
-     * Fetch location data from IPINFO API
-     */
-    private function fetchFromApi(string $ip): array
-    {
-        $token = config('services.ipinfo.token');
-
-        if (!$token) {
-            return $this->getDefaultLocationData();
-        }
-
-        try {
-            $url = "https://api.ipinfo.io/lite/{$ip}?token={$token}";
-            $timeout = config('services.ipinfo.request_timeout', 5);
-            $response = Http::timeout($timeout)->get($url);
-
-            if ($response->successful()) {
-                $data = $response->json();
-                return $this->formatLocationData($data);
-            }
-
-            Log::warning('IPINFO API request failed', [
-                'ip' => $ip,
-                'status' => $response->status(),
-                'response' => $response->body()
-            ]);
-        } catch (\Exception $e) {
-            Log::error('IPINFO API request exception', [
-                'ip' => $ip,
-                'error' => $e->getMessage()
-            ]);
-        }
-
-        return $this->getDefaultLocationData();
-    }
-
-    /**
-     * Format and validate location data from API response
+     * Fill the fields a provider didn't answer
      */
     private function formatLocationData(array $data): array
     {
@@ -103,11 +84,11 @@ class IpLocationService
     }
 
     /**
-     * Generate cache key for IP address
+     * Generate cache key for IP address, scoped by provider
      */
     private function getCacheKey(string $ip): string
     {
-        return self::CACHE_PREFIX . md5($ip);
+        return self::CACHE_PREFIX . ($this->provider?->name() ?? 'none') . ':' . md5($ip);
     }
 
     /**
