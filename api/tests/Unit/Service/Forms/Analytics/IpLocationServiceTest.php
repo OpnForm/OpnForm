@@ -3,8 +3,12 @@
 namespace Tests\Unit;
 
 use App\Service\Forms\Analytics\IpLocationService;
+use App\Service\Forms\Analytics\IpLocation\IpLocationHttpClient;
+use Illuminate\Http\Client\Events\RequestSending;
+use Illuminate\Http\Client\Events\ResponseReceived;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -15,7 +19,7 @@ class IpLocationServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        Http::preventStrayRequests();
+        app(IpLocationHttpClient::class)->preventStrayRequests();
         Cache::flush(); // Clear cache before each test
     }
 
@@ -37,12 +41,20 @@ class IpLocationServiceTest extends TestCase
             'broadcast' => ['255.255.255.255'],
             'reserved' => ['240.0.0.1'],
             'documentation' => ['192.0.2.1'],
+            'deprecated 6to4 relay' => ['192.88.99.1'],
             'multicast' => ['224.0.0.1'],
             'multicast SSDP' => ['239.255.255.250'],
             'IPv6 loopback' => ['::1'],
             'IPv6 unique local' => ['fc00::1'],
             'IPv6 link-local' => ['fe80::1'],
             'IPv6 documentation' => ['2001:db8::1'],
+            'IPv6 additional documentation' => ['3fff::1'],
+            'IPv6 retired 6bone' => ['3ffe::1'],
+            'IPv6 reserved address space' => ['4000::1'],
+            'IPv6 local translation' => ['64:ff9b:1::a00:1'],
+            'IPv6 well-known translation' => ['64:ff9b::a00:1'],
+            'IPv6 dummy prefix' => ['100:0:0:1::1'],
+            'IPv6 segment routing' => ['5f00::1'],
             'IPv6 multicast' => ['ff02::1'],
             'IPv6 global multicast' => ['ff0e::1'],
             'IPv4-mapped private' => ['::ffff:192.168.1.1'],
@@ -57,11 +69,11 @@ class IpLocationServiceTest extends TestCase
     public function test_ineligible_address_is_never_sent(string $ip)
     {
         Config::set('services.ip_location.provider', 'internetdata');
-        Http::fake();
+        app(IpLocationHttpClient::class)->fake();
 
         $this->assertNull(IpLocationService::lookupAddress($ip));
         $this->assertNull($this->service()->lookup($ip));
-        Http::assertNothingSent();
+        app(IpLocationHttpClient::class)->assertNothingSent();
     }
 
     public static function eligibleAddresses(): array
@@ -78,61 +90,93 @@ class IpLocationServiceTest extends TestCase
     public function test_public_address_is_looked_up_in_canonical_form(string $ip, string $sent)
     {
         Config::set('services.ip_location.provider', 'internetdata');
-        Http::fake(['api.internetdata.io/*' => Http::response(self::internetDataAnswer(), 200)]);
+        app(IpLocationHttpClient::class)->fake(['api.internetdata.io/*' => Http::response(self::internetDataAnswer(), 200)]);
 
         $this->assertSame($sent, IpLocationService::lookupAddress($ip));
         $this->assertSame('United States', $this->service()->lookup($ip)?->country);
-        Http::assertSentCount(1);
-        Http::assertSent(fn ($request) => $request->url() === "https://api.internetdata.io/{$sent}");
+        app(IpLocationHttpClient::class)->assertSentCount(1);
+        app(IpLocationHttpClient::class)->assertSent(fn ($request) => $request->url() === "https://api.internetdata.io/{$sent}");
     }
 
     public function test_no_lookup_when_ipinfo_has_no_token()
     {
         Config::set('services.ipinfo.token', null);
-        Http::fake();
+        app(IpLocationHttpClient::class)->fake();
 
         $this->assertNull($this->service()->lookup('8.8.8.8'));
         $this->assertFalse($this->service()->enabled());
-        Http::assertNothingSent();
+        app(IpLocationHttpClient::class)->assertNothingSent();
     }
 
     public function test_ipinfo_lite_answer()
     {
         Config::set('services.ipinfo.token', 'test-token');
-        Http::fake(['api.ipinfo.io/*' => Http::response(self::ipinfoAnswer(), 200)]);
+        app(IpLocationHttpClient::class)->fake(['api.ipinfo.io/*' => Http::response(self::ipinfoAnswer(), 200)]);
 
         $location = $this->service()->lookup('8.8.8.8');
 
         $this->assertSame('US', $location->countryCode);
         $this->assertSame('United States', $location->country);
-        Http::assertSent(fn ($request) => $request->url() === 'https://api.ipinfo.io/lite/8.8.8.8?token=test-token');
+        app(IpLocationHttpClient::class)->assertSent(fn ($request) => $request->url() === 'https://api.ipinfo.io/lite/8.8.8.8?token=test-token');
     }
 
     public function test_internetdata_answer()
     {
         Config::set('services.ip_location.provider', 'internetdata');
-        Http::fake(['api.internetdata.io/*' => Http::response(self::internetDataAnswer(), 200)]);
+        app(IpLocationHttpClient::class)->fake(['api.internetdata.io/*' => Http::response(self::internetDataAnswer(), 200)]);
 
         $location = $this->service()->lookup('8.8.8.8');
 
         $this->assertSame('US', $location->countryCode);
         $this->assertSame('United States', $location->country);
+    }
+
+    public function test_provider_labels_are_normalized_to_the_same_country()
+    {
+        Config::set('services.ipinfo.token', 'test-token');
+        app(IpLocationHttpClient::class)->fake([
+            'api.ipinfo.io/*' => Http::response(array_merge(self::ipinfoAnswer(), ['country_code' => 'KR', 'country' => 'South Korea'])),
+            'api.internetdata.io/*' => Http::response(self::internetDataAnswer(['country' => 'KR', 'country_name' => 'Republic of Korea'])),
+        ]);
+
+        Config::set('services.ip_location.provider', 'ipinfo');
+        $this->assertSame('South Korea', $this->service()->lookup('8.8.8.8')->country);
+        Config::set('services.ip_location.provider', 'internetdata');
+        $this->assertSame('South Korea', $this->service()->lookup('8.8.8.8')->country);
+    }
+
+    public function test_lookup_does_not_emit_global_http_events_with_the_visitor_ip()
+    {
+        $events = 0;
+        Event::listen([RequestSending::class, ResponseReceived::class], function () use (&$events) {
+            $events++;
+        });
+        Http::fake();
+        Http::get('https://example.test');
+        $this->assertGreaterThan(0, $events);
+        $events = 0;
+
+        Config::set('services.ip_location.provider', 'internetdata');
+        app(IpLocationHttpClient::class)->fake(['api.internetdata.io/*' => Http::response(self::internetDataAnswer())]);
+
+        $this->assertSame('US', $this->service()->lookup('8.8.8.8')->countryCode);
+        $this->assertSame(0, $events);
     }
 
     public function test_caches_successful_api_response()
     {
         Config::set('services.ipinfo.token', 'test-token');
         Config::set('services.ip_location.cache_ttl_hours', 1);
-        Http::fake(['api.ipinfo.io/*' => Http::response(self::ipinfoAnswer(), 200)]);
+        app(IpLocationHttpClient::class)->fake(['api.ipinfo.io/*' => Http::response(self::ipinfoAnswer(), 200)]);
 
         $this->assertSame('United States', $this->service()->lookup('8.8.8.8')->country);
         $this->assertSame('United States', $this->service()->lookup('8.8.8.8')->country);
-        Http::assertSentCount(1);
+        app(IpLocationHttpClient::class)->assertSentCount(1);
 
         $this->travel(61)->minutes();
 
         $this->assertSame('United States', $this->service()->lookup('8.8.8.8')->country);
-        Http::assertSentCount(2);
+        app(IpLocationHttpClient::class)->assertSentCount(2);
     }
 
     public static function answersWithoutCountry(): array
@@ -141,6 +185,8 @@ class IpLocationServiceTest extends TestCase
             // IPinfo Lite's answer for an address it has no country for
             'ipinfo' => ['ipinfo', 'api.ipinfo.io/*', ['ip' => '8.8.8.8', 'bogon' => true]],
             'ipinfo invalid code' => ['ipinfo', 'api.ipinfo.io/*', array_merge(self::ipinfoAnswer(), ['country_code' => 'USA'])],
+            'ipinfo unassigned code' => ['ipinfo', 'api.ipinfo.io/*', array_merge(self::ipinfoAnswer(), ['country_code' => 'ZZ'])],
+            'ipinfo retired code' => ['ipinfo', 'api.ipinfo.io/*', array_merge(self::ipinfoAnswer(), ['country_code' => 'AN'])],
             // InternetData's answer for an address it has no location for
             'internetdata' => ['internetdata', 'api.internetdata.io/*', self::internetDataAnswer([
                 'continent' => '', 'continent_name' => '', 'country' => '', 'country_name' => '', 'timezone' => '',
@@ -157,16 +203,16 @@ class IpLocationServiceTest extends TestCase
         Config::set('services.ipinfo.token', 'test-token');
         Config::set('services.ip_location.provider', $provider);
         Config::set('services.ip_location.failure_cache_ttl_minutes', 5);
-        Http::fake([$url => Http::response($answer, 200)]);
+        app(IpLocationHttpClient::class)->fake([$url => Http::response($answer, 200)]);
 
         $this->assertNull($this->service()->lookup('8.8.8.8'));
         $this->assertNull($this->service()->lookup('8.8.8.8'));
-        Http::assertSentCount(1);
+        app(IpLocationHttpClient::class)->assertSentCount(1);
 
         $this->travel(6)->minutes();
 
         $this->assertNull($this->service()->lookup('8.8.8.8'));
-        Http::assertSentCount(2);
+        app(IpLocationHttpClient::class)->assertSentCount(2);
     }
 
     public function test_failed_lookup_is_cached_briefly()
@@ -174,7 +220,7 @@ class IpLocationServiceTest extends TestCase
         Config::set('services.ip_location.provider', 'internetdata');
         Config::set('services.ip_location.failure_cache_ttl_minutes', 5);
 
-        Http::fake([
+        app(IpLocationHttpClient::class)->fake([
             'api.internetdata.io/*' => Http::sequence()
                 ->push('Service Unavailable', 503)
                 ->push(self::internetDataAnswer(), 200)
@@ -182,12 +228,12 @@ class IpLocationServiceTest extends TestCase
 
         $this->assertNull($this->service()->lookup('8.8.8.8'));
         $this->assertNull($this->service()->lookup('8.8.8.8'));
-        Http::assertSentCount(1);
+        app(IpLocationHttpClient::class)->assertSentCount(1);
 
         $this->travel(6)->minutes();
 
         $this->assertSame('United States', $this->service()->lookup('8.8.8.8')->country);
-        Http::assertSentCount(2);
+        app(IpLocationHttpClient::class)->assertSentCount(2);
     }
 
     public function test_failure_logs_carry_no_ip_or_exception_message()
@@ -195,7 +241,7 @@ class IpLocationServiceTest extends TestCase
         Config::set('services.ip_location.provider', 'internetdata');
         Log::spy();
 
-        Http::fake([
+        app(IpLocationHttpClient::class)->fake([
             'api.internetdata.io/8.8.8.8' => Http::response('Service Unavailable for 8.8.8.8', 503),
             'api.internetdata.io/1.1.1.1' => Http::failedConnection(),
         ]);
@@ -210,7 +256,7 @@ class IpLocationServiceTest extends TestCase
     {
         Config::set('services.ipinfo.token', 'test-token');
 
-        Http::fake([
+        app(IpLocationHttpClient::class)->fake([
             'api.ipinfo.io/*' => Http::sequence()
                 ->push(self::ipinfoAnswer(), 200)
                 ->push(array_merge(self::ipinfoAnswer(), ['country_code' => 'CA', 'country' => 'Canada']), 200)
@@ -218,18 +264,18 @@ class IpLocationServiceTest extends TestCase
 
         $this->assertSame('United States', $this->service()->lookup('8.8.8.8')->country);
         $this->assertSame('United States', $this->service()->lookup('8.8.8.8')->country);
-        Http::assertSentCount(1);
+        app(IpLocationHttpClient::class)->assertSentCount(1);
 
         $this->assertTrue($this->service()->clearCache('8.8.8.8'));
 
         $this->assertSame('Canada', $this->service()->lookup('8.8.8.8')->country);
-        Http::assertSentCount(2);
+        app(IpLocationHttpClient::class)->assertSentCount(2);
     }
 
     public function test_cache_statistics()
     {
         Config::set('services.ipinfo.token', 'test-token');
-        Http::fake(['api.ipinfo.io/*' => Http::response(self::ipinfoAnswer(), 200)]);
+        app(IpLocationHttpClient::class)->fake(['api.ipinfo.io/*' => Http::response(self::ipinfoAnswer(), 200)]);
 
         $ips = ['8.8.8.8', '1.1.1.1', '208.67.222.222'];
         $this->service()->lookup($ips[0]);
@@ -246,47 +292,47 @@ class IpLocationServiceTest extends TestCase
         Config::set('services.ipinfo.token', 'test-token');
         Config::set('services.ip_location.request_timeout', 10);
         Config::set('services.ip_location.cache_ttl_hours', 48);
-        Http::fake(['api.ipinfo.io/*' => Http::response(self::ipinfoAnswer(), 200)]);
+        app(IpLocationHttpClient::class)->fake(['api.ipinfo.io/*' => Http::response(self::ipinfoAnswer(), 200)]);
 
         $this->assertSame('United States', $this->service()->lookup('8.8.8.8')->country);
 
         $this->travel(47)->hours();
         $this->service()->lookup('8.8.8.8');
-        Http::assertSentCount(1);
+        app(IpLocationHttpClient::class)->assertSentCount(1);
 
         $this->travel(2)->hours();
         $this->service()->lookup('8.8.8.8');
-        Http::assertSentCount(2);
+        app(IpLocationHttpClient::class)->assertSentCount(2);
     }
 
     public function test_self_hosted_uses_internetdata_without_token()
     {
         Config::set('app.self_hosted', true);
         Config::set('services.ipinfo.token', null);
-        Http::fake(['api.internetdata.io/*' => Http::response(self::internetDataAnswer(), 200)]);
+        app(IpLocationHttpClient::class)->fake(['api.internetdata.io/*' => Http::response(self::internetDataAnswer(), 200)]);
 
         $this->assertSame('United States', $this->service()->lookup('8.8.8.8')->country);
-        Http::assertSent(fn ($request) => $request->url() === 'https://api.internetdata.io/8.8.8.8');
+        app(IpLocationHttpClient::class)->assertSent(fn ($request) => $request->url() === 'https://api.internetdata.io/8.8.8.8');
     }
 
     public function test_self_hosted_uses_ipinfo_when_token_configured()
     {
         Config::set('app.self_hosted', true);
         Config::set('services.ipinfo.token', 'test-token');
-        Http::fake(['api.ipinfo.io/*' => Http::response(self::ipinfoAnswer(), 200)]);
+        app(IpLocationHttpClient::class)->fake(['api.ipinfo.io/*' => Http::response(self::ipinfoAnswer(), 200)]);
 
         $this->assertSame('US', $this->service()->lookup('8.8.8.8')->countryCode);
-        Http::assertSentCount(1);
+        app(IpLocationHttpClient::class)->assertSentCount(1);
     }
 
     public function test_provider_setting_overrides_default()
     {
         Config::set('services.ip_location.provider', 'internetdata');
         Config::set('services.ipinfo.token', 'test-token');
-        Http::fake(['api.internetdata.io/*' => Http::response(self::internetDataAnswer(['country' => 'CA', 'country_name' => 'Canada']), 200)]);
+        app(IpLocationHttpClient::class)->fake(['api.internetdata.io/*' => Http::response(self::internetDataAnswer(['country' => 'CA', 'country_name' => 'Canada']), 200)]);
 
         $this->assertSame('Canada', $this->service()->lookup('8.8.8.8')->country);
-        Http::assertSentCount(1);
+        app(IpLocationHttpClient::class)->assertSentCount(1);
     }
 
     public function test_provider_none_disables_external_lookups()
@@ -294,18 +340,18 @@ class IpLocationServiceTest extends TestCase
         Config::set('app.self_hosted', true);
         Config::set('services.ip_location.provider', 'none');
         Config::set('services.ipinfo.token', 'test-token');
-        Http::fake();
+        app(IpLocationHttpClient::class)->fake();
 
         $this->assertFalse($this->service()->enabled());
         $this->assertNull($this->service()->lookup('8.8.8.8'));
-        Http::assertNothingSent();
+        app(IpLocationHttpClient::class)->assertNothingSent();
     }
 
     public function test_switching_provider_ignores_warm_cache()
     {
         Config::set('services.ipinfo.token', 'test-token');
 
-        Http::fake([
+        app(IpLocationHttpClient::class)->fake([
             'api.ipinfo.io/*' => Http::response(self::ipinfoAnswer(), 200),
             'api.internetdata.io/*' => Http::response(self::internetDataAnswer(['country' => 'CA', 'country_name' => 'Canada']), 200),
         ]);
@@ -317,7 +363,7 @@ class IpLocationServiceTest extends TestCase
 
         Config::set('services.ip_location.provider', 'ipinfo');
         $this->assertSame('United States', $this->service()->lookup('8.8.8.8')->country);
-        Http::assertSentCount(2);
+        app(IpLocationHttpClient::class)->assertSentCount(2);
     }
 
     private function service(): IpLocationService

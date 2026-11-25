@@ -2,11 +2,10 @@
 
 namespace App\Service\Forms\Analytics\IpLocation;
 
-use Illuminate\Support\Facades\Http;
-
 class IpinfoProvider implements IpLocationProvider
 {
     public function __construct(
+        private readonly IpLocationHttpClient $http,
         private readonly string $token,
         private readonly int $timeout,
     ) {
@@ -19,7 +18,7 @@ class IpinfoProvider implements IpLocationProvider
 
     public function lookup(string $ip): ?IpLocation
     {
-        $response = Http::timeout($this->timeout)
+        $response = $this->http->timeout($this->timeout)
             ->get("https://api.ipinfo.io/lite/{$ip}", ['token' => $this->token])
             ->throw();
 

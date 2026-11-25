@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Models\Billing\Subscription;
 use App\Service\Forms\Analytics\IpLocation\InternetDataProvider;
+use App\Service\Forms\Analytics\IpLocation\IpLocationHttpClient;
 use App\Service\Forms\Analytics\IpLocation\IpinfoProvider;
 use App\Service\Forms\Analytics\IpLocation\IpLocationProvider;
 use App\Service\Forms\Analytics\IpLocationService;
@@ -138,6 +139,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(\App\Service\Plan\PlanService::class);
 
         // Form analytics IP location, with the provider picked from config
+        $this->app->singleton(IpLocationHttpClient::class, fn () => new IpLocationHttpClient());
         $this->app->bind(IpLocationService::class, fn () => new IpLocationService($this->ipLocationProvider()));
     }
 
@@ -153,8 +155,8 @@ class AppServiceProvider extends ServiceProvider
             ?: ($token || !config('app.self_hosted') ? 'ipinfo' : 'internetdata');
 
         return match (strtolower($provider)) {
-            'ipinfo' => $token ? new IpinfoProvider($token, $timeout) : null,
-            'internetdata' => new InternetDataProvider($timeout),
+            'ipinfo' => $token ? new IpinfoProvider($this->app->make(IpLocationHttpClient::class), $token, $timeout) : null,
+            'internetdata' => new InternetDataProvider($this->app->make(IpLocationHttpClient::class), $timeout),
             default => null,
         };
     }

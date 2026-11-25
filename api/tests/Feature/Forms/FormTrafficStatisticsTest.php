@@ -14,7 +14,7 @@ beforeEach(function () {
 
 it('preserves traffic breakdown across repeated daily cleanups and combines recent views', function () {
     $meta = ['source' => 'Google', 'device' => 'Desktop', 'country' => 'FR', 'browser' => 'Firefox', 'os' => 'Linux'];
-    foreach ([now()->subDay(), now()->subDay(), now()->subMinute()] as $date) {
+    foreach ([now()->subDay(), now()->subDay(), now()->subMinutes(6)] as $date) {
         $view = $this->form->views()->create(['meta' => $meta]);
         $view->forceFill(['created_at' => $date])->save();
     }
@@ -29,7 +29,7 @@ it('preserves traffic breakdown across repeated daily cleanups and combines rece
     }
 
     $view = $this->form->views()->create(['meta' => $meta]);
-    $view->forceFill(['created_at' => now()->subSecond()])->save();
+    $view->forceFill(['created_at' => now()->subMinutes(6)])->save();
     Artisan::call('forms:database-cleanup');
     // The cleanup invalidates the previously cached result.
     $this->getJson($this->statsUrl)->assertSuccessful()->assertJsonPath('meta_stats.source.Google', 4);

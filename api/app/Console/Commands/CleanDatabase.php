@@ -48,12 +48,12 @@ class CleanDatabase extends Command
     {
         $this->line('Aggregating form views...');
         $statistics = app(FormViewStatistics::class);
-        $now = now();
+        $cutoff = now()->subSeconds(FormView::COUNTRY_ENRICHMENT_WINDOW_SECONDS);
         $maxId = FormView::max('id') ?? 0;
 
         do {
-            $batch = DB::transaction(function () use ($statistics, $now, $maxId) {
-                $ids = DB::table('form_views')->where('created_at', '<', $now)->where('id', '<=', $maxId)
+            $batch = DB::transaction(function () use ($statistics, $cutoff, $maxId) {
+                $ids = DB::table('form_views')->where('created_at', '<', $cutoff)->where('id', '<=', $maxId)
                     ->orderBy('id')->limit(self::VIEW_BATCH_SIZE)->lockForUpdate()->pluck('id');
                 if ($ids->isEmpty()) {
                     return null;
