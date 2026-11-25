@@ -16,7 +16,7 @@ class UserAgentHelper
         $this->browser = new BrowserDetection();
         $this->request = $request;
         $this->userAgent = $request->userAgent() ?? '';
-        $this->ipLocationService = $ipLocationService ?? new IpLocationService();
+        $this->ipLocationService = $ipLocationService ?? app(IpLocationService::class);
     }
 
     public function getMetadata(): array

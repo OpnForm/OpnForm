@@ -92,10 +92,16 @@ return [
         'export_lookback_days' => env('STRIPE_EXPORT_LOOKBACK_DAYS', 45),
     ],
 
+    'ip_location' => [
+        // ipinfo, internetdata or none; unset picks one in AppServiceProvider::ipLocationProvider()
+        'provider' => env('IP_LOCATION_PROVIDER'),
+        'cache_ttl_hours' => env('IP_LOCATION_CACHE_TTL_HOURS', env('IPINFO_CACHE_TTL_HOURS', 24)),
+        'failure_cache_ttl_minutes' => env('IP_LOCATION_FAILURE_CACHE_TTL_MINUTES', 5),
+        'request_timeout' => env('IP_LOCATION_REQUEST_TIMEOUT', env('IPINFO_REQUEST_TIMEOUT', 5)),
+    ],
+
     'ipinfo' => [
         'token' => env('IPINFO_TOKEN'),
-        'cache_ttl_hours' => env('IPINFO_CACHE_TTL_HOURS', 24),
-        'request_timeout' => env('IPINFO_REQUEST_TIMEOUT', 5),
     ],
 
     'license' => [
