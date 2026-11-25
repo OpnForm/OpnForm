@@ -40,4 +40,29 @@ describe('createChunkErrorRecovery', () => {
     expect(reportBlockedCss).toHaveBeenCalledExactlyOnceWith(error)
     expect(reload).not.toHaveBeenCalled()
   })
+
+  it('reports later failures and allows recovery again if the document did not unload', () => {
+    vi.useFakeTimers()
+    try {
+      const reload = vi.fn()
+      const reportBlockedCss = vi.fn()
+      const isReloadBlocked = vi.fn().mockReturnValueOnce(false).mockReturnValueOnce(true).mockReturnValue(false)
+      const recover = createChunkErrorRecovery({ reload, isReloadBlocked, reportBlockedCss })
+
+      expect(recover({ error: new Error('First failure') })).toBe(true)
+      vi.advanceTimersByTime(1_001)
+
+      const blockedError = new Error('Unable to preload CSS for /_nuxt/example.css')
+      expect(recover({ error: blockedError })).toBe(false)
+      expect(hasChunkReload(blockedError)).toBe(false)
+      expect(reportBlockedCss).toHaveBeenCalledExactlyOnceWith(blockedError)
+      expect(reload).toHaveBeenCalledTimes(1)
+
+      vi.advanceTimersByTime(60_000)
+      expect(recover({ error: new Error('Later failure') })).toBe(true)
+      expect(reload).toHaveBeenCalledTimes(2)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
 })

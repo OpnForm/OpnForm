@@ -70,7 +70,12 @@ class Handler extends ExceptionHandler
 
     protected function shouldntReport(Throwable $e)
     {
-        $request = request();
+        if ((! $e instanceof PassportException && ! $e instanceof OAuthServerException)
+            || ! $this->container->bound('request')) {
+            return parent::shouldntReport($e);
+        }
+
+        $request = $this->container->make('request');
 
         // Passport renders refresh failures and reports rejected bearer tokens itself.
         // Keep the OAuth responses while excluding these expected client errors.

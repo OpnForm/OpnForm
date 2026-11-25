@@ -32,6 +32,8 @@ Sentry.init({
     ])) {
       return null
     }
+    // The SDK tag only means it found no marked frame. Kept events may be ours.
+    delete event.tags?.third_party_code
 
     if (event.exception?.values?.length) {
       const errorType = event.exception.values[0]?.type || '';

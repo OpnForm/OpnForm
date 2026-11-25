@@ -1,4 +1,5 @@
 const chunkErrorsWithReload = new WeakSet()
+const RELOAD_DEDUPLICATION_MS = 1_000
 
 export function hasChunkReload (error) {
   const seen = new Set()
@@ -15,11 +16,12 @@ export function hasChunkReload (error) {
 }
 
 export function createChunkErrorRecovery ({ reload, isReloadBlocked, reportBlockedCss }) {
-  let recoveryStarted = false
+  let deduplicateUntil = 0
   let blockedCssReported = false
 
   return ({ error }) => {
-    if (recoveryStarted) {
+    const now = Date.now()
+    if (now < deduplicateUntil) {
       if (error instanceof Error) {
         chunkErrorsWithReload.add(error)
       }
@@ -39,7 +41,9 @@ export function createChunkErrorRecovery ({ reload, isReloadBlocked, reportBlock
       persistState: true,
       ttl: 60_000,
     })
-    recoveryStarted = true
+    // A beforeunload prompt can cancel the reload and leave this document active.
+    deduplicateUntil = now + RELOAD_DEDUPLICATION_MS
+    blockedCssReported = false
     if (error instanceof Error) {
       chunkErrorsWithReload.add(error)
     }
