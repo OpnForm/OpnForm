@@ -241,6 +241,17 @@ For detailed information about environment variables and how to update them in D
     docker compose up -d
     ```
 
+<Warning>
+    Visitor countries in form analytics: after upgrading, an instance without
+    `IPINFO_TOKEN` sends public visitor IPs to InternetData to look up their
+    country by default. It needs no key
+    ([terms](https://internetdata.io/terms),
+    [privacy](https://internetdata.io/privacy)). Private and other non-public
+    addresses are never sent. Set `IP_LOCATION_PROVIDER=none` to turn off
+    external lookups, and views are then recorded with country `Unknown`. See
+    [Environment Variables](/configuration/environment-variables).
+</Warning>
+
 ### Monitoring
 
 View container logs:

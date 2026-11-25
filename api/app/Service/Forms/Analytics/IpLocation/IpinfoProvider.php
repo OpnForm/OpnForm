@@ -2,7 +2,6 @@
 
 namespace App\Service\Forms\Analytics\IpLocation;
 
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 
 class IpinfoProvider implements IpLocationProvider
@@ -18,13 +17,12 @@ class IpinfoProvider implements IpLocationProvider
         return 'ipinfo';
     }
 
-    public function lookup(string $ip): array
+    public function lookup(string $ip): ?IpLocation
     {
-        $data = Http::timeout($this->timeout)
+        $response = Http::timeout($this->timeout)
             ->get("https://api.ipinfo.io/lite/{$ip}", ['token' => $this->token])
-            ->throw()
-            ->json();
+            ->throw();
 
-        return Arr::only($data ?? [], ['country', 'region', 'city', 'timezone', 'org']);
+        return IpLocation::fromCountry($response->json('country_code'), $response->json('country'));
     }
 }

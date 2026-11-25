@@ -18,16 +18,12 @@ class InternetDataProvider implements IpLocationProvider
         return 'internetdata';
     }
 
-    public function lookup(string $ip): array
+    public function lookup(string $ip): ?IpLocation
     {
-        $location = Http::timeout($this->timeout)
+        $response = Http::timeout($this->timeout)
             ->get("https://api.internetdata.io/{$ip}")
-            ->throw()
-            ->json('location') ?? [];
+            ->throw();
 
-        return [
-            'country' => $location['country_name'] ?? null,
-            'timezone' => $location['timezone'] ?? null,
-        ];
+        return IpLocation::fromCountry($response->json('location.country'), $response->json('location.country_name'));
     }
 }
