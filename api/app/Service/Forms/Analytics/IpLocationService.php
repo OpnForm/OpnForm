@@ -8,12 +8,20 @@ use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use Symfony\Component\HttpFoundation\IpUtils;
 
 class IpLocationService
 {
     private const CACHE_PREFIX = 'ip_location:';
 
     private const IPV4_MAPPED_PREFIX = "\0\0\0\0\0\0\0\0\0\0\xff\xff";
+
+    // Non-global IANA special-purpose ranges still accepted by PHP's global range filter.
+    private const NON_GLOBAL_SUBNETS = [
+        '192.88.99.0/24',  // Deprecated 6to4 relay
+        '3ffe::/16',       // Retired 6bone space
+        '3fff::/20',       // Documentation
+    ];
 
     /**
      * @param IpLocationProvider|null $provider null when external lookups are off
@@ -43,9 +51,12 @@ class IpLocationService
         }
         $ip = inet_ntop($packed);
 
-        // FILTER_FLAG_GLOBAL_RANGE lets multicast through: 224.0.0.0/4 and ff00::/8
-        $multicast = strlen($packed) === 4 ? (ord($packed[0]) & 0xF0) === 0xE0 : $packed[0] === "\xff";
-        if ($multicast || filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_GLOBAL_RANGE) === false) {
+        // Exclude IPv4 multicast and require IPv6 addresses to be in the global unicast block.
+        $eligibleRange = strlen($packed) === 4
+            ? (ord($packed[0]) & 0xF0) !== 0xE0
+            : IpUtils::checkIp($ip, '2000::/3');
+        if (!$eligibleRange || filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_GLOBAL_RANGE) === false
+            || IpUtils::checkIp($ip, self::NON_GLOBAL_SUBNETS)) {
             return null;
         }
 
@@ -63,19 +74,26 @@ class IpLocationService
             return null;
         }
 
-        $cacheKey = $this->getCacheKey($ip);
-        $cached = Cache::get($cacheKey);
-        if (is_array($cached)) {
-            return IpLocation::fromArray($cached);
+        $cached = $this->cachedLookup($ip);
+        if ($cached !== null) {
+            return $cached ?: null;
         }
 
         $location = $this->fetch($ip);
         $expiresAt = $location
             ? now()->addHours((int) config('services.ip_location.cache_ttl_hours', 24))
             : now()->addMinutes((int) config('services.ip_location.failure_cache_ttl_minutes', 5));
-        Cache::put($cacheKey, $location?->toArray() ?? [], $expiresAt);
+        Cache::put($this->getCacheKey($ip), $location?->toArray() ?? [], $expiresAt);
 
         return $location;
+    }
+
+    /** Read a lookup without contacting the provider. False is a cached failure, null a cache miss. */
+    public function cachedLookup(string $ip): IpLocation|false|null
+    {
+        $cached = Cache::get($this->getCacheKey($ip));
+
+        return is_array($cached) ? (IpLocation::fromArray($cached) ?? false) : null;
     }
 
     /**

@@ -67,6 +67,29 @@ it('check formstat chart data', function () {
 });
 
 
+it('attributes recent views to their creation date across midnight', function () {
+    $this->travelTo(now()->startOfDay()->addMinute());
+    $user = $this->actingAsProUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace, []);
+    $yesterday = now()->subDay();
+    $recent = $form->views()->create();
+    $recent->forceFill(['created_at' => now()->subMinutes(2)])->save();
+    $older = $form->views()->create();
+    $older->forceFill(['created_at' => $yesterday])->save();
+    $form->views()->create();
+    Artisan::call('forms:database-cleanup');
+
+    expect($form->views()->count())->toBe(2);
+    $url = route('open.workspaces.form.stats', [
+        $workspace, $form, 'date_from' => $yesterday->toDateString(), 'date_to' => now()->toDateString(),
+    ]);
+    $this->getJson($url)->assertSuccessful()->assertJsonPath('views', [
+        $yesterday->format('d-m-Y') => 2,
+        now()->format('d-m-Y') => 1,
+    ]);
+});
+
 it('checks form stats details', function () {
     $user = $this->actingAsProUser();
     $workspace = $this->createUserWorkspace($user);

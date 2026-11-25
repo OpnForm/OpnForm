@@ -24,19 +24,14 @@ class FormStatsController extends Controller
         $this->ensureFormBelongsToWorkspace($form, $workspace);
         $this->authorize('view', $form);
 
-        $formStats = $form->statistics()->whereBetween('date', [$request->date_from, $request->date_to])->get();
+        $dailyViews = app(FormViewStatistics::class)->dailyCounts($form, $request->date_from, $request->date_to);
         $periodStats = ['views' => [], 'submissions' => [], 'partial_submissions' => []];
         foreach (CarbonPeriod::create($request->date_from, $request->date_to) as $dateObj) {
             $date = $dateObj->format('d-m-Y');
 
-            $statisticData = $formStats->where('date', $dateObj->format('Y-m-d'))->first();
-            $periodStats['views'][$date] = $statisticData->data['views'] ?? 0;
+            $periodStats['views'][$date] = $dailyViews[$dateObj->toDateString()] ?? 0;
             $periodStats['submissions'][$date] = $form->submissions()->whereDate('created_at', $dateObj)->where('status', FormSubmission::STATUS_COMPLETED)->count();
             $periodStats['partial_submissions'][$date] = $form->submissions()->whereDate('created_at', $dateObj)->where('status', FormSubmission::STATUS_PARTIAL)->count();
-
-            if ($dateObj->toDateString() === now()->toDateString()) {
-                $periodStats['views'][$date] += $form->views()->count();
-            }
         }
 
         return $periodStats;

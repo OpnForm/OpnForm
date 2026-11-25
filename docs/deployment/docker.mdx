@@ -168,9 +168,9 @@ graph TD
         PostgreSQL and Redis connections
     </Tab>
     <Tab title="Workers">
-        Background processing services: - **API Worker**: Processes queued jobs
-        (emails, exports, etc.) - **API Scheduler**: Handles scheduled tasks and
-        periodic cleanups - Both share the same codebase as the main API
+        - **API Worker** processes jobs such as submissions, emails and exports.
+        - **API Country Worker** processes visitor country lookups.
+        - **API Scheduler** runs scheduled tasks and periodic cleanups.
     </Tab>
     <Tab title="Databases">
         Data storage services: - **PostgreSQL**: Primary database for all
@@ -247,7 +247,10 @@ For detailed information about environment variables and how to update them in D
     country by default. It needs no key
     ([terms](https://internetdata.io/terms),
     [privacy](https://internetdata.io/privacy)). Private and other non-public
-    addresses are never sent. Set `IP_LOCATION_PROVIDER=none` to turn off
+    addresses are never sent. The updated Compose file runs a dedicated
+    `form-view-country` worker. If you run your own workers, start
+    `php artisan queue:work --queue=form-view-country --timeout=30` on the same
+    async connection. Set `IP_LOCATION_PROVIDER=none` to turn off
     external lookups, and views are then recorded with country `Unknown`. See
     [Environment Variables](/configuration/environment-variables).
 </Warning>

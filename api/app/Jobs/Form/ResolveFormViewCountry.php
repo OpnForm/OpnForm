@@ -9,6 +9,9 @@ use Illuminate\Contracts\Queue\ShouldBeEncrypted;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 /**
  * Sets the country of a view saved as "Unknown". It only ever updates that view, so a retry can't count it twice.
@@ -19,6 +22,8 @@ class ResolveFormViewCountry implements ShouldBeEncrypted, ShouldQueue
     use InteractsWithQueue;
     use Queueable;
 
+    public const QUEUE = 'form-view-country';
+
     public int $tries = 3;
 
     public int $timeout = 30;
@@ -28,19 +33,35 @@ class ResolveFormViewCountry implements ShouldBeEncrypted, ShouldQueue
     }
 
     /**
-     * Queue a lookup only when lookups are on, the IP is public and a worker runs the queue,
-     * since the sync driver would make the visitor wait for the provider
+     * Apply a cached country or queue a lookup for a public IP on an asynchronous connection.
      */
     public static function dispatchFor(FormView $view, ?string $ip): void
     {
         $ip = IpLocationService::lookupAddress($ip);
         $driver = config('queue.connections.' . config('queue.default') . '.driver');
 
-        if ($ip === null || in_array($driver, ['sync', 'null'], true) || !app(IpLocationService::class)->enabled()) {
+        if ($ip === null || in_array($driver, [null, 'sync', 'null'], true)) {
             return;
         }
 
-        self::dispatch($view->id, $ip);
+        try {
+            $locationService = app(IpLocationService::class);
+            if (!$locationService->enabled()) {
+                return;
+            }
+
+            $cached = $locationService->cachedLookup($ip);
+            if ($cached === null) {
+                Bus::dispatch((new self($view->id, $ip))->onQueue(self::QUEUE));
+            } elseif ($cached) {
+                $view->update(['meta' => array_merge($view->meta ?? [], ['country' => $cached->country])]);
+            }
+        } catch (Throwable $exception) {
+            Log::warning('Could not schedule form view country enrichment', [
+                'view_id' => $view->id,
+                'error' => class_basename($exception),
+            ]);
+        }
     }
 
     /**
@@ -48,11 +69,16 @@ class ResolveFormViewCountry implements ShouldBeEncrypted, ShouldQueue
      */
     public function handle(IpLocationService $ipLocationService): void
     {
-        $location = $ipLocationService->lookup($this->ip);
-        // The view is gone once CleanDatabase has folded it into the daily statistics
-        $view = $location ? FormView::find($this->viewId) : null;
+        // CleanDatabase may have already folded the view into daily statistics.
+        $view = FormView::find($this->viewId);
+        // Leave enough time for the lookup to finish before the view becomes eligible for aggregation.
+        $latestViewCutoff = now()->subSeconds(FormView::COUNTRY_ENRICHMENT_WINDOW_SECONDS - $this->timeout);
+        if (!$view || $view->created_at->lte($latestViewCutoff)) {
+            return;
+        }
 
-        if ($view) {
+        $location = $ipLocationService->lookup($this->ip);
+        if ($location) {
             $view->update(['meta' => array_merge($view->meta ?? [], ['country' => $location->country])]);
         }
     }
