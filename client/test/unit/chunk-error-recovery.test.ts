@@ -1,80 +1,43 @@
 import { describe, expect, it, vi } from 'vitest'
-import {
-  CHUNK_ERROR_RECOVERY_TAG,
-  createChunkErrorRecovery,
-} from '../../lib/chunk-error-recovery.js'
-
-const flushPromises = () => new Promise(resolve => setTimeout(resolve, 0))
+import { createChunkErrorRecovery, hasChunkReload } from '../../lib/chunk-error-recovery.js'
 
 describe('createChunkErrorRecovery', () => {
-  it('reports the exact chunk error before reloading with persistent loop protection', async () => {
-    const captureException = vi.fn()
-    const flush = vi.fn(() => Promise.resolve(true))
+  it('reloads immediately with persistent loop protection', () => {
     const reload = vi.fn()
-    const recover = createChunkErrorRecovery({ captureException, flush, reload })
-    const error = new Error('Failed to fetch dynamically imported module')
+    const recover = createChunkErrorRecovery({ reload, isReloadBlocked: () => false })
 
+    const error = new TypeError('Importing a module script failed.')
     expect(recover({ error })).toBe(true)
-    await flushPromises()
-
-    expect(captureException).toHaveBeenCalledWith(error, {
-      tags: {
-        handled_by: CHUNK_ERROR_RECOVERY_TAG,
-      },
-    })
-    expect(flush).toHaveBeenCalledWith(500)
+    expect(hasChunkReload(error)).toBe(true)
+    expect(hasChunkReload(new Error(error.message, { cause: error }))).toBe(true)
+    expect(hasChunkReload(new Error(error.message))).toBe(false)
     expect(reload).toHaveBeenCalledWith({
       persistState: true,
       ttl: 60_000,
     })
   })
 
-  it('deduplicates chunk errors while recovery is already in progress', async () => {
-    let finishFlush
-    const flush = vi.fn(() => new Promise(resolve => {
-      finishFlush = resolve
-    }))
-    const captureException = vi.fn()
+  it('deduplicates chunk errors while recovery is already in progress', () => {
     const reload = vi.fn()
-    const recover = createChunkErrorRecovery({ captureException, flush, reload })
+    const recover = createChunkErrorRecovery({ reload, isReloadBlocked: () => false })
 
-    expect(recover({ error: new Error('first') })).toBe(true)
-    expect(recover({ error: new Error('second') })).toBe(false)
-    await Promise.resolve()
-    finishFlush(true)
-    await flushPromises()
-
-    expect(captureException).toHaveBeenCalledTimes(1)
+    expect(recover({ error: new Error('Importing a module script failed.') })).toBe(true)
+    const secondError = new Error('Second failure')
+    expect(recover({ error: secondError })).toBe(false)
+    expect(hasChunkReload(secondError)).toBe(true)
     expect(reload).toHaveBeenCalledTimes(1)
   })
 
-  it('still reloads when telemetry cannot be flushed', async () => {
+  it('reports CSS preload failures once when reload loop protection blocks recovery', () => {
     const reload = vi.fn()
-    const recover = createChunkErrorRecovery({
-      captureException: vi.fn(),
-      flush: vi.fn(() => Promise.reject(new Error('Sentry unavailable'))),
-      reload,
-    })
+    const reportBlockedCss = vi.fn()
+    const recover = createChunkErrorRecovery({ reload, isReloadBlocked: () => true, reportBlockedCss })
+    const error = new Error('Unable to preload CSS for /_nuxt/example.css')
 
-    expect(recover({ error: new Error('chunk failure') })).toBe(true)
-    await flushPromises()
-
-    expect(reload).toHaveBeenCalledTimes(1)
-  })
-
-  it('still reloads when telemetry capture throws synchronously', async () => {
-    const reload = vi.fn()
-    const recover = createChunkErrorRecovery({
-      captureException: vi.fn(() => {
-        throw new Error('Sentry unavailable')
-      }),
-      flush: vi.fn(() => Promise.resolve(true)),
-      reload,
-    })
-
-    expect(recover({ error: new Error('chunk failure') })).toBe(true)
-    await flushPromises()
-
-    expect(reload).toHaveBeenCalledTimes(1)
+    expect(recover({ error })).toBe(false)
+    expect(hasChunkReload(error)).toBe(false)
+    expect(recover({ error })).toBe(false)
+    expect(reportBlockedCss).toHaveBeenCalledExactlyOnceWith(error)
+    expect(reload).not.toHaveBeenCalled()
   })
 })

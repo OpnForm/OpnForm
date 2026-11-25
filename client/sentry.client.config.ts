@@ -1,5 +1,6 @@
 import * as Sentry from "@sentry/nuxt";
-import { CHUNK_ERROR_RECOVERY_TAG } from './lib/chunk-error-recovery.js'
+import { hasChunkReload } from "./lib/chunk-error-recovery.js";
+import { isAnonymousFormMessageCloneError } from "./lib/telemetry/custom-message-event-error.js";
 
 Sentry.init({
   // If set up, you can use your runtime config here
@@ -15,7 +16,11 @@ Sentry.init({
   // Ensure that source maps are properly handled
   attachStacktrace: true,
 
-  beforeSend (event) {
+  beforeSend (event, hint) {
+    if (hasChunkReload(hint.originalException) || isAnonymousFormMessageCloneError(event)) {
+      return null
+    }
+
     if (event.exception?.values?.length) {
       const errorType = event.exception.values[0]?.type || '';
       const errorValue = event.exception.values[0]?.value || '';
@@ -28,15 +33,7 @@ Sentry.init({
         return null
       }
       
-      // The recovery plugin reports exact Nuxt chunk errors before reloading.
-      // Keep filtering noisy browser errors that merely resemble chunk failures.
-      const isRecoveredChunkError = event.tags?.handled_by === CHUNK_ERROR_RECOVERY_TAG
-      const resemblesChunkError =
-        errorValue.includes('Failed to fetch dynamically imported module') ||
-        errorValue.includes('Loading chunk') ||
-        errorValue.includes('Failed to load resource')
-
-      if (!isRecoveredChunkError && resemblesChunkError) {
+      if (errorValue.includes('Failed to load resource')) {
         return null
       }
     }

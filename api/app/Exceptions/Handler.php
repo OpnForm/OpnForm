@@ -5,6 +5,8 @@ namespace App\Exceptions;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Illuminate\Support\Facades\Log;
+use Laravel\Passport\Exceptions\OAuthServerException as PassportException;
+use League\OAuth2\Server\Exception\OAuthServerException;
 use Throwable;
 
 class Handler extends ExceptionHandler
@@ -64,6 +66,29 @@ class Handler extends ExceptionHandler
         }
 
         parent::report($exception);
+    }
+
+    protected function shouldntReport(Throwable $e)
+    {
+        $request = request();
+
+        // Passport renders refresh failures and reports rejected bearer tokens itself.
+        // Keep the OAuth responses while excluding these expected client errors.
+        if ($e instanceof PassportException && $e->statusCode() === 401
+            && $request->routeIs('passport.token') && $request->input('grant_type') === 'refresh_token') {
+            $previous = $e->getPrevious();
+            if ($previous instanceof OAuthServerException
+                && in_array($previous->getErrorType(), ['invalid_request', 'invalid_grant'], true)) {
+                return true;
+            }
+        }
+
+        if ($e instanceof OAuthServerException && $e->getHttpStatusCode() === 401
+            && $e->getErrorType() === 'access_denied' && $request->is('mcp')) {
+            return true;
+        }
+
+        return parent::shouldntReport($e);
     }
 
     public function render($request, Throwable $e)
