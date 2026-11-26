@@ -130,6 +130,17 @@ it('formats redirect data correctly for pro users', function () {
     ]);
 });
 
+it('ignores stored redirects outside HTTP and HTTPS', function () {
+    $user = $this->actingAsProUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace, [
+        'redirect_url' => 'ftp://example.com/thanks',
+    ]);
+
+    expect((new FormSubmissionProcessor())->getRedirectData($form, []))
+        ->toBe(['redirect' => false]);
+});
+
 it('returns no redirect for non-pro users', function () {
     $user = $this->actingAsUser();
     $workspace = $this->createUserWorkspace($user);

@@ -341,6 +341,12 @@ export function useFormManager(initialFormConfig, initialMode = FormMode.LIVE, o
         })
       }
       
+      const redirectUrl = submissionResult?.redirect
+        && typeof submissionResult.redirect_url === 'string'
+        && /^https?:\/\//i.test(submissionResult.redirect_url)
+        ? submissionResult.redirect_url
+        : null
+
       // 10. Handle postMessage communication for iframe integration
       if (import.meta.client) {
         const isIframe = useIsIframe()
@@ -350,9 +356,7 @@ export function useFormManager(initialFormConfig, initialMode = FormMode.LIVE, o
           form: {
             slug: formConfig.slug,
             id: formConfig.id,
-            redirect_target_url: (submissionResult?.redirect && submissionResult?.redirect_url)
-                              ? submissionResult.redirect_url 
-                              : null
+            redirect_target_url: redirectUrl
           },
           submission_data: eventSubmissionData,
           completion_time: completionTime,
@@ -370,8 +374,8 @@ export function useFormManager(initialFormConfig, initialMode = FormMode.LIVE, o
       }
       
       // 11. Handle redirect if server response includes redirect info
-      if (import.meta.client && submissionResult?.redirect && submissionResult?.redirect_url) {
-        window.location.href = submissionResult.redirect_url
+      if (import.meta.client && redirectUrl) {
+        window.location.href = redirectUrl
       }
       
       return submissionResult // Return result from submission composable

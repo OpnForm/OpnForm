@@ -7,6 +7,7 @@ use App\Models\Forms\Form;
 use App\Rules\CustomSlugRule;
 use App\Rules\ComputedVariablesRule;
 use App\Rules\FormPropertiesRule;
+use App\Rules\FormRedirectUrlRule;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Contracts\Validation\Validator;
@@ -157,7 +158,7 @@ abstract class UserFormRequest extends \Illuminate\Foundation\Http\FormRequest
             'pdf_download_button_text' => 'nullable|string|max:50',
             'pdf_template_id' => $pdfTemplateIdRules,
             'submitted_text' => 'string|max:10000',
-            'redirect_url' => 'nullable|string',
+            'redirect_url' => ['bail', 'nullable', 'string', new FormRedirectUrlRule($this->form?->redirect_url)],
             'database_fields_update' => 'nullable|array',
             'max_submissions_count' => 'integer|nullable|min:1',
             'max_submissions_reached_text' => 'string|nullable',
