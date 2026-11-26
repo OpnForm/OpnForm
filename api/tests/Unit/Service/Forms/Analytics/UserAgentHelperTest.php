@@ -1,6 +1,5 @@
 <?php
 
-use App\Service\Forms\Analytics\IpLocationService;
 use App\Service\Forms\Analytics\UserAgentHelper;
 use Illuminate\Http\Request;
 
@@ -8,7 +7,7 @@ afterEach(function () {
     \Mockery::close();
 });
 
-it('constructs with default IP location service when none provided', function () {
+it('constructs from a request', function () {
     $mockRequest = \Mockery::mock(Request::class);
     $mockRequest->shouldReceive('userAgent')->andReturn('Mozilla/5.0');
 
@@ -17,37 +16,24 @@ it('constructs with default IP location service when none provided', function ()
     expect($helper)->toBeInstanceOf(UserAgentHelper::class);
 });
 
-it('constructs with provided IP location service', function () {
-    $mockRequest = \Mockery::mock(Request::class);
-    $mockIpLocationService = \Mockery::mock(IpLocationService::class);
-
-    $mockRequest->shouldReceive('userAgent')->andReturn('Mozilla/5.0');
-
-    $helper = new UserAgentHelper($mockRequest, $mockIpLocationService);
-
-    expect($helper)->toBeInstanceOf(UserAgentHelper::class);
-});
-
 it('handles null user agent gracefully', function () {
     $mockRequest = \Mockery::mock(Request::class);
-    $mockIpLocationService = \Mockery::mock(IpLocationService::class);
 
     $mockRequest->shouldReceive('userAgent')->andReturn(null);
 
-    $helper = new UserAgentHelper($mockRequest, $mockIpLocationService);
+    $helper = new UserAgentHelper($mockRequest);
 
     expect($helper)->toBeInstanceOf(UserAgentHelper::class);
 });
 
 it('returns Direct when no referer header', function () {
     $mockRequest = \Mockery::mock(Request::class);
-    $mockIpLocationService = \Mockery::mock(IpLocationService::class);
 
     $mockRequest->shouldReceive('userAgent')->andReturn('Mozilla/5.0');
     $mockRequest->shouldReceive('header')->with('Referer')->andReturn(null);
     $mockRequest->shouldReceive('header')->with('Origin')->andReturn('https://example.com');
 
-    $helper = new UserAgentHelper($mockRequest, $mockIpLocationService);
+    $helper = new UserAgentHelper($mockRequest);
     $source = $helper->getTrafficSource();
 
     expect($source)->toBe('Direct');
@@ -55,13 +41,12 @@ it('returns Direct when no referer header', function () {
 
 it('returns Direct when referer matches origin', function () {
     $mockRequest = \Mockery::mock(Request::class);
-    $mockIpLocationService = \Mockery::mock(IpLocationService::class);
 
     $mockRequest->shouldReceive('userAgent')->andReturn('Mozilla/5.0');
     $mockRequest->shouldReceive('header')->with('Referer')->andReturn('https://example.com/page');
     $mockRequest->shouldReceive('header')->with('Origin')->andReturn('https://example.com');
 
-    $helper = new UserAgentHelper($mockRequest, $mockIpLocationService);
+    $helper = new UserAgentHelper($mockRequest);
     $source = $helper->getTrafficSource();
 
     expect($source)->toBe('Direct');
@@ -69,13 +54,12 @@ it('returns Direct when referer matches origin', function () {
 
 it('detects Google as traffic source', function () {
     $mockRequest = \Mockery::mock(Request::class);
-    $mockIpLocationService = \Mockery::mock(IpLocationService::class);
 
     $mockRequest->shouldReceive('userAgent')->andReturn('Mozilla/5.0');
     $mockRequest->shouldReceive('header')->with('Referer')->andReturn('https://www.google.com/search?q=test');
     $mockRequest->shouldReceive('header')->with('Origin')->andReturn('https://example.com');
 
-    $helper = new UserAgentHelper($mockRequest, $mockIpLocationService);
+    $helper = new UserAgentHelper($mockRequest);
     $source = $helper->getTrafficSource();
 
     expect($source)->toBe('Google');
@@ -83,13 +67,12 @@ it('detects Google as traffic source', function () {
 
 it('detects Facebook as traffic source', function () {
     $mockRequest = \Mockery::mock(Request::class);
-    $mockIpLocationService = \Mockery::mock(IpLocationService::class);
 
     $mockRequest->shouldReceive('userAgent')->andReturn('Mozilla/5.0');
     $mockRequest->shouldReceive('header')->with('Referer')->andReturn('https://www.facebook.com/');
     $mockRequest->shouldReceive('header')->with('Origin')->andReturn('https://example.com');
 
-    $helper = new UserAgentHelper($mockRequest, $mockIpLocationService);
+    $helper = new UserAgentHelper($mockRequest);
     $source = $helper->getTrafficSource();
 
     expect($source)->toBe('Facebook');
@@ -97,13 +80,12 @@ it('detects Facebook as traffic source', function () {
 
 it('detects Twitter as traffic source', function () {
     $mockRequest = \Mockery::mock(Request::class);
-    $mockIpLocationService = \Mockery::mock(IpLocationService::class);
 
     $mockRequest->shouldReceive('userAgent')->andReturn('Mozilla/5.0');
     $mockRequest->shouldReceive('header')->with('Referer')->andReturn('https://t.co/abc123');
     $mockRequest->shouldReceive('header')->with('Origin')->andReturn('https://example.com');
 
-    $helper = new UserAgentHelper($mockRequest, $mockIpLocationService);
+    $helper = new UserAgentHelper($mockRequest);
     $source = $helper->getTrafficSource();
 
     expect($source)->toBe('Twitter');
@@ -111,13 +93,12 @@ it('detects Twitter as traffic source', function () {
 
 it('detects LinkedIn as traffic source', function () {
     $mockRequest = \Mockery::mock(Request::class);
-    $mockIpLocationService = \Mockery::mock(IpLocationService::class);
 
     $mockRequest->shouldReceive('userAgent')->andReturn('Mozilla/5.0');
     $mockRequest->shouldReceive('header')->with('Referer')->andReturn('https://www.linkedin.com/feed/');
     $mockRequest->shouldReceive('header')->with('Origin')->andReturn('https://example.com');
 
-    $helper = new UserAgentHelper($mockRequest, $mockIpLocationService);
+    $helper = new UserAgentHelper($mockRequest);
     $source = $helper->getTrafficSource();
 
     expect($source)->toBe('Linkedin');
@@ -125,13 +106,12 @@ it('detects LinkedIn as traffic source', function () {
 
 it('returns domain name for unknown traffic sources', function () {
     $mockRequest = \Mockery::mock(Request::class);
-    $mockIpLocationService = \Mockery::mock(IpLocationService::class);
 
     $mockRequest->shouldReceive('userAgent')->andReturn('Mozilla/5.0');
     $mockRequest->shouldReceive('header')->with('Referer')->andReturn('https://some-unknown-site.com/page');
     $mockRequest->shouldReceive('header')->with('Origin')->andReturn('https://example.com');
 
-    $helper = new UserAgentHelper($mockRequest, $mockIpLocationService);
+    $helper = new UserAgentHelper($mockRequest);
     $source = $helper->getTrafficSource();
 
     expect($source)->toBe('some-unknown-site.com');
@@ -139,13 +119,12 @@ it('returns domain name for unknown traffic sources', function () {
 
 it('removes www prefix from domain names', function () {
     $mockRequest = \Mockery::mock(Request::class);
-    $mockIpLocationService = \Mockery::mock(IpLocationService::class);
 
     $mockRequest->shouldReceive('userAgent')->andReturn('Mozilla/5.0');
     $mockRequest->shouldReceive('header')->with('Referer')->andReturn('https://www.unknown-site.com/page');
     $mockRequest->shouldReceive('header')->with('Origin')->andReturn('https://example.com');
 
-    $helper = new UserAgentHelper($mockRequest, $mockIpLocationService);
+    $helper = new UserAgentHelper($mockRequest);
     $source = $helper->getTrafficSource();
 
     expect($source)->toBe('unknown-site.com');
@@ -153,55 +132,26 @@ it('removes www prefix from domain names', function () {
 
 it('returns Unknown for invalid referer URLs', function () {
     $mockRequest = \Mockery::mock(Request::class);
-    $mockIpLocationService = \Mockery::mock(IpLocationService::class);
 
     $mockRequest->shouldReceive('userAgent')->andReturn('Mozilla/5.0');
     $mockRequest->shouldReceive('header')->with('Referer')->andReturn('invalid-url');
     $mockRequest->shouldReceive('header')->with('Origin')->andReturn('https://example.com');
 
-    $helper = new UserAgentHelper($mockRequest, $mockIpLocationService);
+    $helper = new UserAgentHelper($mockRequest);
     $source = $helper->getTrafficSource();
 
     expect($source)->toBe('Unknown');
 });
 
-it('delegates location requests to IP location service', function () {
-    $mockRequest = \Mockery::mock(Request::class);
-    $mockIpLocationService = \Mockery::mock(IpLocationService::class);
-
-    $mockRequest->shouldReceive('userAgent')->andReturn('Mozilla/5.0');
-    $mockRequest->shouldReceive('ip')->andReturn('8.8.8.8');
-
-    $expectedLocation = [
-        'country' => 'US',
-        'region' => 'California',
-        'city' => 'Mountain View'
-    ];
-
-    $mockIpLocationService->shouldReceive('getLocationData')
-        ->with('8.8.8.8')
-        ->andReturn($expectedLocation);
-
-    $helper = new UserAgentHelper($mockRequest, $mockIpLocationService);
-    $location = $helper->getLocation();
-
-    expect($location)->toBe($expectedLocation);
-});
-
 it('returns hashed IP in metadata for privacy', function () {
     $mockRequest = \Mockery::mock(Request::class);
-    $mockIpLocationService = \Mockery::mock(IpLocationService::class);
 
     $mockRequest->shouldReceive('userAgent')->andReturn('Mozilla/5.0');
     $mockRequest->shouldReceive('ip')->andReturn('8.8.8.8');
     $mockRequest->shouldReceive('header')->with('Referer')->andReturn(null);
     $mockRequest->shouldReceive('header')->with('Origin')->andReturn(null);
 
-    $mockIpLocationService->shouldReceive('getLocationData')
-        ->with('8.8.8.8')
-        ->andReturn(['country' => 'US']);
-
-    $helper = new UserAgentHelper($mockRequest, $mockIpLocationService);
+    $helper = new UserAgentHelper($mockRequest);
 
     // Mock the browser detection
     $mockBrowser = \Mockery::mock(\App\Service\Forms\Analytics\BrowserDetection::class);
@@ -223,21 +173,7 @@ it('returns hashed IP in metadata for privacy', function () {
     expect($metadata['ip'])->not()->toBe('8.8.8.8');
     expect($metadata['ip'])->toBeString();
     expect(strlen($metadata['ip']))->toBe(64); // SHA256 hash length
-});
 
-it('handles empty location data', function () {
-    $mockRequest = \Mockery::mock(Request::class);
-    $mockIpLocationService = \Mockery::mock(IpLocationService::class);
-
-    $mockRequest->shouldReceive('userAgent')->andReturn('Mozilla/5.0');
-    $mockRequest->shouldReceive('ip')->andReturn('192.168.1.1');
-
-    $mockIpLocationService->shouldReceive('getLocationData')
-        ->with('192.168.1.1')
-        ->andReturn([]);
-
-    $helper = new UserAgentHelper($mockRequest, $mockIpLocationService);
-    $location = $helper->getLocation();
-
-    expect($location)->toBe([]);
+    // The country is filled in later from the queue, never looked up while the visitor waits
+    expect($metadata['country'])->toBe('Unknown');
 });

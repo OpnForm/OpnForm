@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Forms;
 
-use App\Exports\FormSubmissionExport;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\AnswerFormRequest;
 use App\Http\Requests\FormSubmissionExportRequest;
@@ -20,7 +19,6 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
-use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Http\Request;
 
 class FormSubmissionController extends Controller
@@ -107,16 +105,17 @@ class FormSubmissionController extends Controller
         $this->authorize('view', $form);
 
         $displayColumns = collect($request->columns)->filter(fn ($value, $key) => $value === true)->toArray();
-        $submissionIds = $request->input('submissionIds', []);
+        $submissionIds = $request->input('submissionIds') ?? [];
+        $format = $request->validated('format', 'csv');
         $submissionCount = !empty($submissionIds) ? count($submissionIds) : null;
 
         // Check if we should process asynchronously
         if ($exportService->shouldExportAsync($form, $submissionCount)) {
-            return $this->startAsyncExport($form, $displayColumns, $submissionIds, $exportService);
+            return $this->startAsyncExport($form, $displayColumns, $submissionIds, $format, $exportService);
         }
 
         // Process synchronously for small exports
-        return $this->processSyncExport($form, $displayColumns, $submissionIds, $exportService);
+        return $this->processSyncExport($form, $displayColumns, $submissionIds, $format, $exportService);
     }
 
     public function exportStatus(Form $form, string $jobId, FormExportService $exportService)
@@ -142,11 +141,11 @@ class FormSubmissionController extends Controller
         return new ExportJobStatusResource($jobData);
     }
 
-    private function startAsyncExport(Form $form, array $displayColumns, array $submissionIds, FormExportService $exportService)
+    private function startAsyncExport(Form $form, array $displayColumns, array $submissionIds, string $format, FormExportService $exportService)
     {
         $jobId = $exportService->initializeAsyncExport($form, Auth::id());
 
-        ExportFormSubmissionsJob::dispatch($form, $displayColumns, $submissionIds, $jobId, Auth::id());
+        ExportFormSubmissionsJob::dispatch($form, $displayColumns, $submissionIds, $jobId, Auth::id(), $format);
 
         return $this->success([
             'message' => 'Export started. Large export will be processed in the background.',
@@ -155,27 +154,30 @@ class FormSubmissionController extends Controller
         ]);
     }
 
-    private function processSyncExport(Form $form, array $displayColumns, array $submissionIds, FormExportService $exportService)
+    private function processSyncExport(Form $form, array $displayColumns, array $submissionIds, string $format, FormExportService $exportService)
     {
-        $allRows = [];
         $fileLinkExpiresAt = $exportService->fileLinkExpiresAt($form);
-        // Use query builder with orderBy for consistency with async export
-        $submissionQuery = $form->submissions()->orderByDesc('created_at');
-        if (!empty($submissionIds)) {
-            $submissionQuery->whereIn('id', $submissionIds);
-        }
+        $submissionQuery = $exportService->submissionQuery($form, $submissionIds);
+        $numericColumns = $exportService->numericColumns($form, $format);
+        $rows = function () use ($exportService, $submissionQuery, $form, $displayColumns, $fileLinkExpiresAt, $numericColumns) {
+            foreach ($exportService->iterateSubmissions($submissionQuery, 500) as $submission) {
+                yield $exportService->formatSubmissionForExport(
+                    $form,
+                    $submission,
+                    $displayColumns,
+                    $fileLinkExpiresAt,
+                    $numericColumns
+                );
+            }
+        };
 
-        foreach ($submissionQuery->get() as $submission) {
-            $allRows[] = $exportService->formatSubmissionForExport($form, $submission, $displayColumns, $fileLinkExpiresAt);
-        }
+        $file = $exportService->writeFile($rows(), $format);
 
-        $csvExport = (new FormSubmissionExport($allRows));
-
-        return Excel::download(
-            $csvExport,
-            $form->slug . '-submission-data.csv',
-            \Maatwebsite\Excel\Excel::CSV
-        );
+        return response()->download(
+            $file->getLocalPath(),
+            $form->slug . '-submission-data.' . $format,
+            ['Content-Type' => $exportService->contentType($format)]
+        )->deleteFileAfterSend();
     }
 
     public function submissionFile(Form $form, $filename)

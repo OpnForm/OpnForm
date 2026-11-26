@@ -2,14 +2,17 @@
   <div>
     <!-- Export Button -->
     <UTooltip :text="`Uploaded-file links in this export remain available for ${fileLinkExpirationLabel}.`">
-      <UButton
-        size="sm"
-        color="neutral"
-        variant="ghost"
-        label="Export"
-        :loading="isExporting"
-        @click="startExport"
-      />
+      <UDropdownMenu :items="exportFormatItems" :content="{ align: 'end' }">
+        <UButton
+          size="sm"
+          color="neutral"
+          variant="ghost"
+          label="Export"
+          trailing-icon="i-heroicons-chevron-down"
+          :loading="isExporting"
+          :disabled="isExporting"
+        />
+      </UDropdownMenu>
     </UTooltip>
 
     <!-- Export Progress Modal -->
@@ -103,6 +106,9 @@
 import { formsApi } from '~/api'
 import VTransition from '~/components/global/transitions/VTransition.vue'
 
+const XLSX_CONTENT_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+const XLSX_FORMAT_ERROR = 'The server did not return an Excel file. Try exporting as CSV.'
+
 const props = defineProps({
   form: {
     type: Object,
@@ -160,7 +166,7 @@ const exportColumns = computed(() => {
   }, { created_at: true })
 })
 
-const startExport = () => {
+const startExport = (format) => {
   if (isExporting.value) return
 
   isExporting.value = true
@@ -173,7 +179,8 @@ const startExport = () => {
   progressStartTime.value = Date.now()
   
   const payload = {
-    columns: exportColumns.value
+    columns: exportColumns.value,
+    format
   }
 
   if (props.selectedIds.length > 0) {
@@ -188,22 +195,31 @@ const startExport = () => {
       exportStatus.value = 'queued'
       exportProgress.value = 0
       showModal.value = true
-      startPolling()
+      startPolling(format)
     } else {
       // Handle sync export (direct download)
-      handleDirectDownload(response)
+      handleDirectDownload(response, format)
       isExporting.value = false
     }
   }).catch((error) => {
     console.error(error)
-    exportError.value = error.response?.data?.message || 'Export failed'
+    exportError.value = error.data?.message || error.response?.data?.message || error.message || 'Export failed'
     exportStatus.value = 'failed'
     showModal.value = true
     isExporting.value = false
   })
 }
 
-const handleDirectDownload = (data) => {
+const exportFormatItems = [
+  { label: 'Excel (.xlsx)', onSelect: () => startExport('xlsx') },
+  { label: 'CSV (.csv)', onSelect: () => startExport('csv') }
+]
+
+const handleDirectDownload = (data, format) => {
+  if (format === 'xlsx' && (!(data instanceof Blob) || data.type !== XLSX_CONTENT_TYPE)) {
+    throw new Error(XLSX_FORMAT_ERROR)
+  }
+
   // Convert string to Blob if needed
   let blob
   if (typeof data === 'string') {
@@ -214,7 +230,7 @@ const handleDirectDownload = (data) => {
     throw new Error('Invalid export data format')
   }
   
-  const filename = `${props.form.slug}-${Date.now()}-submissions.csv`
+  const filename = `${props.form.slug}-${Date.now()}-submissions.${format}`
   const a = document.createElement("a")
   document.body.appendChild(a)
   a.style = "display: none"
@@ -226,17 +242,17 @@ const handleDirectDownload = (data) => {
   document.body.removeChild(a)
 }
 
-const startPolling = () => {
+const startPolling = (format) => {
   if (pollingInterval.value) {
     clearInterval(pollingInterval.value)
   }
   
   pollingInterval.value = setInterval(() => {
-    checkExportStatus()
+    checkExportStatus(format)
   }, 5000) // Poll every 5 seconds
   
   // Initial check
-  checkExportStatus()
+  checkExportStatus(format)
 }
 
 // Start smooth continuous progress when processing begins
@@ -248,11 +264,24 @@ watch(exportStatus, (newStatus) => {
   }
 })
 
-const checkExportStatus = () => {
-  if (!exportJobId.value) return
-  
-  formsApi.submissions.exportStatus(props.form.id, exportJobId.value)
+const checkExportStatus = (format) => {
+  const jobId = exportJobId.value
+  if (!jobId) return
+
+  formsApi.submissions.exportStatus(props.form.id, jobId)
     .then(response => {
+      if (exportJobId.value !== jobId) return
+
+      if (response.status === 'completed' && format === 'xlsx' &&
+        (!response.file_url || !new URL(response.file_url, window.location.origin).pathname.endsWith('.xlsx'))) {
+        stopPolling()
+        exportJobId.value = null
+        isExporting.value = false
+        exportError.value = XLSX_FORMAT_ERROR
+        exportStatus.value = 'failed'
+        return
+      }
+
       exportStatus.value = response.status
       const newProgress = response.progress || 0
       
@@ -266,6 +295,7 @@ const checkExportStatus = () => {
       
       if (response.status === 'completed') {
         stopPolling()
+        exportJobId.value = null
         stopProgressAnimation()
         isExporting.value = false
         smoothProgress.value = 100
@@ -276,28 +306,32 @@ const checkExportStatus = () => {
           document.body.appendChild(a)
           a.style = "display: none"
           a.href = response.file_url
-          a.download = `${props.form.slug}-submissions.csv`
+          a.download = `${props.form.slug}-submissions.${format}`
           a.click()
           document.body.removeChild(a)
           
           // Close modal after a short delay
           setTimeout(() => {
-            closeModal()
+            if (exportStatus.value === 'completed' && !isExporting.value) closeModal()
           }, 1000)
         }
       } else if (response.status === 'failed') {
         stopPolling()
+        exportJobId.value = null
         stopProgressAnimation()
         isExporting.value = false
         exportError.value = response.error_message || 'Export failed'
       }
     })
     .catch(error => {
+      if (exportJobId.value !== jobId) return
+
       console.error('Polling error:', error)
       stopPolling()
-      stopProgressAnimation()
+      exportJobId.value = null
       isExporting.value = false
       exportError.value = 'Failed to check export status'
+      exportStatus.value = 'failed'
     })
 }
 

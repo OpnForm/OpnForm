@@ -16,6 +16,11 @@ use Stripe\PaymentIntent;
 class FormPaymentController extends Controller
 {
     /**
+     * Currencies without a minor unit, see https://docs.stripe.com/currencies#zero-decimal
+     */
+    private const ZERO_DECIMAL_CURRENCIES = ['JPY', 'KRW', 'VND'];
+
+    /**
      * Get the Stripe Connect Account ID for the form's payment block.
      *
      * Handles two cases:
@@ -139,7 +144,7 @@ class FormPaymentController extends Controller
             $intent = PaymentIntent::create([
                 // Use description from payment block if available, fallback to form title
                 'description' => $paymentBlock['description'] ?? ('Form - ' . $form->title),
-                'amount' => (int) ($amount * 100),  // Stripe requires amount in cents
+                'amount' => $this->toMinorUnits($amount, $paymentBlock['currency']),
                 'currency' => strtolower($paymentBlock['currency']),
                 'payment_method_types' => ['card'],
                 'metadata' => [
@@ -176,5 +181,15 @@ class FormPaymentController extends Controller
             ]);
             return $this->error(['message' => 'Failed to initialize payment.']);
         }
+    }
+
+    /**
+     * Stripe requires the amount in the smallest unit of the currency (e.g. cents)
+     */
+    private function toMinorUnits(float $amount, string $currency): int
+    {
+        $isZeroDecimal = in_array(strtoupper($currency), self::ZERO_DECIMAL_CURRENCIES, true);
+
+        return (int) round($isZeroDecimal ? $amount : $amount * 100);
     }
 }

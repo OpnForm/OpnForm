@@ -9,23 +9,18 @@ class UserAgentHelper
     private $browser;
     private $request;
     private $userAgent;
-    private $ipLocationService;
 
-    public function __construct(Request $request, ?IpLocationService $ipLocationService = null)
+    public function __construct(Request $request)
     {
         $this->browser = new BrowserDetection();
         $this->request = $request;
         $this->userAgent = $request->userAgent() ?? '';
-        $this->ipLocationService = $ipLocationService ?? new IpLocationService();
     }
 
     public function getMetadata(): array
     {
         // Get browser metadata
         $result = $this->browser->getAll($this->userAgent);
-
-        // Get location info
-        $location = $this->getLocation();
 
         // Return metadata
         return [
@@ -34,7 +29,8 @@ class UserAgentHelper
             'device' => $result['device_type'],
             'browser' => $result['browser_name'],
             'os' => $result['os_name'],
-            'country' => $location['country'] ?? 'Unknown'
+            // Filled in later by ResolveFormViewCountry
+            'country' => 'Unknown'
         ];
     }
 
@@ -77,12 +73,6 @@ class UserAgentHelper
 
         // If no match found, return the domain as the source
         return preg_replace('/^www\./', '', $host);
-    }
-
-    // Get Location from IP (cached)
-    public function getLocation(): array
-    {
-        return $this->ipLocationService->getLocationData($this->request->ip());
     }
 
     // Get hashed IP with daily rotating salt for privacy

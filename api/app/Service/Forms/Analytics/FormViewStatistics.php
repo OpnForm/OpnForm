@@ -3,6 +3,7 @@
 namespace App\Service\Forms\Analytics;
 
 use App\Models\Forms\Form;
+use Carbon\Carbon;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
 
@@ -48,6 +49,29 @@ class FormViewStatistics
         }
 
         return $query->selectRaw('COUNT(*) as count');
+    }
+
+    public function dailyCounts(Form $form, string $from, string $to): array
+    {
+        $start = Carbon::parse($from)->startOfDay();
+        $end = Carbon::parse($to)->startOfDay();
+        $views = DB::table('form_views')->where('form_id', $form->id)
+            ->where('created_at', '>=', $start)
+            ->where('created_at', '<', $end->copy()->addDay())
+            ->selectRaw('DATE(created_at) as date, COUNT(*) as view_count, NULL as data')
+            ->groupByRaw('DATE(created_at)');
+        $history = DB::table('form_statistics')->where('form_id', $form->id)
+            ->whereBetween('date', [$start->toDateString(), $end->toDateString()])
+            ->selectRaw('date, 0 as view_count, data');
+
+        // Read both sources in one snapshot so cleanup cannot move views between reads.
+        $counts = [];
+        foreach ($views->unionAll($history)->cursor() as $row) {
+            $count = $row->data === null ? $row->view_count : (json_decode($row->data, true)['views'] ?? 0);
+            $counts[$row->date] = ($counts[$row->date] ?? 0) + (int) $count;
+        }
+
+        return $counts;
     }
 
     public function metadata(Form $form): array
