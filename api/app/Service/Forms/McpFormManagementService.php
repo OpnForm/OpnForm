@@ -145,7 +145,7 @@ class McpFormManagementService
             $this->assertWritable($form->workspace, $user);
             $this->assertFresh($form, $expectedRevision);
 
-            $definition = $this->definitions->normalizeAndValidate($definition, $form->workspace);
+            $definition = $this->definitions->normalizeAndValidate($definition, $form->workspace, $form->redirect_url);
             $definition['visibility'] = $form->visibility;
 
             $updated = $this->formUpdate->update($form, $definition);

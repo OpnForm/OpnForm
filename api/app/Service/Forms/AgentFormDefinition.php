@@ -7,6 +7,7 @@ use App\Models\Workspace;
 use App\Rules\ComputedVariablesRule;
 use App\Rules\CssOnlyRule;
 use App\Rules\FormPropertiesRule;
+use App\Rules\FormRedirectUrlRule;
 use App\Rules\PublicMediaUrlRule;
 use App\Service\Forms\AgentFormFieldCatalog as FieldCatalog;
 use Illuminate\Support\Arr;
@@ -76,7 +77,7 @@ class AgentFormDefinition
     ) {
     }
 
-    public function normalizeAndValidate(array $definition, ?Workspace $workspace = null): array
+    public function normalizeAndValidate(array $definition, ?Workspace $workspace = null, ?string $existingRedirectUrl = null): array
     {
         $definition = $this->migrate($definition);
         $definition = array_replace($this->defaults(), $definition);
@@ -101,12 +102,12 @@ class AgentFormDefinition
             return $property;
         })->values()->all();
 
-        $this->validate($definition, $workspace);
+        $this->validate($definition, $workspace, $existingRedirectUrl);
 
         return Arr::only($definition, self::ALLOWED_TOP_LEVEL_KEYS);
     }
 
-    public function validate(array $definition, ?Workspace $workspace = null): void
+    public function validate(array $definition, ?Workspace $workspace = null, ?string $existingRedirectUrl = null): void
     {
         $unknownKeys = array_values(array_diff(array_keys($definition), self::ALLOWED_TOP_LEVEL_KEYS));
 
@@ -165,7 +166,7 @@ class AgentFormDefinition
             're_fillable' => ['required', 'boolean'],
             're_fill_button_text' => ['nullable', 'string', 'max:50'],
             'submitted_text' => ['required', 'string', 'max:10000'],
-            'redirect_url' => ['nullable', 'string'],
+            'redirect_url' => ['bail', 'nullable', 'string', new FormRedirectUrlRule($existingRedirectUrl)],
             'max_submissions_count' => ['nullable', 'integer', 'min:1'],
             'max_submissions_reached_text' => ['nullable', 'string'],
             'editable_submissions' => ['required', 'boolean'],

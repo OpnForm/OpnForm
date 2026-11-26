@@ -79,7 +79,7 @@ class AgentFormDraftService
             $this->assertActiveVersion($draft, $expectedVersion);
             $definition = $this->atVersion($draft, $version)->definition;
             $definition['visibility'] = 'draft';
-            $definition = $this->formDefinition->normalizeAndValidate($definition);
+            $definition = $this->formDefinition->normalizeAndValidate($definition, existingRedirectUrl: $definition['redirect_url'] ?? null);
             $this->qualityAnalyzer->assertReadyForAgentPersistence($definition);
             $this->preserveVersion($draft);
             $draft->forceFill([
@@ -114,7 +114,7 @@ class AgentFormDraftService
 
             $definition = $this->patcher->apply($draft->definition, $operations);
             $definition['visibility'] = 'draft';
-            $definition = $this->formDefinition->normalizeAndValidate($definition);
+            $definition = $this->formDefinition->normalizeAndValidate($definition, existingRedirectUrl: $draft->definition['redirect_url'] ?? null);
             $this->qualityAnalyzer->assertReadyForAgentPersistence($definition);
 
             $this->preserveVersion($draft);
@@ -227,7 +227,7 @@ class AgentFormDraftService
             $this->assertActiveVersion($draft, $expectedVersion);
 
             $definition['visibility'] = 'draft';
-            $definition = $this->formDefinition->normalizeAndValidate($definition);
+            $definition = $this->formDefinition->normalizeAndValidate($definition, existingRedirectUrl: $draft->definition['redirect_url'] ?? null);
             $this->preserveVersion($draft);
             $draft->forceFill([
                 'definition' => $definition,
@@ -260,7 +260,7 @@ class AgentFormDraftService
 
             $definition = $draft->definition;
             $definition['visibility'] = 'draft';
-            $definition = $this->formDefinition->normalizeAndValidate($definition, $workspace);
+            $definition = $this->formDefinition->normalizeAndValidate($definition, $workspace, $draft->definition['redirect_url'] ?? null);
             $created = $this->formCreation->create($definition, $user, $workspace);
 
             $this->preserveVersion($draft);
