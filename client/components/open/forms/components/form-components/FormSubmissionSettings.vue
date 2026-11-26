@@ -245,6 +245,7 @@
                 :computed-variables="form.computed_variables"
                 class="w-full max-w-xs"
                 label="Redirect URL"
+                help="Use a URL that starts with http:// or https://."
                 placeholder="https://www.google.com"
                 :required="true"
               />

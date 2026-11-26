@@ -71,7 +71,10 @@ class FormSubmissionProcessor
             ? (new MentionParser($form->redirect_url, $formattedData))->urlFriendlyOutput()->parseAsText()
             : null;
 
-        if ($redirectUrl && !filter_var($redirectUrl, FILTER_VALIDATE_URL)) {
+        if ($redirectUrl && (
+            !filter_var($redirectUrl, FILTER_VALIDATE_URL)
+            || !in_array(strtolower(parse_url($redirectUrl, PHP_URL_SCHEME) ?? ''), ['http', 'https'], true)
+        )) {
             $redirectUrl = null;
         }
 

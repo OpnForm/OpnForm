@@ -820,3 +820,52 @@ it('clears invalid optional selection constraints during form creation', functio
 
     expect($savedField)->not->toHaveKeys(['min_selection', 'max_selection']);
 });
+
+it('rejects non-web redirect schemes when updating a form', function () {
+    $user = $this->actingAsBusinessUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace);
+    $formData = (new \App\Http\Resources\FormResource($form))->toArray(request());
+    $formData['redirect_url'] = 'ftp://example.com/thanks';
+
+    $this->putJson(route('open.forms.update', $form->id), $formData)
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('redirect_url');
+});
+
+it('preserves redirect URLs wrapped in editor markup', function () {
+    $user = $this->actingAsBusinessUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace);
+    $formData = (new \App\Http\Resources\FormResource($form))->toArray(request());
+    $formData['redirect_url'] = '<span>https://example.com/thanks</span>';
+
+    $this->putJson(route('open.forms.update', $form->id), $formData)
+        ->assertSuccessful();
+
+    $form->refresh();
+    expect($form->redirect_url)->toBe($formData['redirect_url']);
+    expect((new \App\Service\Forms\FormSubmissionProcessor())->getRedirectData($form, []))
+        ->toBe(['redirect' => true, 'redirect_url' => 'https://example.com/thanks']);
+});
+
+it('allows unrelated edits to forms with a legacy redirect URL', function (string $storedUrl) {
+    $user = $this->actingAsBusinessUser();
+    $workspace = $this->createUserWorkspace($user);
+    $form = $this->createForm($user, $workspace, [
+        'redirect_url' => $storedUrl,
+    ]);
+    $formData = (new \App\Http\Resources\FormResource($form))->toArray(request());
+    $formData['title'] = 'Updated title';
+
+    $this->putJson(route('open.forms.update', $form->id), $formData)
+        ->assertSuccessful();
+
+    $form->refresh();
+    expect($form->title)->toBe('Updated title')
+        ->and($form->redirect_url)->toBe(Str::trim($storedUrl));
+})->with([
+    'ftp://example.com/thanks',
+    ' ftp://example.com/thanks ',
+    "\u{00A0}ftp://example.com/thanks\u{00A0}",
+]);
