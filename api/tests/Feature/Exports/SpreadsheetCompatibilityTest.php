@@ -1,10 +1,13 @@
 <?php
 
 use App\Exports\FormSubmissionExport;
+use App\Exports\FormSubmissionXlsxExport;
 use App\Exports\Tax\ArrayExport;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Maatwebsite\Excel\Excel;
-use Maatwebsite\Excel\Facades\Excel as ExcelFacade;
+use Maatwebsite\Excel\Files\TemporaryFileFactory;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
 it('round trips a real tax spreadsheet without losing identifiers, amounts, or headings', function () {
@@ -36,16 +39,50 @@ it('round trips a real tax spreadsheet without losing identifiers, amounts, or h
 });
 
 it('writes submission CSV with cleaned headings and quoted Unicode values', function () {
-    $csv = ExcelFacade::raw(new FormSubmissionExport([
+    $file = (new FormSubmissionExport())->write([
         ['Name (title)' => 'Été, "Tokyo"', 'Count (number)' => 0, 'Optional' => null, 'Empty' => ''],
-    ]), Excel::CSV);
+    ]);
     $stream = fopen('php://temp', 'w+');
     try {
-        fwrite($stream, preg_replace('/^\xEF\xBB\xBF/', '', $csv));
+        fwrite($stream, preg_replace('/^\xEF\xBB\xBF/', '', $file->contents()));
         rewind($stream);
         expect(fgetcsv($stream))->toBe(['Name', 'Count', 'Optional', 'Empty'])
             ->and(fgetcsv($stream))->toBe(['Été, "Tokyo"', '0', '', '']);
     } finally {
         fclose($stream);
+        $file->delete();
     }
 });
+
+it('keeps Excel scratch files private and removes them after writing', function (bool $fails) {
+    $directory = sys_get_temp_dir().'/submission-export-'.Str::uuid();
+    $this->app->instance(TemporaryFileFactory::class, new TemporaryFileFactory($directory));
+    $export = new FormSubmissionXlsxExport();
+    $rows = function () use ($directory, $fails) {
+        $workbooks = glob($directory.'/*.xlsx');
+        $scratch = glob($directory.'/*.xlsx-scratch');
+        expect($workbooks)->toHaveCount(1)
+            ->and($scratch)->toHaveCount(1)
+            ->and(fileperms($workbooks[0]) & 0777)->toBe(0600)
+            ->and(fileperms($scratch[0]) & 0777)->toBe(0700);
+
+        yield ['Name' => 'Sample answer'];
+
+        if ($fails) {
+            throw new RuntimeException('Simulated row read failure');
+        }
+    };
+
+    try {
+        if ($fails) {
+            expect(fn () => $export->write($rows()))->toThrow(RuntimeException::class, 'Simulated row read failure');
+            expect(glob($directory.'/*.xlsx'))->toBeEmpty();
+        } else {
+            $file = $export->write($rows());
+            expect($file->exists())->toBeTrue();
+        }
+        expect(glob($directory.'/*.xlsx-scratch'))->toBeEmpty();
+    } finally {
+        File::deleteDirectory($directory);
+    }
+})->with(['success' => false, 'failure' => true]);

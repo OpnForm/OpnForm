@@ -2,12 +2,17 @@
 
 namespace App\Service\Forms;
 
+use App\Exports\FormSubmissionExport;
+use App\Exports\FormSubmissionXlsxExport;
 use App\Models\Forms\Form;
 use App\Models\Forms\FormSubmission;
 use Carbon\Carbon;
+use Generator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Maatwebsite\Excel\Files\LocalTemporaryFile;
 use Vinkla\Hashids\Facades\Hashids;
 
 class FormExportService
@@ -37,6 +42,63 @@ class FormExportService
         return $count > self::SYNC_EXPORT_THRESHOLD;
     }
 
+    /** @return Builder<FormSubmission> */
+    public function submissionQuery(Form $form, array $submissionIds): Builder
+    {
+        $query = $form->submissions()->getQuery();
+        if ($submissionIds !== []) {
+            $query->whereIn('id', $submissionIds);
+        }
+
+        $lastId = (clone $query)->max('id');
+
+        return $query->where('id', '<=', $lastId ?? 0);
+    }
+
+    /** @param Builder<FormSubmission> $query */
+    public function iterateSubmissions(Builder $query, int $chunkSize): Generator
+    {
+        $last = null;
+        $query = (clone $query)
+            ->orderByRaw('created_at IS NULL')
+            ->orderByDesc('created_at')
+            ->orderByDesc('id');
+
+        do {
+            $page = (clone $query)->limit($chunkSize);
+            if ($last !== null) {
+                $createdAt = $last->getRawOriginal('created_at');
+                if ($createdAt === null) {
+                    $page->whereNull('created_at')->where('id', '<', $last->id);
+                } else {
+                    $page->where(fn ($before) => $before
+                        ->where('created_at', '<', $createdAt)
+                        ->orWhere(fn ($sameTime) => $sameTime
+                            ->where('created_at', $createdAt)
+                            ->where('id', '<', $last->id))
+                        ->orWhereNull('created_at'));
+                }
+            }
+
+            $submissions = $page->get();
+            yield from $submissions;
+            $last = $submissions->last();
+        } while ($submissions->count() === $chunkSize);
+    }
+
+    public function numericColumns(Form $form, string $format): array
+    {
+        if ($format !== 'xlsx') {
+            return [];
+        }
+
+        return collect(array_merge($form->properties, $form->removed_properties ?? []))
+            ->whereIn('type', ['number', 'rating', 'scale', 'slider'])
+            ->pluck('id')
+            ->flip()
+            ->all();
+    }
+
     /**
      * Format a single submission for export
      */
@@ -44,7 +106,8 @@ class FormExportService
         Form $form,
         FormSubmission $submission,
         array $displayColumns,
-        ?Carbon $fileLinkExpiresAt = null
+        ?Carbon $fileLinkExpiresAt = null,
+        array $numericColumns = []
     ): array {
         $formatter = (new FormSubmissionFormatter($form, $submission->data))
             ->outputStringsOnly()
@@ -73,13 +136,16 @@ class FormExportService
 
                 $key = collect($formattedData)->keys()->first(fn ($key) => str_ends_with($key, ' ('.$column.')'));
                 if ($key) {
-                    $filteredData[$key] = $formattedData[$key];
+                    $value = $formattedData[$key];
+                    $filteredData[$key] = isset($numericColumns[$column]) && is_numeric($value)
+                        ? $this->excelNumber($value)
+                        : $value;
                 }
             }
         }
 
         if (isset($displayColumns['created_at']) && $displayColumns['created_at'] === true) {
-            $filteredData['created_at'] = $submission->created_at->format('Y-m-d H:i');
+            $filteredData['created_at'] = $submission->created_at?->format('Y-m-d H:i') ?? '';
         }
 
         // Add status column if partial submissions are enabled
@@ -90,83 +156,64 @@ class FormExportService
         return $filteredData;
     }
 
-    /**
-     * Generate CSV content from rows and upload to storage
-     */
-    public function generateAndUploadCsvFile(array $rows, string $fileName, Carbon $expiresAt): string
+    private function excelNumber(int|float|string $value): int|float|string
     {
-        if (empty($rows)) {
-            throw new \Exception('No data to export');
+        $text = is_float($value) ? json_encode($value, JSON_THROW_ON_ERROR) : (string) $value;
+        $number = $value + 0;
+        $mantissa = preg_split('/e/i', trim($text), 2)[0];
+        $digits = trim(str_replace(['.', '-', '+'], '', $mantissa), '0');
+
+        // Keep the original digits when Excel would round or underflow the value.
+        if (strlen($digits) > 15 || abs($number) > 9.99999999999999e307 ||
+            ($digits !== '' && abs($number) < PHP_FLOAT_MIN) ||
+            (is_float($number) && (float) (string) $number !== $number)) {
+            return $text;
         }
 
-        // Generate CSV content
-        $csvContent = $this->generateCsvContent($rows);
+        return $number;
+    }
 
-        // Upload to configured storage disk
-        $filePath = self::EXPORT_FILE_PATH.$fileName;
+    public function writeFile(iterable $rows, string $format): LocalTemporaryFile
+    {
+        return $format === 'xlsx'
+            ? (new FormSubmissionXlsxExport())->write($rows)
+            : (new FormSubmissionExport())->write($rows);
+    }
+
+    public function contentType(string $format): string
+    {
+        return $format === 'xlsx' ? FormSubmissionXlsxExport::CONTENT_TYPE : FormSubmissionExport::CONTENT_TYPE;
+    }
+
+    /**
+     * Generate a spreadsheet from rows and upload it to storage.
+     */
+    public function generateAndUploadFile(iterable $rows, string $relativePath, Carbon $expiresAt, string $format = 'csv'): string
+    {
+        $filePath = self::EXPORT_FILE_PATH.$relativePath;
         $disk = Storage::disk(config('filesystems.default'));
+        $file = $this->writeFile($rows, $format);
+        $stream = null;
 
-        $stored = $disk->put($filePath, $csvContent, [
-            'visibility' => 'private',
-            'Content-Type' => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="'.$fileName.'"',
-        ]);
+        try {
+            $stream = $file->readStream();
+            $stored = $disk->put($filePath, $stream, [
+                'visibility' => 'private',
+                'Content-Type' => $this->contentType($format),
+                'Content-Disposition' => 'attachment; filename="'.basename($relativePath).'"',
+            ]);
+        } finally {
+            if (is_resource($stream)) {
+                fclose($stream);
+            }
+            $file->delete();
+        }
 
         if (!$stored) {
-            throw new \RuntimeException('Unable to store CSV export');
+            throw new \RuntimeException('Unable to store submission export');
         }
 
-        // Generate temporary URL for download (works for all storage types)
         return $disk->temporaryUrl($filePath, $expiresAt);
-    }
-
-    /**
-     * Generate CSV content from array of rows
-     */
-    private function generateCsvContent(array $rows): string
-    {
-        if (empty($rows)) {
-            return '';
-        }
-
-        $output = fopen('php://temp', 'r+');
-
-        // Help spreadsheet applications such as Excel detect UTF-8 correctly.
-        fwrite($output, "\xEF\xBB\xBF");
-
-        // Write header row (clean column names)
-        $headers = $this->cleanColumnNames(array_keys($rows[0]));
-        fputcsv($output, array_map([$this, 'safeSpreadsheetCell'], $headers));
-
-        // Write data rows
-        foreach ($rows as $row) {
-            fputcsv($output, array_map([$this, 'safeSpreadsheetCell'], array_values($row)));
-        }
-
-        rewind($output);
-        $csvContent = stream_get_contents($output);
-        fclose($output);
-
-        return $csvContent;
-    }
-
-    private function safeSpreadsheetCell(mixed $value): mixed
-    {
-        // Preserve real numbers (including negatives); neutralize only text formulas.
-        if (is_string($value) && preg_match('/^[\s\x00-\x1f]*[=+\-@]/u', $value)) {
-            return "'" . $value;
-        }
-        return $value;
-    }
-
-    /**
-     * Clean column names by removing parenthetical content
-     */
-    private function cleanColumnNames(array $columnNames): array
-    {
-        return collect($columnNames)->map(function ($columnName) {
-            return preg_replace('/\s\(.*\)/', '', $columnName);
-        })->toArray();
     }
 
     /**

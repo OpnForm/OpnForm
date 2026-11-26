@@ -2,6 +2,9 @@
 
 use Illuminate\Testing\Fluent\AssertableJson;
 use App\Models\OAuthProvider;
+use Stripe\ApiRequestor;
+use Stripe\HttpClient\ClientInterface;
+use Stripe\HttpClient\CurlClient;
 
 beforeEach(function () {
     $user = $this->actingAsUser();
@@ -80,6 +83,42 @@ it('cannot create payment intent with invalid stripe account', function () {
         ->assertJson([
             'message' => 'Failed to find Stripe account'
         ]);
+});
+
+describe('payment amount in the smallest currency unit', function () {
+    afterEach(function () {
+        ApiRequestor::setHttpClient(new CurlClient());
+    });
+
+    it('sends the exact amount to Stripe', function ($amount, $currency, $expected) {
+        $properties = collect($this->form->properties)->map(function ($block) use ($amount, $currency) {
+            return $block['type'] === 'payment'
+                ? array_merge($block, ['amount' => $amount, 'currency' => $currency])
+                : $block;
+        })->all();
+        $this->form->update(['properties' => $properties]);
+
+        config(['cashier.secret' => 'sk_test_123']);
+        $sentAmount = null;
+        $http = Mockery::mock(ClientInterface::class);
+        $http->shouldReceive('request')->once()
+            ->andReturnUsing(function ($method, $url, $headers, $params) use (&$sentAmount) {
+                $sentAmount = $params['amount'];
+
+                return ['{"id": "pi_123", "object": "payment_intent", "client_secret": "secret"}', 200, []];
+            });
+        ApiRequestor::setHttpClient($http);
+
+        $this->postJson(route('forms.stripe-connect.create-intent', $this->form->slug))
+            ->assertSuccessful()
+            ->assertJsonPath('intent.id', 'pi_123');
+        expect($sentAmount)->toBe($expected);
+    })->with([
+        'cents' => [19.99, 'USD', 1999],
+        'cents of a small amount' => [8.2, 'EUR', 820],
+        'whole amount' => [50, 'USD', 5000],
+        'currency without minor unit' => [1500, 'JPY', 1500],
+    ]);
 });
 
 describe('payment amount with mentions', function () {
