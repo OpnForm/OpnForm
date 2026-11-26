@@ -3,7 +3,10 @@
     <template #label>
       <slot name="label" />
     </template>
-    <div :class="ui.container({ class: props.ui?.slots?.container })">
+    <div
+      :class="ui.container({ class: props.ui?.slots?.container })"
+      :style="inputStyle"
+    >
       <table class="w-full table-auto">
         <thead class="">
           <tr>
@@ -87,7 +90,7 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue', 'focus', 'blur'])
 
-const { compVal, inputWrapperProps, ui, resolvedTheme } = useFormInput(props, { emit }, {
+const { compVal, inputWrapperProps, inputStyle, ui, resolvedTheme } = useFormInput(props, { emit }, {
   variants: matrixInputTheme
 })
 

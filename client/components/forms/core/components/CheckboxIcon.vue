@@ -47,7 +47,8 @@ const resolvedTheme = computed(() => {
 
 // Color style for CSS custom property
 const colorStyle = computed(() => ({
-  '--form-color': props.color
+  '--form-color': props.color,
+  '--form-focus-color': props.color
 }))
 
 // OPTIMIZED: Single computed following Nuxt UI pattern

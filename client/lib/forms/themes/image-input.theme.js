@@ -1,3 +1,5 @@
+import { formControlFocus, formControlTransition } from './focus-ring.theme.js'
+
 /**
  * ImageInput tailwind-variants configuration
  */
@@ -6,7 +8,9 @@ export const imageInputTheme = {
     button: [
       'cursor-pointer relative w-full',
       'flex-1 appearance-none w-full',
-      'focus:outline-hidden'
+      'focus:outline-hidden',
+      formControlTransition,
+      formControlFocus
     ],
     help: 'text-neutral-500'
   },
@@ -40,7 +44,7 @@ export const imageInputTheme = {
           'shadow-[inset_0_-1px_0_0_rgb(212_212_212)] dark:shadow-[inset_0_-1px_0_0_rgb(82_82_82)]',
           '!rounded-none',
           'transition-shadow duration-200',
-          'focus:ring-0 focus:shadow-[inset_0_-2px_0_0_var(--color-form)]'
+          'focus:ring-0 focus:shadow-[inset_0_-2px_0_0_var(--form-focus-color)]'
         ]
       }
     },
@@ -66,4 +70,3 @@ export const imageInputTheme = {
     hasError: false
   }
 }
-
