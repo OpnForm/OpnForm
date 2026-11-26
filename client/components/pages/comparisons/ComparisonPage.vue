@@ -694,6 +694,14 @@
       </div>
     </section>
 
+    <FaqSection
+      :title="`${competitorName} Alternative FAQ`"
+      :description="`Clear answers for teams comparing ${competitorName} and OpnForm.`"
+      :faqs="resolvedComparisonFaqs"
+      :show-contact="false"
+      id-prefix="comparison-faq-answer"
+    />
+
     <section class="py-14 sm:py-28 px-4 sm:px-8 lg:px-12 bg-white">
       <Testimonials />
     </section>
@@ -770,6 +778,10 @@ const props = defineProps({
     type: Array,
     required: true,
   },
+  comparisonFaqs: {
+    type: Array,
+    default: null,
+  },
   getCompetitorPrice: {
     type: Function,
     default: null,
@@ -777,10 +789,60 @@ const props = defineProps({
 })
 
 const { isAuthenticated: authenticated } = useIsAuthenticated()
+const route = useRoute()
 
 const switchSectionTitle = computed(
   () => `Why Users Switch from ${props.competitorName} to OpnForm`,
 )
+
+const defaultComparisonFaqs = computed(() => [
+  {
+    question: "Is OpnForm open source?",
+    answer:
+      "Yes. OpnForm is an open-source form builder. You can use the managed cloud service or self-host the core product when you need more control.",
+  },
+  {
+    question: "Can I self-host OpnForm?",
+    answer:
+      "Yes. OpnForm can be self-hosted. The Community self-hosted edition includes the core product, while self-hosted Enterprise unlocks advanced team, identity, and governance features.",
+  },
+  {
+    question: `Is OpnForm a good alternative to ${props.competitorName}?`,
+    answer:
+      `OpnForm is a good alternative to ${props.competitorName} if you want unlimited submissions, open-source transparency, API/webhooks, and deployment control. ${props.competitorName} may still be a better fit if your team relies on its specific ecosystem or templates.`,
+  },
+  {
+    question: `Can I migrate forms from ${props.competitorName} to OpnForm?`,
+    answer:
+      `You can recreate forms in OpnForm using templates, imports when available, or the form builder. Some ${props.competitorName}-specific logic or integrations may need to be configured manually.`,
+  },
+  {
+    question: "Does OpnForm include unlimited submissions?",
+    answer:
+      "Yes. OpnForm includes unlimited submissions on all plans, including the Free plan.",
+  },
+])
+
+const resolvedComparisonFaqs = computed(() =>
+  props.comparisonFaqs && props.comparisonFaqs.length > 0
+    ? props.comparisonFaqs
+    : defaultComparisonFaqs.value,
+)
+
+const comparisonSchema = computed(() => buildSchemaGraph([
+  buildWebPageSchema({
+    name: props.heroTitle,
+    description: `Compare OpnForm and ${props.competitorName} for pricing, features, integrations, privacy, and open-source deployment control.`,
+    path: route.path,
+  }),
+  buildBreadcrumbSchema([
+    { name: "Home", path: "/" },
+    { name: props.heroTitle, path: route.path },
+  ]),
+  buildFaqSchema(resolvedComparisonFaqs.value),
+]))
+
+useJsonLd("comparison-schema", comparisonSchema)
 
 const resolvedPlanComparisonTitle = computed(
   () =>

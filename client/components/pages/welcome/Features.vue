@@ -314,7 +314,7 @@
           />
 
           <UButton
-            :to="{ name: 'pricing' }"
+            :to="{ name: 'features' }"
             label="See the Full Feature List"
             variant="outline"
             color="neutral"
@@ -460,7 +460,7 @@ const panels = [
     imageSrc: "/img/pages/welcome/feature-3.webp",
     imageWidth: 968,
     link: {
-      to: { name: "pricing" },
+      to: { name: "features" },
       label: "Explore All Features",
       class: "text-violet-700 hover:text-violet-700 hover:no-underline",
     },
