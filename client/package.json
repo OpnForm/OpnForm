@@ -98,7 +98,7 @@
     "libphonenumber-js": "^1.13.16",
     "object-to-formdata": "^4.5.1",
     "overlayscrollbars": "^2.17.1",
-    "pdfjs-dist": "^5.4.530",
+    "pdfjs-dist": "^6.5.438",
     "pinia": "^4.1.0",
     "prismjs": "^1.29.0",
     "qrcode": "^1.5.4",
