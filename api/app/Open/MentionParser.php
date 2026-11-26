@@ -37,6 +37,11 @@ class MentionParser
 
     public function parse()
     {
+        return $this->render();
+    }
+
+    private function render(?callable $replaceMention = null)
+    {
         $doc = new DOMDocument();
         // Disable libxml errors and use internal errors
         $internalErrors = libxml_use_internal_errors(true);
@@ -60,11 +65,11 @@ class MentionParser
                 $fallback = $element->getAttribute('mention-fallback');
                 $value = $this->getData($fieldId);
 
-                if ($value !== null) {
-                    $textNode = $doc->createTextNode(is_array($value) ? implode($this->urlFriendly ? ',+' : ', ', $value) : $value);
-                    $element->parentNode->replaceChild($textNode, $element);
-                } elseif ($fallback !== '') {
-                    $textNode = $doc->createTextNode($fallback);
+                $replacement = is_array($value) ? implode($this->urlFriendly ? ',+' : ', ', $value) : $value;
+                $replacement ??= $fallback !== '' ? $fallback : null;
+
+                if ($replacement !== null) {
+                    $textNode = $doc->createTextNode($replaceMention ? $replaceMention($replacement) : $replacement);
                     $element->parentNode->replaceChild($textNode, $element);
                 } else {
                     $element->parentNode->removeChild($element);
@@ -86,9 +91,29 @@ class MentionParser
 
     public function parseAsText()
     {
-        // First use the existing parse method to handle mentions
-        $html = $this->parse();
+        return implode("\n", $this->textLines($this->parse()));
+    }
 
+    public function parseRecipientEntries(): array
+    {
+        $prefix = bin2hex(random_bytes(16));
+        $replacements = [];
+        $html = $this->render(function ($value) use ($prefix, &$replacements) {
+            $placeholder = $prefix . '_' . count($replacements) . '_';
+            $replacements[$placeholder] = $value;
+
+            return $placeholder;
+        });
+
+        // Only the saved template can create entries. Resolved mentions remain literal text.
+        return array_map(
+            fn ($entry) => strtr($entry, $replacements),
+            $this->textLines($html, "/\r\n|\n|\r/")
+        );
+    }
+
+    private function textLines(string $html, string $lineSeparator = "/\n/"): array
+    {
         $doc = new DOMDocument();
         $internalErrors = libxml_use_internal_errors(true);
 
@@ -109,12 +134,10 @@ class MentionParser
         $text = str_replace(['\\n', '\n'], "\n", $text);
         $text = preg_replace('/\n+/', "\n", trim($text));
 
-        // Ensure each line has exactly one email
-        $lines = explode("\n", $text);
+        $lines = preg_split($lineSeparator, $text);
         $lines = array_map('trim', $lines);
-        $lines = array_filter($lines); // Remove empty lines
 
-        return implode("\n", $lines);
+        return array_values(array_filter($lines));
     }
 
     private function domToText($node, &$text)

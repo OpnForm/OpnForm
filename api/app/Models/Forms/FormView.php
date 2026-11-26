@@ -9,6 +9,8 @@ class FormView extends Model
 {
     use HasFactory;
 
+    public const COUNTRY_ENRICHMENT_WINDOW_SECONDS = 300;
+
     protected $fillable = ['meta'];
 
     protected function casts(): array

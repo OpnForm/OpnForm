@@ -1,6 +1,8 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 import runtimeConfig from "./runtimeConfig"
 import sitemap from "./sitemap"
+import { sentryVitePlugin } from "@sentry/vite-plugin"
+import { SENTRY_APPLICATION_KEY } from "./lib/telemetry/third-party-errors"
 
 const isUnitTestMode = !!process.env.VITEST
 const isE2EMode = process.env.E2E === '1'
@@ -34,6 +36,16 @@ export default defineNuxtConfig({
   hooks: {
       'vite:extendConfig': (config, { isClient }) => {
           if (!isClient) return
+          // The Nuxt Sentry module only installs its build plugin when source maps are enabled.
+          if (process.env.NODE_ENV === 'production' && !isE2EMode && !isUnitTestMode && !process.env.SENTRY_AUTH_TOKEN) {
+              config.plugins ??= []
+              config.plugins.push(sentryVitePlugin({
+                  applicationKey: SENTRY_APPLICATION_KEY,
+                  sourcemaps: { disable: true },
+                  release: { inject: false, create: false, finalize: false },
+                  telemetry: false,
+              }))
+          }
           config.build ||= {}
           config.build.rolldownOptions ||= {}
           config.build.rolldownOptions.output = {
@@ -135,6 +147,7 @@ export default defineNuxtConfig({
   },
 
   sentry: {
+      applicationKey: SENTRY_APPLICATION_KEY,
       authToken: process.env.SENTRY_AUTH_TOKEN,
       org: 'opnform',
       project: 'opnform-vue',

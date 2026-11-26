@@ -42,6 +42,7 @@ class FormSubmissionExportRequest extends FormRequest
                     }
                 },
             ],
+            'format' => ['sometimes', 'string', Rule::in(['csv', 'xlsx'])],
             'columns.*' => ['boolean', 'required'],
             'submissionIds' => 'nullable|array',
             'submissionIds.*' => [

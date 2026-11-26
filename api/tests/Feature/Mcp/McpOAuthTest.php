@@ -326,6 +326,8 @@ it('completes PKCE authorization and uses the issued bearer token on the same en
     $this->deleteJson('/mcp-oauth/session', [], $authorizationHeader)->assertNoContent();
 
     $this->app['auth']->forgetGuards();
+    $sentry = Mockery::spy(app('sentry'));
+    $this->app->instance('sentry', $sentry);
     $this->postJson('/mcp', mcpInitializePayload(), mcpHeaders($authorizationHeader))->assertUnauthorized();
 
     $this->post('/oauth/token', [
@@ -333,6 +335,20 @@ it('completes PKCE authorization and uses the issued bearer token on the same en
         'client_id' => $clientId,
         'refresh_token' => $token->json('refresh_token'),
     ])->assertUnauthorized();
+
+    $sentry->shouldNotHaveReceived('captureException');
+});
+
+it('challenges malformed MCP bearer tokens without reporting a server error', function () {
+    $sentry = Mockery::spy(app('sentry'));
+    $this->app->instance('sentry', $sentry);
+
+    $this->postJson('/mcp', mcpInitializePayload(), mcpHeaders([
+        'Authorization' => 'Bearer malformed-token',
+    ]))->assertUnauthorized()
+        ->assertHeader('WWW-Authenticate');
+
+    $sentry->shouldNotHaveReceived('captureException');
 });
 
 it('rejects an OAuth token without the MCP scope and advertises discovery', function () {

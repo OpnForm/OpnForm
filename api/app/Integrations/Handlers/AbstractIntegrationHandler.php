@@ -12,6 +12,7 @@ use App\Service\Forms\SubmissionUrlService;
 use App\Service\Formulas\ComputedVariableEvaluator;
 use App\Service\Integrations\RecordWebhookOutcome;
 use App\Service\Security\PublicWebhookUrl;
+use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -199,6 +200,21 @@ abstract class AbstractIntegrationHandler
         Http::throw()
             ->withOptions(PublicWebhookUrl::requestOptions($url))
             ->post($url, $this->getWebhookData());
+    }
+
+    protected function sendJsonWebhook(PendingRequest $request): void
+    {
+        $url = $this->getWebhookUrl();
+        $payload = json_encode($this->getWebhookData(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+        $secret = $this->integrationData->webhook_secret ?? null;
+
+        if ($secret) {
+            $request->withHeaders(['X-Webhook-Signature' => 'sha256=' . hash_hmac('sha256', $payload, $secret)]);
+        }
+
+        $request->withOptions(PublicWebhookUrl::requestOptions($url))
+            ->withBody($payload, 'application/json')
+            ->post($url);
     }
 
     abstract public static function getValidationRules(?Form $form): array;
