@@ -4,7 +4,6 @@ namespace App\Integrations\Handlers;
 
 use App\Models\Forms\Form;
 use App\Rules\PublicWebhookUrlRule;
-use App\Service\Security\PublicWebhookUrl;
 use Illuminate\Support\Facades\Http;
 
 class WebhookIntegration extends AbstractIntegrationHandler
@@ -87,11 +86,6 @@ class WebhookIntegration extends AbstractIntegrationHandler
         return $this->integrationData->webhook_url;
     }
 
-    protected function getWebhookSecret(): ?string
-    {
-        return $this->integrationData->webhook_secret ?? null;
-    }
-
     protected function getWebhookHeaders(): array
     {
         $headers = isset($this->integrationData->webhook_headers) && is_object($this->integrationData->webhook_headers)
@@ -104,19 +98,6 @@ class WebhookIntegration extends AbstractIntegrationHandler
         }
 
         return $headers;
-    }
-
-    /**
-     * Generate HMAC-SHA256 signature for webhook payload
-     */
-    protected function generateSignature(string $payload): string
-    {
-        $secret = $this->getWebhookSecret();
-        if (!$secret) {
-            return '';
-        }
-
-        return 'sha256=' . hash_hmac('sha256', $payload, $secret);
     }
 
     protected function shouldRun(): bool
@@ -133,36 +114,7 @@ class WebhookIntegration extends AbstractIntegrationHandler
             return;
         }
 
-        $data = $this->getWebhookData();
-        $payload = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-        $headers = $this->buildRequestHeaders($payload);
-
-        Http::throw()
-            ->timeout(5)
-            ->withOptions(PublicWebhookUrl::requestOptions($this->getWebhookUrl()))
-            ->withHeaders($headers)
-            ->withBody($payload, 'application/json')
-            ->post($this->getWebhookUrl());
-    }
-
-    /**
-     * Build request headers with signature and custom headers
-     */
-    protected function buildRequestHeaders(string $payload): array
-    {
-        $headers = [];
-
-        // Add signature header if secret is configured
-        $signature = $this->generateSignature($payload);
-        if ($signature) {
-            $headers['X-Webhook-Signature'] = $signature;
-        }
-
-        // Add custom headers
-        $customHeaders = $this->getWebhookHeaders();
-        $headers = array_merge($customHeaders, $headers);
-
-        return $headers;
+        $this->sendJsonWebhook(Http::throw()->timeout(5)->withHeaders($this->getWebhookHeaders()));
     }
 
     public static function formatData(array $data): array

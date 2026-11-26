@@ -8,6 +8,7 @@ use App\Models\Forms\Form;
 use App\Models\Forms\FormSubmission;
 use App\Http\Resources\FormResource;
 use App\Http\Resources\FormSubmissionResource;
+use App\Jobs\Form\ResolveFormViewCountry;
 use App\Jobs\Form\StoreFormSubmissionJob;
 use App\Service\Forms\Analytics\UserAgentHelper;
 use App\Service\Forms\FormSubmissionProcessor;
@@ -67,9 +68,10 @@ class PublicFormController extends Controller
             ]);
         }
 
-        // Increment view count and store metadata for analytics
+        // Increment view count and store metadata for analytics; the country is filled in from the queue
         $userAgent = new UserAgentHelper($request);
-        $form->views()->create(['meta' => $userAgent->getMetadata()]);
+        $view = $form->views()->create(['meta' => $userAgent->getMetadata()]);
+        ResolveFormViewCountry::dispatchFor($view, $request->ip());
 
         return $this->success([
             'message' => 'Form viewed.',

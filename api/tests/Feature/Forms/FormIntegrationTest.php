@@ -269,7 +269,7 @@ describe('Webhook Integration', function () {
         ]);
     });
 
-    it('includes form and submission ids in the webhook payload', function () {
+    it('signs the submission payload for :dataset', function (string $integrationId) {
         Http::fake([
             'https://example.com/*' => Http::response(['ok' => true], 200),
         ]);
@@ -290,7 +290,7 @@ describe('Webhook Integration', function () {
 
         $this->postJson(route('open.forms.integrations.create', $form), [
             'status' => 'active',
-            'integration_id' => 'webhook',
+            'integration_id' => $integrationId,
             'logic' => null,
             'data' => [
                 'webhook_url' => 'https://example.com/webhook',
@@ -303,7 +303,7 @@ describe('Webhook Integration', function () {
         $this->postJson(route('forms.answer', $form->slug), $submissionData)
             ->assertSuccessful();
 
-        Http::assertSent(function ($request) use ($form, $submissionData) {
+        Http::assertSent(function ($request) use ($form, $submissionData, $integrationId) {
             $payload = json_decode($request->body(), true);
             $expectedSignature = 'sha256=' . hash_hmac(
                 'sha256',
@@ -314,11 +314,13 @@ describe('Webhook Integration', function () {
             return $request->url() === 'https://example.com/webhook'
                 && $payload['form_id'] === $form->id
                 && is_int($payload['submission_id'])
-                && $payload['submission']['Name'] === $submissionData['name']
+                && ($integrationId === 'webhook'
+                    ? $payload['submission']['Name'] === $submissionData['name']
+                    : !array_key_exists('submission', $payload) && !array_key_exists('message', $payload))
                 && $payload['data']['name']['value'] === $submissionData['name']
                 && $request->hasHeader('X-Webhook-Signature', $expectedSignature);
         });
-    });
+    })->with(['webhook', 'make']);
 
     it('can create webhook with secret and custom headers', function () {
         $user = $this->actingAsProUser();
