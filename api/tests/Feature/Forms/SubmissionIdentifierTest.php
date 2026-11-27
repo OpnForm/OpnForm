@@ -5,6 +5,13 @@ use App\Service\Forms\SubmissionUrlService;
 use Illuminate\Support\Str;
 use Vinkla\Hashids\Facades\Hashids;
 
+dataset('falsy submission hashes', [
+    'string zero' => ['0'],
+    'integer zero' => [0],
+    'false' => [false],
+    'empty array' => [[]],
+]);
+
 describe('Submission UUID Identifiers', function () {
     beforeEach(function () {
         $this->user = $this->actingAsBusinessUser();
@@ -115,6 +122,31 @@ describe('Submission UUID Identifiers', function () {
         $submission->refresh();
         expect($submission->data[$nameField['id']])->toBe('ORIGINAL_DATA');
     });
+
+    it('does not allow editing submission using raw numeric id with a falsy submission hash', function ($submissionHash) {
+        $nameField = collect($this->form->properties)->where('name', 'Name')->first();
+
+        $initialData = $this->generateFormSubmissionData($this->form, [
+            $nameField['id'] => 'ORIGINAL_DATA',
+        ]);
+        $this->postJson(route('forms.answer', $this->form), $initialData)
+            ->assertSuccessful();
+
+        $submission = $this->form->submissions()->firstOrFail();
+
+        $editData = $this->generateFormSubmissionData($this->form, [
+            $nameField['id'] => 'POISONED_DATA',
+        ]);
+        $editData['submission_hash'] = $submissionHash;
+        $editData['submission_id'] = (string) $submission->id;
+
+        $this->actingAsGuest();
+        $this->postJson(route('forms.answer', $this->form), $editData)
+            ->assertStatus(404);
+
+        expect($this->form->submissions()->count())->toBe(1);
+        expect($submission->refresh()->data[$nameField['id']])->toBe('ORIGINAL_DATA');
+    })->with('falsy submission hashes');
 });
 
 describe('Legacy Hashid Rejection', function () {
@@ -313,6 +345,37 @@ describe('Submission update blocked when editable submissions disabled', functio
         $submission->refresh();
         expect($submission->data)->toBe($originalData);
     });
+
+    it('does not update submission using raw numeric id with a falsy submission hash when editing is disabled', function ($submissionHash) {
+        $user = $this->actingAsBusinessUser();
+        $workspace = $this->createUserWorkspace($user);
+        $form = $this->createForm($user, $workspace, [
+            'editable_submissions' => false,
+            'enable_partial_submissions' => false,
+        ]);
+        $nameField = collect($form->properties)->where('name', 'Name')->first();
+
+        $initialData = $this->generateFormSubmissionData($form, [
+            $nameField['id'] => 'ORIGINAL_DATA',
+        ]);
+        $this->postJson(route('forms.answer', $form), $initialData)
+            ->assertSuccessful();
+
+        $submission = $form->submissions()->firstOrFail();
+
+        $editData = $this->generateFormSubmissionData($form, [
+            $nameField['id'] => 'POISONED_DATA',
+        ]);
+        $editData['submission_hash'] = $submissionHash;
+        $editData['submission_id'] = (string) $submission->id;
+
+        $this->actingAsGuest();
+        $this->postJson(route('forms.answer', $form), $editData)
+            ->assertSuccessful();
+
+        expect($form->submissions()->count())->toBe(2);
+        expect($submission->refresh()->data[$nameField['id']])->toBe('ORIGINAL_DATA');
+    })->with('falsy submission hashes');
 
     it('rejects non-UUID submission identifier when only partial submissions are enabled', function () {
         $user = $this->actingAsBusinessUser();
