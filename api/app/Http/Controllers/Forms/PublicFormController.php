@@ -205,7 +205,9 @@ class PublicFormController extends Controller
             ?? $request->get('submission_id')
             ?? ($submissionData['submission_id'] ?? null);
 
-        if (!$submissionIdentifier) {
+        unset($submissionData['submission_id'], $submissionData['submission_hash']);
+
+        if ($submissionIdentifier === null) {
             return $submissionData;
         }
 
@@ -218,8 +220,6 @@ class PublicFormController extends Controller
             && $form->workspace->hasFeature('partial_submissions');
 
         if (!$canEditSubmissions && !$canPartialSubmit) {
-            unset($submissionData['submission_id'], $submissionData['submission_hash']);
-
             return $submissionData;
         }
 
@@ -231,7 +231,7 @@ class PublicFormController extends Controller
             return $canPartialSubmit && $submission?->status === FormSubmission::STATUS_PARTIAL;
         };
 
-        if (!Str::isUuid($submissionIdentifier)) {
+        if (!is_string($submissionIdentifier) || !Str::isUuid($submissionIdentifier)) {
             abort(404, 'Submission not found');
         }
 
@@ -242,12 +242,9 @@ class PublicFormController extends Controller
             abort(404, 'Submission not found');
         }
         if (!$canUseResolvedSubmission($submission)) {
-            unset($submissionData['submission_id'], $submissionData['submission_hash']);
-
             return $submissionData;
         }
         $submissionData['submission_id'] = $submission->id;
-        unset($submissionData['submission_hash']);
 
         return $submissionData;
     }
