@@ -121,16 +121,16 @@
         },
         {
             "name": "aws/aws-sdk-php",
-            "version": "3.406.0",
+            "version": "3.407.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/aws/aws-sdk-php.git",
-                "reference": "fb4a935ea1e7d550cccb9d647f76b9e6e2b98736"
+                "reference": "205fcddb1f2bc9ac98412d6f1eeb4ad5d5ac7229"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/aws/aws-sdk-php/zipball/fb4a935ea1e7d550cccb9d647f76b9e6e2b98736",
-                "reference": "fb4a935ea1e7d550cccb9d647f76b9e6e2b98736",
+                "url": "https://api.github.com/repos/aws/aws-sdk-php/zipball/205fcddb1f2bc9ac98412d6f1eeb4ad5d5ac7229",
+                "reference": "205fcddb1f2bc9ac98412d6f1eeb4ad5d5ac7229",
                 "shasum": ""
             },
             "require": {
@@ -212,9 +212,9 @@
             "support": {
                 "forum": "https://github.com/aws/aws-sdk-php/discussions",
                 "issues": "https://github.com/aws/aws-sdk-php/issues",
-                "source": "https://github.com/aws/aws-sdk-php/tree/3.406.0"
+                "source": "https://github.com/aws/aws-sdk-php/tree/3.407.1"
             },
-            "time": "2026-11-19T19:20:42+00:00"
+            "time": "2026-11-21T00:21:38+00:00"
         },
         {
             "name": "bacon/bacon-qr-code",
@@ -10315,16 +10315,16 @@
         },
         {
             "name": "symfony/filesystem",
-            "version": "v7.4.23",
+            "version": "v7.4.25",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/filesystem.git",
-                "reference": "53d609da66578dad5a39fe290e8f924ec8f05e93"
+                "reference": "c6adf2262feb9e08ba64632d2703987c24555e0d"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/filesystem/zipball/53d609da66578dad5a39fe290e8f924ec8f05e93",
-                "reference": "53d609da66578dad5a39fe290e8f924ec8f05e93",
+                "url": "https://api.github.com/repos/symfony/filesystem/zipball/c6adf2262feb9e08ba64632d2703987c24555e0d",
+                "reference": "c6adf2262feb9e08ba64632d2703987c24555e0d",
                 "shasum": ""
             },
             "require": {
@@ -10361,7 +10361,7 @@
             "description": "Provides basic utilities for the filesystem",
             "homepage": "https://symfony.com",
             "support": {
-                "source": "https://github.com/symfony/filesystem/tree/v7.4.23"
+                "source": "https://github.com/symfony/filesystem/tree/v7.4.25"
             },
             "funding": [
                 {
@@ -10381,7 +10381,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-11-04T08:27:22+00:00"
+            "time": "2026-11-27T10:49:08+00:00"
         },
         {
             "name": "symfony/finder",
@@ -11898,16 +11898,16 @@
         },
         {
             "name": "symfony/process",
-            "version": "v7.4.22",
+            "version": "v7.4.24",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/process.git",
-                "reference": "a5a6912edbbfc4c98cd080bc4bbe37c8e7eeb20a"
+                "reference": "e88ac51768062ad548bf2f900c52231e7e83e475"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/process/zipball/a5a6912edbbfc4c98cd080bc4bbe37c8e7eeb20a",
-                "reference": "a5a6912edbbfc4c98cd080bc4bbe37c8e7eeb20a",
+                "url": "https://api.github.com/repos/symfony/process/zipball/e88ac51768062ad548bf2f900c52231e7e83e475",
+                "reference": "e88ac51768062ad548bf2f900c52231e7e83e475",
                 "shasum": ""
             },
             "require": {
@@ -11939,7 +11939,7 @@
             "description": "Executes commands in sub-processes",
             "homepage": "https://symfony.com",
             "support": {
-                "source": "https://github.com/symfony/process/tree/v7.4.22"
+                "source": "https://github.com/symfony/process/tree/v7.4.24"
             },
             "funding": [
                 {
@@ -11959,7 +11959,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-10-25T14:40:16+00:00"
+            "time": "2026-11-23T08:23:51+00:00"
         },
         {
             "name": "symfony/psr-http-message-bridge",
